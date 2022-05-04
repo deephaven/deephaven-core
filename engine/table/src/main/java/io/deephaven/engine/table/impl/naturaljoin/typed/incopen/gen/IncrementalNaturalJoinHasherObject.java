@@ -141,7 +141,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             if (existingRightRowKey == RowSet.NULL_ROW_KEY) {
                                 alternateRightRowKey.set(alternateTableLocation, rowKeyChunk.get(chunkPosition));
-                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                             } else if (existingRightRowKey < RowSet.NULL_ROW_KEY) {
                                 final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                                 final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
@@ -156,7 +156,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                                 final long duplicateLocation = allocateDuplicateLocation();
                                 rightSideDuplicateRowSets.set(duplicateLocation, RowSetFactory.fromKeys(existingRightRowKey, rowKeyChunk.get(chunkPosition)));
                                 alternateRightRowKey.set(alternateTableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
-                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                             }
                             break MAIN_SEARCH;
                         } else {
@@ -168,12 +168,12 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
                     mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
-                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(-1, tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(-1, mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (existingRightRowKey == RowSet.NULL_ROW_KEY) {
                         mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
-                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     } else if (existingRightRowKey < RowSet.NULL_ROW_KEY) {
                         final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                         final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
@@ -188,7 +188,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                         final long duplicateLocation = allocateDuplicateLocation();
                         rightSideDuplicateRowSets.set(duplicateLocation, RowSetFactory.fromKeys(existingRightRowKey, rowKeyChunk.get(chunkPosition)));
                         mainRightRowKey.set(tableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
-                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     }
                     break;
                 } else {
@@ -283,7 +283,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                         Assert.statementNeverExecuted("Could not find existing right row in state");
                     } else {
                         mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
-                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     }
                     found = true;
                     break;
@@ -312,7 +312,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                                 Assert.statementNeverExecuted("Could not find existing right row in state");
                             } else {
                                 alternateRightRowKey.set(alternateTableLocation, RowSet.NULL_ROW_KEY);
-                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                             }
                             alternateFound = true;
                             break;
@@ -342,7 +342,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
             long existingRightRowKey;
             while ((existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     found = true;
                     break;
                 }
@@ -356,7 +356,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     int alternateTableLocation = firstAlternateTableLocation;
                     while ((existingRightRowKey = alternateRightRowKey.getUnsafe(alternateTableLocation)) != EMPTY_RIGHT_STATE) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                            alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                             alternateFound = true;
                             break;
                         }
@@ -389,7 +389,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     final long keyToShift = rowKeyChunk.get(chunkPosition);
                     if (existingRightRowKey == keyToShift - shiftDelta) {
                         mainRightRowKey.set(tableLocation, keyToShift);
-                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
+                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
                     } else if (existingRightRowKey < RowSet.NULL_ROW_KEY) {
                         final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                         if (shiftDelta < 0) {
@@ -418,7 +418,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                             final long keyToShift = rowKeyChunk.get(chunkPosition);
                             if (existingRightRowKey == keyToShift - shiftDelta) {
                                 alternateRightRowKey.set(alternateTableLocation, keyToShift);
-                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
+                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
                             } else if (existingRightRowKey < RowSet.NULL_ROW_KEY) {
                                 final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                                 if (shiftDelta < 0) {
@@ -569,7 +569,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
         final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate);;
         mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie);
         alternateModifiedTrackerCookieSource.set(locationToMigrate, -1L);
-        modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, destinationTableLocation);;
+        modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, mainInsertMask | destinationTableLocation);;
         alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
         return true;
     }

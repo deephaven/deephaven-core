@@ -54,26 +54,23 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected final WritableColumnSource[] alternateKeySources;
 
     protected ImmutableLongArraySource mainRightRowKey = new ImmutableLongArraySource();
-    protected ImmutableLongArraySource alternateRightRowKey = new ImmutableLongArraySource();
+    protected ImmutableLongArraySource alternateRightRowKey;
 
     protected ImmutableObjectArraySource<WritableRowSet> mainLeftRowSet =
             new ImmutableObjectArraySource(WritableRowSet.class, null);
     protected ImmutableLongArraySource mainModifiedTrackerCookieSource = new ImmutableLongArraySource();
 
-    protected ImmutableObjectArraySource<WritableRowSet> alternateLeftRowSet =
-            new ImmutableObjectArraySource(WritableRowSet.class, null);
-    protected ImmutableLongArraySource alternateModifiedTrackerCookieSource = new ImmutableLongArraySource();
+    protected ImmutableObjectArraySource<WritableRowSet> alternateLeftRowSet;
+    protected ImmutableLongArraySource alternateModifiedTrackerCookieSource;
 
     protected ObjectArraySource<WritableRowSet> rightSideDuplicateRowSets = new ObjectArraySource<>(WritableRowSet.class);
     protected long nextDuplicateRightSide = 0;
     protected TLongArrayList freeDuplicateValues = new TLongArrayList();
 
-    // output alternating column sources
-    protected AlternatingColumnSource[] alternatingColumnSources;
-
     // the mask for insertion into the main table (this tells our alternating column sources which of the two sources
     // to access for a given key)
     protected int mainInsertMask = 0;
+    protected int alternateInsertMask = (int)AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
 
     protected IncrementalNaturalJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
                                                                ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
@@ -202,7 +199,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
-                doRehash(initialBuild, bc.rehashCredits, nextChunkSize, modifiedSlotTracker);
+                while (doRehash(initialBuild, bc.rehashCredits, nextChunkSize, modifiedSlotTracker)) {
+                    migrateFront(modifiedSlotTracker);
+                }
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
@@ -326,24 +325,16 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         mainLeftRowSet = new ImmutableObjectArraySource(WritableRowSet.class, null);
         mainLeftRowSet.ensureCapacity(tableSize);
 
-        mainModifiedTrackerCookieSource = alternateModifiedTrackerCookieSource;
+        alternateModifiedTrackerCookieSource = mainModifiedTrackerCookieSource;
         mainModifiedTrackerCookieSource = new ImmutableLongArraySource();
         mainModifiedTrackerCookieSource.ensureCapacity(tableSize);
 
         if (mainInsertMask == 0) {
-            if (alternatingColumnSources != null) {
-                for (int ai = 0; ai < alternatingColumnSources.length; ++ai) {
-                    alternatingColumnSources[ai].setSources(alternateKeySources[ai], mainKeySources[ai]);
-                }
-            }
             mainInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
+            alternateInsertMask = 0;
         } else {
-            if (alternatingColumnSources != null) {
-                for (int ai = 0; ai < alternatingColumnSources.length; ++ai) {
-                    alternatingColumnSources[ai].setSources(mainKeySources[ai], alternateKeySources[ai]);
-                }
-            }
             mainInsertMask = 0;
+            alternateInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
         }
     }
 
@@ -426,12 +417,21 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public long getRightIndex(long slot) {
-        return mainRightRowKey.getUnsafe(slot);
+        if ((slot & mainInsertMask) == mainInsertMask) {
+            // slot needs to represent whether we are in the main or alternate using main insert mask!
+            return mainRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+        } else {
+            return alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+        }
     }
 
     @Override
     public RowSet getLeftIndex(long slot) {
-        return mainLeftRowSet.getUnsafe(slot);
+        if ((slot & mainInsertMask) == mainInsertMask) {
+            return mainLeftRowSet.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+        } else {
+            return alternateLeftRowSet.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+        }
     }
 
     @Override

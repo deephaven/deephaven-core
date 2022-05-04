@@ -148,7 +148,7 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate);");
         builder.addStatement("mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie)");
         builder.addStatement("alternateModifiedTrackerCookieSource.set(locationToMigrate, -1L)");
-        builder.addStatement("modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, destinationTableLocation);");
+        builder.addStatement("modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, mainInsertMask | destinationTableLocation);");
     }
 
     public static void incrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
@@ -252,13 +252,13 @@ public class TypedNaturalJoinFactory {
     }
 
     private static void modifyCookie(CodeBlock.Builder builder, String sourceType, String tableLocation, String flag) {
-        builder.addStatement("$LModifiedTrackerCookieSource.set($L, modifiedSlotTracker.addMain($LModifiedTrackerCookieSource.getUnsafe($L), $L, existingRightRowKey, $T.$L))", sourceType, tableLocation, sourceType, tableLocation, tableLocation, NaturalJoinModifiedSlotTracker.class, flag);
+        builder.addStatement("$LModifiedTrackerCookieSource.set($L, modifiedSlotTracker.addMain($LModifiedTrackerCookieSource.getUnsafe($L), $LInsertMask | $L, existingRightRowKey, $T.$L))", sourceType, tableLocation, sourceType, tableLocation, sourceType, tableLocation, NaturalJoinModifiedSlotTracker.class, flag);
     }
 
     public static void incrementalRightInsertUpdate(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         builder.addStatement("mainLeftRowSet.set(tableLocation, $T.empty())", RowSetFactory.class);
         builder.addStatement("mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition))");
-        builder.addStatement("mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(-1, tableLocation, existingRightRowKey, $T.FLAG_RIGHT_CHANGE))", NaturalJoinModifiedSlotTracker.class);
+        builder.addStatement("mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(-1, mainInsertMask | tableLocation, existingRightRowKey, $T.FLAG_RIGHT_CHANGE))", NaturalJoinModifiedSlotTracker.class);
     }
 
     public static void incrementalModifyRightFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {

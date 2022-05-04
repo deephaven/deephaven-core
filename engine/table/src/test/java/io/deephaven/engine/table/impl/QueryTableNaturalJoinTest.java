@@ -8,7 +8,7 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.table.impl.naturaljoin.NaturalJoinHelper;
+import io.deephaven.engine.table.impl.NaturalJoinHelper;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
