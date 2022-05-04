@@ -456,8 +456,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
-                    if (leftRowSet != null) {
+                    if (leftRowSet != null && !leftRowSet.isEmpty()) {
                         final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
+                        checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
                         leftRowSet.forAllRowKeys(pos -> innerIndex[(int)pos] = rightRowKeyForState);
                     }
                 }
@@ -468,10 +469,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
-                    if (leftRowSet != null) {
+                    if (leftRowSet != null && !leftRowSet.isEmpty()) {
                         final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
                         if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
                             leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
+                        } else {
+                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
                         }
                     }
                 }
@@ -481,10 +484,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 final WritableRowRedirection rowRedirection = WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
-                    if (leftRowSet != null) {
+                    if (leftRowSet != null && !leftRowSet.isEmpty()) {
                         final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
                         if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
                             leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKeyForState));
+                        } else {
+                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
                         }
                     }
                 }
