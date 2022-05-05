@@ -243,7 +243,6 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("duplicates.insert(rowKeyChunk.get(chunkPosition))");
         assertEq(builder,"duplicateSize", "duplicates.size() - 1");
         builder.nextControlFlow("else");
-        checkForDuplicateError(builder, sourceType, tableLocation);
         builder.addStatement("final long duplicateLocation = allocateDuplicateLocation()");
         builder.addStatement("rightSideDuplicateRowSets.set(duplicateLocation, $T.fromKeys(existingRightRowKey, rowKeyChunk.get(chunkPosition)))", RowSetFactory.class);
         builder.addStatement("$LRightRowKey.set($L, rowKeyFromDuplicateLocation(duplicateLocation))", sourceType, tableLocation);

@@ -417,12 +417,17 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public long getRightIndex(long slot) {
+        final long rightRowKey;
         if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             // slot needs to represent whether we are in the main or alternate using main insert mask!
-            return mainRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+            rightRowKey = mainRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         } else {
-            return alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+            rightRowKey = alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         }
+        if (rightRowKey < RowSet.NULL_ROW_KEY) {
+            return DUPLICATE_RIGHT_VALUE;
+        }
+        return rightRowKey;
     }
 
     @Override

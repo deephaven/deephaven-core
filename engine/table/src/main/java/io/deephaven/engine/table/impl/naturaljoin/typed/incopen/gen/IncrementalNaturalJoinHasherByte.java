@@ -148,10 +148,6 @@ final class IncrementalNaturalJoinHasherByte extends IncrementalNaturalJoinState
                                 duplicates.insert(rowKeyChunk.get(chunkPosition));
                                 Assert.eq(duplicateSize, "duplicateSize", duplicates.size() - 1, "duplicates.size() - 1");
                             } else {
-                                final RowSet leftRowsForState = alternateLeftRowSet.getUnsafe(alternateTableLocation);
-                                if (!leftRowsForState.isEmpty()) {
-                                    throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowsForState.firstRowKey()));
-                                }
                                 final long duplicateLocation = allocateDuplicateLocation();
                                 rightSideDuplicateRowSets.set(duplicateLocation, RowSetFactory.fromKeys(existingRightRowKey, rowKeyChunk.get(chunkPosition)));
                                 alternateRightRowKey.set(alternateTableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
@@ -180,10 +176,6 @@ final class IncrementalNaturalJoinHasherByte extends IncrementalNaturalJoinState
                         duplicates.insert(rowKeyChunk.get(chunkPosition));
                         Assert.eq(duplicateSize, "duplicateSize", duplicates.size() - 1, "duplicates.size() - 1");
                     } else {
-                        final RowSet leftRowsForState = mainLeftRowSet.getUnsafe(tableLocation);
-                        if (!leftRowsForState.isEmpty()) {
-                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowsForState.firstRowKey()));
-                        }
                         final long duplicateLocation = allocateDuplicateLocation();
                         rightSideDuplicateRowSets.set(duplicateLocation, RowSetFactory.fromKeys(existingRightRowKey, rowKeyChunk.get(chunkPosition)));
                         mainRightRowKey.set(tableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
