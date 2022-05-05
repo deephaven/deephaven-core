@@ -446,9 +446,11 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     public String keyString(long slot) {
         final long firstLeftRowKey;
         if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
-            firstLeftRowKey = mainLeftRowSet.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK).firstRowKey();
+            firstLeftRowKey =
+                    mainLeftRowSet.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK).firstRowKey();
         } else {
-            firstLeftRowKey =  alternateLeftRowSet.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK).firstRowKey();
+            firstLeftRowKey =
+                    alternateLeftRowSet.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK).firstRowKey();
         }
         Assert.neq(firstLeftRowKey, "firstLeftRowKey", RowSet.NULL_ROW_KEY);
         return extractKeyStringFromSourceTable(firstLeftRowKey);
