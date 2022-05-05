@@ -278,10 +278,12 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
             final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
             if (leftRowSet != null) {
                 if (leftRowSet.isEmpty()) {
-                    throw new IllegalStateException("When converting left group position an empty LHS rowset was found!");
+                    throw new IllegalStateException(
+                            "When converting left group position an empty LHS rowset was found!");
                 }
                 if (leftRowSet.size() != 1) {
-                    throw new IllegalStateException("When converting left group position to row keys more than one LHS value was found!");
+                    throw new IllegalStateException(
+                            "When converting left group position to row keys more than one LHS value was found!");
                 }
                 final long groupPosition = leftRowSet.get(0);
                 this.leftRowSet.set(ii, rowSetSource.get(groupPosition));
@@ -296,7 +298,8 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
         }
         final int chunkSize = (int) Math.min(rightRowSet.size(), CHUNK_SIZE);
         try (ProbeContext pc = new ProbeContext(rightSources, chunkSize)) {
-            probeTable(pc, rightRowSet, false, rightSources, (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks));
+            probeTable(pc, rightRowSet, false, rightSources,
+                    (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks));
         }
     }
 
@@ -320,7 +323,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        leftRowSet.forAllRowKeys(pos -> innerIndex[(int)pos] = rightRowKeyForState);
+                        leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKeyForState);
                     }
                 }
 
@@ -340,7 +343,8 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                 return new LongColumnSourceWritableRowRedirection(sparseRedirections);
             }
             case Hash: {
-                final WritableRowRedirection rowRedirection = WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
+                final WritableRowRedirection rowRedirection =
+                        WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
@@ -367,33 +371,42 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     @Override
     void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet, long shiftDelta,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        probeTable((ProbeContext)pc, shiftedRowSet, false, rightSources, (chunkOk, sourceKeyChunks) -> applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker));
+        probeTable((ProbeContext) pc, shiftedRowSet, false, rightSources, (chunkOk,
+                sourceKeyChunks) -> applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker));
     }
 
-    protected abstract void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+    protected abstract void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
     void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        probeTable((ProbeContext)pc, modified, false, rightSources, (chunkOk, sourceKeyChunks) -> modifyByRight(chunkOk, sourceKeyChunks, modifiedSlotTracker));
+        probeTable((ProbeContext) pc, modified, false, rightSources,
+                (chunkOk, sourceKeyChunks) -> modifyByRight(chunkOk, sourceKeyChunks, modifiedSlotTracker));
     }
 
-    protected abstract void modifyByRight(RowSequence rowSequence, Chunk[] sourceKeyChunks, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+    protected abstract void modifyByRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
     void removeRight(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        probeTable((ProbeContext)pc, rightRowSet, true, rightSources, (chunkOk, sourceKeyChunks) -> removeRight(chunkOk, sourceKeyChunks, modifiedSlotTracker));
+        probeTable((ProbeContext) pc, rightRowSet, true, rightSources,
+                (chunkOk, sourceKeyChunks) -> removeRight(chunkOk, sourceKeyChunks, modifiedSlotTracker));
     }
 
-    protected abstract void removeRight(RowSequence rowSequence, Chunk[] sourceKeyChunks, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+    protected abstract void removeRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
     void addRightSide(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        probeTable((ProbeContext)pc, rightRowSet, false, rightSources, (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker));
+        probeTable((ProbeContext) pc, rightRowSet, false, rightSources,
+                (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker));
     }
-    protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+
+    protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
     protected void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources,

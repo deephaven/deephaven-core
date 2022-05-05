@@ -43,8 +43,8 @@ public class HasherConfig<T> {
             String mainStateName,
             String overflowOrAlternateStateName,
             String emptyStateName, Class<?> stateType,
-                 Consumer<CodeBlock.Builder> moveMainFull,
-                 Consumer<CodeBlock.Builder> moveMainAlternate,
+            Consumer<CodeBlock.Builder> moveMainFull,
+            Consumer<CodeBlock.Builder> moveMainAlternate,
             Consumer<CodeBlock.Builder> rehashFullSetup,
             List<ParameterSpec> extraPartialRehashParameters,
             List<ProbeSpec> probes,
@@ -86,7 +86,7 @@ public class HasherConfig<T> {
         final ParameterSpec[] params;
 
         public ProbeSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                 FoundMethodBuilder found,
+                FoundMethodBuilder found,
                 Consumer<CodeBlock.Builder> missing, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
@@ -107,8 +107,8 @@ public class HasherConfig<T> {
         final ParameterSpec[] params;
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                         boolean allowAlternates, FoundMethodBuilder found,
-                         BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec... params) {
+                boolean allowAlternates, FoundMethodBuilder found,
+                BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.requiresRowKeyChunk = requiresRowKeyChunk;
@@ -257,7 +257,8 @@ public class HasherConfig<T> {
             return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle, openAddressed,
                     openAddressedAlternate, alwaysMoveMain, includeOriginalSources, supportRehash, mainStateName,
                     overflowOrAlternateStateName, emptyStateName,
-                    stateType, moveMainFull, moveMainAlternate, rehashFullSetup, extraPartialRehashParameters, probes, builds, extraMethods);
+                    stateType, moveMainFull, moveMainAlternate, rehashFullSetup, extraPartialRehashParameters, probes,
+                    builds, extraMethods);
         }
     }
 }

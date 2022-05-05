@@ -46,17 +46,20 @@ public class TypedAggregationFactory {
         builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
     }
 
-    private static void buildFoundIncremental(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    private static void buildFoundIncremental(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         buildFound(hasherConfig, alternate, builder);
         builder.addStatement("final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, 1)");
     }
 
-    static void buildFoundIncrementalInitial(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    static void buildFoundIncrementalInitial(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         buildFoundIncremental(hasherConfig, alternate, builder);
         builder.addStatement("Assert.gtZero(oldRowCount, \"oldRowCount\")");
     }
 
-    static void buildFoundIncrementalUpdate(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    static void buildFoundIncrementalUpdate(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         buildFoundIncremental(hasherConfig, alternate, builder);
         builder.beginControlFlow("if (oldRowCount == 0)");
         builder.addStatement("reincarnatedPositions.add(outputPosition)");

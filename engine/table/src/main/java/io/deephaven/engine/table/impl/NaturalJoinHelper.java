@@ -91,17 +91,24 @@ class NaturalJoinHelper {
                                 "Grouping is not supported with ticking chunked naturalJoin!");
                     }
 
-                    // the right side is unique, so we should have a state for it; the left side can have many duplicates
+                    // the right side is unique, so we should have a state for it; the left side can have many
+                    // duplicates
                     // so we would prefer to have a smaller table
                     final int tableSize = control.tableSizeForRightBuild(rightTable);
 
                     final BothIncrementalNaturalJoinStateManager jsm =
-                            USE_TYPED_STATE_MANAGER ? TypedHasherFactory.make(IncrementalNaturalJoinStateManagerTypedBase.class, bucketingContext.leftSources, tableSize, control.getMaximumLoadFactor(), control.getTargetLoadFactor()) :
-                            new IncrementalChunkedNaturalJoinStateManager(
-                            bucketingContext.leftSources, tableSize, bucketingContext.originalLeftSources, control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+                            USE_TYPED_STATE_MANAGER
+                                    ? TypedHasherFactory.make(IncrementalNaturalJoinStateManagerTypedBase.class,
+                                            bucketingContext.leftSources, tableSize, control.getMaximumLoadFactor(),
+                                            control.getTargetLoadFactor())
+                                    : new IncrementalChunkedNaturalJoinStateManager(
+                                            bucketingContext.leftSources, tableSize,
+                                            bucketingContext.originalLeftSources, control.getMaximumLoadFactor(),
+                                            control.getTargetLoadFactor());
                     jsm.buildFromRightSide(rightTable, bucketingContext.rightSources);
 
-                    try (final BothIncrementalNaturalJoinStateManager.InitialBuildContext ibc = jsm.makeInitialBuildContext()) {
+                    try (final BothIncrementalNaturalJoinStateManager.InitialBuildContext ibc =
+                            jsm.makeInitialBuildContext()) {
                         jsm.decorateLeftSide(leftTable.getRowSet(), bucketingContext.leftSources, ibc);
 
                         jsm.compactAll();
@@ -141,7 +148,8 @@ class NaturalJoinHelper {
                                     bucketingContext.leftSources, control.tableSizeForLeftBuild(leftTable),
                                     bucketingContext.originalLeftSources);
 
-                    RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext = jsm.makeInitialBuildContext(leftTable);
+                    RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext =
+                            jsm.makeInitialBuildContext(leftTable);
 
                     final ObjectArraySource<WritableRowSet> rowSetSource;
                     final MutableInt groupingSize = new MutableInt();

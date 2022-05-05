@@ -13,7 +13,8 @@ import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 public class TypedNaturalJoinFactory {
-    public static void staticBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void staticBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         builder.addStatement("leftHashSlots.set(hashSlotOffset++, (long)tableLocation)");
     }
 
@@ -22,7 +23,8 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("leftHashSlots.set(hashSlotOffset++, (long)tableLocation)");
     }
 
-    public static void staticBuildRightFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void staticBuildRightFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         builder.addStatement("mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE)");
     }
 
@@ -31,7 +33,8 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("mainRightRowKey.set(tableLocation, rightRowKeyToInsert)");
     }
 
-    public static void staticProbeDecorateLeftFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void staticProbeDecorateLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         builder.beginControlFlow("if (rightRowKey == DUPLICATE_RIGHT_STATE)");
         // TODO: THIS COULD BE THE WRONG THING (in terms of format)
         builder.addStatement(
@@ -45,7 +48,8 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("leftRedirections.set(hashSlotOffset++, $T.NULL_ROW_KEY)", RowSet.class);
     }
 
-    public static void staticProbeDecorateRightFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void staticProbeDecorateRightFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         builder.beginControlFlow("if (existingStateValue != NO_RIGHT_STATE_VALUE)");
         builder.addStatement(
                 "throw new IllegalStateException(\"More than one right side mapping for \" + $T.extractKeyStringFromChunks(chunkTypes, sourceKeyChunks, chunkPosition))",
@@ -70,7 +74,8 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("destModifiedCookie[destinationTableLocation] = oldModifiedCookie[sourceBucket]");
     }
 
-    public static void rightIncrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void rightIncrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         builder.addStatement("final long leftRowKey = rowKeyChunk.get(chunkPosition)");
         builder.addStatement("leftRowSet.getUnsafe(tableLocation).insert(leftRowKey)");
     }
@@ -86,41 +91,62 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("mainModifiedTrackerCookieSource.set(tableLocation, -1L)");
     }
 
-    public static void rightIncrementalRightFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
-        builder.addStatement("final long rightRowKeyForState = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition))");
-        builder.beginControlFlow("if (rightRowKeyForState != $T.NULL_ROW_KEY && rightRowKeyForState != $T.NULL_LONG)", RowSet.class, QueryConstants.class);
+    public static void rightIncrementalRightFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
+        builder.addStatement(
+                "final long rightRowKeyForState = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition))");
+        builder.beginControlFlow("if (rightRowKeyForState != $T.NULL_ROW_KEY && rightRowKeyForState != $T.NULL_LONG)",
+                RowSet.class, QueryConstants.class);
         builder.addStatement("final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey()");
         builder.addStatement(
                 "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(leftRowKeyForState))");
         builder.endControlFlow();
     }
 
-    public static void rightIncrementalRemoveFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
-        builder.addStatement("final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, $T.NULL_ROW_KEY)", RowSet.class);
+    public static void rightIncrementalRemoveFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
+        builder.addStatement("final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, $T.NULL_ROW_KEY)",
+                RowSet.class);
         assertEq(builder, "oldRightRow", "rowKeyChunk.get(chunkPosition)");
-        builder.addStatement("modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, $T.FLAG_RIGHT_CHANGE))", NaturalJoinModifiedSlotTracker.class);
+        builder.addStatement(
+                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, $T.FLAG_RIGHT_CHANGE))",
+                NaturalJoinModifiedSlotTracker.class);
     }
 
-    public static void rightIncrementalAddFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
-        builder.addStatement("final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition))", RowSet.class);
-        builder.beginControlFlow("if (oldRightRow != $T.NULL_ROW_KEY && oldRightRow != $T.NULL_LONG)", RowSet.class, QueryConstants.class);
+    public static void rightIncrementalAddFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
+        builder.addStatement(
+                "final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition))",
+                RowSet.class);
+        builder.beginControlFlow("if (oldRightRow != $T.NULL_ROW_KEY && oldRightRow != $T.NULL_LONG)", RowSet.class,
+                QueryConstants.class);
         builder.addStatement("final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey()");
         builder.addStatement(
                 "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(leftRowKeyForState))");
         builder.endControlFlow();
-        builder.addStatement("modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, $T.FLAG_RIGHT_CHANGE))", NaturalJoinModifiedSlotTracker.class);
+        builder.addStatement(
+                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, $T.FLAG_RIGHT_CHANGE))",
+                NaturalJoinModifiedSlotTracker.class);
     }
 
-    public static void rightIncrementalModify(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void rightIncrementalModify(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         builder.addStatement("final long oldRightRow = rightRowKey.getUnsafe(tableLocation)", RowSet.class);
         assertEq(builder, "oldRightRow", "rowKeyChunk.get(chunkPosition)");
-        builder.addStatement("modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, $T.FLAG_RIGHT_MODIFY_PROBE))", NaturalJoinModifiedSlotTracker.class);
+        builder.addStatement(
+                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, $T.FLAG_RIGHT_MODIFY_PROBE))",
+                NaturalJoinModifiedSlotTracker.class);
     }
 
-    public static void rightIncrementalShift(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
-        builder.addStatement("final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition))", RowSet.class);
+    public static void rightIncrementalShift(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
+        builder.addStatement(
+                "final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition))",
+                RowSet.class);
         assertEq(builder, "oldRightRow + shiftDelta", "rowKeyChunk.get(chunkPosition)");
-        builder.addStatement("modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, $T.FLAG_RIGHT_SHIFT))", NaturalJoinModifiedSlotTracker.class);
+        builder.addStatement(
+                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, $T.FLAG_RIGHT_SHIFT))",
+                NaturalJoinModifiedSlotTracker.class);
     }
 
     public static void rightIncrementalMissing(CodeBlock.Builder builder) {
@@ -143,17 +169,21 @@ public class TypedNaturalJoinFactory {
     }
 
     public static void incrementalMoveMainAlternate(CodeBlock.Builder builder) {
-        builder.addStatement("mainLeftRowSet.set(destinationTableLocation, alternateLeftRowSet.getUnsafe(locationToMigrate))");
+        builder.addStatement(
+                "mainLeftRowSet.set(destinationTableLocation, alternateLeftRowSet.getUnsafe(locationToMigrate))");
         builder.addStatement("alternateLeftRowSet.set(locationToMigrate, null)");
         builder.addStatement("final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate);");
         builder.addStatement("mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie)");
         builder.addStatement("alternateModifiedTrackerCookieSource.set(locationToMigrate, -1L)");
-        builder.addStatement("modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, mainInsertMask | destinationTableLocation);");
+        builder.addStatement(
+                "modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, mainInsertMask | destinationTableLocation);");
     }
 
-    public static void incrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void incrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         if (alternate) {
-            builder.addStatement("alternateLeftRowSet.getUnsafe(alternateTableLocation).insert(rowKeyChunk.get(chunkPosition))");
+            builder.addStatement(
+                    "alternateLeftRowSet.getUnsafe(alternateTableLocation).insert(rowKeyChunk.get(chunkPosition))");
         } else {
             checkForDuplicateErrorLeftDecorate(builder, "rowKeyChunk.get(chunkPosition)", "rightRowKeyForState");
             builder.addStatement("mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition))");
@@ -161,12 +191,14 @@ public class TypedNaturalJoinFactory {
     }
 
     public static void incrementalBuildLeftInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        builder.addStatement("mainLeftRowSet.set(tableLocation, $T.fromKeys(rowKeyChunk.get(chunkPosition)))", RowSetFactory.class);
+        builder.addStatement("mainLeftRowSet.set(tableLocation, $T.fromKeys(rowKeyChunk.get(chunkPosition)))",
+                RowSetFactory.class);
         builder.addStatement("mainRightRowKey.set(tableLocation, $T.NULL_ROW_KEY)", RowSet.class);
         builder.addStatement("mainModifiedTrackerCookieSource.set(tableLocation, -1L)");
     }
 
-    public static void incrementalRightFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void incrementalRightFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         final String sourceType = getSourceType(alternate);
         final String tableLocation = getTableLocation(alternate);
         builder.addStatement("final long existingRightRowKey = $LRightRowKey.getUnsafe($L)", sourceType, tableLocation);
@@ -174,26 +206,33 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("$LRightRowKey.set($L, rowKeyChunk.get(chunkPosition))", sourceType, tableLocation);
         builder.nextControlFlow("else if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
-        builder.addStatement("rightSideDuplicateRowSets.getUnsafe(duplicateLocation).insert(rowKeyChunk.get(chunkPosition))");
+        builder.addStatement(
+                "rightSideDuplicateRowSets.getUnsafe(duplicateLocation).insert(rowKeyChunk.get(chunkPosition))");
         builder.nextControlFlow("else", RowSet.class);
         builder.addStatement("final long duplicateLocation = allocateDuplicateLocation()");
-        builder.addStatement("rightSideDuplicateRowSets.set(duplicateLocation, $T.fromKeys(existingRightRowKey, rowKeyChunk.get(chunkPosition)))", RowSetFactory.class);
-        builder.addStatement("$LRightRowKey.set($L, rowKeyFromDuplicateLocation(duplicateLocation))", sourceType, tableLocation);
+        builder.addStatement(
+                "rightSideDuplicateRowSets.set(duplicateLocation, $T.fromKeys(existingRightRowKey, rowKeyChunk.get(chunkPosition)))",
+                RowSetFactory.class);
+        builder.addStatement("$LRightRowKey.set($L, rowKeyFromDuplicateLocation(duplicateLocation))", sourceType,
+                tableLocation);
         builder.endControlFlow();
     }
 
     private static void checkForDuplicateError(CodeBlock.Builder builder, String sourceType, String tableLocation) {
-        builder.addStatement("final $T leftRowsForState = $LLeftRowSet.getUnsafe($L)", RowSet.class, sourceType, tableLocation);
+        builder.addStatement("final $T leftRowsForState = $LLeftRowSet.getUnsafe($L)", RowSet.class, sourceType,
+                tableLocation);
         builder.beginControlFlow("if (!leftRowsForState.isEmpty())");
         builder.addStatement(
                 "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(leftRowsForState.firstRowKey()))");
         builder.endControlFlow();
     }
 
-    private static void checkForDuplicateErrorLeftDecorate(CodeBlock.Builder builder, String leftRowKey, String rightRowState) {
+    private static void checkForDuplicateErrorLeftDecorate(CodeBlock.Builder builder, String leftRowKey,
+            String rightRowState) {
         builder.beginControlFlow("if ($L < $T.NULL_ROW_KEY)", rightRowState, RowSet.class);
         builder.addStatement(
-                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable($L))", leftRowKey);
+                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable($L))",
+                leftRowKey);
         builder.endControlFlow();
     }
 
@@ -203,13 +242,15 @@ public class TypedNaturalJoinFactory {
         initializeModifiedCookie(builder);
     }
 
-    public static void incrementalRemoveRightFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void incrementalRemoveRightFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         final String sourceType = alternate ? "alternate" : "main";
         final String tableLocation = alternate ? "alternateTableLocation" : "tableLocation";
 
         builder.beginControlFlow("if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
-        builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)", WritableRowSet.class);
+        builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)",
+                WritableRowSet.class);
         builder.addStatement("final long duplicateSize = duplicates.size()");
         builder.addStatement("duplicates.remove(rowKeyChunk.get(chunkPosition))");
         assertEq(builder, "duplicateSize", "duplicates.size() + 1");
@@ -218,7 +259,8 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("freeDuplicateLocation(duplicateLocation)");
         builder.endControlFlow();
         builder.nextControlFlow("else if (existingRightRowKey != rowKeyChunk.get(chunkPosition))");
-        builder.addStatement("$T.statementNeverExecuted($S)", Assert.class, "Could not find existing right row in state");
+        builder.addStatement("$T.statementNeverExecuted($S)", Assert.class,
+                "Could not find existing right row in state");
         builder.nextControlFlow("else");
         builder.addStatement("$LRightRowKey.set($L, $T.NULL_ROW_KEY)", sourceType, tableLocation, RowSet.class);
         modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
@@ -226,10 +268,12 @@ public class TypedNaturalJoinFactory {
     }
 
     public static void incrementalRemoveRightMissing(CodeBlock.Builder builder) {
-        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class, "Could not find existing state for removed right row");
+        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class,
+                "Could not find existing state for removed right row");
     }
 
-    public static void incrementalRightFoundUpdate(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void incrementalRightFoundUpdate(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         final String sourceType = getSourceType(alternate);
         final String tableLocation = getTableLocation(alternate);
 
@@ -238,29 +282,39 @@ public class TypedNaturalJoinFactory {
         modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
         builder.nextControlFlow("else if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
-        builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)", WritableRowSet.class);
+        builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)",
+                WritableRowSet.class);
         builder.addStatement("final long duplicateSize = duplicates.size()");
         builder.addStatement("duplicates.insert(rowKeyChunk.get(chunkPosition))");
-        assertEq(builder,"duplicateSize", "duplicates.size() - 1");
+        assertEq(builder, "duplicateSize", "duplicates.size() - 1");
         builder.nextControlFlow("else");
         builder.addStatement("final long duplicateLocation = allocateDuplicateLocation()");
-        builder.addStatement("rightSideDuplicateRowSets.set(duplicateLocation, $T.fromKeys(existingRightRowKey, rowKeyChunk.get(chunkPosition)))", RowSetFactory.class);
-        builder.addStatement("$LRightRowKey.set($L, rowKeyFromDuplicateLocation(duplicateLocation))", sourceType, tableLocation);
+        builder.addStatement(
+                "rightSideDuplicateRowSets.set(duplicateLocation, $T.fromKeys(existingRightRowKey, rowKeyChunk.get(chunkPosition)))",
+                RowSetFactory.class);
+        builder.addStatement("$LRightRowKey.set($L, rowKeyFromDuplicateLocation(duplicateLocation))", sourceType,
+                tableLocation);
         modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
         builder.endControlFlow();
     }
 
     private static void modifyCookie(CodeBlock.Builder builder, String sourceType, String tableLocation, String flag) {
-        builder.addStatement("$LModifiedTrackerCookieSource.set($L, modifiedSlotTracker.addMain($LModifiedTrackerCookieSource.getUnsafe($L), $LInsertMask | $L, existingRightRowKey, $T.$L))", sourceType, tableLocation, sourceType, tableLocation, sourceType, tableLocation, NaturalJoinModifiedSlotTracker.class, flag);
+        builder.addStatement(
+                "$LModifiedTrackerCookieSource.set($L, modifiedSlotTracker.addMain($LModifiedTrackerCookieSource.getUnsafe($L), $LInsertMask | $L, existingRightRowKey, $T.$L))",
+                sourceType, tableLocation, sourceType, tableLocation, sourceType, tableLocation,
+                NaturalJoinModifiedSlotTracker.class, flag);
     }
 
     public static void incrementalRightInsertUpdate(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         builder.addStatement("mainLeftRowSet.set(tableLocation, $T.empty())", RowSetFactory.class);
         builder.addStatement("mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition))");
-        builder.addStatement("mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(-1, mainInsertMask | tableLocation, existingRightRowKey, $T.FLAG_RIGHT_CHANGE))", NaturalJoinModifiedSlotTracker.class);
+        builder.addStatement(
+                "mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(-1, mainInsertMask | tableLocation, existingRightRowKey, $T.FLAG_RIGHT_CHANGE))",
+                NaturalJoinModifiedSlotTracker.class);
     }
 
-    public static void incrementalModifyRightFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void incrementalModifyRightFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         modifyCookie(builder, getSourceType(alternate), getTableLocation(alternate), "FLAG_RIGHT_CHANGE");
     }
 
@@ -275,14 +329,17 @@ public class TypedNaturalJoinFactory {
     }
 
     public static void incrementalModifyRightMissing(CodeBlock.Builder builder) {
-        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class, "Could not find existing state for modified right row");
+        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class,
+                "Could not find existing state for modified right row");
     }
 
     public static void incrementalApplyRightShiftMissing(CodeBlock.Builder builder) {
-        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class, "Could not find existing state for shifted right row");
+        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class,
+                "Could not find existing state for shifted right row");
     }
 
-    public static void incrementalLeftFoundUpdate(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void incrementalLeftFoundUpdate(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         incrementalBuildLeftFound(hasherConfig, alternate, builder);
         checkForDuplicateErrorLeftDecorate(builder, "rowKeyChunk.get(chunkPosition)", "rightRowKeyForState");
         builder.addStatement("leftRedirections.set(leftRedirectionOffset++, rightRowKeyForState)");
@@ -293,17 +350,22 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("leftRedirections.set(leftRedirectionOffset++, $T.NULL_ROW_KEY)", RowSet.class);
     }
 
-    public static void incrementalRemoveLeftFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
-        builder.addStatement("$LLeftRowSet.getUnsafe($L).remove(rowKeyChunk.get(chunkPosition))", getSourceType(alternate), getTableLocation(alternate));
+    public static void incrementalRemoveLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
+        builder.addStatement("$LLeftRowSet.getUnsafe($L).remove(rowKeyChunk.get(chunkPosition))",
+                getSourceType(alternate), getTableLocation(alternate));
     }
 
     public static void incrementalRemoveLeftMissing(CodeBlock.Builder builder) {
-        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class, "Could not find existing state for shifted right row");
+        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class,
+                "Could not find existing state for shifted right row");
     }
 
-    public static void incrementalShiftLeftFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void incrementalShiftLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         final String tableLocation = getTableLocation(alternate);
-        builder.addStatement("final $T leftRowSetForState = $LLeftRowSet.getUnsafe($L)", WritableRowSet.class, getSourceType(alternate), tableLocation);
+        builder.addStatement("final $T leftRowSetForState = $LLeftRowSet.getUnsafe($L)", WritableRowSet.class,
+                getSourceType(alternate), tableLocation);
         builder.addStatement("final long keyToShift = rowKeyChunk.get(chunkPosition)");
         builder.beginControlFlow("if (shiftDelta < 0)");
         builder.addStatement("shiftOneKey(leftRowSetForState, keyToShift, shiftDelta)");
@@ -312,7 +374,8 @@ public class TypedNaturalJoinFactory {
         builder.endControlFlow();
     }
 
-    public static void incrementalApplyRightShift(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+    public static void incrementalApplyRightShift(HasherConfig<?> hasherConfig, boolean alternate,
+            CodeBlock.Builder builder) {
         final String sourceType = getSourceType(alternate);
         final String tableLocation = getTableLocation(alternate);
 
@@ -323,19 +386,23 @@ public class TypedNaturalJoinFactory {
         builder.nextControlFlow("else if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
         builder.beginControlFlow("if (shiftDelta < 0)");
-        builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)", WritableRowSet.class);
+        builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)",
+                WritableRowSet.class);
         builder.addStatement("shiftOneKey(duplicates, keyToShift, shiftDelta)");
         builder.nextControlFlow("else");
         addPendingShift(false, builder, "duplicateLocation");
         builder.endControlFlow();
         builder.nextControlFlow("else");
-        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class, "Could not find existing index for shifted right row");
+        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class,
+                "Could not find existing index for shifted right row");
         builder.endControlFlow();
     }
 
     private static void addPendingShift(boolean alternate, CodeBlock.Builder builder, String tableLocation) {
         if (alternate) {
-            builder.addStatement("pc.pendingShifts.set(pc.pendingShiftPointer++, (long)($T.ALTERNATE_SWITCH_MASK | $L))", AlternatingColumnSource.class, tableLocation);
+            builder.addStatement(
+                    "pc.pendingShifts.set(pc.pendingShiftPointer++, (long)($T.ALTERNATE_SWITCH_MASK | $L))",
+                    AlternatingColumnSource.class, tableLocation);
         } else {
             builder.addStatement("pc.pendingShifts.set(pc.pendingShiftPointer++, (long)$L)", tableLocation);
         }
@@ -347,6 +414,7 @@ public class TypedNaturalJoinFactory {
     }
 
     public static void incrementalShiftLeftMissing(CodeBlock.Builder builder) {
-        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class, "Could not find existing state for shifted right row");
+        builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class,
+                "Could not find existing state for shifted right row");
     }
 }

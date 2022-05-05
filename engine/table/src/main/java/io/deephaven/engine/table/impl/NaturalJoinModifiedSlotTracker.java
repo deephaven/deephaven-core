@@ -159,7 +159,8 @@ public class NaturalJoinModifiedSlotTracker {
      * @param oldTableLocation the old hash slot
      * @param newTableLocation the new hash slot
      */
-    public void moveTableLocation(long cookie, @SuppressWarnings("unused") long oldTableLocation, long newTableLocation) {
+    public void moveTableLocation(long cookie, @SuppressWarnings("unused") long oldTableLocation,
+            long newTableLocation) {
         if (isValidCookie(cookie)) {
             final long pointer = getPointerFromCookie(cookie);
             final long existingSlotAndFlag = modifiedSlots.getLong(pointer);

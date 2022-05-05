@@ -73,7 +73,8 @@ public class TypedHasherFactory {
             builder.openAddressed(true).openAddressedAlternate(false);
             builder.moveMainFull(TypedAggregationFactory::staticAggMoveMain);
             builder.addBuild(
-                    new HasherConfig.BuildSpec("build", "outputPosition", false, true, TypedAggregationFactory::buildFound,
+                    new HasherConfig.BuildSpec("build", "outputPosition", false, true,
+                            TypedAggregationFactory::buildFound,
                             TypedAggregationFactory::buildInsert));
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
             configureAggregation(builder);
@@ -148,7 +149,8 @@ public class TypedHasherFactory {
                     .includeOriginalSources(true)
                     .supportRehash(true)
                     .moveMainFull(TypedNaturalJoinFactory::rightIncrementalMoveMain)
-                    .addExtraPartialRehashParameter(ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build())
+                    .addExtraPartialRehashParameter(
+                            ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build())
                     .alwaysMoveMain(true)
                     .rehashFullSetup(TypedNaturalJoinFactory::rightIncrementalRehashSetup);
 
@@ -162,7 +164,8 @@ public class TypedHasherFactory {
 
 
             final TypeName modifiedSlotTracker = TypeName.get(NaturalJoinModifiedSlotTracker.class);
-            final ParameterSpec modifiedSlotTrackerParam = ParameterSpec.builder(modifiedSlotTracker, "modifiedSlotTracker").build();
+            final ParameterSpec modifiedSlotTrackerParam =
+                    ParameterSpec.builder(modifiedSlotTracker, "modifiedSlotTracker").build();
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "leftRowSetForState", true,
                     TypedNaturalJoinFactory::rightIncrementalRemoveFound,
@@ -185,12 +188,14 @@ public class TypedHasherFactory {
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
                     modifiedSlotTrackerParam));
         } else if (baseClass.equals(IncrementalNaturalJoinStateManagerTypedBase.class)) {
-            final ParameterSpec modifiedSlotTrackerParam = ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
+            final ParameterSpec modifiedSlotTrackerParam =
+                    ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
 
             builder.classPrefix("IncrementalNaturalJoinHasher").packageGroup("naturaljoin")
                     .packageMiddle("incopen")
                     .openAddressedAlternate(true)
-                    .stateType(long.class).mainStateName("mainRightRowKey").overflowOrAlternateStateName("alternateRightRowKey")
+                    .stateType(long.class).mainStateName("mainRightRowKey")
+                    .overflowOrAlternateStateName("alternateRightRowKey")
                     .emptyStateName("EMPTY_RIGHT_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
@@ -224,7 +229,8 @@ public class TypedHasherFactory {
                     TypedNaturalJoinFactory::incrementalModifyRightMissing,
                     modifiedSlotTrackerParam));
 
-            ParameterSpec probeContextParam = ParameterSpec.builder(IncrementalNaturalJoinStateManagerTypedBase.ProbeContext.class, "pc").build();
+            ParameterSpec probeContextParam =
+                    ParameterSpec.builder(IncrementalNaturalJoinStateManagerTypedBase.ProbeContext.class, "pc").build();
             builder.addProbe(new HasherConfig.ProbeSpec("applyRightShift", "existingRightRowKey", true,
                     TypedNaturalJoinFactory::incrementalApplyRightShift,
                     TypedNaturalJoinFactory::incrementalApplyRightShiftMissing,
@@ -310,24 +316,27 @@ public class TypedHasherFactory {
             } else if (hasherConfig.baseClass
                     .equals(StaticNaturalJoinStateManagerTypedBase.class)) {
                 // noinspection unchecked
-                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.naturaljoin.typed.staticopen.gen.TypedHashDispatcher
-                        .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.naturaljoin.typed.staticopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
             } else if (hasherConfig.baseClass
                     .equals(RightIncrementalNaturalJoinStateManagerTypedBase.class)) {
                 // noinspection unchecked
-                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.naturaljoin.typed.rightincopen.gen.TypedHashDispatcher
-                        .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.naturaljoin.typed.rightincopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
             } else if (hasherConfig.baseClass
                     .equals(IncrementalNaturalJoinStateManagerTypedBase.class)) {
                 // noinspection unchecked
-                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.naturaljoin.typed.incopen.gen.TypedHashDispatcher
-                        .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.naturaljoin.typed.incopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
@@ -654,7 +663,8 @@ public class TypedHasherFactory {
             builder.addStatement("final $T [] originalStateArray = $L.getArray()", hasherConfig.stateType,
                     hasherConfig.mainStateName);
         } else {
-            builder.addStatement("final Object [] originalStateArray = (Object[])$L.getArray()", hasherConfig.mainStateName);
+            builder.addStatement("final Object [] originalStateArray = (Object[])$L.getArray()",
+                    hasherConfig.mainStateName);
         }
         builder.addStatement("$L.setArray(destState)", hasherConfig.mainStateName);
 
@@ -665,9 +675,11 @@ public class TypedHasherFactory {
 
         builder.beginControlFlow("for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket)");
         if (hasherConfig.stateType.isPrimitive()) {
-            builder.addStatement("final $T currentStateValue = originalStateArray[sourceBucket]", hasherConfig.stateType);
+            builder.addStatement("final $T currentStateValue = originalStateArray[sourceBucket]",
+                    hasherConfig.stateType);
         } else {
-            builder.addStatement("final $T currentStateValue = ($T)originalStateArray[sourceBucket]", hasherConfig.stateType, hasherConfig.stateType);
+            builder.addStatement("final $T currentStateValue = ($T)originalStateArray[sourceBucket]",
+                    hasherConfig.stateType, hasherConfig.stateType);
         }
         builder.beginControlFlow("if (currentStateValue == $L)", hasherConfig.emptyStateName);
         builder.addStatement("continue");
@@ -722,7 +734,8 @@ public class TypedHasherFactory {
         builder.beginControlFlow("while (rehashPointer > 0 && rehashedEntries < entriesToRehash)");
         final String extraParamNames;
         if (hasherConfig.extraPartialRehashParameters.size() > 0) {
-            extraParamNames = ", " + hasherConfig.extraPartialRehashParameters.stream().map(ps -> ps.name).collect(Collectors.joining(", "));
+            extraParamNames = ", " + hasherConfig.extraPartialRehashParameters.stream().map(ps -> ps.name)
+                    .collect(Collectors.joining(", "));
         } else {
             extraParamNames = "";
         }
@@ -822,7 +835,8 @@ public class TypedHasherFactory {
 
         final String extraParamNames;
         if (hasherConfig.extraPartialRehashParameters.size() > 0) {
-            extraParamNames = ", " + hasherConfig.extraPartialRehashParameters.stream().map(ps -> ps.name).collect(Collectors.joining(", "));
+            extraParamNames = ", " + hasherConfig.extraPartialRehashParameters.stream().map(ps -> ps.name)
+                    .collect(Collectors.joining(", "));
         } else {
             extraParamNames = "";
         }
