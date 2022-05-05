@@ -90,7 +90,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         chunkTypes = new ChunkType[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
-            chunkTypes[ii] = keySourcesForErrorMessages[ii].getChunkType();
+            chunkTypes[ii] = tableKeySources[ii].getChunkType();
             mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
                     tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
@@ -444,7 +444,14 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public String keyString(long slot) {
-        throw new UnsupportedOperationException();
+        final long firstLeftRowKey;
+        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+            firstLeftRowKey = mainLeftRowSet.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK).firstRowKey();
+        } else {
+            firstLeftRowKey =  alternateLeftRowSet.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK).firstRowKey();
+        }
+        Assert.neq(firstLeftRowKey, "firstLeftRowKey", RowSet.NULL_ROW_KEY);
+        return extractKeyStringFromSourceTable(firstLeftRowKey);
     }
 
     protected abstract void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
@@ -452,7 +459,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
         Assert.eqZero(rehashPointer, "rehashPointer");
-        // TODO: CHECK EXACT MATCH
 
         switch (redirectionType) {
             case Contiguous: {
