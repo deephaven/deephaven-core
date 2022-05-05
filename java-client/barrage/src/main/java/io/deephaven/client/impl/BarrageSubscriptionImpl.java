@@ -61,7 +61,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     private boolean subscribed = false;
     private volatile boolean connected = true;
-    private boolean performSnapshot = false;
+    private boolean isSnapshot = false;
 
     /**
      * Represents a BarrageSubscription.
@@ -240,14 +240,12 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     }
 
                     if (isComplete) {
-                        if (performSnapshot) {
+                        if (isSnapshot) {
                             resultTable.sealTable(() -> {
-                                // signify that we are closing the connection
+                                // signal that we are closing the connection
                                 observer.onCompleted();
 
-                                // once sealed, notify the waiters
                                 completed = true;
-
                                 if (completedCondition != null) {
                                     UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
                                 } else {
@@ -320,9 +318,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     @Override
     public synchronized BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
-                                                  boolean blockUntilComplete) throws InterruptedException {
-        performSnapshot = true;
-
+            boolean blockUntilComplete) throws InterruptedException {
+        isSnapshot = true;
         return partialTable(viewport, columns, reverseViewport, blockUntilComplete);
     }
 
@@ -337,7 +334,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             return;
         }
         // log an error only when doing a true subscription (not snapshot)
-        if (!performSnapshot) {
+        if (!isSnapshot) {
             log.error().append(this).append(": unexpectedly closed by other host").endl();
         }
         cleanup();

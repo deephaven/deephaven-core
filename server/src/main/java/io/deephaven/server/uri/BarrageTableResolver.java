@@ -187,6 +187,11 @@ public final class BarrageTableResolver implements UriResolver {
         return sub.partialTable(viewport, columns, reverseViewport);
     }
 
+    /// NOTE: the following snapshot functions use the `BarrageSubscription` snapshot functions which leverage
+    /// `BarrageSubscriptionRequest` and row deltas to remain consistent while the snapshot is being created.
+    /// This is the most efficient way (for both server and client) to collect a consistent snapshot of a refreshing
+    /// table.
+
     /**
      * Create a full snapshot of the remote URI. Uses {@link #SUB_OPTIONS}.
      *

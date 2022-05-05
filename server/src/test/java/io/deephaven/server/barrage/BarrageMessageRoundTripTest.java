@@ -192,7 +192,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             this.barrageMessageProducer = barrageMessageProducer;
 
             this.barrageTable = BarrageTable.make(updateSourceCombiner, UpdateGraphProcessor.DEFAULT,
-                    null, barrageMessageProducer.getTableDefinition(), new HashMap<>(), viewport == null ? -1 : viewport.size());
+                    null, barrageMessageProducer.getTableDefinition(), new HashMap<>(),
+                    viewport == null ? -1 : viewport.size());
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
                     .useDeephavenNulls(useDeephavenNulls)

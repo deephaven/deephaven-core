@@ -72,10 +72,10 @@ public class ArrowFlightUtil {
     static final BarrageMessage.ModColumnData[] ZERO_MOD_COLUMNS = new BarrageMessage.ModColumnData[0];
 
     public static void DoGetCustom(@Nullable final ScheduledExecutorService executorService,
-                                   final SessionState session,
-                                   final TicketRouter ticketRouter,
-                                   final Flight.Ticket request,
-                                   final StreamObserver<InputStream> observer) {
+            final SessionState session,
+            final TicketRouter ticketRouter,
+            final Flight.Ticket request,
+            final StreamObserver<InputStream> observer) {
 
         final SessionState.ExportObject<BaseTable> export =
                 ticketRouter.resolve(session, request, "request");
@@ -119,9 +119,11 @@ public class ArrowFlightUtil {
                 });
     }
 
-    private static void createAndSendSnapshot(BaseTable table, BitSet columns, RowSet viewport, boolean reverseViewport, BarrageSnapshotOptions snapshotRequestOptions, StreamObserver<BarrageStreamGenerator.View> listener, BarragePerformanceLog.SnapshotMetricsHelper metrics) {
+    private static void createAndSendSnapshot(BaseTable table, BitSet columns, RowSet viewport, boolean reverseViewport,
+            BarrageSnapshotOptions snapshotRequestOptions, StreamObserver<BarrageStreamGenerator.View> listener,
+            BarragePerformanceLog.SnapshotMetricsHelper metrics) {
         // if the table is static or append-only and a full snapshot is requested, we can make and send multiple
-        // snapshots to save memory and operate  more efficiently
+        // snapshots to save memory and operate more efficiently
 
         if (viewport == null && (!table.isRefreshing() || table.isAddOnly())) {
             // start with small value and grow
@@ -129,7 +131,8 @@ public class ArrowFlightUtil {
             double snapshotNanosPerCell = 0.0;
             long startKey = 0L;
 
-            final long columnCount = Math.max(1, columns != null ? columns.cardinality() : table.getDefinition().getColumns().length);
+            final long columnCount =
+                    Math.max(1, columns != null ? columns.cardinality() : table.getDefinition().getColumns().length);
 
             boolean isComplete = false;
 
@@ -148,7 +151,7 @@ public class ArrowFlightUtil {
                     }
 
                     try (final RowSet snapshotPartialViewport =
-                                 RowSetFactory.fromRange(startKey, endKey)) {
+                            RowSetFactory.fromRange(startKey, endKey)) {
                         snapshotViewport.insert(snapshotPartialViewport);
 
                         // grab the snapshot and measure elapsed time for next projections
@@ -217,10 +220,10 @@ public class ArrowFlightUtil {
 
             // translate the viewport to keyspace and make the call
             try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, metrics);
-                 final RowSet keySpaceViewport =
-                         viewport != null
-                                 ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
-                                 : null) {
+                    final RowSet keySpaceViewport =
+                            viewport != null
+                                    ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
+                                    : null) {
                 listener.onNext(
                         bsg.getSnapshotView(snapshotRequestOptions, viewport,
                                 reverseViewport, keySpaceViewport, columns));
@@ -687,7 +690,8 @@ public class ArrowFlightUtil {
                                 final boolean reverseViewport = snapshotRequest.reverseViewport();
 
                                 // leverage common code for `DoGet` and `BarrageSnapshotOptions`
-                                createAndSendSnapshot(table, columns, viewport, reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener, metrics);
+                                createAndSendSnapshot(table, columns, viewport, reverseViewport,
+                                        snapshotOptAdapter.adapt(snapshotRequest), listener, metrics);
 
                                 listener.onCompleted();
                             });

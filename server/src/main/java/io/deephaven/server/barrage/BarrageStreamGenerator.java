@@ -84,6 +84,8 @@ public class BarrageStreamGenerator implements
 
         StreamReaderOptions options();
 
+        int clientMaxMessageSize();
+
         RowSet addRowOffsets();
 
         RowSet modRowOffsets(int col);
@@ -396,6 +398,11 @@ public class BarrageStreamGenerator implements
         }
 
         @Override
+        public int clientMaxMessageSize() {
+            return options.maxMessageSize();
+        }
+
+        @Override
         public boolean isViewport() {
             return viewport != null;
         }
@@ -515,6 +522,11 @@ public class BarrageStreamGenerator implements
         }
 
         @Override
+        public int clientMaxMessageSize() {
+            return options.maxMessageSize();
+        }
+
+        @Override
         public boolean isViewport() {
             return viewport != null;
         }
@@ -558,6 +570,11 @@ public class BarrageStreamGenerator implements
         @Override
         public StreamReaderOptions options() {
             return null;
+        }
+
+        @Override
+        public int clientMaxMessageSize() {
+            return 0;
         }
 
         @Override
@@ -720,6 +737,10 @@ public class BarrageStreamGenerator implements
 
         int batchSize = DEFAULT_INITIAL_BATCH_SIZE;
 
+        // allow the client to override the default message size
+        final int maxMessageSize =
+                view.clientMaxMessageSize() > 0 ? view.clientMaxMessageSize() : DEFAULT_MESSAGE_SIZE_LIMIT;
+
         while (offset < numRows) {
             try {
                 final InputStream is = getInputStream(
@@ -728,7 +749,7 @@ public class BarrageStreamGenerator implements
 
                 // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
                 // row then we must send and let it potentially fail)
-                if (bytesToWrite < DEFAULT_MESSAGE_SIZE_LIMIT || batchSize == 1) {
+                if (bytesToWrite < maxMessageSize || batchSize == 1) {
                     // let's write the data
                     visitor.accept(is);
 
@@ -742,7 +763,7 @@ public class BarrageStreamGenerator implements
                 // recompute the batch limit for the next message
                 int bytesPerRow = bytesToWrite / actualBatchSize.intValue();
                 if (bytesPerRow > 0) {
-                    int rowLimit = DEFAULT_MESSAGE_SIZE_LIMIT / bytesPerRow;
+                    int rowLimit = maxMessageSize / bytesPerRow;
 
                     // add some margin for abnormal cell contents
                     batchSize = Math.min(maxBatchSize, Math.max(1, (int) ((double) rowLimit * 0.9)));
@@ -918,10 +939,6 @@ public class BarrageStreamGenerator implements
         final int nodesOffset = metadata.endVector();
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
-        BarrageUpdateMetadata.addNumAddBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator",
-                (view.numAddRows + view.batchSize() - 1) / view.batchSize()));
-        BarrageUpdateMetadata.addNumModBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator",
-                (view.numModRows + view.batchSize() - 1) / view.batchSize()));
         BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
         BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
@@ -974,9 +991,6 @@ public class BarrageStreamGenerator implements
         }
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
-        BarrageUpdateMetadata.addNumAddBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator",
-                (view.numAddRows + view.batchSize() - 1) / view.batchSize()));
-        BarrageUpdateMetadata.addNumModBatches(metadata, 0);
         BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
         BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);

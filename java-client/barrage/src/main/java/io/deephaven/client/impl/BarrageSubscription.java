@@ -47,7 +47,7 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
     public boolean isCompleted();
 
     /**
-     * This call will return the number of rows received by the subscription handler.  This is the sum of all the
+     * This call will return the number of rows received by the subscription handler. This is the sum of all the
      * `rowsIncluded` in the BarrageMessages
      *
      * @return number of rows received by the subscription handler
@@ -112,16 +112,16 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
             throws InterruptedException;
 
     /**
-     * Request a full snapshot of the data and populate a {@link BarrageTable} with the incrementally updating data
-     * that is received. This call will block until all rows for the subscribed table are available.
+     * Request a full snapshot of the data and populate a {@link BarrageTable} with the incrementally updating data that
+     * is received. This call will block until all rows for the subscribed table are available.
      *
      * @return the {@code BarrageTable}
      */
     BarrageTable snapshotEntireTable() throws InterruptedException;
 
     /**
-     * Request a full snapshot of the data and populate a {@link BarrageTable} with the incrementally updating data
-     * that is received.
+     * Request a full snapshot of the data and populate a {@link BarrageTable} with the incrementally updating data that
+     * is received.
      *
      * @param blockUntilComplete block execution until all rows for the subscribed table are available
      *
@@ -130,8 +130,8 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
     BarrageTable snapshotEntireTable(boolean blockUntilComplete) throws InterruptedException;
 
     /**
-     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable}
-     * with the data that is received. This call will block until the subscribed table viewport is satisfied.
+     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable} with
+     * the data that is received. This call will block until the subscribed table viewport is satisfied.
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
@@ -141,9 +141,9 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
     BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns) throws InterruptedException;
 
     /**
-     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable}
-     * with the data that is received. Allows the viewport to be reversed. This call will block until the subscribed
-     * table viewport is satisfied.
+     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable} with
+     * the data that is received. Allows the viewport to be reversed. This call will block until the subscribed table
+     * viewport is satisfied.
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
@@ -151,11 +151,12 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      *
      * @return the {@code BarrageTable}
      */
-    BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException;
+    BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
+            throws InterruptedException;
 
     /**
-     * Request a snapshot of the data limited by viewport or column set and populate a {@link BarrageTable}
-     * with the data that is received. Allows the viewport to be reversed.
+     * Request a snapshot of the data limited by viewport or column set and populate a {@link BarrageTable} with the
+     * data that is received. Allows the viewport to be reversed.
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
@@ -164,7 +165,7 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      *
      * @return the {@code BarrageTable}
      */
-    BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport, boolean blockUntilComplete)
+    BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
+            boolean blockUntilComplete)
             throws InterruptedException;
-
 }

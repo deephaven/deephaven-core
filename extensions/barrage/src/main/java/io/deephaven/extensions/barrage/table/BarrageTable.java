@@ -105,7 +105,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     private BitSet serverColumns;
 
     /** the size of the initial viewport requested from the server (-1 implies full subscription) */
-    private long initialSnapshotViewportRowCount;
+    private long initialSnapshotViewportRowCount = -1;
     /** have we completed the initial snapshot */
     private boolean initialSnapshotReceived;
 
@@ -236,47 +236,6 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
         doWakeup();
     }
-    /**
-     * After invoking `sealTable()` can call this to flatten the internal rowset and discard unpopulated rows
-     */
-    public synchronized void flattenInPlace() {
-        if (!sealed) {
-            throw new UnsupportedOperationException("BarrageTable must be sealed before calling flattenInPlace()");
-        }
-        // remove all unpopulated rows
-        WritableRowSet currentRowSet = getRowSet().writableCast();
-        if (this.serverViewport != null) {
-            try (final RowSet populated = currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
-                currentRowSet.retain(populated);
-            }
-        }
-
-        // flatten the result
-        if (!isFlat()) {
-            MutableLong idx = new MutableLong(0L);
-            currentRowSet.forAllRowKeyRanges( (s,e) -> {
-                long size = e - s + 1;
-                if (idx.longValue() == s) {
-                    // whole range is already flattened
-                    idx.add(size);
-                } else {
-                    // rewrite the rowRedirection
-                    for (long i = s; i <= e; i++) {
-                        this.rowRedirection.putVoid(idx.longValue(), rowRedirection.get(i));
-                        // remove if outside the final range (0 to size() -1)
-                        if (i > getRowSet().size()) {
-                            this.rowRedirection.removeVoid(i);
-                        }
-                        idx.add(1);
-                    }
-                }
-            });
-            // clear and regenerate a flattened rowset
-            long size = currentRowSet.size();
-            currentRowSet.clear();
-            currentRowSet.insertRange(0, size - 1);
-        }
-    }
 
     @Override
     public void handleBarrageMessage(final BarrageMessage update) {
@@ -333,7 +292,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         // make sure that these RowSet updates make some sense compared with each other, and our current view of the
         // table
         final WritableRowSet currentRowSet = getRowSet().writableCast();
-        final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
+        final boolean mightBeInitialSnapshot = update.isSnapshot && currentRowSet.isEmpty();
 
         try (final RowSet currRowsFromPrev = currentRowSet.copy();
                 final WritableRowSet populatedRows =
@@ -372,9 +331,10 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                     // ensure the data sources have at least the incoming capacity. The sources can auto-resize but
                     // we know the initial snapshot size and resize immediately
                     if (this.initialSnapshotViewportRowCount == -1) {
-                        // might as well reserve it all now
+                        // reserve all the rows needed for the full snapshot
                         capacity = update.rowsAdded.size();
                     } else {
+                        // reserve all the rows needed for the viewport (or rows included if larger)
                         capacity = Math.max(this.initialSnapshotViewportRowCount, update.rowsIncluded.size());
                     }
                     for (final WritableColumnSource<?> source : destSources) {
@@ -496,7 +456,6 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                             RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
                     return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
                             : coalescer.update(downstream);
-
                 }
             }
 
@@ -637,8 +596,13 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         }
 
         if (sealed) {
-            // flatten the table
-            flattenInPlace();
+            // remove all unpopulated rows from viewport snapshots
+            if (this.serverViewport != null) {
+                WritableRowSet currentRowSet = getRowSet().writableCast();
+                try (final RowSet populated = currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
+                    currentRowSet.retain(populated);
+                }
+            }
             if (onSealRunnable != null) {
                 onSealRunnable.run();
             }
@@ -732,7 +696,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 makeColumns(columns, writableSources, rowRedirection);
 
         final BarrageTable table = new BarrageTable(
-                registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, initialViewPortRows);
+                registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes,
+                initialViewPortRows);
 
         // Even if this source table will eventually be static, the data isn't here already. Static tables need to
         // have refreshing set to false after processing data but prior to publishing the object to consumers.

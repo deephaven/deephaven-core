@@ -49,40 +49,12 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
         final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder().build();
 
-        final TableHandleManager snapshotManager = mode == null ? client.session()
-                : mode.batch ? client.session().batch() : client.session().serial();
-
-        // This is an example of the most efficient way to retrieve a consistent snapshot from a Deephaven server. Using
-        // `snapshotPartialTable()` or `snapshotEntireTable()` will internally create a subscription and retrieve rows
-        // from the server until a consistent view of the table is established.  Then the subscription will be terminated
-        // and the table flattened (re-indexed from 0 to size() -1) and the table presented to the user.
-        try (final TableHandle handle = snapshotManager.executeLogic(logic());
-                final BarrageSubscription subscription = client.subscribe(handle, options)) {
-
-            final BarrageTable snapshotTable;
-            if (headerSize > 0) {
-                // create a Table snapshot with forward viewport of the specified size
-                snapshotTable = subscription.snapshotPartialTable(RowSetFactory.flat(headerSize), null, false);
-            } else if (tailSize > 0) {
-                // create a Table snapshot with reverse viewport of the specified size
-                snapshotTable = subscription.snapshotPartialTable(RowSetFactory.flat(tailSize), null, true);
-            } else {
-                // create a Table snapshot of the entire Table
-                snapshotTable = subscription.snapshotEntireTable();
-            }
-
-            System.out.println("Snapshot created");
-            System.out.println("Table info: rows = " + snapshotTable.size() + ", cols = " + snapshotTable.getColumns().length);
-            TableTools.show(snapshotTable);
-            System.out.println("");
-        }
-
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         final TableHandleManager subscriptionManager = mode == null ? client.session()
                 : mode.batch ? client.session().batch() : client.session().serial();
 
         try (final TableHandle handle = subscriptionManager.executeLogic(logic());
-             final BarrageSubscription subscription = client.subscribe(handle, options)) {
+                final BarrageSubscription subscription = client.subscribe(handle, options)) {
 
             final BarrageTable subscriptionTable;
             if (headerSize > 0) {
@@ -97,7 +69,8 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
             }
 
             System.out.println("Subscription established");
-            System.out.println("Table info: rows = " + subscriptionTable.size() + ", cols = " + subscriptionTable.getColumns().length);
+            System.out.println("Table info: rows = " + subscriptionTable.size() + ", cols = " +
+                    subscriptionTable.getColumns().length);
             TableTools.show(subscriptionTable);
             System.out.println("");
 
@@ -105,7 +78,8 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                 @ReferentialIntegrity
                 final BarrageTable tableRef = subscriptionTable;
                 {
-                    // Maintain a liveness ownership relationship with subscriptionTable for the lifetime of the listener
+                    // Maintain a liveness ownership relationship with subscriptionTable for the lifetime of the
+                    // listener
                     manage(tableRef);
                 }
 

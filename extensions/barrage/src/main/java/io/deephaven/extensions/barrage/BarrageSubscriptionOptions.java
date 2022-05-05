@@ -29,6 +29,7 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
                 .columnConversionMode(ColumnConversionMode.conversionModeFbToEnum(mode))
                 .minUpdateIntervalMs(options.minUpdateIntervalMs())
                 .batchSize(options.batchSize())
+                .maxMessageSize(options.maxMessageSize())
                 .build();
     }
 
@@ -73,8 +74,18 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
     /**
      * @return the preferred batch size if specified
      */
+    @Override
     @Default
     public int batchSize() {
+        return 0;
+    }
+
+    /**
+     * @return the preferred maximum GRPC message size if specified
+     */
+    @Override
+    @Default
+    public int maxMessageSize() {
         return 0;
     }
 
@@ -88,7 +99,8 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
         return io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions.createBarrageSubscriptionOptions(
                 builder, ColumnConversionMode.conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(),
                 minUpdateIntervalMs(),
-                batchSize());
+                batchSize(),
+                maxMessageSize());
     }
 
     public interface Builder {
@@ -100,6 +112,8 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
         Builder minUpdateIntervalMs(int minUpdateIntervalMs);
 
         Builder batchSize(int batchSize);
+
+        Builder maxMessageSize(int messageSize);
 
         BarrageSubscriptionOptions build();
     }
