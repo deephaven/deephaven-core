@@ -17,20 +17,16 @@ configurations {
   testCompile.extendsFrom junit
 }
 
-// TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
-def protobufVersion = '3.20.1'
-def boringSslVersion = '2.0.34.Final'
-
 dependencies {
   // This should be implementation, if listed at all, at least once we have own own version management
-  api "com.google.protobuf:protobuf-java:${protobufVersion}"
+  Classpaths.inheritProtobufPlatform(project, 'api')
 
   Classpaths.inheritGrpcPlatform(project, 'api')
   api 'io.grpc:grpc-protobuf'
   api 'io.grpc:grpc-api'
   api 'io.grpc:grpc-stub'
 
-  runtimeOnly "io.netty:netty-tcnative-boringssl-static:${boringSslVersion}"
+  Classpaths.inheritBoringSslPlatform(project, 'runtimeOnly')
 
   // This is excessive, and brings in every grpc jar, making it compile-only limits what it pulls in to
   // downstream classpaths

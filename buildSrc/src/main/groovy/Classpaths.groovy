@@ -89,6 +89,14 @@ class Classpaths {
     static final String GRPC_GROUP = 'io.grpc'
     static final String GRPC_VERSION = '1.44.0'
 
+    // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
+    static final String PROTOBUF_GROUP = 'com.google.protobuf'
+    static final String PROTOBUF_VERSION = '3.20.1'
+
+    // See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
+    static final String BORINGSSL_GROUP = 'io.netty'
+    static final String BORINGSSL_VERSION = '2.0.46.Final'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -219,5 +227,15 @@ class Classpaths {
     static void inheritGrpcPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, p.getDependencies().platform(GRPC_GROUP + ":grpc-bom:" + GRPC_VERSION))
+    }
+
+    static void inheritProtobufPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform(PROTOBUF_GROUP + ":protobuf-java:" + PROTOBUF_VERSION))
+    }
+
+    static void inheritBoringSslPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform(BORINGSSL_GROUP + ":netty-tcnative-boringssl-static:" + BORINGSSL_VERSION))
     }
 }
