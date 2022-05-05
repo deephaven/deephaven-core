@@ -6,10 +6,13 @@ plugins {
 description 'Engine Functions: Libraries for use in query expressions'
 
 configurations {
+    primitiveCodegen
     testCompile.extendsFrom junit
 }
 
 dependencies {
+    primitiveCodegen project(':codegen')
+
     api 'net.sf.trove4j:trove4j:3.0.3',
             project(':Util'),
             project(':engine-vector')
@@ -17,18 +20,59 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'Base')
 }
 
+def generatedFiles = []
+
+
 spotless {
     java {
-        targetExclude(
-                '**/*Boolean*Primitives.java',
-                '**/*Byte*Primitives.java',
-                '**/*Char*Primitives.java',
-                '**/*Short*Primitives.java',
-                '**/*Int*Primitives.java',
-                '**/*Long*Primitives.java',
-                '**/*Float*Primitives.java',
-                '**/*Double*Primitives.java',
-                '**/*Object*Primitives.java',
-        )
+        targetExclude generatedFiles
+    }
+}
+
+
+//////////////// Code Generation ////////////////
+
+// task to clean up generated files
+task cleanGen(type:Delete) {
+    delete generatedFiles
+}
+
+tasks.findByName('clean').dependsOn cleanGen
+
+def gencode = { name, template, output ->
+
+    task(name, type: JavaExec) {
+        main = 'io.deephaven.generator.primitivetemplate.CodeGenerator'
+        classpath = configurations.primitiveCodegen
+        args = [template, output]
+        inputs.file template
+        outputs.file output
+    }
+
+    compileJava.dependsOn(name)
+    generatedFiles.add output
+}
+
+gencode 'GenPrimitivesBasic', 'src/templates/Basic.ftl', 'src/main/java/io/deephaven/function/Basic.java'
+gencode 'GenPrimitivesBasicTest', 'src/templates/TestBasic.ftl', 'src/test/java/io/deephaven/function/TestBasic.java'
+gencode 'GenPrimitivesCast', 'src/templates/Cast.ftl', 'src/main/java/io/deephaven/function/Cast.java'
+gencode 'GenPrimitivesCastTest', 'src/templates/TestCast.ftl', 'src/test/java/io/deephaven/function/TestCast.java'
+gencode 'GenPrimitivesBinSearch', 'src/templates/BinSearch.ftl', 'src/main/java/io/deephaven/function/BinSearch.java'
+gencode 'GenPrimitivesBinSearchTest', 'src/templates/TestBinSearch.ftl', 'src/test/java/io/deephaven/function/TestBinSearch.java'
+gencode 'GenPrimitivesSort', 'src/templates/Sort.ftl', 'src/main/java/io/deephaven/function/Sort.java'
+gencode 'GenPrimitivesSortTest', 'src/templates/TestSort.ftl', 'src/test/java/io/deephaven/function/TestSort.java'
+gencode 'GenPrimitivesNumeric', 'src/templates/Numeric.ftl', 'src/main/java/io/deephaven/function/Numeric.java'
+gencode 'GenPrimitivesNumericTest', 'src/templates/TestNumeric.ftl', 'src/test/java/io/deephaven/function/TestNumeric.java'
+
+
+task printSourceSetInformation(){
+    doLast{
+        sourceSets.each { srcSet ->
+            println '['+srcSet.name+']'
+            print '-->Source directories: '+srcSet.allJava.srcDirs+'\n'
+            print '-->Output directories: '+srcSet.output.classesDirs.files+'\n'
+            print '-->Excludes: ' + srcSet.allJava.excludes + '\n'
+            println ''
+        }
     }
 }

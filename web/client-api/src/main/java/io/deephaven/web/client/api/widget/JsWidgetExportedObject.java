@@ -28,7 +28,7 @@ public class JsWidgetExportedObject {
     }
 
     @JsMethod
-    public Promise<Object> fetch() {
+    public Promise<?> fetch() {
         if (getType().equals(JsVariableChanges.TABLE)) {
             return Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
                 connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),

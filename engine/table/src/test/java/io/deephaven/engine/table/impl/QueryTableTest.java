@@ -536,6 +536,19 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals("", TableTools.diff(sortedResult, sortedSource, source.size()));
     }
 
+    public void testStaticSelectIntermediateColumn() {
+        final Table et = emptyTable(3);
+        final Table result = et.select("A = i").join(et).select("B = A", "C = A + B");
+        assertTrue(result.isFlat());
+
+        final List<String> exNames = Arrays.asList("B", "C");
+        final List<ColumnSource<?>> exSources = Arrays.asList(
+                TableTools.colSource(0, 0, 0, 1, 1, 1, 2, 2, 2),
+                TableTools.colSource(0, 0, 0, 2, 2, 2, 4, 4, 4));
+        final Table expected = newTable(9, exNames, exSources);
+        assertTableEquals(expected, result);
+    }
+
     public void testDropColumns() {
         final List<String> colNames = Arrays.asList("String", "Int", "Double");
         final List<ColumnSource<?>> colSources =
@@ -2310,9 +2323,10 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(queryTable.groupBy("Sym").getDefinition().getColumn("Timestamp").getComponentType(),
                 DateTime.class);
         show(queryTable.update("x = Timestamp_[0]"));
-        show(queryTable.update("TimeinSeconds=round((max(Timestamp_)-min(Timestamp_))/1000000000)"));
+        show(queryTable.update("TimeinSeconds=round((maxObj(Timestamp_)-minObj(Timestamp_))/1000000000)"));
         show(queryTable.groupBy("Sym").view("Sym", "x = Timestamp[0]"));
-        show(queryTable.groupBy("Sym").view("Sym", "TimeinSeconds=round((max(Timestamp)-min(Timestamp))/1000000000)"));
+        show(queryTable.groupBy("Sym").view("Sym",
+                "TimeinSeconds=round((maxObj(Timestamp)-minObj(Timestamp))/1000000000)"));
     }
 
     public void testUngroupingAgnostic() {

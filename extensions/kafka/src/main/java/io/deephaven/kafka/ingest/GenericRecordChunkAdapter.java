@@ -10,6 +10,7 @@ import io.deephaven.chunk.*;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericContainer;
 import org.apache.avro.generic.GenericRecord;
 
 import java.math.BigDecimal;
@@ -32,8 +33,9 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             final Schema schema,
             final boolean allowNulls) {
         super(definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls, (fieldPathStr, chunkType,
-                dataType) -> GenericRecordChunkAdapter.makeFieldCopier(schema, fieldPathStr, separator, chunkType,
-                        dataType));
+                dataType, componentType) -> GenericRecordChunkAdapter.makeFieldCopier(schema, fieldPathStr, separator,
+                        chunkType,
+                        dataType, componentType));
     }
 
     /**
@@ -58,12 +60,32 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                 definition, chunkTypeForIndex, columns, separator, schema, allowNulls);
     }
 
+    private static Schema getFieldSchema(final Schema schema, final String fieldPathStr, Pattern separator) {
+        final String[] fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
+        final Schema fieldSchema = GenericRecordUtil.getFieldSchema(schema, fieldPath);
+        return fieldSchema;
+    }
+
+    private static LogicalType getLogicalType(final Schema schema, final String fieldPathStr, Pattern separator) {
+        final Schema fieldSchema = getFieldSchema(schema, fieldPathStr, separator);
+        final LogicalType logicalType = fieldSchema.getLogicalType();
+        return logicalType;
+    }
+
+    private static LogicalType getArrayTypeLogicalType(final Schema schema, final String fieldPathStr,
+            Pattern separator) {
+        final Schema fieldSchema = getFieldSchema(schema, fieldPathStr, separator);
+        final LogicalType logicalType = fieldSchema.getElementType().getLogicalType();
+        return logicalType;
+    }
+
     private static FieldCopier makeFieldCopier(
             final Schema schema,
             final String fieldPathStr,
             final Pattern separator,
             final ChunkType chunkType,
-            final Class<?> dataType) {
+            final Class<?> dataType,
+            final Class<?> componentType) {
         switch (chunkType) {
             case Char:
                 return new GenericRecordCharFieldCopier(fieldPathStr, separator, schema);
@@ -78,9 +100,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                 return new GenericRecordIntFieldCopier(fieldPathStr, separator, schema);
             case Long:
                 if (dataType == DateTime.class) {
-                    final String[] fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
-                    final Schema fieldSchema = GenericRecordUtil.getFieldSchema(schema, fieldPath);
-                    final LogicalType logicalType = fieldSchema.getLogicalType();
+                    final LogicalType logicalType = getLogicalType(schema, fieldPathStr, separator);
                     if (logicalType == null) {
                         throw new IllegalArgumentException(
                                 "Can not map field without a logical type to DateTime: field=" + fieldPathStr);
@@ -94,7 +114,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                     }
                     throw new IllegalArgumentException(
                             "Can not map field with unknown logical type to DateTime: field=" + fieldPathStr
-                                    + ", type=" + logicalType);
+                                    + ", logical type=" + logicalType);
 
                 }
                 return new GenericRecordLongFieldCopier(fieldPathStr, separator, schema);
@@ -120,6 +140,29 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                             "Can not map field with non matching logical type to BigDecimal: " +
                                     "field=" + fieldPathStr + ", logical type=" + logicalType);
                 }
+                if (dataType.isArray()) {
+                    if (DateTime.class.isAssignableFrom(componentType)) {
+                        final LogicalType logicalType = getArrayTypeLogicalType(schema, fieldPathStr, separator);
+                        if (logicalType == null) {
+                            throw new IllegalArgumentException(
+                                    "Can not map field without a logical type to DateTime[]: field=" + fieldPathStr);
+                        }
+                        if (logicalType instanceof LogicalTypes.TimestampMillis) {
+                            return new GenericRecordDateTimeArrayFieldCopier(fieldPathStr, separator, schema,
+                                    1000_000L);
+                        }
+                        if (logicalType instanceof LogicalTypes.TimestampMicros) {
+                            return new GenericRecordDateTimeArrayFieldCopier(fieldPathStr, separator, schema, 1000L);
+                        }
+                        throw new IllegalArgumentException(
+                                "Can not map field with unknown logical type to DateTime[]: field=" + fieldPathStr
+                                        + ", logical type=" + logicalType);
+
+                    }
+                    return new GenericRecordArrayFieldCopier(fieldPathStr, separator, schema, componentType);
+                }
+                // The GenericContainer.class.isAssignableFrom(dataType) case is also covered by the generic object
+                // field copier.
                 return new GenericRecordObjectFieldCopier(fieldPathStr, separator, schema);
         }
         throw new IllegalArgumentException("Can not convert field of type " + dataType);

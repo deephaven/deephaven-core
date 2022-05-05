@@ -134,6 +134,8 @@ include(':Container')
 
 include(':ParquetHadoop')
 
+include(':codegen')
+
 include(':replication-util')
 project(':replication-util').projectDir = file('replication/util')
 

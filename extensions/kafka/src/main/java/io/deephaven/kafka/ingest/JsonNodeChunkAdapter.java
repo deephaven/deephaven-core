@@ -41,7 +41,7 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
     }
 
     private static FieldCopier makeFieldCopier(
-            final String fieldName, final ChunkType chunkType, final Class<?> dataType) {
+            final String fieldName, final ChunkType chunkType, final Class<?> dataType, final Class<?> componentType) {
         switch (chunkType) {
             case Char:
                 return new JsonNodeCharFieldCopier(fieldName);

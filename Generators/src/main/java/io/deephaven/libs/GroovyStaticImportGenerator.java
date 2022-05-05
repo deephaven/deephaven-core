@@ -386,26 +386,15 @@ public class GroovyStaticImportGenerator {
         log.warning("Running GroovyStaticImportGenerator assertNoChange=" + assertNoChange);
 
         final String[] imports = {
-                "io.deephaven.function.BooleanPrimitives",
-                "io.deephaven.function.ByteNumericPrimitives",
-                "io.deephaven.function.BytePrimitives",
-                "io.deephaven.function.CharacterPrimitives",
-                "io.deephaven.function.DoubleFpPrimitives",
-                "io.deephaven.function.DoubleNumericPrimitives",
-                "io.deephaven.function.DoublePrimitives",
-                "io.deephaven.function.FloatFpPrimitives",
-                "io.deephaven.function.FloatNumericPrimitives",
-                "io.deephaven.function.FloatPrimitives",
-                "io.deephaven.function.IntegerNumericPrimitives",
-                "io.deephaven.function.IntegerPrimitives",
-                "io.deephaven.function.LongNumericPrimitives",
-                "io.deephaven.function.LongPrimitives",
-                "io.deephaven.function.ObjectPrimitives",
-                "io.deephaven.function.ShortNumericPrimitives",
-                "io.deephaven.function.ShortPrimitives",
-                "io.deephaven.function.SpecialPrimitives",
-                "io.deephaven.function.ComparePrimitives",
-                "io.deephaven.function.Casting",
+                "io.deephaven.function.Basic",
+                "io.deephaven.function.BinSearch",
+                // "io.deephaven.function.BinSearchAlgo",
+                "io.deephaven.function.Cast",
+                "io.deephaven.function.Logic",
+                "io.deephaven.function.Numeric",
+                "io.deephaven.function.Parse",
+                "io.deephaven.function.Random",
+                "io.deephaven.function.Sort",
         };
 
         @SuppressWarnings("unchecked")

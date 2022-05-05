@@ -10,6 +10,7 @@ import io.deephaven.plugin.type.ObjectTypeLookup;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.TimeoutException;
 
 @Module
 public class PythonConsoleSessionModule {
@@ -25,8 +26,9 @@ public class PythonConsoleSessionModule {
         try {
             return new PythonDeephavenSession(lookup, listener, true, true);
         } catch (IOException e) {
-            // can't happen since we pass false
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("Unable to run python startup scripts", e);
+        } catch (InterruptedException | TimeoutException e) {
+            throw new IllegalStateException("Unable to start a python session: ", e);
         }
     }
 }

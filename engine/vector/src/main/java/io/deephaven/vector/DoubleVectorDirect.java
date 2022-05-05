@@ -28,6 +28,8 @@ public class DoubleVectorDirect implements DoubleVector {
         this.data = data;
     }
 
+    public static final DoubleVector ZERO_LEN_VECTOR = new DoubleVectorDirect();
+
     @Override
     public double get(long i) {
         if (i < 0 || i > data.length - 1) {

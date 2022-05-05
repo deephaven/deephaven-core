@@ -4,7 +4,7 @@
 
 package io.deephaven.plot.datasets.histogram;
 
-import io.deephaven.function.DoubleFpPrimitives;
+import io.deephaven.function.Numeric;
 
 import java.io.Serializable;
 
@@ -46,7 +46,7 @@ public class DiscretizedRangeEqual implements DiscretizedRange, Serializable {
 
     @Override
     public long index(double value) {
-        if (!DoubleFpPrimitives.isNormal(value) || value < min || value > max) {
+        if (!Numeric.isFinite(value) || value < min || value > max) {
             return NULL_LONG;
         }
 

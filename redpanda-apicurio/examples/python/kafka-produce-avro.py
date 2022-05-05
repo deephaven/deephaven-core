@@ -40,7 +40,7 @@
 #
 # From the web IDE, run:
 #
-#    > t = kc.consume({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', value_spec=kc.avro_spec('share_price_record'), table_type=TableType.Append)
+#    > t = kc.consume({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', value_spec=kc.avro_spec('share_price_record'), table_type=TableType.append())
 #
 # The last command above should create a table with columns: [ KafkaPartition, KafkaOffset, KafkaTimestamp, Symbol, Price ]
 # Run this script on the host (not on a docker image) to generate one row:
@@ -100,7 +100,7 @@ for value_arg in sys.argv[4:]:
     if len(s) != 2:
         wrong_form(value_arg)
     # Strictly speaking we are calling for a python type here (eg, "str", "int", "float", "bool").
-    # We allow other type names for ease of use for us, people accostumed to Java.
+    # We allow other type names for ease of use for us, people accustumed to Java.
     if (ptype == "str" or ptype == "string"):
         value[s[0]] = s[1]
     elif (ptype == "bool" or ptype == "boolean"):

@@ -5,8 +5,8 @@
 package io.deephaven.numerics.movingaverages;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.function.Basic;
 import io.deephaven.time.DateTime;
-import io.deephaven.function.DoublePrimitives;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -98,7 +98,7 @@ public abstract class ByEma implements Serializable {
     }
 
     public synchronized double update(long timestampNanos, double value, Object... by) {
-        return updateInternal(timestampNanos, value, DoublePrimitives.isNull(value), Double.isNaN(value), by);
+        return updateInternal(timestampNanos, value, Basic.isNull(value), Double.isNaN(value), by);
     }
 
     private static boolean resetEma(boolean isNull, BadDataBehavior nullBehavior, boolean isNaN,

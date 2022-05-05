@@ -26,6 +26,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
@@ -89,7 +90,7 @@ public class BarrageStreamGenerator implements
 
         @Override
         public BarrageMessageProducer.StreamGenerator<View> newGenerator(
-                final BarrageMessage message, final WriteMetricsConsumer metricsConsumer) {
+                final BarrageMessage message, final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
             return new BarrageStreamGenerator(message, metricsConsumer);
         }
 
@@ -116,7 +117,7 @@ public class BarrageStreamGenerator implements
     }
 
     public final BarrageMessage message;
-    public final WriteMetricsConsumer writeConsumer;
+    public final BarragePerformanceLog.WriteMetricsConsumer writeConsumer;
 
     public final long firstSeq;
     public final long lastSeq;
@@ -138,7 +139,8 @@ public class BarrageStreamGenerator implements
      * @param message the generator takes ownership of the message and its internal objects
      * @param writeConsumer a method that can be used to record write time
      */
-    public BarrageStreamGenerator(final BarrageMessage message, final WriteMetricsConsumer writeConsumer) {
+    public BarrageStreamGenerator(final BarrageMessage message,
+            final BarragePerformanceLog.WriteMetricsConsumer writeConsumer) {
         this.message = message;
         this.writeConsumer = writeConsumer;
         try {
@@ -439,17 +441,22 @@ public class BarrageStreamGenerator implements
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+            final long startTm = System.nanoTime();
+            long bytesWritten = 0;
             ByteBuffer metadata = generator.getSnapshotMetadata(this);
             long offset = 0;
             final long batchSize = batchSize();
             for (long ii = 0; ii < numAddBatches; ++ii) {
-                visitor.accept(generator.getInputStream(
-                        this, offset, offset + batchSize, metadata, generator::appendAddColumns));
+                final InputStream is = generator.getInputStream(
+                        this, offset, offset + batchSize, metadata, generator::appendAddColumns);
+                bytesWritten += is.available();
+                visitor.accept(is);
                 offset += batchSize;
                 metadata = null;
             }
 
             addRowOffsets.close();
+            generator.writeConsumer.onWrite(bytesWritten, System.nanoTime() - startTm);
         }
 
         private int batchSize() {

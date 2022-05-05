@@ -40,7 +40,7 @@ import java.util.stream.IntStream;
 import static io.deephaven.api.agg.Aggregation.AggCount;
 import static io.deephaven.api.agg.Aggregation.AggLast;
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.function.IntegerNumericPrimitives.abs;
+import static io.deephaven.function.Numeric.abs;
 
 /**
  * Utilities class for plotting.

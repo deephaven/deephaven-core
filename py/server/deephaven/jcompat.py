@@ -4,9 +4,11 @@
 """ This module provides Java compatibility support including convenience functions to create some widely used Java
 data structures from corresponding Python ones in order to be able to call Java methods. """
 
-from typing import Any, Iterable, Dict, Set, TypeVar, Callable
+from typing import Any, Iterable, Dict, Set, TypeVar, Callable, Union, Sequence
 
 import jpy
+
+from deephaven._wrapper import unwrap
 from deephaven.dtypes import DType
 
 
@@ -93,3 +95,18 @@ def j_function(func: Callable[[T], R], dtype: DType) -> jpy.JType:
     return jpy.get_type("io.deephaven.integrations.python.PythonFunction")(
         func, dtype.qst_type.clazz()
     )
+
+
+def to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]]:
+    """A convenience function to create a sequence of unwrapped object from either one or a sequence of input values to
+    help JPY find the matching Java overloaded method to call.
+
+    This also enables a function to provide parameters that can accept both singular and plural values of the same type
+    for the convenience of the users, e.g. both x= "abc" and x = ["abc"] are valid arguments.
+    """
+    if not v:
+        return ()
+    if not isinstance(v, Sequence) or isinstance(v, str):
+        return (unwrap(v),)
+    else:
+        return tuple((unwrap(o) for o in v))

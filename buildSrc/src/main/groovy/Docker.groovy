@@ -249,9 +249,13 @@ class Docker {
             sync.into dockerWorkspaceContents
 
             if (cfg.dockerfileFile) {
-                sync.from cfg.dockerfileFile
+                sync.from(cfg.dockerfileFile) { CopySpec dockerfileCopy ->
+                    dockerfileCopy.include(cfg.dockerfileFile.name)
+                }
             } else if (cfg.dockerfileAction) {
-                sync.from dockerfileTask.get().outputs.files
+                sync.from(dockerfileTask.get().outputs.files) { CopySpec dockerfileCopy ->
+                    dockerfileCopy.include('Dockerfile')
+                }
             }
         }
 

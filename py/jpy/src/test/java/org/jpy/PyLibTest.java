@@ -283,4 +283,26 @@ public class PyLibTest {
 
         PyLib.decRefs(new long[] { pyObject1, pyObject2, 0, 0 }, 2);
     }
+
+    @Test
+    public void testEnsureGIL() {
+        assertFalse(PyLib.hasGil());
+        boolean[] lambdaSuccessfullyRan = {false};
+        Integer intResult = PyLib.ensureGil(() -> {
+            assertTrue(PyLib.hasGil());
+            lambdaSuccessfullyRan[0] = true;
+            return 123;
+        });
+        assertEquals((Integer) 123, intResult);
+        assertTrue(lambdaSuccessfullyRan[0]);
+
+        try {
+            Object result = PyLib.ensureGil(() -> {
+                throw new IllegalStateException("Error from inside GIL block");
+            });
+            fail("Exception expected");
+        } catch (IllegalStateException expectedException) {
+            assertEquals("Error from inside GIL block", expectedException.getMessage());
+        }//let anything else rethrow as a failure
+    }
 }

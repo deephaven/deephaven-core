@@ -24,8 +24,9 @@ import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.ByteVectorDirect;
 import io.deephaven.vector.Vector;
 
+import static io.deephaven.vector.ByteVectorDirect.ZERO_LEN_VECTOR;
+
 public class ByteVectorExpansionKernel implements VectorExpansionKernel {
-    private final static ByteVector ZERO_LEN_VECTOR = new ByteVectorDirect();
     public final static ByteVectorExpansionKernel INSTANCE = new ByteVectorExpansionKernel();
 
     @Override

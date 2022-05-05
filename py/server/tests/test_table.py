@@ -25,7 +25,7 @@ class TableTestCase(BaseTestCase):
     #
     def test_eq(self):
         t = self.test_table.select()
-        self.assertEqual(t, self.test_table)
+        self.assert_table_equals(t, self.test_table)
 
         t = self.test_table.where(["a > 500"])
         self.assertNotEqual(t, self.test_table)
@@ -498,6 +498,27 @@ class TableTestCase(BaseTestCase):
     def test_format_row_where(self):
         t = self.test_table.format_row_where("e % 3 = 1", "TEAL")
         self.assertIsNotNone(t)
+
+    def test_layout_hints(self):
+        t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d")
+        self.assertIsNotNone(t)
+
+        t = self.test_table.layout_hints(front=["d", "e"], back=["a", "b"], freeze=["c"], hide=["d"])
+        self.assertIsNotNone(t)
+
+        t = self.test_table.layout_hints(front="e")
+        self.assertIsNotNone(t)
+
+        t = self.test_table.layout_hints(front=["e"])
+        self.assertIsNotNone(t)
+
+        t = self.test_table.layout_hints()
+        self.assertIsNotNone(t)
+
+        with self.assertRaises(DHError) as cm:
+            t = self.test_table.layout_hints(front=["e"], back=True)
+        self.assertTrue(cm.exception.root_cause)
+        self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
 
 if __name__ == "__main__":

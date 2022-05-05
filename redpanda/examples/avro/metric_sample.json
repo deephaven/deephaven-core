@@ -1,0 +1,10 @@
+{ "type" : "record",
+  "namespace" : "io.deephaven.examples",
+  "name" : "metric_sample",
+  "fields" : [
+      { "name" : "Timestamp", "type" : { "type" : "long", "logicalType" : "timestamp-millis" } },
+      { "name" : "Metric",    "type" : "string" },
+      { "name" : "Tags",      "type" : "string" },
+      { "name" : "Samples",   "type" : { "type" : "array",  "items" : "double" } }
+  ]
+}

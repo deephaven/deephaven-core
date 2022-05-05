@@ -5,7 +5,6 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.util.AbstractScriptSession.Snapshot;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import org.jetbrains.annotations.NotNull;
@@ -21,7 +20,7 @@ import java.util.function.Supplier;
  * ScriptSession implementation that simply allows variables to be exported. This is not intended for use in user
  * scripts.
  */
-public class NoLanguageDeephavenSession extends AbstractScriptSession<Snapshot> implements ScriptSession {
+public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractScriptSession.Snapshot> {
     private static final String SCRIPT_TYPE = "NoLanguage";
 
     private final String scriptType;

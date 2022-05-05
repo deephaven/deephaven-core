@@ -28,7 +28,7 @@ import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarragePerformanceLogLogger;
+import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
@@ -141,15 +141,11 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
         this.rowRedirection = rowRedirection;
 
-        final Object tableKey = getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
-        if (executorService == null) {
+        final String tableKey = BarragePerformanceLog.getKeyFor(this);
+        if (executorService == null || tableKey == null) {
             stats = null;
-        } else if (tableKey instanceof String) {
-            stats = new Stats((String) tableKey);
-        } else if (BarragePerformanceLog.ALL_PERFORMANCE_ENABLED) {
-            stats = new Stats(getDescription());
         } else {
-            stats = null;
+            stats = new Stats(tableKey);
         }
 
         this.refreshEntry = UpdatePerformanceTracker.getInstance().getEntry(
@@ -710,13 +706,14 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         public void run() {
             final DateTime now = DateTime.now();
 
-            final BarragePerformanceLogLogger logger = BarragePerformanceLog.getInstance().getLogger();
+            final BarrageSubscriptionPerformanceLogger logger =
+                    BarragePerformanceLog.getInstance().getSubscriptionLogger();
             try {
                 // noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized (logger) {
-                    flush(now, logger, deserialize, "DeserializationTimeMs");
-                    flush(now, logger, processUpdate, "ProcessUpdateTimeMs");
-                    flush(now, logger, refresh, "RefreshTimeMs");
+                    flush(now, logger, deserialize, "DeserializationMillis");
+                    flush(now, logger, processUpdate, "ProcessUpdateMillis");
+                    flush(now, logger, refresh, "RefreshMillis");
                 }
             } catch (IOException ioe) {
                 beginLog(LogLevel.ERROR).append("Unexpected exception while flushing barrage stats: ")
@@ -724,7 +721,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             }
         }
 
-        private void flush(final DateTime now, final BarragePerformanceLogLogger logger, final Histogram hist,
+        private void flush(final DateTime now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
                 final String statType) throws IOException {
             if (hist.getTotalCount() == 0) {
                 return;
