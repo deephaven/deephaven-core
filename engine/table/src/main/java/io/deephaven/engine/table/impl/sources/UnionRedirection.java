@@ -129,6 +129,7 @@ public class UnionRedirection implements Serializable {
      * Find the current slot at or after {@code firstSlot} holding {@code rowKey}.
      *
      * @param rowKey The row key to lookup
+     * @param firstSlot The first slot to search from, must be {@code >= 0}
      * @return Table slot that currently contains the row key
      */
     int currSlotForRowKey(final long rowKey, final int firstSlot) {
@@ -149,6 +150,7 @@ public class UnionRedirection implements Serializable {
      * Find the previous slot at or after {@code firstSlot} holding {@code rowKey}.
      *
      * @param rowKey The row key to lookup
+     * @param firstSlot The first slot to search from, must be {@code >= 0}
      * @return Table slot that previously contained the row key
      */
     int prevSlotForRowKey(final long rowKey, final int firstSlot) {
@@ -157,7 +159,16 @@ public class UnionRedirection implements Serializable {
 
     private static int slotForRowKey(final long rowKey, @NotNull final ThreadLocal<Integer> priorSlot,
             @NotNull final long[] firstRowKeyForSlot, final int numSlots) {
-        int firstSlot = priorSlot.get();
+        final int firstSlot = priorSlot.get();
+        final int slot = slotForRowKey(rowKey, firstSlot, firstRowKeyForSlot, numSlots);
+        if (firstSlot != slot) {
+            priorSlot.set(slot);
+        }
+        return slot;
+    }
+
+    private static int slotForRowKey(final long rowKey, int firstSlot,
+            @NotNull final long[] firstRowKeyForSlot, final int numSlots) {
         if (rowKey >= firstRowKeyForSlot[firstSlot]) {
             if (rowKey < firstRowKeyForSlot[firstSlot + 1]) {
                 return firstSlot;
@@ -165,13 +176,6 @@ public class UnionRedirection implements Serializable {
         } else {
             firstSlot = 0;
         }
-        final int slot = slotForRowKey(rowKey, firstSlot, firstRowKeyForSlot, numSlots);
-        priorSlot.set(slot);
-        return slot;
-    }
-
-    private static int slotForRowKey(final long rowKey, final int firstSlot,
-            @NotNull final long[] firstRowKeyForSlot, final int numSlots) {
         final int slot = Arrays.binarySearch(firstRowKeyForSlot, firstSlot, numSlots, rowKey);
         return slot < 0 ? ~slot - 1 : slot;
     }
