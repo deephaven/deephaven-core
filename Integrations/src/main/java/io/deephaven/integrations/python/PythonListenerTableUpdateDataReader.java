@@ -1,28 +1,40 @@
 package io.deephaven.integrations.python;
 
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ResettableWritableChunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
+/**
+ * An efficient reader for a Python table listener to extract columnar data based on the {@link RowSequence} in the
+ * {@link TableUpdate}
+ */
 public class PythonListenerTableUpdateDataReader {
 
-
+    /**
+     * Factory method for instance of {@link Context}
+     *
+     * @param chunkCapacity
+     * @param columnSources
+     * @return {@link Context}
+     */
     public static io.deephaven.engine.table.Context makeContext(final int chunkCapacity,
             @NotNull final ColumnSource<?>... columnSources) {
         return new Context(chunkCapacity, columnSources);
     }
 
+    /**
+     * Create a context that can be reused to read all the chunks of a row sequence
+     */
     private static class Context implements io.deephaven.engine.table.Context {
 
         private final SharedContext sharedContext;
@@ -51,6 +63,14 @@ public class PythonListenerTableUpdateDataReader {
         }
     }
 
+    /**
+     * Copy data from a table by chunks into a 2D array
+     *
+     * @param context the context used in filling the output array
+     * @param rowSeq indices of the rows of the table to put into the 2D array
+     * @param columnSources columns of data to put into the 2D array
+     * @return a 2D array
+     */
     public static Object[] readChunkColumnMajor(@NotNull final io.deephaven.engine.table.Context context,
             final RowSequence rowSeq,
             final ColumnSource<?>[] columnSources, final boolean prev) {

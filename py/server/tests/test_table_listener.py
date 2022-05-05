@@ -3,15 +3,14 @@
 #
 import time
 import unittest
-from pprint import pprint
 from types import SimpleNamespace
 from typing import List, Dict, Union
 
-import jpy
 import numpy
-from deephaven.experimental import time_window
 
 from deephaven import time_table
+from deephaven._ugp import ugp_exclusive_lock
+from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
 from deephaven.table_listener import listen, TableListener, TableUpdate, TableListenerHandle
 from tests.testbase import BaseTestCase
@@ -20,7 +19,7 @@ from tests.testbase import BaseTestCase
 class TableListenerTestCase(BaseTestCase):
 
     def setUp(self) -> None:
-        with self.ugp_lock_exclusive():
+        with ugp_exclusive_lock():
             self.test_table = time_table("00:00:00.001").update(["X=i%2"]).sort("X").tail(1)
             source_table = time_table("00:00:00.001").update(["TS=currentTime()"])
             self.test_table2 = time_window(source_table, ts_col="TS", window=10 ** 7, bool_col="InWindow")
@@ -43,47 +42,41 @@ class TableListenerTestCase(BaseTestCase):
                 self.assertIn(col, change.keys())
                 self.assertTrue(isinstance(change[col], numpy.ndarray))
                 self.assertEqual(change[col].ndim, 1)
-                # print(change[col])
 
     def test_listener_obj(self):
         class ListenerClass(TableListener):
             def __init__(self):
                 self.t_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
                                                 Shifted=None, modified_columns=None)
+                self.replay_recorder = []
 
             def on_update(self, update, is_replay):
                 self.t_update.added = []
-                self.t_update.added.append(update.added())
-
                 self.t_update.removed = []
-                self.t_update.removed.append(update.removed())
-
                 self.t_update.modified = []
-                self.t_update.modified.append(update.modified())
-
                 self.t_update.modified_prev = []
+                self.t_update.added.append(update.added())
+                self.t_update.removed.append(update.removed())
+                self.t_update.modified.append(update.modified())
                 self.t_update.modified_prev.append(update.modified_prev())
-
-                # self.table_update.shifted = update.shifted
+                self.replay_recorder.append(is_replay)
 
         listener = ListenerClass()
 
         table_listener_handle = listen(self.test_table, listener)
         time.sleep(1)
-        pprint(listener.t_update.added)
-        pprint("----" * 10)
-        pprint(listener.t_update.removed)
         self.check_result(listener.t_update.added, cols="X")
         self.check_result(listener.t_update.removed)
         self.check_result(listener.t_update.modified)
         self.check_result(listener.t_update.modified_prev)
+        self.assertTrue(not any(listener.replay_recorder))
 
         table_listener_handle.stop()
 
     def test_listener_func(self):
         replay_recorder = []
         t_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
-                                       Shifted=None, modified_columns=None)
+                                   Shifted=None, modified_columns=None)
 
         def listener_func(update, is_replay):
             t_update.added = []
@@ -107,24 +100,14 @@ class TableListenerTestCase(BaseTestCase):
         self.assertFalse(all(replay_recorder))
 
         table_listener_handle.stop()
-        listener_called = len(replay_recorder)
+        call_counter = len(replay_recorder)
         time.sleep(1)
-        self.assertEqual(listener_called, len(replay_recorder))
-
-        # del table_listener_handle
-        # pprint(f"{'==='*10}TableListenerHandle has been deleted!")
-        # for _ in range(2):
-        #     _JSystem = jpy.get_type("java.lang.System")
-        #     _JSystem.gc()
-        #
-        # for i in range(50):
-        #     time.sleep(1)
-        #     pprint(f"the table listener has been called {len(replay_recorder)} times.")
+        self.assertEqual(call_counter, len(replay_recorder))
 
     def test_listener_func_chunk(self):
         replay_recorder = []
         t_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
-                                       Shifted=None, modified_columns=None)
+                                   Shifted=None, modified_columns=None)
 
         def listener_func(update, is_replay):
             t_update.added = []
@@ -155,7 +138,7 @@ class TableListenerTestCase(BaseTestCase):
     def test_listener_func_modified_chunk(self):
         replay_recorder = []
         t_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
-                                       Shifted=None, modified_columns=None)
+                                   Shifted=None, modified_columns=None)
         cols = "InWindow"
         t_update.modified_columns_list = []
 
@@ -178,12 +161,7 @@ class TableListenerTestCase(BaseTestCase):
 
         table_listener_handle = listen(self.test_table2, listener=listener_func)
         time.sleep(2)
-        pprint("-----modified-----")
-        pprint(t_update.modified)
-        pprint("------modified-prev------")
-        pprint(t_update.modified_prev)
-        pprint("------modified-columns-list------")
-        pprint(t_update.modified_columns_list)
+        self.assertEqual(t_update.modified_columns_list[-1], [cols])
         self.assertGreaterEqual(len(t_update.added), 1)
         self.check_result(t_update.added, cols)
         self.check_result(t_update.removed, cols)
@@ -216,10 +194,7 @@ class TableListenerTestCase(BaseTestCase):
         listener = ListenerClass()
         table_listener_handle = listen(self.test_table, listener)
         time.sleep(1)
-        # pprint(listener.table_update.added)
-        # pprint("----" * 10)
-        # pprint(listener.table_update.removed)
-        self.check_result(listener.t_update.added, cols="X")
+        self.check_result(listener.t_update.added)
         self.check_result(listener.t_update.removed)
         self.check_result(listener.t_update.modified)
         self.check_result(listener.t_update.modified_prev)
