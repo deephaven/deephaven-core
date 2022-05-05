@@ -258,6 +258,9 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     void buildFromLeftSide(Table leftTable, ColumnSource<?>[] leftSources, InitialBuildContext ibc) {
+        if (leftTable.isEmpty()) {
+            return;
+        }
         final int chunkSize = (int) Math.min(leftTable.size(), CHUNK_SIZE);
         try (BuildContext bc = new BuildContext(leftSources, chunkSize)) {
             buildTable(bc, leftTable.getRowSet(), leftSources, new BuildHandler() {
@@ -401,6 +404,9 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     @Override
     void addRightSide(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (rightRowSet.isEmpty()) {
+            return;
+        }
         probeTable((ProbeContext) pc, rightRowSet, false, rightSources,
                 (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker));
     }

@@ -569,6 +569,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     @Override
     public void addRightSide(Context bc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (rightRowSet.isEmpty()) {
+            return;
+        }
         buildTable(false, (BuildContext) bc, rightRowSet, rightSources,
                 (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker),
                 modifiedSlotTracker);
@@ -581,6 +584,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     public void addLeftSide(Context bc, RowSequence leftRowSet, ColumnSource<?>[] leftSources,
             LongArraySource leftRedirections,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (leftRowSet.isEmpty()) {
+            return;
+        }
         final MutableLong redirectionOffset = new MutableLong(0);
         buildTable(false, (BuildContext) bc, leftRowSet, leftSources, (chunkOk, sourceKeyChunks) -> {
             addLeftSide(chunkOk, sourceKeyChunks, leftRedirections, redirectionOffset.longValue());
@@ -593,6 +599,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?>[] leftSources) {
+        if (leftIndex.isEmpty()) {
+            return;
+        }
         probeTable((ProbeContext) pc, leftIndex, true, leftSources, this::removeLeft);
     }
 
@@ -600,6 +609,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta) {
+        if (shiftedRowSet.isEmpty()) {
+            return;
+        }
         final ProbeContext pc1 = (ProbeContext) pc;
         pc1.startShifts(shiftDelta);
         probeTable(pc1, shiftedRowSet, false, leftSources, (chunkOk, sourceKeyChunks) -> {
@@ -620,6 +632,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     @Override
     public void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet, long shiftDelta,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (shiftedRowSet.isEmpty()) {
+            return;
+        }
         final ProbeContext pc1 = (ProbeContext) pc;
         pc1.startShifts(shiftDelta);
         probeTable(pc1, shiftedRowSet, false, rightSources, (chunkOk, sourceKeyChunks) -> {

@@ -25,12 +25,12 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.*;
 
 
-import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 // region extra imports
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.Nullable;
+import io.deephaven.engine.table.impl.naturaljoin.StaticHashedNaturalJoinStateManager;
 // endregion extra imports
 
 import static io.deephaven.util.SafeCloseable.closeArray;
