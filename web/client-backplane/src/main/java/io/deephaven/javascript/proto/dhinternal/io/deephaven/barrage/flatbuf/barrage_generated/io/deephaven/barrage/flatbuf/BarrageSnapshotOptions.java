@@ -15,13 +15,16 @@ public class BarrageSnapshotOptions {
     public static native void addColumnConversionMode(
             Builder builder, int columnConversionMode);
 
+    public static native void addMaxMessageSize(Builder builder, double maxMessageSize);
+
     public static native void addUseDeephavenNulls(Builder builder, boolean useDeephavenNulls);
 
     public static native double createBarrageSnapshotOptions(
             Builder builder,
             int columnConversionMode,
             boolean useDeephavenNulls,
-            double batchSize);
+            double batchSize,
+            double maxMessageSize);
 
     public static native double endBarrageSnapshotOptions(Builder builder);
 
@@ -46,6 +49,8 @@ public class BarrageSnapshotOptions {
     public native double batchSize();
 
     public native int columnConversionMode();
+
+    public native double maxMessageSize();
 
     public native boolean useDeephavenNulls();
 }
