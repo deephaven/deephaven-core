@@ -105,7 +105,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     private BitSet serverColumns;
 
     /** the size of the initial viewport requested from the server (-1 implies full subscription) */
-    private long initialSnapshotViewportRowCount = -1;
+    private long initialSnapshotViewportRowCount;
     /** have we completed the initial snapshot */
     private boolean initialSnapshotReceived;
 

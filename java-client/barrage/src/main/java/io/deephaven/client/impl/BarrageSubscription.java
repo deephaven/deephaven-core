@@ -44,7 +44,7 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      *
      * @return true when all rows for the subscribed table are available, false otherwise
      */
-    public boolean isCompleted();
+    boolean isCompleted();
 
     /**
      * This call will return the number of rows received by the subscription handler. This is the sum of all the
@@ -52,7 +52,7 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      *
      * @return number of rows received by the subscription handler
      */
-    public long getRowsReceived();
+    long getRowsReceived();
 
     /**
      * Request a full subscription of the data and populate a {@link BarrageTable} with the incrementally updating data
