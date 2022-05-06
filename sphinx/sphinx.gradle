@@ -43,7 +43,7 @@ def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
     runCommand '''set -eux; \\
                   mkdir /tmp/devroot; \\
                   mkdir /tmp/workspace; \\
-                  python -m pip install sphinx==4.0.3 sphinx-autodoc-typehints==1.12.0 pyarrow==6.0.1 protobuf==3.20.1 grpcio==1.44.0 bitstring==3.1.9 /wheel/*.whl breathe==4.31.0 furo==2021.9.8
+                  python -m pip install sphinx==4.0.3 sphinx-autodoc-typehints==1.12.0 pyarrow==7.0.0 protobuf==3.20.1 grpcio==1.44.0 bitstring==3.1.9 /wheel/*.whl breathe==4.31.0 furo==2021.9.8
                   '''
 }
 
