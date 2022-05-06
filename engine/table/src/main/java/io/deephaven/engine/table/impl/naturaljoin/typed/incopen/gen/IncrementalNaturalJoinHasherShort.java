@@ -469,7 +469,7 @@ final class IncrementalNaturalJoinHasherShort extends IncrementalNaturalJoinStat
                     }
                 }
                 if (!alternateFound) {
-                    throw Assert.statementNeverExecuted("Could not find existing state for shifted right row");
+                    throw Assert.statementNeverExecuted("Could not find existing state for removed left row");
                 }
             }
         }
@@ -526,7 +526,7 @@ final class IncrementalNaturalJoinHasherShort extends IncrementalNaturalJoinStat
                     }
                 }
                 if (!alternateFound) {
-                    throw Assert.statementNeverExecuted("Could not find existing state for shifted right row");
+                    throw Assert.statementNeverExecuted("Could not find existing state for shifted left row");
                 }
             }
         }

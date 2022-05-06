@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -104,7 +104,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
             return;
         }
         addUpdateHandler.reset(nextOutputPosition, outputPositions, reincarnatedPositions);
-        buildTable(addUpdateHandler, (TypedHasherUtil.BuildOrProbeContext.BuildContext) bc,
+        buildTable(addUpdateHandler, (BuildContext) bc,
                 rowSequence, sources);
         addUpdateHandler.reset();
     }

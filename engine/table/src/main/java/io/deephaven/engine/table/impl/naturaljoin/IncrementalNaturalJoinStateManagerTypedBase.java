@@ -52,9 +52,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected final WritableColumnSource[] alternateKeySources;
 
     // we use a RowSet.NULL_ROW_KEY for a state that exists, but has no right hand side;
-    // the column sources are initialized with NULL_LONG for something that does not exist.  When there are multiple
+    // the column sources are initialized with NULL_LONG for something that does not exist. When there are multiple
     // right rows, we store a value less than RowSet.NULL_ROW_KEY, which is a position in the rightSideDuplicateRowSets
-    // (-2 maps to 0, -3 to 1, etc.).  We must maintain the right side duplicates so that we do not need a rescan;
+    // (-2 maps to 0, -3 to 1, etc.). We must maintain the right side duplicates so that we do not need a rescan;
     // but in the common (as opposed to impending error) case of a single value we do not want to allocate any objects
     protected ImmutableLongArraySource mainRightRowKey = new ImmutableLongArraySource();
     protected ImmutableLongArraySource alternateRightRowKey;

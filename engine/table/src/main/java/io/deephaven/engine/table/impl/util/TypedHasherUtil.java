@@ -16,7 +16,7 @@ import static io.deephaven.util.SafeCloseable.closeArray;
  */
 public class TypedHasherUtil {
     public static ColumnSource.GetContext[] makeGetContexts(ColumnSource<?>[] sources, final SharedContext sharedState,
-                                                            int chunkSize) {
+            int chunkSize) {
         final ColumnSource.GetContext[] contexts = new ColumnSource.GetContext[sources.length];
         for (int ii = 0; ii < sources.length; ++ii) {
             contexts[ii] = sources[ii].makeGetContext(chunkSize, sharedState);
@@ -25,14 +25,14 @@ public class TypedHasherUtil {
     }
 
     public static void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
-                                    Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
+            Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
         for (int ii = 0; ii < chunks.length; ++ii) {
             chunks[ii] = sources[ii].getChunk(contexts[ii], rowSequence);
         }
     }
 
     public static void getPrevKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
-                                        Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
+            Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
         for (int ii = 0; ii < chunks.length; ++ii) {
             chunks[ii] = sources[ii].getPrevChunk(contexts[ii], rowSequence);
         }

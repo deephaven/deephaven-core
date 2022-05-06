@@ -228,7 +228,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
-                                                           InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
+            InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
 
         switch (redirectionType) {
             case Contiguous: {
@@ -297,7 +297,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
             return;
         }
         probeTable((ProbeContext) pc, shiftedRowSet, false, rightSources, (chunkOk,
-                                                                           sourceKeyChunks) -> applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker));
+                sourceKeyChunks) -> applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker));
     }
 
     protected abstract void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,

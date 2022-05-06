@@ -11,6 +11,7 @@
   "create": ":param config: io.deephaven.client.impl.SessionImplConfig\n:return: io.deephaven.client.impl.SessionImpl",
   "createFuture": ":param config: io.deephaven.client.impl.SessionImplConfig\n:return: java.util.concurrent.CompletableFuture<io.deephaven.client.impl.SessionImpl>",
   "deleteFromInputTable": "Delete source from the input table destination.\n\n:param destination: (io.deephaven.client.impl.HasTicketId) - the input table\n:param source: (io.deephaven.client.impl.HasTicketId) - the source to delete\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the future",
+  "executor": ":return: java.util.concurrent.ScheduledExecutorService",
   "export": "Creates new exports according to the request.\n\n:param request: (io.deephaven.client.impl.ExportsRequest) - the request\n:return: (java.util.List<io.deephaven.client.impl.Export>) the exports",
   "fetchObject": "Fetch the object.\n\n:param type: java.lang.String\n:param ticketId: io.deephaven.client.impl.HasTicketId\n:return: (java.util.concurrent.CompletableFuture<io.deephaven.client.impl.FetchedObject>) the future",
   "newExportId": "Advanced usage, creates a new export ID for this session, but must be managed by the caller. Useful for\n more advanced integrations, particularly around doPut. Callers are responsible for releasing the export ID if necessary.\n\n:return: (io.deephaven.client.impl.ExportId) the new export ID",
