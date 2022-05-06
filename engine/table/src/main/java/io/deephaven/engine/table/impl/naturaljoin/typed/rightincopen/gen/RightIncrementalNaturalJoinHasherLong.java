@@ -25,9 +25,10 @@ import java.util.Arrays;
 final class RightIncrementalNaturalJoinHasherLong extends RightIncrementalNaturalJoinStateManagerTypedBase {
     private final ImmutableLongArraySource mainKeySource0;
 
-    public RightIncrementalNaturalJoinHasherLong(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
-        super(tableKeySources, tableKeySources, tableSize, maximumLoadFactor);
+    public RightIncrementalNaturalJoinHasherLong(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableLongArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }

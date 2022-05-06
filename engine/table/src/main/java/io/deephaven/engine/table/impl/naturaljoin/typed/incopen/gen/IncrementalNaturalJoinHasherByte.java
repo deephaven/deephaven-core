@@ -30,9 +30,10 @@ final class IncrementalNaturalJoinHasherByte extends IncrementalNaturalJoinState
 
     private ImmutableByteArraySource alternateKeySource0;
 
-    public IncrementalNaturalJoinHasherByte(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
-        super(tableKeySources, tableKeySources, tableSize, maximumLoadFactor);
+    public IncrementalNaturalJoinHasherByte(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableByteArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }

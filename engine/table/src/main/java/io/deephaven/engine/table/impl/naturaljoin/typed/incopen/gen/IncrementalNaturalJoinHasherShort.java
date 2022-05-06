@@ -30,9 +30,10 @@ final class IncrementalNaturalJoinHasherShort extends IncrementalNaturalJoinStat
 
     private ImmutableShortArraySource alternateKeySource0;
 
-    public IncrementalNaturalJoinHasherShort(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
-        super(tableKeySources, tableKeySources, tableSize, maximumLoadFactor);
+    public IncrementalNaturalJoinHasherShort(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableShortArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }

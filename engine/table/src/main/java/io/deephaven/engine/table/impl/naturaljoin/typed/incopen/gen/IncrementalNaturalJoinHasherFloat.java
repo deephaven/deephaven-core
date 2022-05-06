@@ -30,9 +30,10 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
 
     private ImmutableFloatArraySource alternateKeySource0;
 
-    public IncrementalNaturalJoinHasherFloat(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
-        super(tableKeySources, tableKeySources, tableSize, maximumLoadFactor);
+    public IncrementalNaturalJoinHasherFloat(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableFloatArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }

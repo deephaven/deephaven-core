@@ -30,9 +30,10 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
 
     private ImmutableCharArraySource alternateKeySource0;
 
-    public IncrementalNaturalJoinHasherChar(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
-        super(tableKeySources, tableKeySources, tableSize, maximumLoadFactor);
+    public IncrementalNaturalJoinHasherChar(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableCharArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }

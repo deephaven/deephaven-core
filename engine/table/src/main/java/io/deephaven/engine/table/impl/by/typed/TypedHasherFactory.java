@@ -44,18 +44,19 @@ public class TypedHasherFactory {
     /**
      * Produce a hasher for the given base class and column sources.
      *
+     * @param <T> the base class
      * @param baseClass the base class (e.g. {@link StaticChunkedOperatorAggregationStateManagerTypedBase} that the
      *        generated hasher extends from
      * @param tableKeySources the key sources
+     * @param originalKeySources
      * @param tableSize the initial table size
      * @param maximumLoadFactor the maximum load factor of the for the table
      * @param targetLoadFactor the load factor that we will rehash to
-     * @param <T> the base class
      * @return an instantiated hasher
      */
-    public static <T> T make(Class<T> baseClass, ColumnSource<?>[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
-        return make(hasherConfigForBase(baseClass), tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+    public static <T> T make(Class<T> baseClass, ColumnSource<?>[] tableKeySources, ColumnSource<?>[] originalKeySources, int tableSize,
+                             double maximumLoadFactor, double targetLoadFactor) {
+        return make(hasherConfigForBase(baseClass), tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
     }
 
     @NotNull
@@ -279,13 +280,13 @@ public class TypedHasherFactory {
      * @param <T> the base class
      * @return an instantiated hasher
      */
-    public static <T> T make(HasherConfig<T> hasherConfig, ColumnSource<?>[] tableKeySources, int tableSize,
+    public static <T> T make(HasherConfig<T> hasherConfig, ColumnSource<?>[] tableKeySources, ColumnSource<?>[] originalKeySources, int tableSize,
             double maximumLoadFactor, double targetLoadFactor) {
         if (USE_PREGENERATED_HASHERS) {
             if (hasherConfig.baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.staticagg.gen.TypedHashDispatcher
-                        .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                        .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
@@ -293,7 +294,7 @@ public class TypedHasherFactory {
                     .equals(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.staticopenagg.gen.TypedHashDispatcher
-                        .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                        .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
@@ -301,7 +302,7 @@ public class TypedHasherFactory {
                     .equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incagg.gen.TypedHashDispatcher
-                        .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                        .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
@@ -309,7 +310,7 @@ public class TypedHasherFactory {
                     .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incopenagg.gen.TypedHashDispatcher
-                        .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                        .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
@@ -318,7 +319,7 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher =
                         (T) io.deephaven.engine.table.impl.naturaljoin.typed.staticopen.gen.TypedHashDispatcher
-                                .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
@@ -327,7 +328,7 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher =
                         (T) io.deephaven.engine.table.impl.naturaljoin.typed.rightincopen.gen.TypedHashDispatcher
-                                .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
@@ -336,7 +337,7 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher =
                         (T) io.deephaven.engine.table.impl.naturaljoin.typed.incopen.gen.TypedHashDispatcher
-                                .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
@@ -363,10 +364,9 @@ public class TypedHasherFactory {
 
         T retVal;
         try {
-            // TODO: The naturalJoin version needs to have both key sources (regular and error versions)
             final Constructor<? extends T> constructor1 =
-                    castedClass.getDeclaredConstructor(ColumnSource[].class, int.class, double.class, double.class);
-            retVal = constructor1.newInstance(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                    castedClass.getDeclaredConstructor(ColumnSource[].class, ColumnSource[].class, int.class, double.class, double.class);
+            retVal = constructor1.newInstance(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException
                 | NoSuchMethodException e) {
             throw new UncheckedDeephavenException("Could not instantiate " + castedClass.getCanonicalName(), e);
@@ -471,9 +471,8 @@ public class TypedHasherFactory {
         CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
         if (hasherConfig.openAddressed) {
             if (hasherConfig.includeOriginalSources) {
-                // TODO: NEED TO HANDLE THE ORIGINAL KEY SOURCES FOR ERRORS
                 constructorCodeBuilder
-                        .addStatement("super(tableKeySources, tableKeySources, tableSize, maximumLoadFactor)");
+                        .addStatement("super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor)");
             } else {
                 constructorCodeBuilder.addStatement("super(tableKeySources, tableSize, maximumLoadFactor)");
             }
@@ -483,7 +482,9 @@ public class TypedHasherFactory {
         }
         addKeySourceFields(hasherConfig, chunkTypes, hasherBuilder, constructorCodeBuilder);
 
-        return MethodSpec.constructorBuilder().addParameter(ColumnSource[].class, "tableKeySources")
+        return MethodSpec.constructorBuilder()
+                .addParameter(ColumnSource[].class, "tableKeySources")
+                .addParameter(ColumnSource[].class, "originalTableKeySources")
                 .addParameter(int.class, "tableSize").addParameter(double.class, "maximumLoadFactor")
                 .addParameter(double.class, "targetLoadFactor").addModifiers(Modifier.PUBLIC)
                 .addCode(constructorCodeBuilder.build())

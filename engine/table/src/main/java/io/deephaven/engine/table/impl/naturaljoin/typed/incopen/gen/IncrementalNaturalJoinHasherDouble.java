@@ -30,9 +30,10 @@ final class IncrementalNaturalJoinHasherDouble extends IncrementalNaturalJoinSta
 
     private ImmutableDoubleArraySource alternateKeySource0;
 
-    public IncrementalNaturalJoinHasherDouble(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
-        super(tableKeySources, tableKeySources, tableSize, maximumLoadFactor);
+    public IncrementalNaturalJoinHasherDouble(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableDoubleArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }

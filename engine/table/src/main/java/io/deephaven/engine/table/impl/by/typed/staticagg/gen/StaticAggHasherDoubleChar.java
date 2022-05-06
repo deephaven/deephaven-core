@@ -34,8 +34,9 @@ final class StaticAggHasherDoubleChar extends StaticChunkedOperatorAggregationSt
 
     private final CharacterArraySource overflowKeySource1;
 
-    public StaticAggHasherDoubleChar(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggHasherDoubleChar(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (DoubleArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (DoubleArraySource) super.overflowKeySources[0];

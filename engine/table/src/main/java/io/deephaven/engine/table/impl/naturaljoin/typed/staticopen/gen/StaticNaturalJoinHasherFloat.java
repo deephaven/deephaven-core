@@ -23,9 +23,10 @@ import io.deephaven.engine.table.impl.util.ChunkUtils;
 final class StaticNaturalJoinHasherFloat extends StaticNaturalJoinStateManagerTypedBase {
     private final ImmutableFloatArraySource mainKeySource0;
 
-    public StaticNaturalJoinHasherFloat(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
-        super(tableKeySources, tableKeySources, tableSize, maximumLoadFactor);
+    public StaticNaturalJoinHasherFloat(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableFloatArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }

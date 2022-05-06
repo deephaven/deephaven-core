@@ -26,9 +26,10 @@ import java.util.Arrays;
 final class RightIncrementalNaturalJoinHasherDouble extends RightIncrementalNaturalJoinStateManagerTypedBase {
     private final ImmutableDoubleArraySource mainKeySource0;
 
-    public RightIncrementalNaturalJoinHasherDouble(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
-        super(tableKeySources, tableKeySources, tableSize, maximumLoadFactor);
+    public RightIncrementalNaturalJoinHasherDouble(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableDoubleArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }

@@ -27,8 +27,9 @@ final class IncrementalAggOpenHasherFloat extends IncrementalChunkedOperatorAggr
 
     private ImmutableFloatArraySource alternateKeySource0;
 
-    public IncrementalAggOpenHasherFloat(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggOpenHasherFloat(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableFloatArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

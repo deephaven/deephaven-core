@@ -29,8 +29,9 @@ final class StaticAggHasherLongLong extends StaticChunkedOperatorAggregationStat
 
     private final LongArraySource overflowKeySource1;
 
-    public StaticAggHasherLongLong(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggHasherLongLong(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (LongArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (LongArraySource) super.overflowKeySources[0];

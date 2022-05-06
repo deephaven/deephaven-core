@@ -22,9 +22,10 @@ import io.deephaven.engine.table.impl.util.ChunkUtils;
 final class StaticNaturalJoinHasherLong extends StaticNaturalJoinStateManagerTypedBase {
     private final ImmutableLongArraySource mainKeySource0;
 
-    public StaticNaturalJoinHasherLong(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
-        super(tableKeySources, tableKeySources, tableSize, maximumLoadFactor);
+    public StaticNaturalJoinHasherLong(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableLongArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }

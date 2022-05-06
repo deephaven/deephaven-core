@@ -23,9 +23,10 @@ import io.deephaven.engine.table.impl.util.ChunkUtils;
 final class StaticNaturalJoinHasherByte extends StaticNaturalJoinStateManagerTypedBase {
     private final ImmutableByteArraySource mainKeySource0;
 
-    public StaticNaturalJoinHasherByte(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
-        super(tableKeySources, tableKeySources, tableSize, maximumLoadFactor);
+    public StaticNaturalJoinHasherByte(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableByteArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }

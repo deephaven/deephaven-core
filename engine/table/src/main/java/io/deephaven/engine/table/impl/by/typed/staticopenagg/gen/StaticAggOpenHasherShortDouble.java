@@ -30,8 +30,9 @@ final class StaticAggOpenHasherShortDouble extends StaticChunkedOperatorAggregat
 
     private final ImmutableDoubleArraySource mainKeySource1;
 
-    public StaticAggOpenHasherShortDouble(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggOpenHasherShortDouble(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableShortArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

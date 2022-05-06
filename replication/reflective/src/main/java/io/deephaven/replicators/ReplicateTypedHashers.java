@@ -54,12 +54,12 @@ public class ReplicateTypedHashers {
                 java.util.Arrays.class);
         dispatchMethodBuilder.beginControlFlow("if (chunkTypes.length == 1)");
         dispatchMethodBuilder.addStatement(
-                "return dispatchSingle(chunkTypes[0], tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
+                "return dispatchSingle(chunkTypes[0], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
         dispatchMethodBuilder.endControlFlow();
         if (doDouble) {
             dispatchMethodBuilder.beginControlFlow("if (chunkTypes.length == 2)");
             dispatchMethodBuilder.addStatement(
-                    "return dispatchDouble(chunkTypes[0], chunkTypes[1], tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
+                    "return dispatchDouble(chunkTypes[0], chunkTypes[1], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
             dispatchMethodBuilder.endControlFlow();
         }
         dispatchMethodBuilder.addStatement("return null");
@@ -111,7 +111,7 @@ public class ReplicateTypedHashers {
             javaFile.writeTo(sourceRoot);
             singleDispatchBuilder.addCode("case " + chunkType.name() + ": ");
             singleDispatchBuilder.addStatement(
-                    "return new $T(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
+                    "return new $T(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
                     ClassName.get(packageName, name));
         }
 
@@ -163,7 +163,7 @@ public class ReplicateTypedHashers {
 
                 doubleDispatchBuilder.addCode("case " + chunkType1.name() + ": ");
                 doubleDispatchBuilder.addStatement(
-                        "return new $T(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
+                        "return new $T(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
                         ClassName.get(packageName, name));
             }
             doubleDispatchBuilder.endControlFlow();
@@ -178,6 +178,7 @@ public class ReplicateTypedHashers {
         dispatchBuilder
                 .returns(returnType)
                 .addParameter(ColumnSource[].class, "tableKeySources")
+                .addParameter(ColumnSource[].class, "originalTableKeySources")
                 .addParameter(int.class, "tableSize")
                 .addParameter(double.class, "maximumLoadFactor")
                 .addParameter(double.class, "targetLoadFactor");
