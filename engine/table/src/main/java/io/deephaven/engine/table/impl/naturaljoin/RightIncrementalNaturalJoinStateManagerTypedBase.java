@@ -1,6 +1,5 @@
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.naturaljoin;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -9,19 +8,23 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.JoinControl;
+import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
-import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
-import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirectionLockFree;
+import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.util.SafeCloseable.closeArray;
+import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
+import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends RightIncrementalNaturalJoinStateManager {
     public static final int CHUNK_SIZE = 4096;
@@ -80,53 +83,6 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
         }
     }
 
-    public static class BuildContext extends BuildOrProbeContext {
-        private BuildContext(ColumnSource<?>[] buildSources, int chunkSize) {
-            super(buildSources, chunkSize);
-        }
-    }
-
-    public static class ProbeContext extends BuildOrProbeContext {
-        private ProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
-            super(buildSources, chunkSize);
-        }
-    }
-
-    private static class BuildOrProbeContext implements Context {
-        final int chunkSize;
-        final SharedContext sharedContext;
-        final ChunkSource.GetContext[] getContexts;
-
-        private BuildOrProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
-            Assert.gtZero(chunkSize, "chunkSize");
-            this.chunkSize = chunkSize;
-            if (buildSources.length > 1) {
-                sharedContext = SharedContext.makeSharedContext();
-            } else {
-                sharedContext = null;
-            }
-            getContexts = makeGetContexts(buildSources, sharedContext, chunkSize);
-        }
-
-        void resetSharedContexts() {
-            if (sharedContext != null) {
-                sharedContext.reset();
-            }
-        }
-
-        void closeSharedContexts() {
-            if (sharedContext != null) {
-                sharedContext.close();
-            }
-        }
-
-        @Override
-        public void close() {
-            closeArray(getContexts);
-            closeSharedContexts();
-        }
-    }
-
     BuildContext makeBuildContext(ColumnSource<?>[] buildSources, long maxSize) {
         return new BuildContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
@@ -140,7 +96,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
             final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
-            final BuildHandler buildHandler) {
+            final TypedHasherUtil.BuildHandler buildHandler) {
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
@@ -164,7 +120,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
             final RowSequence probeRows,
             final boolean usePrev,
             final ColumnSource<?>[] probeSources,
-            final ProbeHandler handler) {
+            final TypedHasherUtil.ProbeHandler handler) {
         try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
@@ -183,16 +139,6 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                 pc.resetSharedContexts();
             }
         }
-    }
-
-    @FunctionalInterface
-    public interface ProbeHandler {
-        void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks);
-    }
-
-    @FunctionalInterface
-    public interface BuildHandler {
-        void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks);
     }
 
     public void doRehash(int nextChunkSize) {
@@ -214,31 +160,8 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     abstract protected void rehashInternalFull(final int oldSize);
 
-    private static void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
-            Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
-        for (int ii = 0; ii < chunks.length; ++ii) {
-            chunks[ii] = sources[ii].getChunk(contexts[ii], rowSequence);
-        }
-    }
-
-    private static void getPrevKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
-            Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
-        for (int ii = 0; ii < chunks.length; ++ii) {
-            chunks[ii] = sources[ii].getPrevChunk(contexts[ii], rowSequence);
-        }
-    }
-
     protected int hashToTableLocation(int hash) {
         return hash & (tableSize - 1);
-    }
-
-    private static ColumnSource.GetContext[] makeGetContexts(ColumnSource<?>[] sources, final SharedContext sharedState,
-            int chunkSize) {
-        final ColumnSource.GetContext[] contexts = new ColumnSource.GetContext[sources.length];
-        for (int ii = 0; ii < sources.length; ++ii) {
-            contexts[ii] = sources[ii].makeGetContext(chunkSize, sharedState);
-        }
-        return contexts;
     }
 
     @Override
@@ -257,25 +180,20 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     @Override
-    void buildFromLeftSide(Table leftTable, ColumnSource<?>[] leftSources, InitialBuildContext ibc) {
+    public void buildFromLeftSide(Table leftTable, ColumnSource<?>[] leftSources, InitialBuildContext ibc) {
         if (leftTable.isEmpty()) {
             return;
         }
         final int chunkSize = (int) Math.min(leftTable.size(), CHUNK_SIZE);
         try (BuildContext bc = new BuildContext(leftSources, chunkSize)) {
-            buildTable(bc, leftTable.getRowSet(), leftSources, new BuildHandler() {
-                @Override
-                public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-                    buildFromLeftSide(chunkOk, sourceKeyChunks);
-                }
-            });
+            buildTable(bc, leftTable.getRowSet(), leftSources, this::buildFromLeftSide);
         }
     }
 
     protected abstract void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     @Override
-    void convertLeftGroups(int groupingSize, InitialBuildContext ibc,
+    public void convertLeftGroups(int groupingSize, InitialBuildContext ibc,
             ObjectArraySource<WritableRowSet> rowSetSource) {
         for (int ii = 0; ii < tableSize; ++ii) {
             final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
@@ -295,12 +213,12 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     @Override
-    void addRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources) {
+    public void addRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources) {
         if (rightRowSet.isEmpty()) {
             return;
         }
         final int chunkSize = (int) Math.min(rightRowSet.size(), CHUNK_SIZE);
-        try (ProbeContext pc = new ProbeContext(rightSources, chunkSize)) {
+        try (ProbeContext pc = makeProbeContext(rightSources, chunkSize)) {
             probeTable(pc, rightRowSet, false, rightSources,
                     (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks));
         }
@@ -309,10 +227,8 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     @Override
-    WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
-            InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
-
-        // TODO: CHECK EXACT MATCH
+    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
+                                                           InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
 
         switch (redirectionType) {
             case Contiguous: {
@@ -326,6 +242,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
+                        checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
                         leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKeyForState);
                     }
                 }
@@ -339,6 +256,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     if (leftRowSet != null) {
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
                         if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
                             leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
                         }
                     }
@@ -353,6 +271,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     if (leftRowSet != null) {
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
                         if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
                             leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKeyForState));
                         }
                     }
@@ -365,25 +284,31 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     @Override
-    WritableRowRedirection buildRowRedirectionFromHashSlotGrouped(QueryTable leftTable,
+    public WritableRowRedirection buildRowRedirectionFromHashSlotGrouped(QueryTable leftTable,
             ObjectArraySource<WritableRowSet> rowSetSource, int groupingSize, boolean exactMatch,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirectionFromHashSlot(leftTable, exactMatch, ibc, redirectionType);
     }
 
     @Override
-    void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet, long shiftDelta,
+    public void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet, long shiftDelta,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (shiftedRowSet.isEmpty()) {
+            return;
+        }
         probeTable((ProbeContext) pc, shiftedRowSet, false, rightSources, (chunkOk,
-                sourceKeyChunks) -> applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker));
+                                                                           sourceKeyChunks) -> applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker));
     }
 
     protected abstract void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
-    void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,
+    public void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (modified.isEmpty()) {
+            return;
+        }
         probeTable((ProbeContext) pc, modified, false, rightSources,
                 (chunkOk, sourceKeyChunks) -> modifyByRight(chunkOk, sourceKeyChunks, modifiedSlotTracker));
     }
@@ -392,8 +317,11 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
-    void removeRight(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
+    public void removeRight(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (rightRowSet.isEmpty()) {
+            return;
+        }
         probeTable((ProbeContext) pc, rightRowSet, true, rightSources,
                 (chunkOk, sourceKeyChunks) -> removeRight(chunkOk, sourceKeyChunks, modifiedSlotTracker));
     }
@@ -402,7 +330,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
-    void addRightSide(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
+    public void addRightSide(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (rightRowSet.isEmpty()) {
             return;

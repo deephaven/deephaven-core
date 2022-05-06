@@ -202,7 +202,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     }
 
     @Override
-    void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources, final RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext) {
+    public void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources, final RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext) {
         if (leftTable.isEmpty()) {
             return;
         }
@@ -904,7 +904,8 @@ class RightIncrementalChunkedNaturalJoinStateManager
         throw new UnsupportedOperationException();
     }
 
-    void addRightSide(RowSequence rightIndex, ColumnSource<?> [] rightSources) {
+    @Override
+    public void addRightSide(RowSequence rightIndex, ColumnSource<?> [] rightSources) {
         if (rightIndex.isEmpty()) {
             return;
         }
@@ -913,28 +914,32 @@ class RightIncrementalChunkedNaturalJoinStateManager
         }
     }
 
-    void addRightSide(final Context pc, RowSequence rightIndex, ColumnSource<?> [] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+    @Override
+    public void addRightSide(final Context pc, RowSequence rightIndex, ColumnSource<?> [] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (rightIndex.isEmpty()) {
             return;
         }
         decorationProbe((ProbeContext)pc, rightIndex, rightSources, false, false, true, false, false, 0, modifiedSlotTracker);
     }
 
-    void removeRight(final Context pc, RowSequence rightIndex, ColumnSource<?> [] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker)  {
+    @Override
+    public void removeRight(final Context pc, RowSequence rightIndex, ColumnSource<?> [] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker)  {
         if (rightIndex.isEmpty()) {
             return;
         }
         decorationProbe((ProbeContext)pc, rightIndex, rightSources, true, false, false, true, false, 0, modifiedSlotTracker);
     }
 
-    void modifyByRight(final Context pc, RowSet modified, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+    @Override
+    public void modifyByRight(final Context pc, RowSet modified, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (modified.isEmpty()) {
             return;
         }
         decorationProbe((ProbeContext)pc, modified, rightSources, false, true, false, false, false, 0, modifiedSlotTracker);
     }
 
-    void applyRightShift(Context pc, ColumnSource<?> [] rightSources, RowSet shiftedRowSet, long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+    @Override
+    public void applyRightShift(Context pc, ColumnSource<?> [] rightSources, RowSet shiftedRowSet, long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (shiftedRowSet.isEmpty()) {
             return;
         }
@@ -1339,7 +1344,8 @@ class RightIncrementalChunkedNaturalJoinStateManager
         }
     }
 
-    WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType) {
+    @Override
+    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType) {
         final LongArraySource leftHashSlots = ((InitialBuildContext) initialBuildContext).leftHashSlots;
         return buildRowRedirection(leftTable, exactMatch, position -> getRightSide(leftHashSlots, position), redirectionType);
     }
@@ -1353,7 +1359,8 @@ class RightIncrementalChunkedNaturalJoinStateManager
         return stateValue;
     }
 
-    WritableRowRedirection buildRowRedirectionFromHashSlotGrouped(QueryTable leftTable, ObjectArraySource<WritableRowSet> rowSetSource, int groupingSize, boolean exactMatch, RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType) {
+    @Override
+    public WritableRowRedirection buildRowRedirectionFromHashSlotGrouped(QueryTable leftTable, ObjectArraySource<WritableRowSet> rowSetSource, int groupingSize, boolean exactMatch, RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType) {
         final LongArraySource leftHashSlots = ((InitialBuildContext) initialBuildContext).leftHashSlots;
         switch (redirectionType) {
             case Contiguous: {
@@ -1416,7 +1423,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
 
-    void convertLeftGroups(int groupingSize, RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext, ObjectArraySource<WritableRowSet> rowSetSource) {
+    public void convertLeftGroups(int groupingSize, RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext, ObjectArraySource<WritableRowSet> rowSetSource) {
         final InitialBuildContext ibc = (InitialBuildContext) initialBuildContext;
         for (int ii = 0; ii < groupingSize; ++ii) {
             final long slot = ibc.leftHashSlots.getUnsafe(ii);

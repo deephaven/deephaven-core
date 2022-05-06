@@ -211,10 +211,10 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                         if (rightRowKeyForState == EMPTY_RIGHT_STATE) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            alternateLeftRowSet.getUnsafe(alternateTableLocation).insert(rowKeyChunk.get(chunkPosition));
                             if (rightRowKeyForState < RowSet.NULL_ROW_KEY) {
                                 throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                             }
+                            alternateLeftRowSet.getUnsafe(alternateTableLocation).insert(rowKeyChunk.get(chunkPosition));
                             leftRedirections.set(leftRedirectionOffset++, rightRowKeyForState);
                             break MAIN_SEARCH;
                         } else {
@@ -234,9 +234,6 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                         throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                     }
                     mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition));
-                    if (rightRowKeyForState < RowSet.NULL_ROW_KEY) {
-                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
-                    }
                     leftRedirections.set(leftRedirectionOffset++, rightRowKeyForState);
                     break;
                 } else {

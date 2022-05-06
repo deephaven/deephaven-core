@@ -17,7 +17,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
-import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.util.QueryConstants;
 import java.lang.Object;

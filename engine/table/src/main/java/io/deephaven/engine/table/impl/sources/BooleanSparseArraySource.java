@@ -834,8 +834,8 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
-        public byte getByte(long rowSet) {
-            return wrapped.getByte(rowSet);
+        public byte getByte(long rowKey) {
+            return wrapped.getByte(rowKey);
         }
 
         @Override

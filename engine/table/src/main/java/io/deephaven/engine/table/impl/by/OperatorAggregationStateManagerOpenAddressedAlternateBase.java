@@ -12,6 +12,8 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import org.apache.commons.lang3.mutable.MutableInt;
 
+import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
+import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 import static io.deephaven.util.SafeCloseable.closeArray;
 
 public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
@@ -276,20 +278,6 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
 
     public boolean rehashRequired(int nextChunkSize) {
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
-    }
-
-    private static void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
-            Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
-        for (int ii = 0; ii < chunks.length; ++ii) {
-            chunks[ii] = sources[ii].getChunk(contexts[ii], rowSequence);
-        }
-    }
-
-    private static void getPrevKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
-            Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
-        for (int ii = 0; ii < chunks.length; ++ii) {
-            chunks[ii] = sources[ii].getPrevChunk(contexts[ii], rowSequence);
-        }
     }
 
     protected int hashToTableLocation(int hash) {

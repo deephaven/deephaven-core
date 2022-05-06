@@ -181,11 +181,11 @@ public class TypedNaturalJoinFactory {
 
     public static void incrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
+        checkForDuplicateErrorLeftDecorate(builder, "rowKeyChunk.get(chunkPosition)", "rightRowKeyForState");
         if (alternate) {
             builder.addStatement(
                     "alternateLeftRowSet.getUnsafe(alternateTableLocation).insert(rowKeyChunk.get(chunkPosition))");
         } else {
-            checkForDuplicateErrorLeftDecorate(builder, "rowKeyChunk.get(chunkPosition)", "rightRowKeyForState");
             builder.addStatement("mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition))");
         }
     }
@@ -341,7 +341,6 @@ public class TypedNaturalJoinFactory {
     public static void incrementalLeftFoundUpdate(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         incrementalBuildLeftFound(hasherConfig, alternate, builder);
-        checkForDuplicateErrorLeftDecorate(builder, "rowKeyChunk.get(chunkPosition)", "rightRowKeyForState");
         builder.addStatement("leftRedirections.set(leftRedirectionOffset++, rightRowKeyForState)");
     }
 
@@ -358,7 +357,7 @@ public class TypedNaturalJoinFactory {
 
     public static void incrementalRemoveLeftMissing(CodeBlock.Builder builder) {
         builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class,
-                "Could not find existing state for shifted right row");
+                "Could not find existing state for removed left row");
     }
 
     public static void incrementalShiftLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
@@ -415,6 +414,6 @@ public class TypedNaturalJoinFactory {
 
     public static void incrementalShiftLeftMissing(CodeBlock.Builder builder) {
         builder.addStatement("throw $T.statementNeverExecuted($S)", Assert.class,
-                "Could not find existing state for shifted right row");
+                "Could not find existing state for shifted left row");
     }
 }

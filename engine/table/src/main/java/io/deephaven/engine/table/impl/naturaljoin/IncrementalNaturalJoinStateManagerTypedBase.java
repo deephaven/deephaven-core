@@ -15,22 +15,19 @@ import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColu
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
-import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
-import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirectionLockFree;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.util.SafeCloseable.closeArray;
+import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
+import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class IncrementalNaturalJoinStateManagerTypedBase extends StaticNaturalJoinStateManager
         implements IncrementalNaturalJoinStateManager, BothIncrementalNaturalJoinStateManager {
     public static final int CHUNK_SIZE = 4096;
     private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
-    public static final long NO_RIGHT_STATE_VALUE = RowSet.NULL_ROW_KEY;
     public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
 
     // the number of slots in our table
@@ -54,6 +51,11 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected final WritableColumnSource[] mainKeySources;
     protected final WritableColumnSource[] alternateKeySources;
 
+    // we use a RowSet.NULL_ROW_KEY for a state that exists, but has no right hand side;
+    // the column sources are initialized with NULL_LONG for something that does not exist.  When there are multiple
+    // right rows, we store a value less than RowSet.NULL_ROW_KEY, which is a position in the rightSideDuplicateRowSets
+    // (-2 maps to 0, -3 to 1, etc.).  We must maintain the right side duplicates so that we do not need a rescan;
+    // but in the common (as opposed to impending error) case of a single value we do not want to allocate any objects
     protected ImmutableLongArraySource mainRightRowKey = new ImmutableLongArraySource();
     protected ImmutableLongArraySource alternateRightRowKey;
 
@@ -69,8 +71,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected long nextDuplicateRightSide = 0;
     protected TLongArrayList freeDuplicateValues = new TLongArrayList();
 
-    // the mask for insertion into the main table (this tells our alternating column sources which of the two sources
-    // to access for a given key)
+    // the mask for insertion into the main table (this is used so that we can identify whether a slot belongs to the
+    // main or alternate table)
     protected int mainInsertMask = 0;
     protected int alternateInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
 
@@ -78,7 +80,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
         super(keySourcesForErrorMessages);
 
-        // we start out with a chunk sized table, and will grow by rehashing the left as states are added
+        // we start out with a chunk sized table, and will grow by rehashing as states are added
         this.tableSize = CHUNK_SIZE;
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
         Require.gtZero(tableSize, "tableSize");
@@ -110,7 +112,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
     }
 
-    public static class BuildContext extends BuildOrProbeContext {
+    public static class BuildContext extends TypedHasherUtil.BuildOrProbeContext {
         private BuildContext(ColumnSource<?>[] buildSources, int chunkSize) {
             super(buildSources, chunkSize);
         }
@@ -118,7 +120,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         final MutableInt rehashCredits = new MutableInt(0);
     }
 
-    public static class ProbeContext extends BuildOrProbeContext {
+    public static class ProbeContext extends TypedHasherUtil.BuildOrProbeContext {
         private ProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
             super(buildSources, chunkSize);
         }
@@ -142,41 +144,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
     }
 
-    private static class BuildOrProbeContext implements Context {
-        final int chunkSize;
-        final SharedContext sharedContext;
-        final ChunkSource.GetContext[] getContexts;
-
-        private BuildOrProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
-            Assert.gtZero(chunkSize, "chunkSize");
-            this.chunkSize = chunkSize;
-            if (buildSources.length > 1) {
-                sharedContext = SharedContext.makeSharedContext();
-            } else {
-                sharedContext = null;
-            }
-            getContexts = makeGetContexts(buildSources, sharedContext, chunkSize);
-        }
-
-        void resetSharedContexts() {
-            if (sharedContext != null) {
-                sharedContext.reset();
-            }
-        }
-
-        void closeSharedContexts() {
-            if (sharedContext != null) {
-                sharedContext.close();
-            }
-        }
-
-        @Override
-        public void close() {
-            closeArray(getContexts);
-            closeSharedContexts();
-        }
-    }
-
     @Override
     public BuildContext makeBuildContext(ColumnSource<?>[] buildSources, long maxSize) {
         return new BuildContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
@@ -192,7 +159,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
-            final BuildHandler buildHandler,
+            final TypedHasherUtil.BuildHandler buildHandler,
             final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
@@ -219,7 +186,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             final RowSequence probeRows,
             final boolean usePrev,
             final ColumnSource<?>[] probeSources,
-            final ProbeHandler handler) {
+            final TypedHasherUtil.ProbeHandler handler) {
         try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
@@ -238,16 +205,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 pc.resetSharedContexts();
             }
         }
-    }
-
-    @FunctionalInterface
-    public interface ProbeHandler {
-        void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks);
-    }
-
-    @FunctionalInterface
-    public interface BuildHandler {
-        void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks);
     }
 
     /**
@@ -362,35 +319,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected abstract int rehashInternalPartial(int numEntriesToRehash,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
-    private static void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
-            Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
-        for (int ii = 0; ii < chunks.length; ++ii) {
-            chunks[ii] = sources[ii].getChunk(contexts[ii], rowSequence);
-        }
-    }
-
-    private static void getPrevKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
-            Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
-        for (int ii = 0; ii < chunks.length; ++ii) {
-            chunks[ii] = sources[ii].getPrevChunk(contexts[ii], rowSequence);
-        }
-    }
-
     protected int hashToTableLocation(int hash) {
         return hash & (tableSize - 1);
     }
 
     protected int hashToTableLocationAlternate(int hash) {
         return hash & (alternateTableSize - 1);
-    }
-
-    private static ColumnSource.GetContext[] makeGetContexts(ColumnSource<?>[] sources, final SharedContext sharedState,
-            int chunkSize) {
-        final ColumnSource.GetContext[] contexts = new ColumnSource.GetContext[sources.length];
-        for (int ii = 0; ii < sources.length; ++ii) {
-            contexts[ii] = sources[ii].makeGetContext(chunkSize, sharedState);
-        }
-        return contexts;
     }
 
     protected long duplicateLocationFromRowKey(long rowKey) {
@@ -522,6 +456,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     @Override
     public void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (modified.isEmpty()) {
+            return;
+        }
         probeTable((ProbeContext) pc, modified, false, rightSources,
                 (chunkOk, sourceKeyChunks) -> modifyByRight(chunkOk, sourceKeyChunks, modifiedSlotTracker));
     }
@@ -532,6 +469,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     @Override
     public void removeRight(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
             @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (rightRowSet.isEmpty()) {
+            return;
+        }
         probeTable((ProbeContext) pc, rightRowSet, true, rightSources,
                 (chunkOk, sourceKeyChunks) -> removeRight(chunkOk, sourceKeyChunks, modifiedSlotTracker));
     }
