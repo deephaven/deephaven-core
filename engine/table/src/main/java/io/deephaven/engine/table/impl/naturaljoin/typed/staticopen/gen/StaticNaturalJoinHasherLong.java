@@ -14,10 +14,10 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.naturaljoin.DuplicateRightRowDecorationException;
 import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 final class StaticNaturalJoinHasherLong extends StaticNaturalJoinStateManagerTypedBase {
     private final ImmutableLongArraySource mainKeySource0;
@@ -104,7 +104,8 @@ final class StaticNaturalJoinHasherLong extends StaticNaturalJoinStateManagerTyp
             while ((rightRowKey = mainRightRowKey.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (rightRowKey == DUPLICATE_RIGHT_STATE) {
-                        throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(chunkTypes, sourceKeyChunks, chunkPosition));
+                        final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
+                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                     }
                     leftRedirections.set(hashSlotOffset++, rightRowKey);
                     found = true;
@@ -133,10 +134,12 @@ final class StaticNaturalJoinHasherLong extends StaticNaturalJoinStateManagerTyp
             while ((existingStateValue = mainRightRowKey.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (existingStateValue != NO_RIGHT_STATE_VALUE) {
-                        throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(chunkTypes, sourceKeyChunks, chunkPosition));
+                        mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE);
+                        throw new DuplicateRightRowDecorationException(tableLocation);
+                    } else {
+                        final long rightRowKeyToInsert = rowKeyChunk.get(chunkPosition);
+                        mainRightRowKey.set(tableLocation, rightRowKeyToInsert);
                     }
-                    final long rightRowKeyToInsert = rowKeyChunk.get(chunkPosition);
-                    mainRightRowKey.set(tableLocation, rightRowKeyToInsert);
                     found = true;
                     break;
                 }

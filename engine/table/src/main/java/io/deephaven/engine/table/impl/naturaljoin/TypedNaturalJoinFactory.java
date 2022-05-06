@@ -2,13 +2,14 @@ package io.deephaven.engine.table.impl.naturaljoin;
 
 import com.squareup.javapoet.CodeBlock;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.by.typed.HasherConfig;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,10 +37,10 @@ public class TypedNaturalJoinFactory {
     public static void staticProbeDecorateLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         builder.beginControlFlow("if (rightRowKey == DUPLICATE_RIGHT_STATE)");
-        // TODO: THIS COULD BE THE WRONG THING (in terms of format)
+        // we only use the row key chunk for an error, so it is lazily created here
+        builder.addStatement("final $T<$T> rowKeyChunk = rowSequence.asRowKeyChunk()", LongChunk.class, OrderedRowKeys.class);
         builder.addStatement(
-                "throw new IllegalStateException(\"More than one right side mapping for \" + $T.extractKeyStringFromChunks(chunkTypes, sourceKeyChunks, chunkPosition))",
-                ChunkUtils.class);
+                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)))");
         builder.endControlFlow();
         builder.addStatement("leftRedirections.set(hashSlotOffset++, rightRowKey)");
     }
@@ -51,12 +52,12 @@ public class TypedNaturalJoinFactory {
     public static void staticProbeDecorateRightFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         builder.beginControlFlow("if (existingStateValue != NO_RIGHT_STATE_VALUE)");
-        builder.addStatement(
-                "throw new IllegalStateException(\"More than one right side mapping for \" + $T.extractKeyStringFromChunks(chunkTypes, sourceKeyChunks, chunkPosition))",
-                ChunkUtils.class);
-        builder.endControlFlow();
+        builder.addStatement("mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE)");
+        builder.addStatement("throw new $T(tableLocation)", DuplicateRightRowDecorationException.class);
+        builder.nextControlFlow("else");
         builder.addStatement("final long rightRowKeyToInsert = rowKeyChunk.get(chunkPosition)");
         builder.addStatement("mainRightRowKey.set(tableLocation, rightRowKeyToInsert)");
+        builder.endControlFlow();
     }
 
     public static void rightIncrementalRehashSetup(CodeBlock.Builder builder) {

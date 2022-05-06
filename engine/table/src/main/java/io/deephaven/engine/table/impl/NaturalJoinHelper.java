@@ -9,10 +9,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
-import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
-import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
-import io.deephaven.engine.table.impl.naturaljoin.StaticHashedNaturalJoinStateManager;
-import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.naturaljoin.*;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
@@ -228,7 +225,11 @@ class NaturalJoinHelper {
                                     StaticChunkedNaturalJoinStateManager.hashTableSize(groupingSize.intValue()),
                                     groupedSourceArray);
                     jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, leftHashSlots);
-                    jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
+                    try {
+                        jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
+                    } catch (DuplicateRightRowDecorationException e) {
+                        jsm.errorOnDuplicatesGrouped(leftHashSlots, leftTableGrouped.size(), rowSetSource);
+                    }
                     rowRedirection = jsm.buildGroupedRowRedirection(leftTable, exactMatch, leftTableGrouped.size(),
                             leftHashSlots, rowSetSource, control.getRedirectionType(leftTable));
                 } else if (control.buildLeft(leftTable, rightTable)) {
@@ -239,7 +240,11 @@ class NaturalJoinHelper {
                             : new StaticChunkedNaturalJoinStateManager(bucketingContext.leftSources,
                                     control.tableSizeForLeftBuild(leftTable), bucketingContext.originalLeftSources);
                     jsm.buildFromLeftSide(leftTable, bucketingContext.leftSources, leftHashSlots);
-                    jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
+                    try {
+                        jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
+                    } catch (DuplicateRightRowDecorationException e) {
+                        jsm.errorOnDuplicatesSingle(leftHashSlots, leftTable.size(), leftTable.getRowSet());
+                    }
                     rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, leftHashSlots,
                             control.getRedirectionType(leftTable));
                 } else {

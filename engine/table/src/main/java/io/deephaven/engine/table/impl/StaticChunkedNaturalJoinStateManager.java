@@ -1064,7 +1064,7 @@ class StaticChunkedNaturalJoinStateManager
                             // I don't love this individual access approach; but we don't otherwise know if we are going
                             // to be writing to the thing twice.  We could alternatively sort these.
                             if (rightRowSetSource.getLong(pc.tableLocationsChunk.get(ii)) != NO_RIGHT_ENTRY_VALUE) {
-                                throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
+                                throw new IllegalStateException("Natural Join found duplicate right key for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
                             }
 
                             // we know that there is no right hand side, so we should set it to our value!
@@ -1131,7 +1131,7 @@ class StaticChunkedNaturalJoinStateManager
                                 final long rightValue = rightKeyIndices.get(pc.chunkPositionsForFetches.get(ii));
                                 final long existingRightValue = overflowRightRowSetSource.getLong(overflowLocation);
                                 if (existingRightValue != NO_RIGHT_ENTRY_VALUE) {
-                                    throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, pc.chunkPositionsForFetches.get(ii)));
+                                    throw new IllegalStateException("Natural Join found duplicate right key for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, pc.chunkPositionsForFetches.get(ii)));
                                 }
                                 overflowRightRowSetSource.set(overflowLocation, rightValue);
                             }
@@ -1154,7 +1154,7 @@ class StaticChunkedNaturalJoinStateManager
                     for (int ii = 0; ii < workingLeftRedirections.size(); ++ii) {
                         final long leftRedirection = workingLeftRedirections.get(ii);
                         if (leftRedirection == DUPLICATE_RIGHT_VALUE) {
-                            throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
+                            throw new IllegalStateException("Natural Join found duplicate right key for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
                         }
                         leftRedirections.set(hashSlotOffset + ii, leftRedirection);
                     }

@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
@@ -244,5 +245,13 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
         return buildGroupedRowRedirection(leftTable, exactMatch, groupingSize,
                 (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), leftIndices,
                 redirectionType);
+    }
+
+    public void errorOnDuplicatesGrouped(LongArraySource leftHashSlots, long size, ObjectArraySource<RowSet> rowSetSource) {
+        errorOnDuplicates(leftHashSlots, size, (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), (long row) -> rowSetSource.getUnsafe(row).firstRowKey());
+    }
+
+    public void errorOnDuplicatesSingle(LongArraySource leftHashSlots, long size, RowSet rowSet) {
+        errorOnDuplicates(leftHashSlots, size, (long position) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)), rowSet::get);
     }
 }

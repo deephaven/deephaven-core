@@ -9,6 +9,7 @@ import io.deephaven.engine.table.impl.StaticNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -77,5 +78,22 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
             }
         }
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
+    }
+
+    public void errorOnDuplicates(LongArraySource leftHashSlots, long size, LongUnaryOperator groupPositionToRightSide, LongUnaryOperator firstLeftKey) {
+        for (int ii = 0; ii < size; ++ii) {
+            final long rightSide = groupPositionToRightSide.applyAsLong(ii);
+            if (rightSide == DUPLICATE_RIGHT_VALUE) {
+                throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(firstLeftKey.applyAsLong(ii)));
+            }
+        }
+    }
+
+    public void errorOnDuplicatesGrouped(LongArraySource leftHashSlots, long size, ObjectArraySource<RowSet> rowSetSource) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void errorOnDuplicatesSingle(LongArraySource leftHashSlots, long size, RowSet rowSet) {
+        throw new UnsupportedOperationException();
     }
 }
