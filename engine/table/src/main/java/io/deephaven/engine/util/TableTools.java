@@ -12,9 +12,7 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTime;
@@ -24,12 +22,10 @@ import io.deephaven.time.TimeZone;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableWithDefaults;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.table.impl.replay.Replayer;
 import io.deephaven.engine.table.impl.replay.ReplayerInterface;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
@@ -50,6 +46,8 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static io.deephaven.engine.table.impl.TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY;
 
 /**
  * Tools for working with tables. This includes methods to examine tables, combine them, convert them to and from CSV
@@ -981,7 +979,7 @@ public class TableTools {
      * @return a Deephaven table object
      */
     public static Table merge(List<Table> theList) {
-        return merge(theList.toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY));
+        return merge(theList.toArray(ZERO_LENGTH_TABLE_ARRAY));
     }
 
     /**
@@ -1003,7 +1001,7 @@ public class TableTools {
      * @return a Deephaven table object
      */
     public static Table merge(Collection<Table> tables) {
-        return merge(tables.toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY));
+        return merge(tables.toArray(ZERO_LENGTH_TABLE_ARRAY));
     }
 
     /**
@@ -1035,12 +1033,12 @@ public class TableTools {
             // return proxyMerge;
             // }
 
-            final List<Table> tableList = TableToolsMergeHelper.getTablesToMerge(Arrays.stream(tables), tables.length);
-            if (tableList == null || tableList.isEmpty()) {
-                throw new IllegalArgumentException("no tables provided to merge");
+            final List<Table> tablesToMerge = TableToolsMergeHelper
+                    .getTablesToMerge(Arrays.stream(tables), tables.length);
+            if (tablesToMerge == null || tablesToMerge.isEmpty()) {
+                throw new IllegalArgumentException("No non-null tables provided to merge");
             }
-
-            return TableToolsMergeHelper.mergeInternal(tableList.get(0).getDefinition(), tableList, null);
+            return PartitionedTableFactory.ofTables(tablesToMerge.toArray(ZERO_LENGTH_TABLE_ARRAY)).merge();
         });
     }
 

@@ -1843,6 +1843,7 @@ public interface Table extends
      *
      * @return This table, or a fully-coalesced child
      */
+    @ConcurrentMethod
     Table coalesce();
 
     /**

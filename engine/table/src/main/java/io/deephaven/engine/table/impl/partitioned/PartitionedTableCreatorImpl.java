@@ -1,19 +1,20 @@
 package io.deephaven.engine.table.impl.partitioned;
 
 import com.google.auto.service.AutoService;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.PartitionedTableFactory;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.api.ColumnName;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.NotificationStepSource;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.qst.type.Type;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -34,14 +35,20 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         }
     }
 
+    private static final ColumnName CONSTITUENT = ColumnName.of("__CONSTITUENT__");
+    private static final TableDefinition CONSTRUCTED_PARTITIONED_TABLE_DEFINITION =
+            TableDefinition.of(ColumnDefinition.of(CONSTITUENT.name(), Type.find(Table.class)));
+
+    @Override
     public PartitionedTable of(
             @NotNull final Table table,
             @NotNull final Set<String> keyColumnNames,
             @NotNull final String constituentColumnName,
-            @NotNull final TableDefinition constituentDefinition) {
+            @NotNull final TableDefinition constituentDefinition,
+            final boolean constituentChangesPermitted) {
         // Validate key columns
         if (!table.hasColumns(keyColumnNames)) {
-            throw new IllegalArgumentException("Underlying table " + table
+            throw new IllegalArgumentException("Partitioned table " + table
                     + " does not have all key columns in " + keyColumnNames + "; instead has "
                     + table.getDefinition().getColumnNamesAsString());
         }
@@ -50,17 +57,25 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         final ColumnDefinition<?> constituentColumnDefinition =
                 table.getDefinition().getColumn(constituentColumnName);
         if (constituentColumnDefinition == null) {
-            throw new IllegalArgumentException("Underlying table " + table
+            throw new IllegalArgumentException("Partitioned table " + table
                     + " has no column named " + constituentColumnName);
         }
         if (!Table.class.isAssignableFrom(constituentColumnDefinition.getDataType())) {
-            throw new IllegalArgumentException("constituent column " + constituentColumnName
+            throw new IllegalArgumentException("Constituent column " + constituentColumnName
                     + " has unsupported data type " + constituentColumnDefinition.getDataType());
         }
 
-        return new PartitionedTableImpl(table, keyColumnNames, constituentColumnName, constituentDefinition);
+        // Validate change support
+        if (!table.isRefreshing() && constituentChangesPermitted) {
+            throw new IllegalArgumentException("Partitioned table " + table
+                    + " is static, but constituent changes are permitted");
+        }
+
+        return new PartitionedTableImpl(
+                table, keyColumnNames, constituentColumnName, constituentDefinition, constituentChangesPermitted, true);
     }
 
+    @Override
     public PartitionedTable of(@NotNull final Table table) {
         final Map<Boolean, List<ColumnDefinition<?>>> splitColumns = table.getDefinition().getColumnStream().collect(
                 Collectors.partitioningBy(cd -> Table.class.isAssignableFrom(cd.getDataType())));
@@ -93,7 +108,9 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
                 table,
                 keyColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
                 constituentColumnName,
-                firstConstituent.getDefinition());
+                firstConstituent.getDefinition(),
+                !table.isRefreshing(),
+                true);
     }
 
     private static boolean readFirstConstituent(
@@ -101,9 +118,60 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
             @NotNull final Table table,
             @NotNull final String constituentColumnName,
             final boolean usePrev) {
-        resultHolder.setValue((Table) (usePrev
-                ? table.getColumnSource(constituentColumnName).getPrev(table.getRowSet().firstRowKeyPrev())
-                : table.getColumnSource(constituentColumnName).get(table.getRowSet().firstRowKey())));
+        resultHolder.setValue(readFirstConstituent(table, constituentColumnName, usePrev));
         return true;
+    }
+
+    private static Table readFirstConstituent(
+            @NotNull final Table table,
+            @NotNull final String constituentColumnName,
+            final boolean usePrev) {
+        return (Table) (usePrev
+                ? table.getColumnSource(constituentColumnName).getPrev(table.getRowSet().firstRowKeyPrev())
+                : table.getColumnSource(constituentColumnName).get(table.getRowSet().firstRowKey()));
+    }
+
+    @Override
+    public PartitionedTable ofTables(
+            @NotNull final TableDefinition constituentDefinition,
+            @NotNull final Table... constituents) {
+        return constituentsToPartitionedTable(constituentDefinition, constituents);
+    }
+
+    @Override
+    public PartitionedTable ofTables(@NotNull final Table... constituents) {
+        return constituentsToPartitionedTable(null, constituents);
+    }
+
+    private PartitionedTableImpl constituentsToPartitionedTable(
+            @Nullable final TableDefinition constituentDefinition,
+            @NotNull final Table... constituents) {
+        final Table[] constituentsToUse = Arrays.stream(constituents).filter(Objects::nonNull).toArray(Table[]::new);
+        if (constituentsToUse.length == 0) {
+            throw new IllegalArgumentException("No non-null constituents provided");
+        }
+
+        final TableDefinition constituentDefinitionToUse =
+                constituentDefinition == null ? constituentsToUse[0].getDefinition() : constituentDefinition;
+
+        // noinspection resource
+        final TrackingRowSet rowSet = RowSetFactory.flat(constituentsToUse.length).toTracking();
+        final Map<String, ColumnSource<?>> columnSources =
+                Map.of(CONSTITUENT.name(), InMemoryColumnSource.getImmutableMemoryColumnSource(constituentsToUse));
+        final Table table = new QueryTable(
+                CONSTRUCTED_PARTITIONED_TABLE_DEFINITION,
+                rowSet,
+                columnSources);
+        for (final Table constituent : constituentsToUse) {
+            table.addParentReference(constituent);
+        }
+
+        return new PartitionedTableImpl(
+                table,
+                Collections.emptyList(),
+                CONSTITUENT.name(),
+                constituentDefinitionToUse,
+                false,
+                true);
     }
 }

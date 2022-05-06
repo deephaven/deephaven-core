@@ -574,6 +574,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
         unionSourceManager.setDisallowReinterpret(); // TODO: Skip this call if we can determine that our entry set is
                                                      // static.
         if (isRefreshing()) {
+            unionSourceManager.setParentDependency(this);
             unionSourceManager.noteUsingComponentsIsUnsafe();
             unionSourceManager.setRefreshing();
             merged.addParentReference(this);

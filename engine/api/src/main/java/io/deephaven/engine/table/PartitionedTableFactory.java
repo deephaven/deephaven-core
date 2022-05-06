@@ -18,19 +18,33 @@ public class PartitionedTableFactory {
     public interface Creator {
 
         /**
-         * @see PartitionedTableFactory#of(Table, Set, String, TableDefinition) Factory method that delegates to this
-         *      method
+         * @see PartitionedTableFactory#of(Table, Set, String, TableDefinition, boolean) Factory method that delegates
+         *      to this method
          */
         PartitionedTable of(
                 @NotNull Table table,
                 @NotNull Set<String> keyColumnNames,
                 @NotNull String constituentColumnName,
-                @NotNull TableDefinition constituentDefinition);
+                @NotNull TableDefinition constituentDefinition,
+                boolean constituentChangesPermitted);
 
         /**
          * @see PartitionedTableFactory#of(Table) Factory method that delegates to this method
          */
         PartitionedTable of(@NotNull Table table);
+
+        /**
+         * @see PartitionedTableFactory#ofTables(TableDefinition, Table...) Factory method that delegates to this method
+         */
+        PartitionedTable ofTables(
+                @NotNull TableDefinition constituentDefinition,
+                @NotNull Table... constituents);
+
+        /**
+         * @see PartitionedTableFactory#ofTables(Table...) Factory method that delegates to this method
+         */
+        PartitionedTable ofTables(
+                @NotNull Table... constituents);
     }
 
     /**
@@ -50,7 +64,7 @@ public class PartitionedTableFactory {
     }
 
     /**
-     * Construct a PartitionedTable.
+     * Construct a {@link PartitionedTable}.
      *
      * @param table The "raw" {@link Table table} of {@link Table tables}. Should be {@link Table#isRefreshing()
      *        refreshing} if any constituents are.
@@ -59,34 +73,91 @@ public class PartitionedTableFactory {
      *        in {@link PartitionedTable#partitionedTransform(PartitionedTable, BinaryOperator)} to correlate tables
      *        that should be transformed together.
      * @param constituentColumnName The "constituent" column name from {@code table}. The constituent column contains
-     *        the underlying {@link Table tables} that make up this PartitionedTable.
-     * @param constituentDefinition The {@link TableDefinition} expected for all rows in the "constituent" column of
-     *        {@code table}
+     *        the underlying non-{@code null} {@link Table tables} that make up the result PartitionedTable.
+     * @param constituentDefinition A {@link TableDefinition} expected to be
+     *        {@link TableDefinition#checkMutualCompatibility(TableDefinition) mutually compatible} with all values in
+     *        the "constituent" column of {@code table}
+     * @param constituentChangesPermitted Whether {@code table} is permitted to report changes that impact the
+     *        constituent column
+     * @return A new PartitionedTable as described
      */
     public static PartitionedTable of(
             @NotNull final Table table,
             @NotNull final Set<String> keyColumnNames,
             @NotNull final String constituentColumnName,
-            @NotNull final TableDefinition constituentDefinition) {
-        return partitionedTableCreator().of(table, keyColumnNames, constituentColumnName, constituentDefinition);
+            @NotNull final TableDefinition constituentDefinition,
+            final boolean constituentChangesPermitted) {
+        return partitionedTableCreator().of(
+                table, keyColumnNames, constituentColumnName, constituentDefinition, constituentChangesPermitted);
     }
 
     /**
-     * Construct a PartitionedTable as in {@link #of(Table, Set, String, TableDefinition)}, inferring most parameters as
-     * follows:
+     * Construct a {@link PartitionedTable} as in {@link #of(Table, Set, String, TableDefinition, boolean)}, inferring
+     * most parameters as follows:
      * <dl>
      * <dt>{@code keyColumnNames}</dt>
      * <dd>The names of all columns with a non-{@link Table} data type</dd>
      * <dt>{@code constituentColumnName}</dt>
      * <dd>The name of the first column with a {@link Table} data type</dd>
      * <dt>{@code constituentDefinition}</dt>
-     * <dd>The {@link TableDefinition} of the value at the first cell in the constituent column. {@code table} must be
-     * non-empty, and the first row of its constituent column must contain a non-{@code null} table value.</dd>
+     * <dd>The {@link TableDefinition} of the value at the first cell in the constituent column. Consequently,
+     * {@code table} must be non-empty.</dd>
+     * <dt>{@code constituentChangesPermitted}</dt>
+     * <dd>The value of {@code !table.isRefreshing()}</dd>
      * </dl>
      *
      * @param table The "raw" {@link Table table} of {@link Table tables}
+     * @return A new PartitionedTable as described
      */
     public static PartitionedTable of(@NotNull final Table table) {
         return partitionedTableCreator().of(table);
+    }
+
+    /**
+     * Construct a {@link Table} with a single column containing the non-{@code null} values in {@code constituents},
+     * and then use that to construct a {@link PartitionedTable} as in
+     * {@link #of(Table, Set, String, TableDefinition, boolean)}, inferring most parameters as follows:
+     * <dl>
+     * <dt>{@code keyColumnNames}</dt>
+     * <dd>An empty list</dd>
+     * <dt>{@code constituentColumnName}</dt>
+     * <dd>The single column containing non-{@code null} values from {@code constituents}</dd>
+     * <dt>{@code constituentChangesPermitted}</dt>
+     * <dd>{@code false}</dd>
+     * </dl>
+     *
+     * @param constituentDefinition A {@link TableDefinition} expected to be
+     *        {@link TableDefinition#checkMutualCompatibility(TableDefinition) mutually compatible} with all values in
+     *        the "constituent" column of {@code table}
+     * @param constituents The constituent tables to include. {@code null} values will be ignored.
+     * @return A new PartitionedTable as described
+     */
+    public static PartitionedTable ofTables(
+            @NotNull final TableDefinition constituentDefinition,
+            @NotNull final Table... constituents) {
+        return partitionedTableCreator().ofTables(constituentDefinition, constituents);
+    }
+
+    /**
+     * Construct a {@link Table} with a single column containing the non-{@code null} values in {@code constituents},
+     * and then use that to construct a PartitionedTable as in
+     * {@link #of(Table, Set, String, TableDefinition, boolean)}, inferring most parameters as follows:
+     * <dl>
+     * <dt>{@code keyColumnNames}</dt>
+     * <dd>An empty list</dd>
+     * <dt>{@code constituentColumnName}</dt>
+     * <dd>The single column containing non-{@code null} values from {@code constituents}</dd>
+     * <dt>{@code constituentDefinition}</dt>
+     * <dd>The {@link TableDefinition} of the first non-{@code null} value in {@code constituents}</dd>
+     * <dt>{@code constituentChangesPermitted}</dt>
+     * <dd>{@code false}</dd>
+     * </dl>
+     *
+     * @param constituents The constituent tables to include. {@code null} values will be ignored. At least one
+     *        non-{@code null} constituent must be supplied.
+     * @return A new PartitionedTable as described
+     */
+    public static PartitionedTable ofTables(@NotNull final Table... constituents) {
+        return partitionedTableCreator().ofTables(constituents);
     }
 }

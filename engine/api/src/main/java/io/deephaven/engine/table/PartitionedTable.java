@@ -16,9 +16,10 @@ import java.util.function.Function;
  * <p>
  * Interface for working with partitioned tables.
  * <p>
- * A partitioned table is a {@link Table} with one or more columns containing non-null, like-defined constituent tables,
- * optionally with "key" columns defined to allow {@link #partitionedTransform(PartitionedTable, BinaryOperator)} or
- * proxied joins with other like-keyed partitioned tables.
+ * A partitioned table is a {@link Table} with one or more columns containing non-{@code null}, like-defined constituent
+ * tables, optionally with "key" columns defined to allow
+ * {@link #partitionedTransform(PartitionedTable, BinaryOperator)} or proxied joins with other like-keyed partitioned
+ * tables.
  */
 public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
 
@@ -70,11 +71,32 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     String constituentColumnName();
 
     /**
-     * Get the {@link TableDefinition definition} shared by all constituent {@link Table tables}.
+     * Get a {@link TableDefinition definition} shared by or
+     * {@link TableDefinition#checkMutualCompatibility(TableDefinition) mutually compatible} with all constituent
+     * {@link Table tables}.
      *
      * @return The constituent definition
      */
     TableDefinition constituentDefinition();
+
+    /**
+     * <p>
+     * Can the constituents of the underlying {@link #table() partitioned table} change?
+     * <p>
+     * This is completely unrelated to whether the constituents themselves are {@link Table#isRefreshing() refreshing},
+     * or whether the underlying partitioned table is refreshing. Note that the underlying partitioned table
+     * <em>must</em> be refreshing if it contains any refreshing constituents.
+     * <p>
+     * PartitionedTables that specify {@code constituentChangesPermitted() == true} must be guaranteed to never change
+     * their constituents. Formally, it is expected that
+     * {@code table().getColumnSource(constituentColumnName()).isImmutable() == true}, that {@code table()} will never
+     * report additions, removals, or shifts, and that any modifications reported will not change values in the
+     * constituent column.
+     *
+     *
+     * @return Whether the constituents of the underlying partitioned table can change
+     */
+    boolean constituentChangesPermitted();
 
     /**
      * Same as {@code proxy(true, true)}.
@@ -110,7 +132,10 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
 
     /**
      * Make a new {@link Table} that contains the rows from all the constituent tables of this PartitionedTable, in the
-     * same relative order as the underlying partitioned table and its constituents.
+     * same relative order as the underlying partitioned table and its constituents. If constituent tables contain extra
+     * columns not in the {@link #constituentDefinition() constituent definition}, those columns will be ignored. If
+     * constituent tables are missing columns in the constituent definition, the corresponding output rows will be
+     * {@code null}.
      * 
      * @return A merged representation of the constituent tables
      */

@@ -4,17 +4,23 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -23,6 +29,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static io.deephaven.engine.table.iterators.ColumnIterator.*;
 
 /**
  * {@link PartitionedTable} implementation.
@@ -35,23 +43,34 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private final Set<String> keyColumnNames;
     private final String constituentColumnName;
     private final TableDefinition constituentDefinition;
+    private final boolean constituentChangesPermitted;
 
     /**
-     * @see io.deephaven.engine.table.PartitionedTableFactory#of(Table, Set, String, TableDefinition) Factory method
-     *      that delegates to this method
+     * @see io.deephaven.engine.table.PartitionedTableFactory#of(Table, Set, String, TableDefinition, boolean) Factory
+     *      method that delegates to this method
+     * @apiNote Only engine-internal tools should call this constructor directly
      */
-    PartitionedTableImpl(
+    public PartitionedTableImpl(
             @NotNull final Table table,
             @NotNull final Collection<String> keyColumnNames,
             @NotNull final String constituentColumnName,
-            @NotNull final TableDefinition constituentDefinition) {
-        if (table.isRefreshing()) {
-            manage(table);
+            @NotNull final TableDefinition constituentDefinition,
+            final boolean constituentChangesPermitted,
+            final boolean validateConstituents) {
+        if (validateConstituents) {
+            final QueryTable coalesced = (QueryTable) table.coalesce();
+            this.table = coalesced.getResult(
+                    new ValidateConstituents(coalesced, constituentColumnName, constituentDefinition));
+        } else {
+            this.table = table;
         }
-        this.table = table;
+        if (this.table.isRefreshing()) {
+            manage(this.table);
+        }
         this.keyColumnNames = Collections.unmodifiableSet(new LinkedHashSet<>(keyColumnNames));
         this.constituentColumnName = constituentColumnName;
         this.constituentDefinition = constituentDefinition;
+        this.constituentChangesPermitted = constituentChangesPermitted;
     }
 
     @Override
@@ -97,6 +116,11 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     }
 
     @Override
+    public boolean constituentChangesPermitted() {
+        return constituentChangesPermitted;
+    }
+
+    @Override
     public PartitionedTable.Proxy proxy(final boolean requireMatchingKeys, final boolean sanityCheckJoinOperations) {
         return PartitionedTableProxyImpl.of(this, requireMatchingKeys, sanityCheckJoinOperations);
     }
@@ -106,7 +130,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         if (!table.isRefreshing()) {
             final Iterator<Table> constituents = table.objectColumnIterator(constituentColumnName);
             return TableTools.merge(StreamSupport.stream(Spliterators.spliterator(
-                            constituents, table.size(), Spliterator.ORDERED), false)
+                    constituents, table.size(), Spliterator.ORDERED), false)
                     .toArray(Table[]::new));
         }
         throw new UnsupportedOperationException("TODO-RWC");
@@ -127,35 +151,35 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 table.where(whereFilters),
                 keyColumnNames,
                 constituentColumnName,
-                constituentDefinition);
+                constituentDefinition,
+                constituentChangesPermitted || table.isRefreshing(),
+                false);
     }
 
     @Override
     public PartitionedTable transform(@NotNull final Function<Table, Table> transformer) {
-        final LivenessScope operationScope = new LivenessScope();
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
-        try (final SafeCloseable ignored = LivenessScopeStack.open(operationScope, false)) {
+        final LivenessManager enclosingScope = LivenessScopeStack.peek();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             // Perform the transformation
             resultTable = table.update(new TableTransformationColumn(constituentColumnName, transformer));
+            enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition
             final Table emptyConstituent = emptyConstituent(constituentDefinition);
             final Table resultEmptyConstituent = transformer.apply(emptyConstituent);
             resultConstituentDefinition = resultEmptyConstituent.getDefinition();
-
-            // Ensure that we don't unnecessarily keep the empty constituents around
-            operationScope.unmanage(emptyConstituent);
-            operationScope.unmanage(resultEmptyConstituent);
         }
-        operationScope.transferTo(LivenessScopeStack.peek());
 
         // Build the result partitioned table
         return new PartitionedTableImpl(
                 resultTable,
                 keyColumnNames,
                 constituentColumnName,
-                resultConstituentDefinition);
+                resultConstituentDefinition,
+                constituentChangesPermitted,
+                true);
     }
 
     @Override
@@ -170,10 +194,10 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         // Validate join compatibility
         checkMatchingKeyColumns(this, other);
 
-        final LivenessScope operationScope = new LivenessScope();
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
-        try (final SafeCloseable ignored = LivenessScopeStack.open(operationScope, false)) {
+        final LivenessManager enclosingScope = LivenessScopeStack.peek();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             // Perform the transformation
             final Table joined = table.join(
                     other.table(),
@@ -182,27 +206,26 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                             ColumnName.of(other.constituentColumnName()))));
             resultTable = joined.update(new BiTableTransformationColumn(
                     constituentColumnName, RHS_CONSTITUENT.name(), transformer));
+            enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition
             final Table emptyConstituent1 = emptyConstituent(constituentDefinition);
             final Table emptyConstituent2 = emptyConstituent(other.constituentDefinition());
             final Table resultEmptyConstituent = transformer.apply(emptyConstituent1, emptyConstituent2);
             resultConstituentDefinition = resultEmptyConstituent.getDefinition();
-
-            // Ensure that we don't unnecessarily keep the empty constituents around
-            operationScope.unmanage(emptyConstituent1);
-            operationScope.unmanage(emptyConstituent2);
-            operationScope.unmanage(resultEmptyConstituent);
         }
-        operationScope.transferTo(LivenessScopeStack.peek());
 
         // Build the result partitioned table
         return new PartitionedTableImpl(
                 resultTable,
                 keyColumnNames,
                 constituentColumnName,
-                resultConstituentDefinition);
+                resultConstituentDefinition,
+                constituentChangesPermitted || other.constituentChangesPermitted(),
+                true);
     }
+
+    // TODO (https://github.com/deephaven/deephaven-core/issues/2368): Consider adding transformWithKeys support
 
     /**
      * Validate that {@code lhs} and {@code rhs} have compatible (same name, same type) key columns, allowing
@@ -248,9 +271,111 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 .collect(Collectors.toMap(ColumnDefinition::getName, Function.identity()));
     }
 
-    // TODO-RWC: Add ticket for this
-    // TODO (insert ticket here): Support "PartitionedTable withCombinedKeys(String keyColumnName)" for combining
-    // multiple key columns into a compound key column using the tuple library, and then add "transformWithKeys"
-    // support.
+    private static final class ValidateConstituents implements QueryTable.MemoizableOperation<QueryTable> {
 
+        private final QueryTable parent;
+        private final String constituentColumnName;
+        private final TableDefinition constituentDefinition;
+
+        private ValidateConstituents(
+                @NotNull final QueryTable parent,
+                @NotNull final String constituentColumnName,
+                @NotNull final TableDefinition constituentDefinition) {
+            this.parent = parent;
+            this.constituentColumnName = constituentColumnName;
+            this.constituentDefinition = constituentDefinition;
+        }
+
+        @Override
+        public String getDescription() {
+            return "validate partitioned table constituents for " + parent.getDescription();
+        }
+
+        @Override
+        public String getLogPrefix() {
+            return "validate-constituents-for-{" + parent.getDescription() + '}';
+        }
+
+        @Override
+        public Result<QueryTable> initialize(final boolean usePrev, final long beforeClock) {
+            final ColumnSource<Table> constituentColumnSource = parent.getColumnSource(constituentColumnName);
+            try (final RowSequence prevRows = usePrev ? parent.getRowSet().copyPrev() : null) {
+                final RowSequence rowsToCheck = usePrev ? prevRows : parent.getRowSet();
+                validateConstituents(constituentDefinition, constituentColumnSource, rowsToCheck);
+            }
+            final QueryTable child = parent.getSubTable(parent.getRowSet(), parent.getModifiedColumnSetForUpdates());
+            parent.propagateFlatness(child);
+            parent.copyAttributes(child, a -> true);
+            return new Result<>(child, new BaseTable.ListenerImpl(getDescription(), parent, child) {
+                @Override
+                public void onUpdate(@NotNull final TableUpdate upstream) {
+                    validateConstituents(constituentDefinition, constituentColumnSource, upstream.modified());
+                    validateConstituents(constituentDefinition, constituentColumnSource, upstream.added());
+                    super.onUpdate(upstream);
+                }
+            });
+        }
+
+        @Override
+        public MemoizedOperationKey getMemoizedOperationKey() {
+            return new ValidateConstituentsMemoizationKey(constituentColumnName, constituentDefinition);
+        }
+    }
+
+    private static void validateConstituents(
+            @NotNull final TableDefinition constituentDefinition,
+            @NotNull final ColumnSource<Table> constituentSource,
+            @NotNull final RowSequence rowsToValidate) {
+        try (final ChunkSource.GetContext getContext = constituentSource.makeGetContext(DEFAULT_CHUNK_SIZE);
+                final RowSequence.Iterator rowsIterator = rowsToValidate.getRowSequenceIterator()) {
+            final RowSequence sliceRows = rowsIterator.getNextRowSequenceWithLength(DEFAULT_CHUNK_SIZE);
+            final ObjectChunk<Table, ? extends Values> sliceConstituents =
+                    constituentSource.getChunk(getContext, sliceRows).asObjectChunk();
+            final int sliceSize = sliceConstituents.size();
+            for (int sci = 0; sci < sliceSize; ++sci) {
+                final Table constituent = sliceConstituents.get(sci);
+                if (constituent == null) {
+                    throw new IllegalStateException("Encountered null constituent");
+                }
+                constituentDefinition.checkMutualCompatibility(constituent.getDefinition());
+            }
+        }
+    }
+
+    private static final class ValidateConstituentsMemoizationKey extends MemoizedOperationKey {
+
+        private final String constituentColumnName;
+        private final TableDefinition constituentDefinition;
+
+        private final int hashCode;
+
+        private ValidateConstituentsMemoizationKey(
+                @NotNull final String constituentColumnName,
+                @NotNull final TableDefinition constituentDefinition) {
+            this.constituentColumnName = constituentColumnName;
+            this.constituentDefinition = constituentDefinition;
+            final MutableInt hashAccumulator = new MutableInt(31 + constituentColumnName.hashCode());
+            constituentDefinition.getColumnStream().map(ColumnDefinition::getName).sorted().forEach(
+                    cn -> hashAccumulator.setValue(31 * hashAccumulator.intValue() + cn.hashCode()));
+            hashCode = hashAccumulator.intValue();
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
+            final ValidateConstituentsMemoizationKey that = (ValidateConstituentsMemoizationKey) other;
+            return constituentColumnName.equals(that.constituentColumnName)
+                    && constituentDefinition.equalsIgnoreOrder(that.constituentDefinition);
+        }
+
+        @Override
+        public int hashCode() {
+            return hashCode;
+        }
+    }
 }

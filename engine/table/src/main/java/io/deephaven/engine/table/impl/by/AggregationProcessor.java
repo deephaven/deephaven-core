@@ -649,7 +649,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(Partition partition) {
-            return new PartitionByChunkedOperator()
+            return new PartitionByChunkedOperator();
         }
 
         // -------------------------------------------------------------------------------------------------------------

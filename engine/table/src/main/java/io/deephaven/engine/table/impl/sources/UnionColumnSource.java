@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
+import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.util.TableTools;
@@ -743,20 +744,20 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public boolean isImmutable() {
-        return sourceLookup.currentSources().allMatch(ColumnSource::isImmutable);
+        return sourceLookup.currSources().allMatch(ColumnSource::isImmutable);
     }
 
     @Override
     public boolean preventsParallelism() {
-        return sourceLookup.currentSources().anyMatch(ColumnSource::preventsParallelism);
+        return sourceLookup.currSources().anyMatch(ColumnSource::preventsParallelism);
     }
 
     @Override
     public boolean isStateless() {
-        return sourceLookup.currentSources().allMatch(ColumnSource::isStateless);
+        return sourceLookup.currSources().allMatch(ColumnSource::isStateless);
     }
 
-    static final class TableSourceLookup<T> implements ConstituentSourceLookup<T> {
+    final class TableSourceLookup implements ConstituentSourceLookup<T> {
 
         private final TrackingRowSet constituentRows;
         private final ColumnSource<Table> constituentTables;
@@ -773,19 +774,27 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
         @Override
         public ColumnSource<T> slotToCurrSource(final int slot) {
-            return constituentTables.get(constituentRows.get(slot)).getColumnSource(columnName);
+            return sourceFromTable(constituentTables.get(constituentRows.get(slot)));
         }
 
         @Override
         public ColumnSource<T> slotToPrevSource(final int slot) {
-            return constituentTables.getPrev(constituentRows.getPrev(slot)).getColumnSource(columnName);
+            return sourceFromTable(constituentTables.getPrev(constituentRows.getPrev(slot)));
+        }
+
+        private ColumnSource<T> sourceFromTable(@NotNull final Table table) {
+            try {
+                return table.getColumnSource(columnName);
+            } catch (NoSuchColumnException e) {
+                return NullValueColumnSource.getInstance(getType(), getComponentType());
+            }
         }
 
         @Override
         public Stream<ColumnSource<T>> currSources() {
             return StreamSupport.stream(Spliterators.spliterator(new ObjectColumnIterator<>(
                     constituentTables, constituentRows, ColumnIterator.DEFAULT_CHUNK_SIZE
-            ), constituentRows.size(), Spliterator.ORDERED), false);
+            ), constituentRows.size(), Spliterator.ORDERED), false).map(this::sourceFromTable);
         }
     }
 }

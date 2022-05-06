@@ -26,12 +26,13 @@ public class UnionSourceManager {
     private final ModifiedColumnSet modifiedColumnSet;
 
     private final String[] names;
-    private final NotificationQueue.Dependency parentDependency;
     private final UnionRedirection unionRedirection = new UnionRedirection();
     private final List<Table> tables = new ArrayList<>();
     private final List<UnionListenerRecorder> listeners = Collections.synchronizedList(new ArrayList<>());
     private final MergedListener mergedListener;
     private final QueryTable result;
+
+    private volatile NotificationQueue.Dependency parentDependency;
 
     private boolean refreshing = false;
     private boolean disallowReinterpret = false;
@@ -39,7 +40,8 @@ public class UnionSourceManager {
 
     private UpdateCommitter<UnionSourceManager> prevFlusher = null;
 
-    public UnionSourceManager(TableDefinition tableDefinition, ) {
+    public UnionSourceManager(@NotNull final PartitionedTable partitionedTable) {
+
         sources = tableDefinition.getColumnList().stream()
                 .map((cd) -> new UnionColumnSource<>(cd.getDataType(), cd.getComponentType(), unionRedirection, this))
                 .toArray(UnionColumnSource[]::new);
@@ -362,5 +364,9 @@ public class UnionSourceManager {
                 return listeners.stream().allMatch((final UnionListenerRecorder recorder) -> recorder.satisfied(step));
             }
         }
+    }
+
+    public void setParentDependency(@NotNull final NotificationQueue.Dependency parentDependency) {
+        this.parentDependency = parentDependency;
     }
 }
