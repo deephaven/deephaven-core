@@ -289,7 +289,7 @@ public class TableViewportSubscription extends HasEventHandling {
                 double viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest, serializeRanges(
                         Collections.singleton(rows.getRange())));
                 double serializationOptionsOffset = BarrageSnapshotOptions
-                        .createBarrageSnapshotOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0);
+                        .createBarrageSnapshotOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0, 0);
                 double tableTicketOffset =
                         BarrageSubscriptionRequest.createTicketVector(doGetRequest, state.getHandle().getTicket());
                 BarrageSnapshotRequest.startBarrageSnapshotRequest(doGetRequest);

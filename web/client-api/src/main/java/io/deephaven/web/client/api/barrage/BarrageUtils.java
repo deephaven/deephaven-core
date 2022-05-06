@@ -213,10 +213,9 @@ public class BarrageUtils {
          * Appends a new record batch and payload. Returns true if this was the final record batch that was expected.
          */
         public boolean appendRecordBatch(RecordBatch recordBatch, ByteBuffer body) {
-            assert numAddRowsRemaining + numModRowsRemaining > 0;
             if (numAddRowsRemaining > 0) {
                 handleAddBatch(recordBatch, body);
-            } else {
+            } else if (numModRowsRemaining > 0) {
                 handleModBatch(recordBatch, body);
             }
             return numAddRowsRemaining + numModRowsRemaining > 0;
