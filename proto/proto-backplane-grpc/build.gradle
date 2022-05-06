@@ -19,7 +19,7 @@ configurations {
 
 dependencies {
   // This should be implementation, if listed at all, at least once we have own own version management
-  Classpaths.inheritProtobuf(project, 'api')
+  Classpaths.inheritProtobufPlatform(project, 'api')
 
   Classpaths.inheritGrpcPlatform(project, 'api')
   api 'io.grpc:grpc-protobuf'
