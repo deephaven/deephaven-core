@@ -97,7 +97,8 @@ class NaturalJoinHelper {
                     final BothIncrementalNaturalJoinStateManager jsm =
                             USE_TYPED_STATE_MANAGER
                                     ? TypedHasherFactory.make(IncrementalNaturalJoinStateManagerTypedBase.class,
-                                            bucketingContext.leftSources, bucketingContext.originalLeftSources, tableSize, control.getMaximumLoadFactor(),
+                                            bucketingContext.leftSources, bucketingContext.originalLeftSources,
+                                            tableSize, control.getMaximumLoadFactor(),
                                             control.getTargetLoadFactor())
                                     : new IncrementalChunkedNaturalJoinStateManager(
                                             bucketingContext.leftSources, tableSize,
@@ -140,7 +141,8 @@ class NaturalJoinHelper {
                     // right is live, left is static
                     final RightIncrementalNaturalJoinStateManager jsm = USE_TYPED_STATE_MANAGER
                             ? TypedHasherFactory.make(RightIncrementalNaturalJoinStateManagerTypedBase.class,
-                                    bucketingContext.leftSources, bucketingContext.originalLeftSources, control.tableSizeForLeftBuild(leftTable),
+                                    bucketingContext.leftSources, bucketingContext.originalLeftSources,
+                                    control.tableSizeForLeftBuild(leftTable),
                                     control.getMaximumLoadFactor(), control.getTargetLoadFactor())
                             : new RightIncrementalChunkedNaturalJoinStateManager(
                                     bucketingContext.leftSources, control.tableSizeForLeftBuild(leftTable),
@@ -219,7 +221,8 @@ class NaturalJoinHelper {
                     final ColumnSource<?>[] groupedSourceArray = {groupSource};
                     final StaticHashedNaturalJoinStateManager jsm = USE_TYPED_STATE_MANAGER
                             ? TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class, groupedSourceArray,
-                            groupedSourceArray, StaticChunkedNaturalJoinStateManager.hashTableSize(groupingSize.intValue()),
+                                    groupedSourceArray,
+                                    StaticChunkedNaturalJoinStateManager.hashTableSize(groupingSize.intValue()),
                                     control.getMaximumLoadFactor(), control.getTargetLoadFactor())
                             : new StaticChunkedNaturalJoinStateManager(groupedSourceArray,
                                     StaticChunkedNaturalJoinStateManager.hashTableSize(groupingSize.intValue()),
@@ -235,7 +238,8 @@ class NaturalJoinHelper {
                 } else if (control.buildLeft(leftTable, rightTable)) {
                     final StaticHashedNaturalJoinStateManager jsm = USE_TYPED_STATE_MANAGER
                             ? TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
-                                    bucketingContext.leftSources, bucketingContext.originalLeftSources, control.tableSizeForLeftBuild(leftTable),
+                                    bucketingContext.leftSources, bucketingContext.originalLeftSources,
+                                    control.tableSizeForLeftBuild(leftTable),
                                     control.getMaximumLoadFactor(), control.getTargetLoadFactor())
                             : new StaticChunkedNaturalJoinStateManager(bucketingContext.leftSources,
                                     control.tableSizeForLeftBuild(leftTable), bucketingContext.originalLeftSources);
@@ -250,7 +254,8 @@ class NaturalJoinHelper {
                 } else {
                     final StaticHashedNaturalJoinStateManager jsm = USE_TYPED_STATE_MANAGER
                             ? TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
-                                    bucketingContext.leftSources, bucketingContext.originalLeftSources, control.tableSizeForRightBuild(leftTable),
+                                    bucketingContext.leftSources, bucketingContext.originalLeftSources,
+                                    control.tableSizeForRightBuild(leftTable),
                                     control.getMaximumLoadFactor(), control.getTargetLoadFactor())
                             : new StaticChunkedNaturalJoinStateManager(bucketingContext.leftSources,
                                     control.tableSizeForRightBuild(rightTable), bucketingContext.originalLeftSources);

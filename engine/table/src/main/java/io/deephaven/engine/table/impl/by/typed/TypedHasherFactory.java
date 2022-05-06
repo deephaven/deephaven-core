@@ -54,9 +54,11 @@ public class TypedHasherFactory {
      * @param targetLoadFactor the load factor that we will rehash to
      * @return an instantiated hasher
      */
-    public static <T> T make(Class<T> baseClass, ColumnSource<?>[] tableKeySources, ColumnSource<?>[] originalKeySources, int tableSize,
-                             double maximumLoadFactor, double targetLoadFactor) {
-        return make(hasherConfigForBase(baseClass), tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+    public static <T> T make(Class<T> baseClass, ColumnSource<?>[] tableKeySources,
+            ColumnSource<?>[] originalKeySources, int tableSize,
+            double maximumLoadFactor, double targetLoadFactor) {
+        return make(hasherConfigForBase(baseClass), tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                targetLoadFactor);
     }
 
     @NotNull
@@ -280,7 +282,8 @@ public class TypedHasherFactory {
      * @param <T> the base class
      * @return an instantiated hasher
      */
-    public static <T> T make(HasherConfig<T> hasherConfig, ColumnSource<?>[] tableKeySources, ColumnSource<?>[] originalKeySources, int tableSize,
+    public static <T> T make(HasherConfig<T> hasherConfig, ColumnSource<?>[] tableKeySources,
+            ColumnSource<?>[] originalKeySources, int tableSize,
             double maximumLoadFactor, double targetLoadFactor) {
         if (USE_PREGENERATED_HASHERS) {
             if (hasherConfig.baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
@@ -319,7 +322,8 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher =
                         (T) io.deephaven.engine.table.impl.naturaljoin.typed.staticopen.gen.TypedHashDispatcher
-                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
@@ -328,7 +332,8 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher =
                         (T) io.deephaven.engine.table.impl.naturaljoin.typed.rightincopen.gen.TypedHashDispatcher
-                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
@@ -337,7 +342,8 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher =
                         (T) io.deephaven.engine.table.impl.naturaljoin.typed.incopen.gen.TypedHashDispatcher
-                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
@@ -365,8 +371,10 @@ public class TypedHasherFactory {
         T retVal;
         try {
             final Constructor<? extends T> constructor1 =
-                    castedClass.getDeclaredConstructor(ColumnSource[].class, ColumnSource[].class, int.class, double.class, double.class);
-            retVal = constructor1.newInstance(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                    castedClass.getDeclaredConstructor(ColumnSource[].class, ColumnSource[].class, int.class,
+                            double.class, double.class);
+            retVal = constructor1.newInstance(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                    targetLoadFactor);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException
                 | NoSuchMethodException e) {
             throw new UncheckedDeephavenException("Could not instantiate " + castedClass.getCanonicalName(), e);

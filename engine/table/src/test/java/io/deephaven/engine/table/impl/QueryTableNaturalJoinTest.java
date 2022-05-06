@@ -542,9 +542,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final DateTime dateTimeB = DateTimeUtils.convertDateTime("2022-05-06T09:31:00 NY");
         final DateTime dateTimeC = DateTimeUtils.convertDateTime("2022-05-06T09:32:00 NY");
         final DateTime dateTimeD = DateTimeUtils.convertDateTime("2022-05-06T09:33:00 NY");
-        final QueryTable left = testTable(col("JK1", false, null, true), col("JK2", dateTimeA, dateTimeA, dateTimeA), c("LeftSentinel", 1, 2, 3));
+        final QueryTable left = testTable(col("JK1", false, null, true), col("JK2", dateTimeA, dateTimeA, dateTimeA),
+                c("LeftSentinel", 1, 2, 3));
         left.setRefreshing(leftRefreshing);
-        final QueryTable right = testTable(col("JK1", true, true), col("JK2", dateTimeA, dateTimeA), c("RightSentinel", 10, 11));
+        final QueryTable right =
+                testTable(col("JK1", true, true), col("JK2", dateTimeA, dateTimeA), c("RightSentinel", 10, 11));
         right.setRefreshing(rightRefreshing);
 
         try {
@@ -557,7 +559,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         // build from left
         final Table left2 = testTable(c("DT", dateTimeA, dateTimeB), c("LeftSentinel", 1, 2));
-        final Table right2 = newTable(c("DT", dateTimeA, dateTimeA, dateTimeB, dateTimeC, dateTimeD), c("RightSentinel", 10, 11, 12, 13, 14));
+        final Table right2 = newTable(c("DT", dateTimeA, dateTimeA, dateTimeB, dateTimeC, dateTimeD),
+                c("RightSentinel", 10, 11, 12, 13, 14));
         try {
             final Table cj2 = left2.naturalJoin(right2, "DT");
             TableTools.showWithRowSet(cj2);
@@ -613,7 +616,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final QueryTable right2 = testRefreshingTable(c("Symbol", a), c("RightSentinel", 10));
         final Table cj2 = left.naturalJoin(castSymbol(clazz, right2), "Symbol");
         assertTableEquals(
-                castSymbol(clazz, newTable(col("Symbol", a, b), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT))),
+                castSymbol(clazz,
+                        newTable(col("Symbol", a, b), intCol("LeftSentinel", 1, 2),
+                                intCol("RightSentinel", 10, NULL_INT))),
                 cj2);
 
         final ErrorListener listener = new ErrorListener(cj2);
@@ -654,7 +659,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final QueryTable right2 = testRefreshingTable(c("Symbol", a), c("RightSentinel", 10));
         final Table cj2 = left.naturalJoin(castSymbol(clazz, right2), "Symbol");
         assertTableEquals(
-                castSymbol(clazz, newTable(col("Symbol", a, b), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT))),
+                castSymbol(clazz,
+                        newTable(col("Symbol", a, b), intCol("LeftSentinel", 1, 2),
+                                intCol("RightSentinel", 10, NULL_INT))),
                 cj2);
 
         final ErrorListener listener = new ErrorListener(cj2);

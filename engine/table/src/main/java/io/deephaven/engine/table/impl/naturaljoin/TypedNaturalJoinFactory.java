@@ -38,7 +38,8 @@ public class TypedNaturalJoinFactory {
             CodeBlock.Builder builder) {
         builder.beginControlFlow("if (rightRowKey == DUPLICATE_RIGHT_STATE)");
         // we only use the row key chunk for an error, so it is lazily created here
-        builder.addStatement("final $T<$T> rowKeyChunk = rowSequence.asRowKeyChunk()", LongChunk.class, OrderedRowKeys.class);
+        builder.addStatement("final $T<$T> rowKeyChunk = rowSequence.asRowKeyChunk()", LongChunk.class,
+                OrderedRowKeys.class);
         builder.addStatement(
                 "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)))");
         builder.endControlFlow();
