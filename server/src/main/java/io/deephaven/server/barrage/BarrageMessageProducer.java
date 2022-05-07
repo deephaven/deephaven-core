@@ -5,7 +5,6 @@
 package io.deephaven.server.barrage;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Streams;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
@@ -61,6 +60,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.stream.Stream;
 
 /**
  * The server-side implementation of a Barrage replication source.
@@ -996,7 +996,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     synchronized (BarrageMessageProducer.this) {
                         final StatusRuntimeException apiError = GrpcUtil.securelyWrapError(log, exception);
 
-                        Streams.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
+                        Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
                                 .forEach(sub -> GrpcUtil.safelyExecuteLocked(sub.listener,
                                         () -> sub.listener.onError(apiError)));
 
