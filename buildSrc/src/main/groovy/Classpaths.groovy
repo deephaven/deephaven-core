@@ -232,12 +232,12 @@ class Classpaths {
         addDependency(config, p.getDependencies().platform(GRPC_GROUP + ":" + GRPC_NAME + ":" + GRPC_VERSION))
     }
 
-    static void inheritProtobufPlatform(Project p, String configName = JavaPlugin.API_CONFIGURATION_NAME) {
+    static void inheritProtobuf(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, p.getDependencies().platform(PROTOBUF_GROUP + ":" + PROTOBUF_NAME + ":" + PROTOBUF_VERSION))
+        addDependency(config, PROTOBUF_GROUP, PROTOBUF_NAME, PROTOBUF_VERSION)
     }
 
-    static void inheritBoringSsl(Project p, String configName = JavaPlugin.API_CONFIGURATION_NAME) {
+    static void inheritBoringSsl(Project p, String configName = JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, BORINGSSL_GROUP, BORINGSSL_NAME, BORINGSSL_VERSION)
     }
