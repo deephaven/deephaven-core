@@ -3,12 +3,15 @@ package io.deephaven.engine.table.impl.select.analyzers;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.table.impl.util.WrappedRowSetWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -42,7 +45,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     }
 
     public static SelectAndViewAnalyzer create(final Mode mode, final Map<String, ColumnSource<?>> columnSources,
-            final TrackingRowSet rowSet, final ModifiedColumnSet parentMcs, final boolean publishTheseSources,
+            TrackingRowSet rowSet, final ModifiedColumnSet parentMcs, final boolean publishTheseSources,
             final boolean allowInternalFlatten,
             final SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
@@ -55,7 +58,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             rowRedirection = null;
         }
 
-        final boolean flatResult = rowSet.isFlat();
+        final TrackingRowSet originalRowSet = rowSet;
+        boolean flatResult = rowSet.isFlat();
         // if we preserve a column, we set this to false
         boolean flattenedResult = !flatResult
                 && allowInternalFlatten
@@ -63,24 +67,41 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 && mode == Mode.SELECT_STATIC;
         int numberOfInternallyFlattenedColumns = 0;
 
+        final HashSet<String> resultColumns = flattenedResult ? new HashSet<>() : null;
         for (final SelectColumn sc : selectColumns) {
-            final Map<String, ColumnSource<?>> columnsOfInterest = analyzer.getAllColumnSources();
             analyzer.updateColumnDefinitionsFromTopLayer(columnDefinitions);
             sc.initDef(columnDefinitions);
-            sc.initInputs(rowSet, columnsOfInterest);
+            sc.initInputs(rowSet, analyzer.getAllColumnSources());
+
+            // When flattening the result, intermediate columns generate results in position space. When we discover
+            // that a select column depends on an intermediate result, then we must flatten all parent columns so
+            // that all dependent columns are in the same result-key space.
+            if (!flatResult && flattenedResult && Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream())
+                    .anyMatch(resultColumns::contains)) {
+                analyzer = analyzer.createStaticFlattenLayer(rowSet);
+                rowSet = RowSetFactory.flat(rowSet.size()).toTracking();
+                flatResult = true;
+
+                // we must re-initialize the column inputs as they may have changed post-flatten
+                sc.initInputs(rowSet, analyzer.getAllColumnSources());
+            } else if (!flatResult && flattenedResult) {
+                resultColumns.add(sc.getName());
+            }
+
             final Stream<String> allDependencies =
                     Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
 
             if (shouldPreserve(sc)) {
-                analyzer =
-                        analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
                 if (numberOfInternallyFlattenedColumns > 0) {
                     // we must preserve this column, but have already created an analyzer for the internally flattened
                     // column, therefore must start over without permitting internal flattening
-                    return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, false, selectColumns);
+                    return create(mode, columnSources, originalRowSet, parentMcs, publishTheseSources, false,
+                            selectColumns);
                 }
+                analyzer =
+                        analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
                 // we can not flatten future columns because we are preserving this column
                 flattenedResult = false;
                 continue;
@@ -107,7 +128,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                                     : sc.newDestInstance(targetDestinationCapacity);
                     analyzer =
                             analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, null, distinctDeps, mcsBuilder,
-                                    false, flattenedResult);
+                                    false, flattenedResult, flatResult && flattenedResult);
                     if (flattenedResult) {
                         numberOfInternallyFlattenedColumns++;
                     }
@@ -126,7 +147,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     }
                     analyzer =
                             analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,
-                                    mcsBuilder, rowRedirection != null, false);
+                                    mcsBuilder, rowRedirection != null, false, false);
                     break;
                 }
                 default:
@@ -190,12 +211,16 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         return new RedirectionLayer(this, resultRowSet, rowRedirection);
     }
 
+    private StaticFlattenLayer createStaticFlattenLayer(TrackingRowSet parentRowSet) {
+        return new StaticFlattenLayer(this, parentRowSet);
+    }
+
     private SelectAndViewAnalyzer createLayerForSelect(RowSet parentRowset, String name, SelectColumn sc,
             WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
-            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected, boolean flatten) {
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected, boolean flatten,
+            boolean alreadyFlattened) {
         return new SelectColumnLayer(parentRowset, this, name, sc, cs, underlyingSource, parentColumnDependencies,
-                mcsBuilder,
-                isRedirected, flatten);
+                mcsBuilder, isRedirected, flatten, alreadyFlattened);
     }
 
     private SelectAndViewAnalyzer createLayerForView(String name, SelectColumn sc, ColumnSource<?> cs,
@@ -346,6 +371,14 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
      * implementation returns false.
      */
     public boolean flattenedResult() {
+        return false;
+    }
+
+    /**
+     * Have the column sources already been flattened? Only the STATIC_SELECT case flattens the result. A static flatten
+     * layer is only added if SelectColumn depends on an intermediate result.
+     */
+    public boolean alreadyFlattenedSources() {
         return false;
     }
 

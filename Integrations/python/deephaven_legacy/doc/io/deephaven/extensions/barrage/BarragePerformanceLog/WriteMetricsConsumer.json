@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.extensions.barrage.BarragePerformanceLog$WriteMetricsConsumer",
+ "methods": {
+  "onWrite": ":param bytes: long\n:param cpuNanos: long"
+ },
+ "path": "io.deephaven.extensions.barrage.BarragePerformanceLog.WriteMetricsConsumer",
+ "typeName": "interface"
+}
