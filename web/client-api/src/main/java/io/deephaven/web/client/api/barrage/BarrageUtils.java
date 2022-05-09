@@ -218,7 +218,8 @@ public class BarrageUtils {
             } else if (numModRowsRemaining > 0) {
                 handleModBatch(recordBatch, body);
             }
-            return numAddRowsRemaining + numModRowsRemaining > 0;
+            // return true when complete
+            return numAddRowsRemaining == 0 && numModRowsRemaining == 0;
         }
 
         private void handleAddBatch(RecordBatch recordBatch, ByteBuffer body) {

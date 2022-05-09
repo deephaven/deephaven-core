@@ -334,8 +334,10 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                         // reserve all the rows needed for the full snapshot
                         capacity = update.rowsAdded.size();
                     } else {
+                        // limit the capacity to current rows of the table if the viewport is very large
+                        capacity = Math.min(this.initialSnapshotViewportRowCount, update.rowsAdded.size());
                         // reserve all the rows needed for the viewport (or rows included if larger)
-                        capacity = Math.max(this.initialSnapshotViewportRowCount, update.rowsIncluded.size());
+                        capacity = Math.max(capacity, update.rowsIncluded.size());
                     }
                     for (final WritableColumnSource<?> source : destSources) {
                         source.ensureCapacity(capacity);
