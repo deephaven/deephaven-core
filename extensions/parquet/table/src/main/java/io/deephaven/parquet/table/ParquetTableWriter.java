@@ -38,7 +38,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
@@ -201,8 +200,6 @@ public class ParquetTableWriter {
             final Map<String, String> tableMeta,
             final TableInfo.Builder tableInfoBuilder) throws SchemaMappingException, IOException {
 
-        final CompressionCodecName compressionCodecName =
-                CompressionCodecName.valueOf(writeInstructions.getCompressionCodecName());
         final Table t = pretransformTable(table, definition);
         final TrackingRowSet tableRowSet = t.getRowSet();
         final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
@@ -212,7 +209,7 @@ public class ParquetTableWriter {
         final Map<String, Map<CacheTags, Object>> computedCache = new HashMap<>();
         final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
                 columnSourceMap, path, writeInstructions, tableMeta,
-                tableInfoBuilder, compressionCodecName);
+                tableInfoBuilder);
         final long nrows = t.size();
         if (nrows > 0) {
             RowGroupWriter rowGroupWriter = parquetFileWriter.addRowGroup(nrows);
@@ -273,8 +270,7 @@ public class ParquetTableWriter {
             final String path,
             final ParquetInstructions writeInstructions,
             final Map<String, String> tableMeta,
-            final TableInfo.Builder tableInfoBuilder,
-            final CompressionCodecName codecName) throws IOException {
+            final TableInfo.Builder tableInfoBuilder) throws IOException {
         // First, map the TableDefinition to a parquet Schema
         final MappedSchema mappedSchema =
                 MappedSchema.create(computedCache, definition, tableRowSet, columnSourceMap, writeInstructions);
@@ -314,7 +310,8 @@ public class ParquetTableWriter {
         }
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
         return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getInstance(), PAGE_SIZE,
-                new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(), codecName, extraMetaData);
+                new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
+                writeInstructions.getCompressionCodecName(), extraMetaData);
     }
 
     private static <DATA_TYPE> void writeColumnSource(

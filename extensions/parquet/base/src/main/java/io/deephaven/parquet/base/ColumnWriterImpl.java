@@ -1,6 +1,8 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionOutputStream;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
@@ -11,19 +13,23 @@ import org.apache.parquet.compression.CompressionCodecFactory;
 import org.apache.parquet.format.*;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ColumnPath;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.internal.column.columnindex.OffsetIndexBuilder;
 import org.apache.parquet.io.ParquetEncodingException;
 import org.apache.parquet.schema.PrimitiveType;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.apache.parquet.bytes.BytesUtils.getWidthFromMaxInt;
 import static org.apache.parquet.format.Util.writePageHeader;
@@ -34,7 +40,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     private final SeekableByteChannel writeChannel;
     private final ColumnDescriptor column;
     private final RowGroupWriterImpl owner;
-    private final CompressionCodecFactory.BytesInputCompressor compressor;
+    private final CompressionCodec compressor;
     private boolean hasDictionary;
     private int pageCount = 0;
     private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
@@ -58,7 +64,7 @@ public class ColumnWriterImpl implements ColumnWriter {
             final RowGroupWriterImpl owner,
             final SeekableByteChannel writeChannel,
             final ColumnDescriptor column,
-            final CompressionCodecFactory.BytesInputCompressor compressor,
+            final CompressionCodec compressor,
             final int pageSize,
             final ByteBufferAllocator allocator) {
         this.writeChannel = writeChannel;
@@ -122,7 +128,12 @@ public class ColumnWriterImpl implements ColumnWriter {
     public void writeDictionaryPage(final ByteBuffer dictionaryBuffer, final int valuesCount) throws IOException {
         long currentChunkDictionaryPageOffset = writeChannel.position();
         int uncompressedSize = dictionaryBuffer.remaining();
-        BytesInput compressedBytes = compressor.compress(BytesInput.from(dictionaryBuffer));
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (WritableByteChannel channel = Channels.newChannel(compressor.createOutputStream(baos))) {
+            channel.write(dictionaryBuffer);
+        }
+        BytesInput compressedBytes = BytesInput.from(baos);
 
         int compressedPageSize = (int) compressedBytes.size();
 
@@ -248,7 +259,11 @@ public class ColumnWriterImpl implements ColumnWriter {
         int uncompressedDataSize = data.remaining();
         int uncompressedSize = (int) (uncompressedDataSize + repetitionLevels.size() + definitionLevels.size());
 
-        BytesInput compressedData = compressor.compress(BytesInput.from(data));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (WritableByteChannel channel = Channels.newChannel(compressor.createOutputStream(baos))) {
+            channel.write(data);
+        }
+        BytesInput compressedData = BytesInput.from(baos);
         int compressedSize = (int) (compressedData.size() + repetitionLevels.size() + definitionLevels.size());
 
         long initialOffset = writeChannel.position();
@@ -284,7 +299,12 @@ public class ColumnWriterImpl implements ColumnWriter {
                     "Cannot write page larger than Integer.MAX_VALUE bytes: " +
                             uncompressedSize);
         }
-        BytesInput compressedBytes = compressor.compress(bytes);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (CompressionOutputStream cos = compressor.createOutputStream(baos)) {
+            bytes.writeAllTo(cos);
+        }
+        BytesInput compressedBytes = BytesInput.from(baos);
+
         long compressedSize = compressedBytes.size();
         if (compressedSize > Integer.MAX_VALUE) {
             throw new ParquetEncodingException(
@@ -369,7 +389,9 @@ public class ColumnWriterImpl implements ColumnWriter {
     public void close() {
         owner.releaseWriter(this,
                 ColumnChunkMetaData.get(ColumnPath.get(column.getPath()), column.getPrimitiveType(),
-                        compressor.getCodecName(),
+                        Stream.of(CompressionCodecName.values())
+                                .filter(codec -> compressor.getDefaultExtension().equals(codec.getExtension()))
+                                .findAny().get(),
                         null, encodings, Statistics.createStats(column.getPrimitiveType()), firstDataPageOffset,
                         dictionaryOffset, totalValueCount, compressedLength, uncompressedLength));
     }

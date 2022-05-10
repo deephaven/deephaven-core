@@ -1,6 +1,7 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.compression.CompressionCodecFactory;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
@@ -24,10 +25,10 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     private ColumnWriterImpl activeWriter;
     private final BlockMetaData blockMetaData;
     private final List<OffsetIndex> currentOffsetIndexes = new ArrayList<>();
-    private final CompressionCodecFactory.BytesInputCompressor compressor;
+    private final CompressionCodec compressor;
 
     RowGroupWriterImpl(String path, boolean append, SeekableChannelsProvider channelsProvider, MessageType type,
-            int pageSize, ByteBufferAllocator allocator, CompressionCodecFactory.BytesInputCompressor compressor)
+            int pageSize, ByteBufferAllocator allocator, CompressionCodec compressor)
             throws IOException {
         this(channelsProvider.getWriteChannel(path, append), type, pageSize, allocator, blockWithPath(path),
                 compressor);
@@ -40,14 +41,14 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     }
 
     RowGroupWriterImpl(SeekableByteChannel writeChannel, MessageType type, int pageSize, ByteBufferAllocator allocator,
-            CompressionCodecFactory.BytesInputCompressor compressor) {
+            CompressionCodec compressor) {
         this(writeChannel, type, pageSize, allocator, new BlockMetaData(), compressor);
     }
 
 
     private RowGroupWriterImpl(SeekableByteChannel writeChannel, MessageType type, int pageSize,
             ByteBufferAllocator allocator, BlockMetaData blockMetaData,
-            CompressionCodecFactory.BytesInputCompressor compressor) {
+            CompressionCodec compressor) {
         this.writeChannel = writeChannel;
         this.type = type;
         this.pageSize = pageSize;

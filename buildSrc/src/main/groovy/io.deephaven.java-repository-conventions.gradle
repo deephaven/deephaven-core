@@ -1,5 +1,7 @@
 repositories {
     mavenCentral()
+
+    // TODO delete these when this bug is done
     maven {
         url 'https://jitpack.io'
         content {
