@@ -34,8 +34,8 @@ public class ParquetFileReader {
     private final MessageType type;
 
     public ParquetFileReader(final String filePath,
-                             final SeekableChannelsProvider channelsProvider,
-                             final int pageSizeHint) throws IOException {
+            final SeekableChannelsProvider channelsProvider,
+            final int pageSizeHint) throws IOException {
         this.channelsProvider = channelsProvider;
         this.codecFactory = ThreadLocal.withInitial(() -> new CodecFactory(new Configuration(), pageSizeHint));
         // Root path should be this file if a single file, else the parent directory for a metadata file

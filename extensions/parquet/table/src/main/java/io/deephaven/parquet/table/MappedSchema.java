@@ -28,7 +28,8 @@ class MappedSchema {
             final ColumnDefinition<?>... extraColumns) {
         final MessageTypeBuilder builder = Types.buildMessage();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-            TypeInfos.TypeInfo typeInfo = getTypeInfo(computedCache, columnDefinition, rowSet, columnSourceMap, instructions);
+            TypeInfos.TypeInfo typeInfo =
+                    getTypeInfo(computedCache, columnDefinition, rowSet, columnSourceMap, instructions);
             Type schemaType = typeInfo.createSchemaType(columnDefinition, instructions);
             builder.addField(schemaType);
         }

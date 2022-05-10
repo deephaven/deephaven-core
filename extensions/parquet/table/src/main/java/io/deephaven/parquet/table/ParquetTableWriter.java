@@ -323,7 +323,8 @@ public class ParquetTableWriter {
             final TableInfo.Builder tableInfoBuilder,
             final CompressionCodecName codecName) throws IOException {
         // First, map the TableDefinition to a parquet Schema
-        final MappedSchema mappedSchema = MappedSchema.create(computedCache, definition, tableRowSet, columnSourceMap, writeInstructions);
+        final MappedSchema mappedSchema =
+                MappedSchema.create(computedCache, definition, tableRowSet, columnSourceMap, writeInstructions);
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         for (final ColumnDefinition<?> column : definition.getColumns()) {
             final String colName = column.getName();
