@@ -2,6 +2,7 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.Version;
 import org.apache.parquet.bytes.ByteBufferAllocator;
@@ -27,13 +28,14 @@ import static org.apache.parquet.format.Util.writeFileMetaData;
 import static org.apache.parquet.format.Util.writePageHeader;
 
 public class ParquetFileWriter {
-    private static ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
+    private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
     private static final int VERSION = 1;
 
     private final SeekableByteChannel writeChannel;
     private final MessageType type;
     private final int pageSize;
     private final ByteBufferAllocator allocator;
+    @ReferentialIntegrity
     private final SeekableChannelsProvider channelsProvider;
     private final CodecFactory.BytesInputCompressor compressor;
     private final Map<String, String> extraMetaData;

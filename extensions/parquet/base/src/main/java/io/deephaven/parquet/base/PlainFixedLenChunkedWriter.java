@@ -17,12 +17,10 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 
-
 /**
  * Plain encoding except for booleans
  */
 public class PlainFixedLenChunkedWriter extends AbstractBulkValuesWriter<ByteBuffer, Binary> {
-    private static final Logger LOG = LoggerFactory.getLogger(org.apache.parquet.column.values.plain.PlainValuesWriter.class);
     private final ByteBufferAllocator allocator;
     private final int originalLimit;
     private final int fixedLength;
@@ -37,7 +35,6 @@ public class PlainFixedLenChunkedWriter extends AbstractBulkValuesWriter<ByteBuf
         originalLimit = innerBuffer.limit();
         this.fixedLength = fixedLength;
     }
-
 
     @Override
     public final void writeBytes(Binary v) {
@@ -95,14 +92,12 @@ public class PlainFixedLenChunkedWriter extends AbstractBulkValuesWriter<ByteBuf
     public WriteResult writeBulkFilterNulls(ByteBuffer bulkValues, Binary nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
         byte[] nullBytes = nullValue.getBytes();
         byte[] stepBytes = new byte[fixedLength];
-        int nullCount = 0;
         for (int i = bulkValues.position(); i < bulkValues.limit(); i += fixedLength) {
             bulkValues.get(stepBytes);
             if (!Arrays.equals(stepBytes, nullBytes)) {
                 innerBuffer.put(bulkValues);
                 dlEncoder.writeInt(1);
             } else {
-                nullCount++;
                 dlEncoder.writeInt(0);
             }
         }
@@ -113,14 +108,12 @@ public class PlainFixedLenChunkedWriter extends AbstractBulkValuesWriter<ByteBuf
     public WriteResult writeBulkFilterNulls(ByteBuffer bulkValues, Binary nullValue, int rowCount) {
         byte[] nullBytes = nullValue.getBytes();
         byte[] stepBytes = new byte[fixedLength];
-        int nullCount = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         for (int i = bulkValues.position(); i < bulkValues.limit(); i += fixedLength) {
             bulkValues.get(stepBytes);
             if (!Arrays.equals(stepBytes, nullBytes)) {
                 innerBuffer.put(bulkValues);
             } else {
-                nullCount++;
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
             }

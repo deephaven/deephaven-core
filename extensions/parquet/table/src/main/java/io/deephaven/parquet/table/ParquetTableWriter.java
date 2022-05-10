@@ -92,11 +92,11 @@ public class ParquetTableWriter {
 
         private final String outputPath;
         private final Table inputTable;
-        private final Map<String, Map<?, long[]>> columnNameToGroupToRange;
+        private final Map<String, Map<?, RowSet>> columnNameToGroupToRange;
 
         public DestinationInfo(@NotNull final String outputPath,
                 @NotNull final Table inputTable,
-                @NotNull final Map<String, Map<?, long[]>> columnNameToGroupToRange) {
+                @NotNull final Map<String, Map<?, RowSet>> columnNameToGroupToRange) {
             this.outputPath = outputPath;
             this.inputTable = inputTable;
             this.columnNameToGroupToRange = columnNameToGroupToRange;
@@ -125,7 +125,7 @@ public class ParquetTableWriter {
          *
          * @return Get this destination's grouping information
          */
-        public Map<String, Map<?, long[]>> getColumnNameToGroupToRange() {
+        public Map<String, Map<?, RowSet>> getColumnNameToGroupToRange() {
             return columnNameToGroupToRange;
         }
     }
@@ -144,7 +144,10 @@ public class ParquetTableWriter {
      * @throws IOException For file writing related errors
      */
     public static void write(
-            Table t, String path, Map<String, String> incomingMeta, Function<String, String> groupingPathFactory,
+            Table t,
+            String path,
+            Map<String, String> incomingMeta,
+            Function<String, String> groupingPathFactory,
             String... groupingColumns) throws SchemaMappingException, IOException {
         write(t, t.getDefinition(), ParquetInstructions.EMPTY, path, incomingMeta, groupingPathFactory,
                 groupingColumns);
@@ -214,9 +217,12 @@ public class ParquetTableWriter {
     }
 
     public static void write(
-            final Table t, final TableDefinition definition, final ParquetInstructions writeInstructions,
+            final Table t,
+            final TableDefinition definition,
+            final ParquetInstructions writeInstructions,
             final String path,
-            final Map<String, String> incomingMeta, final String... groupingColumns)
+            final Map<String, String> incomingMeta,
+            final String... groupingColumns)
             throws SchemaMappingException, IOException {
         write(t, definition, writeInstructions, path, incomingMeta, defaultGroupingFileName(path), groupingColumns);
     }
@@ -316,8 +322,8 @@ public class ParquetTableWriter {
             final Map<String, String> tableMeta,
             final TableInfo.Builder tableInfoBuilder,
             final CompressionCodecName codecName) throws IOException {
-        final MappedSchema mappedSchema =
-                MappedSchema.create(computedCache, definition, tableRowSet, columnSourceMap, writeInstructions);
+        // First, map the TableDefinition to a parquet Schema
+        final MappedSchema mappedSchema = MappedSchema.create(computedCache, definition, tableRowSet, columnSourceMap, writeInstructions);
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         for (final ColumnDefinition<?> column : definition.getColumns()) {
             final String colName = column.getName();
@@ -340,6 +346,7 @@ public class ParquetTableWriter {
                 columnInfoBuilder.codec(codecInfoBuilder.build());
                 usedColumnInfo = true;
             }
+
             if (StringSet.class.isAssignableFrom(column.getDataType())) {
                 columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.StringSet);
                 usedColumnInfo = true;

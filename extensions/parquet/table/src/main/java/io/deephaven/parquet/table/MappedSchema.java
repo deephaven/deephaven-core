@@ -25,19 +25,20 @@ class MappedSchema {
             final TrackingRowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             final ParquetInstructions instructions,
-            final ColumnDefinition... extraColumns) {
+            final ColumnDefinition<?>... extraColumns) {
         final MessageTypeBuilder builder = Types.buildMessage();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-            TypeInfos.TypeInfo typeInfo =
-                    getTypeInfo(computedCache, columnDefinition, rowSet, columnSourceMap, instructions);
+            TypeInfos.TypeInfo typeInfo = getTypeInfo(computedCache, columnDefinition, rowSet, columnSourceMap, instructions);
             Type schemaType = typeInfo.createSchemaType(columnDefinition, instructions);
             builder.addField(schemaType);
         }
+
         for (final ColumnDefinition<?> extraColumn : extraColumns) {
             builder.addField(getTypeInfo(computedCache, extraColumn, rowSet, columnSourceMap, instructions)
                     .createSchemaType(extraColumn, instructions));
         }
-        MessageType schema = builder.named("root");
+
+        final MessageType schema = builder.named("root");
         return new MappedSchema(definition, schema);
     }
 
