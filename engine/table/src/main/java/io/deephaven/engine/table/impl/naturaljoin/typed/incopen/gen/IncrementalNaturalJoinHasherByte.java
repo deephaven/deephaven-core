@@ -320,7 +320,6 @@ final class IncrementalNaturalJoinHasherByte extends IncrementalNaturalJoinState
     protected void modifyByRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
-        final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
             final byte k0 = keyChunk0.get(chunkPosition);
@@ -554,7 +553,7 @@ final class IncrementalNaturalJoinHasherByte extends IncrementalNaturalJoinState
         mainRightRowKey.set(destinationTableLocation, currentStateValue);
         mainLeftRowSet.set(destinationTableLocation, alternateLeftRowSet.getUnsafe(locationToMigrate));
         alternateLeftRowSet.set(locationToMigrate, null);
-        final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate);;
+        final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate);
         mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie);
         alternateModifiedTrackerCookieSource.set(locationToMigrate, -1L);
         modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, mainInsertMask | destinationTableLocation);;

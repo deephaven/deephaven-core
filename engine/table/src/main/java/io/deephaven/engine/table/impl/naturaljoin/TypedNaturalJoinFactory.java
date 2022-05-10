@@ -174,7 +174,7 @@ public class TypedNaturalJoinFactory {
         builder.addStatement(
                 "mainLeftRowSet.set(destinationTableLocation, alternateLeftRowSet.getUnsafe(locationToMigrate))");
         builder.addStatement("alternateLeftRowSet.set(locationToMigrate, null)");
-        builder.addStatement("final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate);");
+        builder.addStatement("final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate)");
         builder.addStatement("mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie)");
         builder.addStatement("alternateModifiedTrackerCookieSource.set(locationToMigrate, -1L)");
         builder.addStatement(

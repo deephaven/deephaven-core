@@ -227,7 +227,7 @@ public class TypedHasherFactory {
                     TypedNaturalJoinFactory::incrementalRightInsertUpdate,
                     modifiedSlotTrackerParam));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", "existingRightRowKey", true,
+            builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", "existingRightRowKey", false,
                     TypedNaturalJoinFactory::incrementalModifyRightFound,
                     TypedNaturalJoinFactory::incrementalModifyRightMissing,
                     modifiedSlotTrackerParam));
