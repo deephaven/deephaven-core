@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PlainIntChunkedWriter and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
@@ -12,29 +14,28 @@ import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.*;
-
+import java.nio.DoubleBuffer;
+import java.nio.IntBuffer;
 
 /**
  * Plain encoding except for booleans
  */
-public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuffer, Double> {
+public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuffer, Number> {
     private final ByteBufferAllocator allocator;
     private final int originalLimit;
 
-    private DoubleBuffer targetBuffer;
-    private ByteBuffer innerBuffer;
+    private final DoubleBuffer targetBuffer;
+    private final ByteBuffer innerBuffer;
 
     PlainDoubleChunkedWriter(int pageSize, ByteBufferAllocator allocator) {
-        innerBuffer = allocator.allocate(pageSize);
+        this.innerBuffer = allocator.allocate(pageSize);
         innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        originalLimit = innerBuffer.limit();
+        this.originalLimit = innerBuffer.limit();
         this.allocator = allocator;
-        targetBuffer = innerBuffer.asDoubleBuffer();
+        this.targetBuffer = innerBuffer.asDoubleBuffer();
         targetBuffer.mark();
         innerBuffer.mark();
     }
-
 
     @Override
     public final void writeDouble(double v) {
@@ -91,16 +92,14 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
     }
 
     @Override
-    public WriteResult writeBulkFilterNulls(DoubleBuffer bulkValues, Double nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
-        double nullDouble = nullValue;
-        int nullCount = 0;
+    public WriteResult writeBulkFilterNulls(DoubleBuffer bulkValues, Number nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
+        double nullDouble = nullValue.doubleValue();
         while (bulkValues.hasRemaining()) {
             double next = bulkValues.get();
             if (next != nullDouble) {
                 writeDouble(next);
                 dlEncoder.writeInt(1);
             } else {
-                nullCount++;
                 dlEncoder.writeInt(0);
             }
         }
@@ -108,9 +107,8 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
     }
 
     @Override
-    public WriteResult writeBulkFilterNulls(DoubleBuffer bulkValues, Double nullValue, int rowCount) {
-        double nullDouble = nullValue;
-        int nullCount = 0;
+    public WriteResult writeBulkFilterNulls(DoubleBuffer bulkValues, Number nullValue, int rowCount) {
+        double nullDouble = nullValue.doubleValue();
         int i = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
@@ -120,13 +118,9 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
-                nullCount++;
             }
             i++;
         }
         return new WriteResult(rowCount, nullOffsets);
     }
-
-
-
 }

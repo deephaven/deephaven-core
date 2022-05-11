@@ -171,7 +171,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -191,7 +191,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -211,7 +211,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -231,7 +231,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -251,7 +251,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -271,7 +271,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -291,7 +291,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -311,7 +311,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -330,7 +330,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -353,7 +353,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -366,6 +366,7 @@ class TypeInfos {
 
         Set<Class<?>> getTypes();
 
+        @SuppressWarnings("BooleanMethodIsAlwaysInverted")
         default boolean isValidFor(Class<?> clazz) {
             return getTypes().contains(clazz);
         }
@@ -403,7 +404,7 @@ class TypeInfos {
                     .as(LogicalTypeAnnotation.listType()).named(parquetColumnName);
         }
 
-        PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType);
+        PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType);
     }
 
     private static class CodecType<T> implements TypeInfo {
@@ -416,8 +417,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
-
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.BINARY, required, repeating);
         }
     }

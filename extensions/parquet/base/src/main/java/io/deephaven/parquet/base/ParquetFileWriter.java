@@ -24,10 +24,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.parquet.format.Util.writeFileMetaData;
-import static org.apache.parquet.format.Util.writePageHeader;
 
 public class ParquetFileWriter {
-    private static ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
+    private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
     private static final int VERSION = 1;
 
     private final SeekableByteChannel writeChannel;
@@ -58,6 +57,7 @@ public class ParquetFileWriter {
         this.compressor = codecFactory.getCompressor(codecName);
     }
 
+    @SuppressWarnings("unused")
     RowGroupWriter addRowGroup(final String path, final boolean append) throws IOException {
         RowGroupWriterImpl rowGroupWriter =
                 new RowGroupWriterImpl(path, append, channelsProvider, type, pageSize, allocator, compressor);
