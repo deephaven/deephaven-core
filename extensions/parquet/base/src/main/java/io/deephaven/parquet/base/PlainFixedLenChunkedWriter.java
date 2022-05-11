@@ -1,6 +1,3 @@
-/* ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PlainIntChunkedWriter and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
