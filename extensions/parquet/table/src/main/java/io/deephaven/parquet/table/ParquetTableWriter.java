@@ -84,53 +84,6 @@ public class ParquetTableWriter {
     }
 
     /**
-     * <p>
-     * Information about a writing destination (e.g. a particular output partition). Couples destination path, input
-     * table data, and grouping information.
-     */
-    public static final class DestinationInfo {
-
-        private final String outputPath;
-        private final Table inputTable;
-        private final Map<String, Map<?, RowSet>> columnNameToGroupToRange;
-
-        public DestinationInfo(@NotNull final String outputPath,
-                @NotNull final Table inputTable,
-                @NotNull final Map<String, Map<?, RowSet>> columnNameToGroupToRange) {
-            this.outputPath = outputPath;
-            this.inputTable = inputTable;
-            this.columnNameToGroupToRange = columnNameToGroupToRange;
-        }
-
-        /**
-         * Get the output path name for this destination.
-         *
-         * @return The output path
-         */
-        public String getOutputPath() {
-            return outputPath;
-        }
-
-        /**
-         * Get the input table that should be read for this destination.
-         *
-         * @return The input table
-         */
-        public Table getInputTable() {
-            return inputTable;
-        }
-
-        /**
-         * Get a map from column name to the column's "group to range" map.
-         *
-         * @return Get this destination's grouping information
-         */
-        public Map<String, Map<?, RowSet>> getColumnNameToGroupToRange() {
-            return columnNameToGroupToRange;
-        }
-    }
-
-    /**
      * Writes a table in parquet format under a given path
      *
      * @param t The table to write

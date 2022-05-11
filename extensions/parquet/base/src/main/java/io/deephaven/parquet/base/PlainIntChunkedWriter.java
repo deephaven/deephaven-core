@@ -13,8 +13,7 @@ import java.nio.IntBuffer;
 
 
 /**
- * Plain encoding except for ints
- * TODO see if we can replicate from this, dhe seems to
+ * Plain encoding except for booleans
  */
 public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, Number> {
     private final ByteBufferAllocator allocator;

@@ -2,7 +2,6 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.Version;
 import org.apache.parquet.bytes.ByteBufferAllocator;
@@ -25,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.parquet.format.Util.writeFileMetaData;
-import static org.apache.parquet.format.Util.writePageHeader;
 
 public class ParquetFileWriter {
     private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
@@ -35,7 +33,6 @@ public class ParquetFileWriter {
     private final MessageType type;
     private final int pageSize;
     private final ByteBufferAllocator allocator;
-    @ReferentialIntegrity
     private final SeekableChannelsProvider channelsProvider;
     private final CodecFactory.BytesInputCompressor compressor;
     private final Map<String, String> extraMetaData;
@@ -60,6 +57,7 @@ public class ParquetFileWriter {
         this.compressor = codecFactory.getCompressor(codecName);
     }
 
+    @SuppressWarnings("unused")
     RowGroupWriter addRowGroup(final String path, final boolean append) throws IOException {
         RowGroupWriterImpl rowGroupWriter =
                 new RowGroupWriterImpl(path, append, channelsProvider, type, pageSize, allocator, compressor);
