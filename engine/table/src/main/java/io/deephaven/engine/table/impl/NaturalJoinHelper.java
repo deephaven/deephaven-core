@@ -885,8 +885,8 @@ class NaturalJoinHelper {
                     }
 
                     if (rightShifted.nonempty()) {
-                        final WritableRowSet previousToShift =
-                                rightRecorder.getParent().getRowSet().copyPrev().minus(rightRemoved);
+                        final WritableRowSet previousToShift = rightRecorder.getParent().getRowSet().copyPrev();
+                        previousToShift.remove(rightRemoved);
 
                         if (rightKeysModified) {
                             previousToShift.remove(modifiedPreShift);
@@ -895,10 +895,12 @@ class NaturalJoinHelper {
                         final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
                         while (sit.hasNext()) {
                             sit.next();
-                            final RowSet shiftedRowSet =
-                                    previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())
-                                            .shift(sit.shiftDelta());
-                            jsm.applyRightShift(pc, rightSources, shiftedRowSet, sit.shiftDelta(), modifiedSlotTracker);
+                            try (final WritableRowSet shiftedRowSet =
+                                    previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
+                                shiftedRowSet.shiftInPlace(sit.shiftDelta());
+                                jsm.applyRightShift(pc, rightSources, shiftedRowSet, sit.shiftDelta(),
+                                        modifiedSlotTracker);
+                            }
                         }
                     }
 
