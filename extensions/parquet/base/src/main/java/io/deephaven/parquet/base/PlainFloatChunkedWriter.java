@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PlainIntChunkedWriter and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
@@ -16,7 +18,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 /**
- * Plain encoding except for floats
+ * Plain encoding except for booleans
  */
 public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffer, Number> {
     private final ByteBufferAllocator allocator;
