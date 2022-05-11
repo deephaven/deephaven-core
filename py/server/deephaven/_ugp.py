@@ -1,6 +1,8 @@
 #
 #     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+"""This module provides access to the Update Graph Processor's locks that must be acquired to perform certain table
+operations."""
 import contextlib
 
 import jpy

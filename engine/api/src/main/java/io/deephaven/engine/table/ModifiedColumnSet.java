@@ -1,14 +1,13 @@
 package io.deephaven.engine.table;
 
-import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.collect.Iterators;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.datastructures.util.CollectionUtil;
 
 import java.util.BitSet;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 /**
  * Data structure to represent a subset of columns, used for propagating modifications via {@link TableUpdate}
@@ -437,6 +436,8 @@ public class ModifiedColumnSet {
      * @return the names of the dirty columns in this set
      */
     public String[] dirtyColumnNames() {
+        if (dirtyColumns == null)
+            return new String[0];
         return dirtyColumns.stream().mapToObj(ci -> columnNames[ci]).toArray(String[]::new);
     }
 
