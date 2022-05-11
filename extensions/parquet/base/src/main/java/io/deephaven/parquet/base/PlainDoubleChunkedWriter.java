@@ -17,7 +17,6 @@ import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 
-
 /**
  * Plain encoding except for booleans
  */

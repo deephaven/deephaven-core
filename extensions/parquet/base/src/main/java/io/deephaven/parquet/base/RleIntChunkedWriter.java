@@ -14,7 +14,6 @@ import java.nio.IntBuffer;
 
 import static org.apache.parquet.bytes.BytesInput.concat;
 
-
 /**
  * Plain encoding except for booleans
  */
