@@ -80,12 +80,12 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
         final TableUpdate update =
                 new TableUpdateImpl(source.getRowSet(), emptyRowSet, emptyRowSet, emptyShift, emptyColumnSet);
         final boolean isReplay = true;
-        pyCallable.call("__call__", isReplay, update);
+        pyCallable.call("__call__", update, isReplay);
     }
 
     @Override
     public void onUpdate(final TableUpdate update) {
         final boolean isReplay = false;
-        pyCallable.call("__call__", isReplay, update);
+        pyCallable.call("__call__", update, isReplay);
     }
 }
