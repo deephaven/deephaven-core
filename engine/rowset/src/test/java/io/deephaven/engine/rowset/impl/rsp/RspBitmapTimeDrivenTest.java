@@ -19,7 +19,7 @@ import static org.junit.Assert.assertFalse;
 @Category(OutOfBandTest.class)
 public class RspBitmapTimeDrivenTest {
 
-    public static final int RANDOM_SEED = 2;
+    public static final int RANDOM_SEED = 3;
     public static final long DEFAULT_PER_TEST_TIME_BUDGET_MILLIS = 2 * 60 * 1000;
     public static final long LOG_PERIOD_MILLIS = 10 * 1000;
 
