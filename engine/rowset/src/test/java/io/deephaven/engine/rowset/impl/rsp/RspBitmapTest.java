@@ -21,10 +21,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.IntConsumer;
-import java.util.function.LongConsumer;
+import java.util.function.*;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
