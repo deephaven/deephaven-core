@@ -59,7 +59,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
+import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
 
 public class BarrageStreamGenerator implements
@@ -70,6 +70,7 @@ public class BarrageStreamGenerator implements
     private static final int DEFAULT_BATCH_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "batchSize", Integer.MAX_VALUE);
 
+    // defaults to a small value that is likely to succeed and provide data for following batches
     private static final int DEFAULT_INITIAL_BATCH_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "initialBatchSize", 4096);
 
@@ -750,6 +751,10 @@ public class BarrageStreamGenerator implements
                 // was an overflow in the ChunkInputStream generator (probably VarBinary). We can't compute the
                 // correct number of rows from this failure, so cut batch size in half and try again. This may
                 // occur multiple times until the size is restricted properly
+                if (batchSize == 1) {
+                    // this row exceeds internal limits and can never be sent
+                    throw(new UncheckedDeephavenException("BarrageStreamGenerator could not send", ex));
+                }
                 batchSize = Math.max(1, batchSize / 2);
             }
         }
@@ -762,15 +767,15 @@ public class BarrageStreamGenerator implements
         int chunkIdx = 0;
         if (addGeneratorCount > 0) {
             // identify the chunk that holds this startRange (NOTE: will be same for all columns)
-            chunkIdx = (int) (startRange / TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
+            chunkIdx = (int) (startRange / SNAPSHOT_CHUNK_SIZE);
             // verify the selected chunk index is valid
             Assert.assertion(chunkIdx >= 0 && chunkIdx < addGeneratorCount, "appendAddColumns - chunk lookup failed");
             // adjust the batch size if we would cross a chunk boundary
-            endRange = Math.min((long) (chunkIdx + 1) * TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD, endRange);
+            endRange = Math.min((long) (chunkIdx + 1) * SNAPSHOT_CHUNK_SIZE, endRange);
         }
         try (final WritableRowSet myAddedOffsets = view.addRowOffsets().subSetByPositionRange(startRange, endRange);
                 final RowSet adjustedOffsets =
-                        myAddedOffsets.shift((long) chunkIdx * -TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD)) {
+                        myAddedOffsets.shift((long) chunkIdx * -SNAPSHOT_CHUNK_SIZE)) {
             // every column must write to the stream
             for (final ChunkListInputStreamGenerator data : addColumnData) {
                 if (myAddedOffsets.isEmpty() || data.generators.length == 0) {
@@ -807,9 +812,9 @@ public class BarrageStreamGenerator implements
         // for each column identify the chunk that holds this startRange
         for (int ii = 0; ii < modColumnData.length; ++ii) {
             final ModColumnData mcd = modColumnData[ii];
-            int chunkIdx = (int) (startRange / TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
+            int chunkIdx = (int) (startRange / SNAPSHOT_CHUNK_SIZE);
             // adjust the batch size if we would cross a chunk boundary
-            endRange = Math.min((long) (chunkIdx + 1) * TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD, endRange);
+            endRange = Math.min((long) (chunkIdx + 1) * SNAPSHOT_CHUNK_SIZE, endRange);
             columnChunkIdx[ii] = chunkIdx;
         }
         // now add mod-column streams, and write the mod column indexes
@@ -847,7 +852,7 @@ public class BarrageStreamGenerator implements
                     final ChunkInputStreamGenerator generator = mcd.data.generators[chunkIdx];
                     // normalize to the chunk offsets
                     try (final WritableRowSet adjustedOffsets =
-                            myModOffsets.shift((long) chunkIdx * -TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD)) {
+                            myModOffsets.shift((long) chunkIdx * -SNAPSHOT_CHUNK_SIZE)) {
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                                 generator.getInputStream(view.options(), adjustedOffsets);
                         drainableColumn.visitFieldNodes(fieldNodeListener);

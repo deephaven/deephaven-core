@@ -8,6 +8,7 @@ import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
@@ -45,8 +46,6 @@ import java.util.stream.Stream;
 
 import io.deephaven.chunk.attributes.Values;
 
-import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
-
 /**
  * A Set of static utilities for computing values from a table while avoiding the use of the UGP lock. This class
  * supports snapshots in both position space and key space.
@@ -80,6 +79,8 @@ public class ConstructSnapshot {
      */
     private static final int MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttemptDurationMillis", 5000);
+
+    public static final int SNAPSHOT_CHUNK_SIZE = 1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
 
     /**
      * Holder for thread-local state.
@@ -1444,7 +1445,7 @@ public class ConstructSnapshot {
             return result;
         }
 
-        final int maxChunkSize = (int) Math.min(size, TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
+        final int maxChunkSize = (int) Math.min(size, SNAPSHOT_CHUNK_SIZE);
 
         try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(maxChunkSize, sharedContext);
                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
@@ -1469,8 +1470,8 @@ public class ConstructSnapshot {
                 offset += currentChunk.size();
 
                 // recompute the size of the next chunk
-                if (size - offset > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
-                    chunkSize = TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
+                if (size - offset > maxChunkSize) {
+                    chunkSize = maxChunkSize;
                 } else {
                     chunkSize = (int) (size - offset);
                 }
