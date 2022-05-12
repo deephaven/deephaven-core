@@ -15,7 +15,7 @@ public class ModifiedColumnSetTest {
     @Test
     public void testModifiedColumnSet() {
         Map<String, ColumnSource<?>> columns = new HashMap<String, ColumnSource<?>>();
-        String[] cols = new String[]{"Col1", "Col2", "Col3"};
+        String[] cols = new String[] {"Col1", "Col2", "Col3"};
         Arrays.stream(cols).forEach(col -> columns.put(col, null));
 
         ModifiedColumnSet mcs = new ModifiedColumnSet(columns);
@@ -29,7 +29,7 @@ public class ModifiedColumnSetTest {
 
         mcs.setAll("Col2", "Col3");
         dirtyColumnNames = mcs.dirtyColumnNames();
-        assertArrayEquals(dirtyColumnNames, new String[]{"Col2", "Col3"});
+        assertArrayEquals(dirtyColumnNames, new String[] {"Col2", "Col3"});
 
         BitSet bitSet = mcs.extractAsBitSet();
         BitSet expected_bitSet = new BitSet(3);
