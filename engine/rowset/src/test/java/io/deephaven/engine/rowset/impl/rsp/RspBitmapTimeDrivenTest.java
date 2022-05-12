@@ -19,7 +19,7 @@ import static org.junit.Assert.assertFalse;
 @Category(OutOfBandTest.class)
 public class RspBitmapTimeDrivenTest {
 
-    public static final int RANDOM_SEED = 3;
+    public static final int RANDOM_SEED = 4;
     public static final long DEFAULT_PER_TEST_TIME_BUDGET_MILLIS = 2 * 60 * 1000;
     public static final long LOG_PERIOD_MILLIS = 10 * 1000;
 
@@ -27,7 +27,7 @@ public class RspBitmapTimeDrivenTest {
     public static final int SPEC_OPTIONS = 6;
 
     // Each position in the spec array represents one block in a series of consecutive RSP blocks
-    // in the result.  Position i in the spec array represents the block starting at i*BLOCK_SIZE
+    // in the result. Position i in the spec array represents the block starting at i*BLOCK_SIZE
     private static OrderedLongSet fromBlockSpec(final int[] spec) {
         final OrderedLongSet.BuilderSequential b = new OrderedLongSetBuilderSequential();
         for (int i = 0; i < spec.length; ++i) {
@@ -130,10 +130,9 @@ public class RspBitmapTimeDrivenTest {
     }
 
     enum Operation {
-        AND_NOT_EQUALS,
-        AND_EQUALS,
-        OR_EQUALS
+        AND_NOT_EQUALS, AND_EQUALS, OR_EQUALS
     }
+
     private static final Map<Operation, BiFunction<RspBitmap, RspBitmap, RspBitmap>> rspOps = new HashMap<>();
     static {
         rspOps.put(Operation.AND_NOT_EQUALS, RspBitmap::andNotEquals);
@@ -186,7 +185,8 @@ public class RspBitmapTimeDrivenTest {
         long nextLog = start + LOG_PERIOD_MILLIS;
         long lastLogChecksDone = 0;
         final String testName = "binaryOps-" + op + "-" + mode + "-" + toTimeStr(testTimeBudgetMillis);
-        System.out.printf("%s: Starting, search space for %d blocks is %d combinations.%n", testName, nblocks, totalChecks);
+        System.out.printf("%s: Starting, search space for %d blocks is %d combinations.%n", testName, nblocks,
+                totalChecks);
         while (true) {
             final long now = System.currentTimeMillis();
             if (now > deadline) {
@@ -280,6 +280,6 @@ public class RspBitmapTimeDrivenTest {
     public void testOrEqualsRandom() {
         final Operation op = Operation.OR_EQUALS;
         binaryOpsExhaustiveHelper(op, rspOps.get(op), osetOps.get(op), 8, TestSequenceMode.RANDOM,
-                DEFAULT_PER_TEST_TIME_BUDGET_MILLIS);
+                60 * 60 * 1000);
     }
 }
