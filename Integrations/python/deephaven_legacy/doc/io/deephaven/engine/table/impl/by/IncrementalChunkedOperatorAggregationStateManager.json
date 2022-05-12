@@ -9,6 +9,7 @@
   "findPositionForKey": ":param key: java.lang.Object\n:return: int",
   "getKeyHashTableSources": ":return: io.deephaven.engine.table.ColumnSource[]",
   "makeAggregationStateBuildContext": ":param buildSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManager.BuildContext",
+  "makeBuildContext": ":param buildSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManager.BuildContext",
   "makeProbeContext": ":param probeSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManager.ProbeContext",
   "rehashRequired": ":return: boolean",
   "remove": ":param pc: io.deephaven.util.SafeCloseable\n:param rowSequence: io.deephaven.engine.rowset.RowSequence\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param outputPositions: io.deephaven.chunk.WritableIntChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param emptiedPositions: io.deephaven.chunk.WritableIntChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>",

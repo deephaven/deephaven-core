@@ -92,6 +92,9 @@ spotless {
                 '**/incopenagg/gen/*.java',
                 '**/staticagg/gen/*.java',
                 '**/staticopenagg/gen/*.java',
+                '**/naturaljoin/staticopen/gen/*.java',
+                '**/naturaljoin/incopen/gen/*.java',
+                '**/naturaljoin/rightincopen/gen/*.java',
                 'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
                 'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
                 'src/test/java/**/*Sample.java'

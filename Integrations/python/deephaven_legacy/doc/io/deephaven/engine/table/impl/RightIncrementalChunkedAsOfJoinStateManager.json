@@ -14,6 +14,7 @@
   "getRightSsaOrIndex": ":param slot: long\n:param indexOutput: org.apache.commons.lang3.mutable.MutableObject<io.deephaven.engine.rowset.WritableRowSet>\n:return: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray",
   "getState": ":param slot: long\n:return: byte",
   "getTableSize": ":return: int",
+  "makeBuildContext": ":param buildSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.engine.table.impl.RightIncrementalChunkedAsOfJoinStateManager.BuildContext",
   "makeProbeContext": ":param probeSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.engine.table.impl.RightIncrementalChunkedAsOfJoinStateManager.ProbeContext",
   "markForRemoval": ":param restampRemovals: io.deephaven.engine.rowset.RowSet\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param slots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param sequentialBuilders: io.deephaven.engine.table.impl.sources.ObjectArraySource<io.deephaven.engine.rowset.RowSetBuilderSequential>\n:return: int",
   "probeAdditions": ":param restampAdditions: io.deephaven.engine.rowset.RowSet\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param slots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param sequentialBuilders: io.deephaven.engine.table.impl.sources.ObjectArraySource<io.deephaven.engine.rowset.RowSetBuilderSequential>\n:return: int",

@@ -71,6 +71,12 @@ public class ImmutableCharArraySource extends AbstractDeferredGroupingColumnSour
         return data[(int)index];
     }
 
+    public final char getAndSetUnsafe(long index, char newValue) {
+        char oldValue = data[(int)index];
+        data[(int)index] = newValue;
+        return oldValue;
+    }
+
     @Override
     public final void set(long key, char value) {
         data[(int)key] = value;

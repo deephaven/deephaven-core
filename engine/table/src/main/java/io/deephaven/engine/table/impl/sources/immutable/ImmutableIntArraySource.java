@@ -76,6 +76,12 @@ public class ImmutableIntArraySource extends AbstractDeferredGroupingColumnSourc
         return data[(int)index];
     }
 
+    public final int getAndSetUnsafe(long index, int newValue) {
+        int oldValue = data[(int)index];
+        data[(int)index] = newValue;
+        return oldValue;
+    }
+
     @Override
     public final void set(long key, int value) {
         data[(int)key] = value;

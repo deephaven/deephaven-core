@@ -34,8 +34,9 @@ final class StaticAggHasherFloatShort extends StaticChunkedOperatorAggregationSt
 
     private final ShortArraySource overflowKeySource1;
 
-    public StaticAggHasherFloatShort(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggHasherFloatShort(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (FloatArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (FloatArraySource) super.overflowKeySources[0];

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.TypedHasherUtil",
+ "methods": {
+  "getKeyChunks": ":param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param contexts: io.deephaven.engine.table.ChunkSource.GetContext[]\n:param chunks: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>[]\n:param rowSequence: io.deephaven.engine.rowset.RowSequence",
+  "getPrevKeyChunks": ":param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param contexts: io.deephaven.engine.table.ChunkSource.GetContext[]\n:param chunks: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>[]\n:param rowSequence: io.deephaven.engine.rowset.RowSequence",
+  "makeGetContexts": ":param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param sharedState: io.deephaven.engine.table.SharedContext\n:param chunkSize: int\n:return: io.deephaven.engine.table.ChunkSource.GetContext[]"
+ },
+ "path": "io.deephaven.engine.table.impl.util.TypedHasherUtil",
+ "text": "Static functions used by Typed Hashers.",
+ "typeName": "class"
+}

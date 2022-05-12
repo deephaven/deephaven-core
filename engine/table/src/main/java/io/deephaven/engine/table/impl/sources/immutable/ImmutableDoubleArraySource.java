@@ -76,6 +76,12 @@ public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSo
         return data[(int)index];
     }
 
+    public final double getAndSetUnsafe(long index, double newValue) {
+        double oldValue = data[(int)index];
+        data[(int)index] = newValue;
+        return oldValue;
+    }
+
     @Override
     public final void set(long key, double value) {
         data[(int)key] = value;
