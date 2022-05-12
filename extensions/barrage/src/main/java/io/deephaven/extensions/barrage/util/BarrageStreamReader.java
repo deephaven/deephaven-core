@@ -37,13 +37,13 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.function.LongConsumer;
-import java.util.function.LongConsumer;
-
-import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
 
 public class BarrageStreamReader implements StreamReader {
 
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamReader.class);
+
+    // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
+    private static final int MAX_CHUNK_SIZE = Integer.MAX_VALUE - 8;
 
     private final LongConsumer deserializeTmConsumer;
 
@@ -134,8 +134,7 @@ public class BarrageStreamReader implements StreamReader {
                             msg.addColumnData[ci].data = new ArrayList<>();
 
                             // create an initial chunk of the correct size
-                            final int chunkSize =
-                                    (int) (Math.min(msg.rowsIncluded.size(), TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD));
+                            final int chunkSize = (int) (Math.min(msg.rowsIncluded.size(), MAX_CHUNK_SIZE));
                             msg.addColumnData[ci].data.add(columnChunkTypes[ci].makeWritableChunk(chunkSize));
                         }
                         numAddRowsTotal = msg.rowsIncluded.size();
@@ -154,7 +153,7 @@ public class BarrageStreamReader implements StreamReader {
 
                             // create an initial chunk of the correct size
                             final int chunkSize = (int) (Math.min(msg.modColumnData[ci].rowsModified.size(),
-                                    TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD));
+                                    MAX_CHUNK_SIZE));
                             msg.modColumnData[ci].data.add(columnChunkTypes[ci].makeWritableChunk(chunkSize));
 
                             numModRowsTotal = Math.max(numModRowsTotal, msg.modColumnData[ci].rowsModified.size());
@@ -249,7 +248,7 @@ public class BarrageStreamReader implements StreamReader {
 
                             // need to add the batch row data to the column chunks
                             WritableChunk<Values> chunk = (WritableChunk<Values>) acd.data.get(lastChunkIndex);
-                            int chunkSize = chunk.size();
+                            int chunkSize = chunk == null ? 0 : chunk.size();
 
                             final int chunkOffset;
                             long rowOffset = numAddRowsRead - lastAddStartIndex;
@@ -258,8 +257,10 @@ public class BarrageStreamReader implements StreamReader {
                                 lastAddStartIndex += chunkSize;
 
                                 // create a new chunk before trying to write again
-                                chunkSize = (int) (Math.min(numAddRowsTotal - numAddRowsRead,
-                                        TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD));
+                                chunkSize = (int) (Math.min(numAddRowsTotal - numAddRowsRead, MAX_CHUNK_SIZE));
+                                // make sure the chunk will hold this batch (DoPut won't populate numAddRowsTotal)
+                                chunkSize = Math.max((int) batch.length(), chunkSize);
+
                                 chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
                                 acd.data.add(chunk);
 
@@ -294,7 +295,7 @@ public class BarrageStreamReader implements StreamReader {
                                 lastModStartIndex += chunkSize;
 
                                 // create a new chunk before trying to write again
-                                chunkSize = (int) (Math.min(remaining, TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD));
+                                chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
                                 chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
                                 mcd.data.add(chunk);
 

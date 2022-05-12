@@ -33,6 +33,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final RowSet parentRowSet;
     private final boolean isRedirected;
     private final boolean flattenedResult;
+    private final boolean alreadyFlattenedSources;
     private final BitSet dependencyBitSet;
     private final boolean canUseThreads;
     private final boolean canParallelizeThisColumn;
@@ -45,7 +46,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     SelectColumnLayer(RowSet parentRowSet, SelectAndViewAnalyzer inner, String name, SelectColumn sc,
             WritableColumnSource ws, WritableColumnSource underlying,
             String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected,
-            boolean flattenedResult) {
+            boolean flattenedResult, boolean alreadyFlattenedSources) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.parentRowSet = parentRowSet;
         this.writableSource = ws;
@@ -53,6 +54,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.dependencyBitSet = new BitSet();
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
         this.flattenedResult = flattenedResult;
+        this.alreadyFlattenedSources = alreadyFlattenedSources;
 
         // we can't use threads at all if we have column that uses a Python query scope, because we are likely operating
         // under the GIL which will cause a deadlock
@@ -372,6 +374,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     @Override
     public boolean flattenedResult() {
         return flattenedResult;
+    }
+
+    @Override
+    public boolean alreadyFlattenedSources() {
+        return alreadyFlattenedSources;
     }
 
     @Override

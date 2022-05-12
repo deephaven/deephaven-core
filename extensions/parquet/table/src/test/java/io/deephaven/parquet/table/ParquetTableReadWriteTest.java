@@ -264,6 +264,8 @@ public class ParquetTableReadWriteTest {
             final Table table1 = getTableFlat(10000, false);
             ParquetTools.writeTable(table1, path);
             assertTrue(new File(path).length() > 0);
+            final Table table2 = ParquetTools.readTable(path);
+            TstUtils.assertTableEquals(table1, table2);
         } finally {
             ParquetInstructions.setDefaultCompressionCodecName(currentCodec);
         }

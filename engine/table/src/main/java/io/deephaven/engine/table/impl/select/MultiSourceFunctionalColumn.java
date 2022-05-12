@@ -76,29 +76,26 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @Override
     public List<String> initInputs(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
-        if (sourceColumns == null) {
-            final List<ColumnSource<?>> localSources = new ArrayList<>(sourceNames.size());
-            final List<ColumnSource<?>> localPrev = new ArrayList<>(sourceNames.size());
+        final List<ColumnSource<?>> localSources = new ArrayList<>(sourceNames.size());
+        final List<ColumnSource<?>> localPrev = new ArrayList<>(sourceNames.size());
 
-            // the column overrides occur when we are in the midst of an update; but we only reinterpret columns with an
-            // updateView, not as part of a generalized update. Thus if this is happening our assumptions have been
-            // violated
-            // and we could provide the wrong answer by not paying attention to the columnsOverride
-            sourceNames.forEach(name -> {
-                final ColumnSource<?> localSourceColumnSource = columnsOfInterest.get(name);
-                if (localSourceColumnSource == null) {
-                    throw new IllegalArgumentException("Source column " + name + " doesn't exist!");
-                }
+        // the column overrides occur when we are in the midst of an update; but we only reinterpret columns with an
+        // updateView, not as part of a generalized update. Thus if this is happening our assumptions have been
+        // violated and we could provide the wrong answer by not paying attention to the columnsOverride
+        sourceNames.forEach(name -> {
+            final ColumnSource<?> localSourceColumnSource = columnsOfInterest.get(name);
+            if (localSourceColumnSource == null) {
+                throw new IllegalArgumentException("Source column " + name + " doesn't exist!");
+            }
 
-                localSources.add(localSourceColumnSource);
-                localPrev.add(new PrevColumnSource<>(localSourceColumnSource));
-            });
+            localSources.add(localSourceColumnSource);
+            localPrev.add(new PrevColumnSource<>(localSourceColumnSource));
+        });
 
-            sourceColumns = localSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
-            prevSources = localPrev.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+        sourceColumns = localSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+        prevSources = localPrev.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
-            usesPython = Arrays.stream(sourceColumns).anyMatch(ColumnSource::preventsParallelism);
-        }
+        usesPython = Arrays.stream(sourceColumns).anyMatch(ColumnSource::preventsParallelism);
 
         return getColumns();
     }

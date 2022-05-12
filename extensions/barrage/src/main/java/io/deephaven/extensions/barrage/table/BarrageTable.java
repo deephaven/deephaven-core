@@ -49,8 +49,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
-import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
-
 /**
  * A client side {@link Table} that mirrors an upstream/server side {@code Table}.
  *
@@ -62,6 +60,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             Configuration.getInstance().getBooleanWithDefault("BarrageTable.debug", false);
 
     private static final Logger log = LoggerFactory.getLogger(BarrageTable.class);
+
+    private static final int BATCH_SIZE = 1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
 
     private final UpdateSourceRegistrar registrar;
     private final NotificationQueue notificationQueue;
@@ -324,8 +324,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
             if (update.rowsIncluded.isNonempty()) {
                 // perform the addition operations in batches for efficiency
-                final int addBatchSize = (int) Math.min(update.rowsIncluded.size(),
-                        1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY);
+                final int addBatchSize = (int) Math.min(update.rowsIncluded.size(), BATCH_SIZE);
 
                 if (mightBeInitialSnapshot) {
                     // ensure the data sources have at least the incoming capacity. The sources can auto-resize but
@@ -399,8 +398,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 }
 
                 // perform the modification operations in batches for efficiency
-                final int modBatchSize = (int) Math.min(column.rowsModified.size(),
-                        1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY);
+                final int modBatchSize = (int) Math.min(column.rowsModified.size(), BATCH_SIZE);
                 modifiedColumnSet.setColumnWithIndex(ii);
 
                 try (final ChunkSource.FillContext redirContext = rowRedirection.makeFillContext(modBatchSize, null);
@@ -515,7 +513,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         }
 
         // Note: these are NOT OrderedRowKeys until after the call to .sort()
-        final int chunkSize = (int) Math.min(rowsToFree.size(), TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
+        final int chunkSize = (int) Math.min(rowsToFree.size(), BATCH_SIZE);
 
         try (final WritableLongChunk<OrderedRowKeys> redirectedRows = WritableLongChunk.makeWritableChunk(chunkSize);
                 final RowSequence.Iterator rowsToFreeIterator = rowsToFree.getRowSequenceIterator()) {

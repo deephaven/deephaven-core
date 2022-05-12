@@ -5,7 +5,6 @@
 package io.deephaven.server.barrage;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Streams;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
@@ -63,8 +62,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
+import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 
 /**
  * The server-side implementation of a Barrage replication source.
@@ -1000,7 +1000,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     synchronized (BarrageMessageProducer.this) {
                         final StatusRuntimeException apiError = GrpcUtil.securelyWrapError(log, exception);
 
-                        Streams.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
+                        Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
                                 .forEach(sub -> GrpcUtil.safelyExecuteLocked(sub.listener,
                                         () -> sub.listener.onError(apiError)));
 
@@ -1627,7 +1627,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     try (final RowSequence.Iterator it = localAdded.getRowSequenceIterator()) {
                         while (it.hasMore()) {
                             final RowSequence rs =
-                                    it.getNextRowSequenceWithLength(TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
+                                    it.getNextRowSequenceWithLength(SNAPSHOT_CHUNK_SIZE);
                             final int chunkCapacity = rs.intSize("serializeItems");
                             final WritableChunk<Values> chunk = adds.chunkType.makeWritableChunk(chunkCapacity);
                             try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
@@ -1656,7 +1656,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     try (final RowSequence.Iterator it = localModified.getRowSequenceIterator()) {
                         while (it.hasMore()) {
                             final RowSequence rs =
-                                    it.getNextRowSequenceWithLength(TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
+                                    it.getNextRowSequenceWithLength(SNAPSHOT_CHUNK_SIZE);
                             final int chunkCapacity = rs.intSize("serializeItems");
                             final WritableChunk<Values> chunk = mods.chunkType.makeWritableChunk(chunkCapacity);
                             try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
@@ -1754,7 +1754,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 try (final RowSequence.Iterator it = localAdded.getRowSequenceIterator()) {
                     while (it.hasMore()) {
-                        final RowSequence rs = it.getNextRowSequenceWithLength(TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
+                        final RowSequence rs = it.getNextRowSequenceWithLength(SNAPSHOT_CHUNK_SIZE);
                         long[] addedMapping = new long[rs.intSize()];
                         Arrays.fill(addedMapping, RowSequence.NULL_ROW_KEY);
                         retval.addedMappings.add(addedMapping);
@@ -1763,7 +1763,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 try (final RowSequence.Iterator it = retval.recordedMods.getRowSequenceIterator()) {
                     while (it.hasMore()) {
-                        final RowSequence rs = it.getNextRowSequenceWithLength(TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
+                        final RowSequence rs = it.getNextRowSequenceWithLength(SNAPSHOT_CHUNK_SIZE);
                         long[] modifiedMapping = new long[rs.intSize()];
                         Arrays.fill(modifiedMapping, RowSequence.NULL_ROW_KEY);
                         retval.modifiedMappings.add(modifiedMapping);

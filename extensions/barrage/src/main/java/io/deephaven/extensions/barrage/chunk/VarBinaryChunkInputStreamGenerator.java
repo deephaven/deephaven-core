@@ -6,22 +6,19 @@ package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.io.LittleEndianDataOutputStream;
 import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
@@ -30,119 +27,95 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
-
 public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamGenerator<ObjectChunk<T, Values>> {
     private static final String DEBUG_NAME = "ObjectChunkInputStream Serialization";
+    private static final int BYTE_CHUNK_SIZE = 1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
 
     private final Appender<T> appendItem;
 
-    public static class ByteStorage extends OutputStream {
+    public static class ByteStorage extends OutputStream implements SafeCloseable {
 
         private final WritableLongChunk<ChunkPositions> offsets;
-        private final ArrayList<byte[]> byteArrays;
-        private final TLongArrayList byteArrayOffsets;
+        private final ArrayList<WritableByteChunk<Values>> byteChunks;
 
-        private BarrageProtoUtil.ExposedByteArrayOutputStream baos;
-
-        private long writtenByteCount;
+        /**
+         * The total number of bytes written to this output stream
+         */
+        private long writtenTotalByteCount = 0L;
+        /**
+         * The total number of bytes written to the current ByteChunk
+         */
+        private int activeChunkByteCount = 0;
+        /**
+         * The ByteChunk to which we are currently writing
+         */
+        private WritableByteChunk<Values> activeChunk = null;
 
         public ByteStorage(int size) {
             offsets = WritableLongChunk.makeWritableChunk(size);
+            byteChunks = new ArrayList<>();
 
-            byteArrays = new ArrayList<>();
-            byteArrayOffsets = new TLongArrayList();
-            byteArrayOffsets.add(0L);
-
-            this.writtenByteCount = 0L;
-
-            baos = new BarrageProtoUtil.ExposedByteArrayOutputStream();
+            // create an initial chunk for data storage.  it might not be needed, but eliminates testing on every
+            // write operation and the costs for creating and disposing from the pool are minimal
+            byteChunks.add(activeChunk = WritableByteChunk.makeWritableChunk(BYTE_CHUNK_SIZE));
         }
 
         public boolean isEmpty() {
-            return byteArrays.isEmpty();
+            return writtenTotalByteCount == 0;
         }
 
         /**
-         * Writes the specified byte to the underlying {@code ByteArrayOutputStream}.
+         * Writes the specified byte to the underlying {@code ByteChunk}.
          *
          * @param   b   the byte to be written.
          */
         public synchronized void write(int b) throws IOException {
-            if ((long) baos.size() + 1 > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
-                // close the current stream and add to the
-                finish();
-                // create a new output stream
-                baos = new BarrageProtoUtil.ExposedByteArrayOutputStream();
+            // test for overflow
+            if (activeChunkByteCount + 1 > BYTE_CHUNK_SIZE) {
+                byteChunks.add(activeChunk = WritableByteChunk.makeWritableChunk(BYTE_CHUNK_SIZE));
+                activeChunkByteCount = 0;
             }
             // do the write
-            baos.write(b);
+            activeChunk.set(activeChunkByteCount++, (byte)b);
+
             // increment the offset
-            writtenByteCount += 1;
+            writtenTotalByteCount += 1;
         }
 
         /**
          * Writes {@code len} bytes from the specified byte array
-         * starting at offset {@code off} to the underlying {@code ByteArrayOutputStream}.
+         * starting at offset {@code off} to the underlying {@code ByteChunk}.
          *
          * @param   b     the data.
          * @param   off   the start offset in the data.
          * @param   len   the number of bytes to write.
-         * @throws  NullPointerException if {@code b} is {@code null}.
          * @throws  IndexOutOfBoundsException if {@code off} is negative,
          * {@code len} is negative, or {@code len} is greater than
          * {@code b.length - off}
          */
-        public synchronized void write(byte b[], int off, int len) throws IOException {
-            if ((long) baos.size() + len > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
-                finish();
-                // create a new output stream
-                baos = new BarrageProtoUtil.ExposedByteArrayOutputStream();
-            }
-            // do the write
-            baos.write(b, off, len);
-            // increment the offset
-            writtenByteCount += len;
-        }
+        public synchronized void write(@NotNull byte[] b, int off, int len) throws IOException {
+            int remaining = len;
+            while (remaining > 0) {
+                final int writeLen = Math.min(remaining, BYTE_CHUNK_SIZE - activeChunkByteCount);
 
-        /**
-         * Writes the complete contents of the specified byte array
-         * to the underlying {@code ByteArrayOutputStream}.
-         *
-         * @apiNote
-         * This method is equivalent to {@link #write(byte[],int,int)
-         * write(b, 0, b.length)}.
-         *
-         * @param   b     the data.
-         * @throws  NullPointerException if {@code b} is {@code null}.
-         * @since   11
-         */
-        public void writeBytes(byte b[]) throws IOException {
-            if ((long) baos.size() + b.length > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
-                finish();
-                // create a new output stream
-                baos = new BarrageProtoUtil.ExposedByteArrayOutputStream();
+                // do the write
+                activeChunk.copyFromTypedArray(b, off, activeChunkByteCount, writeLen);
+
+                // increment the counts
+                writtenTotalByteCount += writeLen;
+                activeChunkByteCount += writeLen;
+                remaining -= writeLen;
+
+                // allocate a new chunk when needed
+                if (activeChunkByteCount == BYTE_CHUNK_SIZE) {
+                    byteChunks.add(activeChunk = WritableByteChunk.makeWritableChunk(BYTE_CHUNK_SIZE));
+                    activeChunkByteCount = 0;
+                }
             }
-            // do the write
-            baos.write(b, 0, b.length);
-            // increment the offset
-            writtenByteCount += b.length;
         }
 
         public long size() {
-            return writtenByteCount;
-        }
-
-        /***
-         * completes the creation of the internal byte[] and closes open output streams
-         */
-        public void finish() throws IOException {
-            // add the buffer to storage
-            byteArrays.add(baos.peekBuffer());
-            // set the offset of the next buffer
-            byteArrayOffsets.add(byteArrayOffsets.get(byteArrayOffsets.size() - 1) + baos.size());
-            // close the old output stream
-            baos.close();
+            return writtenTotalByteCount;
         }
 
         /***
@@ -154,19 +127,6 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
          */
         public long getPayloadSize(int sPos, int ePos) {
             return offsets.get(ePos + 1) - offsets.get(sPos);
-        }
-
-        private int getByteArrayIndex(long bytePos) {
-            // optimize for most common case
-            if (byteArrays.size() == 1) {
-                return 0;
-            }
-            int idx = byteArrayOffsets.binarySearch(bytePos);
-            if (idx < 0) {
-                // return the index that contains this byte position
-                idx = -idx - 2;
-            }
-            return idx;
         }
 
         /***
@@ -184,18 +144,40 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
             long startBytePos = offsets.get(sPos);
             while (remainingBytes > 0) {
-                final int arrayIdx = getByteArrayIndex(startBytePos);
-                // find the offset in the current byte[]
-                final int offset =
-                        LongSizedDataStructure.intSize(DEBUG_NAME, startBytePos - byteArrayOffsets.get(arrayIdx));
-                // compute the length (don't exceed end of the current byte[])
-                final int len = (int) Math.min(remainingBytes, byteArrayOffsets.get(arrayIdx + 1) - startBytePos);
-                // do the write
-                dos.write(byteArrays.get(arrayIdx), offset, len);
+                final int chunkIdx = (int)(startBytePos / BYTE_CHUNK_SIZE);
+                final int byteIdx = (int)(startBytePos % BYTE_CHUNK_SIZE);
+
+                final ByteChunk<?> chunk = byteChunks.get(chunkIdx);
+
+                final int len = (int) Math.min(remainingBytes, BYTE_CHUNK_SIZE - byteIdx);
+
+                // do the write (using the stream adapter utility)
+                ByteChunkToOutputStreamAdapter.write(dos, chunk, byteIdx, len);
+
+                // increment the offsets
                 startBytePos += len;
                 remainingBytes -= len;
             }
             return writeLen;
+        }
+
+        @Override
+        public void close() {
+            try {
+                super.close();
+            } catch (IOException e) {
+                // ignore this error
+            }
+
+            // close the offset and byte chunks
+            if (offsets instanceof PoolableChunk) {
+                ((PoolableChunk) offsets).close();
+            }
+            for (ByteChunk<?> chunk : byteChunks) {
+                if (chunk instanceof PoolableChunk) {
+                    ((PoolableChunk) chunk).close();
+                }
+            }
         }
     }
 
@@ -230,8 +212,6 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             }
             byteStorage.offsets.set(i + 1, byteStorage.size());
         }
-        // must call this function after writes are complete
-        byteStorage.finish();
     }
 
     @Override
@@ -241,7 +221,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                 ((PoolableChunk) chunk).close();
             }
             if (byteStorage != null) {
-                byteStorage.offsets.close();
+                byteStorage.close();
             }
         }
     }
@@ -318,7 +298,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
                 // there are n+1 offsets; it is not assumed first offset is zero
                 if (!subset.isEmpty() && subset.size() == byteStorage.offsets.size() - 1) {
-                    totalCachedSize.add(byteStorage.offsets.size() * Integer.BYTES);
+                    totalCachedSize.add(byteStorage.offsets.size() * (long) Integer.BYTES);
                     totalCachedSize.add(byteStorage.size());
                 } else {
                     totalCachedSize.add(subset.isEmpty() ? 0 : Integer.BYTES); // account for the n+1 offset

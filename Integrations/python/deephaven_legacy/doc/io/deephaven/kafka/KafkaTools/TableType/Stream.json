@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.kafka.KafkaTools$TableType$Stream",
+ "methods": {
+  "isMap": ":return: boolean",
+  "walk": "Note: Java generics information - <T,\nV extends io.deephaven.kafka.KafkaTools.TableType.Visitor<T>>\n\n:param visitor: V\n:return: T"
+ },
+ "path": "io.deephaven.kafka.KafkaTools.TableType.Stream",
+ "text": "Consume all partitions into a single interleaved stream table, which will present only newly-available rows\n to downstream operations and visualizations.\n \n See Table.STREAM_TABLE_ATTRIBUTE for a detailed explanation of stream table semantics, and\n StreamTableTools for related tooling.",
+ "typeName": "class"
+}
