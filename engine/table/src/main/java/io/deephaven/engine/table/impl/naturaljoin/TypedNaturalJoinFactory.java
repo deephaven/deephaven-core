@@ -151,10 +151,6 @@ public class TypedNaturalJoinFactory {
                 NaturalJoinModifiedSlotTracker.class);
     }
 
-    public static void rightIncrementalMissing(CodeBlock.Builder builder) {
-        // we don't care, this could be a right hand side that had no left value
-    }
-
     public static void incrementalRehashSetup(CodeBlock.Builder builder) {
         builder.addStatement("final Object [] oldLeftRowSet = mainLeftRowSet.getArray()");
         builder.addStatement("final Object [] destLeftRowSet = new Object[tableSize]");
@@ -203,7 +199,6 @@ public class TypedNaturalJoinFactory {
             CodeBlock.Builder builder) {
         final String sourceType = getSourceType(alternate);
         final String tableLocation = getTableLocation(alternate);
-        builder.addStatement("final long existingRightRowKey = $LRightRowKey.getUnsafe($L)", sourceType, tableLocation);
         builder.beginControlFlow("if (existingRightRowKey == $T.NULL_ROW_KEY)", RowSet.class);
         builder.addStatement("$LRightRowKey.set($L, rowKeyChunk.get(chunkPosition))", sourceType, tableLocation);
         builder.nextControlFlow("else if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);

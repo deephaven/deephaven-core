@@ -90,8 +90,8 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
             MAIN_SEARCH: while (true) {
-                long rightRowKeyForState = mainRightRowKey.getUnsafe(tableLocation);
-                if (rightRowKeyForState == EMPTY_RIGHT_STATE) {
+                long existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation);
+                if (existingRightRowKey == EMPTY_RIGHT_STATE) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
@@ -99,7 +99,6 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    final long existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation);
                     if (existingRightRowKey == RowSet.NULL_ROW_KEY) {
                         mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
                     } else if (existingRightRowKey < RowSet.NULL_ROW_KEY) {

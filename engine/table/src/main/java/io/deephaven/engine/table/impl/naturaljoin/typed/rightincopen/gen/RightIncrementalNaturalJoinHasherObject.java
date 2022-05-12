@@ -94,8 +94,6 @@ final class RightIncrementalNaturalJoinHasherObject extends RightIncrementalNatu
                 tableLocation = nextTableLocation(tableLocation);
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
             }
-            if (!found) {
-            }
         }
     }
 
@@ -121,8 +119,6 @@ final class RightIncrementalNaturalJoinHasherObject extends RightIncrementalNatu
                 }
                 tableLocation = nextTableLocation(tableLocation);
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
-            }
-            if (!found) {
             }
         }
     }
@@ -153,8 +149,6 @@ final class RightIncrementalNaturalJoinHasherObject extends RightIncrementalNatu
                 tableLocation = nextTableLocation(tableLocation);
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
             }
-            if (!found) {
-            }
         }
     }
 
@@ -181,8 +175,6 @@ final class RightIncrementalNaturalJoinHasherObject extends RightIncrementalNatu
                 tableLocation = nextTableLocation(tableLocation);
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
             }
-            if (!found) {
-            }
         }
     }
 
@@ -208,8 +200,6 @@ final class RightIncrementalNaturalJoinHasherObject extends RightIncrementalNatu
                 }
                 tableLocation = nextTableLocation(tableLocation);
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
-            }
-            if (!found) {
             }
         }
     }

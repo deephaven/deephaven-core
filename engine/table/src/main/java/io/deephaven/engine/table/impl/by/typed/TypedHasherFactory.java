@@ -163,7 +163,7 @@ public class TypedHasherFactory {
 
             builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", "leftRowSetForState", true,
                     TypedNaturalJoinFactory::rightIncrementalRightFound,
-                    TypedNaturalJoinFactory::rightIncrementalMissing));
+                    null));
 
 
             final TypeName modifiedSlotTracker = TypeName.get(NaturalJoinModifiedSlotTracker.class);
@@ -172,22 +172,22 @@ public class TypedHasherFactory {
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "leftRowSetForState", true,
                     TypedNaturalJoinFactory::rightIncrementalRemoveFound,
-                    TypedNaturalJoinFactory::rightIncrementalMissing,
+                    null,
                     modifiedSlotTrackerParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", "leftRowSetForState", true,
                     TypedNaturalJoinFactory::rightIncrementalAddFound,
-                    TypedNaturalJoinFactory::rightIncrementalMissing,
+                    null,
                     modifiedSlotTrackerParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", "leftRowSetForState", true,
                     TypedNaturalJoinFactory::rightIncrementalModify,
-                    TypedNaturalJoinFactory::rightIncrementalMissing,
+                    null,
                     modifiedSlotTrackerParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("applyRightShift", "leftRowSetForState", true,
                     TypedNaturalJoinFactory::rightIncrementalShift,
-                    TypedNaturalJoinFactory::rightIncrementalMissing,
+                    null,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
                     modifiedSlotTrackerParam));
         } else if (baseClass.equals(IncrementalNaturalJoinStateManagerTypedBase.class)) {
@@ -212,7 +212,7 @@ public class TypedHasherFactory {
                     true, false, TypedNaturalJoinFactory::incrementalBuildLeftFound,
                     TypedNaturalJoinFactory::incrementalBuildLeftInsert));
 
-            builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightRowKeyForState", true,
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "existingRightRowKey", true,
                     false, TypedNaturalJoinFactory::incrementalRightFound,
                     TypedNaturalJoinFactory::incrementalRightInsert));
 
