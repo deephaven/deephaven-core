@@ -753,7 +753,8 @@ public class BarrageStreamGenerator implements
                 // occur multiple times until the size is restricted properly
                 if (batchSize == 1) {
                     // this row exceeds internal limits and can never be sent
-                    throw(new UncheckedDeephavenException("BarrageStreamGenerator could not send", ex));
+                    throw (new UncheckedDeephavenException(
+                            "BarrageStreamGenerator - single row (" + offset + ") exceeds transmissible size", ex));
                 }
                 batchSize = Math.max(1, batchSize / 2);
             }
