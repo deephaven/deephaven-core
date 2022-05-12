@@ -4,6 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.BooleanUtils;
@@ -15,6 +16,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,15 +25,24 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import static io.deephaven.util.QueryConstants.*;
 
-public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implements UngroupableColumnSource {
+/**
+ * A {@link ColumnSource} that uses a {@link RowRedirection} to direct access into an underlying wrapped
+ * {@link ColumnSource}. This is used, for example, in a {@link Table#sort(String...)}.
+ *
+ * @param <T>
+ */
+public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
+        implements UngroupableColumnSource {
     protected final RowRedirection rowRedirection;
     protected final ColumnSource<T> innerSource;
+    private final boolean ascendingMapping;
 
     public RedirectedColumnSource(@NotNull final RowRedirection rowRedirection,
             @NotNull final ColumnSource<T> innerSource) {
         super(innerSource.getType());
         this.rowRedirection = rowRedirection;
         this.innerSource = innerSource;
+        this.ascendingMapping = rowRedirection.ascendingMapping();
     }
 
     @Override
@@ -380,13 +391,13 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
 
         @Override
         public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
-            return new FillContext(this, chunkCapacity, sharedContext, true);
+            return new FillContext(this, chunkCapacity, sharedContext, true, ascendingMapping);
         }
     }
 
     @Override
     public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new FillContext(this, chunkCapacity, sharedContext, false);
+        return new FillContext(this, chunkCapacity, sharedContext, false, ascendingMapping);
     }
 
     @Override
@@ -413,7 +424,9 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
 
         effectiveContext.shareable.ensureMappedKeysInitialized(rowRedirection, usePrev, rowSequence);
 
-        if (FillUnordered.providesFillUnordered(innerSource)) {
+        if (ascendingMapping) {
+            effectiveContext.doOrderedFillAscending(innerSource, usePrev, destination);
+        } else if (innerSource instanceof FillUnordered) {
             effectiveContext.doUnorderedFill((FillUnordered) innerSource, usePrev, destination);
         } else {
             effectiveContext.doOrderedFillAndPermute(innerSource, usePrev, destination);
@@ -432,15 +445,15 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
         private final PermuteKernel permuteKernel;
         private final boolean booleanNullByte;
 
-        FillContext(final RedirectedColumnSource cs, final int chunkCapacity, final SharedContext sharedContext,
-                boolean booleanNullByte) {
+        FillContext(final RedirectedColumnSource<?> cs, final int chunkCapacity, final SharedContext sharedContext,
+                boolean booleanNullByte, boolean ascendingMapping) {
             this.booleanNullByte = booleanNullByte;
-            shareable = sharedContext == null ? new Shareable(false, cs, chunkCapacity)
+            shareable = sharedContext == null ? new Shareable(false, cs, chunkCapacity, ascendingMapping)
                     : sharedContext.getOrCreate(new SharingKey(cs.rowRedirection),
-                            () -> new Shareable(true, cs, chunkCapacity));
+                            () -> new Shareable(true, cs, chunkCapacity, ascendingMapping));
             innerFillContext = cs.innerSource.makeFillContext(chunkCapacity, shareable);
 
-            if (FillUnordered.providesFillUnordered(cs.innerSource)) {
+            if (ascendingMapping || FillUnordered.providesFillUnordered(cs.innerSource)) {
                 innerOrderedValues = null;
                 innerOrderedValuesSlice = null;
                 dupExpandKernel = null;
@@ -494,22 +507,33 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
             private boolean sortedFillContextReusable;
             private int uniqueKeyCount;
             private boolean hasNulls;
+            private int nullCount;
             private RowSequence innerRowSequence;
 
-            private Shareable(final boolean shared, final RedirectedColumnSource cs, final int chunkCapacity) {
+            private Shareable(final boolean shared, final RedirectedColumnSource<?> cs, final int chunkCapacity,
+                    boolean ascendingMapping) {
                 this.shared = shared;
 
                 rowRedirectionFillContext = cs.rowRedirection.makeFillContext(chunkCapacity, this);
                 mappedKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
 
-                sortKernelContext = LongIntTimsortKernel.createContext(chunkCapacity);
-                sortedMappedKeys = shared ? WritableLongChunk.makeWritableChunk(chunkCapacity) : mappedKeys;
-                mappedKeysOrder = WritableIntChunk.makeWritableChunk(chunkCapacity);
-                // Note that we can't just compact mappedKeys in place, in case we're sharing with another
-                // source with an inner source that is a FillUnordered.
-                compactedMappedKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
-                nonNullCompactedMappedKeys = ResettableWritableLongChunk.makeResettableChunk();
-                runLengths = WritableIntChunk.makeWritableChunk(chunkCapacity);
+                if (!ascendingMapping) {
+                    sortKernelContext = LongIntTimsortKernel.createContext(chunkCapacity);
+                    sortedMappedKeys = shared ? WritableLongChunk.makeWritableChunk(chunkCapacity) : mappedKeys;
+                    mappedKeysOrder = WritableIntChunk.makeWritableChunk(chunkCapacity);
+                    // Note that we can't just compact mappedKeys in place, in case we're sharing with another
+                    // source with an inner source that is a FillUnordered.
+                    compactedMappedKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
+                    nonNullCompactedMappedKeys = ResettableWritableLongChunk.makeResettableChunk();
+                    runLengths = WritableIntChunk.makeWritableChunk(chunkCapacity);
+                } else {
+                    sortKernelContext = null;
+                    sortedMappedKeys = null;
+                    mappedKeysOrder = null;
+                    compactedMappedKeys = null;
+                    nonNullCompactedMappedKeys = null;
+                    runLengths = null;
+                }
             }
 
             private void ensureMappedKeysInitialized(@NotNull final RowRedirection rowRedirection,
@@ -528,6 +552,21 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
                     rowRedirection.fillPrevChunk(rowRedirectionFillContext, mappedKeys, rowSequence);
                 } else {
                     rowRedirection.fillChunk(rowRedirectionFillContext, mappedKeys, rowSequence);
+                }
+
+                if (rowRedirection.ascendingMapping()) {
+                    nullCount = 0;
+                    for (int ii = mappedKeys.size() - 1; ii >= 0; ii--) {
+                        if (mappedKeys.get(ii) == RowSequence.NULL_ROW_KEY) {
+                            nullCount++;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if (nullCount > 0) {
+                        mappedKeys.setSize(mappedKeys.size() - nullCount);
+                    }
                 }
 
                 mappedKeysReusable = shared;
@@ -606,14 +645,11 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
                 rowRedirectionFillContext.close();
                 mappedKeys.close();
 
-                sortKernelContext.close();
-                if (sortedMappedKeys != mappedKeys) {
+                if (sortedMappedKeys != null && sortedMappedKeys != mappedKeys) {
                     sortedMappedKeys.close();
                 }
-                mappedKeysOrder.close();
-                compactedMappedKeys.close();
-                nonNullCompactedMappedKeys.close();
-                runLengths.close();
+                SafeCloseable.closeArray(sortKernelContext, mappedKeysOrder, compactedMappedKeys,
+                        nonNullCompactedMappedKeys, runLengths);
 
                 super.close();
             }
@@ -665,6 +701,26 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
             // Permute expanded, ordered result into destination
             destination.setSize(shareable.totalKeyCount);
             permuteKernel.permute(innerOrderedValues, shareable.mappedKeysOrder, destination);
+        }
+
+        private void doOrderedFillAscending(@NotNull final ColumnSource<?> innerSource, final boolean usePrev,
+                @NotNull final WritableChunk<? super Values> destination) {
+            try (RowSequence innerOk =
+                    RowSequenceFactory.wrapRowKeysChunkAsRowSequence(LongChunk.downcast(shareable.mappedKeys))) {
+                // Read compacted, ordered keys
+                if (usePrev) {
+                    innerSource.fillPrevChunk(innerFillContext, destination, innerOk);
+                } else {
+                    innerSource.fillChunk(innerFillContext, destination, innerOk);
+                }
+
+                if (shareable.nullCount > 0) {
+                    final int startOff = destination.size();
+                    final int finalSize = startOff + shareable.nullCount;
+                    destination.setSize(finalSize);
+                    destination.fillWithNullValue(startOff, shareable.nullCount);
+                }
+            }
         }
     }
 

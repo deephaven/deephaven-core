@@ -4,12 +4,16 @@
 
 package io.deephaven.kafka;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import gnu.trove.map.hash.TIntLongHashMap;
+import io.confluent.kafka.schemaregistry.avro.AvroSchema;
+import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.SchemaMetadata;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
@@ -44,23 +48,15 @@ import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
-import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericContainer;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.http.*;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.*;
+import org.apache.kafka.common.utils.Utils;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 import org.jetbrains.annotations.NotNull;
@@ -68,8 +64,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.*;
@@ -121,44 +115,6 @@ public class KafkaTools {
 
     private static final int CHUNK_SIZE = 2048;
 
-    private static String extractSchemaServerResponse(final HttpResponse response) throws IOException {
-        final HttpEntity entity = response.getEntity();
-        final Header encodingHeader = entity.getContentEncoding();
-        final Charset encoding = encodingHeader == null
-                ? StandardCharsets.UTF_8
-                : Charsets.toCharset(encodingHeader.getValue());
-        return EntityUtils.toString(entity, encoding);
-    }
-
-    /**
-     * Fetch an Avro schema from a Confluent compatible Schema Server.
-     *
-     * @param schemaServerUrl The schema server URL
-     * @param resourceName The resource name that the schema is known as in the schema server
-     * @param version The version to fetch, or the string "latest" for the latest version.
-     * @return An Avro schema.
-     */
-    public static Schema getAvroSchema(final String schemaServerUrl, final String resourceName, final String version) {
-        String action = "setup http client";
-        try (final CloseableHttpClient client = HttpClients.custom().build()) {
-            final String requestStr =
-                    schemaServerUrl + "/subjects/" + resourceName + "/versions/" + version + "/schema";
-            final HttpUriRequest request = RequestBuilder.get().setUri(requestStr).build();
-            action = "execute schema request " + requestStr;
-            final HttpResponse response = client.execute(request);
-            final int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode != HttpStatus.SC_OK) {
-                throw new UncheckedDeephavenException("Got status code " + statusCode + " requesting " + request);
-            }
-            action = "extract json server response";
-            final String json = extractSchemaServerResponse(response);
-            action = "parse schema server response: " + json;
-            return new Schema.Parser().parse(json);
-        } catch (Exception e) {
-            throw new UncheckedDeephavenException("Exception while trying to " + action, e);
-        }
-    }
-
     /**
      * Create an Avro schema object for a String containing a JSON encoded Avro schema definition.
      * 
@@ -167,50 +123,6 @@ public class KafkaTools {
      */
     public static Schema getAvroSchema(final String avroSchemaAsJsonString) {
         return new Schema.Parser().parse(avroSchemaAsJsonString);
-    }
-
-    /**
-     * Push an Avro schema from a Confluent compatible Schema Server.
-     *
-     * @param schema An Avro schema
-     * @param schemaServerUrl The schema server URL
-     * @param resourceName The resource name that the schema will be known as in the schema server
-     * @return The version for the added resource as returned by schema server.
-     */
-    public static String putAvroSchema(
-            final Schema schema, final String schemaServerUrl, final String resourceName) {
-        String action = "setup http client";
-        try (final CloseableHttpClient client = HttpClients.custom().build()) {
-            final String requestStr =
-                    schemaServerUrl + "/subjects/" + resourceName + "/versions/";
-            final ObjectMapper mapper = new ObjectMapper();
-            final ObjectNode root = mapper.createObjectNode();
-            root.put("schema", schema.toString());
-            final String jsonRequest = mapper.writeValueAsString(root);
-            final HttpUriRequest request = RequestBuilder.post()
-                    .setHeader("Content-Type", "application/vnd.schemaregistry.v1+json")
-                    .setEntity(new StringEntity(jsonRequest))
-                    .setUri(requestStr)
-                    .build();
-            action = "execute schema request " + requestStr;
-            final HttpResponse response = client.execute(request);
-            final int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
-                throw new UncheckedDeephavenException(
-                        "Got response status code " + statusCode + " for request '" + jsonRequest + "': " +
-                                extractSchemaServerResponse(response));
-            }
-            action = "extract json server response";
-            final String jsonStr = extractSchemaServerResponse(response);
-            action = "parse json server response: '" + jsonStr + "' for request '" + jsonRequest + "'";
-            final JsonNode jnode = mapper.readTree(jsonStr).get("version");
-            if (jnode == null) {
-                return null;
-            }
-            return jnode.asText();
-        } catch (Exception e) {
-            throw new UncheckedDeephavenException("Exception while trying to " + action, e);
-        }
     }
 
     public static Schema columnDefinitionsToAvroSchema(
@@ -341,18 +253,6 @@ public class KafkaTools {
             fass = base.bytesBuilder().prop(dhTypeAttribute, type.getName()).endBytes().noDefault();
         }
         return fass;
-    }
-
-    /**
-     * Fetch the latest version of an Avro schema from a Confluent compatible Schema Server.
-     *
-     * @param schemaServerUrl The schema server URL
-     * @param resourceName The resource name that the schema is known as in the schema server
-     * @return An Avro schema.
-     */
-    @SuppressWarnings("unused")
-    public static Schema getAvroSchema(final String schemaServerUrl, final String resourceName) {
-        return getAvroSchema(schemaServerUrl, resourceName, AVRO_LATEST_VERSION);
     }
 
     private static void pushColumnTypesFromAvroField(
@@ -912,6 +812,13 @@ public class KafkaTools {
                     this.publishSchema = publishSchema;
                     this.schemaNamespace = schemaNamespace;
                     this.columnProperties = new MutableObject<>(columnProperties);
+                    if (publishSchema) {
+                        if (schemaVersion != null && !AVRO_LATEST_VERSION.equals(schemaVersion)) {
+                            throw new IllegalArgumentException(
+                                    String.format("schemaVersion must be null or \"%s\" when publishSchema=true",
+                                            AVRO_LATEST_VERSION));
+                        }
+                    }
                 }
 
                 @Override
@@ -923,29 +830,18 @@ public class KafkaTools {
                     if (schema != null) {
                         return;
                     }
-                    final String schemaServiceUrl = ensureAndGetSchemaServerProprety(kafkaProperties);
                     if (publishSchema) {
                         schema = columnDefinitionsToAvroSchema(t,
                                 schemaName, schemaNamespace, columnProperties.getValue(), includeOnlyColumns,
                                 excludeColumns, columnProperties);
-                        final String putVersion = putAvroSchema(schema, schemaServiceUrl, schemaName);
-                        if (putVersion != null && schemaVersion != null && !schemaVersion.equals(putVersion)) {
-                            throw new IllegalStateException("Specified expected version " + schemaVersion
-                                    + " mismatch: schema server put for schema name " +
-                                    schemaName + " resulted in version " + putVersion);
+                        try {
+                            putAvroSchema(kafkaProperties, schemaName, schema);
+                        } catch (RestClientException | IOException e) {
+                            throw new UncheckedDeephavenException(e);
                         }
                     } else {
-                        schema = getAvroSchema(schemaServiceUrl, schemaName, schemaVersion);
+                        schema = getAvroSchema(kafkaProperties, schemaName, schemaVersion);
                     }
-                }
-
-                private static String ensureAndGetSchemaServerProprety(final Properties kafkaProperties) {
-                    if (!kafkaProperties.containsKey(SCHEMA_SERVER_PROPERTY)) {
-                        throw new IllegalArgumentException(
-                                "Avro schema name specified but schema server url property " +
-                                        SCHEMA_SERVER_PROPERTY + " not found.");
-                    }
-                    return kafkaProperties.getProperty(SCHEMA_SERVER_PROPERTY);
                 }
 
                 String[] getColumnNames(final Table t, final Properties kafkaProperties) {
@@ -1766,17 +1662,36 @@ public class KafkaTools {
     }
 
     static Schema getAvroSchema(final Properties kafkaProperties, final String schemaName, final String schemaVersion) {
-        final String schemaServiceUrl = kafkaProperties.getProperty(SCHEMA_SERVER_PROPERTY);
-        if (schemaServiceUrl == null) {
-            throw new IllegalArgumentException(
-                    "Schema server url property " + SCHEMA_SERVER_PROPERTY + " not found.");
-
+        try {
+            final SchemaRegistryClient registryClient = createSchemaRegistryClient(kafkaProperties);
+            final SchemaMetadata schemaMetadata;
+            if (AVRO_LATEST_VERSION.equals(schemaVersion)) {
+                schemaMetadata = registryClient.getLatestSchemaMetadata(schemaName);
+            } else {
+                schemaMetadata = registryClient.getSchemaMetadata(schemaName, Integer.parseInt(schemaVersion));
+            }
+            return (Schema) registryClient.getSchemaById(schemaMetadata.getId()).rawSchema();
+        } catch (RestClientException | IOException e) {
+            throw new UncheckedDeephavenException(e);
         }
-        return getAvroSchema(schemaServiceUrl, schemaName, schemaVersion != null ? schemaVersion : AVRO_LATEST_VERSION);
     }
 
-    static Schema getAvroSchema(final Properties kafkaProperties, final String schemaName) {
-        return getAvroSchema(kafkaProperties, schemaName, AVRO_LATEST_VERSION);
+    private static SchemaRegistryClient createSchemaRegistryClient(Properties kafkaProperties) {
+        // This logic is how the SchemaRegistryClient is built internally.
+        // io.confluent.kafka.serializers.AbstractKafkaSchemaSerDe#configureClientProperties
+        final KafkaAvroDeserializerConfig config = new KafkaAvroDeserializerConfig(Utils.propsToMap(kafkaProperties));
+        return new CachedSchemaRegistryClient(
+                config.getSchemaRegistryUrls(),
+                config.getMaxSchemasPerSubject(),
+                Collections.singletonList(new AvroSchemaProvider()),
+                config.originalsWithPrefix(""),
+                config.requestHeaders());
+    }
+
+    private static int putAvroSchema(Properties kafkaProperties, String schemaName, Schema schema)
+            throws RestClientException, IOException {
+        final SchemaRegistryClient registryClient = createSchemaRegistryClient(kafkaProperties);
+        return registryClient.register(schemaName, new AvroSchema(schema));
     }
 
     private static KeyOrValueIngestData getIngestData(

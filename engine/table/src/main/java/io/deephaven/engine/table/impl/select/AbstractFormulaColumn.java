@@ -4,7 +4,6 @@
 
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
@@ -84,9 +83,6 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @Override
     public List<String> initInputs(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
-        if (this.rowSet != null) {
-            Assert.eq(this.rowSet, "this.rowSet", rowSet, "rowSet");
-        }
         this.rowSet = rowSet;
 
         this.columnSources = columnsOfInterest;

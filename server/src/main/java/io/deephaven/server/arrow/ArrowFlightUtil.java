@@ -702,7 +702,7 @@ public class ArrowFlightUtil {
             }
 
             @Override
-            public void close() {
+            public synchronized void close() {
                 if (onExportResolvedContinuation != null) {
                     onExportResolvedContinuation.cancel();
                     onExportResolvedContinuation = null;

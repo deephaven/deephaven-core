@@ -1258,10 +1258,10 @@ public class QueryTable extends BaseTable {
                                     publishTheseSources, selectColumns);
 
                     // Init all the rows by cooking up a fake Update
-                    final TableUpdate fakeUpdate =
-                            new TableUpdateImpl(rowSet.copy(),
-                                    RowSetFactory.empty(), RowSetFactory.empty(),
-                                    RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
+                    final TableUpdate fakeUpdate = new TableUpdateImpl(
+                            analyzer.alreadyFlattenedSources() ? RowSetFactory.flat(rowSet.size()) : rowSet.copy(),
+                            RowSetFactory.empty(), RowSetFactory.empty(),
+                            RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
 
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
                     final SelectAndViewAnalyzer.JobScheduler jobScheduler;
@@ -1318,6 +1318,9 @@ public class QueryTable extends BaseTable {
                                         effects, analyzer);
                         listenForUpdates(soul);
                     } else {
+                        if (resultTable.getRowSet().isFlat()) {
+                            resultTable.setFlat();
+                        }
                         if (resultTable.getRowSet() == rowSet) {
                             propagateGrouping(selectColumns, resultTable);
                         }

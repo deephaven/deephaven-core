@@ -37,7 +37,9 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
 
     @Override
     int getLayerIndexFor(String column) {
-        return inner.getLayerIndexFor(column);
+        // Result columns' applyUpdate depend on the result of the redirection.
+        Assert.eq(inner.getLayerIndexFor(column), "inner.getLayerIndexFor(column)", BASE_LAYER_INDEX);
+        return REDIRECTION_LAYER_INDEX;
     }
 
     @Override

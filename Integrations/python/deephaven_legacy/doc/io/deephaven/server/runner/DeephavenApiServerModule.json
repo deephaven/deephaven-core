@@ -3,6 +3,7 @@
  "methods": {
   "provideAppMode": ":return: io.deephaven.server.appmode.AppMode",
   "provideScheduler": ":param poolSize: int\n:return: io.deephaven.server.util.Scheduler",
+  "provideScriptSession": ":param scriptTypes: java.util.Map<java.lang.String,javax.inject.Provider<io.deephaven.engine.util.ScriptSession>>\n:return: io.deephaven.engine.util.ScriptSession",
   "provideUpdateGraphProcessor": ":return: io.deephaven.engine.updategraph.UpdateGraphProcessor"
  },
  "path": "io.deephaven.server.runner.DeephavenApiServerModule",
