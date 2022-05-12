@@ -11,6 +11,7 @@ import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
 import io.grpc.servlet.web.websocket.WebSocketServerStream;
+import io.grpc.servlet.jakarta.web.GrpcWebFilter;
 import jakarta.servlet.DispatcherType;
 import jakarta.websocket.server.ServerEndpointConfig;
 import nl.altindag.ssl.SSLFactory;
@@ -77,6 +78,9 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // Direct jetty all use this configuration as the root application
         context.setContextPath("/");
+
+        // Handle grpc-web connections, translate to vanilla grpc
+        context.addFilter(new FilterHolder(new GrpcWebFilter()), "/*", EnumSet.noneOf(DispatcherType.class));
 
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
