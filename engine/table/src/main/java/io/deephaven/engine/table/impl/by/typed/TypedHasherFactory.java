@@ -1104,7 +1104,8 @@ public class TypedHasherFactory {
             builder.addStatement("$T $L", hasherConfig.stateType, ps.stateValueName);
         }
 
-        final String stateSourceName = alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName;
+        final String stateSourceName =
+                alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName;
         if (ps.stateValueName == null) {
             builder.beginControlFlow("while ($L.getUnsafe($L) != $L)",
                     stateSourceName, tableLocationName,
