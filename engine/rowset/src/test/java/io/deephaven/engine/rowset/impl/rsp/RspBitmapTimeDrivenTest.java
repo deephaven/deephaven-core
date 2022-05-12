@@ -280,6 +280,6 @@ public class RspBitmapTimeDrivenTest {
     public void testOrEqualsRandom() {
         final Operation op = Operation.OR_EQUALS;
         binaryOpsExhaustiveHelper(op, rspOps.get(op), osetOps.get(op), 8, TestSequenceMode.RANDOM,
-                60 * 60 * 1000);
+                DEFAULT_PER_TEST_TIME_BUDGET_MILLIS);
     }
 }
