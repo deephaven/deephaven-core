@@ -123,7 +123,7 @@ class TableListenerTestCase(BaseTestCase):
 
         table_listener_handle = TableListenerHandle(self.test_table, listener_func)
         table_listener_handle.start(do_replay=True)
-        ensure_ugp_cycles(table_update_recorder)
+        ensure_ugp_cycles(table_update_recorder, cycles=3)
         table_listener_handle.stop()
 
         self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True,

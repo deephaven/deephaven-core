@@ -5,6 +5,7 @@ import gnu.trove.impl.Constants;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.BitSet;
 import java.util.Map;
@@ -437,7 +438,7 @@ public class ModifiedColumnSet {
      */
     public String[] dirtyColumnNames() {
         if (dirtyColumns == null)
-            return new String[0];
+            return ArrayTypeUtils.EMPTY_STRING_ARRAY;
         return dirtyColumns.stream().mapToObj(ci -> columnNames[ci]).toArray(String[]::new);
     }
 
