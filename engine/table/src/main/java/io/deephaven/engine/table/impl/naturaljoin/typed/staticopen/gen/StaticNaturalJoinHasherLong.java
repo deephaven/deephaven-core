@@ -128,7 +128,6 @@ final class StaticNaturalJoinHasherLong extends StaticNaturalJoinStateManagerTyp
             final long k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
-            boolean found = false;
             int tableLocation = firstTableLocation;
             long existingStateValue;
             while ((existingStateValue = mainRightRowKey.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
@@ -140,7 +139,6 @@ final class StaticNaturalJoinHasherLong extends StaticNaturalJoinStateManagerTyp
                         final long rightRowKeyToInsert = rowKeyChunk.get(chunkPosition);
                         mainRightRowKey.set(tableLocation, rightRowKeyToInsert);
                     }
-                    found = true;
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);

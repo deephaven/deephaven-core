@@ -443,8 +443,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
             int tableLocation = firstTableLocation;
-            long rightRowKeyForState;
-            while ((rightRowKeyForState = mainRightRowKey.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
+            while (mainRightRowKey.getUnsafe(tableLocation) != EMPTY_RIGHT_STATE) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     mainLeftRowSet.getUnsafe(tableLocation).remove(rowKeyChunk.get(chunkPosition));
                     found = true;
@@ -458,7 +457,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                 boolean alternateFound = false;
                 if (firstAlternateTableLocation < rehashPointer) {
                     int alternateTableLocation = firstAlternateTableLocation;
-                    while ((rightRowKeyForState = alternateRightRowKey.getUnsafe(alternateTableLocation)) != EMPTY_RIGHT_STATE) {
+                    while (alternateRightRowKey.getUnsafe(alternateTableLocation) != EMPTY_RIGHT_STATE) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             alternateLeftRowSet.getUnsafe(alternateTableLocation).remove(rowKeyChunk.get(chunkPosition));
                             alternateFound = true;
@@ -486,8 +485,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
             int tableLocation = firstTableLocation;
-            long rightRowKeyForState;
-            while ((rightRowKeyForState = mainRightRowKey.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
+            while (mainRightRowKey.getUnsafe(tableLocation) != EMPTY_RIGHT_STATE) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final WritableRowSet leftRowSetForState = mainLeftRowSet.getUnsafe(tableLocation);
                     final long keyToShift = rowKeyChunk.get(chunkPosition);
@@ -508,7 +506,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                 boolean alternateFound = false;
                 if (firstAlternateTableLocation < rehashPointer) {
                     int alternateTableLocation = firstAlternateTableLocation;
-                    while ((rightRowKeyForState = alternateRightRowKey.getUnsafe(alternateTableLocation)) != EMPTY_RIGHT_STATE) {
+                    while (alternateRightRowKey.getUnsafe(alternateTableLocation) != EMPTY_RIGHT_STATE) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             final WritableRowSet leftRowSetForState = alternateLeftRowSet.getUnsafe(alternateTableLocation);
                             final long keyToShift = rowKeyChunk.get(chunkPosition);

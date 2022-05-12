@@ -161,7 +161,7 @@ public class TypedHasherFactory {
                     true, true, TypedNaturalJoinFactory::rightIncrementalBuildLeftFound,
                     TypedNaturalJoinFactory::rightIncrementalBuildLeftInsert));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", "leftRowSetForState", true,
+            builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", null, true,
                     TypedNaturalJoinFactory::rightIncrementalRightFound,
                     null));
 
@@ -170,22 +170,22 @@ public class TypedHasherFactory {
             final ParameterSpec modifiedSlotTrackerParam =
                     ParameterSpec.builder(modifiedSlotTracker, "modifiedSlotTracker").build();
 
-            builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "leftRowSetForState", true,
+            builder.addProbe(new HasherConfig.ProbeSpec("removeRight", null, true,
                     TypedNaturalJoinFactory::rightIncrementalRemoveFound,
                     null,
                     modifiedSlotTrackerParam));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", "leftRowSetForState", true,
+            builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", null, true,
                     TypedNaturalJoinFactory::rightIncrementalAddFound,
                     null,
                     modifiedSlotTrackerParam));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", "leftRowSetForState", true,
+            builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", null, true,
                     TypedNaturalJoinFactory::rightIncrementalModify,
                     null,
                     modifiedSlotTrackerParam));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("applyRightShift", "leftRowSetForState", true,
+            builder.addProbe(new HasherConfig.ProbeSpec("applyRightShift", null, true,
                     TypedNaturalJoinFactory::rightIncrementalShift,
                     null,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
@@ -246,11 +246,11 @@ public class TypedHasherFactory {
                     ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
                     ParameterSpec.builder(long.class, "leftRedirectionOffset").build()));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", "rightRowKeyForState", true,
+            builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", null, true,
                     TypedNaturalJoinFactory::incrementalRemoveLeftFound,
                     TypedNaturalJoinFactory::incrementalRemoveLeftMissing));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("applyLeftShift", "rightRowKeyForState", true,
+            builder.addProbe(new HasherConfig.ProbeSpec("applyLeftShift", null, true,
                     TypedNaturalJoinFactory::incrementalShiftLeftFound,
                     TypedNaturalJoinFactory::incrementalShiftLeftMissing,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
@@ -1086,9 +1086,13 @@ public class TypedHasherFactory {
         final String firstTableLocationName = alternate ? "firstAlternateTableLocation" : "firstTableLocation";
         final String tableLocationMethod = alternate ? "hashToTableLocationAlternate" : "hashToTableLocation";
         final String foundName = alternate ? "alternateFound" : "found";
+        final boolean foundBlockRequired = (hasherConfig.openAddressedAlternate && !alternate) || ps.missing != null;
 
         builder.addStatement("final int $L = $L(hash)", firstTableLocationName, tableLocationMethod);
-        builder.addStatement("boolean $L = false", foundName);
+
+        if (foundBlockRequired) {
+            builder.addStatement("boolean $L = false", foundName);
+        }
 
         if (alternate) {
             builder.beginControlFlow("if ($L < rehashPointer)", firstTableLocationName);
@@ -1096,18 +1100,27 @@ public class TypedHasherFactory {
         builder.addStatement("int $L = $L", tableLocationName, firstTableLocationName);
 
 
-        if (!alternate) {
+        if (!alternate && ps.stateValueName != null) {
             builder.addStatement("$T $L", hasherConfig.stateType, ps.stateValueName);
         }
 
-        builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L)", ps.stateValueName,
-                alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName, tableLocationName,
-                hasherConfig.emptyStateName);
+        final String stateSourceName = alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName;
+        if (ps.stateValueName == null) {
+            builder.beginControlFlow("while ($L.getUnsafe($L) != $L)",
+                    stateSourceName, tableLocationName,
+                    hasherConfig.emptyStateName);
+        } else {
+            builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L)", ps.stateValueName,
+                    stateSourceName, tableLocationName,
+                    hasherConfig.emptyStateName);
+        }
 
         builder.beginControlFlow(
                 "if (" + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
         ps.found.accept(hasherConfig, alternate, builder);
-        builder.addStatement("$L = true", foundName);
+        if (foundBlockRequired) {
+            builder.addStatement("$L = true", foundName);
+        }
         builder.addStatement("break");
         builder.endControlFlow();
         builder.addStatement("$L = $L($L)", tableLocationName, nextTableLocationName(alternate), tableLocationName);
@@ -1118,7 +1131,7 @@ public class TypedHasherFactory {
             builder.endControlFlow();
         }
 
-        if ((hasherConfig.openAddressedAlternate && !alternate) || ps.missing != null) {
+        if (foundBlockRequired) {
             builder.beginControlFlow("if (!$L)", foundName);
             if (hasherConfig.openAddressedAlternate && !alternate) {
                 doProbeSearch(hasherConfig, ps, chunkTypes, builder, true);
