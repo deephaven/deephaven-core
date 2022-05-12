@@ -97,7 +97,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
                 // region tuple column source
                 @Override
                 public Object get(long rowKey) {
-                    return javaTuples.get(((int) rowKey) / 10).getFirstElement();
+                    return javaTuples.get(((int)rowKey) / 10).getFirstElement();
                 }
                 // endregion tuple column source
             };
