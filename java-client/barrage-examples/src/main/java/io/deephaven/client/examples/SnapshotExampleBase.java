@@ -37,7 +37,6 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
     @Override
     protected void execute(final BarrageSession client) throws Exception {
 
-        // r
         final BarrageSnapshotOptions options = BarrageSnapshotOptions.builder().build();
 
         final TableHandleManager manager = mode == null ? client.session()
@@ -161,11 +160,11 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
         // This is an example of the most efficient way to retrieve a consistent snapshot of a Deephaven table. Using
         // `snapshotPartialTable()` or `snapshotEntireTable()` will internally create a subscription and retrieve rows
         // from the server until a consistent view of the desired rows is established. Then the subscription will be
-        // terminated and the table presented to the user.
+        // terminated and the table returned to the user.
         final BarrageSubscriptionOptions subOptions = BarrageSubscriptionOptions.builder().build();
 
         try (final TableHandle handle = manager.executeLogic(logic());
-             final BarrageSubscription subscription = client.subscribe(handle, subOptions)) {
+                final BarrageSubscription subscription = client.subscribe(handle, subOptions)) {
 
             final BarrageTable table = subscription.snapshotEntireTable();
 
