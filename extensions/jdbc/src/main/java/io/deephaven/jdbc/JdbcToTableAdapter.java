@@ -224,6 +224,7 @@ public class JdbcToTableAdapter {
 
     private interface SourceFiller {
         void readRow(ResultSet rs, JdbcTypeMapper.Context context) throws SQLException;
+
         void close();
     }
 
@@ -293,7 +294,7 @@ public class JdbcToTableAdapter {
         public void flush() {
             columnSource.ensureCapacity(destRowOffset + destChunkOffset);
             try (final RowSet rows = RowSetFactory.fromRange(destRowOffset, destRowOffset + destChunkOffset - 1);
-                 final ChunkSink.FillFromContext context = columnSource.makeFillFromContext(destChunk.capacity())) {
+                    final ChunkSink.FillFromContext context = columnSource.makeFillFromContext(destChunk.capacity())) {
                 columnSource.fillFromChunk(context, destChunk, rows);
             }
             destRowOffset += destChunkOffset;
