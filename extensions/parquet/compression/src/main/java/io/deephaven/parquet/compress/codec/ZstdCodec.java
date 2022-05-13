@@ -1,4 +1,4 @@
-package io.deephaven.parquet.base.compress;
+package io.deephaven.parquet.compress.codec;
 
 import org.apache.parquet.hadoop.codec.ZstandardCodec;
 
@@ -7,8 +7,5 @@ import org.apache.parquet.hadoop.codec.ZstandardCodec;
  * "ZSTANDARD".
  */
 public class ZstdCodec extends ZstandardCodec {
-//    @Override
-//    public String getDefaultExtension() {
-//        return ".zstd";
-//    }
+
 }

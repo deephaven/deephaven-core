@@ -1,4 +1,4 @@
-package io.deephaven.parquet.base.compress;
+package io.deephaven.parquet.compress.codec;
 
 /**
  * Provides an alternative file extension of ".lzo", while the subclass offers

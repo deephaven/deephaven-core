@@ -23,7 +23,6 @@ dependencies {
         // we can add more jars w/ transitive=false,
         // or replace transitive=false here w/ more exclusions;
         // (we want to avoid pulling in netty, loggers, jetty-util, guice and asm).
-
     }
 
     /* A dependency to woodstox is triggered from the
@@ -39,23 +38,18 @@ dependencies {
      *    at io.deephaven.parquet.ColumnChunkReaderImpl.lambda$new$0(ColumnChunkReaderImpl.java:49)
      *    [...]
      *
-     * Similarly for hadoop-shaded-guave.
+     * Similarly for hadoop-shaded-guava.
+     *
+     * lz4-pure-java - note that we can't _easily_ use aircompressor here, as the service loader sees
+     * the copy in hadoop-common. TODO use config instead of service loader
      */
-    runtimeOnly('com.fasterxml.woodstox:woodstox-core:5.2.1')
-    runtimeOnly('org.apache.hadoop.thirdparty:hadoop-shaded-guava:1.1.1')
-    // ParquetFileWriter triggers a dependency to UnmodifieableMap via hadoop.conf.Configuration.
-    runtimeOnly 'commons-collections:commons-collections:3.2.2'
-    // These are necessary for parquet compression codec support.
-//    runtimeOnly('com.hadoop.gplcompression:hadoop-lzo:0.4.20')  // For LZO codec.
-//    runtimeOnly('org.lz4:lz4-java:1.8.0')                       // For LZ4 codec.
-    implementation('com.github.rdblue:brotli-codec:0.1.1')         // For Brotli codec.
-    implementation ('io.airlift:aircompressor:0.21') {
-        because 'Provides Lz4, snappy, LZO, Zstd compression support for parquet'
+    runtimeOnly('com.fasterxml.woodstox:woodstox-core:5.2.1') {
+        because 'hadoop-common required dependency for Configuration'
     }
-    implementation 'org.apache.commons:commons-compress:1.21'
-    implementation 'org.brotli:dec:0.1.2'
-    implementation 'com.nixxcode.jvmbrotli:jvmbrotli:0.2.0'
-    implementation 'com.nixxcode.jvmbrotli:jvmbrotli-win32-x86-amd64:0.2.0'
-    implementation 'com.nixxcode.jvmbrotli:jvmbrotli-linux-x86-amd64:0.2.0'
-    implementation 'com.nixxcode.jvmbrotli:jvmbrotli-darwin-x86-amd64:0.2.0'
+    runtimeOnly('org.apache.hadoop.thirdparty:hadoop-shaded-guava:1.1.1') {
+        because 'hadoop-common required dependency for Configuration'
+    }
+    runtimeOnly('commons-collections:commons-collections:3.2.2') {
+        because 'hadoop-common required dependency for Configuration'
+    }
 }

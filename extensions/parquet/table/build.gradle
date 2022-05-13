@@ -27,6 +27,8 @@ dependencies {
             project(path: ':configs'),
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+
+    testRuntimeOnly('com.github.rdblue:brotli-codec:0.1.1')
 }
 
 spotless {
