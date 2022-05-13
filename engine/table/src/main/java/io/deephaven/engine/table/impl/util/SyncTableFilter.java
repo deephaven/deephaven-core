@@ -16,23 +16,21 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -280,9 +278,10 @@ public class SyncTableFilter {
         }
 
         @Override
-        protected void notifyOnError(Exception updateException) {
-            for (QueryTable queryTable : results) {
-                notifyOnError(updateException, queryTable);
+        protected void propagateErrorDownstream(
+                @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+            for (QueryTable result : results) {
+                result.notifyListenersOnError(error, entry);
             }
         }
 

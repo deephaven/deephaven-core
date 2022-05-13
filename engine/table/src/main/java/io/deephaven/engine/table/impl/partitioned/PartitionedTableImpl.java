@@ -6,6 +6,7 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -17,18 +18,18 @@ import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static io.deephaven.engine.table.iterators.ColumnIterator.*;
 
@@ -44,6 +45,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private final String constituentColumnName;
     private final TableDefinition constituentDefinition;
     private final boolean constituentChangesPermitted;
+
+    private volatile WeakReference<Table> memoizedMerge;
 
     /**
      * @see io.deephaven.engine.table.PartitionedTableFactory#of(Table, Set, String, TableDefinition, boolean) Factory
@@ -127,13 +130,26 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @Override
     public Table merge() {
-        if (!table.isRefreshing()) {
-            final Iterator<Table> constituents = table.objectColumnIterator(constituentColumnName);
-            return TableTools.merge(StreamSupport.stream(Spliterators.spliterator(
-                    constituents, table.size(), Spliterator.ORDERED), false)
-                    .toArray(Table[]::new));
+        Table merged;
+        WeakReference<Table> localMemoizedMerge;
+        if ((localMemoizedMerge = memoizedMerge) != null
+                && Liveness.verifyCachedObjectForReuse(merged = localMemoizedMerge.get())) {
+            return merged;
         }
-        throw new UnsupportedOperationException("TODO-RWC");
+        synchronized (this) {
+            if ((localMemoizedMerge = memoizedMerge) != null
+                    && Liveness.verifyCachedObjectForReuse(merged = localMemoizedMerge.get())) {
+                return merged;
+            }
+            if (table.isRefreshing()) {
+                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+            }
+            final UnionSourceManager unionSourceManager = new UnionSourceManager(this);
+            merged = unionSourceManager.getResult();
+            merged.setAttribute(Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE);
+            memoizedMerge = new WeakReference<>(merged);
+        }
+        return merged;
     }
 
     @Override

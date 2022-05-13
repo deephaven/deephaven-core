@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -8,6 +9,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.util.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import javax.naming.ldap.PagedResultsControl;
 
 /**
  * A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a
@@ -15,23 +20,34 @@ import io.deephaven.engine.table.impl.util.*;
  * {@link MergedListener} should be used when a table has multiple sources, such that each table can process all of it's
  * dependencies at once and fire a single notification to its children.
  */
-public class ListenerRecorder extends BaseTable.ListenerImpl {
+public class ListenerRecorder extends InstrumentedTableUpdateListener {
+
+    protected final Table parent;
     protected final String logPrefix;
-    protected final boolean isRefreshing;
 
     private MergedListener mergedListener;
 
     private long notificationStep = -1;
     private TableUpdate update;
 
-    public ListenerRecorder(String description, Table parent, BaseTable dependent) {
-        super(description, parent, dependent);
-        this.logPrefix = System.identityHashCode(this) + ": " + description + "ShiftObliviousListener Recorder: ";
-        this.isRefreshing = parent.isRefreshing();
+    public ListenerRecorder(
+            @NotNull final String description, @NotNull final Table parent, @Nullable final Object dependent) {
+        super(description);
+        this.parent = parent;
+        logPrefix = System.identityHashCode(this) + ": " + description + " Listener Recorder: ";
+
+        if (parent.isRefreshing()) {
+            manage(parent);
+            if (dependent instanceof Table) {
+                ((Table) dependent).addParentReference(this);
+            } else if (dependent instanceof LivenessManager) {
+                ((LivenessManager) dependent).manage(this);
+            }
+        }
     }
 
-    boolean isRefreshing() {
-        return isRefreshing;
+    public Table getParent() {
+        return parent;
     }
 
     public void release() {
@@ -48,10 +64,30 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
 
         // notify the downstream listener merger
         if (mergedListener == null) {
-            throw new IllegalStateException("Merged listener not set!");
+            throw new IllegalStateException("Merged listener not set");
         }
 
         mergedListener.notifyChanges();
+    }
+
+    @Override
+    protected void onFailureInternal(@NotNull final Throwable originalException, @Nullable final Entry sourceEntry) {
+        this.notificationStep = LogicalClock.DEFAULT.currentStep();
+        if (mergedListener == null) {
+            throw new IllegalStateException("Merged listener not set");
+        }
+        mergedListener.notifyOnUpstreamError(originalException, sourceEntry);
+    }
+
+    @Override
+    public boolean canExecute(final long step) {
+        return parent.satisfied(step);
+    }
+
+    @Override
+    protected void destroy() {
+        super.destroy();
+        parent.removeUpdateListener(this);
     }
 
     public boolean recordedVariablesAreValid() {

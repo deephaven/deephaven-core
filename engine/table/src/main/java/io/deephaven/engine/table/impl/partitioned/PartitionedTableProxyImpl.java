@@ -392,7 +392,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         return table == existing.table()
                 ? existing
                 : new PartitionedTableImpl(table, existing.keyColumnNames(), existing.constituentColumnName(),
-                        existing.constituentDefinition(), existing.constituentChangesPermitted());
+                        existing.constituentDefinition(), existing.constituentChangesPermitted(), false);
     }
 
     // region TableOperations Implementation

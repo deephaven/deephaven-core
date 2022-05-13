@@ -20,14 +20,14 @@ import java.util.function.Function;
 /**
  * {@link SelectColumn} implementation to wrap transformer functions for {@link PartitionedTable#transform(Function)}.
  */
-class TableTransformationColumn extends BaseTableTransformationColumn {
+public class TableTransformationColumn extends BaseTableTransformationColumn {
 
     private final String inputOutputColumnName;
     private final Function<Table, Table> transformer;
 
     private ColumnSource<Table> inputColumnSource;
 
-    TableTransformationColumn(
+    public TableTransformationColumn(
             @NotNull final String inputOutputColumnName,
             @NotNull final Function<Table, Table> transformer) {
         this.inputOutputColumnName = inputOutputColumnName;
