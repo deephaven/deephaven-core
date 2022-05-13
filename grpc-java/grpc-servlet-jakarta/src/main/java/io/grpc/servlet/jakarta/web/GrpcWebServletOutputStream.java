@@ -59,28 +59,4 @@ public class GrpcWebServletOutputStream extends ServletOutputStream {
     public void close() throws IOException {
         super.close();
     }
-
-    public void writeTrailers(Supplier<Map<String, String>> trailers) throws IOException {
-        // probably could inline this and drop the class if we don't have to frame other messages
-        if (trailers == null) {
-            return;
-        }
-        Map<String, String> map = trailers.get();
-        if (map == null) {
-            return;
-        }
-        // write a payload, even for an empty set of trailers
-        int trailerLength =
-                map.entrySet().stream().mapToInt(e -> e.getKey().length() + e.getValue().length() + 4).sum();
-        ByteBuffer payload = ByteBuffer.allocate(5 + trailerLength);
-        payload.put((byte) 0x80);
-        payload.putInt(trailerLength);
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-            payload.put(entry.getKey().getBytes(StandardCharsets.US_ASCII));
-            payload.put(": ".getBytes(StandardCharsets.US_ASCII));
-            payload.put(entry.getValue().getBytes(StandardCharsets.US_ASCII));
-            payload.put("\r\n".getBytes(StandardCharsets.US_ASCII));
-        }
-        wrapped.write(payload.array());
-    }
 }
