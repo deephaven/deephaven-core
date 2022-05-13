@@ -70,16 +70,17 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
          * @param   b   the byte to be written.
          */
         public synchronized void write(int b) throws IOException {
-            // test for overflow
-            if (activeChunkByteCount + 1 > BYTE_CHUNK_SIZE) {
-                byteChunks.add(activeChunk = WritableByteChunk.makeWritableChunk(BYTE_CHUNK_SIZE));
-                activeChunkByteCount = 0;
-            }
             // do the write
             activeChunk.set(activeChunkByteCount++, (byte)b);
 
             // increment the offset
             writtenTotalByteCount += 1;
+
+            // allocate a new chunk when needed
+            if (activeChunkByteCount == BYTE_CHUNK_SIZE) {
+                byteChunks.add(activeChunk = WritableByteChunk.makeWritableChunk(BYTE_CHUNK_SIZE));
+                activeChunkByteCount = 0;
+            }
         }
 
         /**
@@ -104,6 +105,8 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                 // increment the counts
                 writtenTotalByteCount += writeLen;
                 activeChunkByteCount += writeLen;
+                off += writeLen;
+
                 remaining -= writeLen;
 
                 // allocate a new chunk when needed
