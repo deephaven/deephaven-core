@@ -1,0 +1,4 @@
+io.airlift.compress.lzo.LzoCodec
+io.deephaven.parquet.base.compress.ZstdCodec
+org.apache.parquet.hadoop.codec.ZstandardCodec
+io.deephaven.parquet.base.compress.LzoCodec
