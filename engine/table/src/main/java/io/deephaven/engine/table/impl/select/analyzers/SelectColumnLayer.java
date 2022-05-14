@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritable
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -45,6 +46,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final BitSet dependencyBitSet;
     private final boolean canUseThreads;
     private final boolean canParallelizeThisColumn;
+    private final boolean isSystemic;
     private final boolean resultTypeIsLivenessReferent;
     private final boolean resultTypeIsTable;
 
@@ -79,6 +81,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // the select column is stateless
         canParallelizeThisColumn = canUseThreads && !isRedirected
                 && WritableSourceWithEnsurePrevious.providesEnsurePrevious(ws) && sc.isStateless();
+
+        // If we were created on a systemic thread, we want to be sure to make sure that any updates are also
+        // applied systemically.
+        isSystemic = SystemicObjectTracker.isSystemicThread();
 
         // We want to ensure that results are managed appropriately if they are LivenessReferents
         resultTypeIsLivenessReferent = LivenessReferent.class.isAssignableFrom(ws.getType());
@@ -209,7 +215,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private void doSerialApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
             @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion) {
         doEnsureCapacity();
-        doApplyUpdate(upstream, helper, liveResultOwner, 0);
+        SystemicObjectTracker.executeSystemically(isSystemic, () ->
+                doApplyUpdate(upstream, helper, liveResultOwner, 0));
+
         if (!isRedirected) {
             clearObjectsAtThisLevel(toClear);
         }
@@ -221,7 +229,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             final boolean checkTableOperations, final AtomicInteger divisions, final long startOffset) {
         final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(checkTableOperations);
         try {
-            doApplyUpdate(upstream, helper, liveResultOwner, startOffset);
+            SystemicObjectTracker.executeSystemically(isSystemic, () ->
+                    doApplyUpdate(upstream, helper, liveResultOwner, startOffset));
         } finally {
             UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
         }
@@ -235,7 +244,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
     }
 
-    private void doApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,
+    private Boolean doApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,
             @Nullable final LivenessNode liveResultOwner, final long startOffset) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
@@ -403,6 +412,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 }
             }
         }
+        return null;
     }
 
     private <CT extends Chunk<?>> CT maybeManageAdds(
