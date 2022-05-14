@@ -227,7 +227,7 @@ public class UnionRedirection implements Serializable {
         }
     }
 
-    void ensureCapacity(final int numTables) {
+    private void ensureCapacity(final int numTables) {
         checkCapacity(numTables);
         if (currFirstRowKeys.length <= numTables) {
             currFirstRowKeys = Arrays.copyOf(currFirstRowKeys, 1 << MathUtil.ceilLog2(numTables + 1));
@@ -253,12 +253,17 @@ public class UnionRedirection implements Serializable {
         return firstRowKeyAllocated;
     }
 
-    long[] getCurrFirstRowKeysForUpdate() {
-        return currFirstRowKeys;
+    void updateCurrSize(final int currSize) {
+        ensureCapacity(currSize);
+        this.currSize = currSize;
     }
 
-    void setCurrSizeForUpdate(final int currSize) {
-        this.currSize = currSize;
+    /**
+     * @apiNote Only for use by {@link UnionSourceManager}
+     * @return The internal {@link #currFirstRowKeys} array
+     */
+    long[] getCurrFirstRowKeysForUpdate() {
+        return currFirstRowKeys;
     }
 
     /**
