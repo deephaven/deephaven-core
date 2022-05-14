@@ -37,6 +37,18 @@ public final class ObjectColumnIterator<TYPE> extends ColumnIterator<TYPE, Objec
     /**
      * Create a new ObjectColumnIterator.
      *
+     * @param chunkSource The {@link ChunkSource} to fetch values from; must have {@link ChunkSource#getChunkType() *
+     *        chunk type} of {@link ChunkType#Object}
+     * @param rowSequence The {@link RowSequence} to iterate over
+     */
+    public ObjectColumnIterator(@NotNull final ChunkSource<? extends Any> chunkSource,
+                                @NotNull final RowSequence rowSequence) {
+        this(validateChunkType(chunkSource, ChunkType.Object), rowSequence, DEFAULT_CHUNK_SIZE);
+    }
+
+    /**
+     * Create a new ObjectColumnIterator.
+     *
      * @param table {@link Table} to create the iterator from
      * @param columnName Column name for iteration; must have {@link ChunkSource#getChunkType() chunk type} of
      *        {@link ChunkType#Object}

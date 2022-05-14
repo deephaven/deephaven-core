@@ -462,8 +462,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         this.resultTable = resultTable;
         this.aggregationUpdateListener = aggregationUpdateListener;
 
-        new ObjectColumnIterator<Table>(tables, resultTable.getRowSet(), ColumnIterator.DEFAULT_CHUNK_SIZE)
-                .forEachRemaining(this::linkTableReferences);
+        new ObjectColumnIterator<Table>(tables, resultTable.getRowSet()).forEachRemaining(this::linkTableReferences);
 
         // This operator never reports modifications
         return ignored -> ModifiedColumnSet.EMPTY;
