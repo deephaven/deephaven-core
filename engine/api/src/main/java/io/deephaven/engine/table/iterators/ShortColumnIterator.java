@@ -38,10 +38,24 @@ public final class ShortColumnIterator
      * @param rowSequence The {@link RowSequence} to iterate over
      * @param chunkSize The buffer size to use when fetching data
      */
-    public ShortColumnIterator(@NotNull final ChunkSource<? extends Any> chunkSource,
+    public ShortColumnIterator(
+            @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence,
             final int chunkSize) {
         super(validateChunkType(chunkSource, ChunkType.Short), rowSequence, chunkSize);
+    }
+
+    /**
+     * Create a new ShortColumnIterator.
+     *
+     * @param chunkSource The {@link ChunkSource} to fetch values from; must have {@link ChunkSource#getChunkType()
+     *        chunk type} of {@link ChunkType#Short}
+     * @param rowSequence The {@link RowSequence} to iterate over
+     */
+    public ShortColumnIterator(
+            @NotNull final ChunkSource<? extends Any> chunkSource,
+            @NotNull final RowSequence rowSequence) {
+        this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE);
     }
 
     /**

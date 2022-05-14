@@ -28,7 +28,8 @@ public final class ObjectColumnIterator<TYPE> extends ColumnIterator<TYPE, Objec
      * @param rowSequence The {@link RowSequence} to iterate over
      * @param chunkSize The internal buffer size to use when fetching data
      */
-    public ObjectColumnIterator(@NotNull final ChunkSource<? extends Any> chunkSource,
+    public ObjectColumnIterator(
+            @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence,
             final int chunkSize) {
         super(validateChunkType(chunkSource, ChunkType.Object), rowSequence, chunkSize);
@@ -41,8 +42,9 @@ public final class ObjectColumnIterator<TYPE> extends ColumnIterator<TYPE, Objec
      *        chunk type} of {@link ChunkType#Object}
      * @param rowSequence The {@link RowSequence} to iterate over
      */
-    public ObjectColumnIterator(@NotNull final ChunkSource<? extends Any> chunkSource,
-                                @NotNull final RowSequence rowSequence) {
+    public ObjectColumnIterator(
+            @NotNull final ChunkSource<? extends Any> chunkSource,
+            @NotNull final RowSequence rowSequence) {
         this(validateChunkType(chunkSource, ChunkType.Object), rowSequence, DEFAULT_CHUNK_SIZE);
     }
 

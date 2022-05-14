@@ -33,10 +33,24 @@ public final class CharacterColumnIterator
      * @param rowSequence The {@link RowSequence} to iterate over
      * @param chunkSize The buffer size to use when fetching data
      */
-    public CharacterColumnIterator(@NotNull final ChunkSource<? extends Any> chunkSource,
+    public CharacterColumnIterator(
+            @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence,
             final int chunkSize) {
         super(validateChunkType(chunkSource, ChunkType.Char), rowSequence, chunkSize);
+    }
+
+    /**
+     * Create a new CharacterColumnIterator.
+     *
+     * @param chunkSource The {@link ChunkSource} to fetch values from; must have {@link ChunkSource#getChunkType()
+     *        chunk type} of {@link ChunkType#Char}
+     * @param rowSequence The {@link RowSequence} to iterate over
+     */
+    public CharacterColumnIterator(
+            @NotNull final ChunkSource<? extends Any> chunkSource,
+            @NotNull final RowSequence rowSequence) {
+        this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE);
     }
 
     /**

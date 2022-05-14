@@ -38,10 +38,24 @@ public final class ByteColumnIterator
      * @param rowSequence The {@link RowSequence} to iterate over
      * @param chunkSize The buffer size to use when fetching data
      */
-    public ByteColumnIterator(@NotNull final ChunkSource<? extends Any> chunkSource,
+    public ByteColumnIterator(
+            @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence,
             final int chunkSize) {
         super(validateChunkType(chunkSource, ChunkType.Byte), rowSequence, chunkSize);
+    }
+
+    /**
+     * Create a new ByteColumnIterator.
+     *
+     * @param chunkSource The {@link ChunkSource} to fetch values from; must have {@link ChunkSource#getChunkType()
+     *        chunk type} of {@link ChunkType#Byte}
+     * @param rowSequence The {@link RowSequence} to iterate over
+     */
+    public ByteColumnIterator(
+            @NotNull final ChunkSource<? extends Any> chunkSource,
+            @NotNull final RowSequence rowSequence) {
+        this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE);
     }
 
     /**

@@ -38,13 +38,29 @@ public final class DoubleColumnIterator
      * @param rowSequence The {@link RowSequence} to iterate over
      * @param chunkSize The buffer size to use when fetching data
      */
-    public DoubleColumnIterator(@NotNull final ChunkSource<? extends Any> chunkSource,
+    public DoubleColumnIterator(
+            @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence,
+            // @formatter:off
             // region chunkSize
             final int chunkSize
             // endregion chunkSize
+            // @formatter:on
     ) {
         super(validateChunkType(chunkSource, ChunkType.Double), rowSequence, chunkSize);
+    }
+
+    /**
+     * Create a new DoubleColumnIterator.
+     *
+     * @param chunkSource The {@link ChunkSource} to fetch values from; must have {@link ChunkSource#getChunkType()
+     *        chunk type} of {@link ChunkType#Double}
+     * @param rowSequence The {@link RowSequence} to iterate over
+     */
+    public DoubleColumnIterator(
+            @NotNull final ChunkSource<? extends Any> chunkSource,
+            @NotNull final RowSequence rowSequence) {
+        this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE);
     }
 
     /**
