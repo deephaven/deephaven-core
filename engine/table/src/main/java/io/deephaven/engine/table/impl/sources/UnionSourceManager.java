@@ -5,204 +5,162 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.partitioned.TableTransformationColumn;
+import io.deephaven.engine.table.iterators.ColumnIterator;
+import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class UnionSourceManager {
 
-    private final UnionColumnSource<?>[] sources;
-    private final WritableRowSet rowSet;
-    private final List<ModifiedColumnSet.Transformer> modColumnTransformers = new ArrayList<>();
+    private final boolean constituentChangesPermitted;
+    private final String[] columnNames;
+
+    private final Table coalescedPartitions;
+    private final TrackingRowSet constituentSlots;
+    private final ColumnSource<Table> constituentTables;
+
+    private final TrackingWritableRowSet resultRowSet;
+    private final UnionRedirection unionRedirection;
+    private final UnionColumnSource<?>[] resultColumnSources;
+    private final QueryTable resultTable;
     private final ModifiedColumnSet modifiedColumnSet;
 
-    private final String[] names;
-    private final UnionRedirection unionRedirection = new UnionRedirection();
-    private final List<Table> tables = new ArrayList<>();
-    private final List<UnionListenerRecorder> listeners = Collections.synchronizedList(new ArrayList<>());
+    /**
+     * The ListenerRecorders our MergedListener depends on. The first entry is a basic recorder for
+     * {@link #coalescedPartitions}. Subsequent entries are for individual parent tables that occupy our slots.
+     */
+    private final List<ListenerRecorder> listenerRecorders;
     private final MergedListener mergedListener;
-    private final QueryTable result;
-
-    private volatile NotificationQueue.Dependency parentDependency;
-
-    private boolean refreshing = false;
-    private boolean disallowReinterpret = false;
-    private boolean isUsingComponentsSafe = true;
-
-    private UpdateCommitter<UnionSourceManager> prevFlusher = null;
+    private final ListenerRecorder coalescedPartitionsListener;
+    private final UpdateCommitter<UnionSourceManager> updateCommitter;
 
     public UnionSourceManager(@NotNull final PartitionedTable partitionedTable) {
+        constituentChangesPermitted = partitionedTable.constituentChangesPermitted();
+        columnNames = partitionedTable.constituentDefinition().getColumnNamesArray();
 
-        sources = tableDefinition.getColumnList().stream()
-                .map((cd) -> new UnionColumnSource<>(cd.getDataType(), cd.getComponentType(), unionRedirection, this))
+        coalescedPartitions = partitionedTable.table().coalesce().select(
+                new TableTransformationColumn(partitionedTable.constituentColumnName(), Table::coalesce));
+        constituentSlots = coalescedPartitions.getRowSet();
+        constituentTables = coalescedPartitions.getColumnSource(partitionedTable.constituentColumnName());
+
+        final boolean refreshing = coalescedPartitions.isRefreshing();
+        final int initialNumSlots = constituentSlots.intSize();
+
+        // noinspection resource
+        resultRowSet = RowSetFactory.empty().toTracking();
+        unionRedirection = new UnionRedirection(initialNumSlots, refreshing);
+        // noinspection unchecked
+        resultColumnSources = partitionedTable.constituentDefinition().getColumnStream()
+                .map(cd -> new UnionColumnSource<>(cd.getDataType(), cd.getComponentType(), this, unionRedirection,
+                        new TableSourceLookup(cd.getName())))
                 .toArray(UnionColumnSource[]::new);
-        names = tableDefinition.getColumnList().stream().map(ColumnDefinition::getName).toArray(String[]::new);
-        this.parentDependency = parentDependency;
+        resultTable = new QueryTable(resultRowSet, getColumnSources());
+        modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
 
-        result = new QueryTable(RowSetFactory.empty().toTracking(), getColumnSources());
-        rowSet = result.getRowSet().writableCast();
-        modifiedColumnSet = result.newModifiedColumnSet(names);
-
-        mergedListener = new MergedUnionListener(listeners, "TableTools.merge()", result);
-    }
-
-    /**
-     * Ensure that this UnionSourceManager will be refreshing. Should be called proactively if it is expected that
-     * refreshing DynamicTables may be added *after* the initial set, in order to ensure that children of the result
-     * table are correctly setup to listen and run.
-     */
-    public void setRefreshing() {
         if (refreshing) {
-            return;
+            listenerRecorders = Collections.synchronizedList(new ArrayList<>(initialNumSlots + 1));
+            mergedListener = new MergedUnionListener(listenerRecorders, resultTable);
+            resultTable.addParentReference(mergedListener);
+
+            coalescedPartitionsListener = new ListenerRecorder(
+                    "PartitionedTable.merge() Partitions Listener", coalescedPartitions, mergedListener);
+            listenerRecorders.add(coalescedPartitionsListener);
+
+            updateCommitter = new UpdateCommitter<>(this, usm -> usm.unionRedirection.copyCurrToPrev());
+        } else {
+            listenerRecorders = null;
+            mergedListener = null;
+            coalescedPartitionsListener = null;
+            updateCommitter = null;
         }
-        refreshing = true;
-        result.addParentReference(mergedListener);
-        prevFlusher = new UpdateCommitter<>(this, UnionSourceManager::swapPrevStartOfIndices);
+
+        currConstituents().forEach((final Table constituent) -> {
+            final long shiftAmount = unionRedirection.appendInitialTable(constituent.getRowSet().lastRowKey());
+            resultRowSet.insertWithShift(shiftAmount, constituent.getRowSet());
+            if (constituent.isRefreshing()) {
+                assert refreshing;
+                listenerRecorders.add(new UnionListenerRecorder(constituent));
+            }
+        });
+        if (refreshing) {
+            unionRedirection.copyCurrToPrev();
+        }
     }
 
     /**
-     * Specify that columns sources using this manager should not allow reinterpret.
-     */
-    public void setDisallowReinterpret() {
-        disallowReinterpret = true;
-    }
-
-    /**
-     * Determine whether column sources that use this manager should allow reinterpret.
+     * Determine whether using the component tables directly in a subsequent merge will affect the correctness of that
+     * merge. This is {@code true} iff constituents cannot be changed.
      *
-     * @return If {@link ColumnSource#reinterpret(Class)} is allowed
-     */
-    public boolean allowsReinterpret() {
-        return !disallowReinterpret;
-    }
-
-    /**
-     * Note that this UnionSourceManager might have tables added dynamically throughout its lifetime.
-     */
-    public void noteUsingComponentsIsUnsafe() {
-        isUsingComponentsSafe = false;
-    }
-
-    /**
-     * Determine whether using the component tables directly in a subsequent merge will affect the correctness of the
-     * merge.
-     *
-     * @return If using the component tables is allowed.
+     * @return If using the component tables is allowed
      */
     public boolean isUsingComponentsSafe() {
-        return isUsingComponentsSafe;
-    }
-
-    /**
-     * Adds a table to the managed constituents.
-     *
-     * @param table the new table
-     * @param onNewTableMapKey whether this table is being added after the initial setup
-     */
-    public synchronized void addTable(@NotNull final QueryTable table, final boolean onNewTableMapKey) {
-        final Map<String, ? extends ColumnSource<?>> sources = table.getColumnSourceMap();
-        if (onNewTableMapKey) {
-            Require.requirement(!isUsingComponentsSafe(), "!isUsingComponentsSafe()");
-        }
-        Require.requirement(sources.size() == this.sources.length,
-                "sources.size() == this.sources.length", sources.size(),
-                "sources.size()", this.sources.length, "this.sources.length");
-        unionRedirection.appendTable(table.getRowSet().lastRowKey());
-
-        for (int i = 0; i < this.sources.length; i++) {
-            final ColumnSource<?> sourceToAdd = sources.get(names[i]);
-            Assert.assertion(sourceToAdd != null, "sources.get(names[i]) != null", names[i],
-                    "names[i]");
-            // noinspection unchecked,rawtypes
-            this.sources[i].appendColumnSource((ColumnSource) sourceToAdd);
-        }
-        final int tableId = tables.size();
-        tables.add(table);
-
-        if (onNewTableMapKey && !disallowReinterpret) {
-            // if we allow new tables to be added, then we have concurrency concerns about doing reinterpretations off
-            // of the UGP thread
-            throw new IllegalStateException("Can not add new tables when reinterpretation is enabled!");
-        }
-
-        if (table.isRefreshing()) {
-            setRefreshing();
-            final UnionListenerRecorder listener = new UnionListenerRecorder("TableTools.merge",
-                    table, tableId);
-            listeners.add(listener);
-
-            modColumnTransformers.add(table.newModifiedColumnSetTransformer(result, names));
-
-            table.listenForUpdates(listener);
-            if (onNewTableMapKey) {
-                // synthetically invoke onUpdate lest our MergedUnionListener#process never fires.
-                final TableUpdate update = new TableUpdateImpl(
-                        table.getRowSet().copy(), RowSetFactory.empty(), RowSetFactory.empty(),
-                        RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
-                listener.onUpdate(update);
-                update.release();
-            }
-        }
-
-        try (final RowSet shifted = getShiftedIndex(table.getRowSet(), tableId)) {
-            rowSet.insert(shifted);
-        }
-    }
-
-    public Map<String, UnionColumnSource<?>> getColumnSources() {
-        final Map<String, UnionColumnSource<?>> result = new LinkedHashMap<>();
-        for (int i = 0; i < sources.length; i++) {
-            result.put(names[i], sources[i]);
-        }
-        return result;
-    }
-
-    private RowSet getShiftedIndex(final RowSet rowSet, final int tableId) {
-        return rowSet.shift(unionRedirection.currFirstRowKeys[tableId]);
-    }
-
-    private RowSet getShiftedPrevIndex(final RowSet rowSet, final int tableId) {
-        return rowSet.shift(unionRedirection.prevFirstRowKeys[tableId]);
+        return !constituentChangesPermitted;
     }
 
     public Collection<Table> getComponentTables() {
-        return tables;
+        if (!isUsingComponentsSafe()) {
+            throw new UnsupportedOperationException("Cannot get component tables if constituent changes not permitted");
+        }
+        return currConstituents().collect(Collectors.toList());
+    }
+
+    public Map<String, UnionColumnSource<?>> getColumnSources() {
+        final int numColumns = columnNames.length;
+        final Map<String, UnionColumnSource<?>> columnSourcesMap = new LinkedHashMap<>(numColumns);
+        for (int ci = 0; ci < numColumns; ci++) {
+            columnSourcesMap.put(columnNames[ci], resultColumnSources[ci]);
+        }
+        return columnSourcesMap;
+    }
+
+    private RowSet applyCurrShift(final RowSet constituentRowSet, final int slot) {
+        return constituentRowSet.shift(unionRedirection.currFirstRowKeyForSlot(slot));
+    }
+
+    private RowSet applyPreVShift(final RowSet constituentRowSet, final int slot) {
+        return constituentRowSet.shift(unionRedirection.prevFirstRowKeyForSlot(slot));
     }
 
     @NotNull
     public QueryTable getResult() {
-        return result;
+        return resultTable;
     }
 
-    private void swapPrevStartOfIndices() {
-        final long[] tmp = unionRedirection.prevFirstRowKeys;
-        unionRedirection.prevFirstRowKeys = unionRedirection.prevStartOfIndicesAlt;
-        unionRedirection.prevStartOfIndicesAlt = tmp;
-    }
+    private final class UnionListenerRecorder extends ListenerRecorder {
 
-    class UnionListenerRecorder extends ListenerRecorder {
-        final int tableId;
+        private final ModifiedColumnSet.Transformer modifiedColumnsTransformer;
 
-        UnionListenerRecorder(String description, Table parent, int tableId) {
-            super(description, parent, result);
-            this.tableId = tableId;
+        UnionListenerRecorder(@NotNull final Table parent) {
+            super("PartitionedTable.merge() Constituent", parent, mergedListener);
+            modifiedColumnsTransformer =
+                    ((QueryTable) parent).newModifiedColumnSetTransformer(resultTable, columnNames);
             setMergedListener(mergedListener);
+        }
+
+        @Override
+        public Table getParent() {
+            return super.getParent();
         }
     }
 
-    class MergedUnionListener extends MergedListener {
-        MergedUnionListener(Collection<UnionListenerRecorder> recorders, String listenerDescription,
-                QueryTable result) {
-            super(recorders, Collections.emptyList(), listenerDescription, result);
+    private final class MergedUnionListener extends MergedListener {
+
+        private MergedUnionListener(
+                @NotNull final List<ListenerRecorder> listenerRecorders,
+                @NotNull final QueryTable resultTable) {
+            super(listenerRecorders, List.of(), "PartitionedTable.merge()", resultTable);
         }
 
         @Override
@@ -233,14 +191,14 @@ public class UnionSourceManager {
                 final int maxTableId = tables.size() - 1;
 
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-                rowSet.removeRange(unionRedirection.prevFirstRowKeys[firstShiftingTable], Long.MAX_VALUE);
+                resultRowSet.removeRange(unionRedirection.prevFirstRowKeys[firstShiftingTable], Long.MAX_VALUE);
 
                 for (int tableId = firstShiftingTable; tableId <= maxTableId; ++tableId) {
                     final long startOfShift = unionRedirection.currFirstRowKeys[tableId];
                     builder.appendRowSequenceWithOffset(tables.get(tableId).getRowSet(), startOfShift);
                 }
 
-                rowSet.insert(builder.build());
+                resultRowSet.insert(builder.build());
             }
 
             final RowSetBuilderSequential updateAddedBuilder = RowSetFactory.builderSequential();
@@ -259,9 +217,10 @@ public class UnionSourceManager {
 
                 // Listeners only contains ticking tables. However, we might need to shift tables that do not tick.
                 final ListenerRecorder listener =
-                        (nextListenerId < listeners.size() && listeners.get(nextListenerId).tableId == tableId)
-                                ? listeners.get(nextListenerId++)
-                                : null;
+                        (nextListenerId < constituentListeners.size()
+                                && constituentListeners.get(nextListenerId).tableId == tableId)
+                                        ? constituentListeners.get(nextListenerId++)
+                                        : null;
 
                 if (listener == null || listener.getNotificationStep() != currentStep) {
                     if (shiftDelta != 0) {
@@ -285,7 +244,7 @@ public class UnionSourceManager {
                 if (shiftDelta == 0) {
                     try (final RowSet newRemoved = getShiftedPrevIndex(listener.getRemoved(), tableId)) {
                         updateRemovedBuilder.appendRowSequence(newRemoved);
-                        rowSet.remove(newRemoved);
+                        resultRowSet.remove(newRemoved);
                     }
                 } else {
                     // If the shiftDelta is non-zero we have already updated the RowSet above (because we used the new
@@ -297,7 +256,7 @@ public class UnionSourceManager {
                 // Apply and process shifts.
                 final long firstTableKey = unionRedirection.currFirstRowKeys[tableId];
                 final long lastTableKey = unionRedirection.currFirstRowKeys[tableId + 1] - 1;
-                if (shiftData.nonempty() && rowSet.overlapsRange(firstTableKey, lastTableKey)) {
+                if (shiftData.nonempty() && resultRowSet.overlapsRange(firstTableKey, lastTableKey)) {
                     final long prevCardinality = unionRedirection.prevFirstRowKeys[tableId + 1] - offset;
                     final long currCardinality = unionRedirection.currFirstRowKeys[tableId + 1] - currOffset;
                     shiftedBuilder.appendShiftData(shiftData, offset, prevCardinality, currOffset, currCardinality);
@@ -308,7 +267,7 @@ public class UnionSourceManager {
                         // protect from shifting keys that belong to other tables by clipping the shift space
                         final long lastLegalKey = unionRedirection.prevFirstRowKeys[tableId + 1] - 1;
 
-                        try (RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
+                        try (RowSequence.Iterator rsIt = resultRowSet.getRowSequenceIterator()) {
                             for (int idx = 0; idx < shiftData.size(); ++idx) {
                                 final long beginRange = shiftData.getBeginRange(idx) + offset;
                                 if (beginRange > lastLegalKey) {
@@ -334,8 +293,8 @@ public class UnionSourceManager {
                 }
             }
 
-            if (accumulatedShift > 0 && prevFlusher != null) {
-                prevFlusher.maybeActivate();
+            if (accumulatedShift > 0 && updateCommitter != null) {
+                updateCommitter.maybeActivate();
             }
 
             update.modifiedColumnSet = modifiedColumnSet;
@@ -347,26 +306,58 @@ public class UnionSourceManager {
             // Finally add the new keys to the RowSet in post-shift key-space.
             try (RowSet shiftRemoveRowSet = shiftRemoveBuilder.build();
                     RowSet shiftAddedRowSet = shiftAddedBuilder.build()) {
-                rowSet.remove(shiftRemoveRowSet);
-                rowSet.insert(shiftAddedRowSet);
+                resultRowSet.remove(shiftRemoveRowSet);
+                resultRowSet.insert(shiftAddedRowSet);
             }
-            rowSet.insert(update.added());
+            resultRowSet.insert(update.added());
 
             result.notifyListeners(update);
         }
 
         @Override
         protected boolean canExecute(final long step) {
-            if (parentDependency != null && !parentDependency.satisfied(step)) {
-                return false;
-            }
-            synchronized (listeners) {
-                return listeners.stream().allMatch((final UnionListenerRecorder recorder) -> recorder.satisfied(step));
+            synchronized (listenerRecorders) {
+                return listenerRecorders.stream().allMatch(lr -> lr.satisfied(step));
             }
         }
     }
 
-    public void setParentDependency(@NotNull final NotificationQueue.Dependency parentDependency) {
-        this.parentDependency = parentDependency;
+    private Stream<Table> currConstituents() {
+        return StreamSupport.stream(
+                Spliterators.spliterator(
+                        new ObjectColumnIterator<>(
+                                constituentTables, constituentSlots, ColumnIterator.DEFAULT_CHUNK_SIZE),
+                        constituentSlots.size(),
+                        Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED),
+                false);
+    }
+
+    private final class TableSourceLookup<T> implements UnionColumnSource.ConstituentSourceLookup<T> {
+
+        private final String columnName;
+
+        private TableSourceLookup(@NotNull final String columnName) {
+            this.columnName = columnName;
+        }
+
+        @Override
+        public ColumnSource<T> slotToCurrSource(final int slot) {
+            return sourceFromTable(constituentTables.get(constituentSlots.get(slot)));
+        }
+
+        @Override
+        public ColumnSource<T> slotToPrevSource(final int slot) {
+            return sourceFromTable(constituentTables.getPrev(constituentSlots.getPrev(slot)));
+        }
+
+        @Override
+        public Stream<ColumnSource<T>> currSources() {
+            Assert.eqFalse(constituentChangesPermitted, "constituentChangesPermitted");
+            return currConstituents().map(this::sourceFromTable);
+        }
+
+        private ColumnSource<T> sourceFromTable(@NotNull final Table table) {
+            return table.getColumnSource(columnName);
+        }
     }
 }

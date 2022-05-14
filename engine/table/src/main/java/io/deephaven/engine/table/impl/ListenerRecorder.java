@@ -17,7 +17,7 @@ import javax.naming.ldap.PagedResultsControl;
 /**
  * A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a
  * {@link MergedListener} that a change has occurred. The combination of a {@link ListenerRecorder} and
- * {@link MergedListener} should be used when a table has multiple sources, such that each table can process all of it's
+ * {@link MergedListener} should be used when a table has multiple sources, such that each table can process all of its
  * dependencies at once and fire a single notification to its children.
  */
 public class ListenerRecorder extends InstrumentedTableUpdateListener {

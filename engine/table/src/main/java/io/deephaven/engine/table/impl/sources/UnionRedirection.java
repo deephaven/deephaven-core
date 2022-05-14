@@ -33,10 +33,13 @@ public class UnionRedirection implements Serializable {
     public static final long ALLOCATION_UNIT_ROW_KEYS =
             Configuration.getInstance().getLongWithDefault("UnionRedirection.allocationUnit", 1 << 16);
 
+    // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
+    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
     /**
      * Number of table slots to allocate initially.
      */
-    private static final int INITIAL_SIZE = 8;
+    private static final int MINIMUM_ARRAY_SIZE = 8;
 
     /**
      * Cached prior slot used by {@link #currSlotForRowKey(long)}.
@@ -62,14 +65,21 @@ public class UnionRedirection implements Serializable {
 
     /**
      * The current first row key for each slot in of our outer RowSet for this entry, the end of the current entry (+ 1)
-     * is in the next table
-     * 
+     * is in the next table.
      */
-    private long[] currFirstRowKeys = new long[INITIAL_SIZE];
+    private long[] currFirstRowKeys;
 
     // the start of our outer prev RowSet for this entry, the end of the current entry (+ 1) is in the next table
-    private long[] prevFirstRowKeys = new long[INITIAL_SIZE];
+    private long[] prevFirstRowKeys;
 
+    UnionRedirection(final int initialNumTables, final boolean refreshing) {
+        checkCapacity(initialNumTables);
+        final int initialArraySize = refreshing
+                ? Math.max(MINIMUM_ARRAY_SIZE, 1 << MathUtil.ceilLog2(initialNumTables + 1))
+                : initialNumTables + 1;
+        currFirstRowKeys = new long[initialArraySize];
+        prevFirstRowKeys = refreshing ? new long[initialArraySize] : currFirstRowKeys;
+    }
 
     /**
      * Get the first row key currently allocated to {@code slot}. This value may be used to "un-shift" the downstream
@@ -83,13 +93,13 @@ public class UnionRedirection implements Serializable {
     }
 
     /**
-     * Get the last row key currently allocated to {@code slot}. This value may be used to slice row sequences
-     * into the range allocated to the upstream table currently occupying this slot.
+     * Get the last row key currently allocated to {@code slot}. This value may be used to slice row sequences into the
+     * range allocated to the upstream table currently occupying this slot.
      *
      * @param slot The slot to lookup
      * @return The last row key currently allocated to the slot
      */
-    long currLastRowKeyForSlot(final int slot){
+    long currLastRowKeyForSlot(final int slot) {
         return currFirstRowKeys[slot + 1] - 1;
     }
 
@@ -105,13 +115,13 @@ public class UnionRedirection implements Serializable {
     }
 
     /**
-     * Get the last row key previously allocated to {@code slot}. This value may be used to slice row sequences
-     * into the range allocated to the upstream table previously occupying this slot.
+     * Get the last row key previously allocated to {@code slot}. This value may be used to slice row sequences into the
+     * range allocated to the upstream table previously occupying this slot.
      *
      * @param slot The slot to lookup
      * @return The last row key previously allocated to the slot
      */
-    long prevLastRowKeyForSlot(final int slot){
+    long prevLastRowKeyForSlot(final int slot) {
         return prevFirstRowKeys[slot + 1] - 1;
     }
 
@@ -206,39 +216,49 @@ public class UnionRedirection implements Serializable {
         if (prevFirstRowKeys.length != currFirstRowKeys.length) {
             prevFirstRowKeys = new long[currFirstRowKeys.length];
         }
-        System.arraycopy(currFirstRowKeys, 0, prevFirstRowKeys, 0, currFirstRowKeys.length);
+        System.arraycopy(currFirstRowKeys, 0, prevFirstRowKeys, 0, currSize + 1);
         prevSize = currSize;
     }
 
+    private void checkCapacity(final int numTables) {
+        if (numTables > MAX_ARRAY_SIZE - 1) {
+            throw new UnsupportedOperationException(
+                    "Requested capacity " + numTables + " exceeds maximum of " + (MAX_ARRAY_SIZE - 1));
+        }
+    }
+
     void ensureCapacity(final int numTables) {
-        if (currFirstRowKeys.length < numTables) {
-            currFirstRowKeys = Arrays.copyOf(currFirstRowKeys, 1 << MathUtil.ceilLog2(numTables));
+        checkCapacity(numTables);
+        if (currFirstRowKeys.length <= numTables) {
+            currFirstRowKeys = Arrays.copyOf(currFirstRowKeys, 1 << MathUtil.ceilLog2(numTables + 1));
         }
     }
 
     /**
-     * Append a new table at the end of this union with the given maxKey. It is expected that tables will be added in
-     * tableId order.
+     * Append a new table at the end of this union with the given {@code lastRowKey last row key}. This is only used for
+     * initialization purposes.
      *
-     * @param maxKey the maximum key of the table
+     * @param lastRowKey The last row key in the constituent table
+     * @return The amount to shift this constituent's {@link io.deephaven.engine.rowset.RowSet row set} by for inclusion
+     *         in the output row set
      */
-    public void appendTable(long maxKey) {
-        if (currSize + 1 == currFirstRowKeys.length) {
-            currFirstRowKeys = Arrays.copyOf(currFirstRowKeys, currSize * 2);
-            prevFirstRowKeys = Arrays.copyOf(prevFirstRowKeys, currSize * 2);
-            prevStartOfIndicesAlt = Arrays.copyOf(prevStartOfIndicesAlt, currSize * 2);
-        }
-
-        final long keySpace = keySpaceFor(maxKey);
-
-        ++currSize;
-        currFirstRowKeys[currSize] = currFirstRowKeys[currSize - 1] + keySpace;
-        prevFirstRowKeys[currSize] = prevFirstRowKeys[currSize - 1] + keySpace;
-        prevStartOfIndicesAlt[currSize] = prevStartOfIndicesAlt[currSize - 1] + keySpace;
-
-        if (currFirstRowKeys[currSize] < 0 || prevFirstRowKeys[currSize] < 0 || prevStartOfIndicesAlt[currSize] < 0) {
+    long appendInitialTable(final long lastRowKey) {
+        final int constituentIndex = currSize++;
+        final long firstRowKeyAllocated = currFirstRowKeys[constituentIndex];
+        final long lastRowKeyAllocated = firstRowKeyAllocated + keySpaceFor(lastRowKey);
+        if (lastRowKeyAllocated < 0) {
             throw new UnsupportedOperationException(ROW_SET_OVERFLOW_MESSAGE);
         }
+        currFirstRowKeys[constituentIndex + 1] = lastRowKeyAllocated;
+        return firstRowKeyAllocated;
+    }
+
+    long[] getCurrFirstRowKeysForUpdate() {
+        return currFirstRowKeys;
+    }
+
+    void setCurrSizeForUpdate(final int currSize) {
+        this.currSize = currSize;
     }
 
     /**

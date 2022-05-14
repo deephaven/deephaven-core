@@ -9,14 +9,10 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
-import io.deephaven.engine.table.impl.NoSuchColumnException;
-import io.deephaven.engine.table.iterators.ColumnIterator;
-import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -29,7 +25,6 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -67,8 +62,8 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         Stream<ColumnSource<T>> currSources();
     }
 
-    private final UnionRedirection unionRedirection;
     private final UnionSourceManager unionSourceManager;
+    private final UnionRedirection unionRedirection;
     private final ConstituentSourceLookup<T> sourceLookup;
 
     private Map<Class, ReinterpretReference> reinterpretedSources;
@@ -76,16 +71,16 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     UnionColumnSource(
             @NotNull final Class<T> type,
             @Nullable final Class<?> componentType,
-            @NotNull final UnionRedirection unionRedirection,
             @NotNull final UnionSourceManager unionSourceManager,
+            @NotNull final UnionRedirection unionRedirection,
             @NotNull final ConstituentSourceLookup<T> sourceLookup) {
         super(type, componentType);
-        this.unionRedirection = unionRedirection;
         this.unionSourceManager = unionSourceManager;
+        this.unionRedirection = unionRedirection;
         this.sourceLookup = sourceLookup;
     }
 
-    private long getOffset(final long rowKey, final int slot) {
+    private long getCurrOffset(final long rowKey, final int slot) {
         return rowKey - unionRedirection.currFirstRowKeyForSlot(slot);
     }
 
@@ -99,7 +94,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return null;
         }
         final int slot = unionRedirection.currSlotForRowKey(rowKey);
-        final long offset = getOffset(rowKey, slot);
+        final long offset = getCurrOffset(rowKey, slot);
         return sourceLookup.slotToCurrSource(slot).get(offset);
     }
 
@@ -109,7 +104,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return null;
         }
         final int slot = unionRedirection.currSlotForRowKey(rowKey);
-        final long offset = getOffset(rowKey, slot);
+        final long offset = getCurrOffset(rowKey, slot);
         return sourceLookup.slotToCurrSource(slot).getBoolean(offset);
     }
 
@@ -119,7 +114,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return NULL_BYTE;
         }
         final int slot = unionRedirection.currSlotForRowKey(rowKey);
-        final long offset = getOffset(rowKey, slot);
+        final long offset = getCurrOffset(rowKey, slot);
         return sourceLookup.slotToCurrSource(slot).getByte(offset);
     }
 
@@ -129,7 +124,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return NULL_CHAR;
         }
         final int slot = unionRedirection.currSlotForRowKey(rowKey);
-        final long offset = getOffset(rowKey, slot);
+        final long offset = getCurrOffset(rowKey, slot);
         return sourceLookup.slotToCurrSource(slot).getChar(offset);
     }
 
@@ -139,7 +134,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return NULL_DOUBLE;
         }
         final int slot = unionRedirection.currSlotForRowKey(rowKey);
-        final long offset = getOffset(rowKey, slot);
+        final long offset = getCurrOffset(rowKey, slot);
         return sourceLookup.slotToCurrSource(slot).getDouble(offset);
     }
 
@@ -149,7 +144,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return NULL_FLOAT;
         }
         final int slot = unionRedirection.currSlotForRowKey(rowKey);
-        final long offset = getOffset(rowKey, slot);
+        final long offset = getCurrOffset(rowKey, slot);
         return sourceLookup.slotToCurrSource(slot).getFloat(offset);
     }
 
@@ -159,7 +154,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return NULL_INT;
         }
         final int slot = unionRedirection.currSlotForRowKey(rowKey);
-        final long offset = getOffset(rowKey, slot);
+        final long offset = getCurrOffset(rowKey, slot);
         return sourceLookup.slotToCurrSource(slot).getInt(offset);
     }
 
@@ -169,7 +164,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return NULL_LONG;
         }
         final int slot = unionRedirection.currSlotForRowKey(rowKey);
-        final long offset = getOffset(rowKey, slot);
+        final long offset = getCurrOffset(rowKey, slot);
         return sourceLookup.slotToCurrSource(slot).getLong(offset);
     }
 
@@ -179,7 +174,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return NULL_SHORT;
         }
         final int slot = unionRedirection.currSlotForRowKey(rowKey);
-        final long offset = getOffset(rowKey, slot);
+        final long offset = getCurrOffset(rowKey, slot);
         return sourceLookup.slotToCurrSource(slot).getShort(offset);
     }
 
@@ -625,28 +620,6 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         return destination;
     }
 
-    void appendColumnSource(ColumnSource<T> sourceToAdd) {
-        ensureCapacity(numSources);
-        subSources[numSources++] = sourceToAdd;
-
-        if (reinterpretedSources == null) {
-            return;
-        }
-
-        for (final Iterator<Map.Entry<Class, ReinterpretReference>> it = reinterpretedSources.entrySet().iterator(); it
-                .hasNext();) {
-            final Map.Entry<Class, ReinterpretReference> entry = it.next();
-            final WeakReference<ReinterpretToOriginal> weakReference = entry.getValue();
-            final ReinterpretToOriginal reinterpretToOriginal = weakReference.get();
-            if (reinterpretToOriginal == null) {
-                it.remove();
-                continue;
-            }
-            // noinspection unchecked
-            reinterpretToOriginal.appendColumnSource(sourceToAdd.reinterpret(entry.getKey()));
-        }
-    }
-
     /**
      * Return the Union source manager that was used to create this table.
      */
@@ -654,48 +627,45 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         return unionSourceManager;
     }
 
-    public ColumnSource getSubSource(int i) {
-        return subSources[i];
+    public ColumnSource getSubSource(final int slot) {
+        if (!unionSourceManager.isUsingComponentsSafe()) {
+            throw new UnsupportedOperationException("Cannot get component tables if constituent changes not permitted");
+        }
+        return sourceLookup.slotToCurrSource(slot);
     }
 
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return unionSourceManager.allowsReinterpret()
-                && Arrays.stream(subSources).filter(Objects::nonNull)
-                        .allMatch(cs -> cs.allowsReinterpret(alternateDataType));
+        return unionSourceManager.isUsingComponentsSafe()
+                && sourceLookup.currSources().allMatch(cs -> cs.allowsReinterpret(alternateDataType));
     }
 
     @Override
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        final WeakReference<ReinterpretToOriginal> reinterpretedSourceWeakReference =
-                reinterpretedSources == null ? null : reinterpretedSources.get(alternateDataType);
-        if (reinterpretedSourceWeakReference != null) {
-            final UnionColumnSource cachedValue = reinterpretedSourceWeakReference.get();
-            if (cachedValue != null) {
-                // noinspection unchecked
-                return cachedValue;
+        {
+            final WeakReference<ReinterpretToOriginal> reinterpretedSourceWeakReference =
+                    reinterpretedSources == null ? null : reinterpretedSources.get(alternateDataType);
+            if (reinterpretedSourceWeakReference != null) {
+                final UnionColumnSource cachedValue = reinterpretedSourceWeakReference.get();
+                if (cachedValue != null) {
+                    // noinspection unchecked
+                    return cachedValue;
+                }
             }
         }
 
         // noinspection unchecked
-        final ColumnSource<ALTERNATE_DATA_TYPE>[] reinterpretedSubSources = new ColumnSource[subSources.length];
-        for (int ii = 0; ii < subSources.length; ++ii) {
-            if (subSources[ii] == null) {
-                continue;
-            }
-            reinterpretedSubSources[ii] = subSources[ii].reinterpret(alternateDataType);
-        }
-
+        final ColumnSource<ALTERNATE_DATA_TYPE>[] reinterpretedSubSources = sourceLookup.currSources()
+                .map(cs -> cs.reinterpret(alternateDataType)).toArray(ColumnSource[]::new);
         // noinspection unchecked
-        final ReinterpretToOriginal<ALTERNATE_DATA_TYPE> reinterpretedSource =
-                new ReinterpretToOriginal(alternateDataType, numSources, reinterpretedSubSources, this);
+        final ReinterpretToOriginal<ALTERNATE_DATA_TYPE> reinterpretedSource = new ReinterpretToOriginal(
+                alternateDataType, reinterpretedSubSources, this);
 
         if (reinterpretedSources == null) {
-            reinterpretedSources = new KeyedObjectHashMap<>(REINTERPRETED_CLASS_KEY_INSTANCE);
+            reinterpretedSources = new KeyedObjectHashMap<>(ReinterpretedClassKey.INSTANCE);
         }
-
         reinterpretedSources.put(alternateDataType, new ReinterpretReference(reinterpretedSource, alternateDataType));
 
         return reinterpretedSource;
@@ -711,12 +681,15 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     private static class ReinterpretToOriginal<ALTERNATE> extends UnionColumnSource<ALTERNATE> {
+
         private final UnionColumnSource originalSource;
 
-        private ReinterpretToOriginal(Class<ALTERNATE> alternateDataType, int numSources,
-                ColumnSource<ALTERNATE>[] reinterpretedSubSources, UnionColumnSource originalSource) {
-            super(alternateDataType, null, originalSource.unionRedirection,
-                    originalSource.unionSourceManager, numSources, reinterpretedSubSources);
+        private ReinterpretToOriginal(
+                @NotNull final Class<ALTERNATE> alternateDataType,
+                @NotNull final ColumnSource<ALTERNATE>[] reinterpretedSubSources,
+                @NotNull final UnionColumnSource originalSource) {
+            super(alternateDataType, null, originalSource.unionSourceManager, originalSource.unionRedirection,
+                    new ArraySourceLookup<>(reinterpretedSubSources));
             this.originalSource = originalSource;
         }
 
@@ -734,67 +707,54 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     private static class ReinterpretedClassKey extends KeyedObjectKey.Basic<Class, ReinterpretReference> {
+
+        private static final KeyedObjectKey.Basic<Class, ReinterpretReference> INSTANCE = new ReinterpretedClassKey();
+
         @Override
-        public Class getKey(ReinterpretReference reinterpretReference) {
+        public Class getKey(@NotNull final ReinterpretReference reinterpretReference) {
             return reinterpretReference.alternateDataType;
         }
     }
 
-    private static final ReinterpretedClassKey REINTERPRETED_CLASS_KEY_INSTANCE = new ReinterpretedClassKey();
+    private static final class ArraySourceLookup<T> implements UnionColumnSource.ConstituentSourceLookup<T> {
 
-    @Override
-    public boolean isImmutable() {
-        return sourceLookup.currSources().allMatch(ColumnSource::isImmutable);
-    }
+        private final ColumnSource<T>[] constituentSources;
 
-    @Override
-    public boolean preventsParallelism() {
-        return sourceLookup.currSources().anyMatch(ColumnSource::preventsParallelism);
-    }
-
-    @Override
-    public boolean isStateless() {
-        return sourceLookup.currSources().allMatch(ColumnSource::isStateless);
-    }
-
-    final class TableSourceLookup implements ConstituentSourceLookup<T> {
-
-        private final TrackingRowSet constituentRows;
-        private final ColumnSource<Table> constituentTables;
-        private final String columnName;
-
-        TableSourceLookup(
-                @NotNull final TrackingRowSet constituentRows,
-                @NotNull final ColumnSource<Table> constituentTables,
-                @NotNull final String columnName) {
-            this.constituentRows = constituentRows;
-            this.constituentTables = constituentTables;
-            this.columnName = columnName;
+        private ArraySourceLookup(@NotNull final ColumnSource<T>[] constituentSources) {
+            this.constituentSources = constituentSources;
         }
 
         @Override
         public ColumnSource<T> slotToCurrSource(final int slot) {
-            return sourceFromTable(constituentTables.get(constituentRows.get(slot)));
+            return constituentSources[slot];
         }
 
         @Override
         public ColumnSource<T> slotToPrevSource(final int slot) {
-            return sourceFromTable(constituentTables.getPrev(constituentRows.getPrev(slot)));
-        }
-
-        private ColumnSource<T> sourceFromTable(@NotNull final Table table) {
-            try {
-                return table.getColumnSource(columnName);
-            } catch (NoSuchColumnException e) {
-                return NullValueColumnSource.getInstance(getType(), getComponentType());
-            }
+            return constituentSources[slot];
         }
 
         @Override
         public Stream<ColumnSource<T>> currSources() {
-            return StreamSupport.stream(Spliterators.spliterator(new ObjectColumnIterator<>(
-                    constituentTables, constituentRows, ColumnIterator.DEFAULT_CHUNK_SIZE
-            ), constituentRows.size(), Spliterator.ORDERED), false).map(this::sourceFromTable);
+            return Arrays.stream(constituentSources);
         }
+    }
+
+    @Override
+    public boolean isImmutable() {
+        return unionSourceManager.isUsingComponentsSafe()
+                && sourceLookup.currSources().allMatch(ColumnSource::isImmutable);
+    }
+
+    @Override
+    public boolean preventsParallelism() {
+        return !unionSourceManager.isUsingComponentsSafe()
+                || sourceLookup.currSources().anyMatch(ColumnSource::preventsParallelism);
+    }
+
+    @Override
+    public boolean isStateless() {
+        return unionSourceManager.isUsingComponentsSafe()
+                && sourceLookup.currSources().allMatch(ColumnSource::isStateless);
     }
 }
