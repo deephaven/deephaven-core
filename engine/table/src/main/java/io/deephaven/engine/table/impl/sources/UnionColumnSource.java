@@ -716,6 +716,9 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
     }
 
+    /**
+     * ConstituentSource backed by an array.
+     */
     private static final class ArraySourceLookup<T> implements UnionColumnSource.ConstituentSourceLookup<T> {
 
         private final ColumnSource<T>[] constituentSources;

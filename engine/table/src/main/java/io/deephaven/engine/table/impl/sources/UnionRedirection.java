@@ -229,15 +229,15 @@ public class UnionRedirection implements Serializable {
 
     private void ensureCapacity(final int numTables) {
         checkCapacity(numTables);
-        if (currFirstRowKeys.length <= numTables) {
+        if (currFirstRowKeys.length <= numTables + 1) {
             currFirstRowKeys = Arrays.copyOf(currFirstRowKeys, 1 << MathUtil.ceilLog2(numTables + 1));
         }
     }
 
     /**
-     * Append a new table at the end of this union with the given {@code lastRowKey last row key}. This is only used for
-     * initialization purposes.
-     *
+     * Append a new table at the end of this union with the given {@code lastRowKey last row key}.
+     * 
+     * @apiNote Only for use by {@link UnionSourceManager} when initializing
      * @param lastRowKey The last row key in the constituent table
      * @return The amount to shift this constituent's {@link io.deephaven.engine.rowset.RowSet row set} by for inclusion
      *         in the output row set
@@ -253,13 +253,19 @@ public class UnionRedirection implements Serializable {
         return firstRowKeyAllocated;
     }
 
+    /**
+     * Update {@link #currSize} and {@link #ensureCapacity(int)} accordingly.
+     * 
+     * @apiNote Only for use by {@link UnionSourceManager} when processing updates
+     * @param currSize The new value for {@link #currSize}
+     */
     void updateCurrSize(final int currSize) {
         ensureCapacity(currSize);
         this.currSize = currSize;
     }
 
     /**
-     * @apiNote Only for use by {@link UnionSourceManager}
+     * @apiNote Only for use by {@link UnionSourceManager} when processing updates
      * @return The internal {@link #currFirstRowKeys} array
      */
     long[] getCurrFirstRowKeysForUpdate() {
@@ -269,6 +275,7 @@ public class UnionRedirection implements Serializable {
     /**
      * Computes any shift that should be applied to tables at higher slots.
      * 
+     * @apiNote Only for use by {@link UnionSourceManager} when processing updates
      * @param slot The slot of the table that might need more space
      * @param lastRowKey The last row key in the table at {@code slot}
      * @return The relative shift to be applied to all tables at higher slots

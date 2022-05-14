@@ -16,6 +16,7 @@ import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -172,23 +173,23 @@ public class UnionSourceManager {
             }
 
             final long currentStep = LogicalClock.DEFAULT.currentStep();
-            final int currentNumSlots = constituentRows.intSize();
-            if (didConstituentsChange) {
-                unionRedirection.updateCurrSize(currentNumSlots);
-            }
+
+            final int currNumSlots = constituentRows.intSize();
+            unionRedirection.updateCurrSize(currNumSlots);
             final long[] currFirstRowKeys = unionRedirection.getCurrFirstRowKeysForUpdate();
 
             try (final SafeCloseableList toClose = new SafeCloseableList()) {
+                // Get our previous constituent rows
                 final RowSet previousConstituentRows = toClose.add(constituentRows.copyPrev());
+
+                // Compute the row sets of constituents that have been added or removed
                 final WritableRowSet addedConstituentRows = toClose.add(
                         didConstituentsChange ? RowSetFactory.empty() : constituentChanges.added().copy();
                 final WritableRowSet removedConstituentRows = toClose.add(
                         didConstituentsChange ? RowSetFactory.empty() : constituentChanges.removed().copy();
+                convertModifies(constituentChanges, addedConstituentRows, removedConstituentRows);
 
-                if (didConstituentsChange) {
-                    convertModifies(constituentChanges, addedConstituentRows, removedConstituentRows);
-                }
-
+                // Convert the row sets of constituents that have been added or removed to slots
                 final RowSet addedSlots = toClose.add(constituentRows.invert(addedConstituentRows));
                 final RowSet removedSlots = toClose.add(previousConstituentRows.invert(removedConstituentRows));
 
@@ -198,14 +199,20 @@ public class UnionSourceManager {
 //                        toClose.add(previousConstituentRows.minus(removedConstituentRows));
 
                 final RowSetShiftData.Builder shiftedBuilder = new RowSetShiftData.Builder();
+                final WritableRowSet downstreamAdded = RowSetFactory.empty();
+                final WritableRowSet downstreamRemoved = RowSetFactory.empty();
+
                 try (final RowSet.Iterator addedSlotsIter = addedSlots.iterator();
                      final RowSet.Iterator removedSlotsIter = removedSlots.iterator();
                      final ObjectColumnIterator<Table> currValues = currConstituentIter(constituentRows);
                      final ObjectColumnIterator<Table> prevValues = prevConstituentIter(previousConstituentRows)) {
                     int addedSlot = addedSlotsIter.hasNext() ? (int) addedSlotsIter.nextLong() : -1;
                     int removedSlot = removedSlotsIter.hasNext() ? (int) removedSlotsIter.nextLong() : -1;
-                    for (int slot = 0; slot < currentNumSlots; ++slot) {
-
+                    for (int slot = 0; slot < currSizwe; ++slot) {
+                        final Table currValue = currValues.next();
+                        final Table prevValue = currValues.next();
+                        // TODO-RWC: Figure out how to integrate old logic here
+                        if (slot == removedSlot)
                     }
                 }
 
@@ -364,27 +371,33 @@ public class UnionSourceManager {
     }
 
     /**
-     * Examine all modifies constituent tables. For any that have actually changed (according to reference equality),
-     * insert the modified row key into {@code addedConstituentRows} (post-shift) and {@code removedConstituentRows} (pre-shift).
+     * Examine all modified constituent tables. For any that have actually changed (according to reference equality),
+     * insert the modified row key into {@code addedConstituentRows} (post-shift) and {@code removedConstituentRows}
+     * (pre-shift).
      *
      * @param constituentChanges The upstream constituent changes to process
      * @param addedConstituentRows Added constituent rows to insert into
      * @param removedConstituentRows Removed constituent rows to insert into
      */
     private void convertModifies(
-            @NotNull final TableUpdate constituentChanges,
+            @Nullable final TableUpdate constituentChanges,
             @NotNull final WritableRowSet addedConstituentRows,
             @NotNull final WritableRowSet removedConstituentRows) {
-        if (constituentChanges.modified().isEmpty()) {
+        //noinspection resource
+        if (constituentChanges == null || constituentChanges.modified().isEmpty()) {
             return;
         }
         final RowSetBuilderSequential modifiesAsAddsBuilder = RowSetFactory.builderSequential();
         final RowSetBuilderSequential modifiesAsRemovesBuilder = RowSetFactory.builderSequential();
+        // @formatter:off
+        //noinspection resource
         try (final RowSet.Iterator modifiedCurrentRowKeys = constituentChanges.modified().iterator();
              final RowSet.Iterator modifiedPreviousRowKeys = constituentChanges.getModifiedPreShift().iterator();
-             final ObjectColumnIterator<Table> modifiedCurrentValues = currConstituentIter(constituentChanges.modified());
+             final ObjectColumnIterator<Table> modifiedCurrentValues =
+                     currConstituentIter(constituentChanges.modified());
              final ObjectColumnIterator<Table> modifiedPreviousValues =
                      prevConstituentIter(constituentChanges.getModifiedPreShift())) {
+            // @formatter:on
             while (modifiedCurrentRowKeys.hasNext()) {
                 final long currentKey = modifiedCurrentRowKeys.nextLong();
                 final long previousKey = modifiedPreviousRowKeys.nextLong();
@@ -404,6 +417,11 @@ public class UnionSourceManager {
         }
     }
 
+    /**
+     * Get a stream over all current constituent tables.
+     *
+     * @return The stream
+     */
     private Stream<Table> currConstituents() {
         return StreamSupport.stream(
                 Spliterators.spliterator(
@@ -413,6 +431,29 @@ public class UnionSourceManager {
                 false);
     }
 
+    /**
+     * Make an {@link ObjectColumnIterator} over the current constituent tables designated by {@code rows}.
+     *
+     * @param rows The row keys designating the constituents to iterate
+     * @return The iterator
+     */
+    private ObjectColumnIterator<Table> currConstituentIter(@NotNull final RowSequence rows) {
+        return new ObjectColumnIterator<>(constituentTables, rows);
+    }
+
+    /**
+     * Make an {@link ObjectColumnIterator} over the previous constituent tables designated by {@code rows}.
+     *
+     * @param rows The row keys designating the constituents to iterate
+     * @return The iterator
+     */
+    private ObjectColumnIterator<Table> prevConstituentIter(@NotNull final RowSequence rows) {
+        return new ObjectColumnIterator<>(constituentTables.getPrevSource(), rows);
+    }
+
+    /**
+     * ConstituentSourceLookup backed by our {@code constituentTables} and {@code constituentRows}.
+     */
     private final class TableSourceLookup<T> implements UnionColumnSource.ConstituentSourceLookup<T> {
 
         private final String columnName;
@@ -440,13 +481,5 @@ public class UnionSourceManager {
         private ColumnSource<T> sourceFromTable(@NotNull final Table table) {
             return table.getColumnSource(columnName);
         }
-    }
-
-    private ObjectColumnIterator<Table> currConstituentIter(@NotNull final RowSequence rows) {
-        return new ObjectColumnIterator<>(constituentTables, rows);
-    }
-
-    private ObjectColumnIterator<Table> prevConstituentIter(@NotNull final RowSequence rows) {
-        return new ObjectColumnIterator<>(constituentTables.getPrevSource(), rows);
     }
 }
