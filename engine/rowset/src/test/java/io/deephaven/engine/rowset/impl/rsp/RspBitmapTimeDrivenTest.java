@@ -113,6 +113,8 @@ public class RspBitmapTimeDrivenTest {
         }
     }
 
+    public static final int SEARCH_PIECES = SPLIT_SEARCH_SPACE_LAST_PIECE - SPLIT_SEARCH_SPACE_FIRST_PIECE + 1;
+
     public static final boolean TEST_OR, TEST_AND, TEST_ANDNOT;
     static {
         final boolean testOnlyOr = System.getenv("TEST_ONLY_OR") != null;
@@ -329,7 +331,7 @@ public class RspBitmapTimeDrivenTest {
                 final int searchPiece,
                 final TestSequenceMode mode,
                 final long testTimeBudgetMillis) {
-            this.workerName = "" + workerIdx + "/" + SPLIT_SEARCH_SPACE_PIECES;
+            this.workerName = "" + workerIdx + "/" + SEARCH_PIECES;
             this.testName = testName;
             this.op = op;
             this.rspOp = rspOp;
@@ -465,9 +467,8 @@ public class RspBitmapTimeDrivenTest {
             final long testTimeBudgetMillis) {
         final String testName = "binaryOps-" + op + "-" + mode + "-"
                 + ((testTimeBudgetMillis == -1) ? "nolimit" : toTimeStr(testTimeBudgetMillis));
-        final int searchPieces = SPLIT_SEARCH_SPACE_LAST_PIECE - SPLIT_SEARCH_SPACE_FIRST_PIECE + 1;
-        final Thread[] workers = new Thread[searchPieces];
-        for (int i = 0; i < searchPieces; ++i) {
+        final Thread[] workers = new Thread[SEARCH_PIECES];
+        for (int i = 0; i < SEARCH_PIECES; ++i) {
             workers[i] = new Thread(
                     new TestWorker(
                             i,
@@ -479,7 +480,7 @@ public class RspBitmapTimeDrivenTest {
                             testTimeBudgetMillis));
             System.out.printf("%s: Dispatching worker %d.%n", testName, i);
             workers[i].start();
-            if (searchPieces > 1 && i < searchPieces - 1) {
+            if (SEARCH_PIECES > 1 && i < SEARCH_PIECES - 1) {
                 // minimally stagger
                 try {
                     Thread.sleep(10);
@@ -487,7 +488,7 @@ public class RspBitmapTimeDrivenTest {
                     /* ignore */ }
             }
         }
-        for (int i = 0; i < searchPieces; ++i) {
+        for (int i = 0; i < SEARCH_PIECES; ++i) {
             try {
                 workers[i].join();
             } catch (InterruptedException e) {
