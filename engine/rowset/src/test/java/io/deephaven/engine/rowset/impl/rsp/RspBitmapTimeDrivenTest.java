@@ -476,6 +476,10 @@ public class RspBitmapTimeDrivenTest {
                             testTimeBudgetMillis));
             System.out.printf("%s: Dispatching worker %d.%n", testName, i);
             workers[i].start();
+            if (searchPieces > 1 && i < searchPieces - 1) {
+                // minimally stagger
+                try { Thread.sleep(10); } catch (InterruptedException e) { /* ignore */ }
+            }
         }
         for (int i = 0; i < searchPieces; ++i) {
             try {
