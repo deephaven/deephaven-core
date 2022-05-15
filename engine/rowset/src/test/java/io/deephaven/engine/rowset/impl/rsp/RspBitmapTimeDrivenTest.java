@@ -427,14 +427,17 @@ public class RspBitmapTimeDrivenTest {
                     final long millis = now - lastLog;
                     final String deadlineStr = (deadline == -1) ? "no" : (toTimeStr(deadline - now) + " to");
                     final double checksPerMilli = ((double) checksDoneSinceLastLog) / millis;
-                    System.out.printf(
-                            "%s: In the last %.1f seconds ran %.1f checks per second; %.3f%% of this worker's space covered; %s test deadline, %s to worker's space coverage.%n",
+                    final double avgChecksPerMilli = ((double) (check + 1)) / (now - start);
+                    System.out.printf("%s: " +
+                            "In the last %.1f seconds ran %.1f checks per second; " +
+                            "%.3f%% of this worker's space covered; %s test deadline, " +
+                            "%s to worker's space coverage.%n",
                             me,
                             millis / 1000.0,
                             1000.0 * checksPerMilli,
                             (100.0 * (check + 1)) / totalChecks,
                             deadlineStr,
-                            toTimeStr((long) ((totalChecks - check - 1) / checksPerMilli)));
+                            toTimeStr((long) ((totalChecks - check - 1) / avgChecksPerMilli)));
                     System.out.printf(
                             "%s: Last checked for v=%,d => spec0=%s, spec1=%s.%n",
                             me,
@@ -478,7 +481,10 @@ public class RspBitmapTimeDrivenTest {
             workers[i].start();
             if (searchPieces > 1 && i < searchPieces - 1) {
                 // minimally stagger
-                try { Thread.sleep(10); } catch (InterruptedException e) { /* ignore */ }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    /* ignore */ }
             }
         }
         for (int i = 0; i < searchPieces; ++i) {
