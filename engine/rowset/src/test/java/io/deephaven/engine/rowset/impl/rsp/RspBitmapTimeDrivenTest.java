@@ -387,12 +387,17 @@ public class RspBitmapTimeDrivenTest {
                 valueToSpec(spec1value, spec1);
                 if (!checkBinaryOp(rspOp, osetOp, spec0, spec1)) {
                     final String failed = op
-                            + " && spec0==" + toStr(spec0)
-                            + " && spec1==" + toStr(spec1);
-                    System.out.printf("%s: failed, %s.%n", me, failure);
-                    if (failure != null) {
+                            + " spec0=" + Arrays.toString(spec0)
+                            + " spec1=" + Arrays.toString(spec1)
+                            + "\n"
+                            + " spec0 => " + toStr(spec0)
+                            + "\n"
+                            + " spec1 => " + toStr(spec1)
+                            + "\n";
+                    System.out.printf("%s: failed, %s.%n", me, failed);
+                    if (failure == null) {
                         synchronized (TestWorker.class) {
-                            if (failure != null) {
+                            if (failure == null) {
                                 failure = failed;
                             }
                         }
