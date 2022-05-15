@@ -11,7 +11,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.TableTransformationColumn;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.util.SafeCloseable;
@@ -142,14 +141,6 @@ public class UnionSourceManager {
         return columnSourcesMap;
     }
 
-    private RowSet applyCurrShift(final RowSet constituentRowSet, final int slot) {
-        return constituentRowSet.shift(unionRedirection.currFirstRowKeyForSlot(slot));
-    }
-
-    private RowSet applyPreVShift(final RowSet constituentRowSet, final int slot) {
-        return constituentRowSet.shift(unionRedirection.prevFirstRowKeyForSlot(slot));
-    }
-
     @NotNull
     public QueryTable getResult() {
         return resultTable;
@@ -218,157 +209,12 @@ public class UnionSourceManager {
 
         @Override
         protected void process() {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
             final TableUpdate constituentChanges = getAndCheckConstituentChanges();
             final TableUpdate downstream;
-            try (final ChangeProcessingContext context = new ChangeProcessingContext(currentStep, constituentChanges)) {
+            try (final ChangeProcessingContext context = new ChangeProcessingContext(constituentChanges)) {
                 downstream = context.processChanges();
             }
-            {
-                long accumulatedShift = 0;
-                int firstShiftingSlot = constituentRows.intSize();
-                for (int tableId = 0; tableId < tables.size(); ++tableId) {
-                    final long newShift =
-                            unionRedirection.computeShiftIfNeeded(tableId, tables.get(tableId).getRowSet().lastRowKey());
-                    unionRedirection.prevStartOfIndicesAlt[tableId] =
-                            unionRedirection.currFirstRowKeys[tableId] += accumulatedShift;
-                    accumulatedShift += newShift;
-                    if (newShift > 0 && tableId + 1 < firstShiftingTable) {
-                        firstShiftingTable = tableId + 1;
-                    }
-                }
-                // note: prevStart must be set regardless of whether accumulatedShift is non-zero or not.
-                unionRedirection.prevStartOfIndicesAlt[tables.size()] =
-                        unionRedirection.currFirstRowKeys[tables.size()] += accumulatedShift;
-
-                if (accumulatedShift > 0) {
-                    final int maxTableId = tables.size() - 1;
-
-                    final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-                    resultRows.removeRange(unionRedirection.prevFirstRowKeys[firstShiftingTable], Long.MAX_VALUE);
-
-                    for (int tableId = firstShiftingTable; tableId <= maxTableId; ++tableId) {
-                        final long startOfShift = unionRedirection.currFirstRowKeys[tableId];
-                        builder.appendRowSequenceWithOffset(tables.get(tableId).getRowSet(), startOfShift);
-                    }
-
-                    resultRows.insert(builder.build());
-                }
-
-                modifiedColumnSet.clear();
-                final RowSetBuilderSequential updateAddedBuilder = RowSetFactory.builderSequential();
-                final RowSetBuilderSequential shiftAddedBuilder = RowSetFactory.builderSequential();
-                final RowSetBuilderSequential shiftRemoveBuilder = RowSetFactory.builderSequential();
-                final RowSetBuilderSequential updateRemovedBuilder = RowSetFactory.builderSequential();
-                final RowSetBuilderSequential updateModifiedBuilder = RowSetFactory.builderSequential();
-
-                // listeners should be quiescent by the time we are processing this notification, because of the dependency
-                // tracking
-                int nextListenerId = 0;
-                for (int tableId = 0; tableId < tables.size(); ++tableId) {
-                    final long offset = unionRedirection.prevFirstRowKeys[tableId];
-                    final long currOffset = unionRedirection.currFirstRowKeys[tableId];
-                    final long shiftDelta = currOffset - offset;
-
-                    // Listeners only contains ticking tables. However, we might need to shift tables that do not tick.
-                    final ListenerRecorder listener =
-                            (nextListenerId < constituentListeners.size()
-                                    && constituentListeners.get(nextListenerId).tableId == tableId)
-                                    ? constituentListeners.get(nextListenerId++)
-                                    : null;
-
-                    if (listener == null || listener.getNotificationStep() != currentStep) {
-                        if (shiftDelta != 0) {
-                            shiftedBuilder.shiftRange(unionRedirection.prevFirstRowKeys[tableId],
-                                    unionRedirection.prevFirstRowKeys[tableId + 1] - 1, shiftDelta);
-                        }
-                        continue;
-                    }
-
-                    // Mark all dirty columns in this source table as dirty in aggregate.
-                    modColumnTransformers.get(nextListenerId - 1).transform(listener.getModifiedColumnSet(),
-                            modifiedColumnSet);
-
-                    final RowSetShiftData shiftData = listener.getShifted();
-
-                    updateAddedBuilder.appendRowSequenceWithOffset(listener.getAdded(),
-                            unionRedirection.currFirstRowKeys[tableId]);
-                    updateModifiedBuilder.appendRowSequenceWithOffset(listener.getModified(),
-                            unionRedirection.currFirstRowKeys[tableId]);
-
-                    if (shiftDelta == 0) {
-                        try (final RowSet newRemoved = getShiftedPrevIndex(listener.getRemoved(), tableId)) {
-                            updateRemovedBuilder.appendRowSequence(newRemoved);
-                            resultRows.remove(newRemoved);
-                        }
-                    } else {
-                        // If the shiftDelta is non-zero we have already updated the RowSet above (because we used the new
-                        // RowSet), otherwise we need to apply the removals (adjusted by the table's starting key)
-                        updateRemovedBuilder.appendRowSequenceWithOffset(listener.getRemoved(),
-                                unionRedirection.prevFirstRowKeys[tableId]);
-                    }
-
-                    // Apply and process shifts.
-                    final long firstTableKey = unionRedirection.currFirstRowKeys[tableId];
-                    final long lastTableKey = unionRedirection.currFirstRowKeys[tableId + 1] - 1;
-                    if (shiftData.nonempty() && resultRows.overlapsRange(firstTableKey, lastTableKey)) {
-                        final long prevCardinality = unionRedirection.prevFirstRowKeys[tableId + 1] - offset;
-                        final long currCardinality = unionRedirection.currFirstRowKeys[tableId + 1] - currOffset;
-                        shiftedBuilder.appendShiftData(shiftData, offset, prevCardinality, currOffset, currCardinality);
-
-                        // if the entire table was shifted, we've already applied the RowSet update
-                        if (shiftDelta == 0) {
-                            // it is possible that shifts occur outside of our reserved keyspace for this table; we must
-                            // protect from shifting keys that belong to other tables by clipping the shift space
-                            final long lastLegalKey = unionRedirection.prevFirstRowKeys[tableId + 1] - 1;
-
-                            try (RowSequence.Iterator rsIt = resultRows.getRowSequenceIterator()) {
-                                for (int idx = 0; idx < shiftData.size(); ++idx) {
-                                    final long beginRange = shiftData.getBeginRange(idx) + offset;
-                                    if (beginRange > lastLegalKey) {
-                                        break;
-                                    }
-                                    final long endRange = Math.min(shiftData.getEndRange(idx) + offset, lastLegalKey);
-                                    final long rangeDelta = shiftData.getShiftDelta(idx);
-
-                                    if (!rsIt.advance(beginRange)) {
-                                        break;
-                                    }
-                                    Assert.leq(beginRange, "beginRange", endRange, "endRange");
-                                    shiftRemoveBuilder.appendRange(beginRange, endRange);
-                                    rsIt.getNextRowSequenceThrough(endRange).forAllRowKeyRanges(
-                                            (s, e) -> shiftAddedBuilder.appendRange(s + rangeDelta, e + rangeDelta));
-                                }
-                            }
-                        }
-                    } else if (shiftDelta != 0) {
-                        // shift entire thing
-                        shiftedBuilder.shiftRange(unionRedirection.prevFirstRowKeys[tableId],
-                                unionRedirection.prevFirstRowKeys[tableId + 1] - 1, shiftDelta);
-                    }
-                }
-
-                if (accumulatedShift > 0 && updateCommitter != null) {
-                    updateCommitter.maybeActivate();
-                }
-
-                final TableUpdateImpl downstream = new TableUpdateImpl();
-                downstream.added = updateAddedBuilder.build();
-                downstream.removed = updateRemovedBuilder.build();
-                downstream.modified = updateModifiedBuilder.build();
-                downstream.shifted = shiftedBuilder.build();
-                downstream.modifiedColumnSet = modifiedColumnSet;
-
-                // Finally add the new keys to the RowSet in post-shift key-space.
-                try (RowSet shiftRemoveRowSet = shiftRemoveBuilder.build();
-                     RowSet shiftAddedRowSet = shiftAddedBuilder.build()) {
-                    resultRows.remove(shiftRemoveRowSet);
-                    resultRows.insert(shiftAddedRowSet);
-                }
-                resultRows.insert(downstream.added());
-
-                result.notifyListeners(downstream);
-            }
+            result.notifyListeners(downstream);
         }
 
         @Override
@@ -392,12 +238,6 @@ public class UnionSourceManager {
      * Context for processing constituent changes
      */
     private final class ChangeProcessingContext implements SafeCloseable {
-
-        /** Clock step for this update cycle */
-        private final long currentStep;
-
-        /** Upstream changes to the parent table of constituents */
-        private final TableUpdate constituentChanges;
 
         // Arrays to update
         final long[] currFirstRowKeys;
@@ -434,12 +274,19 @@ public class UnionSourceManager {
         private int nextPreviousSlot;
 
         // Other state
-        boolean truncatedResult;
+        /**
+         * Whether some constituent has already been removed, been added, or had to grow, causing us to truncate
+         * {@link #resultRows}. The truncating constituent and following will need to insert their entire shifted row
+         * set, and must update the next slot in {@link #currFirstRowKeys}.
+         */
+        boolean slotAllocationChanged;
+        /**
+         * The first key after which we began inserting shifted constituent row sets instead of trying for piecemeal
+         * updates.
+         */
+        long firstTruncatedResultKey;
 
-        private ChangeProcessingContext(final long currentStep, @NotNull final TableUpdate constituentChanges) {
-            this.currentStep = currentStep;
-            this.constituentChanges = constituentChanges;
-
+        private ChangeProcessingContext(@NotNull final TableUpdate constituentChanges) {
             currFirstRowKeys = unionRedirection.getCurrFirstRowKeysForUpdate();
             prevFirstRowKeys = unionRedirection.getPrevFirstRowKeysForUpdate();
 
@@ -500,12 +347,12 @@ public class UnionSourceManager {
                  final SafeCloseable ignored3 = removedValues;
                  final SafeCloseable ignored4 = addedKeys;
                  final SafeCloseable ignored5 = modifiedKeys;
-                 final SafeCloseable ignored6 = modifiedPreviousValues;
-            ) {}
+                 final SafeCloseable ignored6 = modifiedPreviousValues) {
+            }
             // @formatter:on
         }
 
-        private TableUpdate processChanges(final long currentStep) {
+        private TableUpdate processChanges() {
             final int currConstituentCount = constituentRows.intSize();
             final int prevConstituentCount = constituentRows.intSizePrev();
             unionRedirection.updateCurrSize(currConstituentCount);
@@ -556,10 +403,17 @@ public class UnionSourceManager {
                 }
             }
 
-            // TODO-RWC: resultRowSet update (adds inserted?)
+            Assert.eq(nextCurrentKey, "nextCurrentKey", NULL_ROW_KEY, "NULL_ROW_KEY");
+            Assert.eqNull(nextCurrentValue, "nextCurrentValue");
+            Assert.eq(nextRemovedSlot, "nextRemovedSlot", NULL_ROW_KEY, "NULL_ROW_KEY");
+            Assert.eqNull(nextRemovedValue, "nextRemovedValue");
+            Assert.eq(nextAddedKey, "nextAddedKey", NULL_ROW_KEY, "NULL_ROW_KEY");
+            Assert.eq(nextModifiedKey, "nextModifiedKey", NULL_ROW_KEY, "NULL_ROW_KEY");
+            Assert.eqNull(nextModifiedPreviousValue, "nextModifiedPreviousValue");
+            Assert.eqNull(nextListener, "nextListener");
 
-            if (truncatedResult) {
-                updateCommitter.maybeActivate();
+            try (final RowSet addedBeforeTruncate = downstreamAdded.subSetByKeyRange(0, firstTruncatedResultKey - 1)) {
+                resultRows.insert(addedBeforeTruncate);
             }
 
             return new TableUpdateImpl(
@@ -582,7 +436,9 @@ public class UnionSourceManager {
                 advanceListener();
             }
             final long firstRemovedKey = prevFirstRowKeys[nextPreviousSlot];
-            maybeTruncateFrom(firstRemovedKey);
+            // This will be a no-op unless firstRemovedKey == currFirstRowKeys[nextCurrentSlot], because any adjustment
+            // to our slot allocations (remove, add, grow) will have already been reported.
+            onSlotAllocationChange(firstRemovedKey);
             try (final RowSet constituentPrevKeys = removedConstituent.getRowSet().copyPrev()) {
                 downstreamRemoved.insertWithShift(firstRemovedKey, constituentPrevKeys);
             }
@@ -596,18 +452,20 @@ public class UnionSourceManager {
                 }
             }
             final long firstAddedKey = currFirstRowKeys[nextCurrentSlot];
+            onSlotAllocationChange(firstAddedKey);
             currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(
                     firstAddedKey + keySpaceFor(addedConstituent.getRowSet().lastRowKey()));
-            maybeTruncateFrom(firstAddedKey);
-            downstreamAdded.insertWithShift(firstAddedKey, addedConstituent.getRowSet());
             resultRows.insertWithShift(firstAddedKey, addedConstituent.getRowSet());
+            downstreamAdded.insertWithShift(firstAddedKey, addedConstituent.getRowSet());
         }
 
         private void processExisting(@NotNull final Table constituent) {
-            final long currFirstRowKey = currFirstRowKeys[nextCurrentSlot];
             final long prevFirstRowKey = prevFirstRowKeys[nextPreviousSlot];
             final long nextSlotPrevFirstRowKey = prevFirstRowKeys[nextPreviousSlot + 1];
-            final long shiftAmount = currFirstRowKey - prevFirstRowKey;
+            final long prevLastRowKey = nextSlotPrevFirstRowKey - 1;
+
+            final long currFirstRowKey = currFirstRowKeys[nextCurrentSlot];
+            final long shiftDelta = currFirstRowKey - prevFirstRowKey;
 
             final TableUpdate changes;
             final ModifiedColumnSet.Transformer mcsTransformer;
@@ -623,21 +481,47 @@ public class UnionSourceManager {
             }
 
             if (changes == null || changes.empty()) {
-                if (truncatedResult) { // Some slot earlier than this was removed, added, or had to grow
-                    currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(nextSlotPrevFirstRowKey + shiftAmount);
+                if (slotAllocationChanged) {
+                    currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(nextSlotPrevFirstRowKey + shiftDelta);
                     resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
-                }
-                if (shiftAmount != 0 && constituent.getRowSet().isNonempty()) {
-                    downstreamShiftBuilder.shiftRange(prevFirstRowKey, nextSlotPrevFirstRowKey - 1, shiftAmount);
+                    if (shiftDelta != 0) {
+                        downstreamShiftBuilder.shiftRange(prevFirstRowKey, prevLastRowKey, shiftDelta);
+                    }
                 }
                 return;
             }
 
             final long neededAllocation = keySpaceFor(constituent.getRowSet().lastRowKey());
-            final long previousAllocation = nextSlotPrevFirstRowKey - prevFirstRowKey;
-            if (neededAllocation > previousAllocation) {
-                maybeTruncateFrom(prevFirstRowKey);
-                currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(currFirstRowKey + neededAllocation);
+            final long prevAllocation = nextSlotPrevFirstRowKey - prevFirstRowKey;
+            final long nextSlotCurrFirstRowKey;
+            if (neededAllocation > prevAllocation) {
+                onSlotAllocationChange(currFirstRowKey);
+                currFirstRowKeys[nextCurrentSlot + 1] = nextSlotCurrFirstRowKey =
+                        checkOverflow(currFirstRowKey + neededAllocation);
+            } else if (slotAllocationChanged) {
+                // We have the option here to shrink this constituent's key space allocation to just the needed amount.
+                // On the one hand, that would allow us to reclaim some key space to use elsewhere. On the other hand,
+                // that might make subsequent churn on later cycles more likely, if the constituent grows back to a size
+                // commensurate with its current over-large key space allocation. Taking the churn-averse approach for
+                // now.
+                currFirstRowKeys[nextCurrentSlot + 1] = nextSlotCurrFirstRowKey =
+                        checkOverflow(currFirstRowKey + prevAllocation);
+            } else {
+                // No adjustments have been to allocation, so we can use the previous value.
+                nextSlotCurrFirstRowKey = nextSlotPrevFirstRowKey;
+            }
+
+            final boolean needToProcessShifts = changes.shifted().nonempty() && constituent.getRowSet().isNonempty();
+
+            if (slotAllocationChanged) {
+                resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
+            } else if (!needToProcessShifts) {
+                // Skip this if we will remove the entire range during shift processing
+                // noinspection resource
+                try (final RowSet shiftedRemoved = changes.removed().shift(prevFirstRowKey)) {
+                    resultRows.remove(shiftedRemoved);
+                }
+                // Adds will be inserted at the end of processChanges from downstreamAdded
             }
 
             downstreamAdded.insertWithShift(currFirstRowKey, changes.added());
@@ -645,22 +529,26 @@ public class UnionSourceManager {
             downstreamModified.insertWithShift(currFirstRowKey, changes.modified());
             mcsTransformer.transform(changes.modifiedColumnSet(), modifiedColumnSet);
 
-            // TODO-RWC: Resume from here with shift processing
-
-            if (truncatedResult) {
-                resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
-            } else {
-                try (final RowSet shiftedRemoved = changes.removed().shift(prevFirstRowKey)) {
-                    resultRows.remove(shiftedRemoved);
+            if (needToProcessShifts) {
+                final long currAllocation = nextSlotCurrFirstRowKey - currFirstRowKey;
+                downstreamShiftBuilder.appendShiftData(
+                        changes.shifted(), prevFirstRowKey, prevAllocation, currFirstRowKey, currAllocation);
+                if (!slotAllocationChanged) {
+                    resultRows.removeRange(prevFirstRowKey, prevLastRowKey);
+                    resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
                 }
-                // Adds will be inserted at the end from downstreamAdded
+            } else if (shiftDelta != 0) {
+                Assert.assertion(slotAllocationChanged, "slotAllocationChanged");
+                downstreamShiftBuilder.shiftRange(prevFirstRowKey, prevLastRowKey, shiftDelta);
             }
         }
 
-        private void maybeTruncateFrom(final long firstShiftedKey) {
-            if (!truncatedResult) {
+        private void onSlotAllocationChange(final long firstShiftedKey) {
+            if (!slotAllocationChanged) {
+                updateCommitter.maybeActivate();
                 resultRows.removeRange(firstShiftedKey, Long.MAX_VALUE);
-                truncatedResult = true;
+                slotAllocationChanged = true;
+                firstTruncatedResultKey = firstShiftedKey;
             }
         }
     }
