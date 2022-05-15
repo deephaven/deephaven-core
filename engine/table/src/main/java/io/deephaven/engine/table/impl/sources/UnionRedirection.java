@@ -289,18 +289,4 @@ public class UnionRedirection implements Serializable {
     long[] getPrevFirstRowKeysForUpdate() {
         return prevFirstRowKeys;
     }
-
-    /**
-     * Computes any shift that should be applied to tables at higher slots.
-     * 
-     * @apiNote Only for use by {@link UnionSourceManager} when processing updates
-     * @param slot The slot of the table that might need more space
-     * @param lastRowKey The last row key in the table at {@code slot}
-     * @return The relative shift to be applied to all tables at higher slots
-     */
-    long computeShiftIfNeeded(final int slot, final long lastRowKey) {
-        final long keySpaceNeeded = keySpaceFor(lastRowKey);
-        final long keySpaceAllocated = currFirstRowKeys[slot + 1] - currFirstRowKeys[slot];
-        return Math.max(0, keySpaceNeeded - keySpaceAllocated);
-    }
 }

@@ -15,7 +15,6 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.jetbrains.annotations.NotNull;
@@ -219,49 +218,13 @@ public class UnionSourceManager {
 
         @Override
         protected void process() {
+            final long currentStep = LogicalClock.DEFAULT.currentStep();
             final TableUpdate constituentChanges = getAndCheckConstituentChanges();
             final TableUpdate downstream;
-            try (final SafeCloseableList toClose = new SafeCloseableList()) {
-                downstream = processChanges(constituentChanges, toClose);
+            try (final ChangeProcessingContext context = new ChangeProcessingContext(currentStep, constituentChanges)) {
+                downstream = context.processChanges();
             }
             {
-                // Get our previous constituent rows
-                final RowSet previousConstituentRows = toClose.add(constituentRows.copyPrev());
-
-                // Compute the row sets of constituents that have been added or removed
-                final WritableRowSet addedConstituentRows = toClose.add(
-                        didConstituentsChange ? RowSetFactory.empty() : constituentChanges.added().copy();
-                final WritableRowSet removedConstituentRows = toClose.add(
-                        didConstituentsChange ? RowSetFactory.empty() : constituentChanges.removed().copy();
-                convertModifies(constituentChanges, addedConstituentRows, removedConstituentRows);
-
-                // Convert the row sets of constituents that have been added or removed to slots
-                final RowSet addedSlots = toClose.add(constituentRows.invert(addedConstituentRows));
-                final RowSet removedSlots = toClose.add(previousConstituentRows.invert(removedConstituentRows));
-
-//                final RowSet preservedCurrent = addedConstituentRows.isEmpty() ? constituentRows :
-//                        toClose.add(constituentRows.minus(addedConstituentRows));
-//                final RowSet preservedPrevious = removedConstituentRows.isEmpty() ? previousConstituentRows :
-//                        toClose.add(previousConstituentRows.minus(removedConstituentRows));
-
-                final RowSetShiftData.Builder shiftedBuilder = new RowSetShiftData.Builder();
-                final WritableRowSet downstreamAdded = RowSetFactory.empty();
-                final WritableRowSet downstreamRemoved = RowSetFactory.empty();
-
-                try (final RowSet.Iterator addedSlotsIter = addedSlots.iterator();
-                     final RowSet.Iterator removedSlotsIter = removedSlots.iterator();
-                     final ObjectColumnIterator<Table> currValues = currConstituentIter(constituentRows);
-                     final ObjectColumnIterator<Table> prevValues = prevConstituentIter(previousConstituentRows)) {
-                    int addedSlot = addedSlotsIter.hasNext() ? (int) addedSlotsIter.nextLong() : -1;
-                    int removedSlot = removedSlotsIter.hasNext() ? (int) removedSlotsIter.nextLong() : -1;
-                    for (int slot = 0; slot < currSizwe; ++slot) {
-                        final Table currValue = currValues.next();
-                        final Table prevValue = currValues.next();
-                        // TODO-RWC: Figure out how to integrate old logic here
-                        if (slot == removedSlot)
-                    }
-                }
-
                 long accumulatedShift = 0;
                 int firstShiftingSlot = constituentRows.intSize();
                 for (int tableId = 0; tableId < tables.size(); ++tableId) {
@@ -426,52 +389,25 @@ public class UnionSourceManager {
     }
 
     /**
-     * Examine all modified constituent tables. For any that have actually changed (according to reference equality),
-     * insert the modified row key into {@code addedConstituentRows} (post-shift) and {@code removedConstituentRows}
-     * (pre-shift).
-     *
-     * @param constituentChanges The upstream constituent changes to process
-     * @param addedConstituentRows Added constituent rows to insert into
-     * @param removedConstituentRows Removed constituent rows to insert into
+     * Context for processing constituent changes
      */
-    private void convertModifies(
-            @Nullable final TableUpdate constituentChanges,
-            @NotNull final WritableRowSet addedConstituentRows,
-            @NotNull final WritableRowSet removedConstituentRows) {
-        // noinspection resource
-        if (constituentChanges == null || constituentChanges.modified().isEmpty()) {
-            return;
-        }
-        final RowSetBuilderSequential modifiesAsAddsBuilder = RowSetFactory.builderSequential();
-        final RowSetBuilderSequential modifiesAsRemovesBuilder = RowSetFactory.builderSequential();
-        // @formatter:off
-        //noinspection resource
-        try (final RowSet.Iterator modifiedCurrentKeys = constituentChanges.modified().iterator();
-             final RowSet.Iterator modifiedPreviousKeys = constituentChanges.getModifiedPreShift().iterator();
-             final ObjectColumnIterator<Table> modifiedCurrentValues = currConstituentIter(constituentChanges.modified());
-             final ObjectColumnIterator<Table> modifiedPreviousValues =
-                     prevConstituentIter(constituentChanges.getModifiedPreShift())) {
-            // @formatter:on
-            while (modifiedCurrentKeys.hasNext()) {
-                final long currentKey = modifiedCurrentKeys.nextLong();
-                final long previousKey = modifiedPreviousKeys.nextLong();
-                final Table currentValue = modifiedCurrentValues.next();
-                final Table previousValue = modifiedPreviousValues.next();
-                if (currentValue != previousValue) {
-                    modifiesAsAddsBuilder.appendKey(currentKey);
-                    modifiesAsRemovesBuilder.appendKey(previousKey);
-                }
-            }
-        }
-        try (final RowSet modifiesAsAdds = modifiesAsAddsBuilder.build()) {
-            addedConstituentRows.insert(modifiesAsAdds);
-        }
-        try (final RowSet modifiesAsRemoves = modifiesAsRemovesBuilder.build()) {
-            removedConstituentRows.insert(modifiesAsRemoves);
-        }
-    }
-
     private final class ChangeProcessingContext implements SafeCloseable {
+
+        /** Clock step for this update cycle */
+        private final long currentStep;
+
+        /** Upstream changes to the parent table of constituents */
+        private final TableUpdate constituentChanges;
+
+        // Arrays to update
+        final long[] currFirstRowKeys;
+        final long[] prevFirstRowKeys;
+
+        // Downstream update accumulators
+        private final WritableRowSet downstreamAdded;
+        private final WritableRowSet downstreamRemoved;
+        private final WritableRowSet downstreamModified;
+        private final RowSetShiftData.Builder downstreamShiftBuilder;
 
         // Iterators
         private final RowSet.Iterator currentKeys;
@@ -493,13 +429,26 @@ public class UnionSourceManager {
         private Table nextModifiedPreviousValue;
         private UnionListenerRecorder nextListener;
 
-        // Downstream update accumulators
-        private final WritableRowSet downstreamAdded;
-        private final WritableRowSet downstreamRemoved;
-        private final WritableRowSet downstreamModified;
-        private final RowSetShiftData.Builder downstreamShiftBuilder;
+        // Slot indexes
+        private int nextCurrentSlot;
+        private int nextPreviousSlot;
 
-        private ChangeProcessingContext(@NotNull final TableUpdate constituentChanges) {
+        // Other state
+        boolean truncatedResult;
+
+        private ChangeProcessingContext(final long currentStep, @NotNull final TableUpdate constituentChanges) {
+            this.currentStep = currentStep;
+            this.constituentChanges = constituentChanges;
+
+            currFirstRowKeys = unionRedirection.getCurrFirstRowKeysForUpdate();
+            prevFirstRowKeys = unionRedirection.getPrevFirstRowKeysForUpdate();
+
+            modifiedColumnSet.clear();
+            downstreamAdded = RowSetFactory.empty();
+            downstreamRemoved = RowSetFactory.empty();
+            downstreamModified = RowSetFactory.empty();
+            downstreamShiftBuilder = new RowSetShiftData.Builder();
+
             currentKeys = constituentRows.iterator();
             currentValues = currConstituentIter(constituentRows);
             // @formatter:off
@@ -516,18 +465,6 @@ public class UnionSourceManager {
             modifiedPreviousValues = prevConstituentIter(constituentChanges.getModifiedPreShift());
             listeners = listenerRecorders.iterator();
             Assert.eq(listeners.next(), "first listener", constituentChangesListener, "constituentChangesListener");
-
-            advanceRemoved();
-            advanceCurrent();
-            advanceAdded();
-            advanceModified();
-            advanceListener();
-
-            modifiedColumnSet.clear();
-            downstreamAdded = RowSetFactory.empty();
-            downstreamRemoved = RowSetFactory.empty();
-            downstreamModified = RowSetFactory.empty();
-            downstreamShiftBuilder = new RowSetShiftData.Builder();
         }
 
         private void advanceRemoved() {
@@ -567,10 +504,165 @@ public class UnionSourceManager {
             ) {}
             // @formatter:on
         }
-    }
 
-    private static Table tryAdvanceTable(@NotNull final ObjectColumnIterator<Table> tables) {
-        return tables.hasNext() ? tables.next() : null;
+        private TableUpdate processChanges(final long currentStep) {
+            final int currConstituentCount = constituentRows.intSize();
+            final int prevConstituentCount = constituentRows.intSizePrev();
+            unionRedirection.updateCurrSize(currConstituentCount);
+
+            advanceRemoved();
+            advanceCurrent();
+            advanceAdded();
+            advanceModified();
+            advanceListener();
+
+            while (nextCurrentSlot < currConstituentCount && nextPreviousSlot < prevConstituentCount) {
+                // Removed constituent processing
+                if (nextPreviousSlot == nextRemovedSlot) {
+                    assert nextRemovedValue != null;
+                    processRemove(nextRemovedValue);
+                    advanceRemoved();
+                    ++nextPreviousSlot;
+                }
+                // Added constituent processing
+                else if (nextCurrentKey == nextAddedKey) {
+                    assert nextCurrentValue != null;
+                    processAdd(nextCurrentValue);
+                    advanceCurrent();
+                    advanceAdded();
+                    ++nextCurrentSlot;
+                }
+                // Modified constituent processing
+                else if (nextCurrentKey == nextModifiedKey) {
+                    assert nextModifiedPreviousValue != null;
+                    // "Real" modification processing
+                    if (nextCurrentValue != nextModifiedPreviousValue) {
+                        processRemove(nextModifiedPreviousValue);
+                        processAdd(nextCurrentValue);
+                    } else {
+                        processExisting(nextCurrentValue);
+                    }
+                    advanceCurrent();
+                    advanceModified();
+                    ++nextCurrentSlot;
+                    ++nextPreviousSlot;
+                }
+                // Existing constituent processing
+                else {
+                    processExisting(nextCurrentValue);
+                    advanceCurrent();
+                    ++nextCurrentSlot;
+                    ++nextPreviousSlot;
+                }
+            }
+
+            // TODO-RWC: resultRowSet update (adds inserted?)
+
+            if (truncatedResult) {
+                updateCommitter.maybeActivate();
+            }
+
+            return new TableUpdateImpl(
+                    downstreamAdded,
+                    downstreamRemoved,
+                    downstreamModified,
+                    downstreamShiftBuilder.build(),
+                    modifiedColumnSet);
+        }
+
+        private void processRemove(@NotNull final Table removedConstituent) {
+            if (removedConstituent.isRefreshing()) {
+                assert nextListener != null;
+                Assert.eq(nextListener.getParent(), "listener parent", removedConstituent, "removed constituent");
+                synchronized (listenerRecorders) {
+                    listeners.remove();
+                }
+                removedConstituent.removeUpdateListener(nextListener);
+                mergedListener.unmanage(nextListener);
+                advanceListener();
+            }
+            final long firstRemovedKey = prevFirstRowKeys[nextPreviousSlot];
+            maybeTruncateFrom(firstRemovedKey);
+            try (final RowSet constituentPrevKeys = removedConstituent.getRowSet().copyPrev()) {
+                downstreamRemoved.insertWithShift(firstRemovedKey, constituentPrevKeys);
+            }
+        }
+
+        private void processAdd(@NotNull final Table addedConstituent) {
+            if (addedConstituent.isRefreshing()) {
+                final UnionListenerRecorder addedListener = new UnionListenerRecorder(addedConstituent);
+                synchronized (listenerRecorders) {
+                    listenerRecorders.insertBefore(addedListener, nextListener);
+                }
+            }
+            final long firstAddedKey = currFirstRowKeys[nextCurrentSlot];
+            currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(
+                    firstAddedKey + keySpaceFor(addedConstituent.getRowSet().lastRowKey()));
+            maybeTruncateFrom(firstAddedKey);
+            downstreamAdded.insertWithShift(firstAddedKey, addedConstituent.getRowSet());
+            resultRows.insertWithShift(firstAddedKey, addedConstituent.getRowSet());
+        }
+
+        private void processExisting(@NotNull final Table constituent) {
+            final long currFirstRowKey = currFirstRowKeys[nextCurrentSlot];
+            final long prevFirstRowKey = prevFirstRowKeys[nextPreviousSlot];
+            final long nextSlotPrevFirstRowKey = prevFirstRowKeys[nextPreviousSlot + 1];
+            final long shiftAmount = currFirstRowKey - prevFirstRowKey;
+
+            final TableUpdate changes;
+            final ModifiedColumnSet.Transformer mcsTransformer;
+            if (constituent.isRefreshing()) {
+                assert nextListener != null;
+                Assert.eq(nextListener.getParent(), "listener parent", constituent, "existing constituent");
+                changes = nextListener.getUpdate();
+                mcsTransformer = nextListener.modifiedColumnsTransformer;
+                advanceListener();
+            } else {
+                changes = null;
+                mcsTransformer = null;
+            }
+
+            if (changes == null || changes.empty()) {
+                if (truncatedResult) { // Some slot earlier than this was removed, added, or had to grow
+                    currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(nextSlotPrevFirstRowKey + shiftAmount);
+                    resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
+                }
+                if (shiftAmount != 0 && constituent.getRowSet().isNonempty()) {
+                    downstreamShiftBuilder.shiftRange(prevFirstRowKey, nextSlotPrevFirstRowKey - 1, shiftAmount);
+                }
+                return;
+            }
+
+            final long neededAllocation = keySpaceFor(constituent.getRowSet().lastRowKey());
+            final long previousAllocation = nextSlotPrevFirstRowKey - prevFirstRowKey;
+            if (neededAllocation > previousAllocation) {
+                maybeTruncateFrom(prevFirstRowKey);
+                currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(currFirstRowKey + neededAllocation);
+            }
+
+            downstreamAdded.insertWithShift(currFirstRowKey, changes.added());
+            downstreamRemoved.insertWithShift(prevFirstRowKey, changes.removed());
+            downstreamModified.insertWithShift(currFirstRowKey, changes.modified());
+            mcsTransformer.transform(changes.modifiedColumnSet(), modifiedColumnSet);
+
+            // TODO-RWC: Resume from here with shift processing
+
+            if (truncatedResult) {
+                resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
+            } else {
+                try (final RowSet shiftedRemoved = changes.removed().shift(prevFirstRowKey)) {
+                    resultRows.remove(shiftedRemoved);
+                }
+                // Adds will be inserted at the end from downstreamAdded
+            }
+        }
+
+        private void maybeTruncateFrom(final long firstShiftedKey) {
+            if (!truncatedResult) {
+                resultRows.removeRange(firstShiftedKey, Long.MAX_VALUE);
+                truncatedResult = true;
+            }
+        }
     }
 
     private static long tryAdvanceKey(@NotNull final RowSet.Iterator keys) {
@@ -581,120 +673,12 @@ public class UnionSourceManager {
         return Math.toIntExact(tryAdvanceKey(slots));
     }
 
-    private static UnionListenerRecorder tryAdvanceListener(@NotNull final Iterator<LinkedListenerRecorder> listeners) {
-        return listeners.hasNext() ? (UnionListenerRecorder) listeners.next() : null;
+    private static Table tryAdvanceTable(@NotNull final ObjectColumnIterator<Table> tables) {
+        return tables.hasNext() ? tables.next() : null;
     }
 
-    private TableUpdate processChanges(
-            @NotNull final TableUpdate constituentChanges,
-            @NotNull final SafeCloseableList toClose) {
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
-
-        final int currConstituentCount = constituentRows.intSize();
-        final int prevConstituentCount = constituentRows.intSizePrev();
-        unionRedirection.updateCurrSize(currConstituentCount);
-        final long[] currFirstRowKeys = unionRedirection.getCurrFirstRowKeysForUpdate();
-        final long[] prevFirstRowKeys = unionRedirection.getPrevFirstRowKeysForUpdate();
-
-        // Set up our iterators
-        final RowSet.Iterator currentKeys = toClose.add(constituentRows.iterator());
-        final ObjectColumnIterator<Table> currentValues = toClose.add(currConstituentIter(constituentRows));
-        final RowSet.Iterator removedSlots;
-        // @formatter:off
-        try (final RowSet previousRows = constituentRows.copyPrev();
-             final RowSet removedKeysInverted = previousRows.invert(constituentChanges.removed())) {
-            // @formatter:on
-            removedSlots = toClose.add(removedKeysInverted.iterator());
-        }
-        final ObjectColumnIterator<Table> removedValues = toClose.add(prevConstituentIter(constituentChanges.removed()));
-        final RowSet.Iterator addedKeys = toClose.add(constituentChanges.added().iterator());
-        final RowSet.Iterator modifiedKeys = toClose.add(constituentChanges.modified().iterator());
-        final ObjectColumnIterator<Table> modifiedPreviousValues =
-                toClose.add(prevConstituentIter(constituentChanges.getModifiedPreShift()));
-        final Iterator<LinkedListenerRecorder> listeners = listenerRecorders.iterator();
-        Assert.eq(listeners.next(), "first listener", constituentChangesListener, "constituentChangesListener");
-
-        int nextRemovedSlot = tryAdvanceSlot(removedSlots);
-        Table nextRemovedValue = tryAdvanceTable(removedValues);
-        long nextCurrentKey = tryAdvanceKey(currentKeys);
-        Table nextCurrentValue = tryAdvanceTable(currentValues);
-        long nextAddedKey = tryAdvanceKey(addedKeys);
-        long nextModifiedKey = tryAdvanceKey(modifiedKeys);
-        Table nextModifiedPreviousValue = tryAdvanceTable(modifiedPreviousValues);
-        UnionListenerRecorder nextListener = tryAdvanceListener(listeners);
-
-        modifiedColumnSet.clear();
-        final WritableRowSet added = RowSetFactory.empty();
-        final WritableRowSet removed = RowSetFactory.empty();
-        final WritableRowSet modified = RowSetFactory.empty();
-        final RowSetShiftData.Builder shiftBuilder;
-
-        boolean truncatedResult = false;
-        for (int currSlot = 0, prevSlot = 0; currSlot < currConstituentCount && prevSlot < prevConstituentCount;) {
-            final boolean
-            if (nextCurrentKey == nextModifiedKey) {
-
-            }
-            // Removed constituent processing
-            if (prevSlot == nextRemovedSlot) {
-                assert nextRemovedValue != null;
-                if (nextRemovedValue.isRefreshing()) {
-                    assert nextListener != null;
-                    Assert.eq(nextListener.getParent(), "listener parent", nextRemovedValue, "removed constituent");
-                    synchronized (listenerRecorders) {
-                        listeners.remove();
-                    }
-                    nextRemovedValue.removeUpdateListener(nextListener);
-                    mergedListener.unmanage(nextListener);
-                    nextListener = tryAdvanceListener(listeners);
-                }
-                final long firstRemovedKey = prevFirstRowKeys[prevSlot];
-                if (!truncatedResult) {
-                    resultRows.removeRange(firstRemovedKey, Long.MAX_VALUE);
-                    truncatedResult = true;
-                }
-                try (final RowSet constituentPrevKeys = nextRemovedValue.getRowSet().copyPrev()) {
-                    removed.insertWithShift(firstRemovedKey, constituentPrevKeys);
-                }
-                ++prevSlot;
-                nextRemovedSlot = tryAdvanceSlot(removedSlots);
-                nextRemovedValue = tryAdvanceTable(removedValues);
-                continue;
-            }
-            // Added constituent processing
-            if (nextCurrentKey == nextAddedKey) {
-                assert nextCurrentValue != null;
-                if (nextCurrentValue.isRefreshing()) {
-                    final UnionListenerRecorder addedListener = new UnionListenerRecorder(nextCurrentValue);
-                    synchronized (listenerRecorders) {
-                        listenerRecorders.insertBefore(addedListener, nextListener);
-                    }
-                }
-                final long firstAddedKey = currFirstRowKeys[currSlot];
-                currFirstRowKeys[currSlot + 1] = checkOverflow(
-                        firstAddedKey + keySpaceFor(nextCurrentValue.getRowSet().lastRowKey()));
-                if (!truncatedResult) {
-                    resultRows.removeRange(firstAddedKey, Long.MAX_VALUE);
-                    truncatedResult = true;
-                }
-                added.insertWithShift(firstAddedKey, nextCurrentValue.getRowSet());
-                ++currSlot;
-                nextCurrentKey = tryAdvanceKey(currentKeys);
-                nextCurrentValue = tryAdvanceTable(currentValues);
-                nextAddedKey = tryAdvanceKey(addedKeys);
-                continue;
-            }
-            // Modified constituent processing
-            if (nextCurrentKey == nextModifiedKey) {
-                assert nextModifiedPreviousValue != null;
-                // "Real" modification processing
-                if (nextCurrentValue != nextModifiedPreviousValue) {
-
-                }
-            }
-            // Process in-place changes to unmodified constituents
-        }
-        // Process remaining removes
+    private static UnionListenerRecorder tryAdvanceListener(@NotNull final Iterator<LinkedListenerRecorder> listeners) {
+        return listeners.hasNext() ? (UnionListenerRecorder) listeners.next() : null;
     }
 
     /**
