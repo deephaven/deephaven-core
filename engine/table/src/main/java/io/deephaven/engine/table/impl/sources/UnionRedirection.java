@@ -196,7 +196,7 @@ public class UnionRedirection implements Serializable {
      * @param lastRowKey The highest row key for a given constituent table
      * @return The key space size to allocate
      */
-    private static long keySpaceFor(final long lastRowKey) {
+    static long keySpaceFor(final long lastRowKey) {
         final long numUnits = lastRowKey / ALLOCATION_UNIT_ROW_KEYS + 1;
 
         if (numUnits < 0) {
@@ -206,6 +206,20 @@ public class UnionRedirection implements Serializable {
         // Require empty tables to have non-empty key space allocation so that we can binary search using a row key to
         // find its source table slot.
         return Math.max(1, numUnits) * ALLOCATION_UNIT_ROW_KEYS;
+    }
+
+    /**
+     * Check if we have overflowed row key space.
+     *
+     * @param nextSlotFirstKey The (just calculated) first key for the next slot
+     * @return {@code nextSlotFirstKey}
+     * @throws UnsupportedOperationException If key space has overflowed
+     */
+    static long checkOverflow(final long nextSlotFirstKey) {
+        if (nextSlotFirstKey < 0) {
+            throw new UnsupportedOperationException(ROW_SET_OVERFLOW_MESSAGE);
+        }
+        return nextSlotFirstKey;
     }
 
     /**
@@ -245,11 +259,7 @@ public class UnionRedirection implements Serializable {
     long appendInitialTable(final long lastRowKey) {
         final int constituentIndex = currSize++;
         final long firstRowKeyAllocated = currFirstRowKeys[constituentIndex];
-        final long lastRowKeyAllocated = firstRowKeyAllocated + keySpaceFor(lastRowKey);
-        if (lastRowKeyAllocated < 0) {
-            throw new UnsupportedOperationException(ROW_SET_OVERFLOW_MESSAGE);
-        }
-        currFirstRowKeys[constituentIndex + 1] = lastRowKeyAllocated;
+        currFirstRowKeys[constituentIndex + 1] = checkOverflow(firstRowKeyAllocated + keySpaceFor(lastRowKey));
         return firstRowKeyAllocated;
     }
 
@@ -270,6 +280,14 @@ public class UnionRedirection implements Serializable {
      */
     long[] getCurrFirstRowKeysForUpdate() {
         return currFirstRowKeys;
+    }
+
+    /**
+     * @apiNote Only for use by {@link UnionSourceManager} when processing updates
+     * @return The internal {@link #prevFirstRowKeys} array; should <em>not</em> be mutated
+     */
+    long[] getPrevFirstRowKeysForUpdate() {
+        return prevFirstRowKeys;
     }
 
     /**

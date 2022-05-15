@@ -23,8 +23,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * A merged listener has a collection of {@link ListenerRecorder}s. Each one must complete before the merged listener
@@ -36,8 +36,8 @@ import java.util.stream.Stream;
 public abstract class MergedListener extends LivenessArtifact implements NotificationQueue.Dependency {
     private static final Logger log = LoggerFactory.getLogger(MergedListener.class);
 
-    private final Collection<? extends ListenerRecorder> recorders;
-    private final Collection<NotificationQueue.Dependency> dependencies;
+    private final Iterable<? extends ListenerRecorder> recorders;
+    private final Iterable<NotificationQueue.Dependency> dependencies;
     private final String listenerDescription;
     protected final QueryTable result;
     private final PerformanceEntry entry;
@@ -50,8 +50,8 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     private TableListener.Entry errorSourceEntry;
 
     protected MergedListener(
-            Collection<? extends ListenerRecorder> recorders,
-            Collection<NotificationQueue.Dependency> dependencies,
+            Iterable<? extends ListenerRecorder> recorders,
+            Iterable<NotificationQueue.Dependency> dependencies,
             String listenerDescription,
             QueryTable result) {
         this.recorders = recorders;
@@ -141,7 +141,9 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     }
 
     protected boolean canExecute(final long step) {
-        return Stream.concat(recorders.stream(), dependencies.stream())
+        return Stream.concat(
+                        StreamSupport.stream(recorders.spliterator(), false),
+                        StreamSupport.stream(dependencies.spliterator(), false))
                 .allMatch((final NotificationQueue.Dependency dep) -> dep.satisfied(step));
     }
 
