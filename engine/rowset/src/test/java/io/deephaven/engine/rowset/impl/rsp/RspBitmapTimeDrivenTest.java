@@ -409,7 +409,7 @@ public class RspBitmapTimeDrivenTest {
                     final long millis = now - lastLog;
                     final String deadlineStr = (deadline == -1) ? "no" : (toTimeStr(deadline - now) + " to");
                     System.out.printf(
-                            "%s: In the last %.1f seconds ran %.1f checks per second; %.3f%% of the space covered; %s test deadline.%n",
+                            "%s: In the last %.1f seconds ran %.1f checks per second; %.3f%% of this worker's space covered; %s test deadline.%n",
                             me,
                             millis / 1000.0,
                             (1000.0 * checksDoneSinceLastLog) / millis,
