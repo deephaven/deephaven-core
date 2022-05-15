@@ -20,7 +20,15 @@ import static org.junit.Assert.*;
 public class RspBitmapTimeDrivenTest {
 
     public static final long RANDOM_SEED_BASE = 6;
-    public static final long LOG_PERIOD_MILLIS = 10 * 1000;
+    public static final long LOG_PERIOD_MILLIS;
+    static {
+        final String s = System.getenv("TEST_PERIOD_SECONDS");
+        if (s == null) {
+            LOG_PERIOD_MILLIS = 10 * 1000;
+        } else {
+            LOG_PERIOD_MILLIS = 1000L * Integer.parseInt(s);
+        }
+    }
 
     // See comment about spec value meanings in caller.
     public static final int SPEC_BASE = 6;
