@@ -273,9 +273,19 @@ public class RspBitmapTimeDrivenTest {
         final long totalDeciSeconds = millis / 100;
         final long totalSeconds = totalDeciSeconds / 10;
         final long deciSeconds = totalDeciSeconds % 10;
-        final long minutes = totalSeconds / 60;
+        final long totalMinutes = totalSeconds / 60;
         final long seconds = totalSeconds % 60;
-        return String.format("%dm%d.%ds", minutes, seconds, deciSeconds);
+        final long totalHours = totalMinutes / 60;
+        final long minutes = totalMinutes % 60;
+        final long totalDays = totalHours / 24;
+        final long hours = totalHours % 24;
+        if (totalDays == 0) {
+            if (hours == 0) {
+                return String.format("%dm%d.%ds", totalMinutes, seconds, deciSeconds);
+            }
+            return String.format("%dh%dm%d.%ds", totalHours, minutes, seconds, deciSeconds);
+        }
+        return String.format("%dd%dh%dm%d.%ds", totalDays, hours, minutes, seconds, deciSeconds);
     }
 
     private static void valueToSpec(final long value, final int[] spec) {
@@ -416,13 +426,15 @@ public class RspBitmapTimeDrivenTest {
                     final long checksDoneSinceLastLog = check - lastLogChecksDone;
                     final long millis = now - lastLog;
                     final String deadlineStr = (deadline == -1) ? "no" : (toTimeStr(deadline - now) + " to");
+                    final double checksPerMilli = ((double) checksDoneSinceLastLog) / millis;
                     System.out.printf(
-                            "%s: In the last %.1f seconds ran %.1f checks per second; %.3f%% of this worker's space covered; %s test deadline.%n",
+                            "%s: In the last %.1f seconds ran %.1f checks per second; %.3f%% of this worker's space covered; %s test deadline, %s to worker's space coverage.%n",
                             me,
                             millis / 1000.0,
-                            (1000.0 * checksDoneSinceLastLog) / millis,
+                            1000.0 * checksPerMilli,
                             (100.0 * (check + 1)) / totalChecks,
-                            deadlineStr);
+                            deadlineStr,
+                            toTimeStr((long) ((totalChecks - check - 1) / checksPerMilli)));
                     System.out.printf(
                             "%s: Last checked for v=%,d => spec0=%s, spec1=%s.%n",
                             me,
