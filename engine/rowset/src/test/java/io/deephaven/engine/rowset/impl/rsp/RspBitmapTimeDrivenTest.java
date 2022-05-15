@@ -20,6 +20,7 @@ import static org.junit.Assert.*;
 public class RspBitmapTimeDrivenTest {
 
     public static final long RANDOM_SEED_BASE = 6;
+    public static final long FAILURE_CHECK_PERIOD_MILLIS = 2 * 1000;
     public static final long LOG_PERIOD_MILLIS;
     static {
         final String s = System.getenv("TEST_PERIOD_SECONDS");
@@ -369,6 +370,7 @@ public class RspBitmapTimeDrivenTest {
             final long deadline = (testTimeBudgetMillis == -1) ? -1 : start + testTimeBudgetMillis;
             long lastLog = start;
             long nextLog = start + LOG_PERIOD_MILLIS;
+            long nextFailureCheck = start + FAILURE_CHECK_PERIOD_MILLIS;
             long lastLogChecksDone = 0;
             final String me = String.format("Worker %s %s", workerName, testName);
             System.out.printf(
@@ -377,10 +379,6 @@ public class RspBitmapTimeDrivenTest {
                     (100.0 * searchSpaceSize) / totalSpaceSize);
             final long totalChecks = lastValueForSearch - firstValueForSearch + 1;
             while (true) {
-                if (failure != null) {
-                    System.out.printf("%s: detected failure in another worker, stopping.%n", me);
-                    return;
-                }
                 final long now = System.currentTimeMillis();
                 if (deadline != -1 && now > deadline) {
                     break;
@@ -423,6 +421,13 @@ public class RspBitmapTimeDrivenTest {
                         }
                     }
                     return;
+                }
+                if (now >= nextFailureCheck) {
+                    if (failure != null) {
+                        System.out.printf("%s: detected failure in another worker, stopping.%n", me);
+                        return;
+                    }
+                    nextFailureCheck = now + FAILURE_CHECK_PERIOD_MILLIS;
                 }
                 if (now >= nextLog) {
                     final long checksDoneSinceLastLog = check - lastLogChecksDone;
