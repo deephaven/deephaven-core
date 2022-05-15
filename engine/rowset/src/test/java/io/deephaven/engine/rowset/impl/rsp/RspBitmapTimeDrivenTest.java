@@ -24,7 +24,7 @@ public class RspBitmapTimeDrivenTest {
     static {
         final String s = System.getenv("TEST_PERIOD_SECONDS");
         if (s == null) {
-            LOG_PERIOD_MILLIS = 10 * 1000;
+            LOG_PERIOD_MILLIS = 15 * 1000;
         } else {
             LOG_PERIOD_MILLIS = 1000L * Integer.parseInt(s);
         }
