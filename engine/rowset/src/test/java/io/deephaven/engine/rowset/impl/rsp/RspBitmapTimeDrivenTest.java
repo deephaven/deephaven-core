@@ -89,14 +89,13 @@ public class RspBitmapTimeDrivenTest {
             }
             switch (parts[0].toLowerCase()) {
                 case "exhaustive":
-                    TEST_WORKERS = 1;
                     TEST_MODE = TestSequenceMode.EXHAUSTIVE;
                     PER_TEST_TIME_BUDGET_MILLIS = -1;
                     parts = parts[1].split(",");
                     if (parts.length != 3) {
                         throw new IllegalArgumentException(invalidMsg);
                     }
-                    SPLIT_SEARCH_SPACE_PIECES = Integer.parseInt(parts[0]);
+                    TEST_WORKERS = SPLIT_SEARCH_SPACE_PIECES = Integer.parseInt(parts[0]);
                     SPLIT_SEARCH_SPACE_FIRST_PIECE = Integer.parseInt(parts[1]);
                     SPLIT_SEARCH_SPACE_LAST_PIECE = Integer.parseInt(parts[2]);
                     if (SPLIT_SEARCH_SPACE_PIECES < 1) {
@@ -485,7 +484,7 @@ public class RspBitmapTimeDrivenTest {
                             testName,
                             op, rspOp, osetOp,
                             nblocks,
-                            SPLIT_SEARCH_SPACE_FIRST_PIECE + i,
+                            (mode == TestSequenceMode.RANDOM) ? 0 : (SPLIT_SEARCH_SPACE_FIRST_PIECE + i),
                             mode,
                             testTimeBudgetMillis),
                     "worker-" + i);
