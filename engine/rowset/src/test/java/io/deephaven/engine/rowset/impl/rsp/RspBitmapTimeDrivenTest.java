@@ -180,25 +180,6 @@ public class RspBitmapTimeDrivenTest {
         return b.getTreeIndexImpl();
     }
 
-    // Convert an int value to a spec (a spec represents a base SPEC_BASE number).
-    private static void intToSpec(final int v, final int[] spec) {
-        int rest = v;
-        for (int i = spec.length - 1; i >= 0; --i) {
-            spec[i] = rest % SPEC_BASE;
-            rest /= SPEC_BASE;
-            if (rest == 0 && i > 0) {
-                for (int j = i - 1; j >= 0; --j) {
-                    spec[j] = 0;
-                }
-                return;
-            }
-        }
-        if (rest != 0) {
-            throw new IllegalStateException(
-                    "v=" + v + " outside of representation range for spec.length=" + spec.length);
-        }
-    }
-
     private static String toStr(final int[] spec) {
         final StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < spec.length; ++i) {
@@ -293,16 +274,18 @@ public class RspBitmapTimeDrivenTest {
 
     private static void valueToSpec(final long value, final int[] spec) {
         final int nblocks = spec.length;
-        long v = value + 1; // the encoding in value is displaced to avoid the all zeros (empty) case.
+        long v = value + 1; // transform: input is assumed to be offset to avoid the all zeros (empty) case.
         int i = nblocks - 1;
         while (i >= 0) {
-            final int m = (int) (v % SPEC_BASE);
-            spec[i] = m;
+            spec[i] = (int) (v % SPEC_BASE);
             v = v / SPEC_BASE;
             --i;
             if (v == 0) {
                 break;
             }
+        }
+        if (v != 0) {
+            throw new IllegalStateException("value=" + value + " outside of range for nblocks=" + nblocks);
         }
         for (int j = i; j >= 0; --j) {
             spec[j] = 0;
