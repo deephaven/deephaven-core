@@ -309,6 +309,11 @@ public class RspBitmapTimeDrivenTest {
         }
     }
 
+    private static void log(final String format, final Object... args) {
+        System.out.printf(format, args);
+        System.out.flush();
+    }
+
     static class TestWorker implements Runnable {
         public static volatile String failure = null; // if not null we discovered a failure.
 
@@ -373,7 +378,7 @@ public class RspBitmapTimeDrivenTest {
             long nextFailureCheck = start + FAILURE_CHECK_PERIOD_MILLIS;
             long lastLogChecksDone = 0;
             final String me = String.format("Worker %s %s", workerName, testName);
-            System.out.printf(
+            log(
                     "%s: Starting, searching space for %,d blocks between %,d and %,d (%,d out of %,d combinations, %.001f%% of search space).%n",
                     me, nblocks, firstValueForSearch, lastValueForSearch, searchSpaceSize, totalSpaceSize,
                     (100.0 * searchSpaceSize) / totalSpaceSize);
@@ -412,7 +417,7 @@ public class RspBitmapTimeDrivenTest {
                             + "\n"
                             + " spec1 => " + toStr(spec1)
                             + "\n";
-                    System.out.printf("%s: failed, %s.%n", me, failed);
+                    log("%s: failed, %s.%n", me, failed);
                     if (failure == null) {
                         synchronized (TestWorker.class) {
                             if (failure == null) {
@@ -424,7 +429,7 @@ public class RspBitmapTimeDrivenTest {
                 }
                 if (now >= nextFailureCheck) {
                     if (failure != null) {
-                        System.out.printf("%s: detected failure in another worker, stopping.%n", me);
+                        log("%s: detected failure in another worker, stopping.%n", me);
                         return;
                     }
                     nextFailureCheck = now + FAILURE_CHECK_PERIOD_MILLIS;
@@ -435,7 +440,7 @@ public class RspBitmapTimeDrivenTest {
                     final String deadlineStr = (deadline == -1) ? "no" : (toTimeStr(deadline - now) + " to");
                     final double checksPerMilli = ((double) checksDoneSinceLastLog) / millis;
                     final double avgChecksPerMilli = ((double) (check + 1)) / (now - start);
-                    System.out.printf("%s: " +
+                    log("%s: " +
                             "In the last %.1f seconds ran %.1f checks per second; " +
                             "%.3f%% of this worker's space covered; %s test deadline, " +
                             "%s to worker's space coverage.%n",
@@ -445,7 +450,7 @@ public class RspBitmapTimeDrivenTest {
                             (100.0 * (check + 1)) / totalChecks,
                             deadlineStr,
                             toTimeStr((long) ((totalChecks - check - 1) / avgChecksPerMilli)));
-                    System.out.printf(
+                    log(
                             "%s: Last checked for v=%,d => spec0=%s, spec1=%s.%n",
                             me,
                             v,
@@ -457,7 +462,7 @@ public class RspBitmapTimeDrivenTest {
                 }
                 ++check;
             }
-            System.out.printf("%s: Done in %s.%n",
+            log("%s: Done in %s.%n",
                     me,
                     toTimeStr(System.currentTimeMillis() - start));
         }
@@ -483,7 +488,7 @@ public class RspBitmapTimeDrivenTest {
                             SPLIT_SEARCH_SPACE_FIRST_PIECE + i,
                             mode,
                             testTimeBudgetMillis));
-            System.out.printf("%s: Dispatching worker %d.%n", testName, i);
+            log("%s: Dispatching worker %d.%n", testName, i);
             workers[i].start();
             if (SEARCH_PIECES > 1 && i < SEARCH_PIECES - 1) {
                 // minimally stagger
@@ -500,7 +505,7 @@ public class RspBitmapTimeDrivenTest {
                 // ignore.
             }
         }
-        System.out.printf("%s: All workers finished.%n", testName);
+        log("%s: All workers finished.%n", testName);
         if (TestWorker.failure != null) {
             assertTrue(TestWorker.failure, TestWorker.failure == null);
         }
