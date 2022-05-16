@@ -19,7 +19,9 @@ import static org.junit.Assert.*;
 @Category(OutOfBandTest.class)
 public class RspBitmapTimeDrivenTest {
 
-    public static final long RANDOM_SEED_BASE = 6;
+    public static final long RANDOM_SEED_BASE_DEFAULT = 10;
+    public static final boolean RANDOM_SEED_FROM_TIME = System.getenv("TEST_SEED_FROM_TIME") != null;
+
     public static final long FAILURE_CHECK_PERIOD_MILLIS = 2 * 1000;
     public static final long LOG_PERIOD_MILLIS;
     static {
@@ -82,8 +84,7 @@ public class RspBitmapTimeDrivenTest {
             if (parts.length != 2) {
                 throw new IllegalArgumentException(invalidMsg);
             }
-            switch (parts[0]) {
-                case "EXHAUSTIVE":
+            switch (parts[0].toLowerCase()) {
                 case "exhaustive":
                     TEST_MODE = TestSequenceMode.EXHAUSTIVE;
                     PER_TEST_TIME_BUDGET_MILLIS = -1;
@@ -107,7 +108,6 @@ public class RspBitmapTimeDrivenTest {
                                         " in " + SPLIT_SEARCH_SPACE_PIECES + " pieces");
                     }
                     break;
-                case "RANDOM":
                 case "random":
                     TEST_MODE = TestSequenceMode.RANDOM;
                     parts = parts[1].split(",");
@@ -339,7 +339,8 @@ public class RspBitmapTimeDrivenTest {
             this.nblocks = nblocks;
             this.searchPiece = searchPiece;
             this.testTimeBudgetMillis = testTimeBudgetMillis;
-            rand = new Random(RANDOM_SEED_BASE * SPLIT_SEARCH_SPACE_PIECES + workerIdx);
+            final long seedBase = RANDOM_SEED_FROM_TIME ? System.currentTimeMillis() : RANDOM_SEED_BASE_DEFAULT;
+            rand = new Random(seedBase + SPLIT_SEARCH_SPACE_PIECES * workerIdx);
         }
 
         @Override
