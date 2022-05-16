@@ -23,7 +23,7 @@ public class RspBitmapTimeDrivenTest {
     public static final long FAILURE_CHECK_PERIOD_MILLIS = 2 * 1000;
     public static final long LOG_PERIOD_MILLIS;
     static {
-        final String s = System.getenv("TEST_PERIOD_SECONDS");
+        final String s = System.getenv("TEST_LOG_PERIOD_SECONDS");
         if (s == null) {
             LOG_PERIOD_MILLIS = 15 * 1000;
         } else {
