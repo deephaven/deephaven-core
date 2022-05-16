@@ -53,14 +53,25 @@ public class RspBitmapTimeDrivenTest {
     public static final int SPLIT_SEARCH_SPACE_FIRST_PIECE;
     public static final int SPLIT_SEARCH_SPACE_LAST_PIECE;
     public static final long PER_TEST_TIME_BUDGET_MILLIS;
+    public static final boolean DEFAULT_RANDOM = true;
     static {
         final String s = System.getenv("TEST_MODE");
         if (s == null) {
-            TEST_MODE = TestSequenceMode.RANDOM;
-            SPLIT_SEARCH_SPACE_PIECES = 1;
-            SPLIT_SEARCH_SPACE_FIRST_PIECE = 0;
-            SPLIT_SEARCH_SPACE_LAST_PIECE = 0;
-            PER_TEST_TIME_BUDGET_MILLIS = 2 * 60 * 1000;
+            if (DEFAULT_RANDOM) {
+                // Good for CI / PR checks.
+                TEST_MODE = TestSequenceMode.RANDOM;
+                SPLIT_SEARCH_SPACE_PIECES = 1;
+                SPLIT_SEARCH_SPACE_FIRST_PIECE = 0;
+                SPLIT_SEARCH_SPACE_LAST_PIECE = 0;
+                PER_TEST_TIME_BUDGET_MILLIS = 2 * 60 * 1000;
+            } else {
+                // Good for manual checks.
+                TEST_MODE = TestSequenceMode.EXHAUSTIVE;
+                SPLIT_SEARCH_SPACE_PIECES = 150000;
+                SPLIT_SEARCH_SPACE_FIRST_PIECE = 80000;
+                SPLIT_SEARCH_SPACE_LAST_PIECE = 80009;
+                PER_TEST_TIME_BUDGET_MILLIS = -1;
+            }
         } else {
             String[] parts = s.split(":");
             final String invalidMsg = "Invalid TEST_MODE format: \"" + s +
@@ -470,7 +481,8 @@ public class RspBitmapTimeDrivenTest {
                             nblocks,
                             SPLIT_SEARCH_SPACE_FIRST_PIECE + i,
                             mode,
-                            testTimeBudgetMillis));
+                            testTimeBudgetMillis),
+                    "worker-" + i);
             log("%s: Dispatching worker %d.%n", testName, i);
             workers[i].start();
             if (SEARCH_PIECES > 1 && i < SEARCH_PIECES - 1) {
