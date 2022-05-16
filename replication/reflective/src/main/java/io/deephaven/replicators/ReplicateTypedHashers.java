@@ -6,6 +6,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerTypedBase;
@@ -24,13 +25,14 @@ import java.util.Optional;
 
 public class ReplicateTypedHashers {
     public static void main(String[] args) throws IOException {
-        generatePackage(StaticChunkedOperatorAggregationStateManagerTypedBase.class, true);
-        generatePackage(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
-        generatePackage(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, true);
-        generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
-        generatePackage(StaticNaturalJoinStateManagerTypedBase.class, false);
-        generatePackage(RightIncrementalNaturalJoinStateManagerTypedBase.class, false);
-        generatePackage(IncrementalNaturalJoinStateManagerTypedBase.class, false);
+//        generatePackage(StaticChunkedOperatorAggregationStateManagerTypedBase.class, true);
+//        generatePackage(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
+//        generatePackage(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, true);
+//        generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
+//        generatePackage(StaticNaturalJoinStateManagerTypedBase.class, false);
+//        generatePackage(RightIncrementalNaturalJoinStateManagerTypedBase.class, false);
+//        generatePackage(IncrementalNaturalJoinStateManagerTypedBase.class, false);
+        generatePackage(StaticAsOfJoinStateManagerTypedBase.class, false);
     }
 
     private static void generatePackage(Class<?> baseClass, boolean doDouble) throws IOException {

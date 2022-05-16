@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.asofjoin.StaticHashedAsOfJoinStateManager;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -46,6 +47,7 @@ import static io.deephaven.util.SafeCloseable.closeArray;
 // endregion class visibility
 class StaticChunkedAsOfJoinStateManager
     // region extensions
+    extends StaticHashedAsOfJoinStateManager
     // endregion extensions
 {
     // region constants
@@ -166,12 +168,13 @@ class StaticChunkedAsOfJoinStateManager
     // endregion extra variables
 
     StaticChunkedAsOfJoinStateManager(ColumnSource<?>[] tableKeySources
-                                         , int tableSize
-                                      // region constructor arguments
-                                         , ColumnSource<?>[] tableKeySourcesForErrors
-                                              // endregion constructor arguments
+            , int tableSize
+            // region constructor arguments
+            , ColumnSource<?>[] tableKeySourcesForErrors
+            // endregion constructor arguments
     ) {
         // region super
+        super(tableKeySourcesForErrors);
         // endregion super
         keyColumnCount = tableKeySources.length;
 
@@ -251,7 +254,8 @@ class StaticChunkedAsOfJoinStateManager
     }
 
     // region build wrappers
-    int buildFromRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots) {
+    @Override
+    public int buildFromRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots) {
         if (rightIndex.isEmpty()) {
             return 0;
         }
@@ -262,7 +266,8 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    int buildFromLeftSide(RowSequence leftIndex, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
+    @Override
+    public int buildFromLeftSide(RowSequence leftIndex, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
         if (leftIndex.isEmpty()) {
             return 0;
         }
@@ -1329,7 +1334,8 @@ class StaticChunkedAsOfJoinStateManager
 
 
     // region probe wrappers
-    void probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources)  {
+    @Override
+    public void probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources)  {
         if (leftIndex.isEmpty()) {
             return;
         }
@@ -1338,7 +1344,8 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    int probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilderRandom foundBuilder)  {
+    @Override
+    public int probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilderRandom foundBuilder)  {
         if (leftIndex.isEmpty()) {
             return 0;
         }
@@ -1349,7 +1356,8 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    void probeRight(RowSequence rightIndex, ColumnSource<?>[] rightSources)  {
+    @Override
+    public void probeRight(RowSequence rightIndex, ColumnSource<?>[] rightSources)  {
         if (rightIndex.isEmpty()) {
             return;
         }
@@ -1697,11 +1705,13 @@ class StaticChunkedAsOfJoinStateManager
     }
 
     // region extraction functions
-    int getTableSize() {
+    @Override
+    public int getTableSize() {
         return tableSize;
     }
 
-    int getOverflowSize() {
+    @Override
+    public int getOverflowSize() {
         return nextOverflowLocation;
     }
 
@@ -1716,7 +1726,8 @@ class StaticChunkedAsOfJoinStateManager
      * @param slot the slot in the table (either positive for a main slot, or negative for overflow)
      * @return the RowSet for this slot
      */
-    RowSet getLeftIndex(long slot) {
+    @Override
+    public RowSet getLeftIndex(long slot) {
         final RowSetBuilderSequential builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -1732,7 +1743,8 @@ class StaticChunkedAsOfJoinStateManager
         return builder.build();
     }
 
-    void convertRightBuildersToIndex(LongArraySource slots, int slotCount) {
+    @Override
+    public void convertRightBuildersToIndex(LongArraySource slots, int slotCount) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final long slot = slots.getLong(slotIndex);
             if (isOverflowLocation(slot)) {
@@ -1751,7 +1763,12 @@ class StaticChunkedAsOfJoinStateManager
         rightBuildersConverted = true;
     }
 
-    void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource) {
+    protected String extractKeyStringFromSourceTable(long leftKey) {
+        return super.extractKeyStringFromSourceTable(leftKey);
+    }
+
+    @Override
+    public void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final long slot = slots.getLong(slotIndex);
             if (isOverflowLocation(slot)) {
@@ -1778,7 +1795,8 @@ class StaticChunkedAsOfJoinStateManager
         return rowSetSource.getUnsafe(groupedRowSet.get(0));
     }
 
-    RowSet getRightIndex(long slot) {
+    @Override
+    public RowSet getRightIndex(long slot) {
         if (rightBuildersConverted) {
             if (isOverflowLocation(slot)) {
                 final long overflowLocation = hashLocationToOverflowLocation(slot);
