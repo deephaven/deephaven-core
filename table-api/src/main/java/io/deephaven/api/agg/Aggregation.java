@@ -364,13 +364,25 @@ public interface Aggregation extends Serializable {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Partition partition} aggregation with the supplied output column name.
+     * Create a {@link io.deephaven.api.agg.Partition partition} aggregation with the supplied output column name
+     * and group-by columns included in the output sub-tables.
      *
      * @param resultColumn The {@link Partition#column() output column} name
      * @return The aggregation
      */
     static Partition AggPartition(String resultColumn) {
         return Partition.of(resultColumn);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.Partition partition} aggregation with the supplied output column name.
+     *
+     * @param resultColumn The {@link Partition#column() output column} name
+     * @param includeGroupByColumns Whether to include group-by columns in the result
+     * @return The aggregation
+     */
+    static Partition AggPartition(String resultColumn, boolean includeGroupByColumns) {
+        return Partition.of(resultColumn, includeGroupByColumns);
     }
 
     /**

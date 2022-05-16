@@ -1,8 +1,10 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.ColumnName;
 import org.immutables.value.Value;
+import org.immutables.value.Value.Default;
+import org.immutables.value.Value.Parameter;
 
 /**
  * An {@link Aggregation} that provides a single output column with sub-tables of the input table for each aggregation
@@ -15,7 +17,7 @@ import org.immutables.value.Value;
  * aggregation}.
  */
 @Value.Immutable
-@SimpleStyle
+@BuildableStyle
 public abstract class Partition implements Aggregation {
 
     public static Partition of(ColumnName name) {
@@ -26,8 +28,27 @@ public abstract class Partition implements Aggregation {
         return of(ColumnName.of(x));
     }
 
-    @Value.Parameter
+    public static Partition of(ColumnName name, boolean includeGroupByColumns) {
+        // TODO-RWC: builders, once I get annotation processing to run
+        return ImmutablePartition.of(name);
+    }
+
+    public static Partition of(String x, boolean includeGroupByColumns) {
+        return of(ColumnName.of(x));
+    }
+
+    @Parameter
     public abstract ColumnName column();
+
+    /**
+     * Whether group-by columns (sometimes referred to as "key" columns) should be included in the output sub-tables.
+     *
+     * @return Whether to include group-by columns in the output sub-tables
+     */
+    @Default
+    public boolean includeGroupByColumns() {
+        return true;
+    }
 
     @Override
     public final <V extends Aggregation.Visitor> V walk(V visitor) {

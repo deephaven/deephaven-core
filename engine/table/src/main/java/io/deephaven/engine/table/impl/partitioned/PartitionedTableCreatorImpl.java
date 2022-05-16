@@ -35,7 +35,7 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         }
     }
 
-    private static final ColumnName CONSTITUENT = ColumnName.of("__CONSTITUENT__");
+    public static final ColumnName CONSTITUENT = ColumnName.of("__CONSTITUENT__");
     private static final TableDefinition CONSTRUCTED_PARTITIONED_TABLE_DEFINITION =
             TableDefinition.of(ColumnDefinition.of(CONSTITUENT.name(), Type.find(Table.class)));
 

@@ -42,7 +42,6 @@ public class PartitionByAggregationFactory implements AggregationContextFactory 
                                 (QueryTable) inputTable,
                                 adjustedInputTable,
                                 attributeCopier,
-                                keysToPrepopulate,
                                 groupByColumnNames)
                 },
                 new String[][] {CollectionUtil.ZERO_LENGTH_STRING_ARRAY},

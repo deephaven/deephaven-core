@@ -62,6 +62,7 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
 
     @Override
     public void visit(Partition partition) {
-        out.put(partition.column().name(), "partition sub-table");
+        out.put(partition.column().name(), "partition sub-table"
+                + (partition.includeGroupByColumns() ? " (including group-by columns)" : ""));
     }
 }
