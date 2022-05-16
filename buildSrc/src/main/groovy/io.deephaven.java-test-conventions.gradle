@@ -48,7 +48,6 @@ project.tasks.withType(Test).all { Test t ->
         }
 
         if (findProperty('showStandardStreams') == 'true') {
-            outputs.upToDateWhen {false}
             testLogging.showStandardStreams = true
         }
 
