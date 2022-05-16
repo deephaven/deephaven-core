@@ -25,7 +25,7 @@ class LivenessScope(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_scope
 
-    def preserve(self, wrapper: JObjectWrapper):
+    def preserve(self, wrapper: JObjectWrapper) -> None:
         """Preserves a query graph node (usually a Table) to keep it live for the outer scope."""
         _JLivenessScopeStack.pop(self.j_scope)
         _JLivenessScopeStack.peek().manage(wrapper.j_object)
@@ -35,7 +35,11 @@ class LivenessScope(JObjectWrapper):
 @contextlib.contextmanager
 def liveness_scope() -> LivenessScope:
     """Creates a LivenessScope for running a block of code and releases all the query graph resources upon exit. It
-    can be used in a nested way. """
+    can be used in a nested way.
+
+    Returns:
+        a LivenessScope
+    """
     j_scope = _JLivenessScope()
     _JLivenessScopeStack.push(j_scope)
     try:

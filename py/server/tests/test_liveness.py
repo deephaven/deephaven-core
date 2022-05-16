@@ -47,8 +47,9 @@ class LivenessTestCase(BaseTestCase):
                 df = to_pandas(nested_must_keep)
                 nested_l_scope.preserve(nested_must_keep)
             self.assertTrue(nested_must_keep.j_table.tryRetainReference())
-            self.assertFalse(nested_to_discard.j_table.tryRetainReference())
+            # drop the extra reference obtained by the tryRetainReference() call in the above assert
             nested_must_keep.j_table.dropReference()
+            self.assertFalse(nested_to_discard.j_table.tryRetainReference())
 
         self.assertTrue(must_keep.j_table.tryRetainReference())
         self.assertFalse(to_discard.j_table.tryRetainReference())
