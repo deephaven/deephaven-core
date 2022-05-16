@@ -29,7 +29,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     private static final String NEW_LINE = System.getProperty("line.separator");
 
     public static TableDefinition of(ColumnDefinition<?>... columnDefinitions) {
-        return new TableDefinition(Arrays.asList(columnDefinitions));
+        return new TableDefinition(columnDefinitions);
     }
 
     public static TableDefinition inferFrom(Map<String, ? extends ColumnSource<?>> sources) {

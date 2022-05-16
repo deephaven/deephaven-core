@@ -462,7 +462,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public TableMap partitionBy(boolean dropKeys, String... keyColumnNames) {
+    public PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames) {
         return coalesce().partitionBy(dropKeys, keyColumnNames);
     }
 

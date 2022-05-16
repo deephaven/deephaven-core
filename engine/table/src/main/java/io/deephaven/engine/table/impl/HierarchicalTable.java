@@ -8,6 +8,7 @@ import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
@@ -242,7 +243,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public LocalTableMap partitionBy(boolean dropKeys, String... keyColumnNames) {
+    public PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames) {
         return throwUnsupported("partitionBy()");
     }
 

@@ -1051,7 +1051,7 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
-    default TableMap partitionBy(String... keyColumnNames) {
+    default PartitionedTable partitionBy(String... keyColumnNames) {
         return partitionBy(false, keyColumnNames);
     }
 

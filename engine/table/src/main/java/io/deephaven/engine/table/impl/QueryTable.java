@@ -81,6 +81,7 @@ import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.MatchPair.matchString;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
+import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 
 /**
  * Primary coalesced table implementation.
@@ -450,20 +451,29 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public LocalTableMap partitionBy(final boolean dropKeys, final String... keyColumnNames) {
+    public PartitionedTable partitionBy(final boolean dropKeys, final String... keyColumnNames) {
         if (isStream()) {
             throw streamUnsupported("partitionBy");
         }
         final SelectColumn[] groupByColumns =
                 Arrays.stream(keyColumnNames).map(SourceColumn::new).toArray(SelectColumn[]::new);
-
-        return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, groupByColumns),
+        final QueryTable partitioned = memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, groupByColumns),
                 () -> QueryPerformanceRecorder.withNugget(
                         "partitionBy(" + dropKeys + ", " + Arrays.toString(keyColumnNames) + ')',
                         sizeForInstrumentation(),
-                        () -> PartitionByAggregationFactory.partitionBy(this, dropKeys,
-                                (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.PartitionBy),
-                                Collections.emptyList(), groupByColumns)));
+                        () -> aggNoMemo(AggregationProcessor.forAggregation(List.of(
+                                Partition.of(CONSTITUENT, !dropKeys))), groupByColumns)));
+        final Set<String> keyColumnNamesSet =
+                Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
+        final TableDefinition constituentDefinition;
+        if (dropKeys) {
+            constituentDefinition = TableDefinition.of(definition.getColumnStream()
+                    .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
+        } else {
+            constituentDefinition = definition;
+        }
+        return PartitionedTableFactory.of(
+                partitioned, keyColumnNamesSet, CONSTITUENT.name(), constituentDefinition, isRefreshing());
     }
 
     @Override

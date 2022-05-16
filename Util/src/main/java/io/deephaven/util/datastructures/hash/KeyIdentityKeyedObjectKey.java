@@ -7,7 +7,7 @@ import io.deephaven.hash.KeyedObjectKey;
  */
 public abstract class KeyIdentityKeyedObjectKey<K, V> implements KeyedObjectKey<K, V> {
 
-    private KeyIdentityKeyedObjectKey() {}
+    protected KeyIdentityKeyedObjectKey() {}
 
     @Override
     public final int hashKey(final K key) {
