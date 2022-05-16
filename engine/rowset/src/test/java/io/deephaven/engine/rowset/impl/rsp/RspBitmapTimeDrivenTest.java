@@ -378,8 +378,8 @@ public class RspBitmapTimeDrivenTest {
             long lastLogChecksDone = 0;
             final String me = String.format("Worker %s %s", workerName, testName);
             log(
-                    "%s: Starting, searching space for %,d blocks between %,d and %,d (%,d out of %,d combinations, %.001f%% of search space).%n",
-                    me, nblocks, firstValueForSearch, lastValueForSearch, searchSpaceSize, totalSpaceSize,
+                    "%s: Starting, searching space (%s) for %,d blocks between %,d and %,d (%,d out of %,d combinations, %.001f%% of search space).%n",
+                    me, TEST_MODE, nblocks, firstValueForSearch, lastValueForSearch, searchSpaceSize, totalSpaceSize,
                     (100.0 * searchSpaceSize) / totalSpaceSize);
             final long totalChecks = lastValueForSearch - firstValueForSearch + 1;
             while (true) {
