@@ -46,6 +46,12 @@ project.tasks.withType(Test).all { Test t ->
         if (findProperty('shortTests') == 'true') {
             systemProperty 'TstUtils.shortTests', 'true'
         }
+
+        if (findProperty('showStandardStreams') == 'true') {
+            outputs.upToDateWhen {false}
+            testLogging.showStandardStreams = true
+        }
+
         systemProperty 'Configuration.rootFile', 'dh-tests.prop'
         systemProperty 'devroot', "$rootDir"
         systemProperty 'workspace', "$rootDir/tmp/workspace"

@@ -22,11 +22,3 @@ dependencies {
 }
 
 TestTools.addEngineOutOfBandTest(project)
-
-testOutOfBand {
-    testLogging {
-        outputs.upToDateWhen {false}
-        showStandardStreams = true
-    }
-}
-
