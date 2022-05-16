@@ -55,6 +55,7 @@ public class RspBitmapTimeDrivenTest {
     public static final int SPLIT_SEARCH_SPACE_FIRST_PIECE;
     public static final int SPLIT_SEARCH_SPACE_LAST_PIECE;
     public static final long PER_TEST_TIME_BUDGET_MILLIS;
+    public static final int TEST_WORKERS;
     public static final boolean DEFAULT_RANDOM = true;
     static {
         final String s = System.getenv("TEST_MODE");
@@ -66,6 +67,7 @@ public class RspBitmapTimeDrivenTest {
                 SPLIT_SEARCH_SPACE_FIRST_PIECE = 0;
                 SPLIT_SEARCH_SPACE_LAST_PIECE = 0;
                 PER_TEST_TIME_BUDGET_MILLIS = 2 * 60 * 1000;
+                TEST_WORKERS = 1;
             } else {
                 // Good for manual checks.
                 TEST_MODE = TestSequenceMode.EXHAUSTIVE;
@@ -73,6 +75,7 @@ public class RspBitmapTimeDrivenTest {
                 SPLIT_SEARCH_SPACE_FIRST_PIECE = 80000;
                 SPLIT_SEARCH_SPACE_LAST_PIECE = 80009;
                 PER_TEST_TIME_BUDGET_MILLIS = -1;
+                TEST_WORKERS = 1;
             }
         } else {
             String[] parts = s.split(":");
@@ -86,6 +89,7 @@ public class RspBitmapTimeDrivenTest {
             }
             switch (parts[0].toLowerCase()) {
                 case "exhaustive":
+                    TEST_WORKERS = 1;
                     TEST_MODE = TestSequenceMode.EXHAUSTIVE;
                     PER_TEST_TIME_BUDGET_MILLIS = -1;
                     parts = parts[1].split(",");
@@ -114,7 +118,8 @@ public class RspBitmapTimeDrivenTest {
                     if (parts.length != 2) {
                         throw new IllegalArgumentException(invalidMsg);
                     }
-                    SPLIT_SEARCH_SPACE_PIECES = Integer.parseInt(parts[0]);
+                    TEST_WORKERS = Integer.parseInt(parts[0]);
+                    SPLIT_SEARCH_SPACE_PIECES = 1;
                     SPLIT_SEARCH_SPACE_FIRST_PIECE = 0;
                     SPLIT_SEARCH_SPACE_LAST_PIECE = 0;
                     PER_TEST_TIME_BUDGET_MILLIS = 1000L * Long.parseLong(parts[1]);
@@ -472,8 +477,8 @@ public class RspBitmapTimeDrivenTest {
             final long testTimeBudgetMillis) {
         final String testName = "binaryOps-" + op + "-" + mode + "-"
                 + ((testTimeBudgetMillis == -1) ? "nolimit" : toTimeStr(testTimeBudgetMillis));
-        final Thread[] workers = new Thread[SEARCH_PIECES];
-        for (int i = 0; i < SEARCH_PIECES; ++i) {
+        final Thread[] workers = new Thread[TEST_WORKERS];
+        for (int i = 0; i < TEST_WORKERS; ++i) {
             workers[i] = new Thread(
                     new TestWorker(
                             i,
@@ -486,15 +491,16 @@ public class RspBitmapTimeDrivenTest {
                     "worker-" + i);
             log("%s: Dispatching worker %d.%n", testName, i);
             workers[i].start();
-            if (SEARCH_PIECES > 1 && i < SEARCH_PIECES - 1) {
+            if (TEST_WORKERS > 1 && i < TEST_WORKERS - 1) {
                 // minimally stagger
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException e) {
-                    /* ignore */ }
+                    /* ignore */
+                }
             }
         }
-        for (int i = 0; i < SEARCH_PIECES; ++i) {
+        for (int i = 0; i < TEST_WORKERS; ++i) {
             try {
                 workers[i].join();
             } catch (InterruptedException e) {
