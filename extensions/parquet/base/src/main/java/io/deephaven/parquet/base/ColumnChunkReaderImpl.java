@@ -1,14 +1,12 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.parquet.compress.Compressor;
+import io.deephaven.parquet.compress.DeephavenCodecFactory;
 import io.deephaven.util.datastructures.LazyCachingSupplier;
 import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.io.compress.CompressionCodecFactory;
-import org.apache.hadoop.io.compress.CompressionInputStream;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
@@ -36,25 +34,10 @@ import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
 public class ColumnChunkReaderImpl implements ColumnChunkReader {
-
-    public interface Decompressor {
-        Decompressor NOOP = is -> is;
-
-        static Decompressor of(CompressionCodec compressionCodec) {
-            if (compressionCodec == null) {
-                return NOOP;
-            }
-            return compressionCodec::createInputStream;
-        }
-
-        InputStream decompress(InputStream is) throws IOException;
-    }
-
-
     private final ColumnChunk columnChunk;
     private final SeekableChannelsProvider channelsProvider;
     private final Path rootPath;
-    private final ThreadLocal<CompressionCodec> decompressor;
+    private final Compressor decompressor;
     private final ColumnDescriptor path;
     private final OffsetIndex offsetIndex;
     private final List<Type> fieldTypes;
@@ -65,7 +48,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     ColumnChunkReaderImpl(
             ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider,
-            Path rootPath, CompressionCodecFactory codecFactory, MessageType type,
+            Path rootPath, DeephavenCodecFactory codecFactory, MessageType type,
             OffsetIndex offsetIndex, List<Type> fieldTypes) {
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
@@ -73,11 +56,9 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.path = type
                 .getColumnDescription(columnChunk.meta_data.getPath_in_schema().toArray(new String[0]));
         if (columnChunk.getMeta_data().isSetCodec()) {
-            decompressor = ThreadLocal
-                    .withInitial(() -> codecFactory.getCodecByName(columnChunk.getMeta_data().getCodec().name()));
+            decompressor = codecFactory.getByName(columnChunk.getMeta_data().getCodec().name());
         } else {
-            // explicit null for now
-            decompressor = new ThreadLocal<>();
+            decompressor = Compressor.NOOP;
         }
         this.offsetIndex = offsetIndex;
         this.fieldTypes = fieldTypes;
@@ -201,8 +182,9 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
             // Limit the size of the reader, and fully read the compressed data
             // As above, not closing these streams as they are based on the original file
             BufferedInputStream bufferedInputStream = IOUtils.buffer(inputStream, compressedPageSize);
-            CompressionInputStream decompressedInputStream = decompressor.get().createInputStream(bufferedInputStream);
-            payload = BytesInput.from(decompressedInputStream, pageHeader.getUncompressed_page_size());
+            try (InputStream decompressedInputStream = decompressor.decompressNoClose(bufferedInputStream)) {
+                payload = BytesInput.from(decompressedInputStream, pageHeader.getUncompressed_page_size());
+            }
         } else {
             payload = Helpers.readBytes(file, compressedPageSize);
         }
@@ -276,7 +258,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                                 ? dictionarySupplier
                                 : () -> NULL_DICTIONARY;
                 return new ColumnPageReaderImpl(
-                        channelsProvider, Decompressor.of(decompressor.get()), pageDictionarySupplier,
+                        channelsProvider, decompressor, pageDictionarySupplier,
                         nullMaterializerFactory, path, getFilePath(), fieldTypes, readChannel.position(), pageHeader,
                         -1);
             } catch (IOException e) {
@@ -314,7 +296,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                     (int) (offsetIndex.getLastRowIndex(pos, columnChunk.getMeta_data().getNum_values())
                             - offsetIndex.getFirstRowIndex(pos) + 1);
             ColumnPageReaderImpl columnPageReader =
-                    new ColumnPageReaderImpl(channelsProvider, Decompressor.of(decompressor.get()), dictionarySupplier,
+                    new ColumnPageReaderImpl(channelsProvider, decompressor, dictionarySupplier,
                             nullMaterializerFactory, path, getFilePath(), fieldTypes, offsetIndex.getOffset(pos), null,
                             rowCount);
             pos++;

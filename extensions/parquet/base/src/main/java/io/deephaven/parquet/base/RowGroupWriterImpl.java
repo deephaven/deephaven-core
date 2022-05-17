@@ -1,9 +1,8 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import org.apache.hadoop.io.compress.CompressionCodec;
+import io.deephaven.parquet.compress.Compressor;
 import org.apache.parquet.bytes.ByteBufferAllocator;
-import org.apache.parquet.compression.CompressionCodecFactory;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
@@ -25,10 +24,10 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     private ColumnWriterImpl activeWriter;
     private final BlockMetaData blockMetaData;
     private final List<OffsetIndex> currentOffsetIndexes = new ArrayList<>();
-    private final CompressionCodec compressor;
+    private final Compressor compressor;
 
     RowGroupWriterImpl(String path, boolean append, SeekableChannelsProvider channelsProvider, MessageType type,
-            int pageSize, ByteBufferAllocator allocator, CompressionCodec compressor)
+            int pageSize, ByteBufferAllocator allocator, Compressor compressor)
             throws IOException {
         this(channelsProvider.getWriteChannel(path, append), type, pageSize, allocator, blockWithPath(path),
                 compressor);
@@ -41,14 +40,14 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     }
 
     RowGroupWriterImpl(SeekableByteChannel writeChannel, MessageType type, int pageSize, ByteBufferAllocator allocator,
-            CompressionCodec compressor) {
+                       Compressor compressor) {
         this(writeChannel, type, pageSize, allocator, new BlockMetaData(), compressor);
     }
 
 
     private RowGroupWriterImpl(SeekableByteChannel writeChannel, MessageType type, int pageSize,
             ByteBufferAllocator allocator, BlockMetaData blockMetaData,
-            CompressionCodec compressor) {
+                               Compressor compressor) {
         this.writeChannel = writeChannel;
         this.type = type;
         this.pageSize = pageSize;

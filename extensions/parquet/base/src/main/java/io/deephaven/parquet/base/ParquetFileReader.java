@@ -2,8 +2,7 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import io.deephaven.parquet.compress.DeephavenCodecFactory;
 import org.apache.parquet.format.*;
 import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
@@ -28,7 +27,7 @@ public class ParquetFileReader {
     static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
     public final FileMetaData fileMetaData;
     private final SeekableChannelsProvider channelsProvider;
-    private static final CompressionCodecFactory codecFactory = new CompressionCodecFactory(new Configuration());
+    private static final DeephavenCodecFactory codecFactory = new DeephavenCodecFactory(Collections.emptyList());
     private final Path rootPath;
     private final MessageType type;
 

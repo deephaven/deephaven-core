@@ -1,7 +1,7 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import io.deephaven.parquet.compress.DeephavenCodecFactory;
 import org.apache.parquet.format.ColumnChunk;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.format.Util;
@@ -26,7 +26,7 @@ public class RowGroupReaderImpl implements RowGroupReader {
     private static final int BUFFER_SIZE = 65536;
     private final RowGroup rowGroup;
     private final SeekableChannelsProvider channelsProvider;
-    private final CompressionCodecFactory codecFactory;
+    private final DeephavenCodecFactory codecFactory;
     private final MessageType type;
     private final Map<String, List<Type>> schemaMap = new HashMap<>();
     private final Map<String, ColumnChunk> chunkMap = new HashMap<>();
@@ -34,7 +34,7 @@ public class RowGroupReaderImpl implements RowGroupReader {
     private final Path rootPath;
 
     RowGroupReaderImpl(RowGroup rowGroup, SeekableChannelsProvider channelsProvider, Path rootPath,
-            CompressionCodecFactory codecFactory, MessageType type, MessageType schema) {
+                       DeephavenCodecFactory codecFactory, MessageType type, MessageType schema) {
         this.channelsProvider = channelsProvider;
         this.codecFactory = codecFactory;
         this.rowGroup = rowGroup;

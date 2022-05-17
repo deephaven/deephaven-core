@@ -1,19 +1,16 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
-import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.io.compress.CompressionOutputStream;
+import io.deephaven.parquet.compress.Compressor;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
-import org.apache.parquet.compression.CompressionCodecFactory;
 import org.apache.parquet.format.*;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ColumnPath;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.internal.column.columnindex.OffsetIndexBuilder;
 import org.apache.parquet.io.ParquetEncodingException;
@@ -29,7 +26,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static org.apache.parquet.bytes.BytesUtils.getWidthFromMaxInt;
 import static org.apache.parquet.format.Util.writePageHeader;
@@ -40,7 +36,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     private final SeekableByteChannel writeChannel;
     private final ColumnDescriptor column;
     private final RowGroupWriterImpl owner;
-    private final CompressionCodec compressor;
+    private final Compressor compressor;
     private boolean hasDictionary;
     private int pageCount = 0;
     private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
@@ -64,7 +60,7 @@ public class ColumnWriterImpl implements ColumnWriter {
             final RowGroupWriterImpl owner,
             final SeekableByteChannel writeChannel,
             final ColumnDescriptor column,
-            final CompressionCodec compressor,
+            final Compressor compressor,
             final int pageSize,
             final ByteBufferAllocator allocator) {
         this.writeChannel = writeChannel;
@@ -130,7 +126,7 @@ public class ColumnWriterImpl implements ColumnWriter {
         int uncompressedSize = dictionaryBuffer.remaining();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (WritableByteChannel channel = Channels.newChannel(compressor.createOutputStream(baos))) {
+        try (WritableByteChannel channel = Channels.newChannel(compressor.compress(baos))) {
             channel.write(dictionaryBuffer);
         }
         BytesInput compressedBytes = BytesInput.from(baos);
@@ -260,7 +256,7 @@ public class ColumnWriterImpl implements ColumnWriter {
         int uncompressedSize = (int) (uncompressedDataSize + repetitionLevels.size() + definitionLevels.size());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (WritableByteChannel channel = Channels.newChannel(compressor.createOutputStream(baos))) {
+        try (WritableByteChannel channel = Channels.newChannel(compressor.compress(baos))) {
             channel.write(data);
         }
         BytesInput compressedData = BytesInput.from(baos);
@@ -300,7 +296,7 @@ public class ColumnWriterImpl implements ColumnWriter {
                             uncompressedSize);
         }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (CompressionOutputStream cos = compressor.createOutputStream(baos)) {
+        try (OutputStream cos = compressor.compress(baos)) {
             bytes.writeAllTo(cos);
         }
         BytesInput compressedBytes = BytesInput.from(baos);
@@ -389,9 +385,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     public void close() {
         owner.releaseWriter(this,
                 ColumnChunkMetaData.get(ColumnPath.get(column.getPath()), column.getPrimitiveType(),
-                        Stream.of(CompressionCodecName.values())
-                                .filter(codec -> compressor.getDefaultExtension().equals(codec.getExtension()))
-                                .findAny().get(),
+                        compressor.getCodecName(),
                         null, encodings, Statistics.createStats(column.getPrimitiveType()), firstDataPageOffset,
                         dictionaryOffset, totalValueCount, compressedLength, uncompressedLength));
     }

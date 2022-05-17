@@ -2,15 +2,13 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import io.deephaven.parquet.compress.Compressor;
+import io.deephaven.parquet.compress.DeephavenCodecFactory;
 import org.apache.parquet.Version;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesUtils;
 
 import org.apache.parquet.format.Util;
-import org.apache.parquet.hadoop.CodecFactory;
 import org.apache.parquet.hadoop.metadata.*;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.internal.hadoop.metadata.IndexReference;
@@ -21,6 +19,7 @@ import java.io.OutputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +35,7 @@ public class ParquetFileWriter {
     private final int pageSize;
     private final ByteBufferAllocator allocator;
     private final SeekableChannelsProvider channelsProvider;
-    private final CompressionCodec compressor;
+    private final Compressor compressor;
     private final Map<String, String> extraMetaData;
     private final List<BlockMetaData> blocks = new ArrayList<>();
     private final List<List<OffsetIndex>> offsetIndexes = new ArrayList<>();
@@ -55,8 +54,8 @@ public class ParquetFileWriter {
         writeChannel = channelsProvider.getWriteChannel(filePath, false); // TODO add support for appending
         this.type = type;
         this.channelsProvider = channelsProvider;
-        CompressionCodecFactory ccf = new CompressionCodecFactory(new Configuration());
-        this.compressor = ccf.getCodecByName(codecName);
+        DeephavenCodecFactory ccf = new DeephavenCodecFactory(Collections.emptyList());
+        this.compressor = ccf.getByName(codecName);
     }
 
     @SuppressWarnings("unused")
