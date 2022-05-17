@@ -154,21 +154,25 @@ By default only runs in CI; to run locally:
             // we want to give each test it's own output files for jacoco analysis,
             // so we don't accidentally stomp on previous output.
             // TODO: verify jenkins is analyzing _all_ information here.
-            (t['jacoco'] as JacocoTaskExtension).with {
-                destinationFile = project.provider({ new File(project.buildDir, "jacoco/${type}.exec".toString()) } as Callable<File>)
-                classDumpDir = new File(project.buildDir, "jacoco/${type}Dumps".toString())
-            }
-            (project['jacocoTestReport'] as JacocoReport).with {
-                reports {
-                    JacocoReportsContainer c ->
+            if (project.findProperty('jacoco.enabled') == "true") {
+                (t['jacoco'] as JacocoTaskExtension).with {
+                    destinationFile = project.provider({ new File(project.buildDir, "jacoco/${type}.exec".toString()) } as Callable<File>)
+                    classDumpDir = new File(project.buildDir, "jacoco/${type}Dumps".toString())
+                }
+                (project['jacocoTestReport'] as JacocoReport).with {
+                    reports {
+                        JacocoReportsContainer c ->
                         c.xml.enabled = true
                         c.csv.enabled = true
                         c.html.enabled = true
+                    }
                 }
             }
 
         }
-        project.tasks.findByName('jacocoTestReport').mustRunAfter(t)
+        if (project.findProperty('jacoco.enabled') == "true") {
+            project.tasks.findByName('jacocoTestReport').mustRunAfter(t)
+        }
 
         return t
     }
