@@ -216,8 +216,7 @@ public class BarrageStreamReader implements StreamReader {
                     final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
                     // add and mod rows are never combined in a batch. all added rows must be received before the first
-                    // mod rows will be received. If no metadata is provided, assume there will be only one record
-                    // batch
+                    // mod rows will be received.
                     if (numAddRowsRead < numAddRowsTotal) {
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             final BarrageMessage.AddColumnData acd = msg.addColumnData[ci];
