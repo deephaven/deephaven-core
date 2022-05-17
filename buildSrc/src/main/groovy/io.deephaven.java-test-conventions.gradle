@@ -9,6 +9,7 @@ plugins {
     // slows down builds despite that property;
     // more complex coding is necessary to only conditionally
     // load the plugin when the property is set.
+    // see https://poetengineer.postach.io/post/how-to-conditionally-enable-disable-jacoco-in-gradle-build
 }
 
 def testJar = project.tasks.register 'testJar', Jar, { Jar jar ->
