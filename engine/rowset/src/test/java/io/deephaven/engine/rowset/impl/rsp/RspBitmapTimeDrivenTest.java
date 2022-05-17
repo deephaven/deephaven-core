@@ -335,7 +335,7 @@ public class RspBitmapTimeDrivenTest {
                 final int searchPiece,
                 final TestSequenceMode mode,
                 final long testTimeBudgetMillis) {
-            this.workerName = "" + workerIdx + "/" + SEARCH_PIECES;
+            this.workerName = "" + workerIdx + "/" + TEST_WORKERS;
             this.testName = testName;
             this.op = op;
             this.rspOp = rspOp;
