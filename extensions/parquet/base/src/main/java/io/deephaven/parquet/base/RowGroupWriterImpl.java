@@ -40,14 +40,14 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     }
 
     RowGroupWriterImpl(SeekableByteChannel writeChannel, MessageType type, int pageSize, ByteBufferAllocator allocator,
-                       Compressor compressor) {
+            Compressor compressor) {
         this(writeChannel, type, pageSize, allocator, new BlockMetaData(), compressor);
     }
 
 
     private RowGroupWriterImpl(SeekableByteChannel writeChannel, MessageType type, int pageSize,
             ByteBufferAllocator allocator, BlockMetaData blockMetaData,
-                               Compressor compressor) {
+            Compressor compressor) {
         this.writeChannel = writeChannel;
         this.type = type;
         this.pageSize = pageSize;

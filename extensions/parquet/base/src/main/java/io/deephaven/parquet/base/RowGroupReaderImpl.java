@@ -34,7 +34,7 @@ public class RowGroupReaderImpl implements RowGroupReader {
     private final Path rootPath;
 
     RowGroupReaderImpl(RowGroup rowGroup, SeekableChannelsProvider channelsProvider, Path rootPath,
-                       DeephavenCodecFactory codecFactory, MessageType type, MessageType schema) {
+            DeephavenCodecFactory codecFactory, MessageType type, MessageType schema) {
         this.channelsProvider = channelsProvider;
         this.codecFactory = codecFactory;
         this.rowGroup = rowGroup;
