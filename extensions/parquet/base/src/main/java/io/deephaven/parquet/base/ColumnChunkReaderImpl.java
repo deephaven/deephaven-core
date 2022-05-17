@@ -6,7 +6,6 @@ import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.Compressor;
 import io.deephaven.parquet.compress.DeephavenCodecFactory;
 import io.deephaven.util.datastructures.LazyCachingSupplier;
-import org.apache.commons.io.IOUtils;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
@@ -19,7 +18,6 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -58,7 +56,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         if (columnChunk.getMeta_data().isSetCodec()) {
             decompressor = codecFactory.getByName(columnChunk.getMeta_data().getCodec().name());
         } else {
-            decompressor = Compressor.NOOP;
+            decompressor = Compressor.PASSTHRU;
         }
         this.offsetIndex = offsetIndex;
         this.fieldTypes = fieldTypes;

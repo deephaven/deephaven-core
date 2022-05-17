@@ -16,6 +16,11 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * Deephaven flavor of the Hadoop/Parquet CompressionCodec factory, offering support for picking
+ * codecs from configuration or from the classpath (via service loaders), while still offering
+ * the ability to get a CompressionCodecName enum value having loaded the codec in this way.
+ */
 public class DeephavenCodecFactory {
     public static class CodecWrappingCompressor implements Compressor {
         private final CompressionCodec compressionCodec;
@@ -68,25 +73,36 @@ public class DeephavenCodecFactory {
 
     private static Configuration configurationWithCodecClasses(List<Class<?>> codecClasses) {
         Configuration conf = new Configuration();
-        //noinspection unchecked
+        //noinspection unchecked, rawtypes
         CompressionCodecFactory.setCodecClasses(conf, (List) codecClasses);
         return conf;
     }
 
-    private final Configuration configuration;
-    private CompressionCodecFactory compressionCodecFactory;
+    private final CompressionCodecFactory compressionCodecFactory;
 
     public DeephavenCodecFactory(List<Class<?>> codecClasses) {
         this(configurationWithCodecClasses(codecClasses));
     }
 
     public DeephavenCodecFactory(Configuration configuration) {
-        this.configuration = configuration;
         compressionCodecFactory = new CompressionCodecFactory(configuration);
     }
-    
+
+    /**
+     * Returns a compressor with the given codec name. Do not use this to get a
+     * "no-op" codec, instead use {@link Compressor#PASSTHRU}. Names are identified
+     * using the {@link CompressionCodecFactory} rules (roughly, the first word in
+     * the class's name).
+     *
+     * @param codecName the name of the codec to search for.
+     * @return a compressor instance with a name matching the given codec.
+     */
     public Compressor getByName(String codecName) {
-        return new CodecWrappingCompressor(compressionCodecFactory.getCodecByName(codecName));
+        CompressionCodec codec = compressionCodecFactory.getCodecByName(codecName);
+        if (codec == null) {
+            return null;
+        }
+        return new CodecWrappingCompressor(codec);
     }
 
 }

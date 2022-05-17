@@ -8,7 +8,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public interface Compressor {
-    Compressor NOOP = new Compressor() {
+    /**
+     * Compressor instance that reads and writes uncompressed data directly.
+     */
+    Compressor PASSTHRU = new Compressor() {
         @Override
         public OutputStream compress(OutputStream os) throws IOException {
             return os;
@@ -31,19 +34,37 @@ public interface Compressor {
     };
 
 
+    /**
+     * Creates a new output stream that will take uncompressed writes, and flush data to the provided
+     * stream as compressed data.
+     * @param os the output stream to write compressed contents to
+     * @return an output stream that can accept writes
+     * @throws IOException thrown if an error occurs writing data
+     */
     OutputStream compress(OutputStream os) throws IOException;
 
-    default OutputStream compressNoClose(OutputStream os) throws IOException {
-        return compress(new NonClosingOutputStream(os));
-    }
-
+    /**
+     * Returns a new input stream that when read will provide the uncompressed data, by wrapping an
+     * input stream containing the compressed data.
+     * @param is an input stream that can be read to see compressed data
+     * @return an input stream that can be read to see uncompressed data
+     * @throws IOException thrown if an error occurs reading data
+     */
     InputStream decompress(InputStream is) throws IOException;
 
-    default InputStream decompressNoClose(InputStream is) throws IOException {
-        return decompress(new NonClosingInputStream(is));
-    }
-
-    CompressionCodecName getCodecName();
-
+    /**
+     * Returns an in-memory instance of BytesInput containing the fully decompressed results of the
+     * input stream.
+     * @param inputStream an input stream containing compressed data
+     * @param compressedSize the number of bytes in the compressed data
+     * @param uncompressedSize the number of bytes that should be present when decompressed
+     * @return the decompressed bytes, copied into memory
+     * @throws IOException thrown if an error occurs reading data.
+     */
     BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize) throws IOException;
+
+    /**
+     * @return the CompressionCodecName enum value that represents this compressor.
+     */
+    CompressionCodecName getCodecName();
 }
