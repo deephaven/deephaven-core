@@ -2404,8 +2404,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
         try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable) ungrouped)) {
             assertEquals(snap.rowsAdded, i(0, 1, 2));
-            assertEquals(snap.addColumnData[0].data.asIntChunk().get(0), io.deephaven.util.QueryConstants.NULL_INT);
-            assertEquals(snap.addColumnData[1].data.asIntChunk().get(2), io.deephaven.util.QueryConstants.NULL_INT);
+            assertEquals(snap.addColumnData[0].data.get(0).asIntChunk().get(0),
+                    io.deephaven.util.QueryConstants.NULL_INT);
+            assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(2),
+                    io.deephaven.util.QueryConstants.NULL_INT);
         }
     }
 

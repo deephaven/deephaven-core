@@ -33,6 +33,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.function.LongConsumer;
@@ -41,12 +42,18 @@ public class BarrageStreamReader implements StreamReader {
 
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamReader.class);
 
+    // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
+    private static final int MAX_CHUNK_SIZE = Integer.MAX_VALUE - 8;
+
     private final LongConsumer deserializeTmConsumer;
 
-    private int numAddRowsRead = 0;
-    private int numModRowsRead = 0;
-    private int numAddBatchesRemaining = 0;
-    private int numModBatchesRemaining = 0;
+    private long numAddRowsRead = 0;
+    private long numAddRowsTotal = 0;
+    private long numModRowsRead = 0;
+    private long numModRowsTotal = 0;
+
+    private long lastAddStartIndex = 0;
+    private long lastModStartIndex = 0;
     private BarrageMessage msg = null;
 
     public BarrageStreamReader(final LongConsumer deserializeTmConsumer) {
@@ -83,8 +90,8 @@ public class BarrageStreamReader implements StreamReader {
                     } else if (wrapper.msgType() == BarrageMessageType.BarrageUpdateMetadata) {
                         if (msg != null) {
                             throw new IllegalStateException(
-                                    "Previous message was not complete; pending " + numAddBatchesRemaining
-                                            + " add batches and " + numModBatchesRemaining + " mod batches");
+                                    "Previous message was not complete; pending " + (numAddRowsTotal - numAddRowsRead)
+                                            + " add rows and " + (numModRowsTotal - numModRowsRead) + " mod rows");
                         }
 
                         final BarrageUpdateMetadata metadata =
@@ -97,14 +104,8 @@ public class BarrageStreamReader implements StreamReader {
 
                         numAddRowsRead = 0;
                         numModRowsRead = 0;
-                        numAddBatchesRemaining = metadata.numAddBatches();
-                        numModBatchesRemaining = metadata.numModBatches();
-                        if (numAddBatchesRemaining < 0 || numModBatchesRemaining < 0) {
-                            throw new IllegalStateException(
-                                    "Found negative number of record batches in barrage metadata: "
-                                            + numAddBatchesRemaining + " add batches and " + numModBatchesRemaining
-                                            + " mod batches");
-                        }
+                        lastAddStartIndex = 0;
+                        lastModStartIndex = 0;
 
                         if (msg.isSnapshot) {
                             final ByteBuffer effectiveViewport = metadata.effectiveViewportAsByteBuffer();
@@ -130,17 +131,32 @@ public class BarrageStreamReader implements StreamReader {
                             msg.addColumnData[ci] = new BarrageMessage.AddColumnData();
                             msg.addColumnData[ci].type = columnTypes[ci];
                             msg.addColumnData[ci].componentType = componentTypes[ci];
+                            msg.addColumnData[ci].data = new ArrayList<>();
+
+                            // create an initial chunk of the correct size
+                            final int chunkSize = (int) (Math.min(msg.rowsIncluded.size(), MAX_CHUNK_SIZE));
+                            msg.addColumnData[ci].data.add(columnChunkTypes[ci].makeWritableChunk(chunkSize));
                         }
+                        numAddRowsTotal = msg.rowsIncluded.size();
 
                         // if this message is a snapshot response (vs. subscription) then mod columns may be empty
+                        numModRowsTotal = 0;
                         msg.modColumnData = new BarrageMessage.ModColumnData[metadata.modColumnNodesLength()];
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             msg.modColumnData[ci] = new BarrageMessage.ModColumnData();
                             msg.modColumnData[ci].type = columnTypes[ci];
                             msg.modColumnData[ci].componentType = componentTypes[ci];
+                            msg.modColumnData[ci].data = new ArrayList<>();
 
                             final BarrageModColumnMetadata mcd = metadata.modColumnNodes(ci);
                             msg.modColumnData[ci].rowsModified = extractIndex(mcd.modifiedRowsAsByteBuffer());
+
+                            // create an initial chunk of the correct size
+                            final int chunkSize = (int) (Math.min(msg.modColumnData[ci].rowsModified.size(),
+                                    MAX_CHUNK_SIZE));
+                            msg.modColumnData[ci].data.add(columnChunkTypes[ci].makeWritableChunk(chunkSize));
+
+                            numModRowsTotal = Math.max(numModRowsTotal, msg.modColumnData[ci].rowsModified.size());
                         }
                     }
 
@@ -165,30 +181,10 @@ public class BarrageStreamReader implements StreamReader {
                     throw new IllegalStateException("Only know how to decode Schema/BarrageRecordBatch messages");
                 }
 
-                // snapshots may not provide metadata, generate it now
+                // throw an error when no app metadata (snapshots now provide by default)
                 if (msg == null) {
-                    msg = new BarrageMessage();
-
-                    // generate a default set of column selectors
-                    msg.snapshotColumns = expectedColumns;
-
-                    // create and fill the add column metadata from the schema
-                    msg.addColumnData = new BarrageMessage.AddColumnData[columnTypes.length];
-                    for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
-                        msg.addColumnData[ci] = new BarrageMessage.AddColumnData();
-                        msg.addColumnData[ci].type = columnTypes[ci];
-                        msg.addColumnData[ci].componentType = componentTypes[ci];
-                    }
-
-                    // no mod column data
-                    msg.modColumnData = new BarrageMessage.ModColumnData[0];
-
-                    // generate empty row sets
-                    msg.rowsRemoved = RowSetFactory.empty();
-                    msg.shifted = RowSetShiftData.EMPTY;
-
-                    msg.isSnapshot = true;
-                    numAddBatchesRemaining = 1;
+                    throw new IllegalStateException(
+                            "Missing app metadata tag; cannot decode using BarrageStreamReader");
                 }
 
                 bodyParsed = true;
@@ -219,30 +215,81 @@ public class BarrageStreamReader implements StreamReader {
                     }
                     final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
-                    final boolean isAddBatch = numAddBatchesRemaining > 0;
-                    if (isAddBatch) {
-                        --numAddBatchesRemaining;
-                    } else {
-                        --numModBatchesRemaining;
-                    }
-
-                    if (isAddBatch) {
-                        final int numRowsTotal = msg.rowsIncluded.intSize("BarrageStreamReader");
+                    // add and mod rows are never combined in a batch. all added rows must be received before the first
+                    // mod rows will be received.
+                    if (numAddRowsRead < numAddRowsTotal) {
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
-                            msg.addColumnData[ci].data = ChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                    columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
-                                    bufferInfoIter, ois, (WritableChunk<Values>) msg.addColumnData[ci].data,
-                                    numAddRowsRead, numRowsTotal);
+                            final BarrageMessage.AddColumnData acd = msg.addColumnData[ci];
+
+                            final long remaining = numAddRowsTotal - numAddRowsRead;
+                            if (batch.length() > remaining) {
+                                throw new IllegalStateException(
+                                        "Batch length exceeded the expected number of rows from app metadata");
+                            }
+
+                            // select the current chunk size and read the size
+                            int lastChunkIndex = acd.data.size() - 1;
+                            WritableChunk<Values> chunk = (WritableChunk<Values>) acd.data.get(lastChunkIndex);
+                            int chunkSize = acd.data.get(lastChunkIndex).size();
+
+                            final int chunkOffset;
+                            long rowOffset = numAddRowsRead - lastAddStartIndex;
+                            // reading the rows from this batch might overflow the existing chunk
+                            if (rowOffset + batch.length() > chunkSize) {
+                                lastAddStartIndex += chunkSize;
+
+                                // create a new chunk before trying to write again
+                                chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
+
+                                chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                                acd.data.add(chunk);
+
+                                chunkOffset = 0;
+                                ++lastChunkIndex;
+                            } else {
+                                chunkOffset = (int) rowOffset;
+                            }
+
+                            // fill the chunk with data and assign back into the array
+                            acd.data.set(lastChunkIndex,
+                                    ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
+                                            columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
+                                            chunk, chunkOffset, chunkSize));
                         }
                         numAddRowsRead += batch.length();
                     } else {
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             final BarrageMessage.ModColumnData mcd = msg.modColumnData[ci];
-                            final int numModdedRows = mcd.rowsModified.intSize("BarrageStreamReader");
-                            mcd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                    columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
-                                    bufferInfoIter, ois, (WritableChunk<Values>) mcd.data, numModRowsRead,
-                                    numModdedRows);
+
+                            long remaining = mcd.rowsModified.size() - numModRowsRead;
+
+                            // need to add the batch row data to the column chunks
+                            int lastChunkIndex = mcd.data.size() - 1;
+                            WritableChunk<Values> chunk = (WritableChunk<Values>) mcd.data.get(lastChunkIndex);
+                            int chunkSize = chunk.size();
+
+                            final int chunkOffset;
+                            long rowOffset = numModRowsRead - lastModStartIndex;
+                            // this batch might overflow the chunk
+                            if (rowOffset + Math.min(remaining, batch.length()) > chunkSize) {
+                                lastModStartIndex += chunkSize;
+
+                                // create a new chunk before trying to write again
+                                chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
+                                chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                                mcd.data.add(chunk);
+
+                                chunkOffset = 0;
+                                ++lastChunkIndex;
+                            } else {
+                                chunkOffset = (int) rowOffset;
+                            }
+
+                            // fill the chunk with data and assign back into the array
+                            mcd.data.set(lastChunkIndex,
+                                    ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
+                                            columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
+                                            chunk, chunkOffset, chunkSize));
                         }
                         numModRowsRead += batch.length();
                     }
@@ -259,7 +306,7 @@ public class BarrageStreamReader implements StreamReader {
             }
 
             deserializeTmConsumer.accept(System.nanoTime() - startDeserTm);
-            if (numAddBatchesRemaining + numModBatchesRemaining == 0) {
+            if (numAddRowsRead == numAddRowsTotal && numModRowsRead == numModRowsTotal) {
                 final BarrageMessage retval = msg;
                 msg = null;
                 return retval;

@@ -48,6 +48,8 @@ import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.HdrHistogram.Histogram;
@@ -61,6 +63,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
+
+import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 
 /**
  * The server-side implementation of a Barrage replication source.
@@ -1613,18 +1617,25 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             for (int ci = 0; ci < downstream.addColumnData.length; ++ci) {
                 final ColumnSource<?> deltaColumn = deltaColumns[ci];
                 final BarrageMessage.AddColumnData adds = new BarrageMessage.AddColumnData();
+                adds.data = new ArrayList<>();
+                adds.chunkType = deltaColumn.getChunkType();
+
                 downstream.addColumnData[ci] = adds;
 
                 if (addColumnSet.get(ci)) {
-                    final int chunkCapacity = localAdded.intSize("serializeItems");
-                    final WritableChunk<Values> chunk =
-                            deltaColumn.getChunkType().makeWritableChunk(chunkCapacity);
-                    try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
-                        deltaColumn.fillChunk(fc, chunk, localAdded);
+                    // create data chunk(s) for the added row data
+                    try (final RowSequence.Iterator it = localAdded.getRowSequenceIterator()) {
+                        while (it.hasMore()) {
+                            final RowSequence rs =
+                                    it.getNextRowSequenceWithLength(SNAPSHOT_CHUNK_SIZE);
+                            final int chunkCapacity = rs.intSize("serializeItems");
+                            final WritableChunk<Values> chunk = adds.chunkType.makeWritableChunk(chunkCapacity);
+                            try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
+                                deltaColumn.fillChunk(fc, chunk, rs);
+                            }
+                            adds.data.add(chunk);
+                        }
                     }
-                    adds.data = chunk;
-                } else {
-                    adds.data = deltaColumn.getChunkType().getEmptyChunk();
                 }
 
                 adds.type = deltaColumn.getType();
@@ -1633,26 +1644,33 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
             for (int ci = 0; ci < downstream.modColumnData.length; ++ci) {
                 final ColumnSource<?> deltaColumn = deltaColumns[ci];
-                final BarrageMessage.ModColumnData modifications = new BarrageMessage.ModColumnData();
-                downstream.modColumnData[ci] = modifications;
+                final BarrageMessage.ModColumnData mods = new BarrageMessage.ModColumnData();
+                mods.data = new ArrayList<>();
+                mods.chunkType = deltaColumn.getChunkType();
+                downstream.modColumnData[ci] = mods;
 
                 if (modColumnSet.get(ci)) {
-                    modifications.rowsModified = firstDelta.recordedMods.copy();
+                    mods.rowsModified = firstDelta.recordedMods.copy();
 
-                    final int chunkCapacity = localModified.intSize("serializeItems");
-                    final WritableChunk<Values> chunk =
-                            deltaColumn.getChunkType().makeWritableChunk(chunkCapacity);
-                    try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
-                        deltaColumn.fillChunk(fc, chunk, localModified);
+                    // create data chunk(s) for the added row data
+                    try (final RowSequence.Iterator it = localModified.getRowSequenceIterator()) {
+                        while (it.hasMore()) {
+                            final RowSequence rs =
+                                    it.getNextRowSequenceWithLength(SNAPSHOT_CHUNK_SIZE);
+                            final int chunkCapacity = rs.intSize("serializeItems");
+                            final WritableChunk<Values> chunk = mods.chunkType.makeWritableChunk(chunkCapacity);
+                            try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
+                                deltaColumn.fillChunk(fc, chunk, rs);
+                            }
+                            mods.data.add(chunk);
+                        }
                     }
-                    modifications.data = chunk;
                 } else {
-                    modifications.rowsModified = RowSetFactory.empty();
-                    modifications.data = deltaColumn.getChunkType().getEmptyChunk();
+                    mods.rowsModified = RowSetFactory.empty();
                 }
 
-                modifications.type = deltaColumn.getType();
-                modifications.componentType = deltaColumn.getComponentType();
+                mods.type = deltaColumn.getType();
+                mods.componentType = deltaColumn.getComponentType();
             }
         } else {
             // We must coalesce these updates.
@@ -1700,8 +1718,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             final class ColumnInfo {
                 final WritableRowSet modified = RowSetFactory.empty();
                 final WritableRowSet recordedMods = RowSetFactory.empty();
-                long[] addedMapping;
-                long[] modifiedMapping;
+                ArrayList<long[]> addedMappings = new ArrayList<>();
+                ArrayList<long[]> modifiedMappings = new ArrayList<>();
             }
 
             final HashMap<BitSet, ColumnInfo> infoCache = new HashMap<>();
@@ -1734,15 +1752,28 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 retval.modified.remove(coalescer.added);
                 retval.recordedMods.remove(coalescer.added);
 
-                retval.addedMapping = new long[localAdded.intSize()];
-                retval.modifiedMapping = new long[retval.recordedMods.intSize()];
-                Arrays.fill(retval.addedMapping, RowSequence.NULL_ROW_KEY);
-                Arrays.fill(retval.modifiedMapping, RowSequence.NULL_ROW_KEY);
+                try (final RowSequence.Iterator it = localAdded.getRowSequenceIterator()) {
+                    while (it.hasMore()) {
+                        final RowSequence rs = it.getNextRowSequenceWithLength(SNAPSHOT_CHUNK_SIZE);
+                        long[] addedMapping = new long[rs.intSize()];
+                        Arrays.fill(addedMapping, RowSequence.NULL_ROW_KEY);
+                        retval.addedMappings.add(addedMapping);
+                    }
+                }
+
+                try (final RowSequence.Iterator it = retval.recordedMods.getRowSequenceIterator()) {
+                    while (it.hasMore()) {
+                        final RowSequence rs = it.getNextRowSequenceWithLength(SNAPSHOT_CHUNK_SIZE);
+                        long[] modifiedMapping = new long[rs.intSize()];
+                        Arrays.fill(modifiedMapping, RowSequence.NULL_ROW_KEY);
+                        retval.modifiedMappings.add(modifiedMapping);
+                    }
+                }
 
                 final WritableRowSet unfilledAdds = localAdded.isEmpty() ? RowSetFactory.empty()
-                        : RowSetFactory.fromRange(0, retval.addedMapping.length - 1);
+                        : RowSetFactory.flat(localAdded.size());
                 final WritableRowSet unfilledMods = retval.recordedMods.isEmpty() ? RowSetFactory.empty()
-                        : RowSetFactory.fromRange(0, retval.modifiedMapping.length - 1);
+                        : RowSetFactory.flat(retval.recordedMods.size());
 
                 final WritableRowSet addedRemaining = localAdded.copy();
                 final WritableRowSet modifiedRemaining = retval.recordedMods.copy();
@@ -1772,7 +1803,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             }
 
                             applyRedirMapping(rowsToFill, sourceRows,
-                                    addedMapping ? retval.addedMapping : retval.modifiedMapping);
+                                    addedMapping ? retval.addedMappings : retval.modifiedMappings);
                         }
                     };
 
@@ -1815,19 +1846,21 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             for (int ci = 0; ci < downstream.addColumnData.length; ++ci) {
                 final ColumnSource<?> deltaColumn = deltaColumns[ci];
                 final BarrageMessage.AddColumnData adds = new BarrageMessage.AddColumnData();
+                adds.data = new ArrayList<>();
+                adds.chunkType = deltaColumn.getChunkType();
+
                 downstream.addColumnData[ci] = adds;
 
                 if (addColumnSet.get(ci)) {
                     final ColumnInfo info = getColumnInfo.apply(ci);
-                    final WritableChunk<Values> chunk =
-                            deltaColumn.getChunkType().makeWritableChunk(info.addedMapping.length);
-                    try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(info.addedMapping.length)) {
-                        ((FillUnordered) deltaColumn).fillChunkUnordered(fc, chunk,
-                                LongChunk.chunkWrap(info.addedMapping));
+                    for (long[] addedMapping : info.addedMappings) {
+                        final WritableChunk<Values> chunk = adds.chunkType.makeWritableChunk(addedMapping.length);
+                        try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(addedMapping.length)) {
+                            ((FillUnordered) deltaColumn).fillChunkUnordered(fc, chunk,
+                                    LongChunk.chunkWrap(addedMapping));
+                        }
+                        adds.data.add(chunk);
                     }
-                    adds.data = chunk;
-                } else {
-                    adds.data = deltaColumn.getChunkType().getEmptyChunk();
                 }
 
                 adds.type = deltaColumn.getType();
@@ -1837,28 +1870,29 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             int numActualModCols = 0;
             for (int i = 0; i < downstream.modColumnData.length; ++i) {
                 final ColumnSource<?> sourceColumn = deltaColumns[i];
-                final BarrageMessage.ModColumnData modifications = new BarrageMessage.ModColumnData();
-                downstream.modColumnData[numActualModCols++] = modifications;
+                final BarrageMessage.ModColumnData mods = new BarrageMessage.ModColumnData();
+                mods.data = new ArrayList<>();
+                mods.chunkType = sourceColumn.getChunkType();
+
+                downstream.modColumnData[numActualModCols++] = mods;
 
                 if (modColumnSet.get(i)) {
                     final ColumnInfo info = getColumnInfo.apply(i);
-                    modifications.rowsModified = info.recordedMods.copy();
-
-                    final WritableChunk<Values> chunk =
-                            sourceColumn.getChunkType().makeWritableChunk(info.modifiedMapping.length);
-                    try (final ChunkSource.FillContext fc = sourceColumn.makeFillContext(info.modifiedMapping.length)) {
-                        ((FillUnordered) sourceColumn).fillChunkUnordered(fc, chunk,
-                                LongChunk.chunkWrap(info.modifiedMapping));
+                    mods.rowsModified = info.recordedMods.copy();
+                    for (long[] modifiedMapping : info.modifiedMappings) {
+                        final WritableChunk<Values> chunk = mods.chunkType.makeWritableChunk(modifiedMapping.length);
+                        try (final ChunkSource.FillContext fc = sourceColumn.makeFillContext(modifiedMapping.length)) {
+                            ((FillUnordered) sourceColumn).fillChunkUnordered(fc, chunk,
+                                    LongChunk.chunkWrap(modifiedMapping));
+                        }
+                        mods.data.add(chunk);
                     }
-
-                    modifications.data = chunk;
                 } else {
-                    modifications.rowsModified = RowSetFactory.empty();
-                    modifications.data = sourceColumn.getChunkType().getEmptyChunk();
+                    mods.rowsModified = RowSetFactory.empty();
                 }
 
-                modifications.type = sourceColumn.getType();
-                modifications.componentType = sourceColumn.getComponentType();
+                mods.type = sourceColumn.getType();
+                mods.componentType = sourceColumn.getComponentType();
             }
         }
 
@@ -1872,14 +1906,28 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     // Updates provided mapping so that mapping[i] returns values.get(i) for all i in keys.
-    private static void applyRedirMapping(final RowSet keys, final RowSet values, final long[] mapping) {
+    private static void applyRedirMapping(final RowSet keys, final RowSet values, final ArrayList<long[]> mappings) {
         Assert.eq(keys.size(), "keys.size()", values.size(), "values.size()");
-        Assert.leq(keys.size(), "keys.size()", mapping.length, "mapping.length");
+        MutableLong mapCount = new MutableLong(0L);
+        mappings.forEach((arr) -> mapCount.add(arr.length));
+        Assert.leq(keys.size(), "keys.size()", mapCount.longValue(), "mapping.length");
+
+        // we need to track our progress through multiple mapping arrays
+        MutableLong arrOffset = new MutableLong(0L);
+        MutableInt arrIdx = new MutableInt(0);
+
         final RowSet.Iterator vit = values.iterator();
         keys.forAllRowKeys(lkey -> {
-            final int key = LongSizedDataStructure.intSize("applyRedirMapping", lkey);
-            Assert.eq(mapping[key], "mapping[key]", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
-            mapping[key] = vit.nextLong();
+            long[] mapping = mappings.get(arrIdx.intValue());
+            int keyIdx = LongSizedDataStructure.intSize("applyRedirMapping", lkey - arrOffset.longValue());
+
+            Assert.eq(mapping[keyIdx], "mapping[keyIdx]", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
+            mapping[keyIdx] = vit.nextLong();
+
+            if (keyIdx == mapping.length - 1) {
+                arrOffset.add(mapping.length);
+                arrIdx.add(1);
+            }
         });
     }
 

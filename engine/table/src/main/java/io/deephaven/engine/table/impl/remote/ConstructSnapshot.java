@@ -8,6 +8,7 @@ import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
@@ -78,6 +79,8 @@ public class ConstructSnapshot {
      */
     private static final int MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttemptDurationMillis", 5000);
+
+    public static final int SNAPSHOT_CHUNK_SIZE = 1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
 
     /**
      * Holder for thread-local state.
@@ -1316,8 +1319,6 @@ public class ConstructSnapshot {
             snapshot.rowsIncluded = snapshot.rowsAdded.copy();
         }
 
-        LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
-
         final Map<String, ? extends ColumnSource> sourceMap = table.getColumnSourceMap();
         final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
@@ -1340,16 +1341,19 @@ public class ConstructSnapshot {
                 final RowSet rows = columnIsEmpty ? RowSetFactory.empty() : snapshot.rowsIncluded;
                 // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
                 // when empty
-                acd.data = getSnapshotDataAsChunk(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
+                acd.data =
+                        getSnapshotDataAsChunkList(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
                 acd.type = columnSource.getType();
                 acd.componentType = columnSource.getComponentType();
+                acd.chunkType = columnSource.getChunkType();
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
                 snapshot.modColumnData[ii] = mcd;
                 mcd.rowsModified = RowSetFactory.empty();
-                mcd.data = getSnapshotDataAsChunk(columnSource, null, RowSetFactory.empty(), usePrev);
+                mcd.data = getSnapshotDataAsChunkList(columnSource, null, RowSetFactory.empty(), usePrev);
                 mcd.type = acd.type;
                 mcd.componentType = acd.componentType;
+                mcd.chunkType = columnSource.getChunkType();
             }
         }
 
@@ -1428,6 +1432,52 @@ public class ConstructSnapshot {
             }
             return result;
         }
+    }
+
+    private static <T> ArrayList<Chunk<Values>> getSnapshotDataAsChunkList(final ColumnSource<T> columnSource,
+            final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
+        final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
+        long offset = 0;
+        final long size = rowSet.size();
+        final ArrayList<Chunk<Values>> result = new ArrayList<>();
+
+        if (size == 0) {
+            return result;
+        }
+
+        final int maxChunkSize = (int) Math.min(size, SNAPSHOT_CHUNK_SIZE);
+
+        try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(maxChunkSize, sharedContext);
+                final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+            int chunkSize = maxChunkSize;
+            while (it.hasMore()) {
+                final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(chunkSize);
+                final ChunkType chunkType = sourceToUse.getChunkType();
+
+                // create a new chunk
+                WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
+
+                if (usePrev) {
+                    sourceToUse.fillPrevChunk(context, currentChunk, reducedRowSet);
+                } else {
+                    sourceToUse.fillChunk(context, currentChunk, reducedRowSet);
+                }
+
+                // add the chunk to the current list
+                result.add(currentChunk);
+
+                // increment the offset for the next chunk (using the actual values written)
+                offset += currentChunk.size();
+
+                // recompute the size of the next chunk
+                if (size - offset > maxChunkSize) {
+                    chunkSize = maxChunkSize;
+                } else {
+                    chunkSize = (int) (size - offset);
+                }
+            }
+        }
+        return result;
     }
 
     /**
