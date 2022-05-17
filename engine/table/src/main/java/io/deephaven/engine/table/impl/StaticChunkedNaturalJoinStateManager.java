@@ -31,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 // region extra imports
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.Nullable;
+import io.deephaven.engine.table.impl.naturaljoin.StaticHashedNaturalJoinStateManager;
 // endregion extra imports
 
 import static io.deephaven.util.SafeCloseable.closeArray;
@@ -39,7 +40,7 @@ import static io.deephaven.util.SafeCloseable.closeArray;
 // endregion class visibility
 class StaticChunkedNaturalJoinStateManager
     // region extensions
-    extends StaticNaturalJoinStateManager
+    extends StaticHashedNaturalJoinStateManager
     // endregion extensions
 {
     // region constants
@@ -172,7 +173,8 @@ class StaticChunkedNaturalJoinStateManager
     }
 
     // region build wrappers
-    void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources, final LongArraySource leftHashSlots) {
+    @Override
+    public void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources, final LongArraySource leftHashSlots) {
         if (leftTable.isEmpty()) {
             return;
         }
@@ -182,7 +184,8 @@ class StaticChunkedNaturalJoinStateManager
         }
     }
 
-    void buildFromRightSide(final Table rightTable, ColumnSource<?> [] rightSources) {
+    @Override
+    public void buildFromRightSide(final Table rightTable, ColumnSource<?> [] rightSources) {
         if (rightTable.isEmpty()) {
             return;
         }
@@ -364,7 +367,7 @@ class StaticChunkedNaturalJoinStateManager
 
     }
 
-    BuildContext makeBuildContext(ColumnSource<?>[] buildSources,
+    public BuildContext makeBuildContext(ColumnSource<?>[] buildSources,
                                   long maxSize
                                   // region makeBuildContext args
                                   // endregion makeBuildContext args
@@ -808,7 +811,7 @@ class StaticChunkedNaturalJoinStateManager
 
 
     // region probe wrappers
-    void decorateWithRightSide(Table rightTable, ColumnSource<?> [] rightSources)  {
+    public void decorateWithRightSide(Table rightTable, ColumnSource<?> [] rightSources)  {
         if (rightTable.isEmpty()) {
             return;
         }
@@ -817,15 +820,8 @@ class StaticChunkedNaturalJoinStateManager
         }
     }
 
-    void decorateLeftSide(Table leftTable, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections)  {
-        if (leftTable.isEmpty()) {
-            return;
-        }
-        decorateLeftSide(leftTable.getRowSet(), leftSources, leftRedirections);
-    }
-
     @Override
-    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections)  {
+    public void decorateLeftSide(RowSet leftRowSet, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections)  {
         if (leftRowSet.isEmpty()) {
             return;
         }
@@ -1068,7 +1064,7 @@ class StaticChunkedNaturalJoinStateManager
                             // I don't love this individual access approach; but we don't otherwise know if we are going
                             // to be writing to the thing twice.  We could alternatively sort these.
                             if (rightRowSetSource.getLong(pc.tableLocationsChunk.get(ii)) != NO_RIGHT_ENTRY_VALUE) {
-                                throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
+                                throw new IllegalStateException("Natural Join found duplicate right key for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
                             }
 
                             // we know that there is no right hand side, so we should set it to our value!
@@ -1135,7 +1131,7 @@ class StaticChunkedNaturalJoinStateManager
                                 final long rightValue = rightKeyIndices.get(pc.chunkPositionsForFetches.get(ii));
                                 final long existingRightValue = overflowRightRowSetSource.getLong(overflowLocation);
                                 if (existingRightValue != NO_RIGHT_ENTRY_VALUE) {
-                                    throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, pc.chunkPositionsForFetches.get(ii)));
+                                    throw new IllegalStateException("Natural Join found duplicate right key for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, pc.chunkPositionsForFetches.get(ii)));
                                 }
                                 overflowRightRowSetSource.set(overflowLocation, rightValue);
                             }
@@ -1158,7 +1154,7 @@ class StaticChunkedNaturalJoinStateManager
                     for (int ii = 0; ii < workingLeftRedirections.size(); ++ii) {
                         final long leftRedirection = workingLeftRedirections.get(ii);
                         if (leftRedirection == DUPLICATE_RIGHT_VALUE) {
-                            throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
+                            throw new IllegalStateException("Natural Join found duplicate right key for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
                         }
                         leftRedirections.set(hashSlotOffset + ii, leftRedirection);
                     }
@@ -1193,61 +1189,18 @@ class StaticChunkedNaturalJoinStateManager
     }
 
     // region extraction functions
-    WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
+    @Override
+    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirection(leftTable, exactMatch, position -> getStateValue(leftHashSlots, position), redirectionType);
     }
 
-    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
+    @Override
+    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirection(leftTable, exactMatch, leftRedirections::getLong, redirectionType);
     }
 
-    WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
-        switch (redirectionType) {
-            case Contiguous: {
-                if (!leftTable.isFlat()) {
-                    throw new IllegalStateException("Left table is not flat for contiguous row redirection build!");
-                }
-                // we can use an array, which is perfect for a small enough flat table
-                final long[] innerIndex = new long[leftTable.intSize("contiguous redirection build")];
-                for (int ii = 0; ii < groupingSize; ++ii) {
-                    final long rightSide = getStateValue(leftHashSlots, ii);
-                    checkExactMatch(exactMatch, ii, rightSide);
-                    final RowSet leftRowSetForKey = leftIndices.get(ii);
-                    leftRowSetForKey.forAllRowKeys((long ll) -> innerIndex[(int) ll] = rightSide);
-                }
-                return new ContiguousWritableRowRedirection(innerIndex);
-            }
-            case Sparse: {
-                final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
-
-                for (int ii = 0; ii < groupingSize; ++ii) {
-                    final long rightSide = getStateValue(leftHashSlots, ii);
-
-                    checkExactMatch(exactMatch, ii, rightSide);
-                    if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                        final RowSet leftRowSetForKey = leftIndices.get(ii);
-                        leftRowSetForKey.forAllRowKeys((long ll) -> sparseRedirections.set(ll, rightSide));
-                    }
-                }
-                return new LongColumnSourceWritableRowRedirection(sparseRedirections);
-            }
-            case Hash: {
-                final WritableRowRedirection rowRedirection = WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
-
-                for (int ii = 0; ii < groupingSize; ++ii) {
-                    final long rightSide = getStateValue(leftHashSlots, ii);
-
-                    checkExactMatch(exactMatch, ii, rightSide);
-                    if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                        final RowSet leftRowSetForKey = leftIndices.get(ii);
-                        leftRowSetForKey.forAllRowKeys((long ll) -> rowRedirection.put(ll, rightSide));
-                    }
-                }
-
-                return rowRedirection;
-            }
-        }
-        throw new IllegalStateException("Bad redirectionType: " + redirectionType);
+    public WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
+        return buildGroupedRowRedirection(leftTable, exactMatch, groupingSize, (long ii) -> getStateValue(leftHashSlots, ii), leftIndices, redirectionType);
     }
     // endregion extraction functions
 

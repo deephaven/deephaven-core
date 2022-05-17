@@ -29,8 +29,9 @@ final class StaticAggOpenHasherObjectInt extends StaticChunkedOperatorAggregatio
 
     private final ImmutableIntArraySource mainKeySource1;
 
-    public StaticAggOpenHasherObjectInt(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggOpenHasherObjectInt(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableObjectArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

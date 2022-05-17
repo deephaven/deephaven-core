@@ -254,6 +254,11 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
 
     // let's force some collisions by making our table small
     public void testNaturalJoinRandomStaticOverflow() {
+        // we can not make our table small with the typed state manager, as it does not support overflow
+        if (NaturalJoinHelper.USE_TYPED_STATE_MANAGER) {
+            return;
+        }
+
         for (int leftSize = 10_000; leftSize <= 100_000; leftSize *= 10) {
             for (int rightSize = 10_000; rightSize <= 100_000; rightSize *= 10) {
                 for (int seed = 0; seed < 2; ++seed) {

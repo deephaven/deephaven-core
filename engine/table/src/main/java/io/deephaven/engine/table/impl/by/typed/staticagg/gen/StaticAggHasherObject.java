@@ -23,8 +23,9 @@ final class StaticAggHasherObject extends StaticChunkedOperatorAggregationStateM
 
     private final ObjectArraySource overflowKeySource0;
 
-    public StaticAggHasherObject(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggHasherObject(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (ObjectArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (ObjectArraySource) super.overflowKeySources[0];

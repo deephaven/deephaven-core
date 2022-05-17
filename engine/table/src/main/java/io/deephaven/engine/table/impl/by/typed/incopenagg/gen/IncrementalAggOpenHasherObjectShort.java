@@ -35,8 +35,9 @@ final class IncrementalAggOpenHasherObjectShort extends IncrementalChunkedOperat
 
     private ImmutableShortArraySource alternateKeySource1;
 
-    public IncrementalAggOpenHasherObjectShort(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggOpenHasherObjectShort(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableObjectArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

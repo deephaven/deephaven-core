@@ -67,7 +67,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     }
 
     @Override
-    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?> [] valueSources, LongArraySource leftRedirections) {
+    protected void decorateLeftSide(RowSet leftRowSet, ColumnSource<?> [] valueSources, LongArraySource leftRedirections) {
         if (leftRowSet.isEmpty()) {
             return;
         }
@@ -93,7 +93,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                     final long existingRight = rightRowSetSource.getLong(tableLocation);
 
                     if (existingRight == DUPLICATE_RIGHT_VALUE) {
-                        throw new IllegalStateException("More than one right side mapping for key " + keySourcesForErrorMessages[0].get(leftRowSet.get(offset + ii)));
+                        throw new IllegalStateException(":Natural Join found duplicate right key for " + keySourcesForErrorMessages[0].get(leftRowSet.get(offset + ii)));
                     }
                     leftRedirections.set(offset + ii, existingRight);
                 }

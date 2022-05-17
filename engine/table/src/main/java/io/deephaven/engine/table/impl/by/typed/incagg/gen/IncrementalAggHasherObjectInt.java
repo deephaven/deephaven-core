@@ -33,8 +33,9 @@ final class IncrementalAggHasherObjectInt extends IncrementalChunkedOperatorAggr
 
     private final IntegerArraySource overflowKeySource1;
 
-    public IncrementalAggHasherObjectInt(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggHasherObjectInt(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (ObjectArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (ObjectArraySource) super.overflowKeySources[0];

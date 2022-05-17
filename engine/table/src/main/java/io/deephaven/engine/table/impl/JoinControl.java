@@ -9,7 +9,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
 
 @VisibleForTesting
 public class JoinControl {
-    enum RedirectionType {
+    public enum RedirectionType {
         Contiguous, Sparse, Hash
     }
 

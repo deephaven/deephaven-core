@@ -136,12 +136,12 @@ public class ChunkedOperatorAggregationHelper {
                 stateManager = incrementalStateManager = TypedHasherFactory.make(
                         IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
                         reinterpretedKeySources,
-                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        keySources, control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             } else if (USE_TYPED_STATE_MANAGER) {
                 stateManager = incrementalStateManager = TypedHasherFactory.make(
                         IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
-                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        keySources, control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             } else {
                 stateManager = incrementalStateManager = new IncrementalChunkedOperatorAggregationStateManager(
@@ -152,12 +152,12 @@ public class ChunkedOperatorAggregationHelper {
             if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
                 stateManager = TypedHasherFactory.make(
                         StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, reinterpretedKeySources,
-                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        keySources, control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             } else if (USE_TYPED_STATE_MANAGER) {
                 stateManager = TypedHasherFactory.make(
                         StaticChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
-                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        keySources, control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             } else {
                 stateManager = new StaticChunkedOperatorAggregationStateManager(reinterpretedKeySources,

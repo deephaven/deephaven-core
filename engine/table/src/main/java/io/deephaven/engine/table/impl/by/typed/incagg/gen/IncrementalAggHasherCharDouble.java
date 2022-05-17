@@ -34,8 +34,9 @@ final class IncrementalAggHasherCharDouble extends IncrementalChunkedOperatorAgg
 
     private final DoubleArraySource overflowKeySource1;
 
-    public IncrementalAggHasherCharDouble(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggHasherCharDouble(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (CharacterArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (CharacterArraySource) super.overflowKeySources[0];

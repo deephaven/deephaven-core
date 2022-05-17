@@ -30,8 +30,9 @@ final class StaticAggOpenHasherDoubleFloat extends StaticChunkedOperatorAggregat
 
     private final ImmutableFloatArraySource mainKeySource1;
 
-    public StaticAggOpenHasherDoubleFloat(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggOpenHasherDoubleFloat(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableDoubleArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

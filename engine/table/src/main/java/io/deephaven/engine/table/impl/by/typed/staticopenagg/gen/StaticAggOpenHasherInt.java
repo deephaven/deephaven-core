@@ -23,8 +23,9 @@ import java.util.Arrays;
 final class StaticAggOpenHasherInt extends StaticChunkedOperatorAggregationStateManagerOpenAddressedBase {
     private final ImmutableIntArraySource mainKeySource0;
 
-    public StaticAggOpenHasherInt(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggOpenHasherInt(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableIntArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

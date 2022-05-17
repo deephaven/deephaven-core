@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.engine.table.impl.naturaljoin.StaticHashedNaturalJoinStateManager",
+ "methods": {
+  "buildFromLeftSide": ":param leftTable: io.deephaven.engine.table.Table\n:param leftSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param leftHashSlots: io.deephaven.engine.table.impl.sources.LongArraySource",
+  "buildFromRightSide": ":param rightTable: io.deephaven.engine.table.Table\n:param rightSources: io.deephaven.engine.table.ColumnSource<?>[]",
+  "buildGroupedRowRedirection": ":param leftTable: io.deephaven.engine.table.impl.QueryTable\n:param exactMatch: boolean\n:param groupingSize: long\n:param leftHashSlots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param leftIndices: io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource<io.deephaven.engine.rowset.RowSet>\n:param redirectionType: io.deephaven.engine.table.impl.JoinControl.RedirectionType\n:return: io.deephaven.engine.table.impl.util.WritableRowRedirection",
+  "buildRowRedirectionFromHashSlot": ":param leftTable: io.deephaven.engine.table.impl.QueryTable\n:param exactMatch: boolean\n:param leftHashSlots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param redirectionType: io.deephaven.engine.table.impl.JoinControl.RedirectionType\n:return: io.deephaven.engine.table.impl.util.WritableRowRedirection",
+  "buildRowRedirectionFromRedirections": ":param leftTable: io.deephaven.engine.table.impl.QueryTable\n:param exactMatch: boolean\n:param leftRedirections: io.deephaven.engine.table.impl.sources.LongArraySource\n:param redirectionType: io.deephaven.engine.table.impl.JoinControl.RedirectionType\n:return: io.deephaven.engine.table.impl.util.WritableRowRedirection",
+  "decorateLeftSide": ":param leftRowSet: io.deephaven.engine.rowset.RowSet\n:param leftSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param leftRedirections: io.deephaven.engine.table.impl.sources.LongArraySource",
+  "decorateWithRightSide": ":param rightTable: io.deephaven.engine.table.Table\n:param rightSources: io.deephaven.engine.table.ColumnSource<?>[]",
+  "errorOnDuplicates": ":param leftHashSlots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param size: long\n:param groupPositionToRightSide: java.util.function.LongUnaryOperator\n:param firstLeftKey: java.util.function.LongUnaryOperator",
+  "errorOnDuplicatesGrouped": ":param leftHashSlots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param size: long\n:param rowSetSource: io.deephaven.engine.table.impl.sources.ObjectArraySource<io.deephaven.engine.rowset.RowSet>",
+  "errorOnDuplicatesSingle": ":param leftHashSlots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param size: long\n:param rowSet: io.deephaven.engine.rowset.RowSet"
+ },
+ "path": "io.deephaven.engine.table.impl.naturaljoin.StaticHashedNaturalJoinStateManager",
+ "typeName": "class"
+}

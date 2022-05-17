@@ -6,11 +6,15 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerTypedBase;
+import io.deephaven.engine.table.impl.by.typed.HasherConfig;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
 import org.jetbrains.annotations.NotNull;
 
 import javax.lang.model.element.Modifier;
@@ -24,11 +28,14 @@ public class ReplicateTypedHashers {
         generatePackage(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
         generatePackage(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, true);
         generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
+        generatePackage(StaticNaturalJoinStateManagerTypedBase.class, false);
+        generatePackage(RightIncrementalNaturalJoinStateManagerTypedBase.class, false);
+        generatePackage(IncrementalNaturalJoinStateManagerTypedBase.class, false);
     }
 
     private static void generatePackage(Class<?> baseClass, boolean doDouble) throws IOException {
-        final TypedHasherFactory.HasherConfig<?> hasherConfig = TypedHasherFactory.hasherConfigForBase(baseClass);
-        final String packageName = TypedHasherFactory.packageName(hasherConfig.packageMiddle);
+        final HasherConfig<?> hasherConfig = TypedHasherFactory.hasherConfigForBase(baseClass);
+        final String packageName = TypedHasherFactory.packageName(hasherConfig);
         final File sourceRoot = new File("engine/table/src/main/java/");
 
         final MethodSpec singleDispatch = generateSingleDispatch(baseClass, hasherConfig, packageName, sourceRoot);
@@ -47,12 +54,12 @@ public class ReplicateTypedHashers {
                 java.util.Arrays.class);
         dispatchMethodBuilder.beginControlFlow("if (chunkTypes.length == 1)");
         dispatchMethodBuilder.addStatement(
-                "return dispatchSingle(chunkTypes[0], tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
+                "return dispatchSingle(chunkTypes[0], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
         dispatchMethodBuilder.endControlFlow();
         if (doDouble) {
             dispatchMethodBuilder.beginControlFlow("if (chunkTypes.length == 2)");
             dispatchMethodBuilder.addStatement(
-                    "return dispatchDouble(chunkTypes[0], chunkTypes[1], tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
+                    "return dispatchDouble(chunkTypes[0], chunkTypes[1], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
             dispatchMethodBuilder.endControlFlow();
         }
         dispatchMethodBuilder.addStatement("return null");
@@ -79,7 +86,7 @@ public class ReplicateTypedHashers {
 
     @NotNull
     private static MethodSpec generateSingleDispatch(Class<?> baseClass,
-            TypedHasherFactory.HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
+            HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
         final MethodSpec.Builder singleDispatchBuilder = MethodSpec.methodBuilder("dispatchSingle")
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .addParameter(ChunkType.class, "chunkType");
@@ -104,7 +111,7 @@ public class ReplicateTypedHashers {
             javaFile.writeTo(sourceRoot);
             singleDispatchBuilder.addCode("case " + chunkType.name() + ": ");
             singleDispatchBuilder.addStatement(
-                    "return new $T(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
+                    "return new $T(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
                     ClassName.get(packageName, name));
         }
 
@@ -115,7 +122,7 @@ public class ReplicateTypedHashers {
 
     @NotNull
     private static MethodSpec generateDoubleDispatch(Class<?> baseClass,
-            TypedHasherFactory.HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
+            HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
         final MethodSpec.Builder doubleDispatchBuilder = MethodSpec.methodBuilder("dispatchDouble")
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .addParameter(ChunkType.class, "chunkType0")
@@ -156,7 +163,7 @@ public class ReplicateTypedHashers {
 
                 doubleDispatchBuilder.addCode("case " + chunkType1.name() + ": ");
                 doubleDispatchBuilder.addStatement(
-                        "return new $T(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
+                        "return new $T(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
                         ClassName.get(packageName, name));
             }
             doubleDispatchBuilder.endControlFlow();
@@ -171,6 +178,7 @@ public class ReplicateTypedHashers {
         dispatchBuilder
                 .returns(returnType)
                 .addParameter(ColumnSource[].class, "tableKeySources")
+                .addParameter(ColumnSource[].class, "originalTableKeySources")
                 .addParameter(int.class, "tableSize")
                 .addParameter(double.class, "maximumLoadFactor")
                 .addParameter(double.class, "targetLoadFactor");

@@ -30,8 +30,9 @@ final class StaticAggOpenHasherLongInt extends StaticChunkedOperatorAggregationS
 
     private final ImmutableIntArraySource mainKeySource1;
 
-    public StaticAggOpenHasherLongInt(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggOpenHasherLongInt(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableLongArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

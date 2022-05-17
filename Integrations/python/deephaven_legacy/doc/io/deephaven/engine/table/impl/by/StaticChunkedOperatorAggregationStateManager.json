@@ -6,6 +6,7 @@
   "findPositionForKey": ":param key: java.lang.Object\n:return: int",
   "getKeyHashTableSources": ":return: io.deephaven.engine.table.ColumnSource[]",
   "makeAggregationStateBuildContext": ":param buildSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.util.SafeCloseable",
+  "makeBuildContext": ":param buildSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManager.BuildContext",
   "rehashRequired": ":return: boolean"
  },
  "path": "io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManager",

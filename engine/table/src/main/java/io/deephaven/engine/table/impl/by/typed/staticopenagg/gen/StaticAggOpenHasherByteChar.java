@@ -30,8 +30,9 @@ final class StaticAggOpenHasherByteChar extends StaticChunkedOperatorAggregation
 
     private final ImmutableCharArraySource mainKeySource1;
 
-    public StaticAggOpenHasherByteChar(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggOpenHasherByteChar(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableByteArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
