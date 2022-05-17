@@ -173,13 +173,9 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             }
 
             // close the offset and byte chunks
-            if (offsets instanceof PoolableChunk) {
-                ((PoolableChunk) offsets).close();
-            }
-            for (ByteChunk<?> chunk : byteChunks) {
-                if (chunk instanceof PoolableChunk) {
-                    ((PoolableChunk) chunk).close();
-                }
+            offsets.close();
+            for (WritableByteChunk<?> chunk : byteChunks) {
+                chunk.close();
             }
         }
     }
