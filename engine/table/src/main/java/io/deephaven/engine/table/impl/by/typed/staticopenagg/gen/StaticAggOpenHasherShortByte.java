@@ -30,8 +30,9 @@ final class StaticAggOpenHasherShortByte extends StaticChunkedOperatorAggregatio
 
     private final ImmutableByteArraySource mainKeySource1;
 
-    public StaticAggOpenHasherShortByte(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggOpenHasherShortByte(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableShortArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

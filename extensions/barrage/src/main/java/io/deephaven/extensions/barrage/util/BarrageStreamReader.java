@@ -181,32 +181,10 @@ public class BarrageStreamReader implements StreamReader {
                     throw new IllegalStateException("Only know how to decode Schema/BarrageRecordBatch messages");
                 }
 
-                // snapshots may not provide metadata, generate it now
+                // throw an error when no app metadata (snapshots now provide by default)
                 if (msg == null) {
-                    msg = new BarrageMessage();
-
-                    // generate a default set of column selectors
-                    msg.snapshotColumns = expectedColumns;
-
-                    // create and fill the add column metadata from the schema
-                    msg.addColumnData = new BarrageMessage.AddColumnData[columnTypes.length];
-                    for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
-                        msg.addColumnData[ci] = new BarrageMessage.AddColumnData();
-                        msg.addColumnData[ci].type = columnTypes[ci];
-                        msg.addColumnData[ci].componentType = componentTypes[ci];
-                        msg.addColumnData[ci].data = new ArrayList<>();
-
-                        msg.addColumnData[ci].data.add(null);
-                    }
-
-                    // no mod column data
-                    msg.modColumnData = new BarrageMessage.ModColumnData[0];
-
-                    // generate empty row sets
-                    msg.rowsRemoved = RowSetFactory.empty();
-                    msg.shifted = RowSetShiftData.EMPTY;
-
-                    msg.isSnapshot = true;
+                    throw new IllegalStateException(
+                            "Missing app metadata tag; cannot decode using BarrageStreamReader");
                 }
 
                 bodyParsed = true;
@@ -238,17 +216,21 @@ public class BarrageStreamReader implements StreamReader {
                     final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
                     // add and mod rows are never combined in a batch. all added rows must be received before the first
-                    // mod rows will be received
-
-                    if (numAddRowsRead < numAddRowsTotal || (numAddRowsTotal == 0 && numModRowsTotal == 0)) {
+                    // mod rows will be received.
+                    if (numAddRowsRead < numAddRowsTotal) {
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             final BarrageMessage.AddColumnData acd = msg.addColumnData[ci];
 
-                            int lastChunkIndex = acd.data.size() - 1;
+                            final long remaining = numAddRowsTotal - numAddRowsRead;
+                            if (batch.length() > remaining) {
+                                throw new IllegalStateException(
+                                        "Batch length exceeded the expected number of rows from app metadata");
+                            }
 
-                            // need to add the batch row data to the column chunks
+                            // select the current chunk size and read the size
+                            int lastChunkIndex = acd.data.size() - 1;
                             WritableChunk<Values> chunk = (WritableChunk<Values>) acd.data.get(lastChunkIndex);
-                            int chunkSize = chunk == null ? 0 : chunk.size();
+                            int chunkSize = acd.data.get(lastChunkIndex).size();
 
                             final int chunkOffset;
                             long rowOffset = numAddRowsRead - lastAddStartIndex;
@@ -257,9 +239,7 @@ public class BarrageStreamReader implements StreamReader {
                                 lastAddStartIndex += chunkSize;
 
                                 // create a new chunk before trying to write again
-                                chunkSize = (int) (Math.min(numAddRowsTotal - numAddRowsRead, MAX_CHUNK_SIZE));
-                                // make sure the chunk will hold this batch (DoPut won't populate numAddRowsTotal)
-                                chunkSize = Math.max((int) batch.length(), chunkSize);
+                                chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
 
                                 chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
                                 acd.data.add(chunk);
@@ -281,14 +261,14 @@ public class BarrageStreamReader implements StreamReader {
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             final BarrageMessage.ModColumnData mcd = msg.modColumnData[ci];
 
-                            int lastChunkIndex = mcd.data.size() - 1;
+                            long remaining = mcd.rowsModified.size() - numModRowsRead;
 
                             // need to add the batch row data to the column chunks
+                            int lastChunkIndex = mcd.data.size() - 1;
                             WritableChunk<Values> chunk = (WritableChunk<Values>) mcd.data.get(lastChunkIndex);
                             int chunkSize = chunk.size();
 
                             final int chunkOffset;
-                            long remaining = mcd.rowsModified.size() - numModRowsRead;
                             long rowOffset = numModRowsRead - lastModStartIndex;
                             // this batch might overflow the chunk
                             if (rowOffset + Math.min(remaining, batch.length()) > chunkSize) {

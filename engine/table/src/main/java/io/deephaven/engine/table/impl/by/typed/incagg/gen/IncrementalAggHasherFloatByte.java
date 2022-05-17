@@ -34,8 +34,9 @@ final class IncrementalAggHasherFloatByte extends IncrementalChunkedOperatorAggr
 
     private final ByteArraySource overflowKeySource1;
 
-    public IncrementalAggHasherFloatByte(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggHasherFloatByte(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (FloatArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (FloatArraySource) super.overflowKeySources[0];

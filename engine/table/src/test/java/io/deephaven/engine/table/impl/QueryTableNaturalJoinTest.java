@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.NaturalJoinHelper;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
@@ -32,6 +33,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -156,9 +159,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final int[] leftSizes = new int[] {10, 50, 100};
         final int[] rightSizes = new int[] {10, 50, 100};
-        for (long seed = 0; seed < 5; seed++) {
-            for (int leftSize : leftSizes) {
-                for (int rightSize : rightSizes) {
+        for (int leftSize : leftSizes) {
+            for (int rightSize : rightSizes) {
+                for (long seed = 0; seed < 5; seed++) {
+                    System.out.println("leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed=" + seed);
                     for (JoinIncrement joinIncrement : joinIncrementorsShift) {
                         testNaturalJoinIncremental(false, false, leftSize, rightSize, joinIncrement, seed, maxSteps);
                     }
@@ -168,6 +172,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoinIncrementalOverflow() {
+        if (NaturalJoinHelper.USE_TYPED_STATE_MANAGER) {
+            // the typed state manager does not do overflow, there must be enough space in the open addressed hash table
+            // to contain all of our entries
+            return;
+        }
         setExpectError(false);
 
         final int maxSteps = 5;
@@ -339,23 +348,31 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 new IntGenerator(1, 10));
         final QueryTable rightTable = getTable(true, rightSize, random, rightColumnInfos);
 
-        System.out.println("Left:");
-        TableTools.showWithRowSet(leftTable);
-        System.out.println("Right:");
-        TableTools.showWithRowSet(rightTable);
+        System.out.println("leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed=" + seed);
+
+        if (RefreshingTableTestCase.printTableUpdates) {
+            System.out.println("Left:");
+            TableTools.showWithRowSet(leftTable);
+            System.out.println("Right:");
+            TableTools.showWithRowSet(rightTable);
+        }
 
         final Table result = leftTable.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
 
-        System.out.println("Result:");
-        TableTools.showWithRowSet(result);
+        if (RefreshingTableTestCase.printTableUpdates) {
+            System.out.println("Result:");
+            TableTools.showWithRowSet(result);
+        }
 
-        final Table ungroupedResult = leftTable.update("I1=I1*10")
+        final Table noGroupingResult = leftTable.update("I1=I1*10")
                 .naturalJoin(rightTable.update("I1=I1*10"), "I1", "LC1=C1,LC2=C2").update("I1=(int)(I1/10)");
 
-        System.out.println("Ungrouped Result:");
-        TableTools.showWithRowSet(ungroupedResult);
+        if (RefreshingTableTestCase.printTableUpdates) {
+            System.out.println("Ungrouped Result:");
+            TableTools.showWithRowSet(noGroupingResult);
+        }
 
-        assertTableEquals(ungroupedResult, result);
+        assertTableEquals(noGroupingResult, result);
 
         final Table leftFlat = leftTable.flatten();
         final ColumnSource flatGrouped = leftFlat.getColumnSource("I1");
@@ -365,7 +382,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         ((AbstractColumnSource) flatGrouped).setGroupToRange(grouping);
 
         final Table resultFlat = leftFlat.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
-        assertTableEquals(ungroupedResult, resultFlat);
+        assertTableEquals(noGroupingResult, resultFlat);
 
         for (int step = 0; step < steps; ++step) {
             if (RefreshingTableTestCase.printTableUpdates) {
@@ -384,8 +401,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 TableTools.showWithRowSet(result);
             }
 
-            assertTableEquals(ungroupedResult, result);
-            assertTableEquals(ungroupedResult, resultFlat);
+            assertTableEquals(noGroupingResult, result);
+            assertTableEquals(noGroupingResult, resultFlat);
         }
     }
 
@@ -497,7 +514,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             TableTools.showWithRowSet(cj);
             fail("Expected exception.");
         } catch (IllegalStateException e) {
-            assertEquals("More than one right side mapping for A", e.getMessage());
+            assertEquals(dupMsg + "A", e.getMessage());
         }
 
         // build from left
@@ -508,30 +525,100 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             TableTools.showWithRowSet(cj2);
             fail("Expected exception");
         } catch (IllegalStateException e) {
-            assertEquals("More than one right side mapping for A", e.getMessage());
+            assertEquals(dupMsg + "A", e.getMessage());
+        }
+    }
+
+    public void testNaturalJoinDuplicateReinterpret() {
+        testNaturalJoinDuplicateRightReinterpret(true, true);
+        testNaturalJoinDuplicateRightReinterpret(true, false);
+        testNaturalJoinDuplicateRightReinterpret(false, true);
+        testNaturalJoinDuplicateRightReinterpret(false, false);
+    }
+
+    private void testNaturalJoinDuplicateRightReinterpret(boolean leftRefreshing, boolean rightRefreshing) {
+        // build from right
+        final DateTime dateTimeA = DateTimeUtils.convertDateTime("2022-05-06T09:30:00 NY");
+        final DateTime dateTimeB = DateTimeUtils.convertDateTime("2022-05-06T09:31:00 NY");
+        final DateTime dateTimeC = DateTimeUtils.convertDateTime("2022-05-06T09:32:00 NY");
+        final DateTime dateTimeD = DateTimeUtils.convertDateTime("2022-05-06T09:33:00 NY");
+        final QueryTable left = testTable(col("JK1", false, null, true), col("JK2", dateTimeA, dateTimeA, dateTimeA),
+                c("LeftSentinel", 1, 2, 3));
+        left.setRefreshing(leftRefreshing);
+        final QueryTable right =
+                testTable(col("JK1", true, true), col("JK2", dateTimeA, dateTimeA), c("RightSentinel", 10, 11));
+        right.setRefreshing(rightRefreshing);
+
+        try {
+            final Table cj = left.naturalJoin(right, "JK1, JK2");
+            TableTools.showWithRowSet(cj);
+            fail("Expected exception.");
+        } catch (IllegalStateException e) {
+            assertEquals(dupMsg + "[true, " + dateTimeA + "]", e.getMessage());
+        }
+
+        // build from left
+        final Table left2 = testTable(c("DT", dateTimeA, dateTimeB), c("LeftSentinel", 1, 2));
+        final Table right2 = newTable(c("DT", dateTimeA, dateTimeA, dateTimeB, dateTimeC, dateTimeD),
+                c("RightSentinel", 10, 11, 12, 13, 14));
+        try {
+            final Table cj2 = left2.naturalJoin(right2, "DT");
+            TableTools.showWithRowSet(cj2);
+            fail("Expected exception");
+        } catch (IllegalStateException e) {
+            assertEquals(dupMsg + dateTimeA, e.getMessage());
         }
     }
 
     private final static String dupMsg = "Natural Join found duplicate right key for ";
 
+    private static DateTime makeDateTimeKey(String a) {
+        final DateTime dateTimeA = DateTimeUtils.convertDateTime("2022-05-06T09:30:00 NY");
+        final DateTime dateTimeB = DateTimeUtils.convertDateTime("2022-05-06T09:31:00 NY");
+        switch (a) {
+            case "A":
+                return dateTimeA;
+            case "B":
+                return dateTimeB;
+            default:
+                throw new IllegalStateException();
+        }
+    }
+
+    private static Table castSymbol(Class<?> clazz, Table table) {
+        return table.updateView("Symbol=(" + clazz.getCanonicalName() + ")Symbol");
+    }
+
     public void testNaturalJoinDuplicateRightsRefreshingRight() {
+        testNaturalJoinDuplicateRightsRefreshingRight(String.class, Function.identity());
+        testNaturalJoinDuplicateRightsRefreshingRight(DateTime.class, QueryTableNaturalJoinTest::makeDateTimeKey);
+    }
+
+    private <T> void testNaturalJoinDuplicateRightsRefreshingRight(Class<T> clazz, Function<String, T> makeKey) {
         // initial case
-        final Table left = testTable(c("Symbol", "A", "B"), c("LeftSentinel", 1, 2));
-        final Table right = testRefreshingTable(c("Symbol", "A", "A"), c("RightSentinel", 10, 11));
+        T a = makeKey.apply("A");
+        T b = makeKey.apply("B");
+        final Table left = castSymbol(clazz, testTable(c("Symbol", a, b), c("LeftSentinel", 1, 2)));
+        final Table right = castSymbol(clazz, testRefreshingTable(c("Symbol", a, a), c("RightSentinel", 10, 11)));
+
+        TableTools.showWithRowSet(right.getMeta());
+        TableTools.showWithRowSet(right);
 
         try {
             final Table cj = left.naturalJoin(right, "Symbol");
             TableTools.showWithRowSet(cj);
             fail("Expected exception.");
         } catch (IllegalStateException rte) {
-            assertEquals(dupMsg + "A", rte.getMessage());
+            assertEquals(dupMsg + a, rte.getMessage());
         }
 
         // bad right key added
-        final QueryTable right2 = testRefreshingTable(c("Symbol", "A"), c("RightSentinel", 10));
-        final Table cj2 = left.naturalJoin(right2, "Symbol");
+        final QueryTable right2 = testRefreshingTable(c("Symbol", a), c("RightSentinel", 10));
+        final Table cj2 = left.naturalJoin(castSymbol(clazz, right2), "Symbol");
         assertTableEquals(
-                newTable(col("Symbol", "A", "B"), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT)),
+                castSymbol(clazz,
+                        newTable(col("Symbol", a, b), intCol("LeftSentinel", 1, 2),
+                                intCol("RightSentinel", 10, NULL_INT))),
                 cj2);
 
         final ErrorListener listener = new ErrorListener(cj2);
@@ -539,33 +626,42 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(right2, i(3), c("Symbol", "A"), intCol("RightSentinel", 10));
+                TstUtils.addToTable(right2, i(3), c("Symbol", a), intCol("RightSentinel", 10));
                 right2.notifyListeners(i(3), i(), i());
             });
         }
 
         assertNotNull(listener.originalException());
-        assertEquals(dupMsg + "A", listener.originalException().getMessage());
+        assertEquals(dupMsg + a, listener.originalException().getMessage());
     }
 
     public void testNaturalJoinDuplicateRightsRefreshingBoth() {
+        testNaturalJoinDuplicateRightsRefreshingBoth(String.class, Function.identity());
+        testNaturalJoinDuplicateRightsRefreshingBoth(DateTime.class, QueryTableNaturalJoinTest::makeDateTimeKey);
+    }
+
+    private <T> void testNaturalJoinDuplicateRightsRefreshingBoth(Class<T> clazz, Function<String, T> makeKey) {
         // build from right
-        final Table left = testRefreshingTable(c("Symbol", "A", "B"), c("LeftSentinel", 1, 2));
-        final Table right = testRefreshingTable(c("Symbol", "A", "A"), c("RightSentinel", 10, 11));
+        T a = makeKey.apply("A");
+        T b = makeKey.apply("B");
+        final Table left = castSymbol(clazz, testRefreshingTable(c("Symbol", a, b), c("LeftSentinel", 1, 2)));
+        final Table right = castSymbol(clazz, testRefreshingTable(c("Symbol", a, a), c("RightSentinel", 10, 11)));
 
         try {
             final Table cj = left.naturalJoin(right, "Symbol");
             TableTools.showWithRowSet(cj);
             fail("Expected exception.");
         } catch (IllegalStateException rte) {
-            assertEquals(dupMsg + "A", rte.getMessage());
+            assertEquals(dupMsg + a, rte.getMessage());
         }
 
         // bad right key added
-        final QueryTable right2 = testRefreshingTable(c("Symbol", "A"), c("RightSentinel", 10));
-        final Table cj2 = left.naturalJoin(right2, "Symbol");
+        final QueryTable right2 = testRefreshingTable(c("Symbol", a), c("RightSentinel", 10));
+        final Table cj2 = left.naturalJoin(castSymbol(clazz, right2), "Symbol");
         assertTableEquals(
-                newTable(col("Symbol", "A", "B"), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT)),
+                castSymbol(clazz,
+                        newTable(col("Symbol", a, b), intCol("LeftSentinel", 1, 2),
+                                intCol("RightSentinel", 10, NULL_INT))),
                 cj2);
 
         final ErrorListener listener = new ErrorListener(cj2);
@@ -573,13 +669,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(right2, i(3), c("Symbol", "A"), intCol("RightSentinel", 10));
+                TstUtils.addToTable(right2, i(3), c("Symbol", a), intCol("RightSentinel", 10));
                 right2.notifyListeners(i(3), i(), i());
             });
         }
 
         assertNotNull(listener.originalException());
-        assertEquals(dupMsg + "A", listener.originalException().getMessage());
+        assertEquals(dupMsg + a, listener.originalException().getMessage());
     }
 
 

@@ -1,6 +1,11 @@
 plugins {
     id 'java'
-    id 'io.deephaven.java-jacoco-conventions'
+}
+
+if (project.findProperty('jacoco.enabled') == 'true') {
+    // Only load if jacoco enabled; otherwise
+    // instrumentation of the code is still done.
+    project.apply plugin: 'io.deephaven.java-jacoco-conventions'
 }
 
 def testJar = project.tasks.register 'testJar', Jar, { Jar jar ->
@@ -46,6 +51,11 @@ project.tasks.withType(Test).all { Test t ->
         if (findProperty('shortTests') == 'true') {
             systemProperty 'TstUtils.shortTests', 'true'
         }
+
+        if (findProperty('showStandardStreams') == 'true') {
+            testLogging.showStandardStreams = true
+        }
+
         systemProperty 'Configuration.rootFile', 'dh-tests.prop'
         systemProperty 'devroot', "$rootDir"
         systemProperty 'workspace', "$rootDir/tmp/workspace"

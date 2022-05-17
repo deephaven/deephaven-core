@@ -25,8 +25,9 @@ final class StaticAggHasherFloat extends StaticChunkedOperatorAggregationStateMa
 
     private final FloatArraySource overflowKeySource0;
 
-    public StaticAggHasherFloat(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggHasherFloat(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (FloatArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (FloatArraySource) super.overflowKeySources[0];

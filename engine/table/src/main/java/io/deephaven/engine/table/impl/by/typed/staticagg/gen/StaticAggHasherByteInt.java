@@ -34,8 +34,9 @@ final class StaticAggHasherByteInt extends StaticChunkedOperatorAggregationState
 
     private final IntegerArraySource overflowKeySource1;
 
-    public StaticAggHasherByteInt(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggHasherByteInt(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (ByteArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (ByteArraySource) super.overflowKeySources[0];

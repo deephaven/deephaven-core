@@ -46,7 +46,7 @@ import static io.deephaven.util.SafeCloseable.closeArray;
 class IncrementalChunkedNaturalJoinStateManager
     // region extensions
     extends StaticNaturalJoinStateManager
-    implements IncrementalNaturalJoinStateManager
+    implements IncrementalNaturalJoinStateManager, BothIncrementalNaturalJoinStateManager
     // endregion extensions
 {
     // region constants
@@ -170,6 +170,8 @@ class IncrementalChunkedNaturalJoinStateManager
                                          , int tableSize
                                               // region constructor arguments
                                          , ColumnSource<?>[] tableKeySourcesForErrors
+                                              , double maximumLoadFactor
+                                              , double targetLoadFactor
                                               // endregion constructor arguments
     ) {
         // region super
@@ -215,6 +217,8 @@ class IncrementalChunkedNaturalJoinStateManager
         overflowLeftRowSetource = new ObjectArraySource<>(WritableRowSet.class);
         modifiedTrackerCookieSource = new LongArraySource();
         overflowModifiedTrackerCookieSource = new LongArraySource();
+        setMaximumLoadFactor(maximumLoadFactor);
+        setTargetLoadFactor(targetLoadFactor);
         // endregion constructor
 
         ensureCapacity(tableSize);
@@ -254,32 +258,47 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     // region build wrappers
-    void addRightSide(final BuildContext bc, RowSequence rightIndex, ColumnSource<?> [] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        if (rightIndex.isEmpty()) {
-            return;
-        }
-        buildTable(bc, rightIndex, rightSources, null, modifiedSlotTracker);
-    }
-
-    void addLeftSide(final BuildContext bc, RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        if (leftIndex.isEmpty()) {
-            return;
-        }
-        buildTable(bc, leftIndex, leftSources,  leftRedirections, modifiedSlotTracker);
+    private static class RedirectionsInitialBuildContext implements InitialBuildContext {
+        LongArraySource leftRedirections = new LongArraySource();
     }
 
     @Override
-    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
+    public InitialBuildContext makeInitialBuildContext() {
+        return new RedirectionsInitialBuildContext();
+    }
+
+    @Override
+    public void addRightSide(final Context bc, RowSequence rightIndex, ColumnSource<?> [] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (rightIndex.isEmpty()) {
+            return;
+        }
+        buildTable((BuildContext)bc, rightIndex, rightSources, null, modifiedSlotTracker);
+    }
+
+    public void addLeftSide(final Context bc, RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        if (leftIndex.isEmpty()) {
+            return;
+        }
+        buildTable((BuildContext)bc, leftIndex, leftSources,  leftRedirections, modifiedSlotTracker);
+    }
+
+    protected void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, final LongArraySource leftRedirections) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, InitialBuildContext ibc) {
         if (leftRowSet.isEmpty()) {
             return;
         }
+        final LongArraySource leftRedirections = ((RedirectionsInitialBuildContext)ibc).leftRedirections;
         try (final BuildContext bc = makeBuildContext(leftSources, leftRowSet.size())) {
             leftRedirections.ensureCapacity(leftRowSet.size());
             buildTable(bc, leftRowSet, leftSources, leftRedirections, null);
         }
     }
 
-    void buildFromRightSide(final Table rightTable, ColumnSource<?> [] rightSources) {
+    public void buildFromRightSide(final Table rightTable, ColumnSource<?> [] rightSources) {
         if (rightTable.isEmpty()) {
             return;
         }
@@ -502,7 +521,7 @@ class IncrementalChunkedNaturalJoinStateManager
         }
     }
 
-    void compactAll() {
+    public void compactAll() {
         for (int ii = 0; ii < tableSize; ++ii) {
             final WritableRowSet rowSet = leftRowSetSource.get(ii);
             if (rowSet != null) {
@@ -732,7 +751,7 @@ class IncrementalChunkedNaturalJoinStateManager
 
     }
 
-    BuildContext makeBuildContext(ColumnSource<?>[] buildSources,
+    public BuildContext makeBuildContext(ColumnSource<?>[] buildSources,
                                   long maxSize
                                   // region makeBuildContext args
                                   // endregion makeBuildContext args
@@ -1543,40 +1562,40 @@ class IncrementalChunkedNaturalJoinStateManager
     // endmixin prev
 
     // region probe wrappers
-    void removeLeft(final ProbeContext pc, RowSequence leftIndex, ColumnSource<?> [] leftSources)  {
+    public void removeLeft(final Context pc, RowSequence leftIndex, ColumnSource<?> [] leftSources)  {
         if (leftIndex.isEmpty()) {
             return;
         }
-        decorationProbe(pc, leftIndex, leftSources, true, false, true, false, false, false, 0, null);
+        decorationProbe((ProbeContext)pc, leftIndex, leftSources, true, false, true, false, false, false, 0, null);
     }
 
-    void removeRight(final ProbeContext pc, RowSequence rightIndex, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker)  {
+    public void removeRight(final Context pc, RowSequence rightIndex, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker)  {
         if (rightIndex.isEmpty()) {
             return;
         }
-        decorationProbe(pc, rightIndex, rightSources, true, false, false, true, false, false, 0, modifiedSlotTracker);
+        decorationProbe((ProbeContext)pc, rightIndex, rightSources, true, false, false, true, false, false, 0, modifiedSlotTracker);
     }
 
 
-    void modifyByRight(final ProbeContext pc, RowSet modified, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+    public void modifyByRight(final Context pc, RowSet modified, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (modified.isEmpty()) {
             return;
         }
-        decorationProbe(pc, modified, rightSources, false, true, false, false, false, false, 0, modifiedSlotTracker);
+        decorationProbe((ProbeContext)pc, modified, rightSources, false, true, false, false, false, false, 0, modifiedSlotTracker);
     }
 
-    void applyLeftShift(ProbeContext pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta) {
+    public void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta) {
         if (shiftedRowSet.isEmpty()) {
             return;
         }
-        decorationProbe(pc, shiftedRowSet, leftSources, false, false, false, false, true, false, shiftDelta, null);
+        decorationProbe((ProbeContext)pc, shiftedRowSet, leftSources, false, false, false, false, true, false, shiftDelta, null);
     }
 
-    void applyRightShift(ProbeContext pc, ColumnSource<?> [] rightSources, RowSet shiftedRowSet, long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+    public void applyRightShift(Context pc, ColumnSource<?> [] rightSources, RowSet shiftedRowSet, long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (shiftedRowSet.isEmpty()) {
             return;
         }
-        decorationProbe(pc, shiftedRowSet, rightSources, false, false, false, false, false, true, shiftDelta, modifiedSlotTracker);
+        decorationProbe((ProbeContext)pc, shiftedRowSet, rightSources, false, false, false, false, false, true, shiftDelta, modifiedSlotTracker);
     }
     // endregion probe wrappers
 
@@ -2005,7 +2024,8 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     // region extraction functions
-    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
+    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
+        final LongArraySource leftRedirections = ((RedirectionsInitialBuildContext)ibc).leftRedirections;
         return buildRowRedirection(leftTable, exactMatch, leftRedirections::getUnsafe, redirectionType);
     }
 

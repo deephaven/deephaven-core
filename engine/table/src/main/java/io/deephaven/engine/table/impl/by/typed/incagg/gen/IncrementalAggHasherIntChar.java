@@ -34,8 +34,9 @@ final class IncrementalAggHasherIntChar extends IncrementalChunkedOperatorAggreg
 
     private final CharacterArraySource overflowKeySource1;
 
-    public IncrementalAggHasherIntChar(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggHasherIntChar(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (IntegerArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (IntegerArraySource) super.overflowKeySources[0];

@@ -30,8 +30,9 @@ final class StaticAggOpenHasherLongFloat extends StaticChunkedOperatorAggregatio
 
     private final ImmutableFloatArraySource mainKeySource1;
 
-    public StaticAggOpenHasherLongFloat(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggOpenHasherLongFloat(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableLongArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

@@ -35,8 +35,9 @@ final class IncrementalAggOpenHasherByteObject extends IncrementalChunkedOperato
 
     private ImmutableObjectArraySource alternateKeySource1;
 
-    public IncrementalAggOpenHasherByteObject(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggOpenHasherByteObject(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableByteArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

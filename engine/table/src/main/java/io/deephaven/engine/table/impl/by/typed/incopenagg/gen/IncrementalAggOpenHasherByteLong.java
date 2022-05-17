@@ -36,8 +36,9 @@ final class IncrementalAggOpenHasherByteLong extends IncrementalChunkedOperatorA
 
     private ImmutableLongArraySource alternateKeySource1;
 
-    public IncrementalAggOpenHasherByteLong(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggOpenHasherByteLong(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableByteArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

@@ -36,8 +36,9 @@ final class IncrementalAggOpenHasherCharDouble extends IncrementalChunkedOperato
 
     private ImmutableDoubleArraySource alternateKeySource1;
 
-    public IncrementalAggOpenHasherCharDouble(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggOpenHasherCharDouble(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableCharArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

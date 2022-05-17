@@ -34,8 +34,9 @@ final class IncrementalAggHasherLongByte extends IncrementalChunkedOperatorAggre
 
     private final ByteArraySource overflowKeySource1;
 
-    public IncrementalAggHasherLongByte(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggHasherLongByte(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (LongArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (LongArraySource) super.overflowKeySources[0];

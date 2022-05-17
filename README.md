@@ -280,10 +280,8 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 ## Resources
 
 * [Help!](https://github.com/deephaven/deephaven-core/discussions/969)
-* [A relaxed chat room about all things Deephaven](https://gitter.im/deephaven/deephaven)
-* [Deephaven Community Slack](https://join.slack.com/t/deephavencommunity/shared_invite/zt-11x3hiufp-DmOMWDAvXv_pNDUlVkagLQ)
+* [Deephaven Community Slack](https://deephaven.io/slack)
 * [Discussions](https://github.com/deephaven/deephaven-core/discussions)
-* [deephaven.io](https://deephaven.io)
 * [Deephaven Community Core docs](https://deephaven.io/core/docs/)
 * [Java API docs](https://deephaven.io/core/javadoc/)
 * [Python API docs](https://deephaven.io/core/pydoc/)

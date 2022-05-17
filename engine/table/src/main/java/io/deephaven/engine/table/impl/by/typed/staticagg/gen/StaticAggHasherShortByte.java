@@ -34,8 +34,9 @@ final class StaticAggHasherShortByte extends StaticChunkedOperatorAggregationSta
 
     private final ByteArraySource overflowKeySource1;
 
-    public StaticAggHasherShortByte(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public StaticAggHasherShortByte(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (ShortArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (ShortArraySource) super.overflowKeySources[0];

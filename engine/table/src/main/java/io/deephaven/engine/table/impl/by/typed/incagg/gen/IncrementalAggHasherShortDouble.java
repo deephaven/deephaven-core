@@ -34,8 +34,9 @@ final class IncrementalAggHasherShortDouble extends IncrementalChunkedOperatorAg
 
     private final DoubleArraySource overflowKeySource1;
 
-    public IncrementalAggHasherShortDouble(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggHasherShortDouble(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         this.mainKeySource0 = (ShortArraySource) super.mainKeySources[0];
         this.overflowKeySource0 = (ShortArraySource) super.overflowKeySources[0];

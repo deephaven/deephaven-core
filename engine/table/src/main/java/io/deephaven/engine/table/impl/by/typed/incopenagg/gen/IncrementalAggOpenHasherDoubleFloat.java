@@ -36,8 +36,9 @@ final class IncrementalAggOpenHasherDoubleFloat extends IncrementalChunkedOperat
 
     private ImmutableFloatArraySource alternateKeySource1;
 
-    public IncrementalAggOpenHasherDoubleFloat(ColumnSource[] tableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    public IncrementalAggOpenHasherDoubleFloat(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableDoubleArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
