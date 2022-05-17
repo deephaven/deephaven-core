@@ -179,12 +179,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         final BytesInput payload;
         int compressedPageSize = pageHeader.getCompressed_page_size();
         if (decompressor != null && compressedPageSize > 0) {
-            // Limit the size of the reader, and fully read the compressed data
-            // As above, not closing these streams as they are based on the original file
-            BufferedInputStream bufferedInputStream = IOUtils.buffer(inputStream, compressedPageSize);
-            try (InputStream decompressedInputStream = decompressor.decompressNoClose(bufferedInputStream)) {
-                payload = BytesInput.from(decompressedInputStream, pageHeader.getUncompressed_page_size());
-            }
+            payload = decompressor.decompress(inputStream, compressedPageSize, pageHeader.getUncompressed_page_size());
         } else {
             payload = Helpers.readBytes(file, compressedPageSize);
         }

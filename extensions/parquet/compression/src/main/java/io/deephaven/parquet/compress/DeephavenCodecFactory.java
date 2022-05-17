@@ -1,8 +1,13 @@
 package io.deephaven.parquet.compress;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import org.apache.hadoop.io.compress.CompressionInputStream;
+import org.apache.hadoop.io.compress.Decompressor;
+import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;
@@ -33,6 +38,31 @@ public class DeephavenCodecFactory {
             return Stream.of(CompressionCodecName.values())
                     .filter(codec -> compressionCodec.getDefaultExtension().equals(codec.getExtension()))
                     .findAny().get();
+        }
+
+        @Override
+        public BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize) throws IOException {
+            Decompressor decompressor = CodecPool.getDecompressor(compressionCodec);
+            if (decompressor != null) {
+                // It is permitted for a decompressor to be null, otherwise we want to reset() it to
+                // be ready for a new stream.
+                // Note that this strictly shouldn't be necessary, since returnDecompressor will reset
+                // it as well, but this is the pattern copied from CodecFactory.decompress.
+                decompressor.reset();
+            }
+
+            try {
+                // Note that we don't close this, we assume the caller will close their input stream when ready,
+                // and this won't need to be closed.
+                InputStream buffered = IOUtils.buffer(inputStream, compressedSize);
+                CompressionInputStream decompressed = compressionCodec.createInputStream(buffered, decompressor);
+                return BytesInput.copy(BytesInput.from(decompressed, uncompressedSize));
+            } finally {
+                // Always return it, the pool will decide if it should be reused or not.
+                // CodecFactory has no logic around only returning after successful streams,
+                // and the instance appears to leak otherwise.
+                CodecPool.returnDecompressor(decompressor);
+            }
         }
     }
 

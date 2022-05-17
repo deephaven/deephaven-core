@@ -1,5 +1,6 @@
 package io.deephaven.parquet.compress;
 
+import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;
@@ -22,6 +23,11 @@ public interface Compressor {
         public CompressionCodecName getCodecName() {
             return CompressionCodecName.UNCOMPRESSED;
         }
+
+        @Override
+        public BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize) {
+            return BytesInput.from(inputStream, compressedSize);
+        }
     };
 
 
@@ -38,4 +44,6 @@ public interface Compressor {
     }
 
     CompressionCodecName getCodecName();
+
+    BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize) throws IOException;
 }

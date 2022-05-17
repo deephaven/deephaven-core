@@ -142,10 +142,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             case DATA_PAGE:
                 BufferedInputStream bufferedInputStream =
                         IOUtils.buffer(Channels.newInputStream(file), compressedPageSize);
-                final BytesInput decompressedInput;
-                try (InputStream inputStream = compressor.decompressNoClose(bufferedInputStream)) {
-                    decompressedInput = BytesInput.from(inputStream, uncompressedPageSize);
-                }
+                final BytesInput decompressedInput = compressor.decompress(bufferedInputStream, compressedPageSize, uncompressedPageSize);
 
                 DataPageHeader dataHeaderV1 = pageHeader.getData_page_header();
                 return readRowCountFromPageV1(new DataPageV1(
@@ -171,12 +168,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
         switch (pageHeader.type) {
             case DATA_PAGE:
-                BufferedInputStream bufferedInputStream =
-                        IOUtils.buffer(Channels.newInputStream(file), compressedPageSize);
-                BytesInput decompressedInput;
-                try (InputStream inputStream = compressor.decompressNoClose(bufferedInputStream)) {
-                    decompressedInput = BytesInput.from(inputStream, uncompressedPageSize);
-                }
+                BytesInput decompressedInput = compressor.decompress(Channels.newInputStream(file), compressedPageSize, uncompressedPageSize);
 
                 DataPageHeader dataHeaderV1 = pageHeader.getData_page_header();
                 return readKeysFromPageV1(new DataPageV1(
@@ -196,13 +188,10 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                         Helpers.readBytes(file, dataHeaderV2.getRepetition_levels_byte_length());
                 BytesInput definitionLevels =
                         Helpers.readBytes(file, dataHeaderV2.getDefinition_levels_byte_length());
-                BytesInput data;
-                try (InputStream inputStream = compressor.decompressNoClose(IOUtils.buffer(Channels.newInputStream(file), dataSize))) {
-                    data = BytesInput.from(inputStream,
-                            pageHeader.getUncompressed_page_size()
-                                    - dataHeaderV2.getRepetition_levels_byte_length()
-                                    - dataHeaderV2.getDefinition_levels_byte_length());
-                }
+                BytesInput data = compressor.decompress(Channels.newInputStream(file), dataSize, uncompressedPageSize
+                        - dataHeaderV2.getRepetition_levels_byte_length()
+                        - dataHeaderV2.getDefinition_levels_byte_length());
+
                 readKeysFromPageV2(new DataPageV2(
                         dataHeaderV2.getNum_rows(),
                         dataHeaderV2.getNum_nulls(),
@@ -226,10 +215,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         final int compressedPageSize = pageHeader.getCompressed_page_size();
         switch (pageHeader.type) {
             case DATA_PAGE:
-                BytesInput decompressedInput;
-                try (InputStream inputStream = compressor.decompressNoClose(IOUtils.buffer(Channels.newInputStream(file), compressedPageSize))) {
-                    decompressedInput = BytesInput.from(inputStream, uncompressedPageSize);
-                }
+                BytesInput decompressedInput = compressor.decompress(Channels.newInputStream(file), compressedPageSize, uncompressedPageSize);
 
                 DataPageHeader dataHeaderV1 = pageHeader.getData_page_header();
                 return readPageV1(new DataPageV1(
@@ -246,13 +232,10 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                         - dataHeaderV2.getDefinition_levels_byte_length();
                 BytesInput repetitionLevels = Helpers.readBytes(file, dataHeaderV2.getRepetition_levels_byte_length());
                 BytesInput definitionLevels = Helpers.readBytes(file, dataHeaderV2.getDefinition_levels_byte_length());
-                BytesInput data;
-                try (InputStream inputStream = compressor.decompressNoClose(IOUtils.buffer(Channels.newInputStream(file), dataSize))) {
-                    data = BytesInput.from(inputStream,
-                            pageHeader.getUncompressed_page_size()
-                                    - dataHeaderV2.getRepetition_levels_byte_length()
-                                    - dataHeaderV2.getDefinition_levels_byte_length());
-                }
+                BytesInput data = compressor.decompress(Channels.newInputStream(file), dataSize, pageHeader.getUncompressed_page_size()
+                        - dataHeaderV2.getRepetition_levels_byte_length()
+                        - dataHeaderV2.getDefinition_levels_byte_length());
+
                 return readPageV2(new DataPageV2(
                         dataHeaderV2.getNum_rows(),
                         dataHeaderV2.getNum_nulls(),
