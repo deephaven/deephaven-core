@@ -525,7 +525,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
 
     @Override
     public Table asTable(boolean strictKeys, boolean allowCoalesce, boolean sanityCheckJoins) {
-        return TableMapProxyHandler.makeProxy(this, strictKeys, allowCoalesce, sanityCheckJoins);
+        return null;
     }
 
     public boolean isMergeable() {

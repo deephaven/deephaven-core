@@ -21,7 +21,7 @@ import org.immutables.value.Value.Parameter;
 public abstract class Partition implements Aggregation {
 
     public static Partition of(ColumnName name) {
-        return ImmutablePartition.of(name);
+        return ImmutablePartition.builder().column(name).build();
     }
 
     public static Partition of(String x) {
@@ -29,12 +29,11 @@ public abstract class Partition implements Aggregation {
     }
 
     public static Partition of(ColumnName name, boolean includeGroupByColumns) {
-        // TODO-RWC: builders, once I get annotation processing to run
-        return ImmutablePartition.of(name);
+        return ImmutablePartition.builder().column(name).includeGroupByColumns(includeGroupByColumns).build();
     }
 
     public static Partition of(String x, boolean includeGroupByColumns) {
-        return of(ColumnName.of(x));
+        return of(ColumnName.of(x), includeGroupByColumns);
     }
 
     @Parameter

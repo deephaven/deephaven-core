@@ -29,7 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /**
@@ -127,7 +127,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         return sanityCheckJoins;
     }
 
-    private PartitionedTable.Proxy basicTransform(@NotNull final Function<Table, Table> transformer) {
+    private PartitionedTable.Proxy basicTransform(@NotNull final UnaryOperator<Table> transformer) {
         return new PartitionedTableProxyImpl(
                 target.transform(transformer),
                 requireMatchingKeys,

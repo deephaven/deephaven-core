@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * <p>
@@ -160,10 +161,10 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for an empty
      * input table.
      *
-     * @param transformer The {@link Function} to apply to all constituent {@link Table tables}
+     * @param transformer The {@link UnaryOperator} to apply to all constituent {@link Table tables}
      * @return The new PartitionedTable containing the resulting constituents
      */
-    PartitionedTable transform(@NotNull Function<Table, Table> transformer);
+    PartitionedTable transform(@NotNull UnaryOperator<Table> transformer);
 
     /**
      * <p>
@@ -174,7 +175,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * tables.
      *
      * @param other The other PartitionedTable to find constituents in
-     * @param transformer The {@link Function} to apply to all pairs of constituent {@link Table tables}
+     * @param transformer The {@link BinaryOperator} to apply to all pairs of constituent {@link Table tables}
      * @return The new PartitionedTable containing the resulting constituents
      */
     PartitionedTable partitionedTransform(

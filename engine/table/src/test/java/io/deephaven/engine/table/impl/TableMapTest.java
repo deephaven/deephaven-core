@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.TransformableTableMap;
-import io.deephaven.engine.util.parametrized.TableMapSupplier;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -659,63 +658,5 @@ public class TableMapTest extends RefreshingTableTestCase {
         } finally {
             QueryTable.setMemoizeResults(old);
         }
-    }
-
-    public void testTableMapSupplierListeners() {
-        final QueryTable base = TstUtils.testRefreshingTable(i(0, 1, 2, 3, 4, 5).toTracking(),
-                stringCol("Key", "Zero", "Zero", "One", "One", "One", "One"),
-                stringCol("Color", "Red", "Blue", "Red", "Blue", "Red", "Blue"),
-                intCol("Value", -1, 0, 1, 2, 3, 4));
-
-        final TableMap byKey = base.partitionBy("Key");
-        final TableMapSupplier supplier =
-                new TableMapSupplier(byKey, Collections.singletonList(t -> t.where("Color=`Red`")));
-
-        assertTableEquals(base.where("Color=`Red`"), supplier.merge());
-
-        final Map<String, Table> listenerResults = new HashMap<>();
-
-        supplier.addListener((key, table) -> listenerResults.put((String) key, table));
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet idx = i(6, 7, 8, 9);
-            addToTable(base, idx,
-                    stringCol("Key", "Two", "Two", "Two", "Two"),
-                    stringCol("Color", "Red", "Blue", "Red", "Blue"),
-                    intCol("Value", 5, 6, 7, 8));
-            base.notifyListeners(idx, i(), i());
-        });
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet idx = i(10, 11, 12, 13);
-            addToTable(base, idx,
-                    stringCol("Key", "Three", "Three", "Three", "Three"),
-                    stringCol("Color", "Red", "Red", "Red", "Blue"),
-                    intCol("Value", 9, 10, 11, 12));
-            base.notifyListeners(idx, i(), i());
-        });
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet idx = i(14, 15, 16, 17);
-            addToTable(base, idx,
-                    stringCol("Key", "Four", "Four", "Four", "Four"),
-                    stringCol("Color", "Blue", "Blue", "Blue", "Blue"),
-                    intCol("Value", 13, 14, 15, 16));
-            base.notifyListeners(idx, i(), i());
-        });
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet idx = i(18, 19, 20, 21);
-            addToTable(base, idx,
-                    stringCol("Key", "Four", "Four", "Four", "Four"),
-                    stringCol("Color", "Blue", "Blue", "Blue", "Blue"),
-                    intCol("Value", 9, 10, 11, 12));
-            base.notifyListeners(idx, i(), i());
-        });
-
-        assertTableEquals(base.where("Key=`Two`", "Color=`Red`"), listenerResults.get("Two"));
-        assertTableEquals(base.where("Key=`Three`", "Color=`Red`"), listenerResults.get("Three"));
-        assertTableEquals(base.where("Key=`Four`", "Color=`Red`"), listenerResults.get("Four"));
-
     }
 }

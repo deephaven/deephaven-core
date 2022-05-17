@@ -45,7 +45,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.EmptyTableMap;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.ReverseLookup;
 import io.deephaven.engine.table.impl.RollupInfo;
@@ -1908,7 +1907,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public QueryTable transformResult(@NotNull final QueryTable table) {
             table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
-                    // TODO-RWC: Figure out how to make trees work
+                    // TODO (https://github.com/deephaven/deephaven-core/issues/65):
+                    //      Make rollups work with partitioned tables instead of table maps. PartitionedTable here?
                     partitionOperator.getResultColumns().values().iterator().next());
             if (reaggregated || includeConstituents) {
                 table.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
@@ -1965,7 +1965,10 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     private static void setRollupLeafAttributes(@NotNull final QueryTable table) {
         table.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Normal);
-        table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, EmptyTableMap.INSTANCE);
+        table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
+                // TODO (https://github.com/deephaven/deephaven-core/issues/65):
+                //      Make rollups work with partitioned tables instead of table maps. Empty PartitionedTable here?
+                null);
         table.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
     }
 }

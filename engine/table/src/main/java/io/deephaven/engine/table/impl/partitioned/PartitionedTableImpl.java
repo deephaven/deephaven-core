@@ -28,6 +28,7 @@ import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -173,7 +174,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     }
 
     @Override
-    public PartitionedTable transform(@NotNull final Function<Table, Table> transformer) {
+    public PartitionedTable transform(@NotNull final UnaryOperator<Table> transformer) {
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();

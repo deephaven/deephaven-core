@@ -526,10 +526,12 @@ public class QueryTable extends BaseTable {
             throw streamUnsupported("treeTable");
         }
         return memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> {
-            final LocalTableMap partitionByResult = PartitionByAggregationFactory.partitionBy(this, false,
-                    (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.PartitionBy),
-                    Collections.singletonList(null), parentColumn);
-            final QueryTable rootTable = (QueryTable) partitionByResult.get(null);
+            // TODO (https://github.com/deephaven/deephaven-core/issues/64):
+            //      Need key initialization and preserve-empty support to be able to get the root reliably for
+            //      initially-empty parents.
+            final PartitionedTable partitionedTable = partitionBy(false, parentColumn);
+            final QueryTable rootTable =
+                    (QueryTable) partitionedTable.table().where(new MatchFilter(parentColumn, (Object) null));
             final Table result = HierarchicalTable.createFrom((QueryTable) rootTable.copy(),
                     new TreeTableInfo(idColumn, parentColumn));
 
@@ -550,7 +552,7 @@ public class QueryTable extends BaseTable {
                 reverseLookup = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(QueryTable.this, idColumn);
             }
 
-            result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, partitionByResult);
+            result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, partitionedTable);
             result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
             result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
             copyAttributes(result, CopyAttributeOperation.Treetable);

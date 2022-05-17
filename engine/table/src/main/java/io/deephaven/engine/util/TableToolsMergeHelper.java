@@ -17,14 +17,6 @@ import static io.deephaven.engine.table.impl.TableWithDefaults.ZERO_LENGTH_TABLE
  */
 public class TableToolsMergeHelper {
 
-    public static Table mergeTableMap(LocalTableMap tableMap) {
-        final List<Table> tablesToMergeOrNull = getTablesToMerge(tableMap.values().stream(), tableMap.size());
-        final Table[] tablesToMerge = tablesToMergeOrNull == null
-                ? ZERO_LENGTH_TABLE_ARRAY
-                : tablesToMergeOrNull.toArray(ZERO_LENGTH_TABLE_ARRAY);
-        return PartitionedTableFactory.ofTables(tableMap.getConstituentDefinitionOrErr(), tablesToMerge).merge();
-    }
-
     /**
      * Given a table that consists of only UnionColumnSources, produce a list of new tables that represent each one of
      * the unioned sources. This basically will undo the merge operation, so that the constituents can be reused in a
@@ -93,7 +85,7 @@ public class TableToolsMergeHelper {
             if (table == null) {
                 return;
             }
-            if (table instanceof UncoalescedTable || table instanceof TableMapProxyHandler.TableMapProxy) {
+            if (table instanceof UncoalescedTable) {
                 table = table.coalesce();
             }
 
