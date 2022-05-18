@@ -138,7 +138,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
             // h2.setRateControlFactory(new RateControl.Factory() {});
             final ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
             alpn.setDefaultProtocol(http11.getProtocol());
-            final SslContextFactory.Server sslContextFactory = (SslContextFactory.Server)JettySSLConfig.forServer(config.ssl().get());
+            final SslContextFactory.Server sslContextFactory =
+                    (SslContextFactory.Server) JettySSLConfig.forServer(config.ssl().get());
             final SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
             serverConnector = new ServerConnector(server, tls, alpn, h2, http11);
         } else {
