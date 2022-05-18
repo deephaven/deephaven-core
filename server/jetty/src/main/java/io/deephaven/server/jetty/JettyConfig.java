@@ -1,6 +1,5 @@
 package io.deephaven.server.jetty;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.server.config.ServerConfig;
@@ -9,7 +8,6 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
 /**
@@ -17,7 +15,6 @@ import java.nio.file.Path;
  */
 @Immutable
 @BuildableStyle
-@JsonDeserialize(as = ImmutableJettyConfig.class)
 public abstract class JettyConfig implements ServerConfig {
 
     public static final int DEFAULT_SSL_PORT = 443;
@@ -57,7 +54,7 @@ public abstract class JettyConfig implements ServerConfig {
      * @throws IOException if an IO exception occurs
      */
     public static JettyConfig parseJson(Path path) throws IOException {
-        return Parser.parseJson(path.toFile(), JettyConfig.class);
+        return Parser.parseJson(path.toFile(), ImmutableJettyConfig.class);
     }
 
     public static JettyConfig parseJsonUnchecked(Path path) {

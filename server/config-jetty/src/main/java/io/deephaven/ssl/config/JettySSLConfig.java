@@ -11,7 +11,9 @@ public class JettySSLConfig {
      * @param config the SSL config
      * @return the Jetty server SSL context factory
      */
-    public static SslContextFactory.Server forServer(SSLConfig config) {
+    public static SslContextFactory forServer(SSLConfig config) {
+        // Want to use explicit type SslContextFactory.Server, but can't
+        // TODO(deephaven-core#2404): combined-javadoc fundamentally flawed
         return JettySslUtils.forServer(DeephavenSslUtils.create(config));
     }
 
@@ -21,7 +23,9 @@ public class JettySSLConfig {
      * @param config the SSL config
      * @return the Jetty client SSL context factory
      */
-    public static SslContextFactory.Client forClient(SSLConfig config) {
+    public static SslContextFactory forClient(SSLConfig config) {
+        // Want to use explicit type SslContextFactory.Client, but can't
+        // TODO(deephaven-core#2404): combined-javadoc fundamentally flawed
         return JettySslUtils.forClient(DeephavenSslUtils.create(config));
     }
 }
