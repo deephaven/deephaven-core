@@ -51,6 +51,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
 import static java.util.logging.Level.FINE;
 import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.WARNING;
 
 /**
  * An adapter that transforms {@link HttpServletRequest} into gRPC request and lets a gRPC server process it, and
@@ -316,7 +317,14 @@ public final class ServletAdapter {
         public void onAllDataRead() {
             logger.log(FINE, "[{0}] onAllDataRead", logId);
             stream.transportState().runOnTransportThread(
-                    () -> stream.transportState().inboundDataReceived(ReadableBuffers.empty(), true));
+                    () -> {
+                        try {
+                            stream.transportState().inboundDataReceived(ReadableBuffers.empty(), true);
+                        } catch (IllegalStateException e) {
+                            // todo: figure out why this is happening
+                            logger.log(WARNING, String.format("[%s] onAllDataRead exception", logId), e);
+                        }
+                    });
         }
 
         @Override

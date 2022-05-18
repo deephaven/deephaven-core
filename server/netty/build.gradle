@@ -12,6 +12,9 @@ dependencies {
     Classpaths.inheritGrpcPlatform(project)
     implementation 'io.grpc:grpc-netty'
 
+    Classpaths.inheritImmutables(project)
+    implementation project(':ssl-config-netty')
+
     testImplementation project(':server-test')
 
     testRuntimeOnly project(':log-to-slf4j')

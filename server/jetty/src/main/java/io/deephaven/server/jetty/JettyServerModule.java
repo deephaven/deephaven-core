@@ -1,7 +1,9 @@
 package io.deephaven.server.jetty;
 
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.runner.GrpcServer;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
@@ -12,12 +14,13 @@ import javax.inject.Named;
 import java.util.Set;
 
 @Module
-public class JettyServerModule {
+public interface JettyServerModule {
 
-    @Provides
-    static GrpcServer bindServer(JettyBackedGrpcServer jettyBackedGrpcServer) {
-        return jettyBackedGrpcServer;
-    }
+    @Binds
+    GrpcServer bindServer(JettyBackedGrpcServer jettyBackedGrpcServer);
+
+    @Binds
+    ServerConfig bindsServerConfig(JettyConfig serverConfig);
 
     @Provides
     static ServletAdapter provideGrpcServletAdapter(

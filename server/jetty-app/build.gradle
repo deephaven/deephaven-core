@@ -27,7 +27,7 @@ def extraJvmArgs = [
         '-XX:+UseG1GC',
         '-XX:MaxGCPauseMillis=100',
         '-XX:+UseStringDeduplication',
-        '-XshowSettings:vm',
+        '-XshowSettings:vm'
 ]
 
 if (hasProperty('groovy')) {
@@ -41,6 +41,10 @@ if (!hasProperty('excludeHotspotImpl')) {
     extraJvmArgs += ['--add-opens', 'java.management/sun.management=ALL-UNNAMED']
 }
 
+if (hasProperty('devCerts')) {
+    extraJvmArgs += ['-Dserver.config=etc/dev-jetty-tls.json']
+}
+
 tasks.withType(JavaExec).configureEach {
     // This appends to the existing jvm args, so that java-open-nio still takes effect
     jvmArgs extraJvmArgs
@@ -51,7 +55,7 @@ tasks.withType(CreateStartScripts).configureEach {
 }
 
 applicationName = 'start'
-mainClassName = 'io.deephaven.server.jetty.JettyAppMain'
+mainClassName = 'io.deephaven.server.jetty.JettyMain'
 
 artifacts {
     applicationDist project.tasks.findByName('distTar')

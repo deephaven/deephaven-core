@@ -1,0 +1,10 @@
+{
+  "port": 8443,
+  "ssl": {
+    "identity": {
+      "type": "privatekey",
+      "certChainPath": "../dev-certs/ca.crt",
+      "privateKeyPath": "../dev-certs/key.pem"
+    }
+  }
+}

@@ -1,29 +1,27 @@
 package io.deephaven.server.jetty;
 
 import io.deephaven.base.system.PrintStreamGlobals;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.server.runner.Main;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * The Jetty server main. Parses {@link JettyConfig} from the JSON file from the property {@value SERVER_CONFIG_PROP}.
+ *
+ * @see io.deephaven.server.jetty
+ * @see JettyConfig
+ */
 public class JettyMain extends Main {
     public static void main(String[] args)
             throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
-        final Configuration config = init(args, Main.class);
 
-        // defaults to 5 minutes
-        int httpSessionExpireMs = config.getIntegerWithDefault("http.session.durationMs", 300000);
-        int httpPort = config.getIntegerWithDefault("http.port", 10000);
-        int schedulerPoolSize = config.getIntegerWithDefault("scheduler.poolSize", 4);
-        int maxInboundMessageSize = config.getIntegerWithDefault("grpc.maxInboundMessageSize", 100 * 1024 * 1024);
+        final JettyConfig jettyConfig =
+                init(args, Main.class, JettyConfig::defaultConfig, JettyConfig::parseJsonUnchecked);
 
         DaggerJettyServerComponent
                 .builder()
-                .withPort(httpPort)
-                .withSchedulerPoolSize(schedulerPoolSize)
-                .withSessionTokenExpireTmMs(httpSessionExpireMs)
-                .withMaxInboundMessageSize(maxInboundMessageSize)
+                .withJettyConfig(jettyConfig)
                 .withOut(PrintStreamGlobals.getOut())
                 .withErr(PrintStreamGlobals.getErr())
                 .build()

@@ -12,9 +12,11 @@ dependencies {
     implementation project(':extensions-parquet-base'),
             project(':engine-base'),
             project(':engine-table'),
-            project(':extensions-csv'),
-            'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.0',
-            'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.13.0'
+            project(':extensions-csv')
+
+    Classpaths.inheritJacksonPlatform(project)
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
 
     Classpaths.inheritImmutables(project)
 
