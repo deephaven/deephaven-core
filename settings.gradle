@@ -99,6 +99,15 @@ project(':log-example-stream').projectDir = file('log-factory/examples/example-s
 include(':log-example-file')
 project(':log-example-file').projectDir = file('log-factory/examples/example-file')
 
+include(':ssl-config')
+project(':ssl-config').projectDir = file('server/config')
+
+include(':ssl-config-netty')
+project(':ssl-config-netty').projectDir = file('server/config-netty')
+
+include(':ssl-config-jetty')
+project(':ssl-config-jetty').projectDir = file('server/config-jetty')
+
 include(':server-test')
 project(':server-test').projectDir = file('server/test')
 

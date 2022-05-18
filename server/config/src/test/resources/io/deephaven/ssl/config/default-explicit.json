@@ -1,0 +1,18 @@
+{
+  "identity": [],
+  "identityProperties": false,
+
+  "trust": [],
+  "trustJdk": true,
+  "trustSystem": false,
+  "trustProperties": false,
+  "trustAll": false,
+
+  "ciphers": [],
+  "ciphersProperties": false,
+
+  "protocols": [],
+  "protocolsProperties": false,
+
+  "clientAuthentication": "NONE"
+}

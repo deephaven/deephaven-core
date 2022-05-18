@@ -1,0 +1,13 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    api project(':ssl-config')
+
+    Classpaths.inheritJetty11Platform(project)
+    compileOnly 'org.eclipse.jetty:jetty-util'
+
+    Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-jetty')
+}

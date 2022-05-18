@@ -12,9 +12,13 @@ dependencies {
   Classpaths.inheritGrpcPlatform(project, 'api')
   api 'io.grpc:grpc-api'
   implementation 'io.grpc:grpc-core'
+  implementation 'io.grpc:grpc-netty'
 
   // TODO(deephaven-core#1783): Make proto-backplane-grpc implementation dependency
   api project(':proto:proto-backplane-grpc')
+
+  api project(':ssl-config')
+  implementation project(':ssl-config-netty')
 
   Classpaths.inheritImmutables(project)
   Classpaths.inheritAutoService(project)
