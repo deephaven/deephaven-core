@@ -568,6 +568,12 @@ class Docker {
                 'true' == project.property('deephaven.registry.ignoreOutOfDate') :
                 false
 
+        project.tasks.register('showImageId') {
+            it.doLast {
+                println(imageId)
+            }
+        }
+
         def pullImage = project.tasks.register('pullImage', DockerPullImage) { pull ->
             pull.group = 'Docker Registry'
             pull.description = "Release management task: Pulls '${imageName}'"
