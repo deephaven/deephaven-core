@@ -1,5 +1,6 @@
 package io.deephaven.server.netty;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.server.config.ServerConfig;
@@ -8,6 +9,7 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Path;
 
 /**
@@ -15,6 +17,7 @@ import java.nio.file.Path;
  */
 @Immutable
 @BuildableStyle
+@JsonDeserialize
 public abstract class NettyConfig implements ServerConfig {
 
     public static final int DEFAULT_SSL_PORT = 443;
@@ -53,6 +56,17 @@ public abstract class NettyConfig implements ServerConfig {
      */
     public static NettyConfig parseJson(Path path) throws IOException {
         return Parser.parseJson(path.toFile(), ImmutableNettyConfig.class);
+    }
+
+    /**
+     * Parse the JSON at {@code url} into a netty server configuration.
+     *
+     * @param url the url
+     * @return the configuration
+     * @throws IOException if an IO exception occurs
+     */
+    public static NettyConfig parseJson(URL url) throws IOException {
+        return Parser.parseJson(url, ImmutableNettyConfig.class);
     }
 
     public static NettyConfig parseJsonUnchecked(Path path) {

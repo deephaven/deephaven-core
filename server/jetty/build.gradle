@@ -34,12 +34,21 @@ dependencies {
     Classpaths.inheritImmutables(project)
     implementation project(':ssl-config-jetty')
 
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
+
     testImplementation project(':server-test')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
-test.systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
+test {
+    useJUnitPlatform()
+    systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
+}
 
 apply plugin: 'io.deephaven.java-open-nio'
