@@ -255,25 +255,25 @@ class StaticChunkedAsOfJoinStateManager
 
     // region build wrappers
     @Override
-    public int buildFromRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots) {
-        if (rightIndex.isEmpty()) {
+    public int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots) {
+        if (rightRowSet.isEmpty()) {
             return 0;
         }
-        try (final BuildContext bc = makeBuildContext(rightSources, rightIndex.size())) {
+        try (final BuildContext bc = makeBuildContext(rightSources, rightRowSet.size())) {
             final MutableInt slotCount = new MutableInt(0);
-            buildTable(bc, rightIndex, rightSources, false, addedSlots, slotCount);
+            buildTable(bc, rightRowSet, rightSources, false, addedSlots, slotCount);
             return slotCount.intValue();
         }
     }
 
     @Override
-    public int buildFromLeftSide(RowSequence leftIndex, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
-        if (leftIndex.isEmpty()) {
+    public int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
+        if (leftRowSet.isEmpty()) {
             return 0;
         }
-        try (final BuildContext bc = makeBuildContext(leftSources, leftIndex.size())) {
+        try (final BuildContext bc = makeBuildContext(leftSources, leftRowSet.size())) {
             final MutableInt slotCount = new MutableInt(0);
-            buildTable(bc, leftIndex, leftSources, true, addedSlots, slotCount);
+            buildTable(bc, leftRowSet, leftSources, true, addedSlots, slotCount);
             return slotCount.intValue();
         }
     }
@@ -1335,34 +1335,34 @@ class StaticChunkedAsOfJoinStateManager
 
     // region probe wrappers
     @Override
-    public void probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources)  {
-        if (leftIndex.isEmpty()) {
+    public void probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources)  {
+        if (leftRowSet.isEmpty()) {
             return;
         }
-        try (final ProbeContext pc = makeProbeContext(leftSources, leftIndex.size())) {
-            decorationProbe(pc, leftIndex, leftSources, true, null, null, null);
+        try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
+            decorationProbe(pc, leftRowSet, leftSources, true, null, null, null);
         }
     }
 
     @Override
-    public int probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilderRandom foundBuilder)  {
-        if (leftIndex.isEmpty()) {
+    public int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilderRandom foundBuilder)  {
+        if (leftRowSet.isEmpty()) {
             return 0;
         }
-        try (final ProbeContext pc = makeProbeContext(leftSources, leftIndex.size())) {
+        try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
             final MutableInt slotCount = new MutableInt();
-            decorationProbe(pc, leftIndex, leftSources, true, slots, slotCount, foundBuilder);
+            decorationProbe(pc, leftRowSet, leftSources, true, slots, slotCount, foundBuilder);
             return slotCount.intValue();
         }
     }
 
     @Override
-    public void probeRight(RowSequence rightIndex, ColumnSource<?>[] rightSources)  {
-        if (rightIndex.isEmpty()) {
+    public void probeRight(RowSequence rightRowSet, ColumnSource<?>[] rightSources)  {
+        if (rightRowSet.isEmpty()) {
             return;
         }
-        try (final ProbeContext pc = makeProbeContext(rightSources, rightIndex.size())) {
-            decorationProbe(pc, rightIndex, rightSources, false, null, null, null);
+        try (final ProbeContext pc = makeProbeContext(rightSources, rightRowSet.size())) {
+            decorationProbe(pc, rightRowSet, rightSources, false, null, null, null);
         }
     }
     // endregion probe wrappers

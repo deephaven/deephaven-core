@@ -17,49 +17,41 @@ import org.jetbrains.annotations.NotNull;
 public class TypedAsOfJoinFactory {
     public static void staticBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.addStatement("leftHashSlots.set(hashSlotOffset++, (long)tableLocation)");
+        builder.addStatement("addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition))");
     }
 
     public static void staticBuildLeftInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        builder.addStatement("mainRightRowKey.set(tableLocation, NO_RIGHT_STATE_VALUE)");
-        builder.addStatement("leftHashSlots.set(hashSlotOffset++, (long)tableLocation)");
+        builder.addStatement("addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition))");
+        builder.addStatement("rightRowSetSource.set(tableLocation, $T.builderSequential())", RowSetFactory.class);
+        builder.addStatement("hashSlots.set(hashSlotOffset.getAndIncrement(), (long)tableLocation)");
     }
 
     public static void staticBuildRightFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.addStatement("mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE)");
+        builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition))");
     }
 
     public static void staticBuildRightInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        builder.addStatement("final long rightRowKeyToInsert = rowKeyChunk.get(chunkPosition)");
-        builder.addStatement("mainRightRowKey.set(tableLocation, rightRowKeyToInsert)");
+        builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition))");
+        builder.addStatement("hashSlots.set(hashSlotOffset.getAndIncrement(), (long)tableLocation)");
     }
 
     public static void staticProbeDecorateLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.beginControlFlow("if (rightRowKey == DUPLICATE_RIGHT_STATE)");
-        // we only use the row key chunk for an error, so it is lazily created here
-        builder.addStatement("final $T<$T> rowKeyChunk = rowSequence.asRowKeyChunk()", LongChunk.class,
-                OrderedRowKeys.class);
-        builder.addStatement(
-                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)))");
+        builder.addStatement("final long indexKey = rowKeyChunk.get(chunkPosition)");
+        builder.beginControlFlow("if (addLeftIndex(tableLocation, indexKey) && hashSlots != null)");
+        builder.addStatement("hashSlots.set(hashSlotOffset.getAndIncrement(), tableLocation)");
+        builder.addStatement("foundBuilder.addKey(indexKey)");
         builder.endControlFlow();
-        builder.addStatement("leftRedirections.set(hashSlotOffset++, rightRowKey)");
     }
 
     public static void staticProbeDecorateLeftMissing(CodeBlock.Builder builder) {
-        builder.addStatement("leftRedirections.set(hashSlotOffset++, $T.NULL_ROW_KEY)", RowSet.class);
+        // builder.addStatement("leftRedirections.set(hashSlotOffset++, $T.NULL_ROW_KEY)", RowSet.class);
     }
 
     public static void staticProbeDecorateRightFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.beginControlFlow("if (existingStateValue != NO_RIGHT_STATE_VALUE)");
-        builder.addStatement("mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE)");
-        builder.addStatement("throw new $T(tableLocation)", DuplicateRightRowDecorationException.class);
-        builder.nextControlFlow("else");
-        builder.addStatement("final long rightRowKeyToInsert = rowKeyChunk.get(chunkPosition)");
-        builder.addStatement("mainRightRowKey.set(tableLocation, rightRowKeyToInsert)");
-        builder.endControlFlow();
+        builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition))");
     }
 
     public static void rightIncrementalRehashSetup(CodeBlock.Builder builder) {

@@ -43,7 +43,7 @@ public class AsOfJoinHelper {
     static boolean USE_TYPED_STATE_MANAGER =
             Configuration.getInstance().getBooleanWithDefault(
                     "AsOfJoinHelper.useTypedStateManager",
-                    false);
+                    true);
 
     private AsOfJoinHelper() {} // static use only
 
@@ -168,13 +168,25 @@ public class AsOfJoinHelper {
             leftGrouping = rightGrouping = null;
         }
 
-        final StaticHashedAsOfJoinStateManager asOfJoinStateManager = USE_TYPED_STATE_MANAGER
-                ? TypedHasherFactory.make(StaticAsOfJoinStateManagerTypedBase.class,
-                    leftSources, originalLeftSources,
-                    control.tableSizeForRightBuild(leftTable),
-                    control.getMaximumLoadFactor(), control.getTargetLoadFactor())
-                : new StaticChunkedAsOfJoinStateManager(leftSources,
-                    size, originalLeftSources);
+        final StaticHashedAsOfJoinStateManager asOfJoinStateManager;
+        if (buildLeft) {
+            asOfJoinStateManager = USE_TYPED_STATE_MANAGER
+                    ? TypedHasherFactory.make(StaticAsOfJoinStateManagerTypedBase.class,
+                            leftSources, originalLeftSources,
+                            control.tableSizeForLeftBuild(leftTable),
+                            control.getMaximumLoadFactor(), control.getTargetLoadFactor())
+                    : new StaticChunkedAsOfJoinStateManager(leftSources,
+                            size, originalLeftSources);
+        } else {
+            asOfJoinStateManager = USE_TYPED_STATE_MANAGER
+                    ? TypedHasherFactory.make(StaticAsOfJoinStateManagerTypedBase.class,
+                            leftSources, originalLeftSources,
+                            control.tableSizeForRightBuild(rightTable),
+                            control.getMaximumLoadFactor(), control.getTargetLoadFactor())
+                    : new StaticChunkedAsOfJoinStateManager(leftSources,
+                            size, originalLeftSources);
+        }
+
 
         final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<RowSet>> leftGroupedSources;
         final int leftGroupingSize;
@@ -207,13 +219,13 @@ public class AsOfJoinHelper {
                 slotCount = asOfJoinStateManager.buildFromLeftSide(leftTable.getRowSet(), leftSources, slots);
             } else {
                 slotCount = asOfJoinStateManager.buildFromLeftSide(RowSetFactory.flat(leftGroupingSize),
-                        new ColumnSource[]{leftGroupedSources.getFirst()}, slots);
+                        new ColumnSource[] {leftGroupedSources.getFirst()}, slots);
             }
             if (rightGroupedSources == null) {
                 asOfJoinStateManager.probeRight(rightTable.getRowSet(), rightSources);
             } else {
                 asOfJoinStateManager.probeRight(RowSetFactory.flat(rightGroupingSize),
-                        new ColumnSource[]{rightGroupedSources.getFirst()});
+                        new ColumnSource[] {rightGroupedSources.getFirst()});
             }
         } else {
             if (rightGroupedSources == null) {
@@ -221,13 +233,13 @@ public class AsOfJoinHelper {
             } else {
                 slotCount =
                         asOfJoinStateManager.buildFromRightSide(RowSetFactory.flat(rightGroupingSize),
-                                new ColumnSource[]{rightGroupedSources.getFirst()}, slots);
+                                new ColumnSource[] {rightGroupedSources.getFirst()}, slots);
             }
             if (leftGroupedSources == null) {
                 asOfJoinStateManager.probeLeft(leftTable.getRowSet(), leftSources);
             } else {
                 asOfJoinStateManager.probeLeft(RowSetFactory.flat(leftGroupingSize),
-                        new ColumnSource[]{leftGroupedSources.getFirst()});
+                        new ColumnSource[] {leftGroupedSources.getFirst()});
             }
         }
 
@@ -249,10 +261,10 @@ public class AsOfJoinHelper {
 
         try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch, leftStampSource,
                 rightStampSource, originalRightStampSource);
-             final ResettableWritableLongChunk<RowKeys> keyChunk =
-                     ResettableWritableLongChunk.makeResettableChunk();
-             final ResettableWritableChunk<Values> valuesChunk =
-                     rightStampSource.getChunkType().makeResettableWritableChunk()) {
+                final ResettableWritableLongChunk<RowKeys> keyChunk =
+                        ResettableWritableLongChunk.makeResettableChunk();
+                final ResettableWritableChunk<Values> valuesChunk =
+                        rightStampSource.getChunkType().makeResettableWritableChunk()) {
             for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
                 final long slot = slots.getLong(slotIndex);
                 RowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
@@ -323,16 +335,16 @@ public class AsOfJoinHelper {
                             asOfJoinStateManager.probeLeft(restampKeys, leftSources, updatedSlots, foundBuilder);
 
                     try (final RowSet foundKeys = foundBuilder.build();
-                         final RowSet notFound = restampKeys.minus(foundKeys)) {
+                            final RowSet notFound = restampKeys.minus(foundKeys)) {
                         notFound.forAllRowKeys(rowRedirection::removeVoid);
                     }
 
                     try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch,
                             leftStampSource, rightStampSource, originalRightStampSource);
-                         final ResettableWritableLongChunk<RowKeys> keyChunk =
-                                 ResettableWritableLongChunk.makeResettableChunk();
-                         final ResettableWritableChunk<Values> valuesChunk =
-                                 rightStampSource.getChunkType().makeResettableWritableChunk()) {
+                            final ResettableWritableLongChunk<RowKeys> keyChunk =
+                                    ResettableWritableLongChunk.makeResettableChunk();
+                            final ResettableWritableChunk<Values> valuesChunk =
+                                    rightStampSource.getChunkType().makeResettableWritableChunk()) {
                         for (int ii = 0; ii < slotCount; ++ii) {
                             final long slot = updatedSlots.getLong(ii);
 

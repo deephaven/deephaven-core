@@ -24,12 +24,12 @@ public abstract class StaticHashedAsOfJoinStateManager extends StaticAsOfJoinSta
         super(keySourcesForErrorMessages);
     }
 
-    public abstract int buildFromLeftSide(RowSequence leftIndex, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots);
-    public abstract int buildFromRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots);
+    public abstract int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots);
+    public abstract int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots);
 
-    public abstract void probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources);
-    public abstract int probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilderRandom foundBuilder);
-    public abstract void probeRight(RowSequence rightIndex, ColumnSource<?>[] rightSources);
+    public abstract void probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources);
+    public abstract int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilderRandom foundBuilder);
+    public abstract void probeRight(RowSequence rightRowSet, ColumnSource<?>[] rightSources);
 
     public abstract int getTableSize();
     public abstract int getOverflowSize();

@@ -11,6 +11,8 @@ import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -26,6 +28,7 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import javax.lang.model.element.Modifier;
@@ -257,42 +260,30 @@ public class TypedHasherFactory {
                     TypedNaturalJoinFactory::incrementalShiftLeftMissing,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
                     probeContextParam));
-        }  else if (baseClass.equals(StaticAsOfJoinStateManagerTypedBase.class)) {
+        } else if (baseClass.equals(StaticAsOfJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticAsOfJoinHasher").packageGroup("asofjoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
-                    .stateType(long.class).mainStateName("mainRightRowKey")
+                    .stateType(Object.class).mainStateName("rightRowSetSource")
                     .emptyStateName("EMPTY_RIGHT_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(false);
 
             final TypeName longArraySource = TypeName.get(LongArraySource.class);
-
-            final ParameterSpec leftHashSlots = ParameterSpec.builder(longArraySource, "leftHashSlots").build();
-            final ParameterSpec hashSlotOffset = ParameterSpec.builder(int.class, "hashSlotOffset").build();
-
-
-            final TypeName rowSequenceSource = TypeName.get(RowSequence.class);
-            final ParameterSpec leftIndex = ParameterSpec.builder(rowSequenceSource, "leftIndex").build();
-            final ParameterSpec rightIndex = ParameterSpec.builder(rowSequenceSource, "rightIndex").build();
-
-            final ParameterSpec addedSlots = ParameterSpec.builder(longArraySource, "addedSlots").build();
-
-            final TypeName columnArraySource = TypeName.get(LongArraySource.class);
-
+            final ParameterSpec hashSlots = ParameterSpec.builder(longArraySource, "hashSlots").build();
+            final ParameterSpec hashSlotOffset = ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build();
+            final ParameterSpec foundBuilder = ParameterSpec.builder(RowSetBuilderRandom.class, "foundBuilder").build();
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
-                    false, true, TypedAsOfJoinFactory::staticBuildLeftFound,
-                    TypedAsOfJoinFactory::staticBuildLeftInsert,
-                    leftIndex, addedSlots));
+                    true, true, TypedAsOfJoinFactory::staticBuildLeftFound,
+                    TypedAsOfJoinFactory::staticBuildLeftInsert, hashSlots, hashSlotOffset));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", "rightRowKey",
-                    false, TypedAsOfJoinFactory::staticProbeDecorateLeftFound,
-                    TypedAsOfJoinFactory::staticProbeDecorateLeftMissing,
-                    ParameterSpec.builder(longArraySource, "leftRedirections").build(), hashSlotOffset));
+                    true, TypedAsOfJoinFactory::staticProbeDecorateLeftFound,
+                    TypedAsOfJoinFactory::staticProbeDecorateLeftMissing, hashSlots, hashSlotOffset, foundBuilder));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, TypedAsOfJoinFactory::staticBuildRightFound,
-                    TypedAsOfJoinFactory::staticBuildRightInsert));
+                    TypedAsOfJoinFactory::staticBuildRightInsert, hashSlots, hashSlotOffset));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", "existingStateValue",
                     true, TypedAsOfJoinFactory::staticProbeDecorateRightFound, null));
