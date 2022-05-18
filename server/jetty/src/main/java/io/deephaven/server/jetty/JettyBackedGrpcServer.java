@@ -13,6 +13,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 
@@ -27,6 +28,19 @@ import java.util.concurrent.TimeUnit;
 import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
 
 public class JettyBackedGrpcServer implements GrpcServer {
+
+    /**
+     * This will break combined-javadoc.
+     *
+     * web-client-ide -> gwt -> jetty 9
+     *
+     * our jetty server -> jetty 11
+     *
+     * @return :/
+     */
+    public static SslContextFactory.Server thisWillBreakCombinedJavadoc() {
+        return null;
+    }
 
     private final Server jetty;
 
