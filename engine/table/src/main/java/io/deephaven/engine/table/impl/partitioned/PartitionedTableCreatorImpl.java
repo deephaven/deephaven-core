@@ -161,7 +161,11 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         final Table table = new QueryTable(
                 CONSTRUCTED_PARTITIONED_TABLE_DEFINITION,
                 rowSet,
-                columnSources);
+                columnSources) {
+            {
+                setFlat();
+            }
+        };
         for (final Table constituent : constituentsToUse) {
             table.addParentReference(constituent);
         }

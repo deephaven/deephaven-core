@@ -111,6 +111,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             resultSources.put(KEY_COLUMN_NAME, resultTableLocationKeys);
             resultSources.put(CONSTITUENT_COLUMN_NAME, resultLocationTables);
             result = new QueryTable(resultRows, resultSources);
+            result.setFlat();
 
             final boolean needToRefreshLocations = refreshLocations && tableLocationProvider.supportsSubscriptions();
             if (needToRefreshLocations || refreshSizes) {

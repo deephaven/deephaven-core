@@ -156,8 +156,8 @@ def consumeToTable(
        or None to obtain a single column specified in the kafka_config param via the 
        keys 'deephaven.value.column.name' for column name and 'deephaven.value.column.type' for
        the column type; both should have string values associated to them.
-    :param table_type: A string specifying the resulting table type: one of 'stream' (default), 'append',
-       'stream_map' or 'append_map'.
+    :param table_type: A string specifying the resulting table type: one of 'stream' (default), 'append', or
+     'ring:<capacity>'.
     :return: A Deephaven live table that will update based on Kafma messages consumed for the given topic.
     :raises: ValueError or TypeError if arguments provided can't be processed.
     """

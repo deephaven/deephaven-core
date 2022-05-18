@@ -70,29 +70,14 @@ class TableType(JObjectWrapper):
         return TableType(TableType.j_object_type.stream())
 
     @staticmethod
-    def stream_map():
-        """ Similar to stream(), but each partition is mapped to a distinct stream table."""
-        return TableType(TableType.j_object_type.streamMap())
-
-    @staticmethod
     def append():
         """ Consume all partitions into a single interleaved in-memory append-only table."""
         return TableType(TableType.j_object_type.append())
 
     @staticmethod
-    def append_map():
-        """ Similar to append(), but each partition is mapped to a distinct in-memory append-only table. """
-        return TableType(TableType.j_object_type.appendMap())
-
-    @staticmethod
     def ring(capacity : int):
         """ Consume all partitions into a single in-memory ring table."""
         return TableType(TableType.j_object_type.ring(capacity))
-
-    @staticmethod
-    def ring_map(capacity : int):
-        """ Similar to ring(capacity), but each partition is mapped to a distinct in-memory ring table. """
-        return TableType(TableType.j_object_type.ringMap(capacity))
 
     def __init__(self, j_table_type: jpy.JType):
         self._j_table_type = j_table_type
@@ -108,14 +93,6 @@ present only newly-available rows to downstream operations and visualizations.""
 
 TableType.Append = TableType.append()
 """ Deprecated, prefer TableType.append(). Consume all partitions into a single interleaved in-memory append-only table."""
-
-TableType.StreamMap = TableType.stream_map()
-""" Deprecated, prefer TableType.stream_map(). Similar to Stream, but each partition is mapped to a distinct stream table."""
-
-TableType.AppendMap = TableType.append_map()
-""" Deprecated, prefer TableType.append_map(). Similar to Append, but each partition is mapped to a distinct in-memory
-append-only table. """
-
 
 def j_partitions(partitions):
     if partitions is None:
