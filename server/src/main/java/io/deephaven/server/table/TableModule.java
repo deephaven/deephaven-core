@@ -35,7 +35,7 @@ import io.grpc.BindableService;
 }
 
 
-@Module
+@Module(includes = {TableAccessModule.class})
 public interface TableModule {
     @Binds
     @IntoSet

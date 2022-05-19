@@ -1,14 +1,14 @@
 package io.deephaven.server.appmode;
 
 import io.deephaven.appmode.ApplicationConfig;
-import io.deephaven.server.console.ConsoleServiceGrpcImpl;
+import io.deephaven.server.console.ConsoleAccessDefaultImpl;
 
 public enum AppMode {
     APP_ONLY, HYBRID, CONSOLE_ONLY, API_ONLY;
 
     public static AppMode currentMode() {
         boolean appEnabled = ApplicationConfig.isApplicationModeEnabled();
-        boolean consoleEnabled = !ConsoleServiceGrpcImpl.REMOTE_CONSOLE_DISABLED;
+        boolean consoleEnabled = !ConsoleAccessDefaultImpl.REMOTE_CONSOLE_DISABLED;
         if (appEnabled && consoleEnabled) {
             return HYBRID;
         }

@@ -50,7 +50,6 @@ import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.proto.backplane.script.grpc.TextDocumentItem;
 import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier;
 import io.deephaven.server.session.SessionCloseableObserver;
-import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
@@ -71,14 +70,11 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(ConsoleServiceGrpcImpl.class);
 
-    public static final boolean REMOTE_CONSOLE_DISABLED =
-            Configuration.getInstance().getBooleanWithDefault("deephaven.console.disable", false);
-
     public static final boolean QUIET_AUTOCOMPLETE_ERRORS =
             Configuration.getInstance().getBooleanWithDefault("deephaven.console.autocomplete.quiet", true);
 
     private final TicketRouter ticketRouter;
-    private final SessionService sessionService;
+    private final ConsoleAccess accessControls;
     private final LogBuffer logBuffer;
 
     private final Map<SessionState, CompletionParser> parsers = new ConcurrentHashMap<>();
@@ -87,11 +83,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
     @Inject
     public ConsoleServiceGrpcImpl(final TicketRouter ticketRouter,
-            final SessionService sessionService,
+            final ConsoleAccess accessControls,
             final LogBuffer logBuffer,
             final Provider<ScriptSession> scriptSessionProvider) {
         this.ticketRouter = ticketRouter;
-        this.sessionService = sessionService;
+        this.accessControls = accessControls;
         this.logBuffer = logBuffer;
         this.scriptSessionProvider = scriptSessionProvider;
     }
@@ -100,7 +96,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void getConsoleTypes(final GetConsoleTypesRequest request,
             final StreamObserver<GetConsoleTypesResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            if (!REMOTE_CONSOLE_DISABLED) {
+            // TODO: the web ui blows up here - it calls getConsoleTypes before it does any session service stuff -
+            // likely need to update the client to be better.
+            // accessControls.getConsoleTypes(request);
+            if (!ConsoleAccessDefaultImpl.REMOTE_CONSOLE_DISABLED) {
                 // TODO (#702): initially show all console types; the first console determines the global console type
                 // thereafter
                 responseObserver.onNext(GetConsoleTypesResponse.newBuilder()
@@ -114,15 +113,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     @Override
     public void startConsole(StartConsoleRequest request, StreamObserver<StartConsoleResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            SessionState session = sessionService.getCurrentSession();
-            if (REMOTE_CONSOLE_DISABLED) {
-                responseObserver
-                        .onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Remote console disabled"));
-                return;
-            }
-
-            // TODO auth hook, ensure the user can do this (owner of worker or admin)
-            // session.getAuthContext().requirePrivilege(CreateConsole);
+            final SessionState session = accessControls.startConsole(request);
 
             // TODO (#702): initially global session will be null; set it here if applicable
 
@@ -152,16 +143,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     @Override
     public void subscribeToLogs(LogSubscriptionRequest request, StreamObserver<LogSubscriptionData> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            if (REMOTE_CONSOLE_DISABLED) {
-                responseObserver
-                        .onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Remote console disabled"));
-                return;
-            }
-            SessionState session = sessionService.getCurrentSession();
-            // if that didn't fail, we at least are authenticated, but possibly not authorized
-            // TODO auth hook, ensure the user can do this (owner of worker or admin). same rights as creating a console
-            // session.getAuthContext().requirePrivilege(LogBuffer);
-
+            final SessionState session = accessControls.subscribeToLogs(request);
             logBuffer.subscribe(new LogBufferStreamAdapter(session, request, responseObserver));
         });
     }
@@ -169,7 +151,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     @Override
     public void executeCommand(ExecuteCommandRequest request, StreamObserver<ExecuteCommandResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
+            final SessionState session = accessControls.executeCommand(request);
 
             final Ticket consoleId = request.getConsoleId();
             if (consoleId.getTicket().isEmpty()) {
@@ -226,7 +208,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void bindTableToVariable(BindTableToVariableRequest request,
             StreamObserver<BindTableToVariableResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
+            final SessionState session = accessControls.bindTableToVariable(request);
             Ticket tableId = request.getTableId();
             if (tableId.getTicket().isEmpty()) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No source tableId supplied");
@@ -275,7 +257,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public StreamObserver<AutoCompleteRequest> autoCompleteStream(
             StreamObserver<AutoCompleteResponse> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
+            final SessionState session = accessControls.autoCompleteStream();
             CompletionParser parser = ensureParserForSession(session);
             return new StreamObserver<AutoCompleteRequest>() {
 

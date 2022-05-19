@@ -42,7 +42,6 @@ import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
-import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
@@ -55,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
@@ -65,15 +65,15 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     private static final Logger log = LoggerFactory.getLogger(TableServiceGrpcImpl.class);
 
     private final TicketRouter ticketRouter;
-    private final SessionService sessionService;
+    private final TableAccess accessControls;
     private final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap;
 
     @Inject
     public TableServiceGrpcImpl(final TicketRouter ticketRouter,
-            final SessionService sessionService,
+            final TableAccess accessControls,
             final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap) {
         this.ticketRouter = ticketRouter;
-        this.sessionService = sessionService;
+        this.accessControls = accessControls;
         this.operationMap = operationMap;
     }
 
@@ -91,187 +91,217 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     @Override
     public void emptyTable(final EmptyTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.EMPTY_TABLE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.EMPTY_TABLE, request, responseObserver,
+                accessControls::emptyTable);
     }
 
     @Override
     public void timeTable(final TimeTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TIME_TABLE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TIME_TABLE, request, responseObserver,
+                accessControls::timeTable);
     }
 
     @Override
     public void mergeTables(final MergeTablesRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.MERGE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.MERGE, request, responseObserver,
+                accessControls::mergeTables);
     }
 
     @Override
     public void selectDistinct(final SelectDistinctRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SELECT_DISTINCT, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SELECT_DISTINCT, request, responseObserver,
+                accessControls::selectDistinct);
     }
 
     @Override
     public void update(final SelectOrUpdateRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE, request, responseObserver,
+                accessControls::update);
     }
 
     @Override
     public void lazyUpdate(final SelectOrUpdateRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.LAZY_UPDATE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.LAZY_UPDATE, request, responseObserver,
+                accessControls::lazyUpdate);
     }
 
     @Override
     public void view(final SelectOrUpdateRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.VIEW, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.VIEW, request, responseObserver,
+                accessControls::view);
     }
 
     @Override
     public void updateView(final SelectOrUpdateRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE_VIEW, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE_VIEW, request, responseObserver,
+                accessControls::updateView);
     }
 
     @Override
     public void select(final SelectOrUpdateRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SELECT, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SELECT, request, responseObserver,
+                accessControls::select);
     }
 
     @Override
     public void headBy(final HeadOrTailByRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.HEAD_BY, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.HEAD_BY, request, responseObserver,
+                accessControls::headBy);
     }
 
     @Override
     public void tailBy(final HeadOrTailByRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TAIL_BY, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TAIL_BY, request, responseObserver,
+                accessControls::tailBy);
     }
 
     @Override
     public void head(final HeadOrTailRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.HEAD, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.HEAD, request, responseObserver,
+                accessControls::head);
     }
 
     @Override
     public void tail(final HeadOrTailRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TAIL, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TAIL, request, responseObserver,
+                accessControls::tail);
     }
 
     @Override
     public void ungroup(final UngroupRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UNGROUP, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UNGROUP, request, responseObserver,
+                accessControls::ungroup);
     }
 
     @Override
     public void comboAggregate(final ComboAggregateRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.COMBO_AGGREGATE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.COMBO_AGGREGATE, request, responseObserver,
+                accessControls::comboAggregate);
     }
 
     @Override
     public void snapshot(final SnapshotTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SNAPSHOT, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SNAPSHOT, request, responseObserver,
+                accessControls::snapshot);
     }
 
     @Override
     public void dropColumns(final DropColumnsRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.DROP_COLUMNS, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.DROP_COLUMNS, request, responseObserver,
+                accessControls::dropColumns);
     }
 
     @Override
     public void filter(final FilterTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FILTER, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FILTER, request, responseObserver,
+                accessControls::filter);
     }
 
     @Override
     public void unstructuredFilter(final UnstructuredFilterTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UNSTRUCTURED_FILTER, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UNSTRUCTURED_FILTER, request, responseObserver,
+                accessControls::unstructuredFilter);
     }
 
     @Override
     public void sort(final SortTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SORT, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SORT, request, responseObserver,
+                accessControls::sort);
     }
 
     @Override
     public void flatten(final FlattenRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FLATTEN, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FLATTEN, request, responseObserver,
+                accessControls::flatten);
     }
 
     @Override
     public void crossJoinTables(final CrossJoinTablesRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.CROSS_JOIN, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.CROSS_JOIN, request, responseObserver,
+                accessControls::crossJoinTables);
     }
 
     @Override
     public void naturalJoinTables(final NaturalJoinTablesRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.NATURAL_JOIN, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.NATURAL_JOIN, request, responseObserver,
+                accessControls::naturalJoinTables);
     }
 
     @Override
     public void exactJoinTables(final ExactJoinTablesRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.EXACT_JOIN, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.EXACT_JOIN, request, responseObserver,
+                accessControls::exactJoinTables);
     }
 
     @Override
     public void leftJoinTables(LeftJoinTablesRequest request,
             StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.LEFT_JOIN, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.LEFT_JOIN, request, responseObserver,
+                accessControls::leftJoinTables);
     }
 
     @Override
     public void asOfJoinTables(AsOfJoinTablesRequest request,
             StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.AS_OF_JOIN, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.AS_OF_JOIN, request, responseObserver,
+                accessControls::asOfJoinTables);
     }
 
     @Override
     public void runChartDownsample(RunChartDownsampleRequest request,
             StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.RUN_CHART_DOWNSAMPLE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.RUN_CHART_DOWNSAMPLE, request, responseObserver,
+                accessControls::runChartDownsample);
     }
 
     @Override
     public void fetchTable(FetchTableRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FETCH_TABLE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FETCH_TABLE, request, responseObserver,
+                accessControls::fetchTable);
     }
 
     @Override
     public void applyPreviewColumns(ApplyPreviewColumnsRequest request,
             StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.APPLY_PREVIEW_COLUMNS, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.APPLY_PREVIEW_COLUMNS, request, responseObserver,
+                accessControls::applyPreviewColumns);
     }
 
     @Override
     public void createInputTable(CreateInputTableRequest request,
             StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.CREATE_INPUT_TABLE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.CREATE_INPUT_TABLE, request, responseObserver,
+                accessControls::createInputTable);
     }
 
     @Override
     public void batch(final BatchTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
+            final SessionState session = accessControls.batch(request);
 
             // step 1: initialize exports
             final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
@@ -328,7 +358,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     public void exportedTableUpdates(final ExportedTableUpdatesRequest request,
             final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
+            final SessionState session = accessControls.exportedTableUpdates(request);
             final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
             session.addExportListener(listener);
             ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(
@@ -340,7 +370,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     public void getExportedTableCreationResponse(final Ticket request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
+            final SessionState session = accessControls.getExportedTableCreationResponse(request);
 
             if (request.getTicket().isEmpty()) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No request ticket supplied");
@@ -373,9 +403,10 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
      * @param <T> the protobuf type that configures the behavior of the operation
      */
     private <T> void oneShotOperationWrapper(final BatchTableRequest.Operation.OpCase op, final T request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+            final StreamObserver<ExportedTableCreationResponse> responseObserver,
+            final Function<T, SessionState> acls) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
+            final SessionState session = acls.apply(request);
             final GrpcTableOperation<T> operation = getOp(op);
             operation.validateRequest(request);
 
