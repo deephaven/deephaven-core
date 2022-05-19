@@ -261,6 +261,7 @@ public class BarrageUtils {
                         new DeltaUpdates.ColumnModifications(columnIndex, modifiedRows, columnData);
             }
             deltaUpdates.setSerializedModifications(modifiedColumnData);
+            numModRowsRemaining -= (long) recordBatch.length().toFloat64();
         }
 
         public DeltaUpdates build() {
