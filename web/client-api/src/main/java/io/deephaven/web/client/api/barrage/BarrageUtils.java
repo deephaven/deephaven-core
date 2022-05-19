@@ -171,7 +171,8 @@ public class BarrageUtils {
         private final DeltaUpdates deltaUpdates = new DeltaUpdates();
         private final BarrageUpdateMetadata barrageUpdate;
         private final String[] columnTypes;
-        private int recordBatchesSeen = 0;
+        private long numAddRowsRemaining = 0;
+        private long numModRowsRemaining = 0;
 
         public DeltaUpdatesBuilder(BarrageUpdateMetadata barrageUpdate, boolean isViewport, String[] columnTypes) {
             this.barrageUpdate = barrageUpdate;
@@ -195,23 +196,30 @@ public class BarrageUtils {
                 // if this isn't a viewport, then a second index isn't sent, because all rows are included
                 includedAdditions = deltaUpdates.getAdded();
             }
+            numAddRowsRemaining = includedAdditions.size();
             deltaUpdates.setIncludedAdditions(includedAdditions);
             deltaUpdates.setSerializedAdditions(new DeltaUpdates.ColumnAdditions[0]);
             deltaUpdates.setSerializedModifications(new DeltaUpdates.ColumnModifications[0]);
+
+            for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
+                BarrageModColumnMetadata columnMetadata = barrageUpdate.modColumnNodes(columnIndex);
+                RangeSet modifiedRows = new CompressedRangeSetReader()
+                        .read(typedArrayToLittleEndianByteBuffer(columnMetadata.modifiedRowsArray()));
+                numModRowsRemaining = Math.max(numModRowsRemaining, modifiedRows.size());
+            }
         }
 
         /**
          * Appends a new record batch and payload. Returns true if this was the final record batch that was expected.
          */
         public boolean appendRecordBatch(RecordBatch recordBatch, ByteBuffer body) {
-            assert recordBatchesSeen < barrageUpdate.numAddBatches() + barrageUpdate.numModBatches();
-            if (barrageUpdate.numAddBatches() > recordBatchesSeen) {
+            if (numAddRowsRemaining > 0) {
                 handleAddBatch(recordBatch, body);
-            } else {
+            } else if (numModRowsRemaining > 0) {
                 handleModBatch(recordBatch, body);
             }
-            recordBatchesSeen++;
-            return recordBatchesSeen == barrageUpdate.numAddBatches() + barrageUpdate.numModBatches();
+            // return true when complete
+            return numAddRowsRemaining == 0 && numModRowsRemaining == 0;
         }
 
         private void handleAddBatch(RecordBatch recordBatch, ByteBuffer body) {
@@ -229,6 +237,7 @@ public class BarrageUtils {
                 addedColumnData[columnIndex] = new DeltaUpdates.ColumnAdditions(columnIndex, columnData);
             }
             deltaUpdates.setSerializedAdditions(addedColumnData);
+            numAddRowsRemaining -= (long) recordBatch.length().toFloat64();
         }
 
         private void handleModBatch(RecordBatch recordBatch, ByteBuffer body) {
