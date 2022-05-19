@@ -27,6 +27,7 @@ public abstract class ColumnIterator<TYPE, CHUNK_TYPE extends Chunk<? extends An
     public static final int DEFAULT_CHUNK_SIZE = 1 << 11; // This is the block size for ArrayBackedColumnSource
 
     private final int chunkSize;
+    private final long size;
 
     private ChunkSource<? extends Any> chunkSource;
     private ChunkSource.GetContext getContext;
@@ -46,9 +47,12 @@ public abstract class ColumnIterator<TYPE, CHUNK_TYPE extends Chunk<? extends An
             @NotNull final RowSequence rowSequence,
             final int chunkSize) {
         this.chunkSize = Require.gtZero(chunkSize, "chunkSize");
+        this.size = rowSequence.size();
+
         this.chunkSource = chunkSource;
         getContext = chunkSource.makeGetContext(chunkSize);
         rowKeyIterator = rowSequence.getRowSequenceIterator();
+
         currentData = null;
         currentOffset = Integer.MAX_VALUE;
     }
@@ -60,6 +64,10 @@ public abstract class ColumnIterator<TYPE, CHUNK_TYPE extends Chunk<? extends An
             throw new IllegalArgumentException("Illegal chunk type " + chunkType + ", expected " + expectedChunkType);
         }
         return chunkSource;
+    }
+
+    long size() {
+        return size;
     }
 
     @Override

@@ -1,11 +1,8 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.*;
 import io.deephaven.stringset.ArrayStringSet;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.lang.QueryScope;
@@ -17,12 +14,10 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.TableMap;
 import io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.engine.table.impl.select.ReinterpretedColumn;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -228,24 +223,28 @@ public class TestChunkedRegionedOperations {
 
         final String tableName = "TestTable";
 
-        final TableMap partitionedInputData = inputData.partitionBy("PC");
+        final PartitionedTable partitionedInputData = inputData.partitionBy("PC");
         ParquetTools.writeParquetTables(
-                partitionedInputData.values().toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY),
+                partitionedInputData.table()
+                        .objectColumnIterator(partitionedInputData.constituentColumnName())
+                        .stream().toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedDataDefinition.getWritable(),
                 parquetInstructions,
-                Arrays.stream(partitionedInputData.getKeySet())
+                partitionedInputData.table().objectColumnIterator("PC").stream()
                         .map(pcv -> new File(dataDirectory,
                                 "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
                                         + PARQUET_FILE_NAME))
                         .toArray(File[]::new),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
-        final TableMap partitionedInputMissingData = inputMissingData.view("PC", "II").partitionBy("PC");
+        final PartitionedTable partitionedInputMissingData = inputMissingData.view("PC", "II").partitionBy("PC");
         ParquetTools.writeParquetTables(
-                partitionedInputMissingData.values().toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY),
+                partitionedInputMissingData.table()
+                        .objectColumnIterator(partitionedInputMissingData.constituentColumnName())
+                        .stream().toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedMissingDataDefinition.getWritable(),
                 parquetInstructions,
-                Arrays.stream(partitionedInputMissingData.getKeySet())
+                partitionedInputMissingData.table().objectColumnIterator("PC").stream()
                         .map(pcv -> new File(dataDirectory,
                                 "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
                                         + PARQUET_FILE_NAME))

@@ -13,7 +13,11 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * {@link ColumnIterator} implementation for {@link ChunkSource chunk sources} of objects.
@@ -78,5 +82,14 @@ public final class ObjectColumnIterator<TYPE> extends ColumnIterator<TYPE, Objec
                 action.accept(currentData.get(currentOffset++));
             }
         });
+    }
+
+    public Stream<TYPE> stream() {
+        return StreamSupport.stream(
+                Spliterators.spliterator(
+                        this,
+                        size(),
+                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                false);
     }
 }
