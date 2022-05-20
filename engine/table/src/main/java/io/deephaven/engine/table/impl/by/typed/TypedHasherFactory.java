@@ -284,15 +284,15 @@ public class TypedHasherFactory {
                     true, true, TypedAsOfJoinFactory::staticBuildLeftFound,
                     TypedAsOfJoinFactory::staticBuildLeftInsert));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", "rightRowKey",
+            builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", null,
                     true, TypedAsOfJoinFactory::staticProbeDecorateLeftFound,
-                    TypedAsOfJoinFactory::staticProbeDecorateLeftMissing, hashSlots, hashSlotOffset, foundBuilder));
+                    null, hashSlots, hashSlotOffset, foundBuilder));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, TypedAsOfJoinFactory::staticBuildRightFound,
                     TypedAsOfJoinFactory::staticBuildRightInsert));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", "existingStateValue",
+            builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", null,
                     true, TypedAsOfJoinFactory::staticProbeDecorateRightFound, null));
 
         } else if (baseClass.equals(RightIncrementalAsOfJoinStateManagerTypedBase.class)) {

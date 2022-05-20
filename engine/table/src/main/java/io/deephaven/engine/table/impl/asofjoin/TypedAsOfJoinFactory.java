@@ -43,10 +43,6 @@ public class TypedAsOfJoinFactory {
         builder.endControlFlow();
     }
 
-    public static void staticProbeDecorateLeftMissing(CodeBlock.Builder builder) {
-        // builder.addStatement("leftRedirections.set(hashSlotOffset++, $T.NULL_ROW_KEY)", RowSet.class);
-    }
-
     public static void staticProbeDecorateRightFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition))");

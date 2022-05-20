@@ -104,23 +104,18 @@ final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBa
             final double k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
-            boolean found = false;
             int tableLocation = firstTableLocation;
-            Object rightRowKey;
-            while ((rightRowKey = rightRowSetSource.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
+            while (rightRowSetSource.getUnsafe(tableLocation) != EMPTY_RIGHT_STATE) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long indexKey = rowKeyChunk.get(chunkPosition);
                     if (addLeftIndex(tableLocation, indexKey) && hashSlots != null) {
                         hashSlots.set(hashSlotOffset.getAndIncrement(), (long)tableLocation);
                         foundBuilder.addKey(indexKey);
                     }
-                    found = true;
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
-            }
-            if (!found) {
             }
         }
     }
@@ -134,8 +129,7 @@ final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBa
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            Object existingStateValue;
-            while ((existingStateValue = rightRowSetSource.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
+            while (rightRowSetSource.getUnsafe(tableLocation) != EMPTY_RIGHT_STATE) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition));
                     break;
