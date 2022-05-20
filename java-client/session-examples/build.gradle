@@ -47,6 +47,7 @@ applicationDistribution.into('bin') {
     from(createApplication('subscribe-fields', 'io.deephaven.client.examples.SubscribeToFields'))
     from(createApplication('connect-check', 'io.deephaven.client.examples.ConnectCheck'))
     from(createApplication('fetch-object', 'io.deephaven.client.examples.FetchObject'))
+    from(createApplication('create-time-table', 'io.deephaven.client.examples.CreateTimeTable'))
     fileMode = 0755
 }
 

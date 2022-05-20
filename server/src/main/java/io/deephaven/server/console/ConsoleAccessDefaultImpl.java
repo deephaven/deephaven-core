@@ -11,6 +11,7 @@ import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.util.auth.AuthContext.SuperUser;
 
 import java.util.Objects;
 
@@ -29,7 +30,11 @@ public class ConsoleAccessDefaultImpl implements ConsoleAccess {
         if (REMOTE_CONSOLE_DISABLED) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Remote console disabled");
         }
-        return sessionService.getCurrentSession();
+        final SessionState currentSession = sessionService.getCurrentSession();
+        if (currentSession.getAuthContext() instanceof SuperUser) {
+            return currentSession;
+        }
+        throw GrpcUtil.statusRuntimeException(Code.PERMISSION_DENIED, "Only super user is allowed to use the console");
     }
 
     @Override
