@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
@@ -51,7 +52,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
     private final boolean disallowExactMatch;
     private final SsaSsaStamp ssaSsaStamp;
     private final ChunkSsaStamp chunkSsaStamp;
-    private final RightIncrementalChunkedAsOfJoinStateManager asOfJoinStateManager;
+    private final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager;
     private final WritableRowRedirection rowRedirection;
     private final ModifiedColumnSet leftKeyColumns;
     private final ModifiedColumnSet rightKeyColumns;
@@ -91,7 +92,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             SortingOrder order,
             boolean disallowExactMatch,
             SsaSsaStamp ssaSsaStamp,
-            JoinControl control, RightIncrementalChunkedAsOfJoinStateManager asOfJoinStateManager,
+            JoinControl control, RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager,
             WritableRowRedirection rowRedirection) {
         super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
         this.leftRecorder = leftRecorder;
