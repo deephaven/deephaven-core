@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.BinaryOperator;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * Factory for producing Deephaven engine {@link PartitionedTable} instances.
@@ -69,9 +69,9 @@ public class PartitionedTableFactory {
      * @param table The "raw" {@link Table table} of {@link Table tables}. Should be {@link Table#isRefreshing()
      *        refreshing} if any constituents are.
      * @param keyColumnNames The "key" column names from {@code table}. Key columns are used in
-     *        {@link PartitionedTable#transform(Function)} to validate the safety and correctness of join operations and
-     *        in {@link PartitionedTable#partitionedTransform(PartitionedTable, BinaryOperator)} to correlate tables
-     *        that should be transformed together.
+     *        {@link PartitionedTable#transform(UnaryOperator)} to validate the safety and correctness of join
+     *        operations and in {@link PartitionedTable#partitionedTransform(PartitionedTable, BinaryOperator)} to
+     *        correlate tables that should be transformed together.
      * @param constituentColumnName The "constituent" column name from {@code table}. The constituent column contains
      *        the underlying non-{@code null} {@link Table tables} that make up the result PartitionedTable.
      * @param constituentDefinition A {@link TableDefinition} expected to be
