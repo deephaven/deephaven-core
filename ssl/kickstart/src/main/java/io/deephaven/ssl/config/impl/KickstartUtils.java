@@ -56,17 +56,25 @@ public class KickstartUtils {
         }
         // Ciphers
         {
-            if (config.ciphersProperties()) {
+            // noinspection StatementWithEmptyBody
+            if (config.ciphersJdk()) {
+                // don't add any, kickstart will default to JDK
+            } else if (config.ciphersProperties()) {
                 builder.withSystemPropertyDerivedCiphers();
+            } else {
+                builder.withCiphers(config.ciphers().toArray(new String[0]));
             }
-            builder.withCiphers(config.ciphers().toArray(new String[0]));
         }
         // Protocols
         {
-            if (config.protocolsProperties()) {
+            // noinspection StatementWithEmptyBody
+            if (config.protocolsJdk()) {
+                // don't add any, kickstart will default to JDK
+            } else if (config.protocolsProperties()) {
                 builder.withSystemPropertyDerivedProtocols();
+            } else {
+                builder.withProtocols(config.protocols().toArray(new String[0]));
             }
-            builder.withProtocols(config.protocols().toArray(new String[0]));
         }
         // Client authentication
         switch (config.clientAuthentication()) {

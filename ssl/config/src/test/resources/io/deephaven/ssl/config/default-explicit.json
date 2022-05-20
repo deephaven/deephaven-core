@@ -8,11 +8,13 @@
   "trustProperties": false,
   "trustAll": false,
 
-  "ciphers": [],
+  "ciphersJdk": true,
   "ciphersProperties": false,
+  "ciphers": [],
 
-  "protocols": ["TLSv1.2", "TLSv1.3"],
+  "protocolsJdk": true,
   "protocolsProperties": false,
+  "protocols": [],
 
   "clientAuthentication": "NONE"
 }

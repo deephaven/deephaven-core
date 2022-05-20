@@ -1,5 +1,6 @@
 package io.deephaven.ssl.config;
 
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import io.deephaven.ssl.config.SSLConfig.ClientAuth;
 import org.junit.jupiter.api.Test;
 
@@ -8,6 +9,7 @@ import java.net.URL;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class SSLConfigTest {
 
@@ -98,13 +100,53 @@ public class SSLConfigTest {
     }
 
     @Test
+    void ciphersBad1() throws IOException {
+        checkIllegal("ciphers-bad-1.json");
+    }
+
+    @Test
+    void ciphersBad2() throws IOException {
+        checkIllegal("ciphers-bad-2.json");
+    }
+
+    @Test
+    void ciphersBad3() throws IOException {
+        checkIllegal("ciphers-bad-3.json");
+    }
+
+    @Test
+    void ciphersBad4() throws IOException {
+        checkIllegal("ciphers-bad-4.json");
+    }
+
+    @Test
     void protocols() throws IOException {
-        check("protocols.json", SSLConfig.builder().protocols(Collections.singletonList("TLSv1.3")).build());
+        check("protocols.json", SSLConfig.builder().addProtocols("TLSv1.3").build());
     }
 
     @Test
     void protocolsProperties() throws IOException {
         check("protocols-properties.json", SSLConfig.builder().protocolsProperties(true).build());
+    }
+
+    @Test
+    void protocolsBad1() throws IOException {
+        checkIllegal("protocols-bad-1.json");
+    }
+
+    @Test
+    void protocolsBad2() throws IOException {
+        checkIllegal("protocols-bad-2.json");
+    }
+
+    @Test
+    void protocolsBad3() throws IOException {
+        checkIllegal("protocols-bad-3.json");
+    }
+
+    @Test
+    void protocolsBad4() throws IOException {
+        checkIllegal("protocols-bad-4.json");
     }
 
     @Test
@@ -119,6 +161,15 @@ public class SSLConfigTest {
 
     private static void check(String name, SSLConfig expected) throws IOException {
         assertThat(sslConfig(name)).isEqualTo(expected);
+    }
+
+    private static void checkIllegal(String name) throws IOException {
+        try {
+            sslConfig(name);
+            failBecauseExceptionWasNotThrown(ValueInstantiationException.class);
+        } catch (ValueInstantiationException e) {
+            // expected
+        }
     }
 
     private static SSLConfig sslConfig(String name) throws IOException {

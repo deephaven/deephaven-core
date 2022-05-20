@@ -7,10 +7,12 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -22,6 +24,12 @@ import java.util.List;
 @BuildableStyle
 @JsonDeserialize(as = ImmutableSSLConfig.class)
 public abstract class SSLConfig {
+
+    /**
+     * The default protocols, includes "TSLv1.2" and "TLSv1.3".
+     */
+    public static final List<String> DEFAULT_PROTOCOLS =
+            Collections.unmodifiableList(Arrays.asList("TLSv1.2", "TLSv1.3"));
 
     public static Builder builder() {
         return ImmutableSSLConfig.builder();
@@ -129,9 +137,14 @@ public abstract class SSLConfig {
     }
 
     /**
-     * The ciphers.
+     * Include the ciphers defined by the JDK. Default to {@code true}.
+     *
+     * @see SSLSocket#getEnabledCipherSuites()
      */
-    public abstract List<String> ciphers();
+    @Default
+    public boolean ciphersJdk() {
+        return !ciphersProperties() && ciphers().isEmpty();
+    }
 
     /**
      * Include the ciphers defined by the system properties "https.cipherSuites". Defaults to {@code false}.
@@ -142,11 +155,18 @@ public abstract class SSLConfig {
     }
 
     /**
-     * The protocols. Defaults to "TLSv1.2" and "TLSv1.3".
+     * Include the ciphers explicitly defined. Defaults to empty.
+     */
+    public abstract List<String> ciphers();
+
+    /**
+     * Include the protocols defined by the JDK. Default to {@code true}.
+     *
+     * @see SSLSocket#getEnabledProtocols()
      */
     @Default
-    public List<String> protocols() {
-        return Arrays.asList("TLSv1.2", "TLSv1.3");
+    public boolean protocolsJdk() {
+        return !protocolsProperties() && protocols().isEmpty();
     }
 
     /**
@@ -158,11 +178,32 @@ public abstract class SSLConfig {
     }
 
     /**
+     * Include the protocols explicitly defined. Defaults to empty.
+     */
+    public abstract List<String> protocols();
+
+    /**
      * Client authentication. Defaults to {@link ClientAuth#NONE NONE}.
      */
     @Default
     public ClientAuth clientAuthentication() {
         return ClientAuth.NONE;
+    }
+
+    @Check
+    final void checkProtocols() {
+        if ((protocolsJdk() ? 1 : 0) + (protocolsProperties() ? 1 : 0) + (!protocols().isEmpty() ? 1 : 0) != 1) {
+            throw new IllegalArgumentException(
+                    "Must include exactly one of protocolsJdk(), protocolsProperties(), or protocols()");
+        }
+    }
+
+    @Check
+    final void checkCiphers() {
+        if ((ciphersJdk() ? 1 : 0) + (ciphersProperties() ? 1 : 0) + (!ciphers().isEmpty() ? 1 : 0) != 1) {
+            throw new IllegalArgumentException(
+                    "Must include exactly one of ciphersJdk(), ciphersProperties(), or ciphers()");
+        }
     }
 
     public enum ClientAuth {
@@ -200,7 +241,11 @@ public abstract class SSLConfig {
 
         Builder ciphersProperties(boolean ciphersProperties);
 
-        Builder protocols(List<String> elements);
+        Builder addProtocols(String element);
+
+        Builder addProtocols(String... elements);
+
+        Builder addAllProtocols(Iterable<String> elements);
 
         Builder protocolsProperties(boolean protocolsProperties);
 

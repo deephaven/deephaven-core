@@ -1,0 +1,4 @@
+{
+  "ciphersJdk": true,
+  "ciphers": ["TLS_AES_128_GCM_SHA256"]
+}
