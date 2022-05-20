@@ -16,7 +16,7 @@ import java.util.Collection;
 /**
  * A dataset for table-based categorical data.
  */
-public class CategoryDataSeriesTableMap extends AbstractTableBasedCategoryDataSeries
+public class CategoryDataSeriesPartitionedTable extends AbstractTableBasedCategoryDataSeries
         implements CategoryTableDataSeriesInternal, TableSnapshotSeries {
     private static final long serialVersionUID = 2L;
 
@@ -29,7 +29,7 @@ public class CategoryDataSeriesTableMap extends AbstractTableBasedCategoryDataSe
     private transient CategoryDataSeriesKernel kernel;
 
     /**
-     * Creates a new CategoryDataSeriesTableMap instance.
+     * Creates a new CategoryDataSeriesPartitionedTable instance.
      *
      * @param axes {@link AxesImpl} on which this dataset is being plotted
      * @param id data series id
@@ -43,12 +43,12 @@ public class CategoryDataSeriesTableMap extends AbstractTableBasedCategoryDataSe
      * @throws RuntimeException {@code categories} column must be either time, char/{@link Character},
      *         {@link Comparable}, or numeric {@code values} column must be numeric
      */
-    public <T extends Comparable> CategoryDataSeriesTableMap(final AxesImpl axes,
-            final int id,
-            final Comparable<?> name,
-            final TableHandle tableHandle,
-            final String categories,
-            final String values) {
+    public <T extends Comparable> CategoryDataSeriesPartitionedTable(final AxesImpl axes,
+                                                                     final int id,
+                                                                     final Comparable<?> name,
+                                                                     final TableHandle tableHandle,
+                                                                     final String categories,
+                                                                     final String values) {
         super(axes, id, name);
         ArgumentValidations.assertNotNull(axes, "axes", getPlotInfo());
         ArgumentValidations.assertNotNull(tableHandle, "table", getPlotInfo());
@@ -69,7 +69,7 @@ public class CategoryDataSeriesTableMap extends AbstractTableBasedCategoryDataSe
      * @param series series to copy.
      * @param axes new axes to use.
      */
-    private CategoryDataSeriesTableMap(final CategoryDataSeriesTableMap series, final AxesImpl axes) {
+    private CategoryDataSeriesPartitionedTable(final CategoryDataSeriesPartitionedTable series, final AxesImpl axes) {
         super(series, axes);
 
         this.tableHandle = series.tableHandle;
@@ -79,8 +79,8 @@ public class CategoryDataSeriesTableMap extends AbstractTableBasedCategoryDataSe
     }
 
     @Override
-    public CategoryDataSeriesTableMap copy(AxesImpl axes) {
-        return new CategoryDataSeriesTableMap(this, axes);
+    public CategoryDataSeriesPartitionedTable copy(AxesImpl axes) {
+        return new CategoryDataSeriesPartitionedTable(this, axes);
     }
 
     @Override

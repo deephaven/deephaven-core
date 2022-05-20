@@ -15,7 +15,7 @@ import java.util.Collection;
 /**
  * A dataset for {@link SwappableTable} based categorical data.
  */
-public class CategoryDataSeriesSwappableTableMap extends AbstractSwappableTableBasedCategoryDataSeries
+public class CategoryDataSeriesSwappablePartitionedTable extends AbstractSwappableTableBasedCategoryDataSeries
         implements CategorySwappableTableDataSeriesInternal, TableSnapshotSeries {
     private static final long serialVersionUID = 2L;
 
@@ -28,7 +28,7 @@ public class CategoryDataSeriesSwappableTableMap extends AbstractSwappableTableB
     private transient CategoryDataSeriesKernel kernel;
 
     /**
-     * Creates a CategoryDataSeriesSwappableTableMap instance.
+     * Creates a CategoryDataSeriesSwappablePartitionedTable instance.
      *
      * @param axes axes on which this data series will be plotted
      * @param id data series id
@@ -42,7 +42,7 @@ public class CategoryDataSeriesSwappableTableMap extends AbstractSwappableTableB
      * @throws RuntimeException {@code categories} column must be {@link Comparable} {@code values} column must be
      *         numeric
      */
-    public <T extends Comparable> CategoryDataSeriesSwappableTableMap(final AxesImpl axes,
+    public <T extends Comparable> CategoryDataSeriesSwappablePartitionedTable(final AxesImpl axes,
             final int id,
             final Comparable<?> name,
             final SwappableTable swappableTable,
@@ -68,7 +68,7 @@ public class CategoryDataSeriesSwappableTableMap extends AbstractSwappableTableB
      * @param series series to copy.
      * @param axes new axes to use.
      */
-    private CategoryDataSeriesSwappableTableMap(final CategoryDataSeriesSwappableTableMap series, final AxesImpl axes) {
+    private CategoryDataSeriesSwappablePartitionedTable(final CategoryDataSeriesSwappablePartitionedTable series, final AxesImpl axes) {
         super(series, axes);
 
         this.swappableTable = series.swappableTable;
@@ -78,8 +78,8 @@ public class CategoryDataSeriesSwappableTableMap extends AbstractSwappableTableB
     }
 
     @Override
-    public CategoryDataSeriesSwappableTableMap copy(AxesImpl axes) {
-        return new CategoryDataSeriesSwappableTableMap(this, axes);
+    public CategoryDataSeriesSwappablePartitionedTable copy(AxesImpl axes) {
+        return new CategoryDataSeriesSwappablePartitionedTable(this, axes);
     }
 
     ////////////////////////// external //////////////////////////

@@ -9,21 +9,21 @@ import io.deephaven.engine.table.TableDefinition;
 import java.util.Collection;
 
 /**
- * {@link TableMapHandle} with an underlying table. The purpose of this class is to allow consolidation between
- * constructed TableMaps in FigureWidget.
+ * {@link PartitionedTableHandle} with an underlying table. The purpose of this class is to allow consolidation between
+ * constructed PartitionedTables in FigureWidget.
  */
-public class TableBackedTableMapHandle extends TableMapHandle {
+public class TableBackedPartitionedTableHandle extends PartitionedTableHandle {
 
     private transient Table table;
     private final TableDefinition tableDefinition;
 
-    public TableBackedTableMapHandle(final TableHandle tableHandle, final String[] keyColumns,
-            final PlotInfo plotInfo) {
+    public TableBackedPartitionedTableHandle(final TableHandle tableHandle, final String[] keyColumns,
+                                             final PlotInfo plotInfo) {
         this(tableHandle.getTable(), tableHandle.getColumns(), keyColumns, plotInfo);
     }
 
-    public TableBackedTableMapHandle(final Table table, final Collection<String> columns, final String[] keyColumns,
-            final PlotInfo plotInfo) {
+    public TableBackedPartitionedTableHandle(final Table table, final Collection<String> columns, final String[] keyColumns,
+                                             final PlotInfo plotInfo) {
         super(columns, keyColumns, plotInfo);
 
         ArgumentValidations.assertNotNull(table, "table", plotInfo);

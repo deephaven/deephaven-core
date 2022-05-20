@@ -92,7 +92,7 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
         }
         t = TableTools.newTable(columns).updateView("Cat = i == 0 ? `A` : `B`");
         SelectableDataSetOneClick oneClick =
-                new SelectableDataSetOneClick(t.partitionBy(columnNames), t.getDefinition(), new String[] {"Cat"});
+                new SelectableDataSetOneClick(t.partitionBy(columnNames));
         final ScatterPlotMatrix matrix = ScatterPlotMatrix.scatterPlotMatrix(oneClick, columnNames);
         final XYDataSeriesInternal series = (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
         for (int j = 0; j < series.size(); j++) {

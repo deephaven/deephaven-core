@@ -84,13 +84,13 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public CategoryErrorBarDataSeriesInternal createSeries(String seriesName, final BaseTable t,
             final DynamicSeriesNamer seriesNamer) {
         seriesName = makeSeriesName(seriesName, seriesNamer);
-        final NonserializableCategoryDataSeriesTableMap series =
-                new NonserializableCategoryDataSeriesTableMap(axes(), seriesName, t, categories, values, yLow, yHigh);
+        final NonserializableCategoryDataSeriesPartitionedTable series =
+                new NonserializableCategoryDataSeriesPartitionedTable(axes(), seriesName, t, categories, values, yLow, yHigh);
         series.addSwappableTable(getSwappableTable());
         return series;
     }
 
-    private static class NonserializableCategoryDataSeriesTableMap extends AbstractTableBasedCategoryDataSeries
+    private static class NonserializableCategoryDataSeriesPartitionedTable extends AbstractTableBasedCategoryDataSeries
             implements CategoryErrorBarDataSeriesInternal, CategoryTableDataSeriesInternal {
         private final Table table;
 
@@ -102,7 +102,7 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
         private final CategoryErrorBarDataSeriesKernel kernel;
 
         /**
-         * Creates a new CategoryDataSeriesTableMap instance.
+         * Creates a new CategoryDataSeriesPartitionedTable instance.
          *
          * @param axes {@link AxesImpl} on which this dataset is being plotted
          * @param name series name
@@ -115,7 +115,7 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
          * @throws RuntimeException {@code categories} column must be either time, char/{@link Character},
          *         {@link Comparable}, or numeric {@code values} column must be numeric
          */
-        <T extends Comparable> NonserializableCategoryDataSeriesTableMap(final AxesImpl axes,
+        <T extends Comparable> NonserializableCategoryDataSeriesPartitionedTable(final AxesImpl axes,
                 final Comparable name,
                 final BaseTable table,
                 final String categoryCol,
@@ -143,9 +143,9 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
         }
 
         @Override
-        public NonserializableCategoryDataSeriesTableMap copy(AxesImpl axes) {
+        public NonserializableCategoryDataSeriesPartitionedTable copy(AxesImpl axes) {
             throw new UnsupportedOperationException(
-                    "Copy constructors are not supported on NonserializableCategoryDataSeriesTableMap");
+                    "Copy constructors are not supported on NonserializableCategoryDataSeriesPartitionedTable");
         }
 
         @Override

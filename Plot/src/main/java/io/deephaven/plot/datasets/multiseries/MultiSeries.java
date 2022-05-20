@@ -19,7 +19,7 @@ public interface MultiSeries extends Series {
     // add functions to modify multiseries here (e.g. color)
 
     /**
-     * Defines the procedure to name a generated series. The input of the naming function is the table map key
+     * Defines the procedure to name a generated series. The input of the naming function is the partitioned table key
      * corresponding to the new series.
      *
      * @param namingFunction series naming function
@@ -27,7 +27,7 @@ public interface MultiSeries extends Series {
     MultiSeries seriesNamingFunction(final Function<Object, String> namingFunction);
 
     /**
-     * Defines the procedure to name a generated series. The input of the naming function is the table map key
+     * Defines the procedure to name a generated series. The input of the naming function is the partitioned table key
      * corresponding to the new series.
      *
      * @param namingFunction series naming closure

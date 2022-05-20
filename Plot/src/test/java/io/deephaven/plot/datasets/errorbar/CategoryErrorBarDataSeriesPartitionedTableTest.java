@@ -7,13 +7,13 @@ package io.deephaven.plot.datasets.errorbar;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.plot.*;
 import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesInternal;
-import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesTableMap;
+import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesPartitionedTable;
 import io.deephaven.plot.util.PlotUtils;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 
-public class CategoryErrorBarDataSeriesTableMapTest extends BaseArrayTestCase {
+public class CategoryErrorBarDataSeriesPartitionedTableTest extends BaseArrayTestCase {
 
     public void testCopy() {
         final BaseFigureImpl figure = new BaseFigureImpl();
@@ -38,9 +38,9 @@ public class CategoryErrorBarDataSeriesTableMapTest extends BaseArrayTestCase {
                 TableTools.doubleCol("yHigh", dataYHigh));
 
         final TableHandle h = PlotUtils.createCategoryTableHandle(t, "x", "y", "yLow", "yHigh");
-        final CategoryErrorBarDataSeriesTableMap series =
-                new CategoryErrorBarDataSeriesTableMap(chart.newAxes(), 1, "Test", h, "x", "y", "yLow", "yHigh");
-        final CategoryErrorBarDataSeriesTableMap copy = series.copy(chart.newAxes());
+        final CategoryErrorBarDataSeriesPartitionedTable series =
+                new CategoryErrorBarDataSeriesPartitionedTable(chart.newAxes(), 1, "Test", h, "x", "y", "yLow", "yHigh");
+        final CategoryErrorBarDataSeriesPartitionedTable copy = series.copy(chart.newAxes());
 
         series.size();
         copy.size();
@@ -50,7 +50,7 @@ public class CategoryErrorBarDataSeriesTableMapTest extends BaseArrayTestCase {
 
     }
 
-    private void testCopy(final CategoryErrorBarDataSeriesTableMap series,
+    private void testCopy(final CategoryErrorBarDataSeriesPartitionedTable series,
             final CategoryErrorBarDataSeriesInternal copy) {
         assertEquals(series.getValue("0"), copy.getValue("0"));
         assertEquals(series.getValue("5"), copy.getValue("5"));

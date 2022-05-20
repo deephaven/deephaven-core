@@ -17,7 +17,7 @@ import java.util.Collection;
 /**
  * A dataset for {@link SwappableTable} based categorical data.
  */
-public class CategoryErrorBarDataSeriesSwappableTableMap extends AbstractSwappableTableBasedCategoryDataSeries
+public class CategoryErrorBarDataSeriesSwappablePartitionedTable extends AbstractSwappableTableBasedCategoryDataSeries
         implements CategoryErrorBarDataSeriesInternal, CategorySwappableTableDataSeriesInternal, TableSnapshotSeries {
     private static final long serialVersionUID = 2L;
 
@@ -32,7 +32,7 @@ public class CategoryErrorBarDataSeriesSwappableTableMap extends AbstractSwappab
     private transient CategoryErrorBarDataSeriesKernel kernel;
 
     /**
-     * Creates a CategoryErrorBarDataSeriesSwappableTableMap instance.
+     * Creates a CategoryErrorBarDataSeriesSwappablePartitionedTable instance.
      *
      * @param axes axes on which this data series will be plotted
      * @param id data series id
@@ -46,14 +46,14 @@ public class CategoryErrorBarDataSeriesSwappableTableMap extends AbstractSwappab
      * @throws RuntimeException {@code categories} column must be {@link Comparable} {@code values} column must be
      *         numeric
      */
-    public <T extends Comparable> CategoryErrorBarDataSeriesSwappableTableMap(final AxesImpl axes,
-            final int id,
-            final Comparable name,
-            final SwappableTable swappableTable,
-            final String categories,
-            final String valueCol,
-            final String errorBarLowCol,
-            final String errorBarHighCol) {
+    public <T extends Comparable> CategoryErrorBarDataSeriesSwappablePartitionedTable(final AxesImpl axes,
+                                                                                      final int id,
+                                                                                      final Comparable name,
+                                                                                      final SwappableTable swappableTable,
+                                                                                      final String categories,
+                                                                                      final String valueCol,
+                                                                                      final String errorBarLowCol,
+                                                                                      final String errorBarHighCol) {
         super(axes, id, name);
         ArgumentValidations.assertNotNull(axes, "axes", getPlotInfo());
         ArgumentValidations.assertNotNull(swappableTable, "swappableTable", getPlotInfo());
@@ -82,8 +82,8 @@ public class CategoryErrorBarDataSeriesSwappableTableMap extends AbstractSwappab
      * @param series series to copy.
      * @param axes new axes to use.
      */
-    private CategoryErrorBarDataSeriesSwappableTableMap(final CategoryErrorBarDataSeriesSwappableTableMap series,
-            final AxesImpl axes) {
+    private CategoryErrorBarDataSeriesSwappablePartitionedTable(final CategoryErrorBarDataSeriesSwappablePartitionedTable series,
+                                                                final AxesImpl axes) {
         super(series, axes);
 
         this.swappableTable = series.swappableTable;
@@ -96,8 +96,8 @@ public class CategoryErrorBarDataSeriesSwappableTableMap extends AbstractSwappab
     }
 
     @Override
-    public CategoryErrorBarDataSeriesSwappableTableMap copy(AxesImpl axes) {
-        return new CategoryErrorBarDataSeriesSwappableTableMap(this, axes);
+    public CategoryErrorBarDataSeriesSwappablePartitionedTable copy(AxesImpl axes) {
+        return new CategoryErrorBarDataSeriesSwappablePartitionedTable(this, axes);
     }
 
     @Override

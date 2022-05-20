@@ -10,14 +10,14 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 
-public class TestCategoryDataSeriesSwappableTableMap extends BaseArrayTestCase {
+public class TestCategoryDataSeriesSwappablePartitionedTable extends BaseArrayTestCase {
 
     @Override
     public void setUp() throws Exception {
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
     }
 
-    public void testCategoryDataSeriesTableMap() {
+    public void testCategoryDataSeriesPartitionedTable() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         figure.newChart().newAxes();
         final String[] dataX = new String[500];

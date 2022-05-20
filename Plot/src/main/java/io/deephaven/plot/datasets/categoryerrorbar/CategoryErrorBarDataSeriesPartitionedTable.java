@@ -14,7 +14,7 @@ import io.deephaven.engine.table.Table;
 
 import java.util.Collection;
 
-public class CategoryErrorBarDataSeriesTableMap extends AbstractTableBasedCategoryDataSeries
+public class CategoryErrorBarDataSeriesPartitionedTable extends AbstractTableBasedCategoryDataSeries
         implements CategoryErrorBarDataSeriesInternal, CategoryTableDataSeriesInternal, SeriesInternal {
     private static final long serialVersionUID = 2L;
 
@@ -29,7 +29,7 @@ public class CategoryErrorBarDataSeriesTableMap extends AbstractTableBasedCatego
     private transient CategoryErrorBarDataSeriesKernel kernel;
 
     /**
-     * Creates a new CategoryErrorBarDataSeriesTableMap instance.
+     * Creates a new CategoryErrorBarDataSeriesPartitionedTable instance.
      *
      * @param axes axes on which this data series will be plotted
      * @param id data series id
@@ -44,7 +44,7 @@ public class CategoryErrorBarDataSeriesTableMap extends AbstractTableBasedCatego
      * @throws RuntimeException {@code categoryCol} column must be {@link Comparable} {@code values} column must be
      *         numeric {@code yLow} column must be numeric {@code yHigh} column must be numeric
      */
-    public CategoryErrorBarDataSeriesTableMap(final AxesImpl axes,
+    public CategoryErrorBarDataSeriesPartitionedTable(final AxesImpl axes,
             final int id,
             final Comparable name,
             final TableHandle tableHandle,
@@ -79,7 +79,7 @@ public class CategoryErrorBarDataSeriesTableMap extends AbstractTableBasedCatego
      * @param series series to copy.
      * @param axes new axes to use.
      */
-    private CategoryErrorBarDataSeriesTableMap(final CategoryErrorBarDataSeriesTableMap series, final AxesImpl axes) {
+    private CategoryErrorBarDataSeriesPartitionedTable(final CategoryErrorBarDataSeriesPartitionedTable series, final AxesImpl axes) {
         super(series, axes);
 
         this.tableHandle = series.tableHandle;
@@ -92,8 +92,8 @@ public class CategoryErrorBarDataSeriesTableMap extends AbstractTableBasedCatego
     }
 
     @Override
-    public CategoryErrorBarDataSeriesTableMap copy(AxesImpl axes) {
-        return new CategoryErrorBarDataSeriesTableMap(this, axes);
+    public CategoryErrorBarDataSeriesPartitionedTable copy(AxesImpl axes) {
+        return new CategoryErrorBarDataSeriesPartitionedTable(this, axes);
     }
 
     ////////////////////////// internal //////////////////////////

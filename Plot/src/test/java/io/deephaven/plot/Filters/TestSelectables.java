@@ -13,7 +13,7 @@ import io.deephaven.plot.filters.Selectables;
 import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.PartitionedTable;
 
 import java.util.*;
 
@@ -40,17 +40,17 @@ public class TestSelectables extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains("empty"));
         }
         testFilteredTable(Selectables.oneClick(table, byColumn));
-        testFilteredTable(new SelectableDataSetOneClick(table.partitionBy(byColumn), table.getDefinition(),
-                new String[] {byColumn}));
+        testFilteredTable(new SelectableDataSetOneClick(table.partitionBy(byColumn)
+        ));
     }
 
     private void testFilteredTable(SelectableDataSet<String, Set<Object>> selectableDataSet) {
         SwappableTable swappableTable =
                 selectableDataSet.getSwappableTable("M", figure.newChart(), t -> t, byColumn, valueColumn);
-        testTableMapEquals(table.partitionBy(byColumn), swappableTable.getTableMapHandle().getTableMap());
+        testPartitionedTableEquals(table.partitionBy(byColumn), swappableTable.getPartitionedTableHandle().getPartitionedTable());
     }
 
-    private void testTableMapEquals(final TableMap t1, final TableMap t2) {
+    private void testPartitionedTableEquals(final PartitionedTable t1, final PartitionedTable t2) {
         for (final String c : categories) {
             testTableEquals(t1.get(c), t2.get(c));
         }

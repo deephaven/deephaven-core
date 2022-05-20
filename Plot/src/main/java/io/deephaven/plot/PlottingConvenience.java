@@ -8,34 +8,11 @@
 
 package io.deephaven.plot;
 
-import groovy.lang.Closure;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.gui.color.Color;
-import io.deephaven.plot.Figure;
-import io.deephaven.plot.FigureFactory;
-import io.deephaven.plot.Figure;
-import io.deephaven.plot.Font;
-import io.deephaven.plot.Font.FontStyle;
-import io.deephaven.plot.LineStyle;
-import io.deephaven.plot.LineStyle.LineEndStyle;
-import io.deephaven.plot.LineStyle.LineJoinStyle;
-import io.deephaven.plot.PlotStyle;
-import io.deephaven.plot.axistransformations.AxisTransform;
 import io.deephaven.plot.axistransformations.AxisTransforms;
 import io.deephaven.plot.composite.ScatterPlotMatrix;
-import io.deephaven.plot.datasets.data.IndexableData;
-import io.deephaven.plot.datasets.data.IndexableNumericData;
-import io.deephaven.plot.filters.SelectableDataSet;
-import io.deephaven.plot.filters.SelectableDataSetOneClick;
 import io.deephaven.plot.filters.Selectables;
-import io.deephaven.time.DateTime;
-import java.lang.Comparable;
-import java.lang.String;
-import java.util.Date;
-import java.util.List;
-import java.util.function.DoubleUnaryOperator;
 
 /** 
 * A library of methods for constructing plots.
@@ -325,29 +302,15 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.filters.Selectables#oneClick} 
     **/
-    public static  io.deephaven.plot.filters.SelectableDataSetOneClick oneClick( io.deephaven.engine.table.TableMap tMap, io.deephaven.engine.table.TableDefinition tableDefinition, java.lang.String... byColumns ) {
-        return Selectables.oneClick( tMap, tableDefinition, byColumns );
+    public static  io.deephaven.plot.filters.SelectableDataSetOneClick oneClick( PartitionedTable pTable ) {
+        return Selectables.oneClick( pTable );
     }
 
     /**
     * See {@link io.deephaven.plot.filters.Selectables#oneClick} 
     **/
-    public static  io.deephaven.plot.filters.SelectableDataSetOneClick oneClick( io.deephaven.engine.table.TableMap tMap, io.deephaven.engine.table.Table t, java.lang.String... byColumns ) {
-        return Selectables.oneClick( tMap, t, byColumns );
-    }
-
-    /**
-    * See {@link io.deephaven.plot.filters.Selectables#oneClick} 
-    **/
-    public static  io.deephaven.plot.filters.SelectableDataSetOneClick oneClick( io.deephaven.engine.table.TableMap tMap, io.deephaven.engine.table.TableDefinition tableDefinition, boolean requireAllFiltersToDisplay, java.lang.String... byColumns ) {
-        return Selectables.oneClick( tMap, tableDefinition, requireAllFiltersToDisplay, byColumns );
-    }
-
-    /**
-    * See {@link io.deephaven.plot.filters.Selectables#oneClick} 
-    **/
-    public static  io.deephaven.plot.filters.SelectableDataSetOneClick oneClick( io.deephaven.engine.table.TableMap tMap, io.deephaven.engine.table.Table t, boolean requireAllFiltersToDisplay, java.lang.String... byColumns ) {
-        return Selectables.oneClick( tMap, t, requireAllFiltersToDisplay, byColumns );
+    public static  io.deephaven.plot.filters.SelectableDataSetOneClick oneClick( PartitionedTable pTable, boolean requireAllFiltersToDisplay ) {
+        return Selectables.oneClick( pTable, requireAllFiltersToDisplay );
     }
 
     /**

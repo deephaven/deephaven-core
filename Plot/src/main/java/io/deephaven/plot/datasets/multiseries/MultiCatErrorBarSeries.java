@@ -12,7 +12,7 @@ import io.deephaven.plot.datasets.category.CategoryTableDataSeriesInternal;
 import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesKernel;
 import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesInternal;
 import io.deephaven.plot.util.ArgumentValidations;
-import io.deephaven.plot.util.tables.TableBackedTableMapHandle;
+import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 
@@ -21,7 +21,7 @@ import java.util.Collection;
 /**
  * A {@link AbstractMultiSeries} collection that holds and generates {@link CategoryErrorBarDataSeriesInternal}.
  */
-public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<CategoryErrorBarDataSeriesInternal> {
+public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiSeries<CategoryErrorBarDataSeriesInternal> {
 
     private static final long serialVersionUID = 3180012797112976859L;
     private final String categories;
@@ -35,7 +35,7 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
      * @param axes axes on which this multiseries will be plotted
      * @param id data series id
      * @param name series name
-     * @param tableMapHandle table data
+     * @param partitionedTableHandle table data
      * @param categories column in {@code t} holding discrete data
      * @param values column in {@code t} holding numeric data
      * @param byColumns column(s) in {@code t} that holds the grouping data
@@ -43,20 +43,20 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
     public MultiCatErrorBarSeries(final AxesImpl axes,
             final int id,
             final Comparable name,
-            final TableBackedTableMapHandle tableMapHandle,
+            final TableBackedPartitionedTableHandle partitionedTableHandle,
             final String categories,
             final String values,
             final String yLow,
             final String yHigh,
             final String[] byColumns) {
-        super(axes, id, name, tableMapHandle, categories, values, byColumns);
-        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(tableMapHandle.getTableDefinition(),
+        super(axes, id, name, partitionedTableHandle, categories, values, byColumns);
+        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(partitionedTableHandle.getTableDefinition(),
                 categories, "Invalid data type in category column: column=" + categories, getPlotInfo());
-        ArgumentValidations.assertIsNumericOrTime(tableMapHandle.getTableDefinition(), values,
+        ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), values,
                 "Invalid data type in category column: column=" + values, getPlotInfo());
-        ArgumentValidations.assertIsNumericOrTime(tableMapHandle.getTableDefinition(), yLow,
+        ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), yLow,
                 "Invalid data type in category column: column=" + yLow, getPlotInfo());
-        ArgumentValidations.assertIsNumericOrTime(tableMapHandle.getTableDefinition(), yHigh,
+        ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), yHigh,
                 "Invalid data type in category column: column=" + yHigh, getPlotInfo());
         this.categories = categories;
         this.values = values;
@@ -84,7 +84,7 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
     public CategoryErrorBarDataSeriesInternal createSeries(String seriesName, final BaseTable t,
             final DynamicSeriesNamer seriesNamer) {
         seriesName = makeSeriesName(seriesName, seriesNamer);
-        final NonserializableCategoryDataSeriesTableMap series = new NonserializableCategoryDataSeriesTableMap(axes(),
+        final NonserializableCategoryDataSeriesPartitionedTable series = new NonserializableCategoryDataSeriesPartitionedTable(axes(),
                 seriesName,
                 t,
                 categories,
@@ -94,7 +94,7 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
         return series;
     }
 
-    private static class NonserializableCategoryDataSeriesTableMap extends AbstractTableBasedCategoryDataSeries
+    private static class NonserializableCategoryDataSeriesPartitionedTable extends AbstractTableBasedCategoryDataSeries
             implements CategoryErrorBarDataSeriesInternal, CategoryTableDataSeriesInternal {
         private final BaseTable table;
 
@@ -106,7 +106,7 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
         private final CategoryErrorBarDataSeriesKernel kernel;
 
         /**
-         * Creates a new CategoryDataSeriesTableMap instance.
+         * Creates a new CategoryDataSeriesPartitionedTable instance.
          *
          * @param axes {@link AxesImpl} on which this dataset is being plotted
          * @param name series name
@@ -119,7 +119,7 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
          * @throws RuntimeException {@code categories} column must be either time, char/{@link Character},
          *         {@link Comparable}, or numeric {@code values} column must be numeric
          */
-        <T extends Comparable> NonserializableCategoryDataSeriesTableMap(final AxesImpl axes,
+        <T extends Comparable> NonserializableCategoryDataSeriesPartitionedTable(final AxesImpl axes,
                 final Comparable name,
                 final BaseTable table,
                 final String categoryCol,
@@ -147,9 +147,9 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
         }
 
         @Override
-        public NonserializableCategoryDataSeriesTableMap copy(AxesImpl axes) {
+        public NonserializableCategoryDataSeriesPartitionedTable copy(AxesImpl axes) {
             throw new UnsupportedOperationException(
-                    "Copy constructors are not supported on NonserializableCategoryDataSeriesTableMap");
+                    "Copy constructors are not supported on NonserializableCategoryDataSeriesPartitionedTable");
         }
 
         @Override
@@ -219,7 +219,7 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
     @Override public <COLOR extends io.deephaven.gui.color.Paint> MultiCatErrorBarSeries pointColor(final java.util.function.Function<java.lang.Comparable, COLOR> pointColor, final Object... multiSeriesKey) {
         final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_COLOR + this.hashCode();
         applyFunction(pointColor, newColumn, getX(), io.deephaven.gui.color.Paint.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointColor(getTableMapHandle().getTable(), getX(), newColumn, multiSeriesKey), this));
+        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointColor(getPartitionedTableHandle().getTable(), getX(), newColumn, multiSeriesKey), this));
         return this;
     }
 
@@ -234,7 +234,7 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
     @Override public <COLOR extends java.lang.Integer> MultiCatErrorBarSeries pointColorInteger(final java.util.function.Function<java.lang.Comparable, COLOR> colors, final Object... multiSeriesKey) {
         final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_COLOR + this.hashCode();
         applyFunction(colors, newColumn, getX(), java.lang.Integer.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointColor(getTableMapHandle().getTable(), getX(), newColumn, multiSeriesKey), this));
+        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointColor(getPartitionedTableHandle().getTable(), getX(), newColumn, multiSeriesKey), this));
         return this;
     }
 
@@ -249,7 +249,7 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
     @Override public <LABEL> MultiCatErrorBarSeries pointLabel(final java.util.function.Function<java.lang.Comparable, LABEL> pointLabels, final Object... multiSeriesKey) {
         final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_LABEL + this.hashCode();
         applyFunction(pointLabels, newColumn, getX(), java.lang.Object.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointLabel(getTableMapHandle().getTable(), getX(), newColumn, multiSeriesKey), this));
+        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointLabel(getPartitionedTableHandle().getTable(), getX(), newColumn, multiSeriesKey), this));
         return this;
     }
 
@@ -264,7 +264,7 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
     @Override public MultiCatErrorBarSeries pointShape(final java.util.function.Function<java.lang.Comparable, java.lang.String> pointShapes, final Object... multiSeriesKey) {
         final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_SHAPE + this.hashCode();
         applyFunction(pointShapes, newColumn, getX(), java.lang.String.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointShape(getTableMapHandle().getTable(), getX(), newColumn, multiSeriesKey), this));
+        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointShape(getPartitionedTableHandle().getTable(), getX(), newColumn, multiSeriesKey), this));
         return this;
     }
 
@@ -279,7 +279,7 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
     @Override public <NUMBER extends java.lang.Number> MultiCatErrorBarSeries pointSize(final java.util.function.Function<java.lang.Comparable, NUMBER> pointSizes, final Object... multiSeriesKey) {
         final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_SIZE + this.hashCode();
         applyFunction(pointSizes, newColumn, getX(), java.lang.Number.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointSize(getTableMapHandle().getTable(), getX(), newColumn, multiSeriesKey), this));
+        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointSize(getPartitionedTableHandle().getTable(), getX(), newColumn, multiSeriesKey), this));
         return this;
     }
 

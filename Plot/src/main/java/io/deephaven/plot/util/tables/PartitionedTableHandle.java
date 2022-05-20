@@ -4,11 +4,11 @@
 
 package io.deephaven.plot.util.tables;
 
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.plot.errors.PlotExceptionCause;
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableMap;
 
 import java.io.Serializable;
 import java.util.*;
@@ -16,15 +16,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 /**
- * Holds a TableMap.
+ * Holds a {@link PartitionedTable}.
  */
-public abstract class TableMapHandle implements Serializable, PlotExceptionCause {
+public abstract class PartitionedTableHandle implements Serializable, PlotExceptionCause {
     private static final AtomicInteger nextId = new AtomicInteger();
 
-    /** A reference to the source {@link TableMap} for this handle. */
-    private transient TableMap tableMap;
+    /** A reference to the source {@link PartitionedTable} for this handle. */
+    private transient PartitionedTable partitionedTable;
 
-    /** The key columns that define the tablemap, in order */
+    /** The key columns that define the partitioned table, in order */
     private String[] orderedKeyColumns;
 
     /** The set of all columns that will be used by clients of this handle. */
@@ -41,7 +41,7 @@ public abstract class TableMapHandle implements Serializable, PlotExceptionCause
 
     private final PlotInfo plotInfo;
 
-    protected TableMapHandle(final Collection<String> columns, final String[] keyColumns, final PlotInfo plotInfo) {
+    protected PartitionedTableHandle(final Collection<String> columns, final String[] keyColumns, final PlotInfo plotInfo) {
         this.id = nextId.incrementAndGet();
         this.requiredColumns = new LinkedHashSet<>(columns);
         Collections.addAll(this.requiredColumns, keyColumns);
@@ -51,16 +51,16 @@ public abstract class TableMapHandle implements Serializable, PlotExceptionCause
 
     public abstract TableDefinition getTableDefinition();
 
-    public TableMap getTableMap() {
-        return tableMap;
+    public PartitionedTable getPartitionedTable() {
+        return partitionedTable;
     }
 
     // Please call setKeyColumnsOrdered if necessary after using this method
-    public void setTableMap(final TableMap tableMap) {
-        this.tableMap = tableMap;
+    public void setPartitionedTable(final PartitionedTable partitionedTable) {
+        this.partitionedTable = partitionedTable;
     }
 
-    // Setting the TableMap may result in a different order for columns
+    // Setting the PartitionedTable may result in a different order for columns
     public void setKeyColumnsOrdered(final String[] orderedKeyColumns) {
         this.orderedKeyColumns = orderedKeyColumns;
     }
@@ -79,10 +79,10 @@ public abstract class TableMapHandle implements Serializable, PlotExceptionCause
 
     /**
      * Get the set of columns to .view() when the table is fetched. Typically this is identical to {@link #getColumns()}
-     * however, there are situations where the transformations applied to a TableMap result in columns that are not
-     * present in the base tableMap. (for example catHistPlot).
+     * however, there are situations where the transformations applied to a PartitionedTable result in columns that are
+     * not present in the base PartitionedTable. (for example catHistPlot).
      *
-     * @return
+     * @return The columms to apply via view on fetch
      */
     public Set<String> getFetchViewColumns() {
         return getColumns();

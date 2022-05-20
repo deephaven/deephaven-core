@@ -11,7 +11,7 @@ import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 
-public class TestCategoryDataSeriesTableMap extends BaseArrayTestCase {
+public class TestCategoryDataSeriesPartitionedTable extends BaseArrayTestCase {
 
     public void testCopy() {
         final BaseFigureImpl figure = new BaseFigureImpl();
@@ -27,9 +27,9 @@ public class TestCategoryDataSeriesTableMap extends BaseArrayTestCase {
                 TableTools.doubleCol("y", dataY));
 
         final TableHandle h = PlotUtils.createCategoryTableHandle(t, "x", "y");
-        final CategoryDataSeriesTableMap series =
-                new CategoryDataSeriesTableMap(chart.newAxes(), 1, "Test", h, "x", "y");
-        final CategoryDataSeriesTableMap copy = series.copy(new BaseFigureImpl().newChart().newAxes());
+        final CategoryDataSeriesPartitionedTable series =
+                new CategoryDataSeriesPartitionedTable(chart.newAxes(), 1, "Test", h, "x", "y");
+        final CategoryDataSeriesPartitionedTable copy = series.copy(new BaseFigureImpl().newChart().newAxes());
 
         series.size();
         copy.size();
@@ -39,7 +39,7 @@ public class TestCategoryDataSeriesTableMap extends BaseArrayTestCase {
 
     }
 
-    private void testCopy(final CategoryDataSeriesTableMap series, final AbstractCategoryDataSeries copy) {
+    private void testCopy(final CategoryDataSeriesPartitionedTable series, final AbstractCategoryDataSeries copy) {
         assertEquals(series.getValue("0"), copy.getValue("0"));
         assertEquals(series.getValue("5"), copy.getValue("5"));
         assertEquals(series.getValue("55"), copy.getValue("55"));

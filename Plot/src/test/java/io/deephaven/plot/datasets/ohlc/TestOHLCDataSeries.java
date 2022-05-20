@@ -5,10 +5,10 @@
 package io.deephaven.plot.datasets.ohlc;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.datasets.data.IndexableNumericDataArrayDateTime;
-import io.deephaven.plot.util.tables.TableBackedTableMapHandle;
 import io.deephaven.time.DateTime;
 import io.deephaven.gui.color.Color;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
@@ -80,7 +80,7 @@ public class TestOHLCDataSeries extends BaseArrayTestCase {
         ohlc2.addTableHandle(new TableHandle(TableTools.emptyTable(2).updateView("A=i", "B=i"), "A", "B"));
         ohlc2.addTableHandle(new TableHandle(TableTools.emptyTable(2).updateView("C=i"), "C"));
         final SwappableTable swappableTable =
-                new SwappableTable(new TableBackedTableMapHandle(TableTools.emptyTable(2).updateView("A=i", "B=i"),
+                new SwappableTable(new TableBackedPartitionedTableHandle(TableTools.emptyTable(2).updateView("A=i", "B=i"),
                         new ArrayList<>(), new String[0], null) {}) {
                     @Override
                     public void addColumn(String column) {

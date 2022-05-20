@@ -13,7 +13,7 @@ import io.deephaven.plot.datasets.category.CategoryDataSeries;
 import io.deephaven.plot.datasets.data.*;
 import io.deephaven.plot.datasets.interval.IntervalXYDataSeriesArray;
 import io.deephaven.plot.errors.PlotInfo;
-import io.deephaven.plot.util.tables.TableBackedTableMapHandle;
+import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
@@ -690,19 +690,19 @@ public class PlotUtils {
         return new TableHandle(t, cols);
     }
 
-    public static TableBackedTableMapHandle createCategoryTableMapHandle(Table t,
-            final String catColumn,
-            final String[] otherColumns,
-            final String[] byColumns,
-            final PlotInfo plotInfo) {
-        return createCategoryTableMapHandle(t, new String[] {catColumn}, otherColumns, byColumns, plotInfo);
+    public static TableBackedPartitionedTableHandle createCategoryPartitionedTableHandle(Table t,
+                                                                                 final String catColumn,
+                                                                                 final String[] otherColumns,
+                                                                                 final String[] byColumns,
+                                                                                 final PlotInfo plotInfo) {
+        return createCategoryPartitionedTableHandle(t, new String[] {catColumn}, otherColumns, byColumns, plotInfo);
     }
 
-    public static TableBackedTableMapHandle createCategoryTableMapHandle(Table t,
-            final String[] catColumns,
-            final String[] otherColumns,
-            final String[] byColumns,
-            final PlotInfo plotInfo) {
+    public static TableBackedPartitionedTableHandle createCategoryPartitionedTableHandle(Table t,
+                                                                                 final String[] catColumns,
+                                                                                 final String[] otherColumns,
+                                                                                 final String[] byColumns,
+                                                                                 final PlotInfo plotInfo) {
         final String[] lastByColumns = new String[catColumns.length + byColumns.length];
         System.arraycopy(catColumns, 0, lastByColumns, 0, catColumns.length);
         System.arraycopy(byColumns, 0, lastByColumns, catColumns.length, byColumns.length);
@@ -714,7 +714,7 @@ public class PlotUtils {
         Collections.addAll(columns, lastByColumns);
         columns.add(CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
 
-        return new TableBackedTableMapHandle(t, columns, byColumns, plotInfo);
+        return new TableBackedPartitionedTableHandle(t, columns, byColumns, plotInfo);
     }
 
     public static Table createCategoryTable(final Table t, final String[] catColumns) {
