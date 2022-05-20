@@ -14,7 +14,9 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.StaticHashedAsOfJoinStateManager;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -27,6 +29,8 @@ import io.deephaven.engine.table.impl.util.*;
 
 // mixin rehash
 import java.util.Arrays;
+import java.util.function.LongConsumer;
+
 import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QByte\E
 import io.deephaven.engine.table.impl.sort.permute.BytePermuteKernel;
@@ -41,6 +45,7 @@ import org.jetbrains.annotations.NotNull;
 import org.apache.commons.lang3.mutable.MutableInt;
 // endregion extra imports
 
+import static io.deephaven.engine.table.impl.AsOfJoinHelper.USE_TYPED_STATE_MANAGER;
 import static io.deephaven.util.SafeCloseable.closeArray;
 
 // region class visibility
@@ -548,7 +553,6 @@ class StaticChunkedAsOfJoinStateManager
                             , final MutableInt slotCount
                             // endregion extra build arguments
     ) {
-        long hashSlotOffset = 0;
         // region build start
         final IntegerArraySource buildCookieSource = new IntegerArraySource();
         final IntegerArraySource overflowBuildCookieSource = new IntegerArraySource();
@@ -884,7 +888,6 @@ class StaticChunkedAsOfJoinStateManager
 
                 // region copy hash slots
                 // endregion copy hash slots
-                hashSlotOffset += chunkOk.size();
             }
             // region post build loop
             // endregion post build loop
@@ -909,8 +912,8 @@ class StaticChunkedAsOfJoinStateManager
             if (tableHashPivot == tableSize) {
                 tableSize *= 2;
                 ensureCapacity(tableSize);
-                            // region rehash ensure capacity
-                            buildCookieSource.ensureCapacity(tableSize);
+                // region rehash ensure capacity
+            buildCookieSource.ensureCapacity(tableSize);
                 // endregion rehash ensure capacity
             }
 
@@ -980,13 +983,13 @@ class StaticChunkedAsOfJoinStateManager
                     final byte stateValueToMove = stateSource.getUnsafe(oldHashLocation);
                     stateSource.set(newHashLocation, stateValueToMove);
                     stateSource.set(oldHashLocation, EMPTY_VALUE);
-                                // region rehash move values
+                    // region rehash move values
 
-                                leftRowSetSource.set(newHashLocation, leftRowSetSource.get(oldHashLocation));
-                                leftRowSetSource.set(oldHashLocation, null);
+                    leftRowSetSource.set(newHashLocation, leftRowSetSource.get(oldHashLocation));
+                    leftRowSetSource.set(oldHashLocation, null);
 
-                                rightRowSetSource.set(newHashLocation, rightRowSetSource.get(oldHashLocation));
-                                rightRowSetSource.set(oldHashLocation, null);
+                    rightRowSetSource.set(newHashLocation, rightRowSetSource.get(oldHashLocation));
+                    rightRowSetSource.set(oldHashLocation, null);
 
                                 final int cookie = buildCookieSource.getInt(oldHashLocation);
                                 addedSlots.set(cookie, newHashLocation);
@@ -1065,13 +1068,13 @@ class StaticChunkedAsOfJoinStateManager
                         }
                         bc.sourcePositions.add(ii);
                         bc.destinationLocationPositionInWriteThrough.add((int)(tableLocation - firstBackingChunkLocation));
-                                    // region promotion move
-                                    final long overflowLocation = bc.overflowLocationsAsKeyIndices.get(ii);
-                                    leftRowSetSource.set(tableLocation, overflowLeftRowSetSource.get(overflowLocation));
-                                    overflowLeftRowSetSource.set(overflowLocation, null);
+                        // region promotion move
+                        final long overflowLocation = bc.overflowLocationsAsKeyIndices.get(ii);
+                        leftRowSetSource.set(tableLocation, overflowLeftRowSetSource.get(overflowLocation));
+                        overflowLeftRowSetSource.set(overflowLocation, null);
 
-                                    rightRowSetSource.set(tableLocation, overflowRightRowSetSource.get(overflowLocation));
-                                    overflowRightRowSetSource.set(overflowLocation, null);
+                        rightRowSetSource.set(tableLocation, overflowRightRowSetSource.get(overflowLocation));
+                        overflowRightRowSetSource.set(overflowLocation, null);
 
                                     final int cookie = overflowBuildCookieSource.getInt(overflowLocation);
                                     addedSlots.set(cookie, tableLocation);
@@ -1340,7 +1343,7 @@ class StaticChunkedAsOfJoinStateManager
             return;
         }
         try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
-            decorationProbe(pc, leftRowSet, leftSources, true, null, null, null);
+            decorationProbe(pc, leftRowSet, leftSources, true, null, null,null);
         }
     }
 
@@ -1525,7 +1528,6 @@ class StaticChunkedAsOfJoinStateManager
             Assert.eqNull(foundBuilder, "foundBuilder");
         }
         // endregion probe start
-        long hashSlotOffset = 0;
 
         try (final RowSequence.Iterator rsIt = probeIndex.getRowSequenceIterator();
              // region probe additional try resources
@@ -1657,7 +1659,6 @@ class StaticChunkedAsOfJoinStateManager
 
                 // region probe complete
                 // endregion probe complete
-                hashSlotOffset += chunkSize;
             }
 
             // region probe cleanup
@@ -1743,7 +1744,7 @@ class StaticChunkedAsOfJoinStateManager
         return builder.build();
     }
 
-    @Override
+        @Override
     public void convertRightBuildersToIndex(LongArraySource slots, int slotCount) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final long slot = slots.getLong(slotIndex);
@@ -1897,6 +1898,9 @@ class StaticChunkedAsOfJoinStateManager
 
     // region overflowLocationToHashLocation
     static boolean isOverflowLocation(long hashSlot) {
+        if (USE_TYPED_STATE_MANAGER) {
+            return false;
+        }
         return hashSlot < OVERFLOW_PIVOT_VALUE;
     }
 

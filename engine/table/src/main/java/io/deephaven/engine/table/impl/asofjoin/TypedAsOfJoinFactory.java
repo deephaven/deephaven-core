@@ -23,7 +23,6 @@ public class TypedAsOfJoinFactory {
     public static void staticBuildLeftInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         builder.addStatement("addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition))");
         builder.addStatement("rightRowSetSource.set(tableLocation, $T.builderSequential())", RowSetFactory.class);
-        builder.addStatement("hashSlots.set(hashSlotOffset.getAndIncrement(), (long)tableLocation)");
     }
 
     public static void staticBuildRightFound(HasherConfig<?> hasherConfig, boolean alternate,
@@ -33,14 +32,13 @@ public class TypedAsOfJoinFactory {
 
     public static void staticBuildRightInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition))");
-        builder.addStatement("hashSlots.set(hashSlotOffset.getAndIncrement(), (long)tableLocation)");
     }
 
     public static void staticProbeDecorateLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         builder.addStatement("final long indexKey = rowKeyChunk.get(chunkPosition)");
         builder.beginControlFlow("if (addLeftIndex(tableLocation, indexKey) && hashSlots != null)");
-        builder.addStatement("hashSlots.set(hashSlotOffset.getAndIncrement(), tableLocation)");
+        builder.addStatement("hashSlots.set(hashSlotOffset.getAndIncrement(), (long)tableLocation)");
         builder.addStatement("foundBuilder.addKey(indexKey)");
         builder.endControlFlow();
     }
@@ -52,6 +50,16 @@ public class TypedAsOfJoinFactory {
     public static void staticProbeDecorateRightFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition))");
+    }
+
+    public static void staticRehashSetup(CodeBlock.Builder builder) {
+        builder.addStatement("final Object [] oldLeftState = leftRowSetSource.getArray()");
+        builder.addStatement("final Object [] destLeftState = new Object[tableSize]");
+        builder.addStatement("leftRowSetSource.setArray(destLeftState)");
+    }
+
+    public static void staticMoveMainFull(CodeBlock.Builder builder) {
+        builder.addStatement("destLeftState[destinationTableLocation] = oldLeftState[sourceBucket]");
     }
 
     public static void rightIncrementalRehashSetup(CodeBlock.Builder builder) {

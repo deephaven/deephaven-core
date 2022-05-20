@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.TypedAsOfJoinFactory;
 import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
@@ -261,12 +262,18 @@ public class TypedHasherFactory {
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
                     probeContextParam));
         } else if (baseClass.equals(StaticAsOfJoinStateManagerTypedBase.class)) {
+            final ParameterSpec modifiedSlotTrackerParam =
+                    ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
+
             builder.classPrefix("StaticAsOfJoinHasher").packageGroup("asofjoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
                     .stateType(Object.class).mainStateName("rightRowSetSource")
                     .emptyStateName("EMPTY_RIGHT_STATE")
                     .includeOriginalSources(true)
-                    .supportRehash(false);
+                    .supportRehash(true)
+                    .moveMainFull(TypedAsOfJoinFactory::staticMoveMainFull)
+                    .alwaysMoveMain(true)
+                    .rehashFullSetup(TypedAsOfJoinFactory::staticRehashSetup);
 
             final TypeName longArraySource = TypeName.get(LongArraySource.class);
             final ParameterSpec hashSlots = ParameterSpec.builder(longArraySource, "hashSlots").build();
@@ -275,7 +282,7 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
                     true, true, TypedAsOfJoinFactory::staticBuildLeftFound,
-                    TypedAsOfJoinFactory::staticBuildLeftInsert, hashSlots, hashSlotOffset));
+                    TypedAsOfJoinFactory::staticBuildLeftInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", "rightRowKey",
                     true, TypedAsOfJoinFactory::staticProbeDecorateLeftFound,
@@ -283,10 +290,76 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, TypedAsOfJoinFactory::staticBuildRightFound,
-                    TypedAsOfJoinFactory::staticBuildRightInsert, hashSlots, hashSlotOffset));
+                    TypedAsOfJoinFactory::staticBuildRightInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", "existingStateValue",
                     true, TypedAsOfJoinFactory::staticProbeDecorateRightFound, null));
+
+        } else if (baseClass.equals(RightIncrementalAsOfJoinStateManagerTypedBase.class)) {
+            final ParameterSpec modifiedSlotTrackerParam =
+                    ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
+
+            builder.classPrefix("RightIncrementalAsOfJoinHasher").packageGroup("asofjoin")
+                    .packageMiddle("rightincopen")
+                    .openAddressedAlternate(true)
+                    .stateType(long.class).mainStateName("leftRowSetSource")
+                    .overflowOrAlternateStateName("alternateLeftRowSetSource")
+                    .emptyStateName("EMPTY_RIGHT_STATE")
+                    .includeOriginalSources(true)
+                    .supportRehash(true)
+                    .addExtraPartialRehashParameter(modifiedSlotTrackerParam)
+                    .moveMainFull(TypedAsOfJoinFactory::incrementalMoveMainFull)
+                    .moveMainAlternate(TypedAsOfJoinFactory::incrementalMoveMainAlternate)
+                    .alwaysMoveMain(true)
+                    .rehashFullSetup(TypedAsOfJoinFactory::incrementalRehashSetup);
+
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightRowKeyForState",
+                    true, false, TypedAsOfJoinFactory::incrementalBuildLeftFound,
+                    TypedAsOfJoinFactory::incrementalBuildLeftInsert));
+
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "existingRightRowKey", true,
+                    false, TypedAsOfJoinFactory::incrementalRightFound,
+                    TypedAsOfJoinFactory::incrementalRightInsert));
+
+
+            builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "existingRightRowKey", true,
+                    TypedAsOfJoinFactory::incrementalRemoveRightFound,
+                    TypedAsOfJoinFactory::incrementalRemoveRightMissing,
+                    modifiedSlotTrackerParam));
+
+            builder.addBuild(new HasherConfig.BuildSpec("addRightSide", "existingRightRowKey", true,
+                    true, TypedAsOfJoinFactory::incrementalRightFoundUpdate,
+                    TypedAsOfJoinFactory::incrementalRightInsertUpdate,
+                    modifiedSlotTrackerParam));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", "existingRightRowKey", false,
+                    TypedAsOfJoinFactory::incrementalModifyRightFound,
+                    TypedAsOfJoinFactory::incrementalModifyRightMissing,
+                    modifiedSlotTrackerParam));
+
+            ParameterSpec probeContextParam =
+                    ParameterSpec.builder(IncrementalNaturalJoinStateManagerTypedBase.ProbeContext.class, "pc").build();
+            builder.addProbe(new HasherConfig.ProbeSpec("applyRightShift", "existingRightRowKey", true,
+                    TypedAsOfJoinFactory::incrementalApplyRightShift,
+                    TypedAsOfJoinFactory::incrementalApplyRightShiftMissing,
+                    ParameterSpec.builder(long.class, "shiftDelta").build(),
+                    modifiedSlotTrackerParam, probeContextParam));
+
+            builder.addBuild(new HasherConfig.BuildSpec("addLeftSide", "rightRowKeyForState", true,
+                    true, TypedAsOfJoinFactory::incrementalLeftFoundUpdate,
+                    TypedAsOfJoinFactory::incrementalLeftInsertUpdate,
+                    ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
+                    ParameterSpec.builder(long.class, "leftRedirectionOffset").build()));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", null, true,
+                    TypedAsOfJoinFactory::incrementalRemoveLeftFound,
+                    TypedAsOfJoinFactory::incrementalRemoveLeftMissing));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("applyLeftShift", null, true,
+                    TypedAsOfJoinFactory::incrementalShiftLeftFound,
+                    TypedAsOfJoinFactory::incrementalShiftLeftMissing,
+                    ParameterSpec.builder(long.class, "shiftDelta").build(),
+                    probeContextParam));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
@@ -691,6 +764,94 @@ public class TypedHasherFactory {
     // single inheritor we have does not do that, so we are not adding that complexity at this instant)
     @NotNull
     private static MethodSpec createRehashInternalFullMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
+        final CodeBlock.Builder builder = CodeBlock.builder();
+
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            builder.addStatement("final $T[] destKeyArray$L = new $T[tableSize]", elementType(chunkTypes[ii]), ii,
+                    elementType(chunkTypes[ii]));
+        }
+        if (hasherConfig.stateType.isPrimitive()) {
+            builder.addStatement("final $T[] destState = new $T[tableSize]", hasherConfig.stateType,
+                    hasherConfig.stateType);
+        } else {
+            builder.addStatement("final Object[] destState = new Object[tableSize]");
+        }
+        builder.addStatement("$T.fill(destState, $L)", Arrays.class, hasherConfig.emptyStateName);
+
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            builder.addStatement("final $T [] originalKeyArray$L = mainKeySource$L.getArray()",
+                    elementType(chunkTypes[ii]), ii, ii);
+            builder.addStatement("mainKeySource$L.setArray(destKeyArray$L)", ii, ii);
+        }
+        if (hasherConfig.stateType.isPrimitive()) {
+            builder.addStatement("final $T [] originalStateArray = $L.getArray()", hasherConfig.stateType,
+                    hasherConfig.mainStateName);
+        } else {
+            builder.addStatement("final Object [] originalStateArray = (Object[])$L.getArray()",
+                    hasherConfig.mainStateName);
+        }
+        builder.addStatement("$L.setArray(destState)", hasherConfig.mainStateName);
+
+        if (hasherConfig.rehashFullSetup != null) {
+            hasherConfig.rehashFullSetup.accept(builder);
+        }
+
+
+        builder.beginControlFlow("for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket)");
+        if (hasherConfig.stateType.isPrimitive()) {
+            builder.addStatement("final $T currentStateValue = originalStateArray[sourceBucket]",
+                    hasherConfig.stateType);
+        } else {
+            builder.addStatement("final $T currentStateValue = ($T)originalStateArray[sourceBucket]",
+                    hasherConfig.stateType, hasherConfig.stateType);
+        }
+        builder.beginControlFlow("if (currentStateValue == $L)", hasherConfig.emptyStateName);
+        builder.addStatement("continue");
+        builder.endControlFlow();
+
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            final Class<?> element = elementType(chunkTypes[ii]);
+            builder.addStatement("final $T k$L = originalKeyArray$L[sourceBucket]", element, ii, ii);
+        }
+        builder.addStatement("final int hash = hash("
+                + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
+        builder.addStatement("final int firstDestinationTableLocation = hashToTableLocation(hash)");
+        builder.addStatement("int destinationTableLocation = firstDestinationTableLocation");
+        builder.beginControlFlow("while (true)");
+        builder.beginControlFlow("if (destState[destinationTableLocation] == $L)", hasherConfig.emptyStateName);
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            builder.addStatement("destKeyArray$L[destinationTableLocation] = k$L", ii, ii);
+        }
+        builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]",
+                hasherConfig.mainStateName);
+        if (!hasherConfig.alwaysMoveMain) {
+            builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
+        }
+        hasherConfig.moveMainFull.accept(builder);
+        if (!hasherConfig.alwaysMoveMain) {
+            builder.endControlFlow();
+        }
+        builder.addStatement("break");
+        builder.endControlFlow();
+        builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
+        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, "destinationTableLocation",
+                "destinationTableLocation",
+                "firstDestinationTableLocation", "firstDestinationTableLocation");
+        builder.endControlFlow();
+
+        builder.endControlFlow();
+
+        return MethodSpec.methodBuilder("rehashInternalFull")
+                .returns(void.class)
+                .addParameter(int.class, "oldSize", Modifier.FINAL)
+                .addModifiers(Modifier.PROTECTED)
+                .addCode(builder.build())
+                .addAnnotation(Override.class).build();
+    }
+
+    // leverage the slots array and size to more effi
+    @NotNull
+    private static MethodSpec createRehashInternalFullWithSlotsMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {

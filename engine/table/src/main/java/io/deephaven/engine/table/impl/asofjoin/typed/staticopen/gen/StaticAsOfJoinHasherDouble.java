@@ -20,6 +20,8 @@ import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBa
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource;
 import java.lang.Object;
+import java.lang.Override;
+import java.util.Arrays;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBase {
@@ -37,8 +39,7 @@ final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBa
         return (tableLocation + 1) & (tableSize - 1);
     }
 
-    protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource hashSlots, MutableInt hashSlotOffset) {
+    protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final DoubleChunk<Values> keyChunk0 = sourceKeyChunks[0].asDoubleChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -54,7 +55,6 @@ final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBa
                     mainKeySource0.set(tableLocation, k0);
                     addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition));
                     rightRowSetSource.set(tableLocation, RowSetFactory.builderSequential());
-                    hashSlots.set(hashSlotOffset.getAndIncrement(), (long)tableLocation);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition));
@@ -67,8 +67,7 @@ final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBa
         }
     }
 
-    protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource hashSlots, MutableInt hashSlotOffset) {
+    protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final DoubleChunk<Values> keyChunk0 = sourceKeyChunks[0].asDoubleChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -83,7 +82,6 @@ final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBa
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition));
-                    hashSlots.set(hashSlotOffset.getAndIncrement(), (long)tableLocation);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition));
@@ -113,7 +111,7 @@ final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBa
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long indexKey = rowKeyChunk.get(chunkPosition);
                     if (addLeftIndex(tableLocation, indexKey) && hashSlots != null) {
-                        hashSlots.set(hashSlotOffset.getAndIncrement(), tableLocation);
+                        hashSlots.set(hashSlotOffset.getAndIncrement(), (long)tableLocation);
                         foundBuilder.addKey(indexKey);
                     }
                     found = true;
@@ -151,5 +149,39 @@ final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBa
     private static int hash(double k0) {
         int hash = DoubleChunkHasher.hashInitialSingle(k0);
         return hash;
+    }
+
+    @Override
+    protected void rehashInternalFull(final int oldSize) {
+        final double[] destKeyArray0 = new double[tableSize];
+        final Object[] destState = new Object[tableSize];
+        Arrays.fill(destState, EMPTY_RIGHT_STATE);
+        final double [] originalKeyArray0 = mainKeySource0.getArray();
+        mainKeySource0.setArray(destKeyArray0);
+        final Object [] originalStateArray = (Object[])rightRowSetSource.getArray();
+        rightRowSetSource.setArray(destState);
+        final Object [] oldLeftState = leftRowSetSource.getArray();
+        final Object [] destLeftState = new Object[tableSize];
+        leftRowSetSource.setArray(destLeftState);
+        for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
+            final Object currentStateValue = (Object)originalStateArray[sourceBucket];
+            if (currentStateValue == EMPTY_RIGHT_STATE) {
+                continue;
+            }
+            final double k0 = originalKeyArray0[sourceBucket];
+            final int hash = hash(k0);
+            final int firstDestinationTableLocation = hashToTableLocation(hash);
+            int destinationTableLocation = firstDestinationTableLocation;
+            while (true) {
+                if (destState[destinationTableLocation] == EMPTY_RIGHT_STATE) {
+                    destKeyArray0[destinationTableLocation] = k0;
+                    destState[destinationTableLocation] = originalStateArray[sourceBucket];
+                    destLeftState[destinationTableLocation] = oldLeftState[sourceBucket];
+                    break;
+                }
+                destinationTableLocation = nextTableLocation(destinationTableLocation);
+                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
+            }
+        }
     }
 }

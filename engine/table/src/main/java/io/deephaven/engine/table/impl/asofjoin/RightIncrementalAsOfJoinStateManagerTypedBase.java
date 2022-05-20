@@ -7,26 +7,50 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
+import io.deephaven.engine.table.impl.HashTableAnnotations;
+import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
+import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Function;
 
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
-public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAsOfJoinStateManager {
+public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends RightIncrementalHashedAsOfJoinStateManager {
     public static final int CHUNK_SIZE = 4096;
     private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
-    public static final Object EMPTY_RIGHT_STATE = null;
+
+    public static final byte ENTRY_RIGHT_MASK = 0x3;
+    public static final byte ENTRY_RIGHT_IS_EMPTY = 0x0;
+    public static final byte ENTRY_RIGHT_IS_BUILDER = 0x1;
+    public static final byte ENTRY_RIGHT_IS_SSA = 0x2;
+    public static final byte ENTRY_RIGHT_IS_INDEX = 0x3;
+
+    public static final byte ENTRY_LEFT_MASK = 0x30;
+    public static final byte ENTRY_LEFT_IS_EMPTY = 0x00;
+    public static final byte ENTRY_LEFT_IS_BUILDER = 0x10;
+    public static final byte ENTRY_LEFT_IS_SSA = 0x20;
+    public static final byte ENTRY_LEFT_IS_INDEX = 0x30;
+
+    private static final byte ENTRY_INITIAL_STATE_LEFT = ENTRY_LEFT_IS_BUILDER|ENTRY_RIGHT_IS_EMPTY;
+    private static final byte ENTRY_INITIAL_STATE_RIGHT = ENTRY_LEFT_IS_EMPTY|ENTRY_RIGHT_IS_BUILDER;
 
     // the number of slots in our table
     protected int tableSize;
+
+    // the number of slots in our alternate table, to start with "1" is a lie, but rehashPointer is zero; so our
+    // location value is positive and can be compared against rehashPointer safely
+    protected int alternateTableSize = 1;
+
+    // how much of the alternate sources are necessary to rehash?
+    protected int rehashPointer = 0;
 
     protected long numEntries = 0;
 
@@ -38,19 +62,22 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     protected final ChunkType[] chunkTypes;
     protected final WritableColumnSource[] mainKeySources;
 
-    protected final ImmutableObjectArraySource<RowSetBuilderSequential> leftRowSetSource;
-
     /**
-     * For the ticking case we need to reuse our right rowsets for more than one update. We convert the
-     * SequentialBuilders into actual RowSet objects. Before the conversion (which must be during the build phase) we
-     * put the sequential builders into rightRowSetSource. After the conversion, the sources store actual rowsets.
+     * We use our side source to originally build the RowSet using builders.  When a state is activated (meaning we
+     * have a corresponding entry for it on the other side); we'll turn it into an SSA.  If we have updates for an
+     * inactive state, then we turn it into a WritableRowSet. The entry state tells us what we have on each side, using
+     * a nibble for the left and a nibble for the right.
      */
-    private boolean rightBuildersConverted = false;
-
+    protected final ImmutableObjectArraySource<Object> leftRowSetSource;
+//    protected final ImmutableObjectArraySource<Object> alternateLeftRowSetSource;
     protected final ImmutableObjectArraySource<Object> rightRowSetSource;
+//    protected final ImmutableObjectArraySource<Object> alternateRightRowSetSource;
 
-    protected StaticAsOfJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
-            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
+    private final ByteArraySource stateSource = new ByteArraySource();
+    private final ByteArraySource alternateStateSource = new ByteArraySource();
+
+    protected RightIncrementalAsOfJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
+                                                            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
         // region super
         super(keySourcesForErrorMessages);
         // endregion super
@@ -64,7 +91,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         // region constructor
         mainKeySources = new WritableColumnSource[tableKeySources.length];
         chunkTypes = new ChunkType[tableKeySources.length];
-        leftRowSetSource = new ImmutableObjectArraySource<>(RowSetBuilderSequential.class, null);
+        leftRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
         rightRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
         // endregion constructor
 
@@ -112,7 +139,8 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
      * Returns true if this is the first left row key added to this slot.
      */
     protected boolean addLeftIndex(long tableLocation, long keyToAdd) {
-        return addIndex(leftRowSetSource, tableLocation, keyToAdd);
+        return false;
+//        return addIndex(leftRowSetSource, tableLocation, keyToAdd);
     }
 
     protected void addRightIndex(long tableLocation, long keyToAdd) {
@@ -131,8 +159,12 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
 
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
+                final int nextChunkSize = chunkOk.intSize();
 
-                doRehash(chunkOk.intSize());
+                if (exceedsCapacity(nextChunkSize)) {
+                    throw new IllegalStateException(
+                            "Static asOfJoin does not permit rehashing, table must be allocated with sufficient size at the beginning of initialization.");
+                }
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
@@ -143,29 +175,27 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         }
     }
 
-    private class LeftBuildHandler implements TypedHasherUtil.BuildHandler {
+    private class StaticBuildHandler implements TypedHasherUtil.BuildHandler {
+        final boolean isLeftSide;
+        final LongArraySource hashSlots;
+        final MutableInt hashOffset;
+
+        private StaticBuildHandler(final boolean isLeftSide, final LongArraySource hashSlots,
+                                   final MutableInt hashOffset) {
+            this.hashSlots = hashSlots;
+            this.isLeftSide = isLeftSide;
+            this.hashOffset = hashOffset;
+        }
+
         @Override
         public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            buildFromLeftSide(chunkOk, sourceKeyChunks);
-        }
-    }
-
-    private class RightBuildHandler implements TypedHasherUtil.BuildHandler {
-        @Override
-        public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-           buildFromRightSide(chunkOk, sourceKeyChunks);
-        }
-    }
-
-    private int fillSlotsFromHashTable(@NotNull final LongArraySource slotArray) {
-        slotArray.ensureCapacity(tableSize);
-        long slotCount = 0;
-        for (long slotIdx = 0; slotIdx < tableSize; slotIdx++) {
-            if (rightRowSetSource.get(slotIdx) != EMPTY_RIGHT_STATE) {
-                slotArray.set(slotCount++, slotIdx);
+            hashSlots.ensureCapacity(hashOffset.intValue() + chunkOk.intSize());
+            if (isLeftSide) {
+                buildFromLeftSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset);
+            } else {
+                buildFromRightSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset);
             }
         }
-        return (int)slotCount;
     }
 
     @Override
@@ -175,20 +205,9 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
             return 0;
         }
         try (final BuildContext bc = makeBuildContext(leftSources, leftRowSet.size())) {
-            buildTable(bc, leftRowSet, leftSources, new LeftBuildHandler());
-            return fillSlotsFromHashTable(addedSlots);
-        }
-    }
-
-    @Override
-    public int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources,
-           @NotNull final LongArraySource addedSlots) {
-        if (rightRowSet.isEmpty()) {
-            return 0;
-        }
-        try (final BuildContext bc = makeBuildContext(rightSources, rightRowSet.size())) {
-            buildTable(bc, rightRowSet, rightSources, new RightBuildHandler());
-            return fillSlotsFromHashTable(addedSlots);
+            final MutableInt slotCount = new MutableInt(0);
+            buildTable(bc, leftRowSet, leftSources, new StaticBuildHandler(true, addedSlots, slotCount));
+            return slotCount.intValue();
         }
     }
 
@@ -218,18 +237,15 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         }
     }
 
-    private class LeftProbeHandler implements TypedHasherUtil.ProbeHandler {
+    private class StaticProbeHandler implements TypedHasherUtil.ProbeHandler {
+        final boolean isLeftSide;
         final LongArraySource hashSlots;
         final MutableInt hashOffset;
         final RowSetBuilderRandom foundBuilder;
 
-        private LeftProbeHandler() {
-            this.hashSlots = null;
-            this.hashOffset = null;
-            this.foundBuilder = null;
-        }
-
-        private LeftProbeHandler(final LongArraySource hashSlots, final MutableInt hashOffset, RowSetBuilderRandom foundBuilder) {
+        private StaticProbeHandler(final boolean isLeftSide, final LongArraySource hashSlots,
+                                   final MutableInt hashOffset, RowSetBuilderRandom foundBuilder) {
+            this.isLeftSide = isLeftSide;
             this.hashSlots = hashSlots;
             this.hashOffset = hashOffset;
             this.foundBuilder = foundBuilder;
@@ -237,49 +253,100 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
 
         @Override
         public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            decorateLeftSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset, foundBuilder);
+            if (isLeftSide) {
+                decorateLeftSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset, foundBuilder);
+            } else {
+                decorateWithRightSide(chunkOk, sourceKeyChunks);
+            }
         }
     }
 
-    private class RightProbeHandler implements TypedHasherUtil.ProbeHandler {
-        @Override
-        public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            decorateWithRightSide(chunkOk, sourceKeyChunks);
-        }
+
+
+
+//    @Override
+//    public int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
+//        return 0;
+//    }
+//    @Override
+//    public int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots, int usedSlots);
+
+    @Override
+    public void probeRightInitial(RowSequence rightIndex, ColumnSource<?>[] rightSources) {
+
+    }
+    @Override
+    public int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+        return 0;
+    }
+    @Override
+    public int buildAdditions(boolean isLeftSide, RowSet additions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders){
+        return 0;
     }
 
     @Override
-    public void probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources) {
-        if (leftRowSet.isEmpty()) {
-            return;
-        }
-        try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
-            probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler());
-        }
+    public SegmentedSortedArray getRightSsa(long slot) {
+        return null;
+    }
+    @Override
+    public SegmentedSortedArray getRightSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
+        return null;
+    }
+    @Override
+    public SegmentedSortedArray getLeftSsa(long slot) {
+        return null;
+    }
+    @Override
+    public SegmentedSortedArray getLeftSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
+        return null;
     }
 
     @Override
-    public int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final LongArraySource slots,
-            RowSetBuilderRandom foundBuilder) {
-        if (leftRowSet.isEmpty()) {
-            return 0;
-        }
-        try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
-            final MutableInt slotCount = new MutableInt();
-            probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler(slots, slotCount, foundBuilder));
-            return slotCount.intValue();
-        }
+    public SegmentedSortedArray getLeftSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
+        return null;
+    }
+    @Override
+    public SegmentedSortedArray getRightSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
+        return null;
+    }
+    @Override
+    public void setRightIndex(long slot, RowSet rowSet) {
+
+    }
+    @Override
+    public void setLeftIndex(long slot, RowSet rowSet) {
+
     }
 
     @Override
-    public void probeRight(RowSequence rightRowSet, ColumnSource<?>[] rightSources) {
-        if (rightRowSet.isEmpty()) {
-            return;
-        }
-        try (final ProbeContext pc = makeProbeContext(rightSources, rightRowSet.size())) {
-            probeTable(pc, rightRowSet, false, rightSources, new RightProbeHandler());
-        }
+    public WritableRowSet getAndClearLeftIndex(long slot) {
+        return null;
     }
+
+    @Override
+    public int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+        return 0;
+    }
+
+    @Override
+    public int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+        return 0;
+    }
+
+    @Override
+    public int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+        return 0;
+    }
+
+    @Override
+    public byte getState(long slot) {
+        return 0;
+    }
+
+
+
+
+
 
     @Override
     public int getTableSize() {
@@ -302,7 +369,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
      * @return the RowSet for this slot
      */
     @Override
-    public RowSet getLeftIndex(long slot) {
+    public WritableRowSet getLeftIndex(long slot) {
         RowSetBuilderSequential builder = (RowSetBuilderSequential) leftRowSetSource.getAndSetUnsafe(slot, null);
         if (builder == null) {
             return null;
@@ -311,10 +378,10 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     @Override
-    public RowSet getRightIndex(long slot) {
-        if (rightBuildersConverted) {
-            return (RowSet) rightRowSetSource.getUnsafe(slot);
-        }
+    public WritableRowSet getRightIndex(long slot) {
+//        if (rightBuildersConverted) {
+//            return (WritableRowSet) rightRowSetSource.getUnsafe(slot);
+//        }
         RowSetBuilderSequential builder = (RowSetBuilderSequential) rightRowSetSource.getUnsafe(slot);
         if (builder == null) {
             return null;
@@ -322,81 +389,20 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         return builder.build();
     }
 
-    @Override
-    public void convertRightBuildersToIndex(LongArraySource slots, int slotCount) {
-        for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
-            final long slot = slots.getLong(slotIndex);
-            // this might be empty, if so then set null
-            final RowSetBuilderSequential sequentialBuilder =
-                    (RowSetBuilderSequential) rightRowSetSource.getUnsafe(slot);
-            if (sequentialBuilder != null) {
-                WritableRowSet rs = sequentialBuilder.build();
-                if (rs.isEmpty()) {
-                    rightRowSetSource.set(slot, EMPTY_RIGHT_STATE);
-                    rs.close();
-                } else {
-                    rightRowSetSource.set(slot, rs);
-                }
-            }
-        }
-        rightBuildersConverted = true;
-    }
+    abstract protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            LongArraySource hashSlots, MutableInt hashSlotOffset);
 
-    @Override
-    public void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource) {
-        for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
-            final long slot = slots.getLong(slotIndex);
-
-            final RowSetBuilderSequential sequentialBuilder =
-                    (RowSetBuilderSequential) rightRowSetSource.getUnsafe(slot);
-            if (sequentialBuilder != null) {
-                WritableRowSet rs = sequentialBuilder.build();
-                if (rs.isEmpty()) {
-                    rightRowSetSource.set(slot, EMPTY_RIGHT_STATE);
-                    rs.close();
-                } else {
-                    rightRowSetSource.set(slot, getGroupedIndex(rowSetSource, sequentialBuilder));
-                }
-            }
-        }
-        rightBuildersConverted = true;
-    }
-
-    private RowSet getGroupedIndex(ObjectArraySource<RowSet> rowSetSource, RowSetBuilderSequential sequentialBuilder) {
-        final RowSet groupedRowSet = sequentialBuilder.build();
-        if (groupedRowSet.size() != 1) {
-            throw new IllegalStateException("Grouped rowSet should have exactly one value: " + groupedRowSet);
-        }
-        return rowSetSource.getUnsafe(groupedRowSet.get(0));
-    }
-
-    abstract protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
-
-    abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
+    abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            LongArraySource hashSlots, MutableInt hashSlotOffset);
 
     abstract protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             LongArraySource hashSlots, MutableInt hashSlotOffset, RowSetBuilderRandom foundBuilder);
 
     abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
-    public void doRehash(final int nextChunkSize) {
-        final int oldSize = tableSize;
-        while (rehashRequired(nextChunkSize)) {
-            tableSize *= 2;
-            if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
-                throw new UnsupportedOperationException("Hash table exceeds maximum size!");
-            }
-        }
-        if (tableSize > oldSize) {
-            rehashInternalFull(oldSize);
-        }
+    public boolean exceedsCapacity(int nextChunkSize) {
+        return (numEntries + nextChunkSize) >= (tableSize);
     }
-
-    public boolean rehashRequired(int nextChunkSize) {
-        return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
-    }
-
-    abstract protected void rehashInternalFull(final int oldSize);
 
     protected int hashToTableLocation(int hash) {
         return hash & (tableSize - 1);

@@ -524,11 +524,6 @@ public class QueryTableAjTest {
 
     @SuppressWarnings("SameParameterValue")
     private void testAjRandomStaticOverflow(int seed, int leftSize, int rightSize) {
-        if (AsOfJoinHelper.USE_TYPED_STATE_MANAGER) {
-            // the typed state manager does not do overflow, there must be enough space in the open addressed hash table
-            // to contain all of our entries
-            return;
-        }
         final Logger log = new StreamLoggerImpl();
 
         final Random random = new Random(seed);
@@ -1141,11 +1136,6 @@ public class QueryTableAjTest {
 
     @Test
     public void testAjRandomLeftIncrementalRightStaticOverflow() {
-        if (AsOfJoinHelper.USE_TYPED_STATE_MANAGER) {
-            // the typed state manager does not do overflow, there must be enough space in the open addressed hash table
-            // to contain all of our entries
-            return;
-        }
         final Logger log = new StreamLoggerImpl();
 
         final JoinIncrement joinIncrement = base.leftStepShift;

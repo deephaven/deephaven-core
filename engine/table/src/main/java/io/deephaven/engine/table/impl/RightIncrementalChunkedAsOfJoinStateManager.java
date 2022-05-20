@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -52,6 +53,7 @@ public
 // endregion class visibility
 class RightIncrementalChunkedAsOfJoinStateManager
     // region extensions
+    extends RightIncrementalHashedAsOfJoinStateManager
     // endregion extensions
 {
     // region constants
@@ -193,9 +195,11 @@ class RightIncrementalChunkedAsOfJoinStateManager
     RightIncrementalChunkedAsOfJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
                                                 // region constructor arguments
+            , ColumnSource<?>[] tableKeySourcesForErrors
                                               // endregion constructor arguments
     ) {
         // region super
+        super(tableKeySourcesForErrors);
         // endregion super
         keyColumnCount = tableKeySources.length;
 
@@ -281,7 +285,8 @@ class RightIncrementalChunkedAsOfJoinStateManager
     }
 
     // region build wrappers
-    int buildFromLeftSide(RowSequence leftIndex, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
+    @Override
+    public int buildFromLeftSide(RowSequence leftIndex, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
         if (leftIndex.isEmpty()) {
             return 0;
         }
@@ -292,7 +297,8 @@ class RightIncrementalChunkedAsOfJoinStateManager
         }
     }
 
-    int buildFromRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots, int usedSlots) {
+    @Override
+    public int buildFromRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots, int usedSlots) {
         if (rightIndex.isEmpty()) {
             return usedSlots;
         }
@@ -1462,14 +1468,17 @@ class RightIncrementalChunkedAsOfJoinStateManager
         return cookie - cookieGeneration;
     }
 
+    @Override
     public int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampRemovals, sources, slots, sequentialBuilders, true);
     }
 
+    @Override
     public int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, false);
     }
 
+    @Override
     public int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, true);
     }
@@ -1492,7 +1501,8 @@ class RightIncrementalChunkedAsOfJoinStateManager
         return slotCount.intValue();
     }
 
-    void probeRightInitial(RowSequence rightIndex, ColumnSource<?>[] rightSources)  {
+    @Override
+    public void probeRightInitial(RowSequence rightIndex, ColumnSource<?>[] rightSources)  {
         if (rightIndex.isEmpty()) {
             return;
         }
@@ -1880,7 +1890,8 @@ class RightIncrementalChunkedAsOfJoinStateManager
      * @param slot the slot in the table (either positive for a main slot, or negative for overflow)
      * @return the WritableRowSet for this slot
      */
-    WritableRowSet getAndClearLeftIndex(long slot) {
+    @Override
+    public WritableRowSet getAndClearLeftIndex(long slot) {
         final RowSetBuilderSequential builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -1896,6 +1907,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         return builder.build();
     }
 
+    @Override
     public byte getState(long slot) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -1905,6 +1917,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         }
     }
 
+    @Override
     public SegmentedSortedArray getRightSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -1935,6 +1948,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
+    @Override
     public SegmentedSortedArray getRightSsa(long slot) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -2047,6 +2061,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
+    @Override
     public SegmentedSortedArray getLeftSsa(long slot) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
