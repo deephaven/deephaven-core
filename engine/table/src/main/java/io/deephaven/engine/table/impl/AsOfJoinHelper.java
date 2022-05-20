@@ -105,10 +105,12 @@ public class AsOfJoinHelper {
             if (leftTable.isRefreshing()) {
                 return bothIncrementalAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                         disallowExactMatch, stampPair,
-                        originalLeftSources, leftSources, rightSources, leftStampSource, originalRightStampSource, rightStampSource, rowRedirection);
+                        originalLeftSources, leftSources, rightSources, leftStampSource, originalRightStampSource,
+                        rightStampSource, rowRedirection);
             }
             return rightTickingLeftStaticAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
-                    disallowExactMatch, stampPair, originalLeftSources, leftSources, rightSources, leftStampSource, originalRightStampSource, rightStampSource,
+                    disallowExactMatch, stampPair, originalLeftSources, leftSources, rightSources, leftStampSource,
+                    originalRightStampSource, rightStampSource,
                     rowRedirection);
         } else {
             return rightStaticAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
@@ -232,8 +234,8 @@ public class AsOfJoinHelper {
                 slotCount = asOfJoinStateManager.buildFromRightSide(rightTable.getRowSet(), rightSources, slots);
             } else {
                 slotCount =
-                    asOfJoinStateManager.buildFromRightSide(RowSetFactory.flat(rightGroupingSize),
-                                    new ColumnSource[] {rightGroupedSources.getFirst()}, slots);
+                        asOfJoinStateManager.buildFromRightSide(RowSetFactory.flat(rightGroupingSize),
+                                new ColumnSource[] {rightGroupedSources.getFirst()}, slots);
             }
             if (leftGroupedSources == null) {
                 asOfJoinStateManager.probeLeft(leftTable.getRowSet(), leftSources);
@@ -545,12 +547,12 @@ public class AsOfJoinHelper {
             SortingOrder order,
             boolean disallowExactMatch,
             MatchPair stampPair,
-              ColumnSource<?>[] originalLeftSources,
-              ColumnSource<?>[] leftSources,
-              ColumnSource<?>[] rightSources,
-              ColumnSource<?> leftStampSource,
-              ColumnSource<?> originalRightStampSource,
-              ColumnSource<?> rightStampSource,
+            ColumnSource<?>[] originalLeftSources,
+            ColumnSource<?>[] leftSources,
+            ColumnSource<?>[] rightSources,
+            ColumnSource<?> leftStampSource,
+            ColumnSource<?> originalRightStampSource,
+            ColumnSource<?> rightStampSource,
             WritableRowRedirection rowRedirection) {
         if (leftTable.isRefreshing()) {
             throw new IllegalStateException();
@@ -931,12 +933,12 @@ public class AsOfJoinHelper {
             SortingOrder order,
             boolean disallowExactMatch,
             MatchPair stampPair,
-               ColumnSource<?>[] originalLeftSources,
-               ColumnSource<?>[] leftSources,
-               ColumnSource<?>[] rightSources,
-               ColumnSource<?> leftStampSource,
-               ColumnSource<?> originalRightStampSource,
-               ColumnSource<?> rightStampSource,
+            ColumnSource<?>[] originalLeftSources,
+            ColumnSource<?>[] leftSources,
+            ColumnSource<?>[] rightSources,
+            ColumnSource<?> leftStampSource,
+            ColumnSource<?> originalRightStampSource,
+            ColumnSource<?> rightStampSource,
             WritableRowRedirection rowRedirection) {
         final boolean reverse = order == SortingOrder.Descending;
 
@@ -946,7 +948,8 @@ public class AsOfJoinHelper {
         final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
 
         final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager =
-                new RightIncrementalChunkedAsOfJoinStateManager(leftSources, control.initialBuildSize(), originalLeftSources);
+                new RightIncrementalChunkedAsOfJoinStateManager(leftSources, control.initialBuildSize(),
+                        originalLeftSources);
 
         final LongArraySource slots = new LongArraySource();
         int slotCount = asOfJoinStateManager.buildFromLeftSide(leftTable.getRowSet(), leftSources, slots);

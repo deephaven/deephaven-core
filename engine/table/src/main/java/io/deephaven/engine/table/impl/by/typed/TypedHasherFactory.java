@@ -851,7 +851,8 @@ public class TypedHasherFactory {
 
     // leverage the slots array and size to more effi
     @NotNull
-    private static MethodSpec createRehashInternalFullWithSlotsMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
+    private static MethodSpec createRehashInternalFullWithSlotsMethod(HasherConfig<?> hasherConfig,
+            ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {

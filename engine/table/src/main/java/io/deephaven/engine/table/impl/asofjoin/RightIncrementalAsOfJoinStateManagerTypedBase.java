@@ -39,8 +39,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     public static final byte ENTRY_LEFT_IS_SSA = 0x20;
     public static final byte ENTRY_LEFT_IS_INDEX = 0x30;
 
-    private static final byte ENTRY_INITIAL_STATE_LEFT = ENTRY_LEFT_IS_BUILDER|ENTRY_RIGHT_IS_EMPTY;
-    private static final byte ENTRY_INITIAL_STATE_RIGHT = ENTRY_LEFT_IS_EMPTY|ENTRY_RIGHT_IS_BUILDER;
+    private static final byte ENTRY_INITIAL_STATE_LEFT = ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_EMPTY;
+    private static final byte ENTRY_INITIAL_STATE_RIGHT = ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_BUILDER;
 
     // the number of slots in our table
     protected int tableSize;
@@ -63,21 +63,21 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     protected final WritableColumnSource[] mainKeySources;
 
     /**
-     * We use our side source to originally build the RowSet using builders.  When a state is activated (meaning we
-     * have a corresponding entry for it on the other side); we'll turn it into an SSA.  If we have updates for an
-     * inactive state, then we turn it into a WritableRowSet. The entry state tells us what we have on each side, using
-     * a nibble for the left and a nibble for the right.
+     * We use our side source to originally build the RowSet using builders. When a state is activated (meaning we have
+     * a corresponding entry for it on the other side); we'll turn it into an SSA. If we have updates for an inactive
+     * state, then we turn it into a WritableRowSet. The entry state tells us what we have on each side, using a nibble
+     * for the left and a nibble for the right.
      */
     protected final ImmutableObjectArraySource<Object> leftRowSetSource;
-//    protected final ImmutableObjectArraySource<Object> alternateLeftRowSetSource;
+    // protected final ImmutableObjectArraySource<Object> alternateLeftRowSetSource;
     protected final ImmutableObjectArraySource<Object> rightRowSetSource;
-//    protected final ImmutableObjectArraySource<Object> alternateRightRowSetSource;
+    // protected final ImmutableObjectArraySource<Object> alternateRightRowSetSource;
 
     private final ByteArraySource stateSource = new ByteArraySource();
     private final ByteArraySource alternateStateSource = new ByteArraySource();
 
     protected RightIncrementalAsOfJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
-                                                            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
+            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
         // region super
         super(keySourcesForErrorMessages);
         // endregion super
@@ -140,7 +140,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
      */
     protected boolean addLeftIndex(long tableLocation, long keyToAdd) {
         return false;
-//        return addIndex(leftRowSetSource, tableLocation, keyToAdd);
+        // return addIndex(leftRowSetSource, tableLocation, keyToAdd);
     }
 
     protected void addRightIndex(long tableLocation, long keyToAdd) {
@@ -181,7 +181,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         final MutableInt hashOffset;
 
         private StaticBuildHandler(final boolean isLeftSide, final LongArraySource hashSlots,
-                                   final MutableInt hashOffset) {
+                final MutableInt hashOffset) {
             this.hashSlots = hashSlots;
             this.isLeftSide = isLeftSide;
             this.hashOffset = hashOffset;
@@ -244,7 +244,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         final RowSetBuilderRandom foundBuilder;
 
         private StaticProbeHandler(final boolean isLeftSide, final LongArraySource hashSlots,
-                                   final MutableInt hashOffset, RowSetBuilderRandom foundBuilder) {
+                final MutableInt hashOffset, RowSetBuilderRandom foundBuilder) {
             this.isLeftSide = isLeftSide;
             this.hashSlots = hashSlots;
             this.hashOffset = hashOffset;
@@ -263,24 +263,29 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
 
 
-
-//    @Override
-//    public int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
-//        return 0;
-//    }
-//    @Override
-//    public int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots, int usedSlots);
+    // @Override
+    // public int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final
+    // LongArraySource addedSlots) {
+    // return 0;
+    // }
+    // @Override
+    // public int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, @NotNull final
+    // LongArraySource addedSlots, int usedSlots);
 
     @Override
     public void probeRightInitial(RowSequence rightIndex, ColumnSource<?>[] rightSources) {
 
     }
+
     @Override
-    public int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+    public int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots,
+            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return 0;
     }
+
     @Override
-    public int buildAdditions(boolean isLeftSide, RowSet additions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders){
+    public int buildAdditions(boolean isLeftSide, RowSet additions, ColumnSource<?>[] sources, LongArraySource slots,
+            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return 0;
     }
 
@@ -288,14 +293,17 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     public SegmentedSortedArray getRightSsa(long slot) {
         return null;
     }
+
     @Override
     public SegmentedSortedArray getRightSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
         return null;
     }
+
     @Override
     public SegmentedSortedArray getLeftSsa(long slot) {
         return null;
     }
+
     @Override
     public SegmentedSortedArray getLeftSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
         return null;
@@ -305,14 +313,17 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     public SegmentedSortedArray getLeftSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
         return null;
     }
+
     @Override
     public SegmentedSortedArray getRightSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
         return null;
     }
+
     @Override
     public void setRightIndex(long slot, RowSet rowSet) {
 
     }
+
     @Override
     public void setLeftIndex(long slot, RowSet rowSet) {
 
@@ -324,17 +335,20 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+    public int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, LongArraySource slots,
+            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return 0;
     }
 
     @Override
-    public int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+    public int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots,
+            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return 0;
     }
 
     @Override
-    public int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+    public int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots,
+            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return 0;
     }
 
@@ -342,9 +356,6 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     public byte getState(long slot) {
         return 0;
     }
-
-
-
 
 
 
@@ -379,9 +390,9 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
     @Override
     public WritableRowSet getRightIndex(long slot) {
-//        if (rightBuildersConverted) {
-//            return (WritableRowSet) rightRowSetSource.getUnsafe(slot);
-//        }
+        // if (rightBuildersConverted) {
+        // return (WritableRowSet) rightRowSetSource.getUnsafe(slot);
+        // }
         RowSetBuilderSequential builder = (RowSetBuilderSequential) rightRowSetSource.getUnsafe(slot);
         if (builder == null) {
             return null;

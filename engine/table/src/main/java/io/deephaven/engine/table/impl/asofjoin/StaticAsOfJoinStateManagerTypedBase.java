@@ -153,7 +153,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     private class RightBuildHandler implements TypedHasherUtil.BuildHandler {
         @Override
         public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-           buildFromRightSide(chunkOk, sourceKeyChunks);
+            buildFromRightSide(chunkOk, sourceKeyChunks);
         }
     }
 
@@ -165,7 +165,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
                 slotArray.set(slotCount++, slotIdx);
             }
         }
-        return (int)slotCount;
+        return (int) slotCount;
     }
 
     @Override
@@ -182,7 +182,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
 
     @Override
     public int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources,
-           @NotNull final LongArraySource addedSlots) {
+            @NotNull final LongArraySource addedSlots) {
         if (rightRowSet.isEmpty()) {
             return 0;
         }
@@ -229,7 +229,8 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
             this.foundBuilder = null;
         }
 
-        private LeftProbeHandler(final LongArraySource hashSlots, final MutableInt hashOffset, RowSetBuilderRandom foundBuilder) {
+        private LeftProbeHandler(final LongArraySource hashSlots, final MutableInt hashOffset,
+                RowSetBuilderRandom foundBuilder) {
             this.hashSlots = hashSlots;
             this.hashOffset = hashOffset;
             this.foundBuilder = foundBuilder;
@@ -315,11 +316,8 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         if (rightBuildersConverted) {
             return (RowSet) rightRowSetSource.getUnsafe(slot);
         }
-        RowSetBuilderSequential builder = (RowSetBuilderSequential) rightRowSetSource.getUnsafe(slot);
-        if (builder == null) {
-            return null;
-        }
-        return builder.build();
+        throw new IllegalStateException(
+                "getRightIndex() may not be called before convertRightBuildersToIndex() or convertRightGrouping()");
     }
 
     @Override
