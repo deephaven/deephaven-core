@@ -6,6 +6,7 @@ package io.deephaven.plot.Filters;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
+import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.filters.SelectableDataSet;
 import io.deephaven.plot.filters.SelectableDataSetOneClick;
@@ -52,11 +53,13 @@ public class TestSelectables extends BaseArrayTestCase {
 
     private void testPartitionedTableEquals(final PartitionedTable t1, final PartitionedTable t2) {
         for (final String c : categories) {
-            testTableEquals(t1.get(c), t2.get(c));
+            testTableEquals(TstUtils.getPartition(t1, c), TstUtils.getPartition(t2, c));
         }
     }
 
     private void testTableEquals(final Table t1, final Table t2) {
+        assertNotNull(t1);
+        assertNotNull(t2);
         final List<String> columnNames = new ArrayList<>();
         Arrays.stream(t1.getColumns()).forEach(col -> columnNames.add(col.getName()));
         assertEquals(columnNames.size(), t2.getColumns().length);

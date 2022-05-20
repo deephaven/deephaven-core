@@ -192,7 +192,7 @@ public class RspBitmapTimeDrivenTest {
                     throw new IllegalStateException("Unexpected i=" + i + ", spec[i]=" + spec[i]);
             }
         }
-        return b.getTreeIndexImpl();
+        return b.getOrderedLongSet();
     }
 
     private static String toStr(final int[] spec) {

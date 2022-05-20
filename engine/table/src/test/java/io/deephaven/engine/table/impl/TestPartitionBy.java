@@ -5,8 +5,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.TableDiff;
@@ -32,20 +32,19 @@ import java.util.concurrent.Future;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.api.agg.Aggregation.AggSortedFirst;
+import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
-import static io.deephaven.engine.table.impl.TstUtils.i;
 
 @Category(OutOfBandTest.class)
 public class TestPartitionBy extends QueryTableTestBase {
 
-    class TableMapNugget implements EvalNuggetInterface {
+    class PartitionedTableNugget implements EvalNuggetInterface {
         Table originalTable;
         private final String[] groupByColumns;
         private final ColumnSource[] groupByColumnSources;
-        TableMap splitTable;
+        PartitionedTable splitTable;
 
-        TableMapNugget(Table originalTable, String... groupByColumns) {
+        PartitionedTableNugget(Table originalTable, String... groupByColumns) {
             this.originalTable = originalTable;
             this.groupByColumns = groupByColumns;
             splitTable = originalTable.partitionBy(groupByColumns);
@@ -74,7 +73,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             }
 
             for (Object key : keys) {
-                final Table tableFromMap = splitTable.get(key);
+                final Table tableFromMap = getPartition(splitTable, key);
 
                 final Table whereTable;
                 if (groupByColumnSources.length == 1) {
@@ -118,9 +117,9 @@ public class TestPartitionBy extends QueryTableTestBase {
 
         final QueryTable queryTable = getTable(size, random, columnInfo);
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                // new TableMapNugget(queryTable, "Sym"),
-                // new TableMapNugget(queryTable, "Sym", "intCol"),
-                new TableMapNugget(queryTable, "Sym", "intCol", "doubleCol")
+                // new PartitionedTableNugget(queryTable, "Sym"),
+                // new PartitionedTableNugget(queryTable, "Sym", "intCol"),
+                new PartitionedTableNugget(queryTable, "Sym", "intCol", "doubleCol")
         };
 
         final int steps = 50;
@@ -135,10 +134,10 @@ public class TestPartitionBy extends QueryTableTestBase {
                     TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                             col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
 
-            final TableMap byKey = table.partitionBy("Key");
+            final PartitionedTable byKey = table.partitionBy("Key");
 
-            final Table tableA = byKey.get("A");
-            final Table tableB = byKey.get("B");
+            final Table tableA = getPartition(byKey, "A");
+            final Table tableB = getPartition(byKey, "B");
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
@@ -181,15 +180,15 @@ public class TestPartitionBy extends QueryTableTestBase {
 
         try (final SafeCloseable ignored1 = LivenessScopeStack.open(subTablesScope, true)) {
 
-            final TableMap byKey;
+            final PartitionedTable byKey;
             final Table tableA;
             final Table tableB;
 
             try (final SafeCloseable ignored2 = LivenessScopeStack.open()) {
                 byKey = table.partitionBy("Key");
                 try (final SafeCloseable ignored3 = LivenessScopeStack.open(subTablesScope, false)) {
-                    tableA = byKey.get("A");
-                    tableB = byKey.get("B");
+                    tableA = getPartition(byKey, "A");
+                    tableB = getPartition(byKey, "B");
                 }
             }
 
@@ -212,7 +211,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(byKey.get("C"));
+            assertNull(getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified row, wants to move
@@ -223,7 +222,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(byKey.get("C"));
+            assertNull(getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified row, staying in
@@ -233,7 +232,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(byKey.get("C"));
+            assertNull(getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified row, wants to move
@@ -244,7 +243,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(byKey.get("C"));
+            assertNull(getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified row, staying in
@@ -254,7 +253,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(byKey.get("C"));
+            assertNull(getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(9)); // Removed row from a nonexistent state
@@ -263,7 +262,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(byKey.get("C"));
+            assertNull(getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(8)); // Removed row from an existent state
@@ -272,7 +271,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(byKey.get("C"));
+            assertNull(getPartition(byKey, "C"));
         }
     }
 
@@ -283,13 +282,13 @@ public class TestPartitionBy extends QueryTableTestBase {
 
         try (final SafeCloseable ignored1 = LivenessScopeStack.open()) {
 
-            final TableMap byKey = table.partitionBy("Key");
-            final Table tableA = byKey.get("A");
-            final Table tableB = byKey.get("B");
+            final PartitionedTable byKey = table.partitionBy("Key");
+            final Table tableA = getPartition(byKey, "A");
+            final Table tableB = getPartition(byKey, "B");
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(byKey.get("C"));
+            assertNull(getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
@@ -298,14 +297,14 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(byKey.get("C"));
+            assertNull(getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, makes new state
                 table.notifyListeners(i(9), i(), i());
             });
 
-            final Table tableC = byKey.get("C");
+            final Table tableC = getPartition(byKey, "C");
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
@@ -446,15 +445,20 @@ public class TestPartitionBy extends QueryTableTestBase {
     }
 
     public void testPopulateKeysStatic() {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-implement once populate keys is replaced
+        /*
         final Table table = emptyTable(1).update("USym=`AAPL`", "Value=1");
-        final TableMap map = table.partitionBy("USym");
+        final PartitionedTable map = table.partitionBy("USym");
         map.populateKeys("SPY");
         System.out.println(Arrays.toString(map.getKeySet()));
         assertEquals(map.getKeySet(), new String[] {"AAPL", "SPY"});
         assertFalse(((TableMapImpl) map).isRefreshing());
+        */
     }
 
     public void testPopulateKeysRefreshing() {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-implement once populate keys is replaced
+        /*
         final Table table = emptyTable(1).update("USym=`AAPL`", "Value=1");
         ((BaseTable) table).setRefreshing(true);
         final TableMap map = table.partitionBy("USym");
@@ -462,6 +466,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         System.out.println(Arrays.toString(map.getKeySet()));
         assertEquals(map.getKeySet(), new String[] {"AAPL", "SPY"});
         assertTrue(((TableMapImpl) map).isRefreshing());
+        */
     }
 
     public void testPartitionByWithShifts() {
