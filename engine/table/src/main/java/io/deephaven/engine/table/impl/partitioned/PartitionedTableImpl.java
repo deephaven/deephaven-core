@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
+import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -147,10 +148,45 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             }
             final UnionSourceManager unionSourceManager = new UnionSourceManager(this);
             merged = unionSourceManager.getResult();
+
             merged.setAttribute(Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE);
+            if (!constituentChangesPermitted) {
+                final Map<String, Object> sharedAttributes;
+                try (final ObjectColumnIterator<Table> constituents =
+                             table().objectColumnIterator(constituentColumnName)) {
+                    sharedAttributes = computeSharedAttributes(constituents);
+                }
+                sharedAttributes.forEach(merged::setAttribute);
+            }
+
             memoizedMerge = new WeakReference<>(merged);
         }
         return merged;
+    }
+
+    private Map<String, Object> computeSharedAttributes(@NotNull final Iterator<Table> constituents) {
+        if (!constituents.hasNext()) {
+            return Collections.emptyMap();
+        }
+        final Map<String, Object> candidates = new HashMap<>(constituents.next().getAttributes());
+        while (constituents.hasNext()) {
+            final Table constituent = constituents.next();
+            final Iterator<Map.Entry<String, Object>> candidatesIter = candidates.entrySet().iterator();
+            while (candidatesIter.hasNext()) {
+                final Map.Entry<String, Object> candidate = candidatesIter.next();
+                final String attrKey = candidate.getKey();
+                final Object candidateValue = candidate.getValue();
+                final boolean matches = constituent.hasAttribute(attrKey) &&
+                        Objects.equals(constituent.getAttribute(attrKey), candidateValue);
+                if (!matches) {
+                    candidatesIter.remove();
+                }
+            }
+            if (candidates.isEmpty()) {
+                return Collections.emptyMap();
+            }
+        }
+        return candidates;
     }
 
     @Override

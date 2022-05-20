@@ -1,14 +1,12 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.TransformableTableMap;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -24,7 +22,7 @@ import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 
 import java.util.*;
-import java.util.stream.IntStream;
+import java.util.function.Function;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -33,13 +31,13 @@ import static io.deephaven.engine.table.impl.TstUtils.c;
 import static io.deephaven.engine.table.impl.TstUtils.i;
 
 @Category(OutOfBandTest.class)
-public class TableMapTest extends RefreshingTableTestCase {
+public class PartitionedTableTest extends RefreshingTableTestCase {
 
     @Override
     protected void setUp() throws Exception {
         if (null == ProcessEnvironment.tryGet()) {
             ProcessEnvironment.basicServerInitialization(Configuration.getInstance(),
-                    "TestTransformableTableMapThenMerge", new StreamLoggerImpl());
+                    "TestTransformablePartitionedTableThenMerge", new StreamLoggerImpl());
         }
         super.setUp();
         setExpectError(false);
@@ -53,8 +51,8 @@ public class TableMapTest extends RefreshingTableTestCase {
 
         final Table withK = queryTable.update("K=k");
 
-        final TableMap tableMap = withK.partitionBy("Sym");
-        final Table merged = tableMap.merge();
+        final PartitionedTable partitionedTable = withK.partitionBy("Sym");
+        final Table merged = partitionedTable.merge();
         final Table mergedByK = merged.sort("K");
 
         if (printTableUpdates) {
@@ -79,6 +77,8 @@ public class TableMapTest extends RefreshingTableTestCase {
     }
 
     public void testMergePopulate() {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-implement once populate keys is replaced
+        /*
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bb", "aa", "bb"),
                 c("intCol", 10, 20, 40, 60),
@@ -86,10 +86,10 @@ public class TableMapTest extends RefreshingTableTestCase {
 
         final Table withK = queryTable.update("K=k");
 
-        final TableMap tableMap = withK.partitionBy("Sym");
-        tableMap.populateKeys("cc", "dd");
+        final PartitionedTable partitionedTable = withK.partitionBy("Sym");
+        partitionedTable.populateKeys("cc", "dd");
 
-        final Table merged = tableMap.merge();
+        final Table merged = partitionedTable.merge();
         final Table mergedByK = merged.sort("K");
 
         if (printTableUpdates) {
@@ -110,6 +110,7 @@ public class TableMapTest extends RefreshingTableTestCase {
         }
 
         assertEquals("", TableTools.diff(mergedByK, withK, 10));
+        */
     }
 
     public void testMergeIncremental() {
@@ -131,17 +132,16 @@ public class TableMapTest extends RefreshingTableTestCase {
                         new TstUtils.IntGenerator(0, 20),
                         new TstUtils.DoubleGenerator(0, 100)));
 
+        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-add key initialization
         final EvalNugget en[] = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        return table.partitionBy("Sym").populateKeys((Object[]) syms).merge().sort("Sym");
+                        return table.partitionBy("Sym").merge().sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.partitionBy("intCol")
-                                .populateKeys(IntStream.rangeClosed(0, 20).boxed().toArray(Object[]::new)).merge()
-                                .sort("intCol");
+                        return table.partitionBy("intCol").merge().sort("intCol");
                     }
                 },
         };
@@ -194,29 +194,32 @@ public class TableMapTest extends RefreshingTableTestCase {
                 new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
                 new TstUtils.IntGenerator(100, 200)));
 
-        final TableMap map = withK.partitionBy("Sym");
-        map.populateKeys("aa", "bb", "cc", "dd");
-        final Table asTable = map.asTable(false, true, false);
+        final PartitionedTable leftPT = withK.partitionBy("Sym");
+        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-add key initialization
+        // leftPT.populateKeys("aa", "bb", "cc", "dd");
+        final PartitionedTable.Proxy leftProxy = leftPT.proxy(false, false);
 
-        final TableMap rightMap = rightTable.partitionBy("Sym");
-        rightMap.populateKeys("aa", "bb", "cc", "dd");
-        final Table rightAsTable = rightMap.asTable(false, true, false);
+        final PartitionedTable rightPT = rightTable.partitionBy("Sym");
+        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-add key initialization
+        // rightPT.populateKeys("aa", "bb", "cc", "dd");
+        final PartitionedTable.Proxy rightProxy = rightPT.proxy(false, false);
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return ((TransformableTableMap) table.update("K=Indices").partitionBy("Sym")
-                                .populateKeys("aa", "bb", "cc", "dd").asTable(false, false, false)
+                        return table.update("K=Indices").partitionBy("Sym")
+                                // .populateKeys("aa", "bb", "cc", "dd")
+                                .proxy(false, false)
                                 .update("K2=Indices*2")
                                 .select("K", "K2", "Half=doubleCol/2", "Sq=doubleCol*doubleCol",
-                                        "Weight=intCol*doubleCol", "Sym")).merge().sort("K", "Sym");
+                                        "Weight=intCol*doubleCol", "Sym").target().merge().sort("K", "Sym");
                     }
                 },
-                new SizeNugget(table, asTable),
+                new SizeNugget(table, leftProxy.target().merge()),
                 new QueryTableTest.TableComparator(withK.naturalJoin(rightTable.lastBy("Sym"), "Sym").sort("K", "Sym"),
-                        asTable.naturalJoin(rightTable.lastBy("Sym"), "Sym").coalesce().sort("K", "Sym")),
+                        leftProxy.naturalJoin(rightTable.lastBy("Sym"), "Sym").target().merge().sort("K", "Sym")),
                 new QueryTableTest.TableComparator(withK.naturalJoin(rightTable.lastBy("Sym"), "Sym").sort("K", "Sym"),
-                        asTable.naturalJoin(rightAsTable.lastBy(), "Sym").coalesce().sort("K", "Sym")),
+                        leftProxy.naturalJoin(rightProxy.lastBy(), "Sym").target().merge().sort("K", "Sym")),
         };
 
         for (int i = 0; i < 100; i++) {
@@ -224,26 +227,26 @@ public class TableMapTest extends RefreshingTableTestCase {
         }
     }
 
-    public void testTransformTableMapThenMerge() {
+    public void testTransformPartitionedTableThenMerge() {
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
 
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1).toTracking(),
                 intCol("Key", 1), intCol("Sentinel", 1), col("Sym", "a"), doubleCol("DoubleCol", 1.1));
 
-        final TableMap tableMap = sourceTable.partitionBy("Key");
+        final PartitionedTable partitionedTable = sourceTable.partitionBy("Key");
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return tableMap.merge().sort("Key");
+                        return partitionedTable.merge().sort("Key");
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return tableMap
-                                .transformTables(
+                        return partitionedTable
+                                .transform(
                                         t -> t.update("K2=Key * 2").update("K3=Key + K2").update("K5 = K3 + K2"))
                                 .merge().sort("Key");
                     }
@@ -251,8 +254,8 @@ public class TableMapTest extends RefreshingTableTestCase {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return tableMap
-                                .transformTablesWithMap(tableMap,
+                        return partitionedTable
+                                .partitionedTransform(partitionedTable,
                                         (l, r) -> l.naturalJoin(r.lastBy("Key"), "Key", "Sentinel2=Sentinel"))
                                 .merge().sort("Key");
                     }
@@ -288,24 +291,15 @@ public class TableMapTest extends RefreshingTableTestCase {
 
         queryTable.setAttribute(Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar");
 
-        final TableMap tableMap = queryTable.partitionBy("Sym");
+        final PartitionedTable partitionedTable = queryTable.partitionBy("Sym");
 
-        for (Table table : tableMap.values()) {
+        for (Table table : getPartitions(partitionedTable)) {
             table.setAttribute("quux", "baz");
         }
 
-        final Table asTable = tableMap.asTable(true, false, true);
-        if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(
-                    CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
-                            Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE),
-                    asTable.getAttributes());
-        } else {
-            TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
-                    Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar"), asTable.getAttributes());
-        }
+        final PartitionedTable.Proxy proxy = partitionedTable.proxy(true, true);
 
-        Table merged = ((TransformableTableMap) asTable).merge();
+        Table merged = proxy.target().merge();
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
             TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
                     Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,
@@ -318,20 +312,12 @@ public class TableMapTest extends RefreshingTableTestCase {
         }
 
         int tableCounter = 1;
-        for (Table table : tableMap.values()) {
+        for (Table table : getPartitions(partitionedTable)) {
             table.setAttribute("differing", tableCounter++);
         }
 
-        // the proxy blows up
-        try {
-            asTable.getAttributes();
-            TestCase.fail("Get attributes is inconsistent!");
-        } catch (IllegalArgumentException e) {
-            TestCase.assertEquals("Underlying tables do not have consistent attributes.", e.getMessage());
-        }
-
         // the merged table just takes the set that is consistent
-        merged = ((TransformableTableMap) asTable).merge();
+        merged = proxy.target().merge();
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
             TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
                     Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,
@@ -354,15 +340,15 @@ public class TableMapTest extends RefreshingTableTestCase {
                 c("Sym", "aa_1", "bb_1", "aa_2", "bb_2"),
                 c("RightSentinel", 30, 50, 70, 90));
 
-        final TableMap leftMap = left.partitionBy("USym");
-        final TableMap rightMap = right.partitionBy("USym");
+        final PartitionedTable leftPT = left.partitionBy("USym");
+        final PartitionedTable rightPT = right.partitionBy("USym");
 
-        final Table leftAsTable = leftMap.asTableBuilder().sanityCheckJoin(true).allowCoalesce(false).build();
-        final Table rightAsTable = rightMap.asTableBuilder().sanityCheckJoin(true).allowCoalesce(false).build();
+        final PartitionedTable.Proxy leftProxy = leftPT.proxy(true, true);
+        final PartitionedTable.Proxy rightProxy = rightPT.proxy(true, true);
 
-        final Table result = leftAsTable.join(rightAsTable, "Sym", "RightSentinel");
+        final PartitionedTable.Proxy result = leftProxy.join(rightProxy, "Sym", "RightSentinel");
 
-        final Table mergedResult = ((TransformableTableMap) result).merge();
+        final Table mergedResult = result.target().merge();
         TableTools.show(mergedResult);
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
@@ -375,9 +361,7 @@ public class TableMapTest extends RefreshingTableTestCase {
             TestCase.assertEquals(1, getUpdateErrors().size());
             final Throwable throwable = throwables.get(0);
             TestCase.assertEquals(IllegalArgumentException.class, throwable.getClass());
-            TestCase.assertEquals(
-                    "join([Sym]) Left join key \"aa_1\" exists in multiple TableMap keys, \"aa\" and \"bb\"",
-                    throwable.getMessage());
+            TestCase.assertTrue(throwable.getMessage().contains("has join keys found in multiple constituents"));
             return true;
         });
 
@@ -388,13 +372,13 @@ public class TableMapTest extends RefreshingTableTestCase {
                 c("USym", "aa", "bb", "aa", "bb"),
                 c("Sentinel", 10, 20, 40, 60));
 
-        final TableMap result = sourceTable.partitionBy("USym");
-        final Table aa = result.get("aa");
+        final PartitionedTable result = sourceTable.partitionBy("USym");
+        final Table aa = getPartition(result, "aa");
         final Table aa2 = aa.update("S2=Sentinel * 2");
         TableTools.show(aa2);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
-                () -> TestCase.assertTrue(((QueryTable) aa2).satisfied(LogicalClock.DEFAULT.currentStep())));
+                () -> TestCase.assertTrue(aa2.satisfied(LogicalClock.DEFAULT.currentStep())));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(sourceTable, i(8), c("USym", "bb"), c("Sentinel", 80));
@@ -457,7 +441,7 @@ public class TableMapTest extends RefreshingTableTestCase {
                 c("USym2", "aa", "bb"),
                 c("Sentinel2", 30, 50));
 
-        final TableMap result = sourceTable.partitionBy("USym");
+        final PartitionedTable result = sourceTable.partitionBy("USym");
 
         final PauseHelper pauseHelper = new PauseHelper();
         final PauseHelper pauseHelper2 = new PauseHelper();
@@ -467,13 +451,13 @@ public class TableMapTest extends RefreshingTableTestCase {
         pauseHelper.release();
         pauseHelper2.release();
 
-        final TableMap result2 = sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").partitionBy("USym2")
-                .transformTables(t -> t.update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"));
+        final PartitionedTable result2 = sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").partitionBy("USym2")
+                .transform(t -> t.update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"));
 
         // pauseHelper.pause();
         pauseHelper2.pause();
 
-        final TableMap joined = result.transformTablesWithMap(result2, (l, r) -> {
+        final PartitionedTable joined = result.partitionedTransform(result2, (l, r) -> {
             System.out.println("Doing naturalJoin");
             return l.naturalJoin(r, "USym=USym2");
         });
@@ -543,17 +527,17 @@ public class TableMapTest extends RefreshingTableTestCase {
                 c("USym2", "aa", "bb", "dd"),
                 c("Sentinel2", 30, 50, 90));
 
-        final TableMap result = sourceTable.partitionBy("USym");
+        final PartitionedTable result = sourceTable.partitionBy("USym");
 
         final PauseHelper pauseHelper = new PauseHelper();
         QueryScope.addParam("pauseHelper", pauseHelper);
 
         pauseHelper.release();
 
-        final TableMap result2 = sourceTable2.partitionBy("USym2")
-                .transformTables(t -> t.update("SlowItDown2=pauseHelper.pauseValue(2 * k)"));
+        final PartitionedTable result2 = sourceTable2.partitionBy("USym2")
+                .transform(t -> t.update("SlowItDown2=pauseHelper.pauseValue(2 * k)"));
 
-        final TableMap joined = result.transformTablesWithMap(result2, (l, r) -> {
+        final PartitionedTable joined = result.partitionedTransform(result2, (l, r) -> {
             System.out.println("Doing naturalJoin");
             return l.naturalJoin(r, "USym=USym2");
         });
@@ -585,12 +569,12 @@ public class TableMapTest extends RefreshingTableTestCase {
         TableTools.showWithRowSet(merged);
     }
 
-    public void testTableMapScope() {
-        testTableMapScope(true);
-        testTableMapScope(false);
+    public void testPartitionedTableScope() {
+        testPartitionedTableScope(true);
+        testPartitionedTableScope(false);
     }
 
-    private void testTableMapScope(boolean refreshing) {
+    private void testPartitionedTableScope(boolean refreshing) {
         final Table table = TableTools.newTable(TableTools.col("Key", "A", "B"), intCol("Value", 1, 2));
         if (refreshing) {
             table.setRefreshing(true);
@@ -598,46 +582,46 @@ public class TableMapTest extends RefreshingTableTestCase {
 
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
-        final TableMap map = table.partitionBy("Key");
-        final Table value = map.get("A");
+        final PartitionedTable partitionedTable = table.partitionBy("Key");
+        final Table value = getPartition(partitionedTable, "A");
         assertNotNull(value);
 
-        final SingletonLivenessManager mapManager = new SingletonLivenessManager(map);
+        final SingletonLivenessManager manager = new SingletonLivenessManager(partitionedTable);
 
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
 
         if (refreshing) {
-            org.junit.Assert.assertTrue(map.tryRetainReference());
+            org.junit.Assert.assertTrue(partitionedTable.tryRetainReference());
             org.junit.Assert.assertTrue(value.tryRetainReference());
 
-            map.dropReference();
+            partitionedTable.dropReference();
             value.dropReference();
         }
 
         final SafeCloseable scopeCloseable2 = LivenessScopeStack.open();
-        final Table valueAgain = map.get("A");
+        final Table valueAgain = getPartition(partitionedTable, "A");
         assertSame(value, valueAgain);
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(scopeCloseable2::close);
 
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(mapManager::release);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(manager::release);
 
         org.junit.Assert.assertFalse(value.tryRetainReference());
-        org.junit.Assert.assertFalse(map.tryRetainReference());
+        org.junit.Assert.assertFalse(partitionedTable.tryRetainReference());
     }
 
-    private void testMemoize(Table source, Function.Unary<TableMap, Table> op) {
+    private void testMemoize(Table source, Function<Table, PartitionedTable> op) {
         testMemoize(source, op, op);
     }
 
-    private void testMemoize(Table source, Function.Unary<TableMap, Table> op, Function.Unary<TableMap, Table> op2) {
-        final TableMap result = op.call(source);
-        final TableMap result2 = op2.call(source);
+    private void testMemoize(Table source, Function<Table, PartitionedTable> op, Function<Table, PartitionedTable> op2) {
+        final PartitionedTable result = op.apply(source);
+        final PartitionedTable result2 = op2.apply(source);
         org.junit.Assert.assertSame(result, result2);
     }
 
-    private void testNoMemoize(Table source, Function.Unary<TableMap, Table> op, Function.Unary<TableMap, Table> op2) {
-        final TableMap result = op.call(source);
-        final TableMap result2 = op2.call(source);
+    private void testNoMemoize(Table source, Function<Table, PartitionedTable> op, Function<Table, PartitionedTable> op2) {
+        final PartitionedTable result = op.apply(source);
+        final PartitionedTable result2 = op2.apply(source);
         org.junit.Assert.assertNotSame(result, result2);
     }
 

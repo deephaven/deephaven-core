@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.stringset.ArrayStringSet;
@@ -8,7 +9,6 @@ import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.table.impl.TableWithDefaults;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.BooleanUtils;
@@ -39,6 +39,7 @@ import java.util.stream.IntStream;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
+import static io.deephaven.engine.table.impl.TstUtils.getPartitions;
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -225,9 +226,7 @@ public class TestChunkedRegionedOperations {
 
         final PartitionedTable partitionedInputData = inputData.partitionBy("PC");
         ParquetTools.writeParquetTables(
-                partitionedInputData.table()
-                        .objectColumnIterator(partitionedInputData.constituentColumnName())
-                        .stream().toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY),
+                getPartitions(partitionedInputData),
                 partitionedDataDefinition.getWritable(),
                 parquetInstructions,
                 partitionedInputData.table().objectColumnIterator("PC").stream()
@@ -239,9 +238,7 @@ public class TestChunkedRegionedOperations {
 
         final PartitionedTable partitionedInputMissingData = inputMissingData.view("PC", "II").partitionBy("PC");
         ParquetTools.writeParquetTables(
-                partitionedInputMissingData.table()
-                        .objectColumnIterator(partitionedInputMissingData.constituentColumnName())
-                        .stream().toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY),
+                getPartitions(partitionedInputMissingData),
                 partitionedMissingDataDefinition.getWritable(),
                 parquetInstructions,
                 partitionedInputMissingData.table().objectColumnIterator("PC").stream()

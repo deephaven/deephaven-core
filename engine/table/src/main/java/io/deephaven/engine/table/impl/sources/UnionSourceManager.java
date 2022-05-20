@@ -570,7 +570,7 @@ public class UnionSourceManager {
     }
 
     /**
-     * Get a stream over all current constituent tables.
+     * Get a stream over all current constituent tables. This is for internal engine use only.
      *
      * @return The stream
      */

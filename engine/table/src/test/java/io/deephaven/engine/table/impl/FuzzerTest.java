@@ -164,7 +164,7 @@ public class FuzzerTest {
             session.evaluateScript(query.toString());
 
             annotateBinding(session);
-            final List<Object> hardReferences = new ArrayList<>();
+            final Map<String, Object> hardReferences = new ConcurrentHashMap<>();
             validateBindingTables(session, hardReferences);
 
             final TimeTable timeTable = (TimeTable) session.getVariable("tt");
@@ -308,7 +308,8 @@ public class FuzzerTest {
         });
     }
 
-    private void addPrintListener(GroovyDeephavenSession session, final String variable, List<Object> hardReferences) {
+    private void addPrintListener(
+            GroovyDeephavenSession session, final String variable, Map<String, Object> hardReferences) {
         final Table table = (Table) session.getVariable(variable);
         System.out.println(variable);
         TableTools.showWithRowSet(table);
@@ -316,7 +317,7 @@ public class FuzzerTest {
         if (table.isRefreshing()) {
             final FuzzerPrintListener listener = new FuzzerPrintListener(variable, table);
             table.listenForUpdates(listener);
-            hardReferences.add(listener);
+            hardReferences.put("print_" + System.identityHashCode(table), listener);
         }
     }
 
@@ -330,7 +331,7 @@ public class FuzzerTest {
     }
 
     private void validateBindingPartitionedTableConstituents(
-            GroovyDeephavenSession session, (Map<String, Object> hardReferences) {
+            GroovyDeephavenSession session, Map<String, Object> hardReferences) {
         // noinspection unchecked
         session.getBinding().getVariables().forEach((k, v) -> {
             if (v instanceof PartitionedTable) {

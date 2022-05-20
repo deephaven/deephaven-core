@@ -7,18 +7,14 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.table.impl.select.ConditionFilter;
-import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
-import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.util.SortedBy;
@@ -466,7 +462,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testSortOfPartitionBy() throws ExecutionException, InterruptedException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "a", "a"));
-        final TableMap tm = table.partitionBy("y");
+        final PartitionedTable pt = table.partitionBy("y");
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
@@ -479,8 +475,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
         UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
 
-        final Table tableA = tm.get("a");
-        final Table tableD = tm.get("d");
+        final Table tableA = getPartition(pt, "a");
+        final Table tableD = getPartition(pt, "d");
 
         TableTools.show(tableA);
         TableTools.show(tableD);
@@ -1334,7 +1330,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final QueryTable table2 = makeByConcurrentStep2Table(true, false);
 
 
-        final Callable<TableMap> callable;
+        final Callable<PartitionedTable> callable;
         final Table slowed;
         if (withReset) {
             QueryLibrary.importStatic(TestConcurrentInstantiation.class);
@@ -1356,17 +1352,17 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Future<TableMap> future1 = pool.submit(callable);
-        final TableMap result1;
+        final Future<PartitionedTable> future1 = pool.submit(callable);
+        final PartitionedTable result1;
         if (withReset) {
             SleepUtil.sleep(25);
         }
         result1 = future1.get();
 
         System.out.println("Result 1");
-        final Table result1a = result1.get("a");
-        final Table result1b = result1.get("b");
-        final Table result1c = result1.get("c");
+        final Table result1a = getPartition(result1, "a");
+        final Table result1b = getPartition(result1, "b");
+        final Table result1c = getPartition(result1, "c");
         TableTools.show(result1a);
         TableTools.show(result1b);
         TableTools.show(result1c);
@@ -1380,13 +1376,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         doByConcurrentAdditions(table, false);
         doByConcurrentModifications(table, false);
 
-        final TableMap result2 = pool.submit(callable).get();
+        final PartitionedTable result2 = pool.submit(callable).get();
 
         System.out.println("Result 2");
-        final Table result2a = result2.get("a");
-        final Table result2b = result2.get("b");
-        final Table result2c = result2.get("c");
-        final Table result2d_1 = result2.get("d");
+        final Table result2a = getPartition(result2, "a");
+        final Table result2b = getPartition(result2, "b");
+        final Table result2c = getPartition(result2, "c");
+        final Table result2d_1 = getPartition(result2, "d");
         assertNull(result2d_1);
 
         TableTools.show(result2a);
@@ -1397,19 +1393,19 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         table.notifyListeners(i(5, 9), i(), i(8));
 
-        final Future<TableMap> future3 = pool.submit(callable);
+        final Future<PartitionedTable> future3 = pool.submit(callable);
         if (withReset) {
             while (((QueryTable) slowed).getLastNotificationStep() != LogicalClock.DEFAULT.currentStep()) {
                 UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             }
         }
-        final TableMap result3 = future3.get();
+        final PartitionedTable result3 = future3.get();
 
         System.out.println("Result 3");
-        final Table result3a = result3.get("a");
-        final Table result3b = result3.get("b");
-        final Table result3c = result3.get("c");
-        final Table result3d = result3.get("d");
+        final Table result3a = getPartition(result3, "a");
+        final Table result3b = getPartition(result3, "b");
+        final Table result3c = getPartition(result3, "c");
+        final Table result3d = getPartition(result3, "d");
 
         System.out.println("Expected 2");
         TableTools.show(expected2);

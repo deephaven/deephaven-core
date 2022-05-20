@@ -3378,8 +3378,8 @@ public class QueryTableAggregationTest {
                 stringCol("Key", keyValues), intCol("IntCol", sentinels));
 
         final Table flat = table.flatten();
-        final TableMap map = flat.partitionBy("Key");
-        final Table subTable = map.get("Key");
+        final PartitionedTable partitionedTable = flat.partitionBy("Key");
+        final Table subTable = getPartition(partitionedTable, "Key");
         assertTableEquals(subTable, table);
 
         final FuzzerPrintListener printListener = new FuzzerPrintListener("original", table, 0);

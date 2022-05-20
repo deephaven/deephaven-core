@@ -14,6 +14,8 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSetTstUtils;
 import io.deephaven.engine.table.ElementSource;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -2309,5 +2311,28 @@ public class TstUtils {
         if (failed) {
             throw new RuntimeException("Debug candidate: seed=" + bestSeed + " steps=" + bestSteps);
         }
+    }
+
+    public static Table[] getPartitions(@NotNull final PartitionedTable partitionedTable) {
+        return partitionedTable.table()
+                .<Table>objectColumnIterator(partitionedTable.constituentColumnName()).stream().toArray(Table[]::new);
+    }
+
+    public static Table[] getPartitions(
+            @NotNull final PartitionedTable partitionedTable,
+            @NotNull final Object... keys) {
+        final List<MatchFilter> filters = new ArrayList<>(keys.length);
+        final String[] keyColumnNames = partitionedTable.keyColumnNames().toArray(new String[0]);
+        Assert.eq(keys.length, "keys.length", keyColumnNames.length, "keyColumnNames.length");
+        for (int ki = 0; ki < keys.length; ++ki) {
+            filters.add(new MatchFilter(keyColumnNames[ki], keys[ki]));
+        }
+        return getPartitions(partitionedTable.filter(filters));
+    }
+
+    public static Table getPartition(@NotNull final PartitionedTable partitionedTable, @NotNull final Object... keys) {
+        final Table[] matching =  getPartitions(partitionedTable, keys);
+        Assert.lt(matching.length, "matching.length", 2);
+        return matching.length == 0 ? null : matching[0];
     }
 }
