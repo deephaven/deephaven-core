@@ -100,13 +100,10 @@ include(':log-example-file')
 project(':log-example-file').projectDir = file('log-factory/examples/example-file')
 
 include(':ssl-config')
-project(':ssl-config').projectDir = file('server/config')
+project(':ssl-config').projectDir = file('ssl/config')
 
-include(':ssl-config-netty')
-project(':ssl-config-netty').projectDir = file('server/config-netty')
-
-include(':ssl-config-jetty')
-project(':ssl-config-jetty').projectDir = file('server/config-jetty')
+include(':ssl-kickstart')
+project(':ssl-kickstart').projectDir = file('ssl/kickstart')
 
 include(':server-test')
 project(':server-test').projectDir = file('server/test')

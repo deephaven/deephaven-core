@@ -1,12 +1,14 @@
 package io.deephaven.client.impl;
 
-import io.deephaven.ssl.config.NettySSLConfig;
+import io.deephaven.ssl.config.impl.KickstartUtils;
 import io.deephaven.ssl.config.SSLConfig;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import nl.altindag.ssl.SSLFactory;
+import nl.altindag.ssl.util.NettySslUtils;
 
 import javax.net.ssl.SSLException;
 
@@ -28,7 +30,8 @@ public final class ChannelHelper {
                 .maxInboundMessageSize(clientConfig.maxInboundMessageSize());
         if (clientConfig.target().isSecure()) {
             final SSLConfig ssl = clientConfig.sslOrDefault();
-            final SslContextBuilder netty = NettySSLConfig.forClient(ssl);
+            final SSLFactory sslFactory = KickstartUtils.create(ssl);
+            final SslContextBuilder netty = NettySslUtils.forClient(sslFactory);
             final SslContext grpc;
             try {
                 grpc = GrpcSslContexts.configure(netty).build();
