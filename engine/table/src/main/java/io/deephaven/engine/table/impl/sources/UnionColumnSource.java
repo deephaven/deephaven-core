@@ -367,10 +367,11 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
                 @NotNull final RowSequence outerRowSequence) {
             final int sliceSize = outerRowSequence.intSize();
             slotState.prepare(slot, DataVersion.CURR, sliceSize);
+            final int offset = destination.size();
+            destination.setSize(offset + sliceSize);
             slotState.source.fillChunk(slotState.context,
-                    sliceDestination.resetFromChunk(destination, destination.size(), sliceSize),
+                    sliceDestination.resetFromChunk(destination, offset, sliceSize),
                     sourceRowSequence(outerRowSequence));
-            destination.setSize(destination.size() + sliceSize);
         }
 
         private void fillPrevChunkAppend(
@@ -379,10 +380,11 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
                 @NotNull final RowSequence outerRowSequence) {
             final int sliceSize = outerRowSequence.intSize();
             slotState.prepare(slot, DataVersion.PREV, sliceSize);
+            final int offset = destination.size();
+            destination.setSize(offset + sliceSize);
             slotState.source.fillPrevChunk(slotState.context,
-                    sliceDestination.resetFromChunk(destination, destination.size(), sliceSize),
+                    sliceDestination.resetFromChunk(destination, offset, sliceSize),
                     sourceRowSequence(outerRowSequence));
-            destination.setSize(destination.size() + sliceSize);
         }
 
         @Override
@@ -461,8 +463,8 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             @NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence) {
+        destination.setSize(0);
         if (rowSequence.isEmpty()) {
-            destination.setSize(0);
             return;
         }
         // noinspection unchecked
@@ -502,8 +504,8 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             @NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence) {
+        destination.setSize(0);
         if (rowSequence.isEmpty()) {
-            destination.setSize(0);
             return;
         }
         // noinspection unchecked

@@ -4,6 +4,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.Pair;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.Liveness;
@@ -28,9 +29,9 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.function.BinaryOperator;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.iterators.ColumnIterator.*;
@@ -40,7 +41,7 @@ import static io.deephaven.engine.table.iterators.ColumnIterator.*;
  */
 public class PartitionedTableImpl extends LivenessArtifact implements PartitionedTable {
 
-    private static final ColumnName RHS_CONSTITUENT = ColumnName.of("__RHS_CONSTITUENT__");
+    private static final String RHS_CONSTITUENT = "__RHS_CONSTITUENT__";
 
     private final Table table;
     private final Set<String> keyColumnNames;
@@ -153,7 +154,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             if (!constituentChangesPermitted) {
                 final Map<String, Object> sharedAttributes;
                 try (final ObjectColumnIterator<Table> constituents =
-                             table().objectColumnIterator(constituentColumnName)) {
+                        table().objectColumnIterator(constituentColumnName)) {
                     sharedAttributes = computeSharedAttributes(constituents);
                 }
                 sharedAttributes.forEach(merged::setAttribute);
@@ -245,7 +246,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         }
 
         // Validate join compatibility
-        checkMatchingKeyColumns(this, other);
+        final MatchPair[] joinPairs = matchKeyColumns(this, other);
 
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
@@ -254,11 +255,10 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             // Perform the transformation
             final Table joined = table.join(
                     other.table(),
-                    JoinMatch.from(keyColumnNames),
-                    List.of(JoinAddition.of(RHS_CONSTITUENT,
-                            ColumnName.of(other.constituentColumnName()))));
+                    joinPairs,
+                    new MatchPair[] {new MatchPair(RHS_CONSTITUENT, other.constituentColumnName())});
             resultTable = joined.update(new BiTableTransformationColumn(
-                    constituentColumnName, RHS_CONSTITUENT.name(), transformer));
+                    constituentColumnName, RHS_CONSTITUENT, transformer));
             enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition
@@ -281,31 +281,45 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     // TODO (https://github.com/deephaven/deephaven-core/issues/2368): Consider adding transformWithKeys support
 
     /**
-     * Validate that {@code lhs} and {@code rhs} have compatible (same name, same type) key columns, allowing
-     * {@link #partitionedTransform(PartitionedTable, BinaryOperator)}.
+     * Validate that {@code lhs} and {@code rhs} have compatible key columns, allowing
+     * {@link #partitionedTransform(PartitionedTable, BinaryOperator)}. Compute the matching pairs of key column names.
      *
      * @param lhs The first partitioned table
      * @param rhs The second partitioned table
+     * @return {@link MatchPair Match pairs} linking {@code lhs}'s key column names with {@code rhs}'s key column names
+     *         in the order dictated by {@code lhs}
      * @throws IllegalArgumentException If the key columns are mismatched
      */
-    static void checkMatchingKeyColumns(@NotNull final PartitionedTable lhs, @NotNull final PartitionedTable rhs) {
-        final Map<String, ColumnDefinition<?>> lhsKeyColumnDefinitions = keyColumnDefinitions(lhs);
-        final Map<String, ColumnDefinition<?>> rhsKeyColumnDefinitions = keyColumnDefinitions(rhs);
-        if (!lhs.keyColumnNames().equals(rhs.keyColumnNames())) {
+    static MatchPair[] matchKeyColumns(@NotNull final PartitionedTable lhs, @NotNull final PartitionedTable rhs) {
+        if (lhs.keyColumnNames().size() != rhs.keyColumnNames().size()) {
             throw new IllegalArgumentException("Incompatible partitioned table input for partitioned transform; "
-                    + "key column sets don't contain the same names: "
-                    + "first has " + lhsKeyColumnDefinitions.values()
-                    + ", second has " + rhsKeyColumnDefinitions.values());
+                    + "key column sets don't contain the same names or the same number of columns: "
+                    + "first has " + lhs.keyColumnNames() + ", second has " + rhs.keyColumnNames());
         }
-        final String typeMismatches = lhsKeyColumnDefinitions.values().stream()
-                .filter(cd -> !cd.isCompatible(rhsKeyColumnDefinitions.get(cd.getName())))
-                .map(cd -> cd.describeForCompatibility() + " doesn't match "
-                        + rhsKeyColumnDefinitions.get(cd.getName()).describeForCompatibility())
+        final MatchPair[] keyColumnNamePairs;
+        if (lhs.keyColumnNames().equals(rhs.keyColumnNames())) {
+            keyColumnNamePairs = lhs.keyColumnNames().stream()
+                    .map(cn -> new MatchPair(cn, cn)).toArray(MatchPair[]::new);
+        } else {
+            final String[] lhsKeyColumns = lhs.keyColumnNames().toArray(String[]::new);
+            final String[] rhsKeyColumns = rhs.keyColumnNames().toArray(String[]::new);
+            keyColumnNamePairs = IntStream.range(0, lhsKeyColumns.length)
+                    .mapToObj(ci -> new MatchPair(lhsKeyColumns[ci], rhsKeyColumns[ci])).toArray(MatchPair[]::new);
+        }
+        final String typeMismatches = Arrays.stream(keyColumnNamePairs)
+                .map(namePair -> new Pair<>(
+                        lhs.table().getDefinition().getColumn(namePair.leftColumn()),
+                        rhs.table().getDefinition().getColumn(namePair.rightColumn())))
+                .filter(defPair -> defPair.getFirst().getDataType() != defPair.getSecond().getDataType()
+                        || defPair.getFirst().getComponentType() != defPair.getSecond().getComponentType())
+                .map(defPair -> defPair.getFirst().describeForCompatibility() + " doesn't match "
+                        + defPair.getSecond().describeForCompatibility())
                 .collect(Collectors.joining(", "));
         if (!typeMismatches.isEmpty()) {
             throw new IllegalArgumentException("Incompatible partitioned table input for partitioned transform; "
                     + "key column definitions don't match: " + typeMismatches);
         }
+        return keyColumnNamePairs;
     }
 
     private static Table emptyConstituent(@NotNull final TableDefinition constituentDefinition) {
@@ -314,14 +328,6 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 constituentDefinition,
                 RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(constituentDefinition));
-    }
-
-    private static Map<String, ColumnDefinition<?>> keyColumnDefinitions(
-            @NotNull final PartitionedTable partitionedTable) {
-        final Set<String> keyColumnNames = partitionedTable.keyColumnNames();
-        return partitionedTable.table().getDefinition().getColumnStream()
-                .filter(cd -> keyColumnNames.contains(cd.getName()))
-                .collect(Collectors.toMap(ColumnDefinition::getName, Function.identity()));
     }
 
     private static final class ValidateConstituents implements QueryTable.MemoizableOperation<QueryTable> {

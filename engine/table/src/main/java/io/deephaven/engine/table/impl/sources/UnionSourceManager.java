@@ -149,8 +149,8 @@ public class UnionSourceManager {
     private static class LinkedListenerRecorder extends ListenerRecorder
             implements IntrusiveDoublyLinkedNode<LinkedListenerRecorder> {
 
-        private LinkedListenerRecorder next;
-        private LinkedListenerRecorder prev;
+        private LinkedListenerRecorder next = this;
+        private LinkedListenerRecorder prev = this;
 
         private LinkedListenerRecorder(
                 @NotNull final String description,

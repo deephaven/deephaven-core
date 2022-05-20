@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.BinaryOperator;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 /**
@@ -117,8 +116,8 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * PartitionedTable.
      * <p>
      * Each operation thus applied will produce a new PartitionedTable with the results as in
-     * {@link #transform(Function)} or {@link #partitionedTransform(PartitionedTable, BinaryOperator)}, and return a new
-     * proxy to that PartitionedTable.
+     * {@link #transform(UnaryOperator)} or {@link #partitionedTransform(PartitionedTable, BinaryOperator)}, and return
+     * a new proxy to that PartitionedTable.
      *
      * @param requireMatchingKeys Whether to ensure that both partitioned tables have all the same keys present when a
      *        proxied operation uses {@code this} and another {@link PartitionedTable} as inputs for a
@@ -170,6 +169,17 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * <p>
      * Apply {@code transformer} to all constituent {@link Table tables} found in {@code this} and {@code other} with
      * the same key column values, and produce a new PartitionedTable containing the results.
+     * <p>
+     * Note that {@code other}'s key columns must match {@code this} PartitionedTable's key columns. Two matching
+     * mechanisms are supported, and will be attempted in the order listed:
+     * <ol>
+     * <li>Match by column name. Both PartitionedTables must have all the same {@link #keyColumnNames() key column
+     * names}. Like-named columns must have the same {@link ColumnSource#getType() data type} and
+     * {@link ColumnSource#getComponentType() component type}.</li>
+     * <li>Match by column order. Both PartitionedTables must have their matchable columns in the same order within
+     * their {@link #keyColumnNames() key column names}. Like-positioned columns must have the same
+     * {@link ColumnSource#getType() data type} and {@link ColumnSource#getComponentType() component type}.</li>
+     * </ol>
      * <p>
      * {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for empty input
      * tables.

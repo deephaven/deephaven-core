@@ -5,15 +5,16 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
@@ -163,10 +164,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                 UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
             }
 
-            PartitionedTableImpl.checkMatchingKeyColumns(target, otherTarget);
-
+            final MatchPair[] keyColumnNamePairs = PartitionedTableImpl.matchKeyColumns(target, otherTarget);
             final DependentValidation uniqueKeys = requireMatchingKeys
-                    ? uniqueKeysValidation(target, otherTarget)
+                    ? uniqueKeysValidation(target, otherTarget, keyColumnNamePairs)
                     : null;
             final DependentValidation overlappingLhsJoinKeys = sanityCheckJoins && joinMatches != null
                     ? overlappingLhsJoinKeysValidation(target, joinMatches)
@@ -245,7 +245,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             return parent;
         }
         final DependentValidation[] dependentValidations =
-                Arrays.stream(dependentValidationsIn).filter(Objects::isNull).toArray(DependentValidation[]::new);
+                Arrays.stream(dependentValidationsIn).filter(Objects::nonNull).toArray(DependentValidation[]::new);
         if (dependentValidations.length == 0) {
             return parent;
         }
@@ -298,18 +298,23 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
      *
      * @param lhs The left-hand-side (first) partitioned table
      * @param rhs The right-hand-side (second) partitioned table
+     * @param keyColumnNamePairs Pairs linking key column names in {@code lhs} and {@code rhs}
      * @return A dependent validation checking for keys that are uniquely in only one of the input partitioned tables
      */
     private static DependentValidation uniqueKeysValidation(
             @NotNull final PartitionedTable lhs,
-            @NotNull final PartitionedTable rhs) {
-        final String[] keyColumnNames = lhs.keyColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-        final Table lhsKeys = lhs.table().selectDistinct(keyColumnNames);
-        final Table rhsKeys = rhs.table().selectDistinct(keyColumnNames);
+            @NotNull final PartitionedTable rhs,
+            @NotNull final MatchPair[] keyColumnNamePairs) {
+        final String[] lhsKeyColumnNames = Arrays.stream(keyColumnNamePairs)
+                .map(MatchPair::leftColumn).toArray(String[]::new);
+        final SourceColumn[] rhsKeyColumnRenames = Arrays.stream(keyColumnNamePairs)
+                .map(mp -> new SourceColumn(mp.rightColumn(), mp.leftColumn())).toArray(SourceColumn[]::new);
+        final Table lhsKeys = lhs.table().selectDistinct(lhsKeyColumnNames);
+        final Table rhsKeys = rhs.table().updateView(rhsKeyColumnRenames).selectDistinct(lhsKeyColumnNames);
         final Table unionedKeys = TableTools.merge(lhsKeys, rhsKeys);
         final Table countedKeys = unionedKeys.countBy(FOUND_IN.name(), lhs.keyColumnNames());
         final Table uniqueKeys = countedKeys.where(new MatchFilter(FOUND_IN.name(), 1));
-        final Table uniqueKeysOnly = uniqueKeys.view(keyColumnNames);
+        final Table uniqueKeysOnly = uniqueKeys.view(lhsKeyColumnNames);
         final DependentValidation result = new DependentValidation(uniqueKeysOnly,
                 () -> checkUniqueKeys(uniqueKeysOnly));
         result.run();
