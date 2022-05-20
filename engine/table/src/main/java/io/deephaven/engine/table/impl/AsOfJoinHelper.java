@@ -258,6 +258,8 @@ public class AsOfJoinHelper {
             arrayValuesCache = null;
             if (rightGroupedSources != null) {
                 asOfJoinStateManager.convertRightGrouping(slots, slotCount, rightGroupedSources.getSecond());
+            } else {
+                asOfJoinStateManager.convertRightBuildersToIndex(slots, slotCount);
             }
         }
 
