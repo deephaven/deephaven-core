@@ -1,4 +1,4 @@
-package io.deephaven.server.access;
+package io.deephaven.server.util;
 
 import io.deephaven.server.session.SessionService;
 
@@ -9,8 +9,8 @@ import java.util.ServiceLoader;
 import java.util.ServiceLoader.Provider;
 import java.util.stream.Collectors;
 
-public class Helper {
-    public static <T> Optional<T> findOne(SessionService sessionService, Class<T> clazz) {
+public class ServiceLoaderUtil {
+    public static <T> Optional<T> loadOne(SessionService sessionService, Class<T> clazz) {
         final List<Provider<T>> providers = ServiceLoader.load(clazz).stream().collect(Collectors.toList());
         if (providers.isEmpty()) {
             return Optional.empty();
