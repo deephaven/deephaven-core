@@ -513,7 +513,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         // The sub-table will not continue to update unless the aggregation update listener remains reachable and live.
         subTable.addParentReference(aggregationUpdateListener);
         // We don't need to add a reference from the result to the sub-table, because the sub-table is reachable from
-        // the "tables" column for the (GC) life of the result.
+        // the constituent column for the (GC) life of the result.
         // We do need to ensure that the sub-table remains live for the lifetime of the result.
         resultTable.manage(subTable);
     }

@@ -4,7 +4,6 @@
 
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -57,23 +56,24 @@ public class TestPartitionBy extends QueryTableTestBase {
         @Override
         public void validate(String msg) {
             // get all the keys from the original table
-            final HashSet<Object> keys = new HashSet<>();
+            final HashSet<Object[]> keys = new HashSet<>();
 
+            // TODO-RWC: Don't use smart keys
             for (final RowSet.Iterator it = originalTable.getRowSet().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 if (groupByColumnSources.length == 1) {
-                    keys.add(groupByColumnSources[0].get(next));
+                    keys.add(new Object[] {groupByColumnSources[0].get(next)});
                 } else {
                     final Object[] key = new Object[groupByColumnSources.length];
                     for (int ii = 0; ii < key.length; ++ii) {
                         key[ii] = groupByColumnSources[ii].get(next);
                     }
-                    keys.add(new SmartKey(key));
+                    keys.add(key);
                 }
             }
 
-            for (Object key : keys) {
-                final Table tableFromMap = getPartition(splitTable, key);
+            for (Object[] key : keys) {
+                final Table constituent = getPartition(splitTable, key);
 
                 final Table whereTable;
                 if (groupByColumnSources.length == 1) {
@@ -81,18 +81,19 @@ public class TestPartitionBy extends QueryTableTestBase {
                 } else {
                     final MatchFilter[] filters = new MatchFilter[groupByColumnSources.length];
                     for (int ii = 0; ii < groupByColumns.length; ++ii) {
-                        filters[ii] = new MatchFilter(groupByColumns[ii], ((SmartKey) key).values_[ii]);
+                        filters[ii] = new MatchFilter(groupByColumns[ii], key[ii]);
                     }
                     whereTable = originalTable.where(filters);
                 }
 
-                if (tableFromMap == null) {
-                    System.out.println("Missing key: " + key);
+                if (constituent == null) {
+                    System.out.println("Missing key: " + Arrays.toString(key));
                 } else {
-                    System.out.println(
-                            "Checking key: " + key + ", size: " + tableFromMap.size() + " vs. " + whereTable.size());
+                    System.out.println("Checking key: " + Arrays.toString(key)
+                            + ", size: " + constituent.size()
+                            + " vs. " + whereTable.size());
                 }
-                final String diff = diff(tableFromMap, whereTable, 10, EnumSet.of(TableDiff.DiffItems.DoublesExact));
+                final String diff = diff(constituent, whereTable, 10, EnumSet.of(TableDiff.DiffItems.DoublesExact));
                 Assert.assertEquals(msg, "", diff);
             }
         }
@@ -184,12 +185,15 @@ public class TestPartitionBy extends QueryTableTestBase {
             final Table tableA;
             final Table tableB;
 
+            final LivenessScope subTableManager = new LivenessScope();
             try (final SafeCloseable ignored2 = LivenessScopeStack.open()) {
                 byKey = table.partitionBy("Key");
-                try (final SafeCloseable ignored3 = LivenessScopeStack.open(subTablesScope, false)) {
-                    tableA = getPartition(byKey, "A");
-                    tableB = getPartition(byKey, "B");
-                }
+                tableA = getPartition(byKey, "A");
+                tableB = getPartition(byKey, "B");
+                assertNotNull(tableA);
+                assertNotNull(tableB);
+                subTableManager.manage(tableA);
+                subTableManager.manage(tableB);
             }
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
@@ -211,67 +215,67 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(getPartition(byKey, "C"));
+            expectLivenessException(() -> getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified row, wants to move
-                                                                                      // from existent state to
-                                                                                      // nonexistent state
+                // Modified row, wants to move from existent state to nonexistent state
+                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11));
                 table.notifyListeners(i(), i(), i(8));
             });
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(getPartition(byKey, "C"));
+            expectLivenessException(() -> getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified row, staying in
-                                                                                      // nonexistent state
+                // Modified row, staying in nonexistent state
+                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12));
                 table.notifyListeners(i(), i(), i(8));
             });
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(getPartition(byKey, "C"));
+            expectLivenessException(() -> getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified row, wants to move
-                                                                                      // from nonexistent state to
-                                                                                      // existent state
+                // Modified row, wants to move from nonexistent state to existent state
+                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13));
                 table.notifyListeners(i(), i(), i(8));
             });
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(getPartition(byKey, "C"));
+            expectLivenessException(() -> getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified row, staying in
-                                                                                      // existent state
+                // Modified row, staying in existent state
+                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14));
                 table.notifyListeners(i(), i(), i(8));
             });
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(getPartition(byKey, "C"));
+            expectLivenessException(() -> getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.removeRows(table, i(9)); // Removed row from a nonexistent state
+                // Removed row from a nonexistent state
+                TstUtils.removeRows(table, i(9));
                 table.notifyListeners(i(), i(9), i());
             });
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(getPartition(byKey, "C"));
+            expectLivenessException(() -> getPartition(byKey, "C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.removeRows(table, i(8)); // Removed row from an existent state
+                // Removed row from an existent state
+                TstUtils.removeRows(table, i(8));
                 table.notifyListeners(i(), i(8), i());
             });
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(getPartition(byKey, "C"));
+            expectLivenessException(() -> getPartition(byKey, "C"));
         }
     }
 

@@ -50,15 +50,15 @@ public class UnionSourceManager {
     private final ModifiedColumnSet modifiedColumnSet;
 
     /**
-     * The ListenerRecorders our MergedListener depends on. The first entry is a basic recorder for constituent changes
-     * from the parent partitioned table. Subsequent entries are for individual parent tables that occupy our slots.
-     * Correctness for shared use with the MergedUnionListener is delicate. MergedListener (the super class) only
+     * The ListenerRecorders our MergedListener depends on. The first entry is a recorder for constituent changes from
+     * the parent partitioned table. Subsequent entries are for individual parent constituent tables that occupy our
+     * slots. Correctness for shared use with the MergedUnionListener is delicate. MergedListener (the super class) only
      * iterates the data structure during construction and merged notification delivery, with one exception:
      * {@link MergedUnionListener#canExecute(long)}, which is mutually-synchronized with all modification operations.
      */
     private final IntrusiveDoublyLinkedQueue<LinkedListenerRecorder> listenerRecorders;
     private final MergedListener mergedListener;
-    private final LinkedListenerRecorder constituentChangesListener;
+    private final ConstituentChangesListenerRecorder constituentChangesListener;
     private final UpdateCommitter<UnionSourceManager> updateCommitter;
 
     public UnionSourceManager(@NotNull final PartitionedTable partitionedTable) {
@@ -90,8 +90,8 @@ public class UnionSourceManager {
             mergedListener = new MergedUnionListener(listenerRecorders, resultTable);
             resultTable.addParentReference(mergedListener);
 
-            constituentChangesListener = new LinkedListenerRecorder(
-                    "PartitionedTable.merge() Partitions Listener", coalescedPartitions, mergedListener);
+            constituentChangesListener = new ConstituentChangesListenerRecorder(coalescedPartitions);
+            coalescedPartitions.listenForUpdates(constituentChangesListener);
             listenerRecorders.offer(constituentChangesListener);
 
             updateCommitter = new UpdateCommitter<>(this, usm -> usm.unionRedirection.copyCurrToPrev());
@@ -107,7 +107,9 @@ public class UnionSourceManager {
             resultRows.insertWithShift(shiftAmount, constituent.getRowSet());
             if (constituent.isRefreshing()) {
                 assert refreshing;
-                listenerRecorders.offer(new UnionListenerRecorder(constituent));
+                final ConstituentListenerRecorder constituentListener = new ConstituentListenerRecorder(constituent);
+                constituent.listenForUpdates(constituentListener);
+                listenerRecorders.offer(constituentListener);
             }
         });
         if (refreshing) {
@@ -182,14 +184,22 @@ public class UnionSourceManager {
         }
     }
 
-    private final class UnionListenerRecorder extends LinkedListenerRecorder {
+    private final class ConstituentChangesListenerRecorder extends LinkedListenerRecorder {
+
+        ConstituentChangesListenerRecorder(@NotNull final Table partitions) {
+            super("PartitionedTable.merge() Partitions", partitions, mergedListener);
+            setMergedListener(mergedListener);
+        }
+    }
+
+    private final class ConstituentListenerRecorder extends LinkedListenerRecorder {
 
         private final ModifiedColumnSet.Transformer modifiedColumnsTransformer;
 
-        UnionListenerRecorder(@NotNull final Table parent) {
-            super("PartitionedTable.merge() Constituent", parent, mergedListener);
+        ConstituentListenerRecorder(@NotNull final Table constituent) {
+            super("PartitionedTable.merge() Constituent", constituent, mergedListener);
             modifiedColumnsTransformer =
-                    ((QueryTable) parent).newModifiedColumnSetTransformer(resultTable, columnNames);
+                    ((QueryTable) constituent).newModifiedColumnSetTransformer(resultTable, columnNames);
             setMergedListener(mergedListener);
         }
 
@@ -267,7 +277,7 @@ public class UnionSourceManager {
         private long nextAddedKey;
         private long nextModifiedKey;
         private Table nextModifiedPreviousValue;
-        private UnionListenerRecorder nextListener;
+        private ConstituentListenerRecorder nextListener;
 
         // Slot indexes
         private int nextCurrentSlot;
@@ -363,7 +373,7 @@ public class UnionSourceManager {
             advanceModified();
             advanceListener();
 
-            while (nextCurrentSlot < currConstituentCount && nextPreviousSlot < prevConstituentCount) {
+            while (nextCurrentSlot < currConstituentCount || nextPreviousSlot < prevConstituentCount) {
                 // Removed constituent processing
                 if (nextPreviousSlot == nextRemovedSlot) {
                     assert nextRemovedValue != null;
@@ -412,8 +422,11 @@ public class UnionSourceManager {
             Assert.eqNull(nextModifiedPreviousValue, "nextModifiedPreviousValue");
             Assert.eqNull(nextListener, "nextListener");
 
-            try (final RowSet addedBeforeTruncate = downstreamAdded.subSetByKeyRange(0, firstTruncatedResultKey - 1)) {
-                resultRows.insert(addedBeforeTruncate);
+            try (final RowSet addedBeforeTruncate = slotAllocationChanged
+                    ? downstreamAdded.subSetByKeyRange(0, firstTruncatedResultKey - 1)
+                    : null) {
+                final RowSet addedToInsert = slotAllocationChanged ? addedBeforeTruncate : downstreamAdded;
+                resultRows.insert(addedToInsert);
             }
 
             return new TableUpdateImpl(
@@ -446,7 +459,8 @@ public class UnionSourceManager {
 
         private void processAdd(@NotNull final Table addedConstituent) {
             if (addedConstituent.isRefreshing()) {
-                final UnionListenerRecorder addedListener = new UnionListenerRecorder(addedConstituent);
+                final ConstituentListenerRecorder addedListener = new ConstituentListenerRecorder(addedConstituent);
+                addedConstituent.listenForUpdates(addedListener);
                 synchronized (listenerRecorders) {
                     listenerRecorders.insertBefore(addedListener, nextListener);
                 }
@@ -565,8 +579,9 @@ public class UnionSourceManager {
         return tables.hasNext() ? tables.next() : null;
     }
 
-    private static UnionListenerRecorder tryAdvanceListener(@NotNull final Iterator<LinkedListenerRecorder> listeners) {
-        return listeners.hasNext() ? (UnionListenerRecorder) listeners.next() : null;
+    private static ConstituentListenerRecorder tryAdvanceListener(
+            @NotNull final Iterator<LinkedListenerRecorder> listeners) {
+        return listeners.hasNext() ? (ConstituentListenerRecorder) listeners.next() : null;
     }
 
     /**

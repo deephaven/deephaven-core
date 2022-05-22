@@ -16,10 +16,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;
-import java.util.function.Function;
 
 /**
- * {@link SelectColumn} implementation to wrap transformer functions for {@link PartitionedTable#transform(Function)}.
+ * {@link SelectColumn} implementation to wrap transformer functions for
+ * {@link PartitionedTable#partitionedTransform(PartitionedTable, BinaryOperator) partitioned transformations}.
  */
 class BiTableTransformationColumn extends BaseTableTransformationColumn {
 
@@ -84,6 +84,12 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
         private OutputFormulaFillContext(final int chunkCapacity) {
             inputColumnSource1GetContext = inputColumnSource1.makeGetContext(chunkCapacity);
             inputColumnSource2GetContext = inputColumnSource2.makeGetContext(chunkCapacity);
+        }
+
+        @Override
+        public void close() {
+            inputColumnSource1GetContext.close();
+            inputColumnSource2GetContext.close();
         }
     }
 

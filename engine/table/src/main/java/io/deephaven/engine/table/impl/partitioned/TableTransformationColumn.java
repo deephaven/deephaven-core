@@ -16,9 +16,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
- * {@link SelectColumn} implementation to wrap transformer functions for {@link PartitionedTable#transform(Function)}.
+ * {@link SelectColumn} implementation to wrap transformer functions for
+ * {@link PartitionedTable#transform(UnaryOperator) transformations}.
  */
 public class TableTransformationColumn extends BaseTableTransformationColumn {
 
@@ -75,6 +77,11 @@ public class TableTransformationColumn extends BaseTableTransformationColumn {
 
         private OutputFormulaFillContext(final int chunkCapacity) {
             inputColumnSourceGetContext = inputColumnSource.makeGetContext(chunkCapacity);
+        }
+
+        @Override
+        public void close() {
+            inputColumnSourceGetContext.close();
         }
     }
 

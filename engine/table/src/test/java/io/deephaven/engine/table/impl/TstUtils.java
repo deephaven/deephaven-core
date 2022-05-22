@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.liveness.LivenessStateException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSetTstUtils;
@@ -2321,18 +2322,29 @@ public class TstUtils {
     public static Table[] getPartitions(
             @NotNull final PartitionedTable partitionedTable,
             @NotNull final Object... keys) {
-        final List<MatchFilter> filters = new ArrayList<>(keys.length);
-        final String[] keyColumnNames = partitionedTable.keyColumnNames().toArray(new String[0]);
-        Assert.eq(keys.length, "keys.length", keyColumnNames.length, "keyColumnNames.length");
-        for (int ki = 0; ki < keys.length; ++ki) {
-            filters.add(new MatchFilter(keyColumnNames[ki], keys[ki]));
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final List<MatchFilter> filters = new ArrayList<>(keys.length);
+            final String[] keyColumnNames = partitionedTable.keyColumnNames().toArray(new String[0]);
+            Assert.eq(keys.length, "keys.length", keyColumnNames.length, "keyColumnNames.length");
+            for (int ki = 0; ki < keys.length; ++ki) {
+                filters.add(new MatchFilter(keyColumnNames[ki], keys[ki]));
+            }
+            return getPartitions(partitionedTable.filter(filters));
         }
-        return getPartitions(partitionedTable.filter(filters));
     }
 
     public static Table getPartition(@NotNull final PartitionedTable partitionedTable, @NotNull final Object... keys) {
         final Table[] matching =  getPartitions(partitionedTable, keys);
         Assert.lt(matching.length, "matching.length", 2);
         return matching.length == 0 ? null : matching[0];
+    }
+
+    public static void expectLivenessException(@NotNull final Runnable action) {
+        try {
+            action.run();
+            //noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted("Expected LivenessStateException");
+        } catch (LivenessStateException expected) {
+        }
     }
 }

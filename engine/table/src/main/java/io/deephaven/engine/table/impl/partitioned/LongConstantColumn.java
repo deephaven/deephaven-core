@@ -122,6 +122,10 @@ class LongConstantColumn implements SelectColumn {
         private static final Formula.FillContext INSTANCE = new OutputFormulaFillContext();
 
         private OutputFormulaFillContext() {}
+
+        @Override
+        public void close() {
+        }
     }
 
     private final class OutputFormula extends Formula {

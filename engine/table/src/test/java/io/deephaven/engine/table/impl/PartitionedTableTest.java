@@ -175,7 +175,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         }
     }
 
-    public void testAsTable() {
+    public void testProxy() {
         final Random random = new Random(0);
 
         final int size = 100;
@@ -284,7 +284,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testAttributes() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+        final QueryTable queryTable = TstUtils.testTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bb", "aa", "bb"),
                 c("intCol", 10, 20, 40, 60),
                 c("doubleCol", 0.1, 0.2, 0.4, 0.6));
@@ -511,8 +511,6 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
-
-
         TableTools.showWithRowSet(merged);
     }
 
@@ -542,7 +540,6 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             return l.naturalJoin(r, "USym=USym2");
         });
         final Table merged = joined.merge();
-
 
         pauseHelper.pause();
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
