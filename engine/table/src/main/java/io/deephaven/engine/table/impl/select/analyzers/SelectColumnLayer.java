@@ -406,7 +406,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         final Chunk<? extends Values> modifiedResults = chunkSource.getChunk(chunkSourceContext, keys);
                         writableSource.fillFromChunk(destContext, modifiedResults, keys);
                         if (needToUnmanagePrevValues) {
-                            addPrevModifiedToPrevUnmanager(liveResultOwner, fillContext, prevKeyIter, modifiedResults);
+                            handleModifyManagement(liveResultOwner, fillContext, prevKeyIter, modifiedResults);
                         }
                     }
                 }
@@ -446,7 +446,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
     }
 
-    private void addPrevModifiedToPrevUnmanager(
+    private void handleModifyManagement(
             @NotNull final LivenessNode liveResultOwner,
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final RowSequence.Iterator prevKeyIter,
@@ -463,6 +463,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             if (typedModifiedResults.get(ci) == prevModifiedResults.get(ci)) {
                 prevModifiedResults.set(ci, null);
                 ++sameCount;
+            } else {
+                liveResultOwner.manage(typedModifiedResults.get(ci));
             }
         }
         if (prevModifiedResults.size() == sameCount) {

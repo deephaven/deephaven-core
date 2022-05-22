@@ -516,6 +516,14 @@ public abstract class BaseTable extends LivenessArtifact
         }
     }
 
+    public final void removeParentReference(@NotNull final Object parent) {
+        if (DynamicNode.notDynamicOrIsRefreshing(parent) && parents.remove(parent)) {
+            if (parent instanceof LivenessReferent) {
+                tryUnmanage((LivenessReferent) parent);
+            }
+        }
+    }
+
     @Override
     public boolean satisfied(final long step) {
         if (lastSatisfiedStep == step) {
@@ -543,6 +551,12 @@ public abstract class BaseTable extends LivenessArtifact
                     }
                 }
             }
+            // TODO-RWC: We must also depend on contained tables
+            //   See io.deephaven.engine.table.impl.by.PartitionByChunkedOperator.linkTableReferences
+            //   See SelectColumnLayer
+            //   Can we add a special parent that iterates contained tables? Is that safe?
+            //   How about a parent that is not satisfied unless our listener is (short circuiting), and *then*
+            //   does a current and previous iteration of contained dependencies to check their satisfaction?
         }
 
         UpdateGraphProcessor.DEFAULT.logDependencies().append("All parents dependencies satisfied ").append(this)
