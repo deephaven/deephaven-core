@@ -1333,6 +1333,7 @@ public class QueryTable extends BaseTable {
                                     resultTable, effects, analyzer);
                             liveResultCapture.transferTo(soul);
                             listenForUpdates(soul);
+                            ConstituentDependency.install(resultTable, soul);
                         } else {
                             if (resultTable.getRowSet().isFlat()) {
                                 resultTable.setFlat();

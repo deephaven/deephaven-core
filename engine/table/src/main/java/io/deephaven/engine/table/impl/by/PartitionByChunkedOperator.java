@@ -29,12 +29,14 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.ConstituentDependency;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -503,6 +505,12 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         this.resultTable = resultTable;
         this.aggregationUpdateListener = aggregationUpdateListener;
 
+        // This is safe to do here since Partition is the only operation that creates a column of
+        // NotificationQueue.Dependency (i.e. Table), and since we only allow one Partition operator per aggregation.
+        // Otherwise, it would be better to do this in the helper.
+        ConstituentDependency.install(resultTable, (NotificationQueue.Dependency) aggregationUpdateListener);
+
+        // Link constituents
         new ObjectColumnIterator<Table>(tables, resultTable.getRowSet()).forEachRemaining(this::linkTableReferences);
 
         // This operator never reports modifications
@@ -513,7 +521,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         // The sub-table will not continue to update unless the aggregation update listener remains reachable and live.
         subTable.addParentReference(aggregationUpdateListener);
         // We don't need to add a reference from the result to the sub-table, because the sub-table is reachable from
-        // the constituent column for the (GC) life of the result.
+        // the constituent column for the (GC) life of the result, and because the ConstituentDependency will enforce
+        // the necessary dependency from result to sub-table.
         // We do need to ensure that the sub-table remains live for the lifetime of the result.
         resultTable.manage(subTable);
     }

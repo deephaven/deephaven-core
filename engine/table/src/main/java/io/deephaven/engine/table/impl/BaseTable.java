@@ -6,8 +6,6 @@ package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.log.LogOutput;
@@ -516,17 +514,9 @@ public abstract class BaseTable extends LivenessArtifact
         }
     }
 
-    public final void removeParentReference(@NotNull final Object parent) {
-        if (DynamicNode.notDynamicOrIsRefreshing(parent) && parents.remove(parent)) {
-            if (parent instanceof LivenessReferent) {
-                tryUnmanage((LivenessReferent) parent);
-            }
-        }
-    }
-
     @Override
     public boolean satisfied(final long step) {
-        if (lastSatisfiedStep == step) {
+        if (!isRefreshing() || lastSatisfiedStep == step) {
             return true;
         }
 
@@ -545,21 +535,18 @@ public abstract class BaseTable extends LivenessArtifact
             for (Object parent : parents) {
                 if (parent instanceof NotificationQueue.Dependency) {
                     if (!((NotificationQueue.Dependency) parent).satisfied(step)) {
-                        UpdateGraphProcessor.DEFAULT.logDependencies().append("Parents dependencies not satisfied for ")
-                                .append(this).append(", parent=").append((NotificationQueue.Dependency) parent).endl();
+                        UpdateGraphProcessor.DEFAULT.logDependencies()
+                                .append("Parents dependencies not satisfied for ").append(this)
+                                .append(", parent=").append((NotificationQueue.Dependency) parent)
+                                .endl();
                         return false;
                     }
                 }
             }
-            // TODO-RWC: We must also depend on contained tables
-            //   See io.deephaven.engine.table.impl.by.PartitionByChunkedOperator.linkTableReferences
-            //   See SelectColumnLayer
-            //   Can we add a special parent that iterates contained tables? Is that safe?
-            //   How about a parent that is not satisfied unless our listener is (short circuiting), and *then*
-            //   does a current and previous iteration of contained dependencies to check their satisfaction?
         }
 
-        UpdateGraphProcessor.DEFAULT.logDependencies().append("All parents dependencies satisfied ").append(this)
+        UpdateGraphProcessor.DEFAULT.logDependencies()
+                .append("All parents dependencies satisfied for ").append(this)
                 .endl();
 
         lastSatisfiedStep = step;

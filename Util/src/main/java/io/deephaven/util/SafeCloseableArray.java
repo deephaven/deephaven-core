@@ -18,8 +18,7 @@ public class SafeCloseableArray<T extends SafeCloseable> implements SafeCloseabl
     @Override
     public final void close() {
         for (int ii = 0; ii < array.length; ii++) {
-            if (array[ii] != null) {
-                array[ii].close();
+            try (final SafeCloseable ignored = array[ii]) {
                 array[ii] = null;
             }
         }

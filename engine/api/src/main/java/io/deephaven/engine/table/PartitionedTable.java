@@ -4,6 +4,7 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.liveness.LivenessNode;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,6 +21,10 @@ import java.util.function.UnaryOperator;
  * tables, optionally with "key" columns defined to allow
  * {@link #partitionedTransform(PartitionedTable, BinaryOperator)} or proxied joins with other like-keyed partitioned
  * tables.
+ * <p>
+ * Note that partitioned tables should {@link io.deephaven.engine.updategraph.NotificationQueue.Dependency depend} on
+ * and {@link io.deephaven.engine.liveness.LivenessManager#manage(LivenessReferent) manage} their
+ * {@link Table#isRefreshing() refreshing} constituents.
  */
 public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
 
