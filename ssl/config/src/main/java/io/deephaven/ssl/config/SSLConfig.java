@@ -20,34 +20,79 @@ import java.util.Optional;
 @JsonDeserialize(as = ImmutableSSLConfig.class)
 public abstract class SSLConfig {
 
+    public static final TrustJdk DEFAULT_CLIENT_TRUST = TrustJdk.of();
+    public static final ProtocolsModern DEFAULT_CLIENT_PROTOCOLS = ProtocolsModern.of();
+    public static final CiphersModern DEFAULT_CLIENT_CIPHERS = CiphersModern.of();
+
     public static Builder builder() {
         return ImmutableSSLConfig.builder();
     }
 
     /**
-     * The default configuration includes JDK default where applicable. This configuration is suitable for generic
-     * clients connecting to public services. The default configuration is represented by the explicit JSON:
+     * The default client configuration is suitable for clients connecting to public Deephaven services. The default
+     * configuration is represented by the JSON:
      * 
      * <pre>
      * {
-     *   "identity": null,
      *   "trust": {
      *     "type": "jdk"
      *   },
-     *   "ciphers": {
-     *     "type": "jdk"
-     *   },
      *   "protocols": {
-     *     "type": "jdk"
+     *     "type": "modern"
      *   },
-     *   "clientAuthentication": "NONE"
+     *   "ciphers": {
+     *     "type": "modern"
+     *   }
      * }
      * </pre>
      *
-     * @return the default configuration
+     * @return the default client configuration
      */
-    public static SSLConfig defaultConfig() {
-        return builder().build();
+    public static SSLConfig defaultClient() {
+        return builder()
+                .trust(DEFAULT_CLIENT_TRUST)
+                .protocols(DEFAULT_CLIENT_PROTOCOLS)
+                .ciphers(DEFAULT_CLIENT_CIPHERS)
+                .build();
+    }
+
+    /**
+     * Creates a server configuration with JDK default compatibility.
+     */
+    public static SSLConfig jdkDefaultServer(Identity identity) {
+        return builder()
+                .identity(identity)
+                .protocols(ProtocolsJdk.of())
+                .ciphers(CiphersJdk.of())
+                .build();
+    }
+
+    /**
+     * Creates a server configuration with modern compatibility.
+     *
+     * @see ProtocolsModern
+     * @see CiphersModern
+     */
+    public static SSLConfig modernCompatibilityServer(Identity identity) {
+        return builder()
+                .identity(identity)
+                .protocols(ProtocolsModern.of())
+                .ciphers(CiphersModern.of())
+                .build();
+    }
+
+    /**
+     * Creates a server configuration with intermediate compatibility.
+     *
+     * @see ProtocolsIntermediate
+     * @see CiphersIntermediate
+     */
+    public static SSLConfig intermediateCompatibilityServer(Identity identity) {
+        return builder()
+                .identity(identity)
+                .protocols(ProtocolsIntermediate.of())
+                .ciphers(CiphersIntermediate.of())
+                .build();
     }
 
     public static SSLConfig parseJson(Path path) throws IOException {
@@ -68,32 +113,19 @@ public abstract class SSLConfig {
     public abstract Optional<Identity> identity();
 
     /**
-     * The trust material. Defaults to {@link TrustJdk#of() jdk}.
+     * The optional trust material.
      */
-    @Default
-    public Trust trust() {
-        return TrustJdk.of();
-    }
+    public abstract Optional<Trust> trust();
 
     /**
-     * The protocols. Defaults to {@link ProtocolsJdk#of() jdk}.
-     *
-     * @return the protocols
+     * The optional protocols.
      */
-    @Default
-    public Protocols protocols() {
-        return ProtocolsJdk.of();
-    }
+    public abstract Optional<Protocols> protocols();
 
     /**
-     * The ciphers. Defaults to {@link CiphersJdk#of() jdk}.
-     *
-     * @return the ciphers
+     * The optional ciphers.
      */
-    @Default
-    public Ciphers ciphers() {
-        return CiphersJdk.of();
-    }
+    public abstract Optional<Ciphers> ciphers();
 
     /**
      * Client authentication. Defaults to {@link ClientAuth#NONE NONE}.
@@ -112,9 +144,9 @@ public abstract class SSLConfig {
 
         Builder trust(Trust trust);
 
-        Builder ciphers(Ciphers ciphers);
-
         Builder protocols(Protocols protocols);
+
+        Builder ciphers(Ciphers ciphers);
 
         Builder clientAuthentication(ClientAuth clientAuthentication);
 

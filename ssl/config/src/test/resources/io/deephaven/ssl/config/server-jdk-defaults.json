@@ -1,0 +1,13 @@
+{
+  "identity": {
+    "type": "privatekey",
+    "certChainPath": "ca.crt",
+    "privateKeyPath": "key.pem"
+  },
+  "protocols": {
+    "type": "jdk"
+  },
+  "ciphers": {
+    "type": "jdk"
+  }
+}

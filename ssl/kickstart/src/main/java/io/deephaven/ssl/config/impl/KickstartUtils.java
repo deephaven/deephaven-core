@@ -2,6 +2,7 @@ package io.deephaven.ssl.config.impl;
 
 import io.deephaven.ssl.config.Ciphers;
 import io.deephaven.ssl.config.CiphersExplicit;
+import io.deephaven.ssl.config.CiphersIntermediate;
 import io.deephaven.ssl.config.CiphersJdk;
 import io.deephaven.ssl.config.CiphersModern;
 import io.deephaven.ssl.config.CiphersProperties;
@@ -12,17 +13,18 @@ import io.deephaven.ssl.config.IdentityPrivateKey;
 import io.deephaven.ssl.config.IdentityProperties;
 import io.deephaven.ssl.config.Protocols;
 import io.deephaven.ssl.config.ProtocolsExplicit;
+import io.deephaven.ssl.config.ProtocolsIntermediate;
 import io.deephaven.ssl.config.ProtocolsJdk;
 import io.deephaven.ssl.config.ProtocolsModern;
 import io.deephaven.ssl.config.ProtocolsProperties;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.Trust;
 import io.deephaven.ssl.config.TrustAll;
-import io.deephaven.ssl.config.TrustCertificatesConfig;
+import io.deephaven.ssl.config.TrustCertificates;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.TrustList;
 import io.deephaven.ssl.config.TrustProperties;
-import io.deephaven.ssl.config.TrustStoreConfig;
+import io.deephaven.ssl.config.TrustStore;
 import io.deephaven.ssl.config.TrustSystem;
 import io.grpc.util.CertificateUtils;
 import nl.altindag.ssl.SSLFactory;
@@ -41,67 +43,14 @@ import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 
 public class KickstartUtils {
-    public static SSLFactory create(SSLConfig config) {
+
+    public static SSLFactory create(SSLConfig config, Trust defaultTrust, Protocols defaultProtocols,
+            Ciphers defaultCiphers) {
         final SSLFactory.Builder builder = SSLFactory.builder();
-        // Identity
         config.identity().ifPresent(identity -> addIdentity(builder, identity));
-
-        // Trust
-        addTrust(builder, config.trust());
-
-        // Ciphers
-        config.ciphers().walk(new Ciphers.Visitor<Void>() {
-            @Override
-            public Void visit(CiphersJdk jdk) {
-                // no-op, kickstart will default to JDK
-                return null;
-            }
-
-            @Override
-            public Void visit(CiphersModern modern) {
-                builder.withCiphers(modern.ciphers().toArray(new String[0]));
-                return null;
-            }
-
-            @Override
-            public Void visit(CiphersProperties properties) {
-                builder.withSystemPropertyDerivedCiphers();
-                return null;
-            }
-
-            @Override
-            public Void visit(CiphersExplicit explicit) {
-                builder.withCiphers(explicit.values().toArray(new String[0]));
-                return null;
-            }
-        });
-        // Protocols
-        config.protocols().walk(new Protocols.Visitor<Object>() {
-            @Override
-            public Object visit(ProtocolsJdk jdk) {
-                // no-op, kickstart will default to JDK
-                return null;
-            }
-
-            @Override
-            public Object visit(ProtocolsModern modern) {
-                builder.withProtocols(modern.protocols().toArray(new String[0]));
-                return null;
-            }
-
-            @Override
-            public Object visit(ProtocolsProperties properties) {
-                builder.withSystemPropertyDerivedProtocols();
-                return null;
-            }
-
-            @Override
-            public Object visit(ProtocolsExplicit explicit) {
-                builder.withProtocols(explicit.values().toArray(new String[0]));
-                return null;
-            }
-        });
-        // Client authentication
+        addTrust(builder, config.trust().orElse(defaultTrust));
+        addProtocols(builder, config.protocols().orElse(defaultProtocols));
+        addCiphers(builder, config.ciphers().orElse(defaultCiphers));
         switch (config.clientAuthentication()) {
             case WANTED:
                 builder.withWantClientAuthentication();
@@ -119,14 +68,15 @@ public class KickstartUtils {
 
     private static void addTrust(SSLFactory.Builder builder, Trust config) {
         config.walk(new Trust.Visitor<Void>() {
+
             @Override
-            public Void visit(TrustStoreConfig trustStore) {
+            public Void visit(TrustStore trustStore) {
                 addTrust(builder, trustStore);
                 return null;
             }
 
             @Override
-            public Void visit(TrustCertificatesConfig certificates) {
+            public Void visit(TrustCertificates certificates) {
                 addTrust(builder, certificates);
                 return null;
             }
@@ -165,7 +115,7 @@ public class KickstartUtils {
         });
     }
 
-    private static void addTrust(SSLFactory.Builder builder, TrustCertificatesConfig config) {
+    private static void addTrust(SSLFactory.Builder builder, TrustCertificates config) {
         for (String path : config.path()) {
             try {
                 final X509Certificate[] x509Certificates = readX509Certificates(Paths.get(path));
@@ -180,7 +130,7 @@ public class KickstartUtils {
         }
     }
 
-    private static void addTrust(SSLFactory.Builder builder, TrustStoreConfig config) {
+    private static void addTrust(SSLFactory.Builder builder, TrustStore config) {
         try {
             final char[] password = config.password().toCharArray();
             builder.withTrustMaterial(Paths.get(config.path()), password);
@@ -214,6 +164,74 @@ public class KickstartUtils {
                 for (Identity value : list.values()) {
                     addIdentity(builder, value);
                 }
+                return null;
+            }
+        });
+    }
+
+    private static void addCiphers(SSLFactory.Builder builder, Ciphers ciphers) {
+        ciphers.walk(new Ciphers.Visitor<Void>() {
+            @Override
+            public Void visit(CiphersJdk jdk) {
+                // no-op, kickstart will default to JDK
+                return null;
+            }
+
+            @Override
+            public Void visit(CiphersModern modern) {
+                builder.withCiphers(modern.ciphers().toArray(new String[0]));
+                return null;
+            }
+
+            @Override
+            public Void visit(CiphersIntermediate intermediate) {
+                builder.withCiphers(intermediate.ciphers().toArray(new String[0]));
+                return null;
+            }
+
+            @Override
+            public Void visit(CiphersProperties properties) {
+                builder.withSystemPropertyDerivedCiphers();
+                return null;
+            }
+
+            @Override
+            public Void visit(CiphersExplicit explicit) {
+                builder.withCiphers(explicit.values().toArray(new String[0]));
+                return null;
+            }
+        });
+    }
+
+    private static void addProtocols(SSLFactory.Builder builder, Protocols protocols) {
+        protocols.walk(new Protocols.Visitor<Object>() {
+            @Override
+            public Object visit(ProtocolsJdk jdk) {
+                // no-op, kickstart will default to JDK
+                return null;
+            }
+
+            @Override
+            public Object visit(ProtocolsModern modern) {
+                builder.withProtocols(modern.protocols().toArray(new String[0]));
+                return null;
+            }
+
+            @Override
+            public Object visit(ProtocolsIntermediate intermediate) {
+                builder.withProtocols(intermediate.protocols().toArray(new String[0]));
+                return null;
+            }
+
+            @Override
+            public Object visit(ProtocolsProperties properties) {
+                builder.withSystemPropertyDerivedProtocols();
+                return null;
+            }
+
+            @Override
+            public Object visit(ProtocolsExplicit explicit) {
+                builder.withProtocols(explicit.values().toArray(new String[0]));
                 return null;
             }
         });

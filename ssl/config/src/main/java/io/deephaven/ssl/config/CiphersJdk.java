@@ -4,12 +4,12 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 
-import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLServerSocketFactory;
 
 /**
  * Include the ciphers defined by the JDK.
  *
- * @see SSLSocket#getEnabledCipherSuites()
+ * @see SSLServerSocketFactory#getDefaultCipherSuites()
  */
 @Immutable
 @SimpleStyle

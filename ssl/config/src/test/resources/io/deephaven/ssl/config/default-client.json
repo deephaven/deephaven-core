@@ -1,0 +1,11 @@
+{
+  "trust": {
+    "type": "jdk"
+  },
+  "protocols": {
+    "type": "modern"
+  },
+  "ciphers": {
+    "type": "modern"
+  }
+}

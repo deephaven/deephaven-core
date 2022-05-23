@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
- * 
+ * The TLS ciphers.
+ *
  * @see CiphersJdk
  * @see CiphersModern
  * @see CiphersProperties
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = CiphersJdk.class, name = "jdk"),
         @JsonSubTypes.Type(value = CiphersModern.class, name = "modern"),
+        @JsonSubTypes.Type(value = CiphersIntermediate.class, name = "intermediate"),
         @JsonSubTypes.Type(value = CiphersProperties.class, name = "properties"),
         @JsonSubTypes.Type(value = CiphersExplicit.class, name = "explicit"),
 })
@@ -25,9 +27,12 @@ public interface Ciphers {
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {
+
         T visit(CiphersJdk jdk);
 
         T visit(CiphersModern modern);
+
+        T visit(CiphersIntermediate intermediate);
 
         T visit(CiphersProperties properties);
 

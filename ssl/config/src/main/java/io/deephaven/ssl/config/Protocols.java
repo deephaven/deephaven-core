@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
+ * The TLS protocols.
  *
+ * @see ProtocolsDefault
  * @see ProtocolsJdk
  * @see ProtocolsModern
  * @see ProtocolsProperties
@@ -17,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ProtocolsJdk.class, name = "jdk"),
         @JsonSubTypes.Type(value = ProtocolsModern.class, name = "modern"),
+        @JsonSubTypes.Type(value = ProtocolsIntermediate.class, name = "intermediate"),
         @JsonSubTypes.Type(value = ProtocolsProperties.class, name = "properties"),
         @JsonSubTypes.Type(value = ProtocolsExplicit.class, name = "explicit"),
 })
@@ -28,6 +31,8 @@ public interface Protocols {
         T visit(ProtocolsJdk jdk);
 
         T visit(ProtocolsModern modern);
+
+        T visit(ProtocolsIntermediate intermediate);
 
         T visit(ProtocolsProperties properties);
 

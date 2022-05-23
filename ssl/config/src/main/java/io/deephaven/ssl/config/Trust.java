@@ -5,17 +5,23 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
  * The trust material configuration.
- * 
- * @see TrustStoreConfig
- * @see TrustCertificatesConfig
+ *
+ * @see TrustDefault
+ * @see TrustStore
+ * @see TrustCertificates
+ * @see TrustJdk
+ * @see TrustProperties
+ * @see TrustSystem
+ * @see TrustAll
+ * @see TrustList
  */
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.PROPERTY,
         property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = TrustStoreConfig.class, name = "truststore"),
-        @JsonSubTypes.Type(value = TrustCertificatesConfig.class, name = "certs"),
+        @JsonSubTypes.Type(value = TrustStore.class, name = "truststore"),
+        @JsonSubTypes.Type(value = TrustCertificates.class, name = "certs"),
         @JsonSubTypes.Type(value = TrustJdk.class, name = "jdk"),
         @JsonSubTypes.Type(value = TrustProperties.class, name = "properties"),
         @JsonSubTypes.Type(value = TrustSystem.class, name = "system"),
@@ -26,9 +32,9 @@ public interface Trust {
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {
-        T visit(TrustStoreConfig trustStore);
+        T visit(TrustStore trustStore);
 
-        T visit(TrustCertificatesConfig certificates);
+        T visit(TrustCertificates certificates);
 
         T visit(TrustJdk jdk);
 

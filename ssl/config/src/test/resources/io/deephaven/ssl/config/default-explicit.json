@@ -1,13 +1,7 @@
 {
   "identity": null,
-  "trust": {
-    "type": "jdk"
-  },
-  "ciphers": {
-    "type": "jdk"
-  },
-  "protocols": {
-    "type": "jdk"
-  },
+  "trust": null,
+  "ciphers": null,
+  "protocols": null,
   "clientAuthentication": "NONE"
 }

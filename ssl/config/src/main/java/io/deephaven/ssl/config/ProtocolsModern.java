@@ -9,6 +9,8 @@ import java.util.List;
 
 /**
  * Includes the protocol {@value #TLSV_1_3}.
+ *
+ * @see <a href="https://wiki.mozilla.org/Security/Server_Side_TLS#Modern_compatibility">Modern compatibility</a>
  */
 @Immutable
 @SimpleStyle

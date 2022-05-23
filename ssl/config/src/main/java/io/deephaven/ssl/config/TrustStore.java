@@ -9,10 +9,10 @@ import org.immutables.value.Value.Immutable;
  */
 @Immutable
 @BuildableStyle
-@JsonDeserialize(as = ImmutableTrustStoreConfig.class)
-public abstract class TrustStoreConfig implements Trust {
-    public static TrustStoreConfig of(String path, String password) {
-        return ImmutableTrustStoreConfig.builder().path(path).password(password).build();
+@JsonDeserialize(as = ImmutableTrustStore.class)
+public abstract class TrustStore implements Trust {
+    public static TrustStore of(String path, String password) {
+        return ImmutableTrustStore.builder().path(path).password(password).build();
     }
 
     /**

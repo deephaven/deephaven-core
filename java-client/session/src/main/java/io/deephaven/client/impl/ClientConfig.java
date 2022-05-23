@@ -46,11 +46,11 @@ public abstract class ClientConfig {
     }
 
     /**
-     * Equivalent to {@code ssl().orElseGet(SSLConfig::defaultConfig)}. Useful for retrieving a suitable configuration
+     * Equivalent to {@code ssl().orElseGet(SSLConfig::defaultClient)}. Useful for retrieving a suitable configuration
      * when {@code target().isSecure()} is {@code true}.
      */
     public final SSLConfig sslOrDefault() {
-        return ssl().orElseGet(SSLConfig::defaultConfig);
+        return ssl().orElseGet(SSLConfig::defaultClient);
     }
 
     @Check

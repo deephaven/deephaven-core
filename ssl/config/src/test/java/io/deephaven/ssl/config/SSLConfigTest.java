@@ -13,60 +13,77 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 public class SSLConfigTest {
 
     @Test
+    void defaultClient() throws IOException {
+        check("default-client.json", SSLConfig.defaultClient());
+    }
+
+    @Test
     void defaultExplicit() throws IOException {
-        check("default-explicit.json", SSLConfig.defaultConfig());
+        check("default-explicit.json", SSLConfig.builder().build());
     }
 
     @Test
     void defaultImplicit() throws IOException {
-        check("default-implicit.json", SSLConfig.defaultConfig());
+        check("default-implicit.json", SSLConfig.builder().build());
     }
 
     @Test
     void identityKeystore() throws IOException {
-        check("identity-keystore.json",
-                SSLConfig.builder().identity(IdentityKeyStore.of("path.p12", "secret")).build());
+        check("identity-keystore.json", server(IdentityKeyStore.of("path.p12", "secret")));
     }
 
     @Test
     void identityPrivatekey() throws IOException {
         check("identity-privatekey.json",
-                SSLConfig.builder()
-                        .identity(
-                                IdentityPrivateKey.builder().certChainPath("ca.crt").privateKeyPath("key.pem").build())
-                        .build());
+                server(IdentityPrivateKey.builder().certChainPath("ca.crt").privateKeyPath("key.pem").build()));
     }
 
     @Test
     void identityMultiple() throws IOException {
-        check("identity-multiple.json", SSLConfig.builder().identity(IdentityList.of(
+        check("identity-multiple.json", server(IdentityList.of(
                 IdentityPrivateKey.builder().certChainPath("ca.crt").privateKeyPath("key.pem").alias("alias-1").build(),
-                IdentityKeyStore.of("path.p12", "secret")))
-                .build());
+                IdentityKeyStore.of("path.p12", "secret"))));
     }
-
 
     @Test
     void identityProperties() throws IOException {
-        check("identity-properties.json", SSLConfig.builder().identity(IdentityProperties.of()).build());
+        check("identity-properties.json", server(IdentityProperties.of()));
+    }
+
+    @Test
+    void jdkDefaultServer() throws IOException {
+        check("server-jdk-defaults.json", SSLConfig.jdkDefaultServer(
+                IdentityPrivateKey.builder().certChainPath("ca.crt").privateKeyPath("key.pem").build()));
+    }
+
+    @Test
+    void modernServer() throws IOException {
+        check("server-modern.json", SSLConfig.modernCompatibilityServer(
+                IdentityPrivateKey.builder().certChainPath("ca.crt").privateKeyPath("key.pem").build()));
+    }
+
+    @Test
+    void intermediateServer() throws IOException {
+        check("server-intermediate.json", SSLConfig.intermediateCompatibilityServer(
+                IdentityPrivateKey.builder().certChainPath("ca.crt").privateKeyPath("key.pem").build()));
     }
 
     @Test
     void trustCertificates() throws IOException {
-        check("trust-certificates.json", SSLConfig.builder().trust(TrustCertificatesConfig.of("ca.crt")).build());
+        check("trust-certificates.json", SSLConfig.builder().trust(TrustCertificates.of("ca.crt")).build());
     }
 
     @Test
     void trustStore() throws IOException {
-        check("trust-store.json", SSLConfig.builder().trust(TrustStoreConfig.of("ca.p12", "secret")).build());
+        check("trust-store.json", SSLConfig.builder().trust(TrustStore.of("ca.p12", "secret")).build());
     }
 
     @Test
     void trustMultiple() throws IOException {
         check("trust-multiple.json", SSLConfig.builder()
                 .trust(TrustList.of(
-                        TrustCertificatesConfig.of("ca-1.crt", "ca-2.crt"),
-                        TrustStoreConfig.of("ca-3.p12", "secret")))
+                        TrustCertificates.of("ca-1.crt", "ca-2.crt"),
+                        TrustStore.of("ca-3.p12", "secret")))
                 .build());
     }
 
@@ -139,6 +156,10 @@ public class SSLConfigTest {
     @Test
     void clientAuthenticationNeeded() throws IOException {
         check("client-authentication-needed.json", SSLConfig.builder().clientAuthentication(ClientAuth.NEEDED).build());
+    }
+
+    private static SSLConfig server(Identity identity) {
+        return SSLConfig.builder().identity(identity).build();
     }
 
     private static void check(String name, SSLConfig expected) throws IOException {

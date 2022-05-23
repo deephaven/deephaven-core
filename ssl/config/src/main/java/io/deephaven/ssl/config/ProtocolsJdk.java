@@ -9,7 +9,7 @@ import javax.net.ssl.SSLSocket;
 /**
  * Include the protocols defined by the JDK.
  *
- * @see SSLSocket#getEnabledProtocols()
+ * @see SSLSocket#getSupportedProtocols()
  */
 @Immutable
 @SimpleStyle

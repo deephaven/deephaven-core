@@ -13,11 +13,11 @@ import java.util.List;
  */
 @Immutable
 @BuildableStyle
-@JsonDeserialize(as = ImmutableTrustCertificatesConfig.class)
-public abstract class TrustCertificatesConfig implements Trust {
+@JsonDeserialize(as = ImmutableTrustCertificates.class)
+public abstract class TrustCertificates implements Trust {
 
-    public static TrustCertificatesConfig of(String... path) {
-        return ImmutableTrustCertificatesConfig.builder().addPath(path).build();
+    public static TrustCertificates of(String... path) {
+        return ImmutableTrustCertificates.builder().addPath(path).build();
     }
 
     /**

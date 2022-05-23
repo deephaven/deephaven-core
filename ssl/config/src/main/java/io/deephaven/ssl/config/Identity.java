@@ -8,6 +8,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  *
  * @see IdentityKeyStore
  * @see IdentityPrivateKey
+ * @see IdentityProperties
+ * @see IdentityList
  */
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
