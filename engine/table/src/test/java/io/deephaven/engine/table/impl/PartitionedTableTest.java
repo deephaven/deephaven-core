@@ -358,7 +358,8 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             left.notifyListeners(i(8), i(), i());
             UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         }, throwables -> {
-            TestCase.assertEquals(1, getUpdateErrors().size());
+            // We should deliver a failure to every dependent node
+            TestCase.assertTrue(getUpdateErrors().size() > 0);
             final Throwable throwable = throwables.get(0);
             TestCase.assertEquals(IllegalArgumentException.class, throwable.getClass());
             TestCase.assertTrue(throwable.getMessage().contains("has join keys found in multiple constituents"));

@@ -4,18 +4,14 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.SourceColumn;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.TimeZone;
@@ -166,7 +162,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
             final MatchPair[] keyColumnNamePairs = PartitionedTableImpl.matchKeyColumns(target, otherTarget);
             final DependentValidation uniqueKeys = requireMatchingKeys
-                    ? uniqueKeysValidation(target, otherTarget, keyColumnNamePairs)
+                    ? matchingKeysValidation(target, otherTarget, keyColumnNamePairs)
                     : null;
             final DependentValidation overlappingLhsJoinKeys = sanityCheckJoins && joinMatches != null
                     ? overlappingLhsJoinKeysValidation(target, joinMatches)
@@ -206,35 +202,22 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         return Arrays.stream(split).limit(split.length - 1).map(JoinMatch::parse).collect(Collectors.toList());
     }
 
-    private static class DependentValidation extends LivenessArtifact
-            implements Runnable, NotificationQueue.Dependency {
+    /**
+     * Struct to pair a {@code validation} with a {@code table} whose updates dictate when the validation needs to run.
+     */
+    private static class DependentValidation {
 
-        private final NotificationQueue.Dependency parent;
+        private final String name;
+        private final Table table;
         private final Runnable validation;
 
         private DependentValidation(
-                @NotNull final Table parent,
+                @NotNull final String name,
+                @NotNull final Table table,
                 @NotNull final Runnable validation) {
-            this.parent = parent;
+            this.name = name;
+            this.table = table;
             this.validation = validation;
-            if (parent.isRefreshing()) {
-                manage(parent);
-            }
-        }
-
-        @Override
-        public LogOutput append(@NotNull final LogOutput logOutput) {
-            return parent.append(logOutput);
-        }
-
-        @Override
-        public boolean satisfied(final long step) {
-            return parent.satisfied(step);
-        }
-
-        @Override
-        public void run() {
-            validation.run();
         }
     }
 
@@ -249,6 +232,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         if (dependentValidations.length == 0) {
             return parent;
         }
+
         // NB: All code paths that pass non-null validations for refreshing parents call checkInitiateTableOperation
         // first, so we can dispense with snapshots and swap listeners.
         final QueryTable coalescedParent = (QueryTable) parent.coalesce();
@@ -257,40 +241,40 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                 coalescedParent.getModifiedColumnSetForUpdates());
         coalescedParent.propagateFlatness(child);
         coalescedParent.copyAttributes(child, a -> true);
-        coalescedParent.listenForUpdates(new ValidatingCopyListener(coalescedParent, child, dependentValidations));
-        return child;
-    }
 
-    private static final class ValidatingCopyListener extends BaseTable.ListenerImpl {
+        final List<ListenerRecorder> recorders = new ArrayList<>(1 + dependentValidations.length);
 
-        private final DependentValidation[] dependentValidations;
+        final ListenerRecorder parentRecorder = new ListenerRecorder("Validating Copy Parent", coalescedParent, null);
+        coalescedParent.listenForUpdates(parentRecorder);
+        recorders.add(parentRecorder);
 
-        private ValidatingCopyListener(@NotNull final QueryTable parent, @NotNull final QueryTable child,
-                @NotNull final DependentValidation[] dependentValidations) {
-            super("Validating copy listener", parent, child);
-            this.dependentValidations = dependentValidations;
-            for (final LivenessReferent referent : dependentValidations) {
-                manage(referent);
-            }
-        }
+        final ListenerRecorder[] validationRecorders = Arrays.stream(dependentValidations).map(dv -> {
+            final ListenerRecorder validationRecorder = new ListenerRecorder(dv.name, dv.table, null);
+            dv.table.listenForUpdates(validationRecorder);
+            recorders.add(validationRecorder);
+            return validationRecorder;
+        }).toArray(ListenerRecorder[]::new);
 
-        @Override
-        public boolean canExecute(final long step) {
-            for (final NotificationQueue.Dependency dependency : dependentValidations) {
-                if (!dependency.satisfied(step)) {
-                    return false;
+        final MergedListener validationMergeListener = new MergedListener(recorders, List.of(), "Validation", child) {
+            @Override
+            protected void process() {
+                final int numValidations = dependentValidations.length;
+                for (int vi = 0; vi < numValidations; ++vi) {
+                    if (validationRecorders[vi].recordedVariablesAreValid()) {
+                        dependentValidations[vi].validation.run();
+                    }
+                }
+                final TableUpdate parentUpdate = parentRecorder.getUpdate();
+                if (parentUpdate != null && !parentUpdate.empty()) {
+                    parentUpdate.acquire();
+                    child.notifyListeners(parentUpdate);
                 }
             }
-            return super.canExecute(step);
-        }
+        };
 
-        @Override
-        public void onUpdate(@NotNull final TableUpdate upstream) {
-            for (final Runnable validation : dependentValidations) {
-                validation.run();
-            }
-            super.onUpdate(upstream);
-        }
+        recorders.forEach(rec -> rec.setMergedListener(validationMergeListener));
+        child.addParentReference(validationMergeListener);
+        return child;
     }
 
     /**
@@ -301,7 +285,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
      * @param keyColumnNamePairs Pairs linking key column names in {@code lhs} and {@code rhs}
      * @return A dependent validation checking for keys that are uniquely in only one of the input partitioned tables
      */
-    private static DependentValidation uniqueKeysValidation(
+    private static DependentValidation matchingKeysValidation(
             @NotNull final PartitionedTable lhs,
             @NotNull final PartitionedTable rhs,
             @NotNull final MatchPair[] keyColumnNamePairs) {
@@ -313,33 +297,32 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         final Table rhsKeys = rhs.table().updateView(rhsKeyColumnRenames).selectDistinct(lhsKeyColumnNames);
         final Table unionedKeys = TableTools.merge(lhsKeys, rhsKeys);
         final Table countedKeys = unionedKeys.countBy(FOUND_IN.name(), lhs.keyColumnNames());
-        final Table uniqueKeys = countedKeys.where(new MatchFilter(FOUND_IN.name(), 1));
-        final Table uniqueKeysOnly = uniqueKeys.view(lhsKeyColumnNames);
-        final DependentValidation result = new DependentValidation(uniqueKeysOnly,
-                () -> checkUniqueKeys(uniqueKeysOnly));
-        result.run();
-        return result;
+        final Table nonMatchingKeys = countedKeys.where(new MatchFilter(FOUND_IN.name(), 1));
+        final Table nonMatchingKeysOnly = nonMatchingKeys.view(lhsKeyColumnNames);
+        checkNonMatchingKeys(nonMatchingKeysOnly);
+        return new DependentValidation("Matching Partition Keys", nonMatchingKeysOnly,
+                () -> checkNonMatchingKeys(nonMatchingKeysOnly));
     }
 
-    private static void checkUniqueKeys(@NotNull final Table uniqueKeys) {
-        if (!uniqueKeys.isEmpty()) {
+    private static void checkNonMatchingKeys(@NotNull final Table nonMatchingKeys) {
+        if (!nonMatchingKeys.isEmpty()) {
             throw new IllegalArgumentException(
                     "Partitioned table arguments have non-matching keys; re-assess your input data or create a proxy with requireMatchingKeys=false:\n"
-                            + tableToString(uniqueKeys, 10));
+                            + tableToString(nonMatchingKeys, 10));
         }
     }
 
     private static DependentValidation overlappingLhsJoinKeysValidation(
             @NotNull final PartitionedTable lhs,
             @NotNull final Collection<? extends JoinMatch> joinMatches) {
-        return overlappingJoinKeysValidation(lhs,
+        return nonOverlappingJoinKeysValidation(lhs,
                 joinMatches.stream().map(jm -> jm.left().name()).toArray(String[]::new));
     }
 
     private static DependentValidation overlappingRhsJoinKeysValidation(
             @NotNull final PartitionedTable rhs,
             @NotNull final Collection<? extends JoinMatch> joinMatches) {
-        return overlappingJoinKeysValidation(rhs,
+        return nonOverlappingJoinKeysValidation(rhs,
                 joinMatches.stream().map(jm -> jm.right().name()).toArray(String[]::new));
     }
 
@@ -352,7 +335,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
      * @return A dependent validation checking for join keys that are found in more than one constituent table in
      *         {@code input}
      */
-    private static DependentValidation overlappingJoinKeysValidation(
+    private static DependentValidation nonOverlappingJoinKeysValidation(
             @NotNull final PartitionedTable input,
             @NotNull final String[] joinKeyColumnNames) {
         // NB: At the moment, we are assuming that constituents appear only once per partitioned table in scenarios
@@ -364,10 +347,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         final Table mergedWithUniqueAgg = merged.aggAllBy(AggSpec.unique(), joinKeyColumnNames);
         final Table overlappingJoinKeys = mergedWithUniqueAgg.where(Filter.isNull(ENCLOSING_CONSTITUENT));
         final Table overlappingJoinKeysOnly = overlappingJoinKeys.view(joinKeyColumnNames);
-        final DependentValidation result = new DependentValidation(overlappingJoinKeysOnly,
+        checkOverlappingJoinKeys(input, overlappingJoinKeysOnly);
+        return new DependentValidation("Non-overlapping Join Keys", overlappingJoinKeysOnly,
                 () -> checkOverlappingJoinKeys(input, overlappingJoinKeysOnly));
-        result.run();
-        return result;
     }
 
     private static void checkOverlappingJoinKeys(
