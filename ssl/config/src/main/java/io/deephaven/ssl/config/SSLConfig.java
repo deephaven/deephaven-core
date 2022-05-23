@@ -1,19 +1,14 @@
 package io.deephaven.ssl.config;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.deephaven.annotations.BuildableStyle;
-import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 
 /**
  * The SSL configuration object.
@@ -25,38 +20,26 @@ import java.util.List;
 @JsonDeserialize(as = ImmutableSSLConfig.class)
 public abstract class SSLConfig {
 
-    /**
-     * The default protocols, includes "TSLv1.2" and "TLSv1.3".
-     */
-    public static final List<String> DEFAULT_PROTOCOLS =
-            Collections.unmodifiableList(Arrays.asList("TLSv1.2", "TLSv1.3"));
-
     public static Builder builder() {
         return ImmutableSSLConfig.builder();
     }
 
     /**
-     * The default configuration includes {@link #trustJdk()}, but no other trust nor identity material. This
-     * configuration is suitable for generic clients connecting to public services. The default configuration is
-     * represented by the JSON:
+     * The default configuration includes JDK default where applicable. This configuration is suitable for generic
+     * clients connecting to public services. The default configuration is represented by the explicit JSON:
      * 
      * <pre>
      * {
-     *   "identity": [],
-     *   "identityProperties": false,
-     *
-     *   "trust": [],
-     *   "trustJdk": true,
-     *   "trustSystem": false,
-     *   "trustProperties": false,
-     *   "trustAll": false,
-     *
-     *   "ciphers": [],
-     *   "ciphersProperties": false,
-     *
-     *   "protocols": ["TLSv1.2", "TLSv1.3"],
-     *   "protocolsProperties": false,
-     *
+     *   "identity": null,
+     *   "trust": {
+     *     "type": "jdk"
+     *   },
+     *   "ciphers": {
+     *     "type": "jdk"
+     *   },
+     *   "protocols": {
+     *     "type": "jdk"
+     *   },
      *   "clientAuthentication": "NONE"
      * }
      * </pre>
@@ -80,107 +63,37 @@ public abstract class SSLConfig {
     }
 
     /**
-     * The identity material.
+     * The identity material. Optional for clients, necessary for servers.
      */
-    @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-    public abstract List<IdentityConfig> identity();
+    public abstract Optional<Identity> identity();
 
     /**
-     * Include the identity material defined by the system properties "javax.net.ssl.keyStore",
-     * "javax.net.ssl.keyStorePassword", "javax.net.ssl.keyStoreType", and "javax.net.ssl.keyStoreProvider". Defaults to
-     * {@code false}.
+     * The trust material. Defaults to {@link TrustJdk#of() jdk}.
      */
     @Default
-    public boolean identityProperties() {
-        return false;
+    public Trust trust() {
+        return TrustJdk.of();
     }
 
     /**
-     * The trust material.
-     */
-    @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-    public abstract List<TrustConfig> trust();
-
-    /**
-     * Include the default JDK trust material. Defaults to {@code true}.
-     */
-    @Default
-    public boolean trustJdk() {
-        return true;
-    }
-
-    /**
-     * Include the trust material defined by the operating system. Only Mac and Windows at the moment. Defaults to
-     * {@code false}.
-     */
-    @Default
-    public boolean trustSystem() {
-        return false;
-    }
-
-    /**
-     * Include the trust material defined by the system properties "javax.net.ssl.trustStore",
-     * "javax.net.ssl.trustStorePassword", "javax.net.ssl.trustStoreType", and "javax.net.ssl.trustStoreProvider".
-     * Defaults to {@code false}.
-     */
-    @Default
-    public boolean trustProperties() {
-        return false;
-    }
-
-    /**
-     * Trust all certificates without validation. Should not be used in production. Defaults to {@code false}.
-     */
-    @Default
-    public boolean trustAll() {
-        return false;
-    }
-
-    /**
-     * Include the ciphers defined by the JDK. Default to {@code true}.
+     * The protocols. Defaults to {@link ProtocolsJdk#of() jdk}.
      *
-     * @see SSLSocket#getEnabledCipherSuites()
+     * @return the protocols
      */
     @Default
-    public boolean ciphersJdk() {
-        return !ciphersProperties() && ciphers().isEmpty();
+    public Protocols protocols() {
+        return ProtocolsJdk.of();
     }
 
     /**
-     * Include the ciphers defined by the system properties "https.cipherSuites". Defaults to {@code false}.
-     */
-    @Default
-    public boolean ciphersProperties() {
-        return false;
-    }
-
-    /**
-     * Include the ciphers explicitly defined. Defaults to empty.
-     */
-    public abstract List<String> ciphers();
-
-    /**
-     * Include the protocols defined by the JDK. Default to {@code true}.
+     * The ciphers. Defaults to {@link CiphersJdk#of() jdk}.
      *
-     * @see SSLSocket#getEnabledProtocols()
+     * @return the ciphers
      */
     @Default
-    public boolean protocolsJdk() {
-        return !protocolsProperties() && protocols().isEmpty();
+    public Ciphers ciphers() {
+        return CiphersJdk.of();
     }
-
-    /**
-     * Include the protocols defined by the system properties "https.protocols". Defaults to {@code false}.
-     */
-    @Default
-    public boolean protocolsProperties() {
-        return false;
-    }
-
-    /**
-     * Include the protocols explicitly defined. Defaults to empty.
-     */
-    public abstract List<String> protocols();
 
     /**
      * Client authentication. Defaults to {@link ClientAuth#NONE NONE}.
@@ -190,64 +103,18 @@ public abstract class SSLConfig {
         return ClientAuth.NONE;
     }
 
-    @Check
-    final void checkProtocols() {
-        if ((protocolsJdk() ? 1 : 0) + (protocolsProperties() ? 1 : 0) + (!protocols().isEmpty() ? 1 : 0) != 1) {
-            throw new IllegalArgumentException(
-                    "Must include exactly one of protocolsJdk(), protocolsProperties(), or protocols()");
-        }
-    }
-
-    @Check
-    final void checkCiphers() {
-        if ((ciphersJdk() ? 1 : 0) + (ciphersProperties() ? 1 : 0) + (!ciphers().isEmpty() ? 1 : 0) != 1) {
-            throw new IllegalArgumentException(
-                    "Must include exactly one of ciphersJdk(), ciphersProperties(), or ciphers()");
-        }
-    }
-
     public enum ClientAuth {
         NONE, WANTED, NEEDED
     }
 
     public interface Builder {
-        Builder addIdentity(IdentityConfig element);
+        Builder identity(Identity identity);
 
-        Builder addIdentity(IdentityConfig... elements);
+        Builder trust(Trust trust);
 
-        Builder addAllIdentity(Iterable<? extends IdentityConfig> elements);
+        Builder ciphers(Ciphers ciphers);
 
-        Builder identityProperties(boolean identityProperties);
-
-        Builder addTrust(TrustConfig element);
-
-        Builder addTrust(TrustConfig... elements);
-
-        Builder addAllTrust(Iterable<? extends TrustConfig> elements);
-
-        Builder trustJdk(boolean trustJdk);
-
-        Builder trustSystem(boolean trustSystem);
-
-        Builder trustProperties(boolean trustProperties);
-
-        Builder trustAll(boolean trustAll);
-
-        Builder addCiphers(String element);
-
-        Builder addCiphers(String... elements);
-
-        Builder addAllCiphers(Iterable<String> elements);
-
-        Builder ciphersProperties(boolean ciphersProperties);
-
-        Builder addProtocols(String element);
-
-        Builder addProtocols(String... elements);
-
-        Builder addAllProtocols(Iterable<String> elements);
-
-        Builder protocolsProperties(boolean protocolsProperties);
+        Builder protocols(Protocols protocols);
 
         Builder clientAuthentication(ClientAuth clientAuthentication);
 

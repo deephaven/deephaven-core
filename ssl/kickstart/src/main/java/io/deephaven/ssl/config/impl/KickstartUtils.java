@@ -1,12 +1,29 @@
 package io.deephaven.ssl.config.impl;
 
-import io.deephaven.ssl.config.IdentityConfig;
-import io.deephaven.ssl.config.KeyStoreConfig;
-import io.deephaven.ssl.config.PrivateKeyConfig;
+import io.deephaven.ssl.config.Ciphers;
+import io.deephaven.ssl.config.CiphersExplicit;
+import io.deephaven.ssl.config.CiphersJdk;
+import io.deephaven.ssl.config.CiphersModern;
+import io.deephaven.ssl.config.CiphersProperties;
+import io.deephaven.ssl.config.Identity;
+import io.deephaven.ssl.config.IdentityKeyStore;
+import io.deephaven.ssl.config.IdentityList;
+import io.deephaven.ssl.config.IdentityPrivateKey;
+import io.deephaven.ssl.config.IdentityProperties;
+import io.deephaven.ssl.config.Protocols;
+import io.deephaven.ssl.config.ProtocolsExplicit;
+import io.deephaven.ssl.config.ProtocolsJdk;
+import io.deephaven.ssl.config.ProtocolsModern;
+import io.deephaven.ssl.config.ProtocolsProperties;
 import io.deephaven.ssl.config.SSLConfig;
+import io.deephaven.ssl.config.Trust;
+import io.deephaven.ssl.config.TrustAll;
 import io.deephaven.ssl.config.TrustCertificatesConfig;
-import io.deephaven.ssl.config.TrustConfig;
+import io.deephaven.ssl.config.TrustJdk;
+import io.deephaven.ssl.config.TrustList;
+import io.deephaven.ssl.config.TrustProperties;
 import io.deephaven.ssl.config.TrustStoreConfig;
+import io.deephaven.ssl.config.TrustSystem;
 import io.grpc.util.CertificateUtils;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.exception.GenericKeyStoreException;
@@ -27,55 +44,63 @@ public class KickstartUtils {
     public static SSLFactory create(SSLConfig config) {
         final SSLFactory.Builder builder = SSLFactory.builder();
         // Identity
-        {
-            if (config.identityProperties()) {
-                builder.withSystemPropertyDerivedIdentityMaterial();
-            }
-            for (IdentityConfig identity : config.identity()) {
-                addIdentity(builder, identity);
-            }
-        }
+        config.identity().ifPresent(identity -> addIdentity(builder, identity));
+
         // Trust
-        {
-            if (config.trustAll()) {
-                builder.withTrustingAllCertificatesWithoutValidation();
-            } else {
-                if (config.trustJdk()) {
-                    builder.withDefaultTrustMaterial();
-                }
-                if (config.trustSystem()) {
-                    builder.withSystemTrustMaterial();
-                }
-                if (config.trustProperties()) {
-                    builder.withSystemPropertyDerivedTrustMaterial();
-                }
-                for (TrustConfig trust : config.trust()) {
-                    addTrust(builder, trust);
-                }
-            }
-        }
+        addTrust(builder, config.trust());
+
         // Ciphers
-        {
-            // noinspection StatementWithEmptyBody
-            if (config.ciphersJdk()) {
-                // don't add any, kickstart will default to JDK
-            } else if (config.ciphersProperties()) {
+        config.ciphers().walk(new Ciphers.Visitor<Void>() {
+            @Override
+            public Void visit(CiphersJdk jdk) {
+                // no-op, kickstart will default to JDK
+                return null;
+            }
+
+            @Override
+            public Void visit(CiphersModern modern) {
+                builder.withCiphers(modern.ciphers().toArray(new String[0]));
+                return null;
+            }
+
+            @Override
+            public Void visit(CiphersProperties properties) {
                 builder.withSystemPropertyDerivedCiphers();
-            } else {
-                builder.withCiphers(config.ciphers().toArray(new String[0]));
+                return null;
             }
-        }
+
+            @Override
+            public Void visit(CiphersExplicit explicit) {
+                builder.withCiphers(explicit.values().toArray(new String[0]));
+                return null;
+            }
+        });
         // Protocols
-        {
-            // noinspection StatementWithEmptyBody
-            if (config.protocolsJdk()) {
-                // don't add any, kickstart will default to JDK
-            } else if (config.protocolsProperties()) {
-                builder.withSystemPropertyDerivedProtocols();
-            } else {
-                builder.withProtocols(config.protocols().toArray(new String[0]));
+        config.protocols().walk(new Protocols.Visitor<Object>() {
+            @Override
+            public Object visit(ProtocolsJdk jdk) {
+                // no-op, kickstart will default to JDK
+                return null;
             }
-        }
+
+            @Override
+            public Object visit(ProtocolsModern modern) {
+                builder.withProtocols(modern.protocols().toArray(new String[0]));
+                return null;
+            }
+
+            @Override
+            public Object visit(ProtocolsProperties properties) {
+                builder.withSystemPropertyDerivedProtocols();
+                return null;
+            }
+
+            @Override
+            public Object visit(ProtocolsExplicit explicit) {
+                builder.withProtocols(explicit.values().toArray(new String[0]));
+                return null;
+            }
+        });
         // Client authentication
         switch (config.clientAuthentication()) {
             case WANTED:
@@ -92,8 +117,8 @@ public class KickstartUtils {
         return builder.build();
     }
 
-    private static void addTrust(SSLFactory.Builder builder, TrustConfig config) {
-        config.walk(new TrustConfig.Visitor<Void>() {
+    private static void addTrust(SSLFactory.Builder builder, Trust config) {
+        config.walk(new Trust.Visitor<Void>() {
             @Override
             public Void visit(TrustStoreConfig trustStore) {
                 addTrust(builder, trustStore);
@@ -103,6 +128,38 @@ public class KickstartUtils {
             @Override
             public Void visit(TrustCertificatesConfig certificates) {
                 addTrust(builder, certificates);
+                return null;
+            }
+
+            @Override
+            public Void visit(TrustJdk jdk) {
+                builder.withDefaultTrustMaterial();
+                return null;
+            }
+
+            @Override
+            public Void visit(TrustProperties properties) {
+                builder.withSystemPropertyDerivedTrustMaterial();
+                return null;
+            }
+
+            @Override
+            public Void visit(TrustSystem system) {
+                builder.withSystemTrustMaterial();
+                return null;
+            }
+
+            @Override
+            public Void visit(TrustAll all) {
+                builder.withTrustingAllCertificatesWithoutValidation();
+                return null;
+            }
+
+            @Override
+            public Void visit(TrustList list) {
+                for (Trust trust : list.values()) {
+                    addTrust(builder, trust);
+                }
                 return null;
             }
         });
@@ -132,23 +189,37 @@ public class KickstartUtils {
         }
     }
 
-    private static void addIdentity(SSLFactory.Builder builder, IdentityConfig config) {
-        config.walk(new IdentityConfig.Visitor<Void>() {
+    private static void addIdentity(SSLFactory.Builder builder, Identity config) {
+        config.walk(new Identity.Visitor<Void>() {
             @Override
-            public Void visit(KeyStoreConfig keyStore) {
+            public Void visit(IdentityKeyStore keyStore) {
                 addIdentity(builder, keyStore);
                 return null;
             }
 
             @Override
-            public Void visit(PrivateKeyConfig privateKey) {
+            public Void visit(IdentityPrivateKey privateKey) {
                 addIdentity(builder, privateKey);
+                return null;
+            }
+
+            @Override
+            public Void visit(IdentityProperties properties) {
+                builder.withSystemPropertyDerivedIdentityMaterial();
+                return null;
+            }
+
+            @Override
+            public Void visit(IdentityList list) {
+                for (Identity value : list.values()) {
+                    addIdentity(builder, value);
+                }
                 return null;
             }
         });
     }
 
-    private static void addIdentity(SSLFactory.Builder builder, KeyStoreConfig config) {
+    private static void addIdentity(SSLFactory.Builder builder, IdentityKeyStore config) {
         final char[] password = config.password().toCharArray();
         try {
             if (config.keystoreType().isPresent()) {
@@ -161,7 +232,7 @@ public class KickstartUtils {
         }
     }
 
-    private static void addIdentity(SSLFactory.Builder builder, PrivateKeyConfig config) {
+    private static void addIdentity(SSLFactory.Builder builder, IdentityPrivateKey config) {
         try {
             final PrivateKey privateKey = readPrivateKey(Paths.get(config.privateKeyPath()));
             final X509Certificate[] x509Certificates = readX509Certificates(Paths.get(config.certChainPath()));

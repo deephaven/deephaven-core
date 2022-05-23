@@ -1,20 +1,13 @@
 {
-  "identity": [],
-  "identityProperties": false,
-
-  "trust": [],
-  "trustJdk": true,
-  "trustSystem": false,
-  "trustProperties": false,
-  "trustAll": false,
-
-  "ciphersJdk": true,
-  "ciphersProperties": false,
-  "ciphers": [],
-
-  "protocolsJdk": true,
-  "protocolsProperties": false,
-  "protocols": [],
-
+  "identity": null,
+  "trust": {
+    "type": "jdk"
+  },
+  "ciphers": {
+    "type": "jdk"
+  },
+  "protocols": {
+    "type": "jdk"
+  },
   "clientAuthentication": "NONE"
 }

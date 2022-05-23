@@ -11,15 +11,15 @@ import java.util.Optional;
  */
 @Immutable
 @BuildableStyle
-@JsonDeserialize(as = ImmutableKeyStoreConfig.class)
-public abstract class KeyStoreConfig implements IdentityConfig {
+@JsonDeserialize(as = ImmutableIdentityKeyStore.class)
+public abstract class IdentityKeyStore implements Identity {
 
-    public static KeyStoreConfig of(String path, String password) {
-        return ImmutableKeyStoreConfig.builder().path(path).password(password).build();
+    public static IdentityKeyStore of(String path, String password) {
+        return ImmutableIdentityKeyStore.builder().path(path).password(password).build();
     }
 
-    public static KeyStoreConfig of(String path, String password, String keystoreType) {
-        return ImmutableKeyStoreConfig.builder().path(path).password(password).keystoreType(keystoreType).build();
+    public static IdentityKeyStore of(String path, String password, String keystoreType) {
+        return ImmutableIdentityKeyStore.builder().path(path).password(password).keystoreType(keystoreType).build();
     }
 
     /**

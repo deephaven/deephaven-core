@@ -11,11 +11,11 @@ import java.util.Optional;
  */
 @Immutable
 @BuildableStyle
-@JsonDeserialize(as = ImmutablePrivateKeyConfig.class)
-public abstract class PrivateKeyConfig implements IdentityConfig {
+@JsonDeserialize(as = ImmutableIdentityPrivateKey.class)
+public abstract class IdentityPrivateKey implements Identity {
 
     public static Builder builder() {
-        return ImmutablePrivateKeyConfig.builder();
+        return ImmutableIdentityPrivateKey.builder();
     }
 
     /**
@@ -52,6 +52,6 @@ public abstract class PrivateKeyConfig implements IdentityConfig {
 
         Builder alias(String alias);
 
-        PrivateKeyConfig build();
+        IdentityPrivateKey build();
     }
 }

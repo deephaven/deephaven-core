@@ -1,3 +1,5 @@
 {
-  "trustProperties": true
+  "trust": {
+    "type": "properties"
+  }
 }

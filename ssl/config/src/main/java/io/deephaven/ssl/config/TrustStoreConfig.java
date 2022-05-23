@@ -5,12 +5,12 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * The trust material configuration from a trust store.
+ * The trust material from a trust store.
  */
 @Immutable
 @BuildableStyle
 @JsonDeserialize(as = ImmutableTrustStoreConfig.class)
-public abstract class TrustStoreConfig implements TrustConfig {
+public abstract class TrustStoreConfig implements Trust {
     public static TrustStoreConfig of(String path, String password) {
         return ImmutableTrustStoreConfig.builder().path(path).password(password).build();
     }
@@ -26,7 +26,7 @@ public abstract class TrustStoreConfig implements TrustConfig {
     public abstract String password();
 
     @Override
-    public final <V extends Visitor<T>, T> T walk(V visitor) {
+    public final <T> T walk(Visitor<T> visitor) {
         return visitor.visit(this);
     }
 }

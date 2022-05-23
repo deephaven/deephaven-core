@@ -1,3 +1,5 @@
 {
-  "trustSystem": true
+  "trust": {
+    "type": "system"
+  }
 }

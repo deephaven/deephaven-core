@@ -9,12 +9,12 @@ import org.immutables.value.Value.Immutable;
 import java.util.List;
 
 /**
- * The trust material configuration from a certificate(s).
+ * The trust material from a certificate(s).
  */
 @Immutable
 @BuildableStyle
 @JsonDeserialize(as = ImmutableTrustCertificatesConfig.class)
-public abstract class TrustCertificatesConfig implements TrustConfig {
+public abstract class TrustCertificatesConfig implements Trust {
 
     public static TrustCertificatesConfig of(String... path) {
         return ImmutableTrustCertificatesConfig.builder().addPath(path).build();
@@ -27,7 +27,7 @@ public abstract class TrustCertificatesConfig implements TrustConfig {
     public abstract List<String> path();
 
     @Override
-    public final <V extends Visitor<T>, T> T walk(V visitor) {
+    public final <T> T walk(Visitor<T> visitor) {
         return visitor.visit(this);
     }
 

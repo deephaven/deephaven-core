@@ -1,3 +1,5 @@
 {
-  "trustAll": true
+  "trust": {
+    "type": "all"
+  }
 }

@@ -1,5 +1,5 @@
 {
-  "trust": {
+  "ciphers": {
     "type": "jdk"
   }
 }

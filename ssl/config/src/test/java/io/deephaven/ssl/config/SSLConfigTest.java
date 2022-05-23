@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -26,127 +25,110 @@ public class SSLConfigTest {
     @Test
     void identityKeystore() throws IOException {
         check("identity-keystore.json",
-                SSLConfig.builder().addIdentity(KeyStoreConfig.of("path.p12", "secret")).build());
+                SSLConfig.builder().identity(IdentityKeyStore.of("path.p12", "secret")).build());
     }
 
     @Test
     void identityPrivatekey() throws IOException {
         check("identity-privatekey.json",
                 SSLConfig.builder()
-                        .addIdentity(
-                                PrivateKeyConfig.builder().certChainPath("ca.crt").privateKeyPath("key.pem").build())
+                        .identity(
+                                IdentityPrivateKey.builder().certChainPath("ca.crt").privateKeyPath("key.pem").build())
                         .build());
     }
 
     @Test
     void identityMultiple() throws IOException {
-        check("identity-multiple.json",
-                SSLConfig.builder().addIdentity(PrivateKeyConfig.builder().certChainPath("ca.crt")
-                        .privateKeyPath("key.pem").alias("alias-1").build(), KeyStoreConfig.of("path.p12", "secret"))
-                        .build());
+        check("identity-multiple.json", SSLConfig.builder().identity(IdentityList.of(
+                IdentityPrivateKey.builder().certChainPath("ca.crt").privateKeyPath("key.pem").alias("alias-1").build(),
+                IdentityKeyStore.of("path.p12", "secret")))
+                .build());
     }
 
 
     @Test
     void identityProperties() throws IOException {
-        check("identity-properties.json", SSLConfig.builder().identityProperties(true).build());
+        check("identity-properties.json", SSLConfig.builder().identity(IdentityProperties.of()).build());
     }
 
     @Test
     void trustCertificates() throws IOException {
-        check("trust-certificates.json", SSLConfig.builder().addTrust(TrustCertificatesConfig.of("ca.crt")).build());
+        check("trust-certificates.json", SSLConfig.builder().trust(TrustCertificatesConfig.of("ca.crt")).build());
     }
 
     @Test
     void trustStore() throws IOException {
-        check("trust-store.json", SSLConfig.builder().addTrust(TrustStoreConfig.of("ca.p12", "secret")).build());
+        check("trust-store.json", SSLConfig.builder().trust(TrustStoreConfig.of("ca.p12", "secret")).build());
     }
 
     @Test
     void trustMultiple() throws IOException {
         check("trust-multiple.json", SSLConfig.builder()
-                .addTrust(TrustCertificatesConfig.of("ca-1.crt", "ca-2.crt"), TrustStoreConfig.of("ca-3.p12", "secret"))
+                .trust(TrustList.of(
+                        TrustCertificatesConfig.of("ca-1.crt", "ca-2.crt"),
+                        TrustStoreConfig.of("ca-3.p12", "secret")))
                 .build());
     }
 
     @Test
     void trustJdk() throws IOException {
-        check("trust-jdk.json", SSLConfig.builder().trustJdk(false).build());
+        check("trust-jdk.json", SSLConfig.builder().trust(TrustJdk.of()).build());
     }
 
     @Test
     void trustSystem() throws IOException {
-        check("trust-system.json", SSLConfig.builder().trustSystem(true).build());
+        check("trust-system.json", SSLConfig.builder().trust(TrustSystem.of()).build());
     }
 
     @Test
     void trustProperties() throws IOException {
-        check("trust-properties.json", SSLConfig.builder().trustProperties(true).build());
+        check("trust-properties.json", SSLConfig.builder().trust(TrustProperties.of()).build());
     }
 
     @Test
     void trustAll() throws IOException {
-        check("trust-all.json", SSLConfig.builder().trustAll(true).build());
+        check("trust-all.json", SSLConfig.builder().trust(TrustAll.of()).build());
     }
 
     @Test
-    void ciphers() throws IOException {
-        check("ciphers.json", SSLConfig.builder().addCiphers("TLS_AES_128_GCM_SHA256").build());
+    void ciphersExplicit() throws IOException {
+        check("ciphers-explicit.json",
+                SSLConfig.builder().ciphers(CiphersExplicit.of("TLS_AES_128_GCM_SHA256")).build());
     }
 
     @Test
     void ciphersProperties() throws IOException {
-        check("ciphers-properties.json", SSLConfig.builder().ciphersProperties(true).build());
+        check("ciphers-properties.json", SSLConfig.builder().ciphers(CiphersProperties.of()).build());
     }
 
     @Test
-    void ciphersBad1() throws IOException {
-        checkIllegal("ciphers-bad-1.json");
+    void ciphersModern() throws IOException {
+        check("ciphers-modern.json", SSLConfig.builder().ciphers(CiphersModern.of()).build());
     }
 
     @Test
-    void ciphersBad2() throws IOException {
-        checkIllegal("ciphers-bad-2.json");
+    void ciphersJdk() throws IOException {
+        check("ciphers-jdk.json", SSLConfig.builder().ciphers(CiphersJdk.of()).build());
     }
 
     @Test
-    void ciphersBad3() throws IOException {
-        checkIllegal("ciphers-bad-3.json");
-    }
-
-    @Test
-    void ciphersBad4() throws IOException {
-        checkIllegal("ciphers-bad-4.json");
-    }
-
-    @Test
-    void protocols() throws IOException {
-        check("protocols.json", SSLConfig.builder().addProtocols("TLSv1.3").build());
+    void protocolsExplicit() throws IOException {
+        check("protocols-explicit.json", SSLConfig.builder().protocols(ProtocolsExplicit.of("TLSv1.3")).build());
     }
 
     @Test
     void protocolsProperties() throws IOException {
-        check("protocols-properties.json", SSLConfig.builder().protocolsProperties(true).build());
+        check("protocols-properties.json", SSLConfig.builder().protocols(ProtocolsProperties.of()).build());
     }
 
     @Test
-    void protocolsBad1() throws IOException {
-        checkIllegal("protocols-bad-1.json");
+    void protocolsModern() throws IOException {
+        check("protocols-modern.json", SSLConfig.builder().protocols(ProtocolsModern.of()).build());
     }
 
     @Test
-    void protocolsBad2() throws IOException {
-        checkIllegal("protocols-bad-2.json");
-    }
-
-    @Test
-    void protocolsBad3() throws IOException {
-        checkIllegal("protocols-bad-3.json");
-    }
-
-    @Test
-    void protocolsBad4() throws IOException {
-        checkIllegal("protocols-bad-4.json");
+    void protocolsJdk() throws IOException {
+        check("protocols-jdk.json", SSLConfig.builder().protocols(ProtocolsJdk.of()).build());
     }
 
     @Test
