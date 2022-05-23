@@ -457,23 +457,20 @@ public class QueryTable extends BaseTable {
         }
         final SelectColumn[] groupByColumns =
                 Arrays.stream(keyColumnNames).map(SourceColumn::new).toArray(SelectColumn[]::new);
-        final QueryTable partitioned = memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, groupByColumns),
-                () -> QueryPerformanceRecorder.withNugget(
-                        "partitionBy(" + dropKeys + ", " + Arrays.toString(keyColumnNames) + ')',
-                        sizeForInstrumentation(),
-                        () -> aggNoMemo(AggregationProcessor.forAggregation(List.of(
-                                Partition.of(CONSTITUENT, !dropKeys))), groupByColumns)));
-        final Set<String> keyColumnNamesSet =
-                Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
-        final TableDefinition constituentDefinition;
-        if (dropKeys) {
-            constituentDefinition = TableDefinition.of(definition.getColumnStream()
-                    .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
-        } else {
-            constituentDefinition = definition;
-        }
-        return PartitionedTableFactory.of(
-                partitioned, keyColumnNamesSet, CONSTITUENT.name(), constituentDefinition, isRefreshing());
+        return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, groupByColumns), () -> {
+            final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), Arrays.asList(groupByColumns));
+            final Set<String> keyColumnNamesSet =
+                    Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
+            final TableDefinition constituentDefinition;
+            if (dropKeys) {
+                constituentDefinition = TableDefinition.of(definition.getColumnStream()
+                        .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
+            } else {
+                constituentDefinition = definition;
+            }
+            return PartitionedTableFactory.of(
+                    partitioned, keyColumnNamesSet, CONSTITUENT.name(), constituentDefinition, isRefreshing());
+        });
     }
 
     @Override
