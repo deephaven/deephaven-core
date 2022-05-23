@@ -53,7 +53,7 @@ class LongConstantColumn implements SelectColumn {
     @NotNull
     @Override
     public ColumnSource<?> getDataView() {
-        return new ViewColumnSource<>(Table.class, new OutputFormula(), false, true);
+        return new ViewColumnSource<>(long.class, new OutputFormula(), false, true);
     }
 
     @Override
@@ -156,7 +156,7 @@ class LongConstantColumn implements SelectColumn {
 
         @Override
         protected ChunkType getChunkType() {
-            return ChunkType.Object;
+            return ChunkType.Long;
         }
 
         @Override
