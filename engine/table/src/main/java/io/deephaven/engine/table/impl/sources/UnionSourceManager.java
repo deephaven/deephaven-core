@@ -114,9 +114,7 @@ public class UnionSourceManager {
                 }
             });
         }
-        if (refreshing) {
-            unionRedirection.copyCurrToPrev();
-        }
+        unionRedirection.initializePrev();
     }
 
     /**

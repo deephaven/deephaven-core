@@ -64,12 +64,16 @@ public class UnionRedirection implements Serializable {
     private int prevSize = 0;
 
     /**
-     * The current first row key for each slot in of our outer RowSet for this entry, the end of the current entry (+ 1)
-     * is in the next table.
+     * The current first row key in our outer RowSet for each slot. {@code currFirstRowKeys[currSize]} is the total size
+     * of the currently-allocated row key space.
      */
     private long[] currFirstRowKeys;
 
-    // the start of our outer prev RowSet for this entry, the end of the current entry (+ 1) is in the next table
+    /**
+     * The previous first row key in our previous outer RowSet for each slot. {@code prevFirstRowKeys[prevSize]} is the
+     * total size of the previously-allocated row key space. {@code prevFirstRowKeys == currFirstRowKeys} if our source
+     * table (and thus its constituents) is not refreshing.
+     */
     private long[] prevFirstRowKeys;
 
     UnionRedirection(final int initialNumTables, final boolean refreshing) {
@@ -223,8 +227,21 @@ public class UnionRedirection implements Serializable {
     }
 
     /**
-     * Update previous redirections to match current redirections. This should be done at the end of initialization, and
-     * the end of the updating phase of each UGP cycle.
+     * Update previous redirections to match current redirections at the end of initialization.
+     */
+    void initializePrev() {
+        if (prevFirstRowKeys == currFirstRowKeys) {
+            // Static
+            prevSize = currSize;
+        } else {
+            // Refreshing
+            copyCurrToPrev();
+        }
+    }
+
+    /**
+     * Update previous redirections to match current redirections. This should be done at the end of the updating phase
+     * of each UGP cycle if the values in {@code currFirstRowKeys} changed.
      */
     void copyCurrToPrev() {
         if (prevFirstRowKeys.length != currFirstRowKeys.length) {
