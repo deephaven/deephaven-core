@@ -15,6 +15,8 @@ import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 
 import java.util.Map;
+import java.util.Set;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -39,7 +41,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         builder.addTable("b", b);
         final Map<String, Table> result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[] {"a", "b"}, result.keySet());
+        assertEquals(Set.of("a", "b"), result.keySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -87,7 +89,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         builder.addTable("b", b);
         final Map<String, Table> result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[] {"a", "b"}, result.keySet());
+        assertEquals(Set.of("a", "b"), result.keySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -168,7 +170,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
                 .addTable("b", b, "ID");
         final Map<String, Table> result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[] {"a", "b"}, result.keySet());
+        assertEquals(Set.of("a", "b"), result.keySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -220,7 +222,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         builder.addTable("b", b, "Ego", "Klyuch");
         final Map<String, Table> result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[] {"a", "b"}, result.keySet());
+        assertEquals(Set.of("a", "b"), result.keySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");

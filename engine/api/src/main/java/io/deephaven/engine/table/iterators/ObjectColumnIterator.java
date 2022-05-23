@@ -84,12 +84,16 @@ public final class ObjectColumnIterator<TYPE> extends ColumnIterator<TYPE, Objec
         });
     }
 
+    /**
+     * Convert this ObjectColumnIterator to a {@link Stream}. The result <em>must</em> be {@link Stream#close() closed}
+     * in order to ensure resources are released. A try-with-resources block is strongly encouraged.
+     *
+     * @return A {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     */
     public Stream<TYPE> stream() {
-        return StreamSupport.stream(
-                Spliterators.spliterator(
-                        this,
-                        size(),
-                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
-                false);
+        return StreamSupport.stream(Spliterators.spliterator(
+                                this, size(), Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                        false)
+                .onClose(this::close);
     }
 }

@@ -48,6 +48,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -2315,8 +2316,10 @@ public class TstUtils {
     }
 
     public static Table[] getPartitions(@NotNull final PartitionedTable partitionedTable) {
-        return partitionedTable.table()
-                .<Table>objectColumnIterator(partitionedTable.constituentColumnName()).stream().toArray(Table[]::new);
+        try (final Stream<Table> constituents = partitionedTable.table()
+                .<Table>objectColumnIterator(partitionedTable.constituentColumnName()).stream()) {
+            return constituents.toArray(Table[]::new);
+        }
     }
 
     public static Table[] getPartitions(

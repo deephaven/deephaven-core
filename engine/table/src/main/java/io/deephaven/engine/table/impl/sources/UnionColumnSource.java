@@ -19,6 +19,7 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.qst.column.Column;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -58,7 +59,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         /**
          * Get a stream of all current constituent sources.
          *
-         * @return A stream of all current constituent sources
+         * @return A stream of all current constituent sources, which must be closed.
          */
         Stream<ColumnSource<T>> currSources();
     }
@@ -641,8 +642,12 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return unionSourceManager.isUsingComponentsSafe()
-                && sourceLookup.currSources().allMatch(cs -> cs.allowsReinterpret(alternateDataType));
+        if (!unionSourceManager.isUsingComponentsSafe()) {
+            return false;
+        }
+        try (final Stream<ColumnSource<T>> sources = sourceLookup.currSources()) {
+            return sources.allMatch(cs -> cs.allowsReinterpret(alternateDataType));
+        }
     }
 
     @Override
@@ -660,9 +665,11 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             }
         }
 
-        // noinspection unchecked
-        final ColumnSource<ALTERNATE_DATA_TYPE>[] reinterpretedSubSources = sourceLookup.currSources()
-                .map(cs -> cs.reinterpret(alternateDataType)).toArray(ColumnSource[]::new);
+        final ColumnSource<ALTERNATE_DATA_TYPE>[] reinterpretedSubSources;
+        try (final Stream<ColumnSource<T>> sources = sourceLookup.currSources()) {
+            // noinspection unchecked
+            reinterpretedSubSources = sources.map(cs -> cs.reinterpret(alternateDataType)).toArray(ColumnSource[]::new);
+        }
         // noinspection unchecked
         final ReinterpretToOriginal<ALTERNATE_DATA_TYPE> reinterpretedSource = new ReinterpretToOriginal(
                 alternateDataType, reinterpretedSubSources, this);
@@ -749,19 +756,31 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public boolean isImmutable() {
-        return unionSourceManager.isUsingComponentsSafe()
-                && sourceLookup.currSources().allMatch(ColumnSource::isImmutable);
+        if (!unionSourceManager.isUsingComponentsSafe()) {
+            return false;
+        }
+        try (final Stream<ColumnSource<T>> sources = sourceLookup.currSources()) {
+            return sources.allMatch(ColumnSource::isImmutable);
+        }
     }
 
     @Override
     public boolean preventsParallelism() {
-        return !unionSourceManager.isUsingComponentsSafe()
-                || sourceLookup.currSources().anyMatch(ColumnSource::preventsParallelism);
+        if (!unionSourceManager.isUsingComponentsSafe()) {
+            return true;
+        }
+        try (final Stream<ColumnSource<T>> sources = sourceLookup.currSources()) {
+            return sources.anyMatch(ColumnSource::preventsParallelism);
+        }
     }
 
     @Override
     public boolean isStateless() {
-        return unionSourceManager.isUsingComponentsSafe()
-                && sourceLookup.currSources().allMatch(ColumnSource::isStateless);
+        if (!unionSourceManager.isUsingComponentsSafe()) {
+            return false;
+        }
+        try (final Stream<ColumnSource<T>> sources = sourceLookup.currSources()) {
+            return sources.allMatch(ColumnSource::isStateless);
+        }
     }
 }

@@ -390,62 +390,68 @@ public class TestPartitionBy extends QueryTableTestBase {
     }
 
     public void testReleaseRaceRollup() {
-        setExpectError(false);
-        final ExecutorService pool = Executors.newFixedThreadPool(1);
-
-        final QueryTable rawTable = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
-                col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6), intCol("I2", 1, 2, 3));
-
-        QueryScope.addParam("sleepHelper", new SleepHelper());
-
-        // make it slow to read key
-        final Table table = rawTable.updateView("Key = sleepHelper.sleepValue(0, Key)", "K2=1",
-                "Int=sleepHelper.sleepValue(250, Int)");
-
-        final SingletonLivenessManager mapManager;
-
-        final Table rollup;
-
-        try (final SafeCloseable ignored1 = LivenessScopeStack.open()) {
-            rollup = table.rollup(List.of(AggSortedFirst("Int", "Int")), "Key", "K2");
-            mapManager = new SingletonLivenessManager(rollup);
-        }
-
-        final MutableLong start = new MutableLong();
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(rawTable, i(8), col("Key", "C"), intCol("Int", 8), intCol("I2", 5));
-            rawTable.notifyListeners(i(8), i(), i());
-            start.setValue(System.currentTimeMillis());
-        });
-        System.out.println("Completion took: " + (System.currentTimeMillis() - start.getValue()));
-
-        final MutableObject<Future<?>> mutableFuture = new MutableObject<>();
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(rawTable, i(10, 11, 12), col("Key", "C", "D", "E"), intCol("Int", 8, 9, 10),
-                    intCol("I2", 6, 7, 8));
-            rawTable.notifyListeners(i(10, 11, 12), i(), i());
-
-            mutableFuture.setValue(pool.submit(() -> {
-                try {
-                    Thread.sleep(1100);
-                } catch (InterruptedException ignored) {
-                }
-                mapManager.release();
-                System.out.println("Releasing map!");
-            }));
-
-            start.setValue(System.currentTimeMillis());
-        });
-        System.out.println("Completion took: " + (System.currentTimeMillis() - start.getValue()));
-
+        // TODO https://github.com/deephaven/deephaven-core/issues/65): Delete this, uncomment and fix the rest
         try {
-            mutableFuture.getValue().get();
-        } catch (InterruptedException | ExecutionException e) {
-            TestCase.fail(e.getMessage());
-        }
+            emptyTable(10).rollup(List.of(), "ABC", "DEF");
+            fail("Expected exception");
+        } catch (UnsupportedOperationException expected) {}
 
-        pool.shutdownNow();
+//        setExpectError(false);
+//        final ExecutorService pool = Executors.newFixedThreadPool(1);
+//
+//        final QueryTable rawTable = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+//                col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6), intCol("I2", 1, 2, 3));
+//
+//        QueryScope.addParam("sleepHelper", new SleepHelper());
+//
+//        // make it slow to read key
+//        final Table table = rawTable.updateView("Key = sleepHelper.sleepValue(0, Key)", "K2=1",
+//                "Int=sleepHelper.sleepValue(250, Int)");
+//
+//        final SingletonLivenessManager mapManager;
+//
+//        final Table rollup;
+//
+//        try (final SafeCloseable ignored1 = LivenessScopeStack.open()) {
+//            rollup = table.rollup(List.of(AggSortedFirst("Int", "Int")), "Key", "K2");
+//            mapManager = new SingletonLivenessManager(rollup);
+//        }
+//
+//        final MutableLong start = new MutableLong();
+//        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+//            TstUtils.addToTable(rawTable, i(8), col("Key", "C"), intCol("Int", 8), intCol("I2", 5));
+//            rawTable.notifyListeners(i(8), i(), i());
+//            start.setValue(System.currentTimeMillis());
+//        });
+//        System.out.println("Completion took: " + (System.currentTimeMillis() - start.getValue()));
+//
+//        final MutableObject<Future<?>> mutableFuture = new MutableObject<>();
+//
+//        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+//            TstUtils.addToTable(rawTable, i(10, 11, 12), col("Key", "C", "D", "E"), intCol("Int", 8, 9, 10),
+//                    intCol("I2", 6, 7, 8));
+//            rawTable.notifyListeners(i(10, 11, 12), i(), i());
+//
+//            mutableFuture.setValue(pool.submit(() -> {
+//                try {
+//                    Thread.sleep(1100);
+//                } catch (InterruptedException ignored) {
+//                }
+//                mapManager.release();
+//                System.out.println("Releasing map!");
+//            }));
+//
+//            start.setValue(System.currentTimeMillis());
+//        });
+//        System.out.println("Completion took: " + (System.currentTimeMillis() - start.getValue()));
+//
+//        try {
+//            mutableFuture.getValue().get();
+//        } catch (InterruptedException | ExecutionException e) {
+//            TestCase.fail(e.getMessage());
+//        }
+//
+//        pool.shutdownNow();
     }
 
     public void testPopulateKeysStatic() {

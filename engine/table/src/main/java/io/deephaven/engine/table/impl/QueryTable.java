@@ -14,7 +14,6 @@ import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
@@ -80,7 +79,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.MatchPair.matchString;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 
 /**
@@ -275,7 +273,7 @@ public class QueryTable extends BaseTable {
     /**
      * Create a new query table with the {@link ColumnDefinition ColumnDefinitions} of {@code template}, but in the
      * order of {@code this}. The tables must be mutually compatible, as defined via
-     * {@link TableDefinition#checkCompatibility(TableDefinition)}.
+     * {@link TableDefinition#checkMutualCompatibility(TableDefinition)}.
      *
      * @param template the new definition template to use
      * @return the new query table
@@ -476,6 +474,9 @@ public class QueryTable extends BaseTable {
     @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Selectable... groupByColumns) {
+        throw new UnsupportedOperationException("rollup is not yet implemented in community");
+        // TODO https://github.com/deephaven/deephaven-core/issues/65): Implement rollups based on PartitionedTable
+        /*
         if (isStream() && includeConstituents) {
             throw streamUnsupported("rollup with included constituents");
         }
@@ -515,10 +516,14 @@ public class QueryTable extends BaseTable {
 
             return result;
         });
+        */
     }
 
     @Override
     public Table treeTable(String idColumn, String parentColumn) {
+        throw new UnsupportedOperationException("treeTable is not yet implemented in community");
+        // TODO https://github.com/deephaven/deephaven-core/issues/64): Implement treeTable based on PartitionedTable
+        /*
         if (isStream()) {
             throw streamUnsupported("treeTable");
         }
@@ -557,6 +562,7 @@ public class QueryTable extends BaseTable {
 
             return result;
         });
+        */
     }
 
     @Override

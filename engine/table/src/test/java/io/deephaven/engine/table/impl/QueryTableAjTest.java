@@ -1183,7 +1183,7 @@ public class QueryTableAjTest {
              final ObjectColumnIterator<Table> lefts = correlated.objectColumnIterator("Left");
              final ObjectColumnIterator<Table> rights = correlated.objectColumnIterator("Right")) {
             while (results.hasNext()) {
-                checkAjResult(results.next(), lefts.next(), rights.next(), reverse, noexact);
+                checkAjResult(lefts.next(), rights.next(), results.next(), reverse, noexact);
             }
         }
     }

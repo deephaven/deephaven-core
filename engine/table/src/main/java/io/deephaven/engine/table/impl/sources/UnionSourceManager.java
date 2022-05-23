@@ -102,16 +102,18 @@ public class UnionSourceManager {
             updateCommitter = null;
         }
 
-        currConstituents().forEach((final Table constituent) -> {
-            final long shiftAmount = unionRedirection.appendInitialTable(constituent.getRowSet().lastRowKey());
-            resultRows.insertWithShift(shiftAmount, constituent.getRowSet());
-            if (constituent.isRefreshing()) {
-                assert refreshing;
-                final ConstituentListenerRecorder constituentListener = new ConstituentListenerRecorder(constituent);
-                constituent.listenForUpdates(constituentListener);
-                listenerRecorders.offer(constituentListener);
-            }
-        });
+        try (final Stream<Table> initialConstituents = currConstituents()) {
+            initialConstituents.forEach((final Table constituent) -> {
+                final long shiftAmount = unionRedirection.appendInitialTable(constituent.getRowSet().lastRowKey());
+                resultRows.insertWithShift(shiftAmount, constituent.getRowSet());
+                if (constituent.isRefreshing()) {
+                    assert refreshing;
+                    final ConstituentListenerRecorder constituentListener = new ConstituentListenerRecorder(constituent);
+                    constituent.listenForUpdates(constituentListener);
+                    listenerRecorders.offer(constituentListener);
+                }
+            });
+        }
         if (refreshing) {
             unionRedirection.copyCurrToPrev();
         }
@@ -131,7 +133,9 @@ public class UnionSourceManager {
         if (!isUsingComponentsSafe()) {
             throw new UnsupportedOperationException("Cannot get component tables if constituent changes not permitted");
         }
-        return currConstituents().collect(Collectors.toList());
+        try (final Stream<Table> currConstituents = currConstituents()) {
+            return currConstituents.collect(Collectors.toList());
+        }
     }
 
     public Map<String, UnionColumnSource<?>> getColumnSources() {
@@ -586,15 +590,16 @@ public class UnionSourceManager {
     /**
      * Get a stream over all current constituent tables. This is for internal engine use only.
      *
-     * @return The stream
+     * @return The stream, which must be closed
      */
     private Stream<Table> currConstituents() {
-        return StreamSupport.stream(
-                Spliterators.spliterator(
-                        currConstituentIter(constituentRows),
-                        constituentRows.size(),
-                        Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED),
-                false);
+        final ObjectColumnIterator<Table> currConstituents = currConstituentIter(constituentRows);
+        return StreamSupport.stream(Spliterators.spliterator(
+                                currConstituents,
+                                constituentRows.size(),
+                                Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED),
+                        false)
+                .onClose(currConstituents::close);
     }
 
     /**

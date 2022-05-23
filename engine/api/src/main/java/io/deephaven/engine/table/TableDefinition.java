@@ -11,10 +11,10 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.HashCodeUtil;
 import io.deephaven.qst.column.header.ColumnHeader;
-import java.util.Map.Entry;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.util.Map.Entry;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -229,13 +229,32 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      * number of columns, each matched up with {@link ColumnDefinition#isCompatible}. As such, this method has an
      * equivalence relation, ie {@code A.checkMutualCompatibility(B) == B.checkMutualCompatibility(A)}.
      *
-     * @param other the other definition
-     * @return {@code this} table definition, but in the the column order of {@code other}
+     * @param other The other definition
+     * @return {@code this} table definition, but in the column order of {@code other}
      * @throws IncompatibleTableDefinitionException if the definitions are not compatible
      */
     public TableDefinition checkMutualCompatibility(@NotNull final TableDefinition other) {
-        TableDefinition result = checkCompatibility(other, false);
-        other.checkCompatibility(this, false);
+        return checkMutualCompatibility(other, "this", "other");
+    }
+
+    /**
+     * Tests mutual-compatibility of {@code this} and {@code other}. To be mutually compatible, they must have the same
+     * number of columns, each matched up with {@link ColumnDefinition#isCompatible}. As such, this method has an
+     * equivalence relation, ie {@code A.checkMutualCompatibility(B) == B.checkMutualCompatibility(A)}.
+     *
+     * @param other   The other definition
+     * @param lhsName Name to use when describing {@code this} if an exception is thrown
+     * @param rhsName Name to use when describing {@code other} if an exception is thrown
+     * @return {@code this} table definition, but in the column order of {@code other}
+     * @throws IncompatibleTableDefinitionException if the definitions are not compatible
+     */
+    public TableDefinition checkMutualCompatibility(@NotNull final TableDefinition other, String lhsName, String rhsName) {
+        final TableDefinition result = checkCompatibilityInternal(other, false);
+        if (result == null || other.checkCompatibilityInternal(this, false) == null) {
+            final List<String> differences = describeCompatibilityDifferences(other, lhsName, rhsName);
+            throw new IncompatibleTableDefinitionException("Table definition incompatibilities: \n\t"
+                    + String.join("\n\t", differences));
+        }
         return result;
     }
 
@@ -274,38 +293,52 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      * @return the minimized compatible table definition, in the same order as {@code other}
      * @throws IncompatibleTableDefinitionException if the definitions are not compatible
      */
-    public TableDefinition checkCompatibility(@NotNull final TableDefinition other,
+    public TableDefinition checkCompatibility(
+            @NotNull final TableDefinition other,
             final boolean ignorePartitioningColumns) {
-        List<ColumnDefinition<?>> inOrder = new ArrayList<>();
+        final TableDefinition minimized = checkCompatibilityInternal(other, ignorePartitioningColumns);
+        if (minimized != null) {
+            return minimized;
+        }
+        final List<String> differences = describeCompatibilityDifferences(other, "this", "other");
+        throw new IncompatibleTableDefinitionException("Table definition incompatibilities: "
+                + String.join("\n\t", differences));
+    }
 
-        // TODO: need to compare in order and be less permissive with partitioning -
-        final StringBuilder sb = new StringBuilder();
+    /**
+     * Test compatibility of {@code this} with {@code other}. This definition must have all columns of the other, and
+     * the column definitions in common must be compatible, as defined by
+     * {@link ColumnDefinition#isCompatible(ColumnDefinition)}.
+     *
+     * @param other The definition to compare to
+     * @param ignorePartitioningColumns If true, {@code other} may contain partitioning columns not in {@code this}
+     * @return The minimized compatible table definition, in the same order as {@code other}, or {@code null} if
+     *         incompatible
+     */
+    private TableDefinition checkCompatibilityInternal(
+            @NotNull final TableDefinition other,
+            final boolean ignorePartitioningColumns) {
+        final List<ColumnDefinition<?>> inOrder = new ArrayList<>();
+
         final Map<String, ColumnDefinition<?>> myNamesToColumns = getColumnNameMap();
         for (final ColumnDefinition<?> otherColumn : other.columns) {
             if (ignorePartitioningColumns && otherColumn.isPartitioning())
                 continue;
             final ColumnDefinition<?> myColumn = myNamesToColumns.get(otherColumn.getName());
             if (myColumn == null) {
-                sb.append(NEW_LINE).append("\tMissing column definition for ").append(otherColumn.getName());
+                return null;
             } else if (!myColumn.isCompatible(otherColumn)) {
-                sb.append(NEW_LINE)
-                        .append("\tColumn definitions aren't compatible - ")
-                        .append("found column ")
-                        .append(myColumn.describeForCompatibility())
-                        .append(", expected compatibility with ")
-                        .append(otherColumn.describeForCompatibility());
+                return null;
             }
             inOrder.add(myColumn);
         }
-        if (sb.length() > 0) {
-            throw new IncompatibleTableDefinitionException("Table definition incompatibilities: " + sb.toString());
-        }
+
         return new TableDefinition(inOrder);
     }
 
     /**
      * Build a description of the difference between this definition and the other. Should correspond to
-     * equalsIgnoreOrder logic.
+     * {@link #equalsIgnoreOrder} logic.
      *
      * @param other another TableDefinition to compare
      * @param lhs what to call "this" definition
@@ -314,6 +347,31 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      */
     public List<String> describeDifferences(@NotNull final TableDefinition other, @NotNull final String lhs,
             @NotNull final String rhs) {
+        return describeDifferences(other, lhs, rhs, ColumnDefinition::equals, true);
+    }
+
+    /**
+     * Build a description of the difference between this definition and the other. Should correspond to
+     * {@link #checkMutualCompatibility} logic.
+     *
+     * @param other another TableDefinition to compare
+     * @param lhs what to call "this" definition
+     * @param rhs what to call the other definition
+     * @return a list of strings representing the difference between two table definitions
+     */
+    public List<String> describeCompatibilityDifferences(@NotNull final TableDefinition other, @NotNull final String lhs,
+                                            @NotNull final String rhs) {
+        return describeDifferences(other, lhs, rhs, ColumnDefinition::isCompatible, false);
+    }
+
+    @FunctionalInterface
+    private interface ColumnDefinitionEqualityTest {
+        boolean match(ColumnDefinition<?> c1, ColumnDefinition<?> c2);
+    }
+
+    private List<String> describeDifferences(
+            @NotNull final TableDefinition other, @NotNull final String lhs, @NotNull final String rhs,
+            @NotNull final ColumnDefinitionEqualityTest test, final boolean includeColumnType) {
         final List<String> differences = new ArrayList<>();
 
         final Map<String, ColumnDefinition<?>> otherColumns = other.getColumnNameMap();
@@ -321,10 +379,10 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
             final ColumnDefinition<?> otherColumn = otherColumns.get(thisColumn.getName());
             if (otherColumn == null) {
                 differences.add(lhs + " column '" + thisColumn.getName() + "' is missing in " + rhs);
-            } else if (!thisColumn.equals(otherColumn)) {
+            } else if (!test.match(thisColumn, otherColumn)) {
                 differences.add("column '" + thisColumn.getName() + "' is different ...");
                 thisColumn.describeDifferences(differences, otherColumn, lhs, rhs,
-                        "    " + thisColumn.getName() + ": ");
+                        "    " + thisColumn.getName() + ": ", includeColumnType);
             }
             // else same
         }
@@ -332,7 +390,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         final Map<String, ColumnDefinition<?>> thisColumns = getColumnNameMap();
         for (final ColumnDefinition<?> otherColumn : other.getColumns()) {
             if (null == thisColumns.get(otherColumn.getName())) {
-                differences.add("column '" + otherColumn.getName() + "' is missing in " + lhs);
+                differences.add(rhs + " column '" + otherColumn.getName() + "' is missing in " + lhs);
             }
         }
 

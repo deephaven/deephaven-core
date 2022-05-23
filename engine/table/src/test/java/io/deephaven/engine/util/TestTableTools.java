@@ -144,35 +144,31 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         try {
             TableTools.merge(table1, table2);
             TestCase.fail("Expected exception");
-        } catch (UnsupportedOperationException e) {
-            // Expected
+        } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
+
         try {
             TableTools.merge(table2, table1);
             TestCase.fail("Expected exception");
-        } catch (UnsupportedOperationException e) {
-            // Expected
+        } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
+
         try {
             TableTools.merge(table2, emptyTable);
-        } catch (UnsupportedOperationException mismatchException) {
-            TestCase.assertEquals(
-                    "Column mismatch for table 1, missing columns: [GroupedInts1, StringKeys1], additional columns: [GroupedInts, StringKeys]",
-                    mismatchException.getMessage());
+            TestCase.fail("Expected exception");
+        } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, table2.updateView("S2=StringKeys1"));
-        } catch (UnsupportedOperationException mismatchException) {
-            TestCase.assertEquals("Column mismatch for table 1, additional columns: [S2]",
-                    mismatchException.getMessage());
+            TestCase.fail("Expected exception");
+        } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, table2.dropColumns("StringKeys1"));
-        } catch (UnsupportedOperationException mismatchException) {
-            TestCase.assertEquals("Column mismatch for table 1, missing columns: [StringKeys1]",
-                    mismatchException.getMessage());
+            TestCase.fail("Expected exception");
+        } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
     }
 

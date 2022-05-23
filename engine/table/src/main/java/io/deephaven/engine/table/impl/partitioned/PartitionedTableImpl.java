@@ -1,8 +1,5 @@
 package io.deephaven.engine.table.impl.partitioned;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.JoinAddition;
-import io.deephaven.api.JoinMatch;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Pair;
 import io.deephaven.chunk.ObjectChunk;
@@ -396,7 +393,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 if (constituent == null) {
                     throw new IllegalStateException("Encountered null constituent");
                 }
-                constituentDefinition.checkMutualCompatibility(constituent.getDefinition());
+                constituentDefinition.checkMutualCompatibility(constituent.getDefinition(), "expected", "constituent");
             }
         }
     }

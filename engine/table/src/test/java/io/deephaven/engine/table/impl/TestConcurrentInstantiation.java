@@ -52,55 +52,60 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     private final ExecutorService dualPool = Executors.newFixedThreadPool(2);
 
     public void testTreeTableFilter() throws ExecutionException, InterruptedException {
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),
-                col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
-                col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
-        final Table treed =
-                UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                        .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+        // TODO (https://github.com/deephaven/deephaven-core/issues/64): Delete this, uncomment and fix the rest
+        try {
+            emptyTable(10).treeTable("ABC", "DEF");
+            fail("Expected exception");
+        } catch (UnsupportedOperationException expected) {}
 
-        final Callable<Table> callable =
-                () -> TreeTableFilter.rawFilterTree(treed, "Sentinel in 4, 6, 9, 11, 12, 13, 14, 15");
-
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        final Table rawSorted = pool.submit(callable).get();
-        TableTools.show(rawSorted);
-
-        assertTrue(Arrays.equals(new int[] {1, 3, 4, 6, 9}, (int[]) rawSorted.getColumn("Sentinel").getDirect()));
-
-        TstUtils.addToTable(source, i(10), c("Sentinel", 11),
-                c("Parent", 2));
-        final Table table2 = pool.submit(callable).get();
-        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-
-        source.notifyListeners(i(10), i(), i());
-
-        final Future<Table> future3 = pool.submit(callable);
-        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-        final Table table3 = future3.get();
-
-        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-        assertEquals(TableTools.diff(table2, table3, 20), "");
-
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        TstUtils.addToTable(source, i(11), c("Sentinel", 12), c("Parent", 10));
-
-        final Table table4 = pool.submit(callable).get();
-        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-        assertEquals(TableTools.diff(table2, table3, 20), "");
-        assertEquals(TableTools.diff(table3, table4, 20), "");
-
-        source.notifyListeners(i(11), i(), i());
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-
-        assertTrue(Arrays.equals(new int[] {1, 2, 3, 4, 6, 9, 10, 11, 12},
-                (int[]) rawSorted.getColumn("Sentinel").getDirect()));
-        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-        assertEquals(TableTools.diff(table2, table3, 20), "");
-        assertEquals(TableTools.diff(table3, table4, 20), "");
-
+//        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),
+//                col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+//                col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
+//        final Table treed =
+//                UpdateGraphProcessor.DEFAULT.exclusiveLock()
+//                        .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+//
+//        final Callable<Table> callable =
+//                () -> TreeTableFilter.rawFilterTree(treed, "Sentinel in 4, 6, 9, 11, 12, 13, 14, 15");
+//
+//        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+//        final Table rawSorted = pool.submit(callable).get();
+//        TableTools.show(rawSorted);
+//
+//        assertTrue(Arrays.equals(new int[] {1, 3, 4, 6, 9}, (int[]) rawSorted.getColumn("Sentinel").getDirect()));
+//
+//        TstUtils.addToTable(source, i(10), c("Sentinel", 11),
+//                c("Parent", 2));
+//        final Table table2 = pool.submit(callable).get();
+//        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+//
+//        source.notifyListeners(i(10), i(), i());
+//
+//        final Future<Table> future3 = pool.submit(callable);
+//        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+//
+//        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+//        final Table table3 = future3.get();
+//
+//        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+//        assertEquals(TableTools.diff(table2, table3, 20), "");
+//
+//        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+//        TstUtils.addToTable(source, i(11), c("Sentinel", 12), c("Parent", 10));
+//
+//        final Table table4 = pool.submit(callable).get();
+//        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+//        assertEquals(TableTools.diff(table2, table3, 20), "");
+//        assertEquals(TableTools.diff(table3, table4, 20), "");
+//
+//        source.notifyListeners(i(11), i(), i());
+//        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+//
+//        assertTrue(Arrays.equals(new int[] {1, 2, 3, 4, 6, 9, 10, 11, 12},
+//                (int[]) rawSorted.getColumn("Sentinel").getDirect()));
+//        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+//        assertEquals(TableTools.diff(table2, table3, 20), "");
+//        assertEquals(TableTools.diff(table3, table4, 20), "");
     }
 
 

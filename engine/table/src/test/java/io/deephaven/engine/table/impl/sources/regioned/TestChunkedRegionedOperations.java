@@ -36,6 +36,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
@@ -225,27 +227,35 @@ public class TestChunkedRegionedOperations {
         final String tableName = "TestTable";
 
         final PartitionedTable partitionedInputData = inputData.partitionBy("PC");
+        final File[] partitionedInputDestinations;
+        try (final Stream<String> partitionNames = partitionedInputData.table()
+                .<String>objectColumnIterator("PC").stream()) {
+            partitionedInputDestinations = partitionNames.map(pcv -> new File(dataDirectory,
+                            "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
+                                    + PARQUET_FILE_NAME))
+                    .toArray(File[]::new);
+        }
         ParquetTools.writeParquetTables(
                 getPartitions(partitionedInputData),
                 partitionedDataDefinition.getWritable(),
                 parquetInstructions,
-                partitionedInputData.table().objectColumnIterator("PC").stream()
-                        .map(pcv -> new File(dataDirectory,
-                                "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
-                                        + PARQUET_FILE_NAME))
-                        .toArray(File[]::new),
+                partitionedInputDestinations,
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         final PartitionedTable partitionedInputMissingData = inputMissingData.view("PC", "II").partitionBy("PC");
+        final File[] partitionedInputMissingDestinations;
+        try (final Stream<String> partitionNames = partitionedInputMissingData.table()
+                .<String>objectColumnIterator("PC").stream()) {
+            partitionedInputMissingDestinations = partitionNames.map(pcv -> new File(dataDirectory,
+                            "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
+                                    + PARQUET_FILE_NAME))
+                    .toArray(File[]::new);
+        }
         ParquetTools.writeParquetTables(
                 getPartitions(partitionedInputMissingData),
                 partitionedMissingDataDefinition.getWritable(),
                 parquetInstructions,
-                partitionedInputMissingData.table().objectColumnIterator("PC").stream()
-                        .map(pcv -> new File(dataDirectory,
-                                "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
-                                        + PARQUET_FILE_NAME))
-                        .toArray(File[]::new),
+                partitionedInputMissingDestinations,
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         expected = TableTools
