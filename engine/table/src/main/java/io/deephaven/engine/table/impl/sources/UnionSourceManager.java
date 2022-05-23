@@ -249,10 +249,6 @@ public class UnionSourceManager {
      */
     private final class ChangeProcessingContext implements SafeCloseable {
 
-        // Arrays to update
-        final long[] currFirstRowKeys;
-        final long[] prevFirstRowKeys;
-
         // Downstream update accumulators
         private final WritableRowSet downstreamAdded;
         private final WritableRowSet downstreamRemoved;
@@ -268,6 +264,10 @@ public class UnionSourceManager {
         private final RowSet.Iterator modifiedKeys;
         private final ObjectColumnIterator<Table> modifiedPreviousValues;
         private final Iterator<LinkedListenerRecorder> listeners;
+
+        // Arrays to update
+        private long[] currFirstRowKeys;
+        private long[] prevFirstRowKeys;
 
         // Most recently retrieved item from each iterator
         private int nextRemovedSlot;
@@ -297,9 +297,6 @@ public class UnionSourceManager {
         long firstTruncatedResultKey;
 
         private ChangeProcessingContext(@NotNull final TableUpdate constituentChanges) {
-            currFirstRowKeys = unionRedirection.getCurrFirstRowKeysForUpdate();
-            prevFirstRowKeys = unionRedirection.getPrevFirstRowKeysForUpdate();
-
             modifiedColumnSet.clear();
             downstreamAdded = RowSetFactory.empty();
             downstreamRemoved = RowSetFactory.empty();
@@ -366,6 +363,8 @@ public class UnionSourceManager {
             final int currConstituentCount = constituentRows.intSize();
             final int prevConstituentCount = constituentRows.intSizePrev();
             unionRedirection.updateCurrSize(currConstituentCount);
+            currFirstRowKeys = unionRedirection.getCurrFirstRowKeysForUpdate();
+            prevFirstRowKeys = unionRedirection.getPrevFirstRowKeysForUpdate();
 
             advanceRemoved();
             advanceCurrent();

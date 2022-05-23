@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
@@ -489,6 +490,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         try (final RowSequence.Iterator sliceIterator = rowSequence.getRowSequenceIterator()) {
             do {
                 final RowSequence sliceRowSequence = sliceIterator.getNextRowSequenceThrough(lastKeyForSlot);
+                Assert.eqFalse(sliceRowSequence.isEmpty(), "sliceRowSequence.isEmpty()");
                 fillContext.fillChunkAppend(slot, destination, sliceRowSequence);
                 if (!sliceIterator.hasMore()) {
                     return;
