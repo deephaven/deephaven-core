@@ -242,13 +242,16 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      * number of columns, each matched up with {@link ColumnDefinition#isCompatible}. As such, this method has an
      * equivalence relation, ie {@code A.checkMutualCompatibility(B) == B.checkMutualCompatibility(A)}.
      *
-     * @param other   The other definition
+     * @param other The other definition
      * @param lhsName Name to use when describing {@code this} if an exception is thrown
      * @param rhsName Name to use when describing {@code other} if an exception is thrown
      * @return {@code this} table definition, but in the column order of {@code other}
      * @throws IncompatibleTableDefinitionException if the definitions are not compatible
      */
-    public TableDefinition checkMutualCompatibility(@NotNull final TableDefinition other, String lhsName, String rhsName) {
+    public TableDefinition checkMutualCompatibility(
+            @NotNull final TableDefinition other,
+            @NotNull final String lhsName,
+            @NotNull final String rhsName) {
         final TableDefinition result = checkCompatibilityInternal(other, false);
         if (result == null || other.checkCompatibilityInternal(this, false) == null) {
             final List<String> differences = describeCompatibilityDifferences(other, lhsName, rhsName);
@@ -359,8 +362,10 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      * @param rhs what to call the other definition
      * @return a list of strings representing the difference between two table definitions
      */
-    public List<String> describeCompatibilityDifferences(@NotNull final TableDefinition other, @NotNull final String lhs,
-                                            @NotNull final String rhs) {
+    public List<String> describeCompatibilityDifferences(
+            @NotNull final TableDefinition other,
+            @NotNull final String lhs,
+            @NotNull final String rhs) {
         return describeDifferences(other, lhs, rhs, ColumnDefinition::isCompatible, false);
     }
 

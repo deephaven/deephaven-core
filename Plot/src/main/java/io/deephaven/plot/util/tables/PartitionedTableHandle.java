@@ -41,7 +41,10 @@ public abstract class PartitionedTableHandle implements Serializable, PlotExcept
 
     private final PlotInfo plotInfo;
 
-    protected PartitionedTableHandle(final Collection<String> columns, final String[] keyColumns, final PlotInfo plotInfo) {
+    protected PartitionedTableHandle(
+            final Collection<String> columns,
+            final String[] keyColumns,
+            final PlotInfo plotInfo) {
         this.id = nextId.incrementAndGet();
         this.requiredColumns = new LinkedHashSet<>(columns);
         Collections.addAll(this.requiredColumns, keyColumns);

@@ -1908,7 +1908,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         public QueryTable transformResult(@NotNull final QueryTable table) {
             table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
                     // TODO (https://github.com/deephaven/deephaven-core/issues/65):
-                    //      Make rollups work with partitioned tables instead of table maps. PartitionedTable here?
+                    // Make rollups work with partitioned tables instead of table maps. PartitionedTable here?
                     partitionOperator.getResultColumns().values().iterator().next());
             if (reaggregated || includeConstituents) {
                 table.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
@@ -1967,7 +1967,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         table.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Normal);
         table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
                 // TODO (https://github.com/deephaven/deephaven-core/issues/65):
-                //      Make rollups work with partitioned tables instead of table maps. Empty PartitionedTable here?
+                // Make rollups work with partitioned tables instead of table maps. Empty PartitionedTable here?
                 null);
         table.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
     }

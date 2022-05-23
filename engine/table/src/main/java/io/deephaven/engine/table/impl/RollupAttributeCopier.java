@@ -16,7 +16,7 @@ public class RollupAttributeCopier {
         st.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Constituent);
         st.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
                 // TODO (https://github.com/deephaven/deephaven-core/issues/65):
-                //      Make rollups work with partitioned tables instead of table maps. Empty PartitionedTable here?
+                // Make rollups work with partitioned tables instead of table maps. Empty PartitionedTable here?
                 null);
         st.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
     };

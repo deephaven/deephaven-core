@@ -38,8 +38,8 @@ public class CategoryErrorBarDataSeriesPartitionedTableTest extends BaseArrayTes
                 TableTools.doubleCol("yHigh", dataYHigh));
 
         final TableHandle h = PlotUtils.createCategoryTableHandle(t, "x", "y", "yLow", "yHigh");
-        final CategoryErrorBarDataSeriesPartitionedTable series =
-                new CategoryErrorBarDataSeriesPartitionedTable(chart.newAxes(), 1, "Test", h, "x", "y", "yLow", "yHigh");
+        final CategoryErrorBarDataSeriesPartitionedTable series = new CategoryErrorBarDataSeriesPartitionedTable(
+                chart.newAxes(), 1, "Test", h, "x", "y", "yLow", "yHigh");
         final CategoryErrorBarDataSeriesPartitionedTable copy = series.copy(chart.newAxes());
 
         series.size();

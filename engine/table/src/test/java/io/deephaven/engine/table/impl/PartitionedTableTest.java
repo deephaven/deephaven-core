@@ -79,38 +79,27 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     public void testMergePopulate() {
         // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-implement once populate keys is replaced
         /*
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
-                c("Sym", "aa", "bb", "aa", "bb"),
-                c("intCol", 10, 20, 40, 60),
-                c("doubleCol", 0.1, 0.2, 0.4, 0.6));
-
-        final Table withK = queryTable.update("K=k");
-
-        final PartitionedTable partitionedTable = withK.partitionBy("Sym");
-        partitionedTable.populateKeys("cc", "dd");
-
-        final Table merged = partitionedTable.merge();
-        final Table mergedByK = merged.sort("K");
-
-        if (printTableUpdates) {
-            TableTools.show(withK);
-            TableTools.show(mergedByK);
-        }
-
-        assertEquals("", TableTools.diff(mergedByK, withK, 10));
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(queryTable, i(3, 9), c("Sym", "cc", "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9));
-            queryTable.notifyListeners(i(3, 9), i(), i());
-        });
-
-        if (printTableUpdates) {
-            TableTools.show(withK);
-            TableTools.show(mergedByK);
-        }
-
-        assertEquals("", TableTools.diff(mergedByK, withK, 10));
-        */
+         * final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(), c("Sym", "aa", "bb",
+         * "aa", "bb"), c("intCol", 10, 20, 40, 60), c("doubleCol", 0.1, 0.2, 0.4, 0.6));
+         * 
+         * final Table withK = queryTable.update("K=k");
+         * 
+         * final PartitionedTable partitionedTable = withK.partitionBy("Sym"); partitionedTable.populateKeys("cc",
+         * "dd");
+         * 
+         * final Table merged = partitionedTable.merge(); final Table mergedByK = merged.sort("K");
+         * 
+         * if (printTableUpdates) { TableTools.show(withK); TableTools.show(mergedByK); }
+         * 
+         * assertEquals("", TableTools.diff(mergedByK, withK, 10));
+         * 
+         * UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> { addToTable(queryTable, i(3, 9), c("Sym", "cc",
+         * "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9)); queryTable.notifyListeners(i(3, 9), i(), i()); });
+         * 
+         * if (printTableUpdates) { TableTools.show(withK); TableTools.show(mergedByK); }
+         * 
+         * assertEquals("", TableTools.diff(mergedByK, withK, 10));
+         */
     }
 
     public void testMergeIncremental() {
@@ -212,7 +201,8 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                                 .proxy(false, false)
                                 .update("K2=Indices*2")
                                 .select("K", "K2", "Half=doubleCol/2", "Sq=doubleCol*doubleCol",
-                                        "Weight=intCol*doubleCol", "Sym").target().merge().sort("K", "Sym");
+                                        "Weight=intCol*doubleCol", "Sym")
+                                .target().merge().sort("K", "Sym");
                     }
                 },
                 new SizeNugget(table, leftProxy.target().merge()),
@@ -452,8 +442,9 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         pauseHelper.release();
         pauseHelper2.release();
 
-        final PartitionedTable result2 = sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").partitionBy("USym2")
-                .transform(t -> t.update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"));
+        final PartitionedTable result2 =
+                sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").partitionBy("USym2")
+                        .transform(t -> t.update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"));
 
         // pauseHelper.pause();
         pauseHelper2.pause();
@@ -611,13 +602,15 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         testMemoize(source, op, op);
     }
 
-    private void testMemoize(Table source, Function<Table, PartitionedTable> op, Function<Table, PartitionedTable> op2) {
+    private void testMemoize(Table source, Function<Table, PartitionedTable> op,
+            Function<Table, PartitionedTable> op2) {
         final PartitionedTable result = op.apply(source);
         final PartitionedTable result2 = op2.apply(source);
         org.junit.Assert.assertSame(result, result2);
     }
 
-    private void testNoMemoize(Table source, Function<Table, PartitionedTable> op, Function<Table, PartitionedTable> op2) {
+    private void testNoMemoize(Table source, Function<Table, PartitionedTable> op,
+            Function<Table, PartitionedTable> op2) {
         final PartitionedTable result = op.apply(source);
         final PartitionedTable result2 = op2.apply(source);
         org.junit.Assert.assertNotSame(result, result2);

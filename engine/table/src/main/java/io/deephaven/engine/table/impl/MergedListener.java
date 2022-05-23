@@ -77,12 +77,12 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     }
 
     private void notifyInternal(@Nullable final Throwable upstreamError,
-                                @Nullable final TableListener.Entry errorSourceEntry) {
+            @Nullable final TableListener.Entry errorSourceEntry) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
 
         synchronized (this) {
             if (notificationStep == currentStep) {
-                //noinspection ConstantConditions
+                // noinspection ConstantConditions
                 throw Assert.statementNeverExecuted(
                         "MergedListener was fired before both all listener records completed: listener="
                                 + System.identityHashCode(this) + ", currentStep=" + currentStep);
@@ -142,8 +142,8 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     protected boolean canExecute(final long step) {
         return Stream.concat(
-                        StreamSupport.stream(recorders.spliterator(), false),
-                        StreamSupport.stream(dependencies.spliterator(), false))
+                StreamSupport.stream(recorders.spliterator(), false),
+                StreamSupport.stream(dependencies.spliterator(), false))
                 .allMatch((final NotificationQueue.Dependency dep) -> dep.satisfied(step));
     }
 
@@ -183,7 +183,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             final long currentStep = LogicalClock.DEFAULT.currentStep();
             try {
                 if (queuedNotificationStep != currentStep) {
-                    //noinspection ConstantConditions
+                    // noinspection ConstantConditions
                     throw Assert.statementNeverExecuted("Notification step mismatch: listener="
                             + System.identityHashCode(MergedListener.this) + ": queuedNotificationStep="
                             + queuedNotificationStep + ", step=" + currentStep);
@@ -212,7 +212,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                 try {
                     synchronized (MergedListener.this) {
                         if (notificationStep == queuedNotificationStep) {
-                            //noinspection ConstantConditions
+                            // noinspection ConstantConditions
                             throw Assert.statementNeverExecuted("Multiple notifications in the same step: listener="
                                     + System.identityHashCode(MergedListener.this) + ", queuedNotificationStep="
                                     + queuedNotificationStep);

@@ -691,18 +691,18 @@ public class PlotUtils {
     }
 
     public static TableBackedPartitionedTableHandle createCategoryPartitionedTableHandle(Table t,
-                                                                                 final String catColumn,
-                                                                                 final String[] otherColumns,
-                                                                                 final String[] byColumns,
-                                                                                 final PlotInfo plotInfo) {
+            final String catColumn,
+            final String[] otherColumns,
+            final String[] byColumns,
+            final PlotInfo plotInfo) {
         return createCategoryPartitionedTableHandle(t, new String[] {catColumn}, otherColumns, byColumns, plotInfo);
     }
 
     public static TableBackedPartitionedTableHandle createCategoryPartitionedTableHandle(Table t,
-                                                                                 final String[] catColumns,
-                                                                                 final String[] otherColumns,
-                                                                                 final String[] byColumns,
-                                                                                 final PlotInfo plotInfo) {
+            final String[] catColumns,
+            final String[] otherColumns,
+            final String[] byColumns,
+            final PlotInfo plotInfo) {
         final String[] lastByColumns = new String[catColumns.length + byColumns.length];
         System.arraycopy(catColumns, 0, lastByColumns, 0, catColumns.length);
         System.arraycopy(byColumns, 0, lastByColumns, catColumns.length, byColumns.length);

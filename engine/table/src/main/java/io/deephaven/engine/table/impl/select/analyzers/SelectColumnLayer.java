@@ -215,8 +215,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private void doSerialApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
             @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion) {
         doEnsureCapacity();
-        SystemicObjectTracker.executeSystemically(isSystemic, () ->
-                doApplyUpdate(upstream, helper, liveResultOwner, 0));
+        SystemicObjectTracker.executeSystemically(isSystemic,
+                () -> doApplyUpdate(upstream, helper, liveResultOwner, 0));
 
         if (!isRedirected) {
             clearObjectsAtThisLevel(toClear);
@@ -229,8 +229,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             final boolean checkTableOperations, final AtomicInteger divisions, final long startOffset) {
         final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(checkTableOperations);
         try {
-            SystemicObjectTracker.executeSystemically(isSystemic, () ->
-                    doApplyUpdate(upstream, helper, liveResultOwner, startOffset));
+            SystemicObjectTracker.executeSystemically(isSystemic,
+                    () -> doApplyUpdate(upstream, helper, liveResultOwner, startOffset));
         } finally {
             UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
         }

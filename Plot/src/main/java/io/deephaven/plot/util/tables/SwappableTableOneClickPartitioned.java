@@ -11,24 +11,30 @@ import java.util.*;
 import java.util.function.Function;
 
 /**
- * Holds a handle on a one click table that may get swapped out for another table. A PartitionedTable is used to
- * compute the OneClick.
+ * Holds a handle on a one click table that may get swapped out for another table. A PartitionedTable is used to compute
+ * the OneClick.
  */
 public class SwappableTableOneClickPartitioned extends SwappableTableOneClickAbstract {
     private static final long serialVersionUID = 1L;
 
     private final Function<Table, Table> transform;
 
-    public SwappableTableOneClickPartitioned(final Comparable seriesName, final long updateInterval,
-                                             final PartitionedTableHandle partitionedTableHandle,
-                                             final Function<Table, Table> transform, final String... byColumns) {
+    public SwappableTableOneClickPartitioned(
+            final Comparable seriesName,
+            final long updateInterval,
+            final PartitionedTableHandle partitionedTableHandle,
+            final Function<Table, Table> transform,
+            final String... byColumns) {
         this(seriesName, updateInterval, partitionedTableHandle, transform, true, byColumns);
     }
 
-    public SwappableTableOneClickPartitioned(final Comparable seriesName, final long updateInterval,
-                                             final PartitionedTableHandle partitionedTableHandle,
-                                             final Function<Table, Table> transform,
-                                             final boolean requireAllFiltersToDisplay, final String... byColumns) {
+    public SwappableTableOneClickPartitioned(
+            final Comparable seriesName,
+            final long updateInterval,
+            final PartitionedTableHandle partitionedTableHandle,
+            final Function<Table, Table> transform,
+            final boolean requireAllFiltersToDisplay,
+            final String... byColumns) {
         super(seriesName, updateInterval, partitionedTableHandle, requireAllFiltersToDisplay, byColumns);
         ArgumentValidations.assertColumnsInTable(partitionedTableHandle.getTableDefinition(), null, byColumns);
         this.transform = transform;

@@ -557,7 +557,7 @@ public class GenerateFigureImmutable {
                                 "    private FigureImpl applyFunctionalProperties() {\n" +
                                 "        final Map<Table, java.util.Set<java.util.function.Function<Table, Table>>> tableFunctionMap = getFigure().getTableFunctionMap();\n"
                                 +
-                                "        final Map<io.deephaven.engine.table.PartitionedTable, java.util.Set<java.util.function.Function<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable>>> tableMapFunctionMap = getFigure().getPartitionedTableFunctionMap();\n"
+                                "        final Map<io.deephaven.engine.table.PartitionedTable, java.util.Set<java.util.function.Function<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable>>> partitionedTableFunctionMap = getFigure().getPartitionedTableFunctionMap();\n"
                                 +
                                 "        final java.util.List<io.deephaven.plot.util.functions.FigureImplFunction> figureFunctionList = getFigure().getFigureFunctionList();\n"
                                 +
@@ -622,9 +622,10 @@ public class GenerateFigureImmutable {
                                 "\n" +
                                 "        for(final io.deephaven.engine.table.PartitionedTable initPartitionedTable : allPartitionedTables) {\n"
                                 +
-                                "            if(tableMapFunctionMap.get(initPartitionedTable) != null) {\n" +
-                                "                finalPartitionedTableComputation.computeIfAbsent(initPartitionedTable, t -> {\n" +
-                                "                    final java.util.Set<java.util.function.Function<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable>> functions = tableMapFunctionMap.get(initPartitionedTable);\n"
+                                "            if(partitionedTableFunctionMap.get(initPartitionedTable) != null) {\n" +
+                                "                finalPartitionedTableComputation.computeIfAbsent(initPartitionedTable, t -> {\n"
+                                +
+                                "                    final java.util.Set<java.util.function.Function<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable>> functions = partitionedTableFunctionMap.get(initPartitionedTable);\n"
                                 +
                                 "                    io.deephaven.engine.table.PartitionedTable resultPartitionedTable = initPartitionedTable;\n"
                                 +
@@ -637,13 +638,15 @@ public class GenerateFigureImmutable {
                                 "                    return resultPartitionedTable;\n" +
                                 "                });\n" +
                                 "            } else {\n" +
-                                "                finalPartitionedTableComputation.put(initPartitionedTable, initPartitionedTable);\n" +
+                                "                finalPartitionedTableComputation.put(initPartitionedTable, initPartitionedTable);\n"
+                                +
                                 "            }\n" +
                                 "        }\n" +
                                 "\n" +
                                 "        for(final io.deephaven.plot.util.tables.PartitionedTableHandle h : getFigure().getPartitionedTableHandles()) {\n"
                                 +
-                                "            h.setPartitionedTable(finalPartitionedTableComputation.get(h.getPartitionedTable()));\n" +
+                                "            h.setPartitionedTable(finalPartitionedTableComputation.get(h.getPartitionedTable()));\n"
+                                +
                                 "        }\n" +
                                 "\n" +
                                 "        FigureImpl finalFigure = this;\n" +
@@ -653,7 +656,7 @@ public class GenerateFigureImmutable {
                                 "        }\n" +
                                 "\n" +
                                 "        tableFunctionMap.clear();\n" +
-                                "        tableMapFunctionMap.clear();\n" +
+                                "        partitionedTableFunctionMap.clear();\n" +
                                 "        figureFunctionList.clear();\n" +
                                 "\n" +
                                 "        return finalFigure;\n" +

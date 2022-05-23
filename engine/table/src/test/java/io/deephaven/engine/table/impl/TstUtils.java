@@ -2337,7 +2337,7 @@ public class TstUtils {
     }
 
     public static Table getPartition(@NotNull final PartitionedTable partitionedTable, @NotNull final Object... keys) {
-        final Table[] matching =  getPartitions(partitionedTable, keys);
+        final Table[] matching = getPartitions(partitionedTable, keys);
         Assert.lt(matching.length, "matching.length", 2);
         return matching.length == 0 ? null : matching[0];
     }
@@ -2345,7 +2345,7 @@ public class TstUtils {
     public static void expectLivenessException(@NotNull final Runnable action) {
         try {
             action.run();
-            //noinspection ThrowableNotThrown
+            // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted("Expected LivenessStateException");
         } catch (LivenessStateException expected) {
         }

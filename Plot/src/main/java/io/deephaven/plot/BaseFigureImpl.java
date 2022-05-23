@@ -39,8 +39,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
     private long updateInterval = Configuration.getInstance().getLongWithDefault("plot.update.interval", 1000L);
 
     private transient Map<Table, Set<Function<Table, Table>>> tableFunctionMap;
-    private transient Map<PartitionedTable, Set<Function<PartitionedTable, PartitionedTable>>>
-            partitionedTableFunctionMap;
+    private transient Map<PartitionedTable, Set<Function<PartitionedTable, PartitionedTable>>> partitionedTableFunctionMap;
     private transient List<FigureImplFunction> figureFunctionList;
 
     /**
@@ -255,8 +254,9 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
         return tableFunctionMap;
     }
 
-    public void registerPartitionedTableFunction(final PartitionedTableHandle partitionedTableHandle,
-                                                 final Function<Table, Table> tableTransform) {
+    public void registerPartitionedTableFunction(
+            final PartitionedTableHandle partitionedTableHandle,
+            final Function<Table, Table> tableTransform) {
         if (partitionedTableFunctionMap == null) {
             partitionedTableFunctionMap = new HashMap<>();
         }

@@ -45,7 +45,9 @@ public class Selectables {
      *        data when appropriate oneclicks are selected
      * @return {@link SelectableDataSetOneClick} with the specified table and columns
      */
-    public static SelectableDataSetOneClick oneClick(final Table t, final boolean requireAllFiltersToDisplay,
+    public static SelectableDataSetOneClick oneClick(
+            final Table t,
+            final boolean requireAllFiltersToDisplay,
             final String... byColumns) {
         if (byColumns == null || byColumns.length < 1) {
             throw new IllegalArgumentException("byColumns can not be empty");
@@ -59,13 +61,14 @@ public class Selectables {
     /**
      * Creates a {@link SelectableDataSetOneClick} with the specified columns.
      *
-     * @param pTable                     PartitionedTable
+     * @param pTable PartitionedTable
      * @param requireAllFiltersToDisplay false to display data when not all oneclicks are selected; true to only display
-     *                                   data when appropriate oneclicks are selected
+     *        data when appropriate oneclicks are selected
      * @return {@link SelectableDataSetOneClick} with the specified partitioned table and columns
      */
-    public static SelectableDataSetOneClick oneClick(final PartitionedTable pTable,
-                                                     final boolean requireAllFiltersToDisplay) {
+    public static SelectableDataSetOneClick oneClick(
+            final PartitionedTable pTable,
+            final boolean requireAllFiltersToDisplay) {
         if (pTable.keyColumnNames().isEmpty()) {
             throw new IllegalArgumentException("byColumns can not be empty");
         }

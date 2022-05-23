@@ -108,7 +108,8 @@ public class UnionSourceManager {
                 resultRows.insertWithShift(shiftAmount, constituent.getRowSet());
                 if (constituent.isRefreshing()) {
                     assert refreshing;
-                    final ConstituentListenerRecorder constituentListener = new ConstituentListenerRecorder(constituent);
+                    final ConstituentListenerRecorder constituentListener =
+                            new ConstituentListenerRecorder(constituent);
                     constituent.listenForUpdates(constituentListener);
                     listenerRecorders.offer(constituentListener);
                 }
@@ -593,10 +594,10 @@ public class UnionSourceManager {
     private Stream<Table> currConstituents() {
         final ObjectColumnIterator<Table> currConstituents = currConstituentIter(constituentRows);
         return StreamSupport.stream(Spliterators.spliterator(
-                                currConstituents,
-                                constituentRows.size(),
-                                Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED),
-                        false)
+                currConstituents,
+                constituentRows.size(),
+                Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED),
+                false)
                 .onClose(currConstituents::close);
     }
 

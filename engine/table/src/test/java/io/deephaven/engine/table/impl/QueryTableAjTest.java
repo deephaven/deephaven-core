@@ -1178,10 +1178,10 @@ public class QueryTableAjTest {
         final Table correlated = bucketResults.table()
                 .naturalJoin(leftBucket.table(), "Bucket", "Left=" + leftBucket.constituentColumnName())
                 .naturalJoin(rightBucket.table(), "Bucket", "Right=" + rightBucket.constituentColumnName());
-        try (final ObjectColumnIterator<Table> results
-                     = correlated.objectColumnIterator(bucketResults.constituentColumnName());
-             final ObjectColumnIterator<Table> lefts = correlated.objectColumnIterator("Left");
-             final ObjectColumnIterator<Table> rights = correlated.objectColumnIterator("Right")) {
+        try (final ObjectColumnIterator<Table> results =
+                correlated.objectColumnIterator(bucketResults.constituentColumnName());
+                final ObjectColumnIterator<Table> lefts = correlated.objectColumnIterator("Left");
+                final ObjectColumnIterator<Table> rights = correlated.objectColumnIterator("Right")) {
             while (results.hasNext()) {
                 checkAjResult(lefts.next(), rights.next(), results.next(), reverse, noexact);
             }

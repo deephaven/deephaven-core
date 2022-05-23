@@ -68,7 +68,7 @@ public class QueryFactory {
     // TODO (https://github.com/deephaven/deephaven-core/issues/64): Re-enable treeTable
     // TODO (https://github.com/deephaven/deephaven-core/issues/65): Re-enable rollup
     private static final String[] FINAL_OPS =
-            {"selectDistinct", "byOperation", "aggCombo",/* "treeTable", "rollup",*/ "applyToAllBy"};
+            {"selectDistinct", "byOperation", "aggCombo", /* "treeTable", "rollup", */ "applyToAllBy"};
     private static final HashMap<String, String[]> DEFAULT_SWITCH_CONTROL = new HashMap<String, String[]>() {
         {
             put("supportedOps", IMPLEMENTED_OPS);

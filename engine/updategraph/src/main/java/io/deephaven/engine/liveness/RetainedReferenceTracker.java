@@ -388,7 +388,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
             if (referentsToRemove.isEmpty()) {
                 return;
             }
-            for (int rLast = retained.size() - 1, ri = 0; ri <= rLast; ) {
+            for (int rLast = retained.size() - 1, ri = 0; ri <= rLast;) {
                 final LivenessReferent current = retained.get(ri);
                 final DropState foundState = referentsToRemove.get(current);
                 if (foundState != null) {

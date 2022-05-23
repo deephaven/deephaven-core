@@ -48,8 +48,8 @@ public interface LivenessNode extends LivenessReferent, LivenessManager {
     }
 
     /**
-     * For each referent in referents, if this node is still live and manages referent one or more times, drop one
-     * such reference.
+     * For each referent in referents, if this node is still live and manages referent one or more times, drop one such
+     * reference.
      *
      * @param referents The referents to drop
      * @return Whether this node was live and thus in fact tried to drop a reference

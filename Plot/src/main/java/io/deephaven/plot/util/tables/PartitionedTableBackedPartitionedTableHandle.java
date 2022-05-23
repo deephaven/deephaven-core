@@ -25,18 +25,20 @@ public class PartitionedTableBackedPartitionedTableHandle extends PartitionedTab
     private transient Table tableDefinitionTable;
     private Set<String> viewColumns;
 
-    public PartitionedTableBackedPartitionedTableHandle(final PartitionedTable partitionedTable,
-                                                        final TableDefinition tableDefinition, final String[] keyColumns,
-                                                        final PlotInfo plotInfo, Collection<String> columns) {
+    public PartitionedTableBackedPartitionedTableHandle(
+            final PartitionedTable partitionedTable,
+            final TableDefinition tableDefinition, final String[] keyColumns,
+            final PlotInfo plotInfo, Collection<String> columns) {
         this(partitionedTable, tableDefinition, keyColumns, plotInfo, columns, null);
     }
 
-    public PartitionedTableBackedPartitionedTableHandle(@NotNull final PartitionedTable partitionedTable,
-                                                        @NotNull final TableDefinition tableDefinition,
-                                                        @NotNull final String[] keyColumns,
-                                                        final PlotInfo plotInfo,
-                                                        @NotNull Collection<String> columns,
-                                                        @Nullable Collection<String> viewColumns) {
+    public PartitionedTableBackedPartitionedTableHandle(
+            @NotNull final PartitionedTable partitionedTable,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final String[] keyColumns,
+            final PlotInfo plotInfo,
+            @NotNull Collection<String> columns,
+            @Nullable Collection<String> viewColumns) {
         super(columns, keyColumns, plotInfo);
         ArgumentValidations.assertNotNull(partitionedTable, "partitionedTable", plotInfo);
         setPartitionedTable(partitionedTable);

@@ -231,8 +231,8 @@ public class TestChunkedRegionedOperations {
         try (final Stream<String> partitionNames = partitionedInputData.table()
                 .<String>objectColumnIterator("PC").stream()) {
             partitionedInputDestinations = partitionNames.map(pcv -> new File(dataDirectory,
-                            "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
-                                    + PARQUET_FILE_NAME))
+                    "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
+                            + PARQUET_FILE_NAME))
                     .toArray(File[]::new);
         }
         ParquetTools.writeParquetTables(
@@ -247,8 +247,8 @@ public class TestChunkedRegionedOperations {
         try (final Stream<String> partitionNames = partitionedInputMissingData.table()
                 .<String>objectColumnIterator("PC").stream()) {
             partitionedInputMissingDestinations = partitionNames.map(pcv -> new File(dataDirectory,
-                            "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
-                                    + PARQUET_FILE_NAME))
+                    "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
+                            + PARQUET_FILE_NAME))
                     .toArray(File[]::new);
         }
         ParquetTools.writeParquetTables(

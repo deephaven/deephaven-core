@@ -43,12 +43,13 @@ public class CategoryDataSeriesPartitionedTable extends AbstractTableBasedCatego
      * @throws RuntimeException {@code categories} column must be either time, char/{@link Character},
      *         {@link Comparable}, or numeric {@code values} column must be numeric
      */
-    public <T extends Comparable> CategoryDataSeriesPartitionedTable(final AxesImpl axes,
-                                                                     final int id,
-                                                                     final Comparable<?> name,
-                                                                     final TableHandle tableHandle,
-                                                                     final String categories,
-                                                                     final String values) {
+    public <T extends Comparable> CategoryDataSeriesPartitionedTable(
+            final AxesImpl axes,
+            final int id,
+            final Comparable<?> name,
+            final TableHandle tableHandle,
+            final String categories,
+            final String values) {
         super(axes, id, name);
         ArgumentValidations.assertNotNull(axes, "axes", getPlotInfo());
         ArgumentValidations.assertNotNull(tableHandle, "table", getPlotInfo());

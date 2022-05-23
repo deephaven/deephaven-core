@@ -364,8 +364,8 @@ public interface Aggregation extends Serializable {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Partition partition} aggregation with the supplied output column name
-     * and group-by columns included in the output sub-tables.
+     * Create a {@link io.deephaven.api.agg.Partition partition} aggregation with the supplied output column name and
+     * group-by columns included in the output sub-tables.
      *
      * @param resultColumn The {@link Partition#column() output column} name
      * @return The aggregation

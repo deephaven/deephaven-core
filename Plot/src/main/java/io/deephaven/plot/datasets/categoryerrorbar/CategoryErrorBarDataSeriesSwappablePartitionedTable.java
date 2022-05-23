@@ -47,13 +47,13 @@ public class CategoryErrorBarDataSeriesSwappablePartitionedTable extends Abstrac
      *         numeric
      */
     public <T extends Comparable> CategoryErrorBarDataSeriesSwappablePartitionedTable(final AxesImpl axes,
-                                                                                      final int id,
-                                                                                      final Comparable name,
-                                                                                      final SwappableTable swappableTable,
-                                                                                      final String categories,
-                                                                                      final String valueCol,
-                                                                                      final String errorBarLowCol,
-                                                                                      final String errorBarHighCol) {
+            final int id,
+            final Comparable name,
+            final SwappableTable swappableTable,
+            final String categories,
+            final String valueCol,
+            final String errorBarLowCol,
+            final String errorBarHighCol) {
         super(axes, id, name);
         ArgumentValidations.assertNotNull(axes, "axes", getPlotInfo());
         ArgumentValidations.assertNotNull(swappableTable, "swappableTable", getPlotInfo());
@@ -82,8 +82,9 @@ public class CategoryErrorBarDataSeriesSwappablePartitionedTable extends Abstrac
      * @param series series to copy.
      * @param axes new axes to use.
      */
-    private CategoryErrorBarDataSeriesSwappablePartitionedTable(final CategoryErrorBarDataSeriesSwappablePartitionedTable series,
-                                                                final AxesImpl axes) {
+    private CategoryErrorBarDataSeriesSwappablePartitionedTable(
+            final CategoryErrorBarDataSeriesSwappablePartitionedTable series,
+            final AxesImpl axes) {
         super(series, axes);
 
         this.swappableTable = series.swappableTable;

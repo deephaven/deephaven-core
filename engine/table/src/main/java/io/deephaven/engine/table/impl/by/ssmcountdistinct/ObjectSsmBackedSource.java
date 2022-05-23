@@ -5,6 +5,8 @@
  */
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
+import java.util.Objects;
+
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;

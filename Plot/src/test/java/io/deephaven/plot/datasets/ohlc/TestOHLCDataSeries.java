@@ -80,12 +80,10 @@ public class TestOHLCDataSeries extends BaseArrayTestCase {
         ohlc2.addTableHandle(new TableHandle(TableTools.emptyTable(2).updateView("A=i", "B=i"), "A", "B"));
         ohlc2.addTableHandle(new TableHandle(TableTools.emptyTable(2).updateView("C=i"), "C"));
         final SwappableTable swappableTable =
-                new SwappableTable(new TableBackedPartitionedTableHandle(TableTools.emptyTable(2).updateView("A=i", "B=i"),
-                        new ArrayList<>(), new String[0], null) {}) {
+                new SwappableTable(new TableBackedPartitionedTableHandle(
+                        TableTools.emptyTable(2).updateView("A=i", "B=i"), new ArrayList<>(), new String[0], null)) {
                     @Override
-                    public void addColumn(String column) {
-
-                    }
+                    public void addColumn(String column) {}
                 };
         ohlc2.addSwappableTable(swappableTable);
 

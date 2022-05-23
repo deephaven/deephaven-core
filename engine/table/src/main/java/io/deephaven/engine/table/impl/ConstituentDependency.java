@@ -91,8 +91,8 @@ public class ConstituentDependency implements Dependency {
         final int numColumns = dependencyColumns.length;
         final ChunkSource.GetContext[] contexts = new ChunkSource.GetContext[numColumns];
         try (final SharedContext sharedContext = numColumns > 1 ? SharedContext.makeSharedContext() : null;
-             final SafeCloseable ignored = new SafeCloseableArray<>(contexts);
-             final RowSequence.Iterator rows = resultRows.getRowSequenceIterator()) {
+                final SafeCloseable ignored = new SafeCloseableArray<>(contexts);
+                final RowSequence.Iterator rows = resultRows.getRowSequenceIterator()) {
             for (int ci = 0; ci < numColumns; ++ci) {
                 contexts[ci] = dependencyColumns[ci].makeGetContext(chunkSize, sharedContext);
             }

@@ -79,7 +79,9 @@ public class CategoryErrorBarDataSeriesPartitionedTable extends AbstractTableBas
      * @param series series to copy.
      * @param axes new axes to use.
      */
-    private CategoryErrorBarDataSeriesPartitionedTable(final CategoryErrorBarDataSeriesPartitionedTable series, final AxesImpl axes) {
+    private CategoryErrorBarDataSeriesPartitionedTable(
+            final CategoryErrorBarDataSeriesPartitionedTable series,
+            final AxesImpl axes) {
         super(series, axes);
 
         this.tableHandle = series.tableHandle;

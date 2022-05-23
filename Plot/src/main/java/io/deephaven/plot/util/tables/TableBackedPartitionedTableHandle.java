@@ -17,13 +17,18 @@ public class TableBackedPartitionedTableHandle extends PartitionedTableHandle {
     private transient Table table;
     private final TableDefinition tableDefinition;
 
-    public TableBackedPartitionedTableHandle(final TableHandle tableHandle, final String[] keyColumns,
-                                             final PlotInfo plotInfo) {
+    public TableBackedPartitionedTableHandle(
+            final TableHandle tableHandle,
+            final String[] keyColumns,
+            final PlotInfo plotInfo) {
         this(tableHandle.getTable(), tableHandle.getColumns(), keyColumns, plotInfo);
     }
 
-    public TableBackedPartitionedTableHandle(final Table table, final Collection<String> columns, final String[] keyColumns,
-                                             final PlotInfo plotInfo) {
+    public TableBackedPartitionedTableHandle(
+            final Table table,
+            final Collection<String> columns,
+            final String[] keyColumns,
+            final PlotInfo plotInfo) {
         super(columns, keyColumns, plotInfo);
 
         ArgumentValidations.assertNotNull(table, "table", plotInfo);

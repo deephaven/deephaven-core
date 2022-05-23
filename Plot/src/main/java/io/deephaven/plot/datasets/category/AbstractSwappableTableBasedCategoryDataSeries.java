@@ -135,7 +135,8 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
         return this;
     }
 
-    private <S, T> Function<Table, Table> constructPartitionedTableFromFunctionOnCategoryCol(final Function<S, T> function,
+    private <S, T> Function<Table, Table> constructPartitionedTableFromFunctionOnCategoryCol(
+            final Function<S, T> function,
             final Class resultClass, final String columnName) {
         return constructPartitionedTableFromFunction(function, resultClass, getCategoryCol(), columnName);
     }

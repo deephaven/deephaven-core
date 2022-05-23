@@ -68,7 +68,9 @@ public class CategoryDataSeriesSwappablePartitionedTable extends AbstractSwappab
      * @param series series to copy.
      * @param axes new axes to use.
      */
-    private CategoryDataSeriesSwappablePartitionedTable(final CategoryDataSeriesSwappablePartitionedTable series, final AxesImpl axes) {
+    private CategoryDataSeriesSwappablePartitionedTable(
+            final CategoryDataSeriesSwappablePartitionedTable series,
+            final AxesImpl axes) {
         super(series, axes);
 
         this.swappableTable = series.swappableTable;

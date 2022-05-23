@@ -115,15 +115,16 @@ public class FigureWidgetTranslator {
         // {
         // Set<String> relevantColumns =
         // entry.getValue().stream().map(PartitionedTableHandle::getColumns).flatMap(Set::stream).collect(Collectors.toSet());
-        // PartitionedTable partitionedTable = new PartitionedTableSupplier(entry.getKey(), Collections.singletonList(t ->
-        // t.view(relevantColumns)));
+        // PartitionedTable partitionedTable =
+        // new PartitionedTableSupplier(entry.getKey(), Collections.singletonList(t -> t.view(relevantColumns)));
         //
         // for (PartitionedTableHandle handle : entry.getValue()) {
         // partitionedTablePositionMap.put(handle, i);
         // }
         // i++;
         //
-        // SessionState.ExportObject<PartitionedTable> tableExportObject = sessionState.newServerSideExport(partitionedTable);
+        // SessionState.ExportObject<PartitionedTable> tableExportObject =
+        // sessionState.newServerSideExport(partitionedTable);
         // clientFigure.addPartitionedTable(...)
         // }
 
@@ -375,10 +376,10 @@ public class FigureWidgetTranslator {
 
                                 if (partitionedTableMultiSeries instanceof MultiXYSeries) {
                                     MultiXYSeries multiXYSeries = (MultiXYSeries) partitionedTableMultiSeries;
-                                    clientAxes.add(makePartitionedTableSourceDescriptor(plotHandleId, multiXYSeries.getXCol(),
-                                            SourceType.X, xAxis));
-                                    clientAxes.add(makePartitionedTableSourceDescriptor(plotHandleId, multiXYSeries.getYCol(),
-                                            SourceType.Y, yAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandleId, multiXYSeries.getXCol(), SourceType.X, xAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandleId, multiXYSeries.getYCol(), SourceType.Y, yAxis));
                                     clientSeries.setLineColor(stringMapWithDefault(mergeColors(
                                             multiXYSeries.lineColorSeriesNameTointMap(),
                                             multiXYSeries.lineColorSeriesNameToStringMap(),
@@ -410,12 +411,12 @@ public class FigureWidgetTranslator {
                                             multiXYSeries.pointShapeSeriesNameToShapeMap())));
                                 } else if (partitionedTableMultiSeries instanceof MultiCatSeries) {
                                     MultiCatSeries multiCatSeries = (MultiCatSeries) partitionedTableMultiSeries;
-                                    clientAxes.add(
-                                            makePartitionedTableSourceDescriptor(plotHandleId, multiCatSeries.getCategoryCol(),
-                                                    catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
-                                    clientAxes.add(
-                                            makePartitionedTableSourceDescriptor(plotHandleId, multiCatSeries.getNumericCol(),
-                                                    numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandleId, multiCatSeries.getCategoryCol(),
+                                            catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
+                                    clientAxes.add(makePartitionedTableSourceDescriptor(
+                                            plotHandleId, multiCatSeries.getNumericCol(),
+                                            numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
                                     clientSeries.setLineColor(stringMapWithDefault(mergeColors(
                                             multiCatSeries.lineColorSeriesNameTointMap(),
                                             multiCatSeries.lineColorSeriesNameToStringMap(),
@@ -739,8 +740,8 @@ public class FigureWidgetTranslator {
         oneClick.addAllColumns(swappableTable.getByColumns());
         oneClick.addAllColumnTypes(swappableTable.getByColumns()
                 .stream()
-                .map(colName -> swappableTable.getPartitionedTableHandle().getTableDefinition().getColumn(colName).getDataType()
-                        .getCanonicalName())
+                .map(colName -> swappableTable.getPartitionedTableHandle().getTableDefinition()
+                        .getColumn(colName).getDataType().getCanonicalName())
                 .collect(Collectors.toList()));
         oneClick.setRequireAllFiltersToDisplay(swappableTable.isRequireAllFiltersToDisplay());
         return oneClick.build();

@@ -41,14 +41,14 @@ import java.util.stream.Collectors;
  * later may appear in your query before another row that was logged earlier within a different partition.
  *
  * If you tag each row with a long column that can be used to correlate the two tables, the SyncTableFilter can release
- * only rows with matching values in all the input tables. For example, if you have input tables "a" "b" and "c",
- * with a key of "USym", if "a" has rows for SPY with IDs of 1, 2, and 3, but "b" and "c" only have rows for "2", the
- * filter will pass through the rows with ID 2. When both "b" and "c" have SPY rows for 3, then the rows for ID 2 are
- * removed and the rows for ID 3 are added to the result tables.
+ * only rows with matching values in all the input tables. For example, if you have input tables "a" "b" and "c", with a
+ * key of "USym", if "a" has rows for SPY with IDs of 1, 2, and 3, but "b" and "c" only have rows for "2", the filter
+ * will pass through the rows with ID 2. When both "b" and "c" have SPY rows for 3, then the rows for ID 2 are removed
+ * and the rows for ID 3 are added to the result tables.
  *
  * The SyncTableFilter is configured through the Builder inner class. Tables are added to the builder, providing a name
- * for each table. The return value is a map of the results with each filtered input table accessible according to
- * the name provided to the builder.
+ * for each table. The return value is a map of the results with each filtered input table accessible according to the
+ * name provided to the builder.
  *
  * For each key, only pass through the rows that have the minimum value of an ID across all tables. The IDs must be
  * monotonically increasing for each key. Your underlying tables must make use of transactions such that all rows for a
@@ -148,7 +148,7 @@ public class SyncTableFilter {
             objectToState.add(new HashMap<>());
             keySources[ii] = TupleSourceFactory.makeTupleSource(sources);
             idSources.add(std.table.getColumnSource(std.idColumn, long.class));
-            //noinspection resource
+            // noinspection resource
             resultRowSet[ii] = RowSetFactory.empty().toTracking();
             results[ii] = ((QueryTable) std.table).getSubTable(resultRowSet[ii], null, mergedListener);
 
@@ -495,10 +495,12 @@ public class SyncTableFilter {
 
         private void checkDefaultsInitialized() {
             if (defaultId == null) {
-                throw new IllegalArgumentException("Can not specify table without an ID column unless the default ID has been set on the builder!");
+                throw new IllegalArgumentException(
+                        "Can not specify table without an ID column unless the default ID has been set on the builder!");
             }
             if (defaultKeys == null) {
-                throw new IllegalArgumentException("Can not specify table without a key column unless the default keys have been set on the builder!");
+                throw new IllegalArgumentException(
+                        "Can not specify table without a key column unless the default keys have been set on the builder!");
             }
         }
 

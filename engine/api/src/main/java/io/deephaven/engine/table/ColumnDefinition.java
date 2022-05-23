@@ -446,16 +446,16 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
      * Enumerate the differences between this ColumnDefinition, and another one. Lines will be of the form "lhs
      * attribute 'value' does not match rhs attribute 'value'.
      *
-     * @param differences       an array to which differences can be added
-     * @param other             the ColumnDefinition under comparison
-     * @param lhs               what to call "this" definition
-     * @param rhs               what to call the other definition
-     * @param prefix             begin each difference with this string
+     * @param differences an array to which differences can be added
+     * @param other the ColumnDefinition under comparison
+     * @param lhs what to call "this" definition
+     * @param rhs what to call the other definition
+     * @param prefix begin each difference with this string
      * @param includeColumnType whether to include {@code columnType} comparisons
      */
     public void describeDifferences(@NotNull List<String> differences, @NotNull final ColumnDefinition<?> other,
-                                    @NotNull final String lhs, @NotNull final String rhs, @NotNull final String prefix,
-                                    final boolean includeColumnType) {
+            @NotNull final String lhs, @NotNull final String rhs, @NotNull final String prefix,
+            final boolean includeColumnType) {
         if (!name.equals(other.name)) {
             differences.add(prefix + lhs + " name '" + name + "' does not match " + rhs + " name '" + other.name + "'");
         }

@@ -43,8 +43,8 @@ public class SelectableDataSetOneClick implements SelectableDataSet<String, Set<
      * corresponding OneClick filter.
      *
      * @param partitionedTable partitioned table
-     * @throws io.deephaven.base.verify.RequirementFailure {@code partitionedTable}, {@code table} and {@code byColumns} must
-     *                                                     not be null
+     * @throws io.deephaven.base.verify.RequirementFailure {@code partitionedTable}, {@code table} and {@code byColumns}
+     *         must not be null
      */
     public SelectableDataSetOneClick(PartitionedTable partitionedTable) {
         this(partitionedTable, true);
@@ -58,13 +58,14 @@ public class SelectableDataSetOneClick implements SelectableDataSet<String, Set<
      * null until all {@code byColumns} have a corresponding OneClick filter. If {@code requireAllFiltersToDisplay} is
      * false, the {@link SwappableTable} will be calculated by filtering the {@code table} with the OneClicks used.
      *
-     * @param partitionedTable           PartitionedTable
+     * @param partitionedTable PartitionedTable
      * @param requireAllFiltersToDisplay false to display data when not all oneclicks are selected; true to only display
-     *                                   data when appropriate oneclicks are selected
-     * @throws io.deephaven.base.verify.RequirementFailure {@code partitionedTable}, {@code table} and {@code byColumns} must
-     *                                                     not be null
+     *        data when appropriate oneclicks are selected
+     * @throws io.deephaven.base.verify.RequirementFailure {@code partitionedTable}, {@code table} and {@code byColumns}
+     *         must not be null
      */
-    public SelectableDataSetOneClick(final PartitionedTable partitionedTable, final boolean requireAllFiltersToDisplay) {
+    public SelectableDataSetOneClick(final PartitionedTable partitionedTable,
+            final boolean requireAllFiltersToDisplay) {
         Require.neqNull(partitionedTable, "partitionedTable");
         this.partitionedTable = partitionedTable;
         this.requireAllFiltersToDisplay = requireAllFiltersToDisplay;
@@ -121,8 +122,8 @@ public class SelectableDataSetOneClick implements SelectableDataSet<String, Set<
         partitionedTableHandle.setKeyColumnsOrdered(byColumns);
         partitionedTableHandle.setOneClickMap(true);
 
-        return new SwappableTableOneClickPartitioned(seriesName, figure.getUpdateInterval(), partitionedTableHandle, tableTransform,
-                requireAllFiltersToDisplay, byColumns);
+        return new SwappableTableOneClickPartitioned(seriesName, figure.getUpdateInterval(), partitionedTableHandle,
+                tableTransform, requireAllFiltersToDisplay, byColumns);
     }
 
     private TableDefinition transformTableDefinition(TableDefinition toTransform,
