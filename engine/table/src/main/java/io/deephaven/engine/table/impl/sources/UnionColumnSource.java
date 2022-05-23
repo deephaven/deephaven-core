@@ -284,7 +284,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
         void prepare(final int sliceSlot, final DataVersion sliceDataVersion, final int sliceSize) {
             final boolean updateSource = sliceSlot != slot || dataVersion != sliceDataVersion;
-            final boolean updateContext = updateSource || context == null || sliceSize < capacity;
+            final boolean updateContext = updateSource || context == null || capacity < sliceSize;
             if (updateSource) {
                 slot = sliceSlot;
                 dataVersion = sliceDataVersion;
