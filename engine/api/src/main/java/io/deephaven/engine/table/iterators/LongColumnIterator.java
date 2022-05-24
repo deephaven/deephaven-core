@@ -20,8 +20,13 @@ import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.PrimitiveIterator;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * {@link ColumnIterator} implementation for {@link ChunkSource chunk sources} of primitive longs.
@@ -112,5 +117,19 @@ public final class LongColumnIterator
                 action.accept(TypeUtils.box(currentData.get(currentOffset++)));
             }
         });
+    }
+
+    /**
+     * Create a {@link LongStream} over the remaining elements of this LongColumnIterator. The result <em>must</em> be
+     * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * try-with-resources block is strongly encouraged.
+     *
+     * @return A {@link LongStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     */
+    public LongStream stream() {
+        return StreamSupport.longStream(Spliterators.spliterator(
+                this, size(), Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                false)
+                .onClose(this::close);
     }
 }

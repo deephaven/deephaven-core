@@ -66,6 +66,7 @@ import org.apache.kafka.common.utils.Utils;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -1211,22 +1212,48 @@ public class KafkaTools {
     }
 
     /**
-     * Map "Python-friendly" table type name to a {@link TableType}.
+     * Map "Python-friendly" table type name to a {@link TableType}. Supported values are:
+     * <ol>
+     * <li>{@code "stream"}</li>
+     * <li>{@code "append"}</li>
+     * <li>{@code "ring:<capacity>"} where capacity is a integer number specifying the maximum number of trailing rows
+     * to include in the result</li>
+     * </ol>
      *
      * @param typeName The friendly name
      * @return The mapped {@link TableType}
      */
     @ScriptApi
-    public static TableType friendlyNameToResultType(@NotNull final String typeName) {
+    public static TableType friendlyNameToTableType(@NotNull final String typeName) {
         final String[] split = typeName.split(":");
-        // @formatter:off
-        switch (split[0]) {
-            case "stream": return TableType.stream();
-            case "append": return TableType.append();
-            case "ring"  : return TableType.ring(Integer.parseInt(split[1])); // TODO-RWC: Document?
-            default      : return null;
+        switch (split[0].trim()) {
+            case "stream":
+                if (split.length != 1) {
+                    throw unexpectedType(typeName, null);
+                }
+                return TableType.stream();
+            case "append":
+                if (split.length != 1) {
+                    throw unexpectedType(typeName, null);
+                }
+                return TableType.append();
+            case "ring":
+                if (split.length != 2) {
+                    throw unexpectedType(typeName, null);
+                }
+                try {
+                    return TableType.ring(Integer.parseInt(split[1].trim()));
+                } catch (NumberFormatException e) {
+                    throw unexpectedType(typeName, e);
+                }
+            default:
+                throw unexpectedType(typeName, null);
         }
-        // @formatter:on
+    }
+
+    private static IllegalArgumentException unexpectedType(@NotNull final String typeName, @Nullable Exception cause) {
+        return new IllegalArgumentException("Unexpected type format \"" + typeName
+                + "\", expected \"stream\", \"append\", or \"ring:<capacity>\"", cause);
     }
 
     /**

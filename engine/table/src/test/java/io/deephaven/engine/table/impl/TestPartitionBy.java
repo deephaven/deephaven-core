@@ -7,30 +7,21 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableLong;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.api.agg.Aggregation.AggSortedFirst;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 
@@ -56,23 +47,18 @@ public class TestPartitionBy extends QueryTableTestBase {
         @Override
         public void validate(String msg) {
             // get all the keys from the original table
-            final HashSet<Object[]> keys = new HashSet<>();
+            final Map<ArrayTuple, Object[]> tupleToKey = new HashMap<>();
 
-            // TODO-RWC: Don't use smart keys
             for (final RowSet.Iterator it = originalTable.getRowSet().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
-                if (groupByColumnSources.length == 1) {
-                    keys.add(new Object[] {groupByColumnSources[0].get(next)});
-                } else {
-                    final Object[] key = new Object[groupByColumnSources.length];
-                    for (int ii = 0; ii < key.length; ++ii) {
-                        key[ii] = groupByColumnSources[ii].get(next);
-                    }
-                    keys.add(key);
+                final Object[] key = new Object[groupByColumnSources.length];
+                for (int ii = 0; ii < key.length; ++ii) {
+                    key[ii] = groupByColumnSources[ii].get(next);
                 }
+                tupleToKey.put(new ArrayTuple(key), key);
             }
 
-            for (Object[] key : keys) {
+            for (Object[] key : tupleToKey.values()) {
                 final Table constituent = getPartition(splitTable, key);
 
                 final Table whereTable;

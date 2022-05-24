@@ -92,12 +92,10 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * or whether the underlying partitioned table is refreshing. Note that the underlying partitioned table
      * <em>must</em> be refreshing if it contains any refreshing constituents.
      * <p>
-     * PartitionedTables that specify {@code constituentChangesPermitted() == true} must be guaranteed to never change
-     * their constituents. Formally, it is expected that
-     * {@code table().getColumnSource(constituentColumnName()).isImmutable() == true}, that {@code table()} will never
-     * report additions, removals, or shifts, and that any modifications reported will not change values in the
-     * constituent column.
-     *
+     * PartitionedTables that specify {@code constituentChangesPermitted() == false} must be guaranteed to never change
+     * their constituents. Formally, it is expected that {@code table()} will never report additions, removals, or
+     * shifts, and that any modifications reported will not change values in the constituent column
+     * (that is, {@code table().getColumnSource(constituentColumnName())}).
      *
      * @return Whether the constituents of the underlying partitioned table can change
      */

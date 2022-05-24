@@ -14,15 +14,9 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.time.TimeZone;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
@@ -140,15 +134,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             if ((target.table().isRefreshing() || otherTable.isRefreshing()) && joinMatches != null) {
                 UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
             }
-
-            final DependentValidation overlappingLhsJoinKeys = sanityCheckJoins && joinMatches != null
-                    ? overlappingLhsJoinKeysValidation(target, joinMatches)
-                    : null;
-            final Table validatedLhsTable = validated(target.table(), overlappingLhsJoinKeys);
-            final PartitionedTable lhsToUse = maybeRewrap(validatedLhsTable, target);
-
             return new PartitionedTableProxyImpl(
-                    lhsToUse.transform(ct -> transformer.apply(ct, otherTable)),
+                    target.transform(ct -> transformer.apply(ct, otherTable)),
                     requireMatchingKeys,
                     sanityCheckJoins);
         }
@@ -308,7 +295,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         if (!nonMatchingKeys.isEmpty()) {
             throw new IllegalArgumentException(
                     "Partitioned table arguments have non-matching keys; re-assess your input data or create a proxy with requireMatchingKeys=false:\n"
-                            + tableToString(nonMatchingKeys, 10));
+                            + TableTools.string(nonMatchingKeys, 10));
         }
     }
 
@@ -358,20 +345,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         if (!overlappingJoinKeys.isEmpty()) {
             throw new IllegalArgumentException("Partitioned table \"" + input.table().getDescription()
                     + "\" has join keys found in multiple constituents; re-assess your input data or create a proxy with sanityCheckJoinOperations=false:\n"
-                    + tableToString(overlappingJoinKeys, 10));
-        }
-    }
-
-    private static String tableToString(
-            @NotNull final Table table,
-            @SuppressWarnings("SameParameterValue") final int maximumRows) {
-        try (final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                final PrintStream printStream = new PrintStream(bytes, true, StandardCharsets.UTF_8)) {
-            TableTools.show(table, maximumRows, TimeZone.TZ_DEFAULT, printStream);
-            printStream.flush();
-            return bytes.toString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+                    + TableTools.string(overlappingJoinKeys, 10));
         }
     }
 

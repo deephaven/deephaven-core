@@ -77,23 +77,6 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     }
 
     @Override
-    public boolean equals(final Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-        final PartitionedTableImpl that = (PartitionedTableImpl) other;
-        return table.equals(that.table);
-    }
-
-    @Override
-    public int hashCode() {
-        return table.hashCode();
-    }
-
-    @Override
     public String toString() {
         return "PartitionedTable for " + table.getDescription();
     }
@@ -254,8 +237,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     other.table(),
                     joinPairs,
                     new MatchPair[] {new MatchPair(RHS_CONSTITUENT, other.constituentColumnName())});
-            resultTable = joined.update(new BiTableTransformationColumn(
-                    constituentColumnName, RHS_CONSTITUENT, transformer));
+            resultTable = joined
+                    .update(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT, transformer))
+                    .dropColumns(RHS_CONSTITUENT);
             enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition

@@ -15,8 +15,13 @@ import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.PrimitiveIterator;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * {@link ColumnIterator} implementation for {@link ChunkSource chunk sources} of primitive ints.
@@ -107,5 +112,19 @@ public final class IntegerColumnIterator
                 action.accept(TypeUtils.box(currentData.get(currentOffset++)));
             }
         });
+    }
+
+    /**
+     * Create a {@link IntStream} over the remaining elements of this IntegerColumnIterator. The result <em>must</em> be
+     * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * try-with-resources block is strongly encouraged.
+     *
+     * @return A {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     */
+    public IntStream stream() {
+        return StreamSupport.intStream(Spliterators.spliterator(
+                this, size(), Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                false)
+                .onClose(this::close);
     }
 }

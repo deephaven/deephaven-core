@@ -34,9 +34,11 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.io.util.NullOutputStream;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.type.ArrayTypeUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -284,16 +286,25 @@ public class TableTools {
     /**
      * Returns the first few rows of a table as a pipe-delimited string.
      *
-     * @param t a Deephaven table object
+     * @param table a Deephaven table object
      * @param size the number of rows to return
      * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param columns varargs of columns to include in the result
      * @return a String
      */
-    public static String string(Table t, int size, io.deephaven.time.TimeZone timeZone, String... columns) {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        TableTools.show(t, size, timeZone, new PrintStream(os), columns);
-        return os.toString();
+    public static String string(
+            @NotNull final Table table,
+            final int size,
+            final io.deephaven.time.TimeZone timeZone,
+            @NotNull final String... columns) {
+        try (final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+             final PrintStream printStream = new PrintStream(bytes, false, StandardCharsets.UTF_8)) {
+            TableTools.show(table, size, timeZone, printStream, columns);
+            printStream.flush();
+            return bytes.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /**
