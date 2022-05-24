@@ -49,7 +49,7 @@ public class FilterPrinterTest {
 
     private static void assertSameValue(double expected) {
         Literal literal = lit(expected);
-        String str = removeQuotes(FilterPrinter.printNoEscape(literal));
+        String str = FilterPrinter.printNoEscape(literal);
 
         // test magic values that make sense in java, but Double.parseDouble won't accept directly
         if (Double.isNaN(expected)) {
@@ -73,16 +73,9 @@ public class FilterPrinterTest {
     private static void assertSameValue(long expected) {
         assertTrue("Must be in the range that a double value can represent", Math.abs(expected) < (1L << 53));
         Literal literal = lit(expected);
-        String str = removeQuotes(FilterPrinter.printNoEscape(literal));
+        String str = FilterPrinter.printNoEscape(literal);
 
         assertEquals(Long.toString(expected), str);
-    }
-
-    private static String removeQuotes(String quotedStr) {
-        assertTrue(quotedStr.length() >= 2);
-        assertEquals(quotedStr.charAt(0), '"');
-        assertEquals(quotedStr.charAt(quotedStr.length() - 1), '"');
-        return quotedStr.substring(1, quotedStr.length() - 1);
     }
 
     private static void rotateAndAssert(long longBits) {

@@ -26,7 +26,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
         FilterPrinter visitor = new FilterPrinter(false);
         visitor.onLiteral(literal);
 
-        return "\"" + visitor.sb.toString() + "\"";
+        return visitor.sb.toString();
     }
 
     public FilterPrinter(boolean escapeStrings) {
@@ -34,10 +34,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     private String stringEscape(String str) {
-        if (escapeStrings) {
-            return "\"" + StringEscapeUtils.escapeJava(str) + "\"";
-        }
-        return str;
+        return "\"" + (escapeStrings ? StringEscapeUtils.escapeJava(str) : str) + "\"";
     }
 
     @Override
