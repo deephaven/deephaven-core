@@ -2965,7 +2965,7 @@ public class QueryTableAggregationTest {
             this.originalValue = e();
 
             ((QueryTable) originalValue)
-                    .listenForUpdates(new InstrumentedTableUpdateListener("Failure ShiftObliviousListener") {
+                    .listenForUpdates(new InstrumentedTableUpdateListener("Failure Listener") {
                         @Override
                         public void onUpdate(final TableUpdate update) {}
 

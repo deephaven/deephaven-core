@@ -5,7 +5,7 @@ import junit.framework.TestCase;
 
 public class FailureListener extends InstrumentedTableUpdateListener {
     public FailureListener() {
-        super("Fuzzer Failure ShiftObliviousListener");
+        super("Fuzzer Failure Listener");
     }
 
     @Override

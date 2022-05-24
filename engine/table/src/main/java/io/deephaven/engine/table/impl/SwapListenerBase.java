@@ -23,7 +23,7 @@ import org.jetbrains.annotations.NotNull;
  * clock changes, we were not gotNotification, and no notifications were enqueued; then we have a successful snapshot
  * and can return true. We then set the currentListener, so that all future calls are forwarded to the listener.
  *
- * Use either {@link ShiftObliviousSwapListener} or {@link SwapListener} depending on which ShiftObliviousListener
+ * Use either {@link ShiftObliviousSwapListener} or {@link SwapListener} depending on which TableListener
  * interface you are using.
  */
 public abstract class SwapListenerBase<T extends TableListener> extends LivenessArtifact implements TableListener {
@@ -106,7 +106,7 @@ public abstract class SwapListenerBase<T extends TableListener> extends Liveness
     protected synchronized boolean end(@SuppressWarnings("unused") final long clockCycle) {
         if (isInInitialNotificationWindow()) {
             if (eventualListener == null) {
-                throw new IllegalStateException("ShiftObliviousListener has not been set on end!");
+                throw new IllegalStateException("Listener has not been set on end!");
             }
             if (eventualResult == null) {
                 throw new IllegalStateException("Result has not been set on end!");
@@ -176,7 +176,7 @@ public abstract class SwapListenerBase<T extends TableListener> extends Liveness
     }
 
     /**
-     * Invoke {@link QueryTable#listenForUpdates(ShiftObliviousListener)} for the appropriate subclass of
+     * Invoke {@link QueryTable#listenForUpdates} for the appropriate subclass of
      * {@link SwapListenerBase}.
      */
     public abstract void subscribeForUpdates();
