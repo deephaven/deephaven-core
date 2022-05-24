@@ -14,9 +14,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
-import io.deephaven.engine.table.impl.asofjoin.StaticHashedAsOfJoinStateManager;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -29,8 +26,6 @@ import io.deephaven.engine.table.impl.util.*;
 
 // mixin rehash
 import java.util.Arrays;
-import java.util.function.LongConsumer;
-
 import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QByte\E
 import io.deephaven.engine.table.impl.sort.permute.BytePermuteKernel;
@@ -43,9 +38,9 @@ import org.jetbrains.annotations.NotNull;
 
 // region extra imports
 import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.engine.table.impl.asofjoin.StaticHashedAsOfJoinStateManager;
 // endregion extra imports
 
-import static io.deephaven.engine.table.impl.AsOfJoinHelper.USE_TYPED_STATE_MANAGER;
 import static io.deephaven.util.SafeCloseable.closeArray;
 
 // region class visibility
@@ -173,10 +168,10 @@ class StaticChunkedAsOfJoinStateManager
     // endregion extra variables
 
     StaticChunkedAsOfJoinStateManager(ColumnSource<?>[] tableKeySources
-            , int tableSize
+                                         , int tableSize
             // region constructor arguments
             , ColumnSource<?>[] tableKeySourcesForErrors
-            // endregion constructor arguments
+                                              // endregion constructor arguments
     ) {
         // region super
         super(tableKeySourcesForErrors);
@@ -553,6 +548,7 @@ class StaticChunkedAsOfJoinStateManager
                             , final MutableInt slotCount
                             // endregion extra build arguments
     ) {
+        long hashSlotOffset = 0;
         // region build start
         final IntegerArraySource buildCookieSource = new IntegerArraySource();
         final IntegerArraySource overflowBuildCookieSource = new IntegerArraySource();
@@ -888,6 +884,7 @@ class StaticChunkedAsOfJoinStateManager
 
                 // region copy hash slots
                 // endregion copy hash slots
+                hashSlotOffset += chunkOk.size();
             }
             // region post build loop
             // endregion post build loop
@@ -1528,6 +1525,7 @@ class StaticChunkedAsOfJoinStateManager
             Assert.eqNull(foundBuilder, "foundBuilder");
         }
         // endregion probe start
+        long hashSlotOffset = 0;
 
         try (final RowSequence.Iterator rsIt = probeIndex.getRowSequenceIterator();
              // region probe additional try resources
@@ -1659,6 +1657,7 @@ class StaticChunkedAsOfJoinStateManager
 
                 // region probe complete
                 // endregion probe complete
+                hashSlotOffset += chunkSize;
             }
 
             // region probe cleanup
@@ -1898,9 +1897,6 @@ class StaticChunkedAsOfJoinStateManager
 
     // region overflowLocationToHashLocation
     static boolean isOverflowLocation(long hashSlot) {
-        if (USE_TYPED_STATE_MANAGER) {
-            return false;
-        }
         return hashSlot < OVERFLOW_PIVOT_VALUE;
     }
 

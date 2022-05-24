@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.asofjoin;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -7,16 +8,21 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.HashTableAnnotations;
-import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
+import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Function;
 
@@ -27,20 +33,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     public static final int CHUNK_SIZE = 4096;
     private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
 
-    public static final byte ENTRY_RIGHT_MASK = 0x3;
-    public static final byte ENTRY_RIGHT_IS_EMPTY = 0x0;
-    public static final byte ENTRY_RIGHT_IS_BUILDER = 0x1;
-    public static final byte ENTRY_RIGHT_IS_SSA = 0x2;
-    public static final byte ENTRY_RIGHT_IS_INDEX = 0x3;
-
-    public static final byte ENTRY_LEFT_MASK = 0x30;
-    public static final byte ENTRY_LEFT_IS_EMPTY = 0x00;
-    public static final byte ENTRY_LEFT_IS_BUILDER = 0x10;
-    public static final byte ENTRY_LEFT_IS_SSA = 0x20;
-    public static final byte ENTRY_LEFT_IS_INDEX = 0x30;
-
-    private static final byte ENTRY_INITIAL_STATE_LEFT = ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_EMPTY;
-    private static final byte ENTRY_INITIAL_STATE_RIGHT = ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_BUILDER;
+    public static final byte ENTRY_EMPTY_STATE = QueryConstants.NULL_BYTE;
 
     // the number of slots in our table
     protected int tableSize;
@@ -60,7 +53,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
     // the keys for our hash entries
     protected final ChunkType[] chunkTypes;
-    protected final WritableColumnSource[] mainKeySources;
+    protected WritableColumnSource[] mainKeySources;
+    protected WritableColumnSource[] alternateKeySources;
 
     /**
      * We use our side source to originally build the RowSet using builders. When a state is activated (meaning we have
@@ -68,13 +62,46 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
      * state, then we turn it into a WritableRowSet. The entry state tells us what we have on each side, using a nibble
      * for the left and a nibble for the right.
      */
-    protected final ImmutableObjectArraySource<Object> leftRowSetSource;
-    // protected final ImmutableObjectArraySource<Object> alternateLeftRowSetSource;
-    protected final ImmutableObjectArraySource<Object> rightRowSetSource;
-    // protected final ImmutableObjectArraySource<Object> alternateRightRowSetSource;
+    protected ImmutableObjectArraySource<Object> leftRowSetSource;
+    protected ImmutableObjectArraySource<Object> alternateLeftRowSetSource;
+    protected ImmutableObjectArraySource<Object> rightRowSetSource;
+    protected ImmutableObjectArraySource<Object> alternateRightRowSetSource;
 
-    private final ByteArraySource stateSource = new ByteArraySource();
-    private final ByteArraySource alternateStateSource = new ByteArraySource();
+    protected ImmutableByteArraySource stateSource = new ImmutableByteArraySource();
+    protected ImmutableByteArraySource alternateStateSource = new ImmutableByteArraySource();
+
+    // the mask for insertion into the main table (this is used so that we can identify whether a slot belongs to the
+    // main or alternate table)
+    protected int mainInsertMask = 0;
+    protected int alternateInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
+
+    /**
+     * Each slot in the hash table has a 'cookie', which we reset by incrementing the cookie generation.  The cookie
+     * allows us to index into an array source that is passed in for each operation; serving as an intrusive set
+     * of modified states (we'll add relevant indices in the probe/build to a RowSet builder).
+     */
+    protected ImmutableLongArraySource cookieSource = new ImmutableLongArraySource();
+    protected ImmutableLongArraySource alternateCookieSource;
+    protected long cookieGeneration;
+    protected int nextCookie;
+
+    protected void resetCookie() {
+        cookieGeneration += (10 + nextCookie);
+        nextCookie = 0;
+    }
+
+    protected long getCookieMain(long slot) {
+        return getCookie(cookieSource, slot);
+    }
+
+    protected long getCookie(ImmutableLongArraySource cookieSource, long slot) {
+        long cookie = cookieSource.getUnsafe(slot);
+        if (cookie == QueryConstants.NULL_LONG || cookie < cookieGeneration) {
+            cookieSource.set(slot, cookie = cookieGeneration + nextCookie);
+            nextCookie++;
+        }
+        return cookie - cookieGeneration;
+    }
 
     protected RightIncrementalAsOfJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
             ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
@@ -90,9 +117,12 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
         // region constructor
         mainKeySources = new WritableColumnSource[tableKeySources.length];
+        alternateKeySources = new WritableColumnSource[tableKeySources.length];
         chunkTypes = new ChunkType[tableKeySources.length];
         leftRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
+        alternateLeftRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
         rightRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
+        alternateRightRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
         // endregion constructor
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
@@ -113,7 +143,17 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         // region ensureCapacity
         leftRowSetSource.ensureCapacity(tableSize);
         rightRowSetSource.ensureCapacity(tableSize);
+        stateSource.ensureCapacity(tableSize);
+        cookieSource.ensureCapacity(tableSize);
         // endregion ensureCapacity
+    }
+
+    public static class BuildContext extends TypedHasherUtil.BuildOrProbeContext {
+        private BuildContext(ColumnSource<?>[] buildSources, int chunkSize) {
+            super(buildSources, chunkSize);
+        }
+
+        final MutableInt rehashCredits = new MutableInt(0);
     }
 
     BuildContext makeBuildContext(ColumnSource<?>[] buildSources, long maxSize) {
@@ -124,31 +164,44 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-    static boolean addIndex(ImmutableObjectArraySource<RowSetBuilderSequential> source, long location, long keyToAdd) {
-        boolean addedSlot = false;
-        RowSetBuilderSequential builder = source.getUnsafe(location);
-        if (builder == null) {
-            source.set(location, builder = RowSetFactory.builderSequential());
-            addedSlot = true;
-        }
+    protected static void createBuilder(ImmutableObjectArraySource<RowSetBuilderSequential> source, long location, long keyToAdd) {
+        final RowSetBuilderSequential builder;
+        source.set(location, builder = RowSetFactory.builderSequential());
         builder.appendKey(keyToAdd);
-        return addedSlot;
     }
 
-    /**
-     * Returns true if this is the first left row key added to this slot.
-     */
-    protected boolean addLeftIndex(long tableLocation, long keyToAdd) {
-        return false;
-        // return addIndex(leftRowSetSource, tableLocation, keyToAdd);
+    protected static void addToBuilder(ImmutableObjectArraySource<RowSetBuilderSequential> source, long location, long keyToAdd) {
+        source.getUnsafe(location).appendKey(keyToAdd);
     }
 
-    protected void addRightIndex(long tableLocation, long keyToAdd) {
-        // noinspection unchecked
-        addIndex((ImmutableObjectArraySource) rightRowSetSource, tableLocation, keyToAdd);
+    protected void addLeftIndex(long tableLocation, long keyToAdd, byte currentState) {
+        final boolean isEmpty = (currentState & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY;
+        if (isEmpty) {
+            final byte newState = (byte)((currentState & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_BUILDER);
+            stateSource.set(tableLocation, newState);
+            //noinspection unchecked
+            createBuilder((ImmutableObjectArraySource)leftRowSetSource, tableLocation, keyToAdd);
+        } else {
+            //noinspection unchecked
+            addToBuilder((ImmutableObjectArraySource)leftRowSetSource, tableLocation, keyToAdd);
+        }
+    }
+
+    protected void addRightIndex(long tableLocation, long keyToAdd, byte currentState) {
+        final boolean isEmpty = (currentState & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY;
+        if (isEmpty) {
+            final byte newState = (byte)((currentState & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_BUILDER);
+            stateSource.set(tableLocation, newState);
+            //noinspection unchecked
+            createBuilder((ImmutableObjectArraySource)rightRowSetSource, tableLocation, keyToAdd);
+        } else {
+            //noinspection unchecked
+            addToBuilder((ImmutableObjectArraySource)rightRowSetSource, tableLocation, keyToAdd);
+        }
     }
 
     protected void buildTable(
+            final boolean initialBuild,
             final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
@@ -159,11 +212,9 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
-                final int nextChunkSize = chunkOk.intSize();
 
-                if (exceedsCapacity(nextChunkSize)) {
-                    throw new IllegalStateException(
-                            "Static asOfJoin does not permit rehashing, table must be allocated with sufficient size at the beginning of initialization.");
+                while (doRehash(initialBuild, bc.rehashCredits, chunkOk.intSize())) {
+                    migrateFront();
                 }
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
@@ -175,40 +226,100 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         }
     }
 
-    private class StaticBuildHandler implements TypedHasherUtil.BuildHandler {
-        final boolean isLeftSide;
+    private class LeftBuildHandler implements TypedHasherUtil.BuildHandler {
         final LongArraySource hashSlots;
-        final MutableInt hashOffset;
+        final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders;
 
-        private StaticBuildHandler(final boolean isLeftSide, final LongArraySource hashSlots,
-                final MutableInt hashOffset) {
+        private LeftBuildHandler(final LongArraySource hashSlots) {
             this.hashSlots = hashSlots;
-            this.isLeftSide = isLeftSide;
-            this.hashOffset = hashOffset;
+            this.sequentialBuilders = null;
+        }
+
+        private LeftBuildHandler(final LongArraySource hashSlots, final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+            this.hashSlots = hashSlots;
+            this.sequentialBuilders = sequentialBuilders;
         }
 
         @Override
         public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            hashSlots.ensureCapacity(hashOffset.intValue() + chunkOk.intSize());
-            if (isLeftSide) {
-                buildFromLeftSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset);
-            } else {
-                buildFromRightSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset);
+            hashSlots.ensureCapacity(nextCookie + chunkOk.intSize());
+            buildFromLeftSide(chunkOk, sourceKeyChunks, hashSlots, sequentialBuilders);
+        }
+    }
+
+    private class RightBuildHandler implements TypedHasherUtil.BuildHandler {
+        final LongArraySource hashSlots;
+        final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders;
+
+        private RightBuildHandler(final LongArraySource hashSlots) {
+            this.hashSlots = hashSlots;
+            this.sequentialBuilders = null;
+        }
+
+        private RightBuildHandler(final LongArraySource hashSlots, final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+            this.hashSlots = hashSlots;
+            this.sequentialBuilders = sequentialBuilders;
+        }
+
+        @Override
+        public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
+            hashSlots.ensureCapacity(nextCookie + chunkOk.intSize());
+            buildFromRightSide(chunkOk, sourceKeyChunks, hashSlots, sequentialBuilders);
+        }
+    }
+
+    private int fillSlotsFromHashTable(@NotNull final LongArraySource slotArray, long slotCount, byte match) {
+        slotArray.ensureCapacity(tableSize);
+        for (long slotIdx = 0; slotIdx < tableSize; slotIdx++) {
+            Byte rowState = stateSource.get(slotIdx);
+            if (rowState != null && rowState == match) {
+                slotArray.set(slotCount++, slotIdx);
             }
         }
+        return (int) slotCount;
     }
 
     @Override
     public int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources,
-            @NotNull final LongArraySource addedSlots) {
+                                 @NotNull final LongArraySource addedSlots) {
         if (leftRowSet.isEmpty()) {
             return 0;
         }
         try (final BuildContext bc = makeBuildContext(leftSources, leftRowSet.size())) {
-            final MutableInt slotCount = new MutableInt(0);
-            buildTable(bc, leftRowSet, leftSources, new StaticBuildHandler(true, addedSlots, slotCount));
-            return slotCount.intValue();
+            buildTable(true, bc, leftRowSet, leftSources, new LeftBuildHandler(addedSlots));
+            return fillSlotsFromHashTable(addedSlots, 0L, ENTRY_INITIAL_STATE_LEFT);
         }
+    }
+
+    @Override
+    public int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources,
+                                  @NotNull final LongArraySource addedSlots, int usedSlots) {
+        if (rightRowSet.isEmpty()) {
+            return usedSlots;
+        }
+        try (final BuildContext bc = makeBuildContext(rightSources, rightRowSet.size())) {
+            buildTable(true, bc, rightRowSet, rightSources, new RightBuildHandler(addedSlots));
+            return fillSlotsFromHashTable(addedSlots, usedSlots, ENTRY_INITIAL_STATE_RIGHT);
+        }
+    }
+
+    @Override
+    public int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+        return accumulateIndices(restampRemovals, sources, slots, sequentialBuilders, true);
+    }
+
+    @Override
+    public int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+        return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, false);
+    }
+
+    @Override
+    public int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+        return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, true);
+    }
+
+    public int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+        return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, false);
     }
 
     protected void probeTable(
@@ -237,127 +348,68 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         }
     }
 
-    private class StaticProbeHandler implements TypedHasherUtil.ProbeHandler {
-        final boolean isLeftSide;
+    private class RightProbeHandler implements TypedHasherUtil.ProbeHandler {
         final LongArraySource hashSlots;
-        final MutableInt hashOffset;
-        final RowSetBuilderRandom foundBuilder;
+        final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders;
 
-        private StaticProbeHandler(final boolean isLeftSide, final LongArraySource hashSlots,
-                final MutableInt hashOffset, RowSetBuilderRandom foundBuilder) {
-            this.isLeftSide = isLeftSide;
+        private RightProbeHandler() {
+            this.hashSlots = null;
+            this.sequentialBuilders = null;
+        }
+
+        private RightProbeHandler(final LongArraySource hashSlots, final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
             this.hashSlots = hashSlots;
-            this.hashOffset = hashOffset;
-            this.foundBuilder = foundBuilder;
+            this.sequentialBuilders = sequentialBuilders;
         }
 
         @Override
         public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            if (isLeftSide) {
-                decorateLeftSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset, foundBuilder);
-            } else {
-                decorateWithRightSide(chunkOk, sourceKeyChunks);
-            }
+            probeRightSide(chunkOk, sourceKeyChunks, hashSlots, sequentialBuilders);
         }
     }
 
-
-
-    // @Override
-    // public int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final
-    // LongArraySource addedSlots) {
-    // return 0;
-    // }
-    // @Override
-    // public int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, @NotNull final
-    // LongArraySource addedSlots, int usedSlots);
-
     @Override
     public void probeRightInitial(RowSequence rightIndex, ColumnSource<?>[] rightSources) {
-
+        if (rightIndex.isEmpty()) {
+            return;
+        }
+        try (final ProbeContext pc = makeProbeContext(rightSources, rightIndex.size())) {
+            probeTable(pc, rightIndex, false, rightSources, new RightProbeHandler());
+        }
     }
 
-    @Override
-    public int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots,
-            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-        return 0;
+    private int accumulateIndices(RowSet restampAdditions, ColumnSource<?>[] rightSources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, boolean usePrev) {
+        resetCookie();
+
+        if (restampAdditions.isNonempty()) {
+            try (final ProbeContext pc = makeProbeContext(rightSources, restampAdditions.size())) {
+                probeTable(pc, restampAdditions, usePrev, rightSources, new RightProbeHandler(slots, sequentialBuilders));
+            }
+        }
+
+        return nextCookie;
     }
 
     @Override
     public int buildAdditions(boolean isLeftSide, RowSet additions, ColumnSource<?>[] sources, LongArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-        return 0;
+
+        resetCookie();
+
+        if (additions.isEmpty()) {
+            return 0;
+        }
+
+        try (final BuildContext bc = makeBuildContext(sources, additions.size())) {
+            MutableInt slotCount = new MutableInt(0);
+            if (isLeftSide) {
+                buildTable(false, bc, additions, sources, new LeftBuildHandler(slots, sequentialBuilders));
+            } else {
+                buildTable(false, bc, additions, sources, new RightBuildHandler(slots, sequentialBuilders));
+            }
+            return nextCookie;
+        }
     }
-
-    @Override
-    public SegmentedSortedArray getRightSsa(long slot) {
-        return null;
-    }
-
-    @Override
-    public SegmentedSortedArray getRightSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
-        return null;
-    }
-
-    @Override
-    public SegmentedSortedArray getLeftSsa(long slot) {
-        return null;
-    }
-
-    @Override
-    public SegmentedSortedArray getLeftSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
-        return null;
-    }
-
-    @Override
-    public SegmentedSortedArray getLeftSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
-        return null;
-    }
-
-    @Override
-    public SegmentedSortedArray getRightSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
-        return null;
-    }
-
-    @Override
-    public void setRightIndex(long slot, RowSet rowSet) {
-
-    }
-
-    @Override
-    public void setLeftIndex(long slot, RowSet rowSet) {
-
-    }
-
-    @Override
-    public WritableRowSet getAndClearLeftIndex(long slot) {
-        return null;
-    }
-
-    @Override
-    public int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, LongArraySource slots,
-            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-        return 0;
-    }
-
-    @Override
-    public int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots,
-            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-        return 0;
-    }
-
-    @Override
-    public int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots,
-            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-        return 0;
-    }
-
-    @Override
-    public byte getState(long slot) {
-        return 0;
-    }
-
-
 
     @Override
     public int getTableSize() {
@@ -369,53 +421,316 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         return 0;
     }
 
-    /**
-     * When we get the left RowSet out of our source (after a build or probe); we do it by pulling a sequential builder
-     * and then calling build(). We also null out the value in the column source, thus freeing the builder's memory.
-     *
-     * This also results in clearing out the left hand side of the table between each probe phase for the left
-     * refreshing case.
-     *
-     * @param slot the slot in the table
-     * @return the RowSet for this slot
-     */
     @Override
-    public WritableRowSet getLeftIndex(long slot) {
-        RowSetBuilderSequential builder = (RowSetBuilderSequential) leftRowSetSource.getAndSetUnsafe(slot, null);
+    public WritableRowSet getAndClearLeftIndex(long slot) {
+        final RowSetBuilderSequential builder = (RowSetBuilderSequential) leftRowSetSource.getUnsafe(slot);
+        leftRowSetSource.set(slot, null);
         if (builder == null) {
             return null;
         }
         return builder.build();
+    }
+
+    @Override
+    public byte getState(long slot) {
+        return stateSource.getUnsafe(slot);
+    }
+
+    @Override
+    public SegmentedSortedArray getRightSsa(long slot) {
+        final byte entryType = stateSource.getUnsafe(slot);
+        if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_SSA) {
+            return (SegmentedSortedArray) rightRowSetSource.getUnsafe(slot);
+        }
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public SegmentedSortedArray getRightSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
+        final byte entryType = stateSource.getUnsafe(slot);
+        switch (entryType & ENTRY_RIGHT_MASK) {
+            case ENTRY_RIGHT_IS_EMPTY:
+                return makeSsaFromEmpty(slot, ssaFactory, rightRowSetSource, stateSource, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_SSA));
+            case ENTRY_RIGHT_IS_INDEX:
+                return makeSsaFromIndex(slot, ssaFactory, rightRowSetSource, stateSource, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_SSA));
+            case ENTRY_RIGHT_IS_BUILDER:
+                return makeSsaFromBuilder(slot, ssaFactory, rightRowSetSource, stateSource, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_SSA));
+            case ENTRY_RIGHT_IS_SSA:
+                return (SegmentedSortedArray) rightRowSetSource.getUnsafe(slot);
+        }
+        throw new IllegalStateException();
     }
 
     @Override
     public WritableRowSet getRightIndex(long slot) {
-        // if (rightBuildersConverted) {
-        // return (WritableRowSet) rightRowSetSource.getUnsafe(slot);
-        // }
-        RowSetBuilderSequential builder = (RowSetBuilderSequential) rightRowSetSource.getUnsafe(slot);
-        if (builder == null) {
-            return null;
+        final byte entryType = stateSource.getUnsafe(slot);
+        if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_INDEX) {
+            return (WritableRowSet) rightRowSetSource.getUnsafe(slot);
         }
-        return builder.build();
+        else if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_BUILDER) {
+            final WritableRowSet rowSet = ((RowSetBuilderSequential)rightRowSetSource.getUnsafe(slot)).build();
+            rightRowSetSource.set(slot, rowSet);
+            stateSource.set(slot, (byte)((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX));
+            return rowSet;
+        }
+        throw new IllegalStateException();
     }
 
-    abstract protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource hashSlots, MutableInt hashSlotOffset);
+    @Override
+    public WritableRowSet getLeftIndex(long slot) {
+        final byte entryType = stateSource.getUnsafe(slot);
+        if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_INDEX) {
+            return (WritableRowSet) leftRowSetSource.getUnsafe(slot);
+        }
+        else if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_BUILDER) {
+            final WritableRowSet rowSet = ((RowSetBuilderSequential)leftRowSetSource.getUnsafe(slot)).build();
+            leftRowSetSource.set(slot, rowSet);
+            stateSource.set(slot, (byte)((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_INDEX));
+            return rowSet;
+        }
+        throw new IllegalStateException();
+    }
 
-    abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource hashSlots, MutableInt hashSlotOffset);
+    @Override
+    public void setLeftIndex(long slot, RowSet rowSet) {
+        final byte entryType = stateSource.getUnsafe(slot);
+        if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY) {
+            stateSource.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_INDEX));
+            leftRowSetSource.set(slot, rowSet);
+            return;
+        }
+        throw new IllegalStateException();
+    }
 
-    abstract protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource hashSlots, MutableInt hashSlotOffset, RowSetBuilderRandom foundBuilder);
+    @Override
+    public void setRightIndex(long slot, RowSet rowSet) {
+        final byte entryType = stateSource.getUnsafe(slot);
+        if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY) {
+            stateSource.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX));
+            rightRowSetSource.set(slot, rowSet);
+            return;
+        }
+        throw new IllegalStateException();
+    }
 
-    abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
+    @Override
+    public SegmentedSortedArray getLeftSsa(long slot) {
+        final byte entryType = stateSource.getUnsafe(slot);
+        if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_SSA) {
+            return (SegmentedSortedArray) leftRowSetSource.getUnsafe(slot);
+        }
+        throw new IllegalStateException();
+    }
 
-    public boolean exceedsCapacity(int nextChunkSize) {
-        return (numEntries + nextChunkSize) >= (tableSize);
+    @Override
+    public SegmentedSortedArray getLeftSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
+        final byte entryType = stateSource.getUnsafe(slot);
+        switch (entryType & ENTRY_LEFT_MASK) {
+            case ENTRY_LEFT_IS_EMPTY:
+                return makeSsaFromEmpty(slot, ssaFactory, leftRowSetSource, stateSource, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_SSA));
+            case ENTRY_LEFT_IS_BUILDER:
+                return makeSsaFromBuilder(slot, ssaFactory, leftRowSetSource, stateSource, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_SSA));
+            case ENTRY_LEFT_IS_INDEX:
+                return makeSsaFromIndex(slot, ssaFactory, leftRowSetSource, stateSource, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_SSA));
+            case ENTRY_LEFT_IS_SSA:
+                return (SegmentedSortedArray) leftRowSetSource.getUnsafe(slot);
+        }
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public SegmentedSortedArray getLeftSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
+        final byte entryType = stateSource.getUnsafe(slot);
+        final byte stateValueForIndex = (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_INDEX);
+        return getSsaOrIndex(indexOutput, slot, leftEntryAsRightType(entryType), leftRowSetSource, stateSource, stateValueForIndex);
+    }
+
+    @Override
+    public SegmentedSortedArray getRightSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
+        final byte entryType = stateSource.getUnsafe(slot);
+        final byte stateValueForIndex = (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX);
+        return getSsaOrIndex(indexOutput, slot, getRightEntryType(entryType), rightRowSetSource, stateSource, stateValueForIndex);
+    }
+
+    @Nullable
+    private static SegmentedSortedArray getSsaOrIndex(MutableObject<WritableRowSet> indexOutput, long location, byte entryType, ImmutableObjectArraySource<Object> sideSource, ImmutableByteArraySource stateSource, byte stateValueForIndex) {
+        switch (entryType) {
+            case  ENTRY_RIGHT_IS_SSA:
+                return (SegmentedSortedArray) sideSource.getUnsafe(location);
+            case  ENTRY_RIGHT_IS_INDEX:
+                indexOutput.setValue((WritableRowSet) sideSource.getUnsafe(location));
+                return null;
+            case ENTRY_RIGHT_IS_EMPTY: {
+                final WritableRowSet emptyRowSet = RowSetFactory.empty();
+                sideSource.set(location, emptyRowSet);
+                stateSource.set(location, stateValueForIndex);
+                indexOutput.setValue(emptyRowSet);
+                return null;
+            }
+            case  ENTRY_RIGHT_IS_BUILDER: {
+                final WritableRowSet rowSet = ((RowSetBuilderSequential) sideSource.getUnsafe(location)).build();
+                sideSource.set(location, rowSet);
+                stateSource.set(location, stateValueForIndex);
+                indexOutput.setValue(rowSet);
+                return null;
+            }
+            default:
+                throw new IllegalStateException();
+        }
+    }
+
+    @Nullable
+    private SegmentedSortedArray makeSsaFromBuilder(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory, ImmutableObjectArraySource<Object> ssaSource, ImmutableByteArraySource stateSource, byte newState) {
+        final RowSetBuilderSequential builder = (RowSetBuilderSequential) ssaSource.getUnsafe(slot);
+        final RowSet rowSet;
+        if (builder == null) {
+            rowSet = RowSetFactory.empty();
+        } else {
+            rowSet = builder.build();
+        }
+        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, rowSet);
+    }
+
+    @Nullable
+    private SegmentedSortedArray makeSsaFromEmpty(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory, ImmutableObjectArraySource<Object> ssaSource, ImmutableByteArraySource stateSource, byte newState) {
+        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, RowSetFactory.empty());
+    }
+
+    @Nullable
+    private SegmentedSortedArray makeSsaFromIndex(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory, ImmutableObjectArraySource<Object> ssaSource, ImmutableByteArraySource stateSource, byte newState) {
+        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, (RowSet) ssaSource.getUnsafe(slot));
+    }
+
+    private SegmentedSortedArray makeSsaFromIndex(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory, ImmutableObjectArraySource<Object> ssaSource, ImmutableByteArraySource stateSource, byte newState, RowSet rowSet) {
+        stateSource.set(slot, newState);
+        final SegmentedSortedArray ssa = ssaFactory.apply(rowSet);
+        rowSet.close();
+        ssaSource.set(slot, ssa);
+        return ssa;
+    }
+
+    protected void newAlternate() {
+        alternateRightRowSetSource = rightRowSetSource;
+        rightRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
+        rightRowSetSource.ensureCapacity(tableSize);
+
+        alternateLeftRowSetSource = leftRowSetSource;
+        leftRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
+        leftRowSetSource.ensureCapacity(tableSize);
+
+        alternateStateSource = stateSource;
+        stateSource = new ImmutableByteArraySource();
+        stateSource.ensureCapacity(tableSize);
+
+        alternateCookieSource = cookieSource;
+        cookieSource = new ImmutableLongArraySource();
+        cookieSource.ensureCapacity(tableSize);
+
+        if (mainInsertMask == 0) {
+            mainInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
+            alternateInsertMask = 0;
+        } else {
+            mainInsertMask = 0;
+            alternateInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
+        }
+    }
+
+    protected void clearAlternate() {
+        for (int ii = 0; ii < mainKeySources.length; ++ii) {
+            alternateKeySources[ii] = null;
+        }
+    }
+
+    /**
+     * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
+     * @param rehashCredits the number of entries this operation has rehashed (input/output)
+     * @param nextChunkSize the size of the chunk we are processing
+     * @return true if a front migration is required
+     */
+    public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
+        if (rehashPointer > 0) {
+            final int requiredRehash = nextChunkSize - rehashCredits.intValue();
+            if (requiredRehash <= 0) {
+                return false;
+            }
+
+            // before building, we need to do at least as much rehash work as we would do build work
+            rehashCredits.add(rehashInternalPartial(requiredRehash));
+            if (rehashPointer == 0) {
+                clearAlternate();
+            }
+        }
+
+        int oldTableSize = tableSize;
+        while (rehashRequired(nextChunkSize)) {
+            tableSize *= 2;
+
+            if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
+                throw new UnsupportedOperationException("Hash table exceeds maximum size!");
+            }
+        }
+
+        if (oldTableSize == tableSize) {
+            return false;
+        }
+
+        // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
+        if (rehashCredits.intValue() > 0) {
+            rehashCredits.setValue(0);
+        }
+
+        if (fullRehash) {
+            // if we are doing a full rehash, we need to ditch the alternate
+            if (rehashPointer > 0) {
+                rehashInternalPartial((int) numEntries);
+                clearAlternate();
+            }
+
+            rehashInternalFull(oldTableSize);
+
+            return false;
+        }
+
+        Assert.eqZero(rehashPointer, "rehashPointer");
+
+        for (int ii = 0; ii < mainKeySources.length; ++ii) {
+            alternateKeySources[ii] = mainKeySources[ii];
+            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize, alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
+            mainKeySources[ii].ensureCapacity(tableSize);
+        }
+        alternateTableSize = oldTableSize;
+        if (numEntries > 0) {
+            rehashPointer = alternateTableSize;
+        }
+
+        newAlternate();
+
+        return true;
+    }
+
+
+    public boolean rehashRequired(int nextChunkSize) {
+        return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
     }
 
     protected int hashToTableLocation(int hash) {
         return hash & (tableSize - 1);
     }
+
+    protected int hashToTableLocationAlternate(int hash) {
+        return hash & (alternateTableSize - 1);
+    }
+
+
+    abstract protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks, final LongArraySource hashSlots, final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+
+    abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks, final LongArraySource hashSlots, final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+
+    abstract protected void probeRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks, final LongArraySource hashSlots, final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+
+    abstract protected int rehashInternalPartial(int entriesToRehash);
+
+    abstract protected void migrateFront();
+
+    abstract protected void rehashInternalFull(final int oldSize);
 }

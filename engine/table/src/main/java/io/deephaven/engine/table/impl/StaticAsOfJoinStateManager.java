@@ -16,19 +16,10 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 
 public abstract class StaticAsOfJoinStateManager {
-    public static final long NO_RIGHT_ENTRY_VALUE = RowSequence.NULL_ROW_KEY;
-
     protected final ColumnSource<?>[] keySourcesForErrorMessages;
 
     protected StaticAsOfJoinStateManager(ColumnSource<?>[] keySourcesForErrorMessages) {
         this.keySourcesForErrorMessages = keySourcesForErrorMessages;
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    public void checkExactMatch(boolean exactMatch, long leftKeyIndex, long rightSide) {
-        if (exactMatch && rightSide == NO_RIGHT_ENTRY_VALUE) {
-            throw new RuntimeException("Tables don't have one-to-one mapping - no mappings for key " + extractKeyStringFromSourceTable(leftKeyIndex) + ".");
-        }
     }
 
     // produce a pretty key for error messages

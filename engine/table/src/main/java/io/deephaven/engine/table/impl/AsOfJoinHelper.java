@@ -2,13 +2,18 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.rowset.*;
+import io.deephaven.chunk.sized.SizedBooleanChunk;
+import io.deephaven.chunk.sized.SizedChunk;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
+import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.StaticHashedAsOfJoinStateManager;
@@ -16,21 +21,17 @@ import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.join.BucketedChunkedAjMergedListener;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.join.ZeroKeyChunkedAjMergedListener;
-import io.deephaven.engine.table.impl.naturaljoin.StaticHashedNaturalJoinStateManager;
-import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.sized.SizedBooleanChunk;
-import io.deephaven.chunk.sized.SizedChunk;
-import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.table.impl.ssa.ChunkSsaStamp;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.ssa.SsaSsaStamp;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.engine.table.impl.util.SingleValueRowRedirection;
+import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -38,7 +39,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 public class AsOfJoinHelper {
@@ -569,8 +569,11 @@ public class AsOfJoinHelper {
 
         final int tableSize = control.initialBuildSize();
 
-        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager =
-                new RightIncrementalChunkedAsOfJoinStateManager(leftSources, tableSize, originalLeftSources);
+        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager = USE_TYPED_STATE_MANAGER
+                ? TypedHasherFactory.make(RightIncrementalAsOfJoinStateManagerTypedBase.class,
+                    leftSources, originalLeftSources, tableSize,
+                    control.getMaximumLoadFactor(), control.getTargetLoadFactor())
+                : new RightIncrementalChunkedAsOfJoinStateManager(leftSources, tableSize, originalLeftSources);
 
         final LongArraySource slots = new LongArraySource();
         final int slotCount = asOfJoinStateManager.buildFromLeftSide(leftTable.getRowSet(), leftSources, slots);
@@ -949,9 +952,13 @@ public class AsOfJoinHelper {
                 SegmentedSortedArray.makeFactory(stampChunkType, reverse, control.rightSsaNodeSize());
         final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
 
-        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager =
-                new RightIncrementalChunkedAsOfJoinStateManager(leftSources, control.initialBuildSize(),
-                        originalLeftSources);
+        final int tableSize = control.initialBuildSize();
+
+        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager = USE_TYPED_STATE_MANAGER
+                ? TypedHasherFactory.make(RightIncrementalAsOfJoinStateManagerTypedBase.class,
+                    leftSources, originalLeftSources, tableSize,
+                    control.getMaximumLoadFactor(), control.getTargetLoadFactor())
+                : new RightIncrementalChunkedAsOfJoinStateManager(leftSources, tableSize, originalLeftSources);
 
         final LongArraySource slots = new LongArraySource();
         int slotCount = asOfJoinStateManager.buildFromLeftSide(leftTable.getRowSet(), leftSources, slots);
@@ -1027,11 +1034,11 @@ public class AsOfJoinHelper {
                 // them into an ssa
                 final byte state = asOfJoinStateManager.getState(slot);
                 if ((state
-                        & RightIncrementalChunkedAsOfJoinStateManager.ENTRY_RIGHT_MASK) == RightIncrementalChunkedAsOfJoinStateManager.ENTRY_RIGHT_IS_EMPTY) {
+                        & RightIncrementalHashedAsOfJoinStateManager.ENTRY_RIGHT_MASK) == RightIncrementalHashedAsOfJoinStateManager.ENTRY_RIGHT_IS_EMPTY) {
                     continue;
                 }
                 if ((state
-                        & RightIncrementalChunkedAsOfJoinStateManager.ENTRY_LEFT_MASK) == RightIncrementalChunkedAsOfJoinStateManager.ENTRY_LEFT_IS_EMPTY) {
+                        & RightIncrementalHashedAsOfJoinStateManager.ENTRY_LEFT_MASK) == RightIncrementalHashedAsOfJoinStateManager.ENTRY_LEFT_IS_EMPTY) {
                     continue;
                 }
 

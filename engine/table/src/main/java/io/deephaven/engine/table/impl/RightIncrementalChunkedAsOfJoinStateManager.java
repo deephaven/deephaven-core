@@ -14,7 +14,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -42,6 +41,7 @@ import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
 
 import java.util.function.Function;
 // endregion extra imports
@@ -155,21 +155,6 @@ class RightIncrementalChunkedAsOfJoinStateManager
     // endmixin rehash
 
     // region extra variables
-    public static final byte ENTRY_RIGHT_MASK = 0x3;
-    public static final byte ENTRY_RIGHT_IS_EMPTY = 0x0;
-    public static final byte ENTRY_RIGHT_IS_BUILDER = 0x1;
-    public static final byte ENTRY_RIGHT_IS_SSA = 0x2;
-    public static final byte ENTRY_RIGHT_IS_INDEX = 0x3;
-
-    public static final byte ENTRY_LEFT_MASK = 0x30;
-    public static final byte ENTRY_LEFT_IS_EMPTY = 0x00;
-    public static final byte ENTRY_LEFT_IS_BUILDER = 0x10;
-    public static final byte ENTRY_LEFT_IS_SSA = 0x20;
-    public static final byte ENTRY_LEFT_IS_INDEX = 0x30;
-
-    private static final byte ENTRY_INITIAL_STATE_LEFT = ENTRY_LEFT_IS_BUILDER|ENTRY_RIGHT_IS_EMPTY;
-    private static final byte ENTRY_INITIAL_STATE_RIGHT = ENTRY_LEFT_IS_EMPTY|ENTRY_RIGHT_IS_BUILDER;
-
     /**
      * We use our side source to originally build the RowSet using builders.  When a state is activated (meaning we
      * have a corresponding entry for it on the other side); we'll turn it into an SSA.  If we have updates for an
@@ -1511,15 +1496,6 @@ class RightIncrementalChunkedAsOfJoinStateManager
         }
     }
 
-    private void addToSequentialBuilder(long slot, @NotNull ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, long indexKey) {
-        RowSetBuilderSequential builder = sequentialBuilders.getUnsafe(slot);
-        if (builder == null) {
-            builder = RowSetFactory.builderSequential();
-            sequentialBuilders.set(slot, builder);
-        }
-        builder.appendKey(indexKey);
-    }
-
     // endregion probe wrappers
 
     // mixin decorationProbe
@@ -2021,6 +1997,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
+    @Override
     public void setLeftIndex(long slot, RowSet rowSet) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -2041,6 +2018,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
+    @Override
     public void setRightIndex(long slot, RowSet rowSet) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -2078,6 +2056,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
+    @Override
     public SegmentedSortedArray getLeftSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -2108,6 +2087,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
+    @Override
     public SegmentedSortedArray getLeftSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -2121,10 +2101,6 @@ class RightIncrementalChunkedAsOfJoinStateManager
         }
     }
 
-    private byte leftEntryAsRightType(byte entryType) {
-        return (byte)((entryType & ENTRY_LEFT_MASK) >> 4);
-    }
-
     public SegmentedSortedArray getRightSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -2136,10 +2112,6 @@ class RightIncrementalChunkedAsOfJoinStateManager
             final byte stateValueForIndex = (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX);
             return getSsaOrIndex(indexOutput, slot, getRightEntryType(entryType), rightSideSource, stateSource, stateValueForIndex);
         }
-    }
-
-    private byte getRightEntryType(byte entryType) {
-        return (byte)(entryType & ENTRY_RIGHT_MASK);
     }
 
     @Nullable
