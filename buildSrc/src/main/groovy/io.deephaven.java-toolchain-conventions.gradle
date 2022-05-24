@@ -143,24 +143,26 @@ def c2ExcludesJvmArgs = { String c2ExcludesFile ->
 
 // Utility to add jvm args to all executions, whether intellij or from a application script or gradle javaexec
 def devJvmArgs = [
-//  '-XX:Tier4CompileThreshold=1000', // this optional line makes it easier to trigger the c2 error on the above methods
+  '-XX:Tier4CompileThreshold=1000', // this optional line makes it easier to trigger the c2 error on the above methods
 //  '-XX:+PrintFlagsFinal',           // this optional line makes it easier to explore the final values for compiler args
 //  '-XX:+PrintCompilation',          // this optional line shows jit operations as they happen
 ]
 
 tasks.withType(JavaExec).configureEach {
-  def c2ExcludesFile = createCompilerDirectives.get().outputs.files
-  inputs.files c2ExcludesFile
+//  def c2ExcludesFile = createCompilerDirectives.get().outputs.files
+//  inputs.files c2ExcludesFile
   javaLauncher.set runtimeLauncher
-  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path) + devJvmArgs
+//  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path) + devJvmArgs
+  jvmArgs += devJvmArgs
 }
 
 tasks.withType(Test).configureEach {
-  def c2ExcludesFile = createCompilerDirectives.get().outputs.files
-  inputs.files c2ExcludesFile
+//  def c2ExcludesFile = createCompilerDirectives.get().outputs.files
+//  inputs.files c2ExcludesFile
 
   javaLauncher.set testRuntimeLauncher
-  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path) + devJvmArgs
+//  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path) + devJvmArgs
+  jvmArgs += devJvmArgs
 }
 
 tasks.withType(GroovyCompile).configureEach {

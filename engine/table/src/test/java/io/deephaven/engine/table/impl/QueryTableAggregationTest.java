@@ -2445,7 +2445,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testMedianByIncremental() {
-        final int[] sizes = {10, 50, 200};
+        final int[] sizes = {10, 50, 200, 1000, 2000, 10000};
         for (int size : sizes) {
             testMedianByIncremental(size);
         }
