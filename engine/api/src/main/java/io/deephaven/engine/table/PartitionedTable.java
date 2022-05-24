@@ -1,6 +1,8 @@
 package io.deephaven.engine.table;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.agg.Partition;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.liveness.LivenessNode;
@@ -166,6 +168,17 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @return The filtered PartitionedTable
      */
     PartitionedTable filter(Collection<? extends Filter> filters);
+
+    /**
+     * <p>
+     * Make a new PartitionedTable from the result of applying {@code sortColumns} to the underlying partitioned table.
+     * <p>
+     * {@code sortColumns} must not reference the constituent column.
+     * 
+     * @param sortColumns The columns to sort by. Must not reference the constituent column.
+     * @return The sorted PartitionedTable
+     */
+    PartitionedTable sort(Collection<SortColumn> sortColumns);
 
     /**
      * <p>

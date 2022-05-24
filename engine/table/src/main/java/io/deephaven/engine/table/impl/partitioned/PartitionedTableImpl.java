@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.partitioned;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Pair;
 import io.deephaven.chunk.ObjectChunk;
@@ -196,6 +197,25 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         }
         return new PartitionedTableImpl(
                 table.where(whereFilters),
+                keyColumnNames,
+                uniqueKeys,
+                constituentColumnName,
+                constituentDefinition,
+                constituentChangesPermitted || table.isRefreshing(),
+                false);
+    }
+
+    @Override
+    public PartitionedTable sort(@NotNull final Collection<SortColumn> sortColumns) {
+        final boolean invalidSortColumn = sortColumns.stream()
+                .map((final SortColumn sortColumn) -> sortColumn.column().name())
+                .anyMatch((final String columnName) -> columnName.equals(constituentColumnName));
+        if (invalidSortColumn) {
+            throw new IllegalArgumentException("Unsupported sort on constituent column " + constituentColumnName
+                    + " found in sort columns: " + sortColumns);
+        }
+        return new PartitionedTableImpl(
+                table.sort(sortColumns),
                 keyColumnNames,
                 uniqueKeys,
                 constituentColumnName,
