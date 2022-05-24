@@ -956,7 +956,7 @@ def string(*args):
       :return: (java.lang.String) a String
       
     *Overload 4*  
-      :param t: (io.deephaven.engine.table.Table) - a Deephaven table object
+      :param table: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param size: (int) - the number of rows to return
       :param timeZone: (io.deephaven.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of columns to include in the result
