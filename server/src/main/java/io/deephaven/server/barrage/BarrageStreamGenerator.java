@@ -720,15 +720,18 @@ public class BarrageStreamGenerator implements
 
         int batchSize = DEFAULT_INITIAL_BATCH_SIZE;
 
+        // TODO: remove this when JS API can accept multiple batches
+        boolean sendAllowed = numRows <= batchSize;
+
         while (offset < numRows) {
             try {
-                final InputStream is = getInputStream(
-                        view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
+                final InputStream is =
+                        getInputStream(view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
                 int bytesToWrite = is.available();
 
                 // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
                 // row then we must send and let it potentially fail)
-                if (bytesToWrite < DEFAULT_MESSAGE_SIZE_LIMIT || batchSize == 1) {
+                if (sendAllowed && (bytesToWrite < DEFAULT_MESSAGE_SIZE_LIMIT || batchSize == 1)) {
                     // let's write the data
                     visitor.accept(is);
 
@@ -738,7 +741,9 @@ public class BarrageStreamGenerator implements
                 } else {
                     // can't write this, so close the input stream and retry
                     is.close();
+                    sendAllowed = true;
                 }
+
                 // recompute the batch limit for the next message
                 int bytesPerRow = bytesToWrite / actualBatchSize.intValue();
                 if (bytesPerRow > 0) {
