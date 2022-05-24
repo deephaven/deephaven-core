@@ -298,7 +298,7 @@ public class TableTools {
             final io.deephaven.time.TimeZone timeZone,
             @NotNull final String... columns) {
         try (final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-             final PrintStream printStream = new PrintStream(bytes, false, StandardCharsets.UTF_8)) {
+                final PrintStream printStream = new PrintStream(bytes, false, StandardCharsets.UTF_8)) {
             TableTools.show(table, size, timeZone, printStream, columns);
             printStream.flush();
             return bytes.toString(StandardCharsets.UTF_8);
