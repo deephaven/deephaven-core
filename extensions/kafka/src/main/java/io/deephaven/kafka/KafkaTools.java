@@ -1721,8 +1721,8 @@ public class KafkaTools {
         private StreamPartitionedTable(
                 @NotNull final TableDefinition constituentDefinition,
                 @NotNull final UpdateSourceCombiner refreshCombiner) {
-            super(makeResultTable(), Set.of(PARTITION_COLUMN_NAME), CONSTITUENT_COLUMN_NAME, constituentDefinition,
-                    true, false);
+            super(makeResultTable(), Set.of(PARTITION_COLUMN_NAME), true, CONSTITUENT_COLUMN_NAME,
+                    constituentDefinition, true, false);
             this.refreshCombiner = refreshCombiner;
             manage(refreshCombiner);
             refreshCombiner.addSource(this);

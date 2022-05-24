@@ -43,6 +43,7 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
     public PartitionedTable of(
             @NotNull final Table table,
             @NotNull final Set<String> keyColumnNames,
+            final boolean uniqueKeys,
             @NotNull final String constituentColumnName,
             @NotNull final TableDefinition constituentDefinition,
             final boolean constituentChangesPermitted) {
@@ -72,7 +73,13 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         }
 
         return new PartitionedTableImpl(
-                table, keyColumnNames, constituentColumnName, constituentDefinition, constituentChangesPermitted, true);
+                table,
+                keyColumnNames,
+                uniqueKeys,
+                constituentColumnName,
+                constituentDefinition,
+                constituentChangesPermitted,
+                true);
     }
 
     @Override
@@ -107,6 +114,7 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         return new PartitionedTableImpl(
                 table,
                 keyColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
+                false,
                 constituentColumnName,
                 firstConstituent.getDefinition(),
                 !table.isRefreshing(),
@@ -173,6 +181,7 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         return new PartitionedTableImpl(
                 table,
                 Collections.emptyList(),
+                false,
                 CONSTITUENT.name(),
                 constituentDefinitionToUse,
                 false,

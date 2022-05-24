@@ -69,6 +69,18 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     Set<String> keyColumnNames();
 
     /**
+     * <p>
+     * Are the keys (key column values for a row considered as a tuple) in the underlying {@link #table() partitioned
+     * table} unique?
+     * <p>
+     * If keys are unique, one can expect that {@code table().selectDistinct(keyColumnNames.toArray(String[]::new))} is
+     * equivalent to {@code table().view(keyColumnNames.toArray(String[]::new))}.
+     *
+     * @return Whether the keys in the underlying partitioned table are unique
+     */
+    boolean uniqueKeys();
+
+    /**
      * Get the name of the "constituent" column of {@link Table tables}.
      *
      * @return The constituent column name
@@ -94,8 +106,8 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * <p>
      * PartitionedTables that specify {@code constituentChangesPermitted() == false} must be guaranteed to never change
      * their constituents. Formally, it is expected that {@code table()} will never report additions, removals, or
-     * shifts, and that any modifications reported will not change values in the constituent column
-     * (that is, {@code table().getColumnSource(constituentColumnName())}).
+     * shifts, and that any modifications reported will not change values in the constituent column (that is,
+     * {@code table().getColumnSource(constituentColumnName())}).
      *
      * @return Whether the constituents of the underlying partitioned table can change
      */

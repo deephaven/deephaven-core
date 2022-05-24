@@ -64,6 +64,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 refreshSizes,
                 locationKeyMatcher).result(),
                 Set.of(KEY_COLUMN_NAME),
+                true,
                 CONSTITUENT_COLUMN_NAME,
                 constituentDefinition,
                 refreshLocations,

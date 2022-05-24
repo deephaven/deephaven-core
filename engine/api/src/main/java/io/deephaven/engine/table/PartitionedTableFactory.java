@@ -18,12 +18,13 @@ public class PartitionedTableFactory {
     public interface Creator {
 
         /**
-         * @see PartitionedTableFactory#of(Table, Set, String, TableDefinition, boolean) Factory method that delegates
-         *      to this method
+         * @see PartitionedTableFactory#of(Table, Set, boolean, String, TableDefinition, boolean) Factory method that
+         *      delegates to this method
          */
         PartitionedTable of(
                 @NotNull Table table,
                 @NotNull Set<String> keyColumnNames,
+                boolean uniqueKeys,
                 @NotNull String constituentColumnName,
                 @NotNull TableDefinition constituentDefinition,
                 boolean constituentChangesPermitted);
@@ -72,6 +73,8 @@ public class PartitionedTableFactory {
      *        {@link PartitionedTable#transform(UnaryOperator)} to validate the safety and correctness of join
      *        operations and in {@link PartitionedTable#partitionedTransform(PartitionedTable, BinaryOperator)} to
      *        correlate tables that should be transformed together. Passing an ordered set is highly recommended.
+     * @param uniqueKeys Whether the keys (key column values for a row considered as a tuple) in {@code table} are
+     *        guaranteed to be unique
      * @param constituentColumnName The "constituent" column name from {@code table}. The constituent column contains
      *        the underlying non-{@code null} {@link Table tables} that make up the result PartitionedTable.
      * @param constituentDefinition A {@link TableDefinition} expected to be
@@ -84,19 +87,27 @@ public class PartitionedTableFactory {
     public static PartitionedTable of(
             @NotNull final Table table,
             @NotNull final Set<String> keyColumnNames,
+            final boolean uniqueKeys,
             @NotNull final String constituentColumnName,
             @NotNull final TableDefinition constituentDefinition,
             final boolean constituentChangesPermitted) {
         return partitionedTableCreator().of(
-                table, keyColumnNames, constituentColumnName, constituentDefinition, constituentChangesPermitted);
+                table,
+                keyColumnNames,
+                uniqueKeys,
+                constituentColumnName,
+                constituentDefinition,
+                constituentChangesPermitted);
     }
 
     /**
-     * Construct a {@link PartitionedTable} as in {@link #of(Table, Set, String, TableDefinition, boolean)}, inferring
-     * most parameters as follows:
+     * Construct a {@link PartitionedTable} as in {@link #of(Table, Set, boolean, String, TableDefinition, boolean)},
+     * inferring most parameters as follows:
      * <dl>
      * <dt>{@code keyColumnNames}</dt>
      * <dd>The names of all columns with a non-{@link Table} data type</dd>
+     * <dt>{@code uniqueKeys}</dt>
+     * <dd>{@code false}</dd>
      * <dt>{@code constituentColumnName}</dt>
      * <dd>The name of the first column with a {@link Table} data type</dd>
      * <dt>{@code constituentDefinition}</dt>
@@ -116,10 +127,12 @@ public class PartitionedTableFactory {
     /**
      * Construct a {@link Table} with a single column containing the non-{@code null} values in {@code constituents},
      * and then use that to construct a {@link PartitionedTable} as in
-     * {@link #of(Table, Set, String, TableDefinition, boolean)}, inferring most parameters as follows:
+     * {@link #of(Table, Set, boolean, String, TableDefinition, boolean)}, inferring most parameters as follows:
      * <dl>
      * <dt>{@code keyColumnNames}</dt>
      * <dd>An empty list</dd>
+     * <dt>{@code uniqueKeys}</dt>
+     * <dd>{@code false}</dd>
      * <dt>{@code constituentColumnName}</dt>
      * <dd>The single column containing non-{@code null} values from {@code constituents}</dd>
      * <dt>{@code constituentChangesPermitted}</dt>
@@ -141,10 +154,12 @@ public class PartitionedTableFactory {
     /**
      * Construct a {@link Table} with a single column containing the non-{@code null} values in {@code constituents},
      * and then use that to construct a PartitionedTable as in
-     * {@link #of(Table, Set, String, TableDefinition, boolean)}, inferring most parameters as follows:
+     * {@link #of(Table, Set, boolean, String, TableDefinition, boolean)}, inferring most parameters as follows:
      * <dl>
      * <dt>{@code keyColumnNames}</dt>
      * <dd>An empty list</dd>
+     * <dt>{@code uniqueKeys}</dt>
+     * <dd>{@code false}</dd>
      * <dt>{@code constituentColumnName}</dt>
      * <dd>The single column containing non-{@code null} values from {@code constituents}</dd>
      * <dt>{@code constituentDefinition}</dt>

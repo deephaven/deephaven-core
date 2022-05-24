@@ -25,6 +25,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -466,8 +467,8 @@ public class QueryTable extends BaseTable {
             } else {
                 constituentDefinition = definition;
             }
-            return PartitionedTableFactory.of(
-                    partitioned, keyColumnNamesSet, CONSTITUENT.name(), constituentDefinition, isRefreshing());
+            return new PartitionedTableImpl(partitioned, keyColumnNamesSet, true, CONSTITUENT.name(),
+                    constituentDefinition, isRefreshing(), false);
         });
     }
 

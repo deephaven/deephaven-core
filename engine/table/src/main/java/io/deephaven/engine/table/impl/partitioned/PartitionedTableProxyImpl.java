@@ -352,8 +352,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     private static PartitionedTable maybeRewrap(@NotNull final Table table, @NotNull final PartitionedTable existing) {
         return table == existing.table()
                 ? existing
-                : new PartitionedTableImpl(table, existing.keyColumnNames(), existing.constituentColumnName(),
-                        existing.constituentDefinition(), existing.constituentChangesPermitted(), false);
+                : new PartitionedTableImpl(table, existing.keyColumnNames(), existing.uniqueKeys(),
+                        existing.constituentColumnName(), existing.constituentDefinition(),
+                        existing.constituentChangesPermitted(), false);
     }
 
     // region TableOperations Implementation

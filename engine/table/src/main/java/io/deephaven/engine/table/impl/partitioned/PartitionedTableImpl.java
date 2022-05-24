@@ -14,6 +14,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Inverted;
 import static io.deephaven.engine.table.iterators.ColumnIterator.*;
 
 /**
@@ -42,6 +44,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     private final Table table;
     private final Set<String> keyColumnNames;
+    private final boolean uniqueKeys;
     private final String constituentColumnName;
     private final TableDefinition constituentDefinition;
     private final boolean constituentChangesPermitted;
@@ -49,13 +52,14 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private volatile WeakReference<Table> memoizedMerge;
 
     /**
-     * @see io.deephaven.engine.table.PartitionedTableFactory#of(Table, Set, String, TableDefinition, boolean) Factory
-     *      method that delegates to this method
+     * @see PartitionedTableFactory#of(Table, Set, boolean, String, TableDefinition, boolean) Factory method that
+     *      delegates to this method
      * @apiNote Only engine-internal tools should call this constructor directly
      */
     public PartitionedTableImpl(
             @NotNull final Table table,
             @NotNull final Collection<String> keyColumnNames,
+            final boolean uniqueKeys,
             @NotNull final String constituentColumnName,
             @NotNull final TableDefinition constituentDefinition,
             final boolean constituentChangesPermitted,
@@ -71,6 +75,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             manage(this.table);
         }
         this.keyColumnNames = Collections.unmodifiableSet(new LinkedHashSet<>(keyColumnNames));
+        this.uniqueKeys = uniqueKeys;
         this.constituentColumnName = constituentColumnName;
         this.constituentDefinition = constituentDefinition;
         this.constituentChangesPermitted = constituentChangesPermitted;
@@ -89,6 +94,11 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     @Override
     public Set<String> keyColumnNames() {
         return keyColumnNames;
+    }
+
+    @Override
+    public boolean uniqueKeys() {
+        return uniqueKeys;
     }
 
     @Override
@@ -184,6 +194,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         return new PartitionedTableImpl(
                 table.where(whereFilters),
                 keyColumnNames,
+                uniqueKeys,
                 constituentColumnName,
                 constituentDefinition,
                 constituentChangesPermitted || table.isRefreshing(),
@@ -210,6 +221,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         return new PartitionedTableImpl(
                 resultTable,
                 keyColumnNames,
+                uniqueKeys,
                 constituentColumnName,
                 resultConstituentDefinition,
                 constituentChangesPermitted,
@@ -233,10 +245,12 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             // Perform the transformation
-            final Table joined = table.join(
-                    other.table(),
-                    joinPairs,
-                    new MatchPair[] {new MatchPair(RHS_CONSTITUENT, other.constituentColumnName())});
+            final MatchPair[] joinAdditions =
+                    new MatchPair[] {new MatchPair(RHS_CONSTITUENT, other.constituentColumnName())};
+            final Table joined = uniqueKeys
+                    ? table.naturalJoin(other.table(), joinPairs, joinAdditions)
+                            .where(new MatchFilter(Inverted, RHS_CONSTITUENT, (Object) null))
+                    : table.join(other.table(), joinPairs, joinAdditions);
             resultTable = joined
                     .update(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT, transformer))
                     .dropColumns(RHS_CONSTITUENT);
@@ -253,6 +267,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         return new PartitionedTableImpl(
                 resultTable,
                 keyColumnNames,
+                uniqueKeys,
                 constituentColumnName,
                 resultConstituentDefinition,
                 constituentChangesPermitted || other.constituentChangesPermitted(),
