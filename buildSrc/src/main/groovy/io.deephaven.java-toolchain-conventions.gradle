@@ -109,6 +109,8 @@ def tier4CompilationExcludes = [
   'io.deephaven.engine.table.impl.StaticChunkedCrossJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
   'io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
   'io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
+
+  'io.deephaven.engine.table.impl.by.AddOnlyFirstOrLastChunkedOperator':['addChunk', 'updateRedirections']
 ]
 def createCompilerDirectives = tasks.register('createCompilerDirectives') {
   def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')
