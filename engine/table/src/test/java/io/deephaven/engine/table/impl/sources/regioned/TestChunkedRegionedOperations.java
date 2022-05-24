@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
-import static io.deephaven.engine.table.impl.TstUtils.getPartitions;
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -236,7 +235,7 @@ public class TestChunkedRegionedOperations {
                     .toArray(File[]::new);
         }
         ParquetTools.writeParquetTables(
-                getPartitions(partitionedInputData),
+                partitionedInputData.constituents(),
                 partitionedDataDefinition.getWritable(),
                 parquetInstructions,
                 partitionedInputDestinations,
@@ -252,7 +251,7 @@ public class TestChunkedRegionedOperations {
                     .toArray(File[]::new);
         }
         ParquetTools.writeParquetTables(
-                getPartitions(partitionedInputMissingData),
+                partitionedInputMissingData.constituents(),
                 partitionedMissingDataDefinition.getWritable(),
                 parquetInstructions,
                 partitionedInputMissingDestinations,

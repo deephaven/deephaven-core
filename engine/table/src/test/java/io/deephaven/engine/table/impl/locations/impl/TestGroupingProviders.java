@@ -25,7 +25,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.deephaven.engine.table.impl.TstUtils.getPartitions;
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 
 /**
@@ -75,7 +74,7 @@ public class TestGroupingProviders {
     private void doTest(final boolean missingGroups) {
         final Table raw = TableTools.emptyTable(26 * 10 * 1000).update("Part=String.format(`%04d`, (long)(ii/1000))",
                 "Sym=(char)('A' + ii % 26)", "Other=ii");
-        final Table[] partitions = getPartitions(raw.partitionBy("Part").transform(rp -> rp.groupBy("Sym").ungroup()));
+        final Table[] partitions = raw.partitionBy("Part").transform(rp -> rp.groupBy("Sym").ungroup()).constituents();
 
         if (!missingGroups) {
             // Create a pair of partitions without the grouping column

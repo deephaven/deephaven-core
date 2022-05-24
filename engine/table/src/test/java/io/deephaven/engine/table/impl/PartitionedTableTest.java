@@ -283,7 +283,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         final PartitionedTable partitionedTable = queryTable.partitionBy("Sym");
 
-        for (Table table : getPartitions(partitionedTable)) {
+        for (Table table : partitionedTable.constituents()) {
             table.setAttribute("quux", "baz");
         }
 
@@ -302,7 +302,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         }
 
         int tableCounter = 1;
-        for (Table table : getPartitions(partitionedTable)) {
+        for (Table table : partitionedTable.constituents()) {
             table.setAttribute("differing", tableCounter++);
         }
 
@@ -364,7 +364,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 c("Sentinel", 10, 20, 40, 60));
 
         final PartitionedTable result = sourceTable.partitionBy("USym");
-        final Table aa = getPartition(result, "aa");
+        final Table aa = result.constituentFor("aa");
         final Table aa2 = aa.update("S2=Sentinel * 2");
         TableTools.show(aa2);
 
@@ -572,7 +572,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
         final PartitionedTable partitionedTable = table.partitionBy("Key");
-        final Table value = getPartition(partitionedTable, "A");
+        final Table value = partitionedTable.constituentFor("A");
         assertNotNull(value);
 
         final SingletonLivenessManager manager = new SingletonLivenessManager(partitionedTable);
@@ -588,7 +588,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         }
 
         final SafeCloseable scopeCloseable2 = LivenessScopeStack.open();
-        final Table valueAgain = getPartition(partitionedTable, "A");
+        final Table valueAgain = partitionedTable.constituentFor("A");
         assertSame(value, valueAgain);
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(scopeCloseable2::close);
 

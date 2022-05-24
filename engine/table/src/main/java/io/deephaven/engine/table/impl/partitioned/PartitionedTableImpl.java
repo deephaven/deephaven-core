@@ -9,11 +9,13 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
@@ -22,6 +24,7 @@ import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
@@ -78,7 +81,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         this.uniqueKeys = uniqueKeys;
         this.constituentColumnName = constituentColumnName;
         this.constituentDefinition = constituentDefinition;
-        this.constituentChangesPermitted = constituentChangesPermitted;
+        this.constituentChangesPermitted = constituentChangesPermitted && table.isRefreshing();
     }
 
     @Override
@@ -181,7 +184,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     }
 
     @Override
-    public PartitionedTable filter(@NotNull final Collection<? extends Filter> filters) {
+    public PartitionedTableImpl filter(@NotNull final Collection<? extends Filter> filters) {
         final WhereFilter[] whereFilters = WhereFilter.from(filters);
         final boolean invalidFilter = Arrays.stream(whereFilters).flatMap((final WhereFilter filter) -> {
             filter.init(table.getDefinition());
@@ -202,7 +205,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     }
 
     @Override
-    public PartitionedTable transform(@NotNull final UnaryOperator<Table> transformer) {
+    public PartitionedTableImpl transform(@NotNull final UnaryOperator<Table> transformer) {
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
@@ -229,7 +232,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     }
 
     @Override
-    public PartitionedTable partitionedTransform(
+    public PartitionedTableImpl partitionedTransform(
             @NotNull final PartitionedTable other,
             @NotNull final BinaryOperator<Table> transformer) {
         // Check safety before doing any extra work
@@ -275,6 +278,84 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     }
 
     // TODO (https://github.com/deephaven/deephaven-core/issues/2368): Consider adding transformWithKeys support
+
+    @Override
+    public Table constituentFor(@NotNull final Object... keyColumnValues) {
+        if (keyColumnValues.length != keyColumnNames.size()) {
+            throw new IllegalArgumentException(
+                    "Key count mismatch: expected one key column value for each key column name in " + keyColumnNames
+                            + ", instead received " + Arrays.toString(keyColumnValues));
+        }
+        final int numKeys = keyColumnValues.length;
+        final List<MatchFilter> filters = new ArrayList<>(numKeys);
+        final String[] keyColumnNames = keyColumnNames().toArray(String[]::new);
+        for (int kci = 0; kci < numKeys; ++kci) {
+            filters.add(new MatchFilter(keyColumnNames[kci], keyColumnValues[kci]));
+        }
+        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Table[] matchingConstituents = filter(filters).snapshotConstituents();
+            if (matchingConstituents.length > 1) {
+                throw new UnsupportedOperationException(
+                        "Result size mismatch: expected 0 or 1 results, instead found "
+                                + matchingConstituents.length);
+            }
+            if (matchingConstituents.length == 1) {
+                final Table constituent = matchingConstituents[0];
+                if (constituent.isRefreshing()) {
+                    enclosingLivenessManager.manage(constituent);
+                }
+                return constituent;
+            }
+            return null;
+        }
+    }
+
+    @Override
+    public Table[] constituents() {
+        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Table[] constituents = snapshotConstituents();
+            Arrays.stream(constituents).forEach((final Table constituent) -> {
+                if (constituent.isRefreshing()) {
+                    enclosingLivenessManager.manage(constituent);
+                }
+            });
+            return constituents;
+        }
+    }
+
+    private Table[] snapshotConstituents() {
+        if (constituentChangesPermitted) {
+            final MutableObject<Table[]> resultHolder = new MutableObject<>();
+            ConstructSnapshot.callDataSnapshotFunction(
+                    "PartitionedTable.constituents(): ",
+                    ConstructSnapshot.makeSnapshotControl(false, true, (QueryTable) table.coalesce()),
+                    (final boolean usePrev, final long beforeClockValue) -> {
+                        resultHolder.setValue(fetchConstituents(usePrev));
+                        return true;
+                    });
+            return resultHolder.getValue();
+        } else {
+            return fetchConstituents(false);
+        }
+    }
+
+    private Table[] fetchConstituents(final boolean usePrev) {
+        try (final RowSet prevRowSet = usePrev ? table.getRowSet().copyPrev() : null) {
+            final RowSequence rowsToFetch = usePrev
+                    ? prevRowSet
+                    : table.getRowSet();
+            final ColumnSource<Table> constituentColumnSource = table.getColumnSource(constituentColumnName);
+            final ChunkSource<Values> chunkSourceToFetch = usePrev
+                    ? constituentColumnSource.getPrevSource()
+                    : constituentColumnSource;
+            try (final Stream<Table> constituentStream =
+                    new ObjectColumnIterator<Table>(chunkSourceToFetch, rowsToFetch).stream()) {
+                return constituentStream.toArray(Table[]::new);
+            }
+        }
+    }
 
     /**
      * Validate that {@code lhs} and {@code rhs} have compatible key columns, allowing

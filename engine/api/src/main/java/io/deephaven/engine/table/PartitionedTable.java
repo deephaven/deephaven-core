@@ -62,7 +62,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
 
     /**
      * Get the names of all "key" columns that are part of {@code table().getDefinition()}. If there are no key columns,
-     * the result will be empty.
+     * the result will be empty. This set is explicitly ordered.
      *
      * @return The key column names
      */
@@ -206,4 +206,39 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     PartitionedTable partitionedTransform(
             @NotNull PartitionedTable other,
             @NotNull BinaryOperator<Table> transformer);
+
+    /**
+     * <p>
+     * Get a single {@link Table constituent} by its corresponding key column values.
+     * <p>
+     * The {@code keyColumnValues} can be thought of as a tuple constraining the values for the corresponding key
+     * columns for the result row. If there are no matching rows, the result is {@code null}. If there are multiple
+     * matching rows, an {@link UnsupportedClassVersionError} is thrown.
+     * <p>
+     * The result will be {@link io.deephaven.engine.liveness.LivenessManager#manage(LivenessReferent) managed} by the
+     * enclosing {@link io.deephaven.engine.liveness.LivenessScopeStack#peek() liveness scope}.
+     * <p>
+     * Note that if {@link #constituentChangesPermitted()}, this method may return different results if invoked multiple
+     * times.
+     *
+     * @param keyColumnValues Ordered, boxed values for the key columns in the same order as {@link #keyColumnNames()}
+     * @throws IllegalArgumentException If {@code keyColumnValues.length != keyColumnNames().size()}
+     * @throws UnsupportedOperationException If multiple matching rows for the {@code keyColumnValues} were found
+     * @return The {@link Table constituent} at the single row in {@link #table()} matching the {@code keyColumnValues},
+     *         or {@code null} if no matches were found
+     */
+    Table constituentFor(@NotNull Object... keyColumnValues);
+
+    /**
+     * Get all the current {@link Table constituents}.
+     * <p>
+     * The results will be {@link io.deephaven.engine.liveness.LivenessManager#manage(LivenessReferent) managed} by the
+     * enclosing {@link io.deephaven.engine.liveness.LivenessScopeStack#peek() liveness scope}.
+     * <p>
+     * Note that if {@link #constituentChangesPermitted()}, this method may return different results if invoked multiple
+     * times.
+     *
+     * @return An array of all current {@link Table constituents}
+     */
+    Table[] constituents();
 }

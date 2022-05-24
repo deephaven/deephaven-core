@@ -4,7 +4,6 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.*;
@@ -44,7 +43,6 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.util.QueryConstants.NULL_INT;
 
 @Category(OutOfBandTest.class)
 public class TestConcurrentInstantiation extends QueryTableTestBase {
@@ -481,8 +479,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
         UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
 
-        final Table tableA = getPartition(pt, "a");
-        final Table tableD = getPartition(pt, "d");
+        final Table tableA = pt.constituentFor("a");
+        final Table tableD = pt.constituentFor("d");
 
         TableTools.show(tableA);
         TableTools.show(tableD);
@@ -1366,9 +1364,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         result1 = future1.get();
 
         System.out.println("Result 1");
-        final Table result1a = getPartition(result1, "a");
-        final Table result1b = getPartition(result1, "b");
-        final Table result1c = getPartition(result1, "c");
+        final Table result1a = result1.constituentFor("a");
+        final Table result1b = result1.constituentFor("b");
+        final Table result1c = result1.constituentFor("c");
         TableTools.show(result1a);
         TableTools.show(result1b);
         TableTools.show(result1c);
@@ -1385,10 +1383,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final PartitionedTable result2 = pool.submit(callable).get();
 
         System.out.println("Result 2");
-        final Table result2a = getPartition(result2, "a");
-        final Table result2b = getPartition(result2, "b");
-        final Table result2c = getPartition(result2, "c");
-        final Table result2d_1 = getPartition(result2, "d");
+        final Table result2a = result2.constituentFor("a");
+        final Table result2b = result2.constituentFor("b");
+        final Table result2c = result2.constituentFor("c");
+        final Table result2d_1 = result2.constituentFor("d");
         assertNull(result2d_1);
 
         TableTools.show(result2a);
@@ -1408,10 +1406,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final PartitionedTable result3 = future3.get();
 
         System.out.println("Result 3");
-        final Table result3a = getPartition(result3, "a");
-        final Table result3b = getPartition(result3, "b");
-        final Table result3c = getPartition(result3, "c");
-        final Table result3d = getPartition(result3, "d");
+        final Table result3a = result3.constituentFor("a");
+        final Table result3b = result3.constituentFor("b");
+        final Table result3c = result3.constituentFor("c");
+        final Table result3d = result3.constituentFor("d");
 
         System.out.println("Expected 2");
         TableTools.show(expected2);

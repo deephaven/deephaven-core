@@ -3379,7 +3379,7 @@ public class QueryTableAggregationTest {
 
         final Table flat = table.flatten();
         final PartitionedTable partitionedTable = flat.partitionBy("Key");
-        final Table subTable = getPartition(partitionedTable, "Key");
+        final Table subTable = partitionedTable.constituentFor("Key");
         assertTableEquals(subTable, table);
 
         final FuzzerPrintListener printListener = new FuzzerPrintListener("original", table, 0);

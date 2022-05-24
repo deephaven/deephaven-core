@@ -59,7 +59,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             }
 
             for (Object[] key : tupleToKey.values()) {
-                final Table constituent = getPartition(splitTable, key);
+                final Table constituent = splitTable.constituentFor(key);
 
                 final Table whereTable;
                 if (groupByColumnSources.length == 1) {
@@ -123,8 +123,8 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             final PartitionedTable byKey = table.partitionBy("Key");
 
-            final Table tableA = getPartition(byKey, "A");
-            final Table tableB = getPartition(byKey, "B");
+            final Table tableA = byKey.constituentFor("A");
+            final Table tableB = byKey.constituentFor("B");
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
@@ -174,8 +174,8 @@ public class TestPartitionBy extends QueryTableTestBase {
             final LivenessScope subTableManager = new LivenessScope();
             try (final SafeCloseable ignored2 = LivenessScopeStack.open()) {
                 byKey = table.partitionBy("Key");
-                tableA = getPartition(byKey, "A");
-                tableB = getPartition(byKey, "B");
+                tableA = byKey.constituentFor("A");
+                tableB = byKey.constituentFor("B");
                 assertNotNull(tableA);
                 assertNotNull(tableB);
                 subTableManager.manage(tableA);
@@ -201,7 +201,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            expectLivenessException(() -> getPartition(byKey, "C"));
+            expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 // Modified row, wants to move from existent state to nonexistent state
@@ -211,7 +211,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            expectLivenessException(() -> getPartition(byKey, "C"));
+            expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 // Modified row, staying in nonexistent state
@@ -221,7 +221,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            expectLivenessException(() -> getPartition(byKey, "C"));
+            expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 // Modified row, wants to move from nonexistent state to existent state
@@ -231,7 +231,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            expectLivenessException(() -> getPartition(byKey, "C"));
+            expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 // Modified row, staying in existent state
@@ -241,7 +241,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            expectLivenessException(() -> getPartition(byKey, "C"));
+            expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 // Removed row from a nonexistent state
@@ -251,7 +251,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            expectLivenessException(() -> getPartition(byKey, "C"));
+            expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 // Removed row from an existent state
@@ -261,7 +261,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            expectLivenessException(() -> getPartition(byKey, "C"));
+            expectLivenessException(() -> byKey.constituentFor("C"));
         }
     }
 
@@ -273,12 +273,12 @@ public class TestPartitionBy extends QueryTableTestBase {
         try (final SafeCloseable ignored1 = LivenessScopeStack.open()) {
 
             final PartitionedTable byKey = table.partitionBy("Key");
-            final Table tableA = getPartition(byKey, "A");
-            final Table tableB = getPartition(byKey, "B");
+            final Table tableA = byKey.constituentFor("A");
+            final Table tableB = byKey.constituentFor("B");
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(getPartition(byKey, "C"));
+            assertNull(byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
@@ -287,14 +287,14 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertNull(getPartition(byKey, "C"));
+            assertNull(byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, makes new state
                 table.notifyListeners(i(9), i(), i());
             });
 
-            final Table tableC = getPartition(byKey, "C");
+            final Table tableC = byKey.constituentFor("C");
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
