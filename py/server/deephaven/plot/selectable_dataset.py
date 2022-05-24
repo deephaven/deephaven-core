@@ -54,14 +54,11 @@ def one_click(t: Table, by: List[str] = None, require_all_filters: bool = False)
         raise DHError(e, "failed in one_click.") from e
 
 
-def one_click_table_map(tm: jpy.JType, t: Table, by: List[str] = None,
-                        require_all_filters: bool = False) -> SelectableDataSet:
+def one_click_partitioned_table(pt: jpy.JType, require_all_filters: bool = False) -> SelectableDataSet:
     """ Creates a SelectableDataSet with the specified columns from the table map.
 
     Args:
-        tm (jpy.JType): the source table map
-        t (Table): the source table
-        by (List[str]): the selected columns
+        pt (jpy.JType): the source partitioned table
         require_all_filters (bool): false to display data when not all oneclicks are selected; true to only
             display data when appropriate oneclicks are selected
 
@@ -71,9 +68,7 @@ def one_click_table_map(tm: jpy.JType, t: Table, by: List[str] = None,
     Raises:
         DHError
     """
-    if not by:
-        by = []
     try:
-        return SelectableDataSet(j_sds=_JSelectables.oneClick(tm, t.j_table, require_all_filters, *by))
+        return SelectableDataSet(j_sds=_JSelectables.oneClick(pt, require_all_filters))
     except Exception as e:
         raise DHError(e, "failed in one_click.") from e
