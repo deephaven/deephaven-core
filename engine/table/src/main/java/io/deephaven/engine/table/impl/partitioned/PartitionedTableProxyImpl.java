@@ -154,7 +154,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             final DependentValidation overlappingLhsJoinKeys = sanityCheckJoins && joinMatches != null
                     ? overlappingLhsJoinKeysValidation(target, joinMatches)
                     : null;
-            final DependentValidation overlappingRhsJoinKeys = otherProxy.sanityChecksJoins() && joinMatches != null
+            final DependentValidation overlappingRhsJoinKeys = sanityCheckJoins && joinMatches != null
                     ? overlappingRhsJoinKeysValidation(otherTarget, joinMatches)
                     : null;
 
