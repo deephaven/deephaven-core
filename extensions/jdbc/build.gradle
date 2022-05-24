@@ -13,14 +13,8 @@ dependencies {
 
     implementation 'com.google.guava:guava:19.0'
 
-    Classpaths.inheritImmutables(project)
-
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
-
-    testImplementation TestTools.projectDependency(project, 'engine-table'),
-            TestTools.projectDependency(project, 'engine-base'),
-            'junit:junit:4.13.2'
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

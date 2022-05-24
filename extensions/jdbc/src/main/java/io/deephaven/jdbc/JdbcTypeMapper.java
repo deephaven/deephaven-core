@@ -1,6 +1,5 @@
 package io.deephaven.jdbc;
 
-import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
@@ -9,7 +8,6 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.ShortChunk;
-import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
@@ -42,19 +40,19 @@ public class JdbcTypeMapper {
      */
     public static class Context {
         private final Calendar sourceCalendar;
-        private final String arrayDelimiter;
+        private final ArrayParser arrayParser;
         private final boolean strict;
 
         private Context(TimeZone sourceTimeZone, String arrayDelimiter, boolean strict) {
             this.sourceCalendar = Calendar.getInstance(sourceTimeZone);
-            this.arrayDelimiter = arrayDelimiter;
+            this.arrayParser = ArrayParser.getInstance(arrayDelimiter);
             this.strict = strict;
         }
 
 
         private Context(Calendar calendar) {
             this.sourceCalendar = calendar;
-            this.arrayDelimiter = ",";
+            this.arrayParser = ArrayParser.getInstance(",");
             this.strict = true;
         }
 
@@ -76,7 +74,7 @@ public class JdbcTypeMapper {
          *
          */
         public static Context of(Calendar calendar) {
-            return new Context(calendar);
+            return new Context((Calendar) calendar.clone());
         }
 
         /**
@@ -89,12 +87,12 @@ public class JdbcTypeMapper {
         }
 
         /**
-         * Get the array delimiter to use when encoding/decoding arrays as String values.*
+         * Get the array delimiter to use when encoding/decoding arrays as String values.
          *
          * @return the delimiter
          */
-        public String getArrayDelimiter() {
-            return arrayDelimiter;
+        public ArrayParser getArrayParser() {
+            return arrayParser;
         }
 
         /**
@@ -108,34 +106,9 @@ public class JdbcTypeMapper {
     }
 
     /**
-     * Utility function to find a column by name in ResultSetMetaData.
-     *
-     * @param metaData ResultSetMetaData to query
-     * @param columnName column name
-     * @return column index for the given name (1-based)
-     */
-    private static int getMetaDataColumnIndex(final ResultSetMetaData metaData, final String columnName) {
-        int ix = -1;
-        try {
-            for (int i = 1; i <= metaData.getColumnCount(); i++) {
-                if (metaData.getColumnName(i).equals(columnName)) {
-                    ix = i;
-                    break;
-                }
-            }
-        } catch (SQLException ex) {
-            throw new RuntimeException("Error finding column in ResultSetMetaData", ex);
-        }
-        if (ix == -1) {
-            throw new IllegalArgumentException("No column found for \"" + columnName + "\" in ResultSetMetaData");
-        }
-        return ix;
-    }
-
-    /**
-     * An abstraction for mapping a JDBC type to an Deephaven column type. Each implementation of DataTypeMapping
+     * An abstraction for mapping a JDBC type to a Deephaven column type. Each implementation of DataTypeMapping
      * provides the logic for extracting a value of a specific SQL type from a ResultSet and converting to the Deephaven
-     * type as well as binding an Deephaven value to a JDBC Statement appropriately (bidirectional mapping).
+     * type as well as binding a Deephaven value to a JDBC Statement appropriately (bidirectional mapping).
      *
      * <p>
      * Note that more than one type mapping is possible for each SQL type - a DATE might be converted to either a
@@ -291,9 +264,7 @@ public class JdbcTypeMapper {
             if (strValue == null) {
                 objectChunk.set(destOffset, null);
             } else {
-                objectChunk.set(destOffset,
-                        ArrayParser.getInstance(context.getArrayDelimiter())
-                                .getDoubleArray(strValue, context.isStrict()));
+                objectChunk.set(destOffset, context.getArrayParser().getDoubleArray(strValue, context.isStrict()));
             }
         }
 
@@ -306,7 +277,7 @@ public class JdbcTypeMapper {
             if (value == null) {
                 stmt.setNull(parameterIndex, sqlType);
             } else {
-                stmt.setString(parameterIndex, ArrayParser.getInstance(context.getArrayDelimiter()).encodeArray(value));
+                stmt.setString(parameterIndex, context.getArrayParser().encodeArray(value));
             }
         }
     }
@@ -326,9 +297,7 @@ public class JdbcTypeMapper {
             if (strValue == null) {
                 objectChunk.set(destOffset, null);
             } else {
-                objectChunk.set(destOffset,
-                        ArrayParser.getInstance(context.getArrayDelimiter())
-                                .getLongArray(strValue, context.isStrict()));
+                objectChunk.set(destOffset, context.getArrayParser().getLongArray(strValue, context.isStrict()));
             }
         }
 
@@ -341,7 +310,7 @@ public class JdbcTypeMapper {
             if (value == null) {
                 stmt.setNull(parameterIndex, sqlType);
             } else {
-                stmt.setString(parameterIndex, ArrayParser.getInstance(context.getArrayDelimiter()).encodeArray(value));
+                stmt.setString(parameterIndex, context.getArrayParser().encodeArray(value));
             }
         }
     }
@@ -438,14 +407,14 @@ public class JdbcTypeMapper {
             if (value == null) {
                 stmt.setNull(parameterIndex, sqlType);
             } else {
-                stmt.setDouble(parameterIndex, value.floatValue());
+                stmt.setFloat(parameterIndex, value.floatValue());
             }
         }
     }
 
     public static class IntDataTypeMapping extends DataTypeMapping<Integer> {
         IntDataTypeMapping() {
-            super(Types.INTEGER, Integer.class);
+            super(Types.INTEGER, int.class);
         }
 
         @Override
@@ -473,7 +442,7 @@ public class JdbcTypeMapper {
 
     public static class CharDataTypeMapping extends DataTypeMapping<Character> {
         CharDataTypeMapping() {
-            super(Types.CHAR, Character.class);
+            super(Types.CHAR, char.class);
         }
 
         @Override
@@ -483,7 +452,7 @@ public class JdbcTypeMapper {
             final WritableCharChunk<Values> charChunk = destChunk.asWritableCharChunk();
             final String str = resultSet.getString(columnIndex);
             // lenient for now (if a string is empty or null we map to NULL, otherwise take 1st char)
-            charChunk.set(destOffset, (str == null || str.length() == 0) ? QueryConstants.NULL_CHAR : str.charAt(0));
+            charChunk.set(destOffset, (str == null || str.isEmpty()) ? QueryConstants.NULL_CHAR : str.charAt(0));
         }
 
         @Override
@@ -502,7 +471,7 @@ public class JdbcTypeMapper {
 
     public static class ShortDataTypeMapping extends DataTypeMapping<Short> {
         ShortDataTypeMapping() {
-            super(Types.SMALLINT, Short.class);
+            super(Types.SMALLINT, short.class);
         }
 
         @Override
@@ -529,7 +498,7 @@ public class JdbcTypeMapper {
 
     public static class LongDataTypeMapping extends DataTypeMapping<Long> {
         LongDataTypeMapping() {
-            super(Types.BIGINT, Long.class);
+            super(Types.BIGINT, long.class);
         }
 
         @Override
@@ -556,7 +525,7 @@ public class JdbcTypeMapper {
 
     public static class FloatDataTypeMapping extends DataTypeMapping<Float> {
         FloatDataTypeMapping(int sqlType) {
-            super(sqlType, Float.class);
+            super(sqlType, float.class);
         }
 
         @Override
@@ -586,7 +555,7 @@ public class JdbcTypeMapper {
      */
     public static class DecimalToFloatDataTypeMapping extends DataTypeMapping<Float> {
         DecimalToFloatDataTypeMapping(int sqlType) {
-            super(sqlType, Float.class);
+            super(sqlType, float.class);
         }
 
         @Override
@@ -614,7 +583,7 @@ public class JdbcTypeMapper {
 
     public static class DoubleDataTypeMapping extends DataTypeMapping<Double> {
         DoubleDataTypeMapping(int sqlType) {
-            super(sqlType, Double.class);
+            super(sqlType, double.class);
         }
 
         @Override
@@ -644,7 +613,7 @@ public class JdbcTypeMapper {
      */
     public static class DecimalToDoubleDataTypeMapping extends DataTypeMapping<Double> {
         DecimalToDoubleDataTypeMapping(int sqlType) {
-            super(sqlType, Double.class);
+            super(sqlType, double.class);
         }
 
         @Override
@@ -669,37 +638,9 @@ public class JdbcTypeMapper {
         }
     }
 
-    public static class ByteDataTypeMapping extends DataTypeMapping<Byte> {
-        ByteDataTypeMapping() {
-            super(Types.TINYINT, Byte.class);
-        }
-
-        @Override
-        public void bindToChunk(
-                WritableChunk<Values> destChunk, int destOffset,
-                ResultSet resultSet, int columnIndex, Context context) throws SQLException {
-            final WritableByteChunk<Values> byteChunk = destChunk.asWritableByteChunk();
-            final byte value = resultSet.getByte(columnIndex);
-            byteChunk.set(destOffset, resultSet.wasNull() ? QueryConstants.NULL_BYTE : value);
-        }
-
-        @Override
-        public void bindFromChunk(
-                Chunk<Values> srcChunk, int srcOffset,
-                PreparedStatement stmt, int parameterIndex, Context context) throws SQLException {
-            final ByteChunk<Values> byteChunk = srcChunk.asByteChunk();
-            final byte value = byteChunk.get(srcOffset);
-            if (value == QueryConstants.NULL_BYTE) {
-                stmt.setNull(parameterIndex, sqlType);
-            } else {
-                stmt.setByte(parameterIndex, value);
-            }
-        }
-    }
-
     public static class BooleanDataTypeMapping extends DataTypeMapping<Boolean> {
         BooleanDataTypeMapping(int sqlType) {
-            super(sqlType, Boolean.class);
+            super(sqlType, boolean.class);
         }
 
         @Override
@@ -760,11 +701,11 @@ public class JdbcTypeMapper {
                 stmt.setNull(parameterIndex, sqlType);
             } else {
                 // set date as midnight in the source calendar
-                final Calendar sourceCalendar = (Calendar) context.getSourceCalendar().clone();
+                final Calendar sourceCalendar = context.getSourceCalendar();
                 // noinspection MagicConstant
                 sourceCalendar.set(value.getYear(), value.getMonthValue() - 1, value.getDayOfMonth(),
                         0, 0, 0);
-                stmt.setDate(parameterIndex, new Date(sourceCalendar.getTimeInMillis()), context.getSourceCalendar());
+                stmt.setDate(parameterIndex, new Date(sourceCalendar.getTimeInMillis()), sourceCalendar);
             }
         }
     }
@@ -829,7 +770,7 @@ public class JdbcTypeMapper {
 
     public static class DateYearDataTypeMapping extends DataTypeMapping<Integer> {
         DateYearDataTypeMapping() {
-            super(Types.DATE, Integer.class, java.sql.Date.class);
+            super(Types.DATE, int.class, java.sql.Date.class);
         }
 
         @Override
@@ -901,7 +842,7 @@ public class JdbcTypeMapper {
     // out as 12:00:00, since we are missing the "date" part)
     public static class TimeNanosDataTypeMapping extends DataTypeMapping<Long> {
         TimeNanosDataTypeMapping(int sqlType) {
-            super(sqlType, Long.class, java.sql.Time.class);
+            super(sqlType, long.class, java.sql.Time.class);
         }
 
         @Override
@@ -986,111 +927,108 @@ public class JdbcTypeMapper {
      */
     private static final Map<Integer, MappingCollection> dataTypeMappings;
     static {
-        final Map<Integer, MappingCollection> initMap = new HashMap<>(25);
-        initMap.put(Types.CHAR, MappingCollection.builder(String.class)
+
+        dataTypeMappings = Map.ofEntries(Map.entry(Types.CHAR, MappingCollection.builder(String.class)
                 .mapping(char.class, new CharDataTypeMapping())
-                .mapping(String.class, new StringDataTypeMapping(Types.CHAR)).build());
-        initMap.put(Types.NCHAR, new MappingCollection(String.class, new StringDataTypeMapping(Types.NCHAR)));
-        initMap.put(Types.VARCHAR, MappingCollection.builder(String.class)
-                .mapping(String.class, new StringDataTypeMapping(Types.VARCHAR))
-                .mapping(double[].class, new StringDoubleArrayDataTypeMapping())
-                .mapping(long[].class, new StringLongArrayDataTypeMapping()).build());
-        initMap.put(Types.NVARCHAR, new MappingCollection(String.class, new StringDataTypeMapping(Types.NVARCHAR)));
-        initMap.put(Types.LONGVARCHAR,
-                new MappingCollection(String.class, new StringDataTypeMapping(Types.LONGVARCHAR)));
-        initMap.put(Types.LONGNVARCHAR,
-                new MappingCollection(String.class, new StringDataTypeMapping(Types.LONGNVARCHAR)));
-        initMap.put(Types.NUMERIC, MappingCollection.builder(BigDecimal.class)
-                .mapping(BigDecimal.class, new DecimalDataTypeMapping(Types.NUMERIC))
-                .mapping(double.class, new DecimalToDoubleDataTypeMapping(Types.NUMERIC))
-                .mapping(Double.class, new DecimalToDoubleDataTypeMapping(Types.NUMERIC))
-                .mapping(float.class, new DecimalToFloatDataTypeMapping(Types.NUMERIC))
-                .mapping(Float.class, new DecimalToFloatDataTypeMapping(Types.NUMERIC))
-                .build());
-        initMap.put(Types.DECIMAL, MappingCollection.builder(BigDecimal.class)
-                .mapping(BigDecimal.class, new DecimalDataTypeMapping(Types.DECIMAL))
-                .mapping(double.class, new DecimalToDoubleDataTypeMapping(Types.DECIMAL))
-                .mapping(Double.class, new DecimalToDoubleDataTypeMapping(Types.DECIMAL))
-                .mapping(float.class, new DecimalToFloatDataTypeMapping(Types.DECIMAL))
-                .mapping(Float.class, new DecimalToFloatDataTypeMapping(Types.DECIMAL))
-                .build());
-        initMap.put(Types.BOOLEAN, MappingCollection.builder(boolean.class)
-                .mapping(boolean.class, new BooleanDataTypeMapping(Types.BOOLEAN))
-                .mapping(Boolean.class, new BooleanDataTypeMapping(Types.BOOLEAN)).build());
-        initMap.put(Types.BIT, MappingCollection.builder(boolean.class)
-                .mapping(boolean.class, new BooleanDataTypeMapping(Types.BIT))
-                .mapping(Boolean.class, new BooleanDataTypeMapping(Types.BIT)).build());
-        initMap.put(Types.TINYINT, MappingCollection.builder(short.class)
-                .mapping(short.class, new ShortDataTypeMapping())
-                .mapping(Short.class, new ShortDataTypeMapping()).build());
-        initMap.put(Types.SMALLINT, MappingCollection.builder(short.class)
-                .mapping(short.class, new ShortDataTypeMapping())
-                .mapping(Short.class, new ShortDataTypeMapping()).build());
-        initMap.put(Types.INTEGER, MappingCollection.builder(int.class)
-                .mapping(int.class, new IntDataTypeMapping())
-                .mapping(Integer.class, new IntDataTypeMapping()).build());
-        initMap.put(Types.BIGINT, MappingCollection.builder(long.class)
-                .mapping(long.class, new LongDataTypeMapping())
-                .mapping(Long.class, new LongDataTypeMapping()).build());
-        initMap.put(Types.REAL, MappingCollection.builder(float.class)
-                .mapping(float.class, new FloatDataTypeMapping(Types.REAL))
-                .mapping(Float.class, new FloatDataTypeMapping(Types.REAL))
-                .mapping(BigDecimal.class, new FloatToDecimalDataTypeMapping(Types.REAL)).build());
-        // counter-intuitive, but JDBC FLOAT is the same as DOUBLE (REAL is single precision float)
-        initMap.put(Types.FLOAT, MappingCollection.builder(double.class)
-                .mapping(double.class, new DoubleDataTypeMapping(Types.FLOAT))
-                .mapping(Double.class, new DoubleDataTypeMapping(Types.FLOAT))
-                .mapping(BigDecimal.class, new DoubleToDecimalDataTypeMapping(Types.FLOAT)).build());
-        initMap.put(Types.DOUBLE, MappingCollection.builder(double.class)
-                .mapping(double.class, new DoubleDataTypeMapping(Types.DOUBLE))
-                .mapping(Double.class, new DoubleDataTypeMapping(Types.DOUBLE))
-                .mapping(BigDecimal.class, new DoubleToDecimalDataTypeMapping(Types.DOUBLE)).build());
-        initMap.put(Types.BINARY, new MappingCollection(byte[].class, new ByteArrayDataTypeMapping(Types.BINARY)));
-        initMap.put(Types.VARBINARY,
-                new MappingCollection(byte[].class, new ByteArrayDataTypeMapping(Types.VARBINARY)));
-        initMap.put(Types.LONGVARBINARY,
-                new MappingCollection(byte[].class, new ByteArrayDataTypeMapping(Types.LONGVARBINARY)));
-        initMap.put(Types.BLOB, new MappingCollection(byte[].class, new ByteArrayDataTypeMapping(Types.BLOB)));
+                .mapping(String.class, new StringDataTypeMapping(Types.CHAR)).build()),
+                Map.entry(Types.NCHAR, new MappingCollection(String.class, new StringDataTypeMapping(Types.NCHAR))),
+                Map.entry(Types.VARCHAR, MappingCollection.builder(String.class)
+                        .mapping(String.class, new StringDataTypeMapping(Types.VARCHAR))
+                        .mapping(double[].class, new StringDoubleArrayDataTypeMapping())
+                        .mapping(long[].class, new StringLongArrayDataTypeMapping()).build()),
+                Map.entry(Types.NVARCHAR,
+                        new MappingCollection(String.class, new StringDataTypeMapping(Types.NVARCHAR))),
+                Map.entry(Types.LONGVARCHAR,
+                        new MappingCollection(String.class, new StringDataTypeMapping(Types.LONGVARCHAR))),
+                Map.entry(Types.LONGNVARCHAR,
+                        new MappingCollection(String.class, new StringDataTypeMapping(Types.LONGNVARCHAR))),
+                Map.entry(Types.NUMERIC, MappingCollection.builder(BigDecimal.class)
+                        .mapping(BigDecimal.class, new DecimalDataTypeMapping(Types.NUMERIC))
+                        .mapping(double.class, new DecimalToDoubleDataTypeMapping(Types.NUMERIC))
+                        .mapping(Double.class, new DecimalToDoubleDataTypeMapping(Types.NUMERIC))
+                        .mapping(float.class, new DecimalToFloatDataTypeMapping(Types.NUMERIC))
+                        .mapping(Float.class, new DecimalToFloatDataTypeMapping(Types.NUMERIC))
+                        .build()),
+                Map.entry(Types.DECIMAL, MappingCollection.builder(BigDecimal.class)
+                        .mapping(BigDecimal.class, new DecimalDataTypeMapping(Types.DECIMAL))
+                        .mapping(double.class, new DecimalToDoubleDataTypeMapping(Types.DECIMAL))
+                        .mapping(Double.class, new DecimalToDoubleDataTypeMapping(Types.DECIMAL))
+                        .mapping(float.class, new DecimalToFloatDataTypeMapping(Types.DECIMAL))
+                        .mapping(Float.class, new DecimalToFloatDataTypeMapping(Types.DECIMAL))
+                        .build()),
+                Map.entry(Types.BOOLEAN, MappingCollection.builder(boolean.class)
+                        .mapping(boolean.class, new BooleanDataTypeMapping(Types.BOOLEAN))
+                        .mapping(Boolean.class, new BooleanDataTypeMapping(Types.BOOLEAN)).build()),
+                Map.entry(Types.BIT, MappingCollection.builder(boolean.class)
+                        .mapping(boolean.class, new BooleanDataTypeMapping(Types.BIT))
+                        .mapping(Boolean.class, new BooleanDataTypeMapping(Types.BIT)).build()),
+                Map.entry(Types.TINYINT, MappingCollection.builder(short.class)
+                        .mapping(short.class, new ShortDataTypeMapping())
+                        .mapping(Short.class, new ShortDataTypeMapping()).build()),
+                Map.entry(Types.SMALLINT, MappingCollection.builder(short.class)
+                        .mapping(short.class, new ShortDataTypeMapping())
+                        .mapping(Short.class, new ShortDataTypeMapping()).build()),
+                Map.entry(Types.INTEGER, MappingCollection.builder(int.class)
+                        .mapping(int.class, new IntDataTypeMapping())
+                        .mapping(Integer.class, new IntDataTypeMapping()).build()),
+                Map.entry(Types.BIGINT, MappingCollection.builder(long.class)
+                        .mapping(long.class, new LongDataTypeMapping())
+                        .mapping(Long.class, new LongDataTypeMapping()).build()),
+                Map.entry(Types.REAL, MappingCollection.builder(float.class)
+                        .mapping(float.class, new FloatDataTypeMapping(Types.REAL))
+                        .mapping(Float.class, new FloatDataTypeMapping(Types.REAL))
+                        .mapping(BigDecimal.class, new FloatToDecimalDataTypeMapping(Types.REAL)).build()),
+                // counter-intuitive, but JDBC FLOAT is the same as DOUBLE (REAL is single precision float)
+                Map.entry(Types.FLOAT, MappingCollection.builder(double.class)
+                        .mapping(double.class, new DoubleDataTypeMapping(Types.FLOAT))
+                        .mapping(Double.class, new DoubleDataTypeMapping(Types.FLOAT))
+                        .mapping(BigDecimal.class, new DoubleToDecimalDataTypeMapping(Types.FLOAT)).build()),
+                Map.entry(Types.DOUBLE, MappingCollection.builder(double.class)
+                        .mapping(double.class, new DoubleDataTypeMapping(Types.DOUBLE))
+                        .mapping(Double.class, new DoubleDataTypeMapping(Types.DOUBLE))
+                        .mapping(BigDecimal.class, new DoubleToDecimalDataTypeMapping(Types.DOUBLE)).build()),
+                Map.entry(Types.BINARY,
+                        new MappingCollection(byte[].class, new ByteArrayDataTypeMapping(Types.BINARY))),
+                Map.entry(Types.VARBINARY,
+                        new MappingCollection(byte[].class, new ByteArrayDataTypeMapping(Types.VARBINARY))),
+                Map.entry(Types.LONGVARBINARY,
+                        new MappingCollection(byte[].class, new ByteArrayDataTypeMapping(Types.LONGVARBINARY))),
+                Map.entry(Types.BLOB, new MappingCollection(byte[].class, new ByteArrayDataTypeMapping(Types.BLOB))),
+                Map.entry(Types.DATE, MappingCollection.builder(LocalDate.class)
+                        .mapping(LocalDate.class, new DateLocalDateDataTypeMapping())
+                        .mapping(DateTime.class, new DateDateTimeDataTypeMapping())
+                        // provides the option to treat a DATE column as a String
+                        .mapping(String.class, new StringDataTypeMapping(Types.DATE))
+                        .build()),
 
-        initMap.put(Types.DATE, MappingCollection.builder(LocalDate.class)
-                .mapping(LocalDate.class, new DateLocalDateDataTypeMapping())
-                .mapping(DateTime.class, new DateDateTimeDataTypeMapping())
-                // provides the option to treat a DATE column as a String
-                .mapping(String.class, new StringDataTypeMapping(Types.DATE))
-                .build());
+                // TODO: map to LocalDateTime?
+                Map.entry(Types.TIMESTAMP, MappingCollection.builder(DateTime.class)
+                        .mapping(DateTime.class, new TimestampDateTimeDataTypeMapping(Types.TIMESTAMP))
+                        // provides the option to treat a TIMESTAMP column as a String
+                        .mapping(String.class, new StringDataTypeMapping(Types.TIMESTAMP))
+                        .build()),
 
-        // TODO: map to LocalDateTime?
-        initMap.put(Types.TIMESTAMP, MappingCollection.builder(DateTime.class)
-                .mapping(DateTime.class, new TimestampDateTimeDataTypeMapping(Types.TIMESTAMP))
-                // provides the option to treat a TIMESTAMP column as a String
-                .mapping(String.class, new StringDataTypeMapping(Types.TIMESTAMP))
-                .build());
+                // TODO: map to OffsetDateTime?
+                Map.entry(Types.TIMESTAMP_WITH_TIMEZONE, MappingCollection.builder(DateTime.class)
+                        .mapping(DateTime.class, new TimestampDateTimeDataTypeMapping(Types.TIMESTAMP_WITH_TIMEZONE))
+                        // provides the option to treat a TIMESTAMP_WITH_TIMEZONE column as a String
+                        .mapping(String.class, new StringDataTypeMapping(Types.TIMESTAMP_WITH_TIMEZONE))
+                        .build()),
+                Map.entry(Types.TIME, MappingCollection.builder(LocalTime.class)
+                        .mapping(LocalTime.class, new TimeLocalTimeDataTypeMapping(Types.TIME))
+                        .mapping(long.class, new TimeNanosDataTypeMapping(Types.TIME))
+                        .mapping(Long.class, new TimeNanosDataTypeMapping(Types.TIME))
+                        // provides the option to treat a TIME column as a String
+                        .mapping(String.class, new StringDataTypeMapping(Types.TIME))
+                        .build()),
 
-        // TODO: map to OffsetDateTime?
-        initMap.put(Types.TIMESTAMP_WITH_TIMEZONE, MappingCollection.builder(DateTime.class)
-                .mapping(DateTime.class, new TimestampDateTimeDataTypeMapping(Types.TIMESTAMP_WITH_TIMEZONE))
-                // provides the option to treat a TIMESTAMP_WITH_TIMEZONE column as a String
-                .mapping(String.class, new StringDataTypeMapping(Types.TIMESTAMP_WITH_TIMEZONE))
-                .build());
-
-        initMap.put(Types.TIME, MappingCollection.builder(LocalTime.class)
-                .mapping(LocalTime.class, new TimeLocalTimeDataTypeMapping(Types.TIME))
-                .mapping(long.class, new TimeNanosDataTypeMapping(Types.TIME))
-                .mapping(Long.class, new TimeNanosDataTypeMapping(Types.TIME))
-                // provides the option to treat a TIME column as a String
-                .mapping(String.class, new StringDataTypeMapping(Types.TIME))
-                .build());
-
-        // TODO: map to OffsetTime?
-        initMap.put(Types.TIME_WITH_TIMEZONE, MappingCollection.builder(LocalTime.class)
-                .mapping(LocalTime.class, new TimeLocalTimeDataTypeMapping(Types.TIME_WITH_TIMEZONE))
-                .mapping(long.class, new TimeNanosDataTypeMapping(Types.TIME_WITH_TIMEZONE))
-                // provides the option to treat a TIME_WITH_TIMEZONE column as a String
-                .mapping(String.class, new StringDataTypeMapping(Types.TIME_WITH_TIMEZONE))
-                .build());
-
-        // noinspection Java9CollectionFactory
-        dataTypeMappings = Collections.unmodifiableMap(initMap);
+                // TODO: map to OffsetTime?
+                Map.entry(Types.TIME_WITH_TIMEZONE, MappingCollection.builder(LocalTime.class)
+                        .mapping(LocalTime.class, new TimeLocalTimeDataTypeMapping(Types.TIME_WITH_TIMEZONE))
+                        .mapping(long.class, new TimeNanosDataTypeMapping(Types.TIME_WITH_TIMEZONE))
+                        // provides the option to treat a TIME_WITH_TIMEZONE column as a String
+                        .mapping(String.class, new StringDataTypeMapping(Types.TIME_WITH_TIMEZONE))
+                        .build()));
     }
 
     // there is a microsoft.sql.Types class, but we don't want compile-time dependencies on any particular driver
@@ -1104,25 +1042,26 @@ public class JdbcTypeMapper {
             new HashMap<>();
     static {
         // here we create a map for each driver with custom types and create the appropriate mappings
-        final Map<Integer, MappingCollection> sqlServerMap = new HashMap<>();
-
-        // special DATETIMEOFFSET type for SQL Server
-        sqlServerMap.put(SqlServerTypes.DATETIMEOFFSET, MappingCollection.builder(DateTime.class)
-                .mapping(DateTime.class, new TimestampDateTimeDataTypeMapping(SqlServerTypes.DATETIMEOFFSET)).build());
-
-        // YEAR MySQL type shows up as a DATE, we support mapping to an Integer
-        final Map<Integer, MappingCollection> mysqlMap = new HashMap<>();
-        mysqlMap.put(Types.DATE, MappingCollection.builder(null)
-                .mapping(Integer.class, new DateYearDataTypeMapping()).build());
-
         try {
+            // special DATETIMEOFFSET type for SQL Server
+            final Map<Integer, MappingCollection> sqlServerMap = new HashMap<>();
+            sqlServerMap.put(SqlServerTypes.DATETIMEOFFSET, MappingCollection.builder(DateTime.class)
+                    .mapping(DateTime.class, new TimestampDateTimeDataTypeMapping(SqlServerTypes.DATETIMEOFFSET))
+                    .build());
+
             driverSpecificDataTypeMappings.put(
                     Class.forName("com.microsoft.sqlserver.jdbc.ISQLServerConnection").asSubclass(Connection.class),
                     sqlServerMap);
         } catch (ClassNotFoundException ignored) {
             // ignore the driver overloads; it's not on the classpath
         }
+
         try {
+            // YEAR MySQL type shows up as a DATE, we support mapping to an Integer
+            final Map<Integer, MappingCollection> mysqlMap = new HashMap<>();
+            mysqlMap.put(Types.DATE, MappingCollection.builder(null)
+                    .mapping(Integer.class, new DateYearDataTypeMapping()).build());
+
             driverSpecificDataTypeMappings.put(
                     Class.forName("com.mysql.cj.jdbc.JdbcConnection").asSubclass(Connection.class),
                     mysqlMap);
@@ -1135,11 +1074,11 @@ public class JdbcTypeMapper {
      * Get the default type mapping for converting JDBC/SQL values to/from a Deephaven column type.
      *
      * @param rs JDBC ResultSet from which to extract type information
-     * @param columnName Name of the column
+     * @param columnIndex the index of the JDBC ResultSet column
      * @return The default mapping for the specified column
      */
-    static public <T> DataTypeMapping<T> getDefaultColumnTypeMapping(final ResultSet rs, final String columnName) {
-        return getColumnTypeMapping(rs, columnName, null);
+    static public <T> DataTypeMapping<T> getDefaultColumnTypeMapping(final ResultSet rs, final int columnIndex) {
+        return getColumnTypeMapping(rs, columnIndex, null);
     }
 
     /**
@@ -1147,13 +1086,12 @@ public class JdbcTypeMapper {
      *
      * @param connection a JDBC Connection object, used to determine database-specific mappings
      * @param metaData a JDBC ResultSetMetaData object that will provide the SQL type information
-     * @param columnName the name of the JDBC ResultSet column
+     * @param columnIndex the index of the JDBC ResultSet column
      * @return a mapping object that can be used to map SQL/JDBC ResultSet values to and from Deephaven column values
      */
     static public <T> DataTypeMapping<T> getDefaultColumnTypeMapping(final Connection connection,
-            final ResultSetMetaData metaData, final String columnName) {
-
-        return getColumnTypeMapping(connection, metaData, columnName, null, false);
+            final ResultSetMetaData metaData, final int columnIndex) {
+        return getColumnTypeMapping(connection, metaData, columnIndex, null);
     }
 
     /**
@@ -1161,33 +1099,16 @@ public class JdbcTypeMapper {
      * specified, a default will be used.
      *
      * @param rs a JDBC ResultSet object that will provide the SQL type information
-     * @param columnName the name of the JDBC ResultSet column
+     * @param columnIndex the index of the JDBC ResultSet column
      * @param deephavenDataType if not null, the desired Deephaven target data type
      * @param <T> the target Deephaven type
      * @return a mapping object that can be used to map SQL/JDBC ResultSet values to and from Deephaven column values
      */
-    static public <T> DataTypeMapping<T> getColumnTypeMapping(final ResultSet rs, final String columnName,
+    static public <T> DataTypeMapping<T> getColumnTypeMapping(final ResultSet rs, final int columnIndex,
             Class<T> deephavenDataType) {
-        return getColumnTypeMapping(rs, columnName, deephavenDataType, false);
-    }
-
-    /**
-     * Get type mapping for converting JDBC to/from Deephaven column type. If the target Deephaven type is not
-     * specified, a default will be used.
-     *
-     * @param rs a JDBC ResultSet object that will provide the SQL type information
-     * @param columnName the name of the JDBC ResultSet column
-     * @param deephavenDataType if not null, the desired Deephaven target data type
-     * @param throwException if true, throw an exception if a mapping cannot be found. Otherwise, return null
-     * @param <T> the target Deephaven type
-     * @return a mapping object that can be used to map SQL/JDBC ResultSet values to and from Deephaven column values
-     */
-    static public <T> DataTypeMapping<T> getColumnTypeMapping(final ResultSet rs, final String columnName,
-            Class<T> deephavenDataType, final boolean throwException) {
-
         try {
             return getColumnTypeMapping(rs.getStatement() == null ? null : rs.getStatement().getConnection(),
-                    rs.getMetaData(), columnName, deephavenDataType, throwException);
+                    rs.getMetaData(), columnIndex, deephavenDataType);
         } catch (SQLException ex) {
             throw new RuntimeException("Error getting connection from ResultSet: " + ex.getMessage(), ex);
         }
@@ -1198,42 +1119,18 @@ public class JdbcTypeMapper {
      * specified, a default will be used.
      *
      * @param connection a JDBC Connection object, used to determine database-specific mappings
-     * @param metaData a JDBC ResultSetMetaData object that will provide the SQL type information
-     * @param column the JDBC ResultSetMetaData column index
-     * @param deephavenDataType if not null, the desired Deephaven target data type
-     * @param <T> the target Deephaven type
-     * @return a mapping object that can be used to map SQL/JDBC ResultSet values to and from Deephaven column values
-     */
-    static public <T> DataTypeMapping<T> getColumnTypeMapping(final Connection connection,
-            final ResultSetMetaData metaData, final int column,
-            Class<T> deephavenDataType) {
-        try {
-            final int type = metaData.getColumnType(column);
-            return getColumnTypeMapping(connection.getClass(), type, deephavenDataType);
-        } catch (SQLException ex) {
-            throw new RuntimeException("Failed to get metadata for source column: " + column, ex);
-        }
-    }
-
-    /**
-     * Get type mapping for converting JDBC to/from Deephaven column type. If the target Deephaven type is not
-     * specified, a default will be used.
-     *
-     * @param connection a JDBC Connection object, used to determine database-specific mappings
      * @param rs the JDBC ResultSet
-     * @param columnName the column for which to find a type match
+     * @param columnIndex the index of the JDBC ResultSet column
      * @param deephavenDataType if not null, the desired Deephaven target data type
-     * @param throwException if true, throw an exception if a mapping cannot be found. Otherwise, return null
      * @param <T> the target Deephaven type
      * @return a mapping object that can be used to map SQL/JDBC ResultSet values to and from Deephaven column values
      */
     static public <T> DataTypeMapping<T> getColumnTypeMapping(final Connection connection,
-            final ResultSetMetaData rs, final String columnName,
-            Class<T> deephavenDataType, boolean throwException) {
+            final ResultSetMetaData rs, final int columnIndex, Class<T> deephavenDataType) {
         final int type;
         Class<? extends Connection> connClass = null;
         try {
-            type = rs.getColumnType(getMetaDataColumnIndex(rs, columnName));
+            type = rs.getColumnType(columnIndex);
 
             // statement/connection should be null only in test cases (in which case we cannot test driver-specific
             // behavior anyway)
@@ -1241,24 +1138,9 @@ public class JdbcTypeMapper {
                 connClass = connection.getClass();
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to get metadata for source column: " + columnName, e);
+            throw new RuntimeException("Failed to get metadata for source column: " + columnIndex, e);
         }
-        return getColumnTypeMapping(connClass, type, deephavenDataType, throwException);
-    }
-
-    /**
-     * Get type mapping for converting JDBC to/from Deephaven column type. If the target Deephaven type is not
-     * specified, a default will be used.
-     *
-     * @param connClass a JDBC Connection subclass, used to determine database-specific mappings
-     * @param type the SQL type
-     * @param deephavenDataType if not null, the desired Deephaven target data type
-     * @param <T> the target Deephaven type
-     * @return a mapping object that can be used to map SQL/JDBC ResultSet values to and from Deephaven column values
-     */
-    static public <T> DataTypeMapping<T> getColumnTypeMapping(final Class<? extends Connection> connClass, int type,
-            Class<? extends T> deephavenDataType) {
-        return getColumnTypeMapping(connClass, type, deephavenDataType, false);
+        return getColumnTypeMapping(connClass, type, deephavenDataType);
     }
 
     /**
@@ -1268,12 +1150,11 @@ public class JdbcTypeMapper {
      * @param connClass a JDBC Connection subclass, used to determine database-specific mappings
      * @param type the SQL type
      * @param deephavenDataType the column type, if known. If null, the default type mapping will be provided
-     * @param throwException if true, throw an exception if a mapping cannot be found. Otherwise, return null
      * @param <T> the target Deephaven type
      * @return a mapping object that can be used to map SQL/JDBC ResultSet values to and from Deephaven column values
      */
     static public <T> DataTypeMapping<T> getColumnTypeMapping(final Class<? extends Connection> connClass, int type,
-            Class<? extends T> deephavenDataType, boolean throwException) {
+            Class<? extends T> deephavenDataType) {
 
         // First, see if there is a driver-specific mapping that matches the specified SQL and Deephaven types.
         // If no Deephaven type is specified, and the driver specific mappings provide a default, return that.
@@ -1291,7 +1172,7 @@ public class JdbcTypeMapper {
                         } else if (deephavenDataType != null
                                 && mappingCollection.getMapping(deephavenDataType) != null) {
                             // noinspection unchecked
-                            return (DataTypeMapping<T>) entry.getValue().get(type).getMapping(deephavenDataType);
+                            return (DataTypeMapping<T>) mappingCollection.getMapping(deephavenDataType);
                         }
                     }
                 }
@@ -1302,18 +1183,14 @@ public class JdbcTypeMapper {
         final MappingCollection result = dataTypeMappings.get(type);
 
         if (result == null) {
-            if (throwException) {
-                throw new JdbcTypeMapperException(type, null);
-            } else {
-                return null;
-            }
+            throw new JdbcTypeMapperException(type, null);
         }
         // noinspection unchecked
         final DataTypeMapping<T> mapping = (DataTypeMapping<T>) (deephavenDataType == null
                 ? result.getDefaultMapping()
                 : result.getMapping(deephavenDataType));
 
-        if (throwException && mapping == null) {
+        if (mapping == null) {
             throw new JdbcTypeMapperException(type, deephavenDataType);
         }
         return mapping;

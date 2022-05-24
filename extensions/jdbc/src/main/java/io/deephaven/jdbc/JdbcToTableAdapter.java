@@ -7,6 +7,8 @@ import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
@@ -44,8 +46,6 @@ public class JdbcToTableAdapter {
     /**
      * Options applicable when reading JDBC data into a Deephaven in-memory table. Designed to constructed in a "fluent"
      * manner, with defaults applied if not specified by the user.
-     *
-     *
      */
     public static class ReadJdbcOptions {
         private CasingStyle casingStyle = null;
@@ -65,7 +65,7 @@ public class JdbcToTableAdapter {
          * more details.
          *
          * @param casingStyle if not null, CasingStyle to apply to column names - None or null = no change to casing
-         * @param replacement character, or empty String, to use for replacments of space or hyphen in source column
+         * @param replacement character, or empty String, to use for replacements of space or hyphen in source column
          *        names
          * @return customized options object
          */
@@ -150,7 +150,7 @@ public class JdbcToTableAdapter {
     /**
      * Returns a table that was populated from the provided result set.
      *
-     * @param rs result set to read
+     * @param rs result set to read, its cursor should be before the first row to import
      * @param origColumnNames columns to include or all if none provided
      * @return a deephaven static table
      * @throws SQLException if reading from the result set fails
@@ -159,6 +159,15 @@ public class JdbcToTableAdapter {
         return readJdbc(rs, readJdbcOptions(), origColumnNames);
     }
 
+    /**
+     * Returns a table that was populated from the provided result set.
+     *
+     * @param rs result set to read, its cursor should be before the first row to import
+     * @param options options to change the way readJdbc behaves
+     * @param origColumnNames columns to include or all if none provided
+     * @return a deephaven static table
+     * @throws SQLException if reading from the result set fails
+     */
     public static Table readJdbc(final ResultSet rs, final ReadJdbcOptions options, String... origColumnNames)
             throws SQLException {
         final ResultSetMetaData md = rs.getMetaData();
@@ -183,15 +192,16 @@ public class JdbcToTableAdapter {
             final Class<?> destType = options.targetTypeMap.get(columnName);
 
             final JdbcTypeMapper.DataTypeMapping<?> typeMapping =
-                    JdbcTypeMapper.getColumnTypeMapping(rs, origColumnNames[ii], destType);
+                    JdbcTypeMapper.getColumnTypeMapping(rs, columnIndex, destType);
 
+            final Class<?> deephavenType = typeMapping.getDeephavenType();
+            final Class<?> componentType = deephavenType.getComponentType();
             final WritableColumnSource<?> cs = numRows == 0
-                    ? ArrayBackedColumnSource.getMemoryColumnSource(0, typeMapping.getDeephavenType())
-                    : InMemoryColumnSource.getImmutableMemoryColumnSource(numRows, typeMapping.getDeephavenType(),
-                            null);
+                    ? ArrayBackedColumnSource.getMemoryColumnSource(0, deephavenType, componentType)
+                    : InMemoryColumnSource.getImmutableMemoryColumnSource(numRows, deephavenType, componentType);
 
             if (numRows > 0) {
-                cs.ensureCapacity(numRows);
+                cs.ensureCapacity(numRows, false);
             }
 
             if (ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(cs)) {
@@ -209,7 +219,7 @@ public class JdbcToTableAdapter {
         long numRowsRead = 0;
         while (rs.next() && (options.maxRows == -1 || numRowsRead < options.maxRows)) {
             for (SourceFiller filler : sourceFillers) {
-                filler.readRow(rs, context);
+                filler.readRow(rs, context, numRowsRead);
             }
             ++numRowsRead;
         }
@@ -221,9 +231,8 @@ public class JdbcToTableAdapter {
         return new QueryTable(RowSetFactory.flat(numRowsRead).toTracking(), columnMap);
     }
 
-
     private interface SourceFiller {
-        void readRow(ResultSet rs, JdbcTypeMapper.Context context) throws SQLException;
+        void readRow(ResultSet rs, JdbcTypeMapper.Context context, long destRowKey) throws SQLException;
 
         void close();
     }
@@ -234,7 +243,6 @@ public class JdbcToTableAdapter {
         final WritableColumnSource<?> columnSource;
         final ResettableWritableChunk<Values> destChunk;
 
-        long destRowOffset = 0;
         int destChunkOffset = 0;
 
         BackingStoreSourceFiller(
@@ -246,15 +254,15 @@ public class JdbcToTableAdapter {
         }
 
         @Override
-        public void readRow(ResultSet rs, JdbcTypeMapper.Context context) throws SQLException {
+        public void readRow(ResultSet rs, JdbcTypeMapper.Context context, long destRowKey) throws SQLException {
             if (destChunkOffset >= destChunk.capacity()) {
-                columnSource.ensureCapacity(destRowOffset + 1);
+                columnSource.ensureCapacity(destRowKey + 1, false);
                 ChunkedBackingStoreExposedWritableSource ws = (ChunkedBackingStoreExposedWritableSource) columnSource;
-                final long firstRowOffset = ws.resetWritableChunkToBackingStore(destChunk, destRowOffset);
-                destChunkOffset = LongSizedDataStructure.intSize("JdbcToTableAdapter", destRowOffset - firstRowOffset);
+                final long firstRowOffset = ws.resetWritableChunkToBackingStore(destChunk, destRowKey);
+                destChunkOffset = LongSizedDataStructure.intSize("JdbcToTableAdapter", destRowKey - firstRowOffset);
             }
 
-            ++destRowOffset;
+            // noinspection unchecked
             typeMapping.bindToChunk(destChunk, destChunkOffset++, rs, columnIndex, context);
         }
 
@@ -269,6 +277,7 @@ public class JdbcToTableAdapter {
         final JdbcTypeMapper.DataTypeMapping<?> typeMapping;
         final WritableColumnSource<?> columnSource;
         final WritableChunk<Values> destChunk;
+        final ChunkSink.FillFromContext fillFromContext;
 
         long destRowOffset = 0;
         int destChunkOffset = 0;
@@ -278,12 +287,13 @@ public class JdbcToTableAdapter {
             this.columnIndex = columnIndex;
             this.typeMapping = typeMapping;
             this.columnSource = columnSource;
-            final int chunkSize = 1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
+            final int chunkSize = ArrayBackedColumnSource.BLOCK_SIZE;
             destChunk = columnSource.getChunkType().makeWritableChunk(chunkSize);
+            fillFromContext = columnSource.makeFillFromContext(chunkSize);
         }
 
         @Override
-        public void readRow(ResultSet rs, JdbcTypeMapper.Context context) throws SQLException {
+        public void readRow(ResultSet rs, JdbcTypeMapper.Context context, long destRowKey) throws SQLException {
             if (destChunkOffset >= destChunk.capacity()) {
                 flush();
             }
@@ -292,10 +302,10 @@ public class JdbcToTableAdapter {
         }
 
         public void flush() {
-            columnSource.ensureCapacity(destRowOffset + destChunkOffset);
-            try (final RowSet rows = RowSetFactory.fromRange(destRowOffset, destRowOffset + destChunkOffset - 1);
-                    final ChunkSink.FillFromContext context = columnSource.makeFillFromContext(destChunk.capacity())) {
-                columnSource.fillFromChunk(context, destChunk, rows);
+            columnSource.ensureCapacity(destRowOffset + destChunkOffset, false);
+            try (final RowSequence rows =
+                    RowSequenceFactory.forRange(destRowOffset, destRowOffset + destChunkOffset - 1)) {
+                columnSource.fillFromChunk(fillFromContext, destChunk, rows);
             }
             destRowOffset += destChunkOffset;
             destChunkOffset = 0;
@@ -305,6 +315,7 @@ public class JdbcToTableAdapter {
         public void close() {
             flush();
             destChunk.close();
+            fillFromContext.close();
         }
     }
 
@@ -322,7 +333,7 @@ public class JdbcToTableAdapter {
     }
 
     /**
-     * Ensures that columns names are valid for use in Iris and applies optional casing rules
+     * Ensures that columns names are valid for use in Deephaven and applies optional casing rules
      *
      * @param originalColumnName Column name to be checked for validity and uniqueness
      * @param usedNames List of names already used in the table
@@ -389,15 +400,15 @@ public class JdbcToTableAdapter {
         if (type == ResultSet.TYPE_SCROLL_INSENSITIVE || type == ResultSet.TYPE_SCROLL_SENSITIVE) {
             try {
                 final int firstRow = rs.getRow();
-                if (firstRow == 0) {
-                    // this result set is empty
+                if (!rs.isBeforeFirst() && firstRow == 0 || rs.isAfterLast()) {
+                    // this result set appears to be empty
                     return 0;
                 }
 
                 rs.last();
                 final int lastRow = rs.getRow();
                 rs.absolute(firstRow);
-                return lastRow - firstRow + 1;
+                return lastRow - firstRow;
             } catch (SQLException ignored) {
             }
         }

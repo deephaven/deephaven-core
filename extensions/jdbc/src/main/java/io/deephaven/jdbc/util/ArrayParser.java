@@ -25,7 +25,7 @@ public class ArrayParser {
         this.pattern = Pattern.compile(Pattern.quote(delimiter));
     }
 
-    public static ArrayParser getInstance(String delimiter) {
+    public static synchronized ArrayParser getInstance(String delimiter) {
         return parserMap.computeIfAbsent(delimiter, ArrayParser::new);
     }
 
@@ -34,11 +34,6 @@ public class ArrayParser {
             throw new InputMismatchException("Value submitted for Array parsing too short.");
         }
         final char start = value.charAt(0);
-        if (start != '[' && start != '{' && start != '(') {
-            throw new InputMismatchException("Value submitted for Array parsing doesn't match needed format, " +
-                    "unexpected opening character: " + start);
-        }
-        final char end = value.charAt(value.length() - 1);
         final char expectedEnd;
         switch (start) {
             case '[':
@@ -51,9 +46,10 @@ public class ArrayParser {
                 expectedEnd = ')';
                 break;
             default:
-                throw new IllegalStateException("Internal error");
+                throw new InputMismatchException("Value submitted for Array parsing doesn't match needed format, " +
+                        "unexpected opening character: " + start);
         }
-        if (end != expectedEnd) {
+        if (value.charAt(value.length() - 1) != expectedEnd) {
             throw new InputMismatchException("Missing expected closing character: " + expectedEnd);
         }
     }
@@ -62,7 +58,7 @@ public class ArrayParser {
      * Parse the given string as an array of doubles, based upon the delimiter.
      *
      * @param value string to parse
-     * @param strict enforce format strictly
+     * @param strict fail if the pattern does not begin / end with: [], {}, or ()
      * @return array of parsed values
      */
     public double[] getDoubleArray(String value, boolean strict) {
@@ -73,7 +69,7 @@ public class ArrayParser {
      * Parse the given string as an array of longs, based upon the delimiter.
      *
      * @param value string the to parse
-     * @param strict enforce format strictly
+     * @param strict fail if the pattern does not begin / end with: [], {}, or ()
      * @return array of parsed values
      */
     public long[] getLongArray(String value, boolean strict) {
@@ -84,7 +80,7 @@ public class ArrayParser {
      * Create a properly typed array from the input string based upon the delimiter, given a supplier.
      *
      * @param value The array string value
-     * @param strict if strict processing should be used
+     * @param strict fail if the pattern does not begin / end with: [], {}, or ()
      * @param elementSupplier a supplier to convert a stream of element strings to items of the correct types
      * @param <T> the type
      * @return an array of values of the specified type
@@ -97,7 +93,7 @@ public class ArrayParser {
      * Convert the input string value to a stream of strings for each element based upon the delimiter.
      *
      * @param value the array as a string
-     * @param strict if strict processing should be used
+     * @param strict fail if the pattern does not begin / end with: [], {}, or ()
      * @return a stream of strings for each element of the array
      */
     private Stream<String> toStringStream(String value, boolean strict) {
@@ -111,7 +107,7 @@ public class ArrayParser {
         }
 
         try {
-            return Arrays.stream(pattern.split(value.trim().substring(1, value.length() - 1))).map(String::trim);
+            return Arrays.stream(pattern.split(value.substring(1, value.length() - 1))).map(String::trim);
         } catch (Exception e) {
             throw new IllegalArgumentException(
                     "Value submitted for Array parsing doesn't match needed format: " + value, e);

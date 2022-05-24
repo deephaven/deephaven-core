@@ -1,8 +1,6 @@
 package io.deephaven.jdbc;
 
-import java.lang.reflect.Field;
-import java.sql.Types;
-import java.util.Arrays;
+import java.sql.JDBCType;
 
 public class JdbcTypeMapperException extends RuntimeException {
     private final int sqlType;
@@ -24,13 +22,11 @@ public class JdbcTypeMapperException extends RuntimeException {
     }
 
     public String getSqlTypeString() {
-        return Arrays.stream(Types.class.getFields()).filter(f -> {
-            try {
-                return (Integer) f.get(null) == sqlType;
-            } catch (IllegalAccessException ex) {
-                throw new RuntimeException("Unexpected error looking up SQL type information:", ex);
-            }
-        }).map(Field::getName).findFirst().orElse("N/A");
+        try {
+            return JDBCType.valueOf(sqlType).name();
+        } catch (final IllegalArgumentException ignored) {
+            return "N/A";
+        }
     }
 
     @Override
