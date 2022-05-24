@@ -1,8 +1,8 @@
 {
  "className": "io.deephaven.plot.DynamicChartTitle$ChartTitleSwappableTable",
  "methods": {
-  "getSwappableTable": ":return: io.deephaven.plot.util.tables.SwappableTable",
-  "getTableMapHandle": ":return: io.deephaven.plot.util.tables.TableMapHandle"
+  "getPartitionedTableHandle": ":return: io.deephaven.plot.util.tables.PartitionedTableHandle",
+  "getSwappableTable": ":return: io.deephaven.plot.util.tables.SwappableTable"
  },
  "path": "io.deephaven.plot.DynamicChartTitle.ChartTitleSwappableTable",
  "text": "A dynamic chart title from oneClick datasets",

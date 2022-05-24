@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.plot.util.functions.SerializableClosure",
- "methods": {
-  "getClosure": "Gets this SerializableClosure's closure.\n\n:return: (groovy.lang.Closure<SerializableClosure.T>) this SerializableClosure's closure"
- },
- "path": "io.deephaven.db.plot.util.functions.SerializableClosure",
- "text": "A serializable closure.",
- "typeName": "class"
-}

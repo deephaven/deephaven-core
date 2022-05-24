@@ -8,5 +8,6 @@
   "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.engine.table.impl.TableCreatorImpl[]) an array containing the constants of this enum type, in the order they are declared"
  },
  "path": "io.deephaven.engine.table.impl.TableCreatorImpl",
+ "text": "Engine-specific implementation of TableCreator.",
  "typeName": "enum"
 }

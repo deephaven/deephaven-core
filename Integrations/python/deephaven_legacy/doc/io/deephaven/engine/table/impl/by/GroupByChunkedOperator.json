@@ -17,6 +17,6 @@
   "unchunkedRowSet": "Whether the operator can deal with an unchunked RowSet more efficiently than a chunked RowSet.\n\n:return: (boolean) true if the operator can deal with unchunked RowSets, false otherwise"
  },
  "path": "io.deephaven.engine.table.impl.by.GroupByChunkedOperator",
- "text": "An IterativeChunkedAggregationOperator used in the implementation of Table.groupBy(java.util.Collection<? extends io.deephaven.api.Selectable>).",
+ "text": "An IterativeChunkedAggregationOperator used in the implementation of Table.groupBy(java.util.Collection<? extends io.deephaven.api.Selectable>),\n AggSpecGroup, and Aggregation.AggGroup(String...).",
  "typeName": "class"
 }

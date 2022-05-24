@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.tables.lang.DBLanguageFunctionGenerator",
- "methods": {
-  "main": ":param args: java.lang.String[]",
-  "plus": ":param a: double[]\n:param b: int\n:return: double[]"
- },
- "path": "io.deephaven.db.tables.lang.DBLanguageFunctionGenerator",
- "typeName": "class"
-}
