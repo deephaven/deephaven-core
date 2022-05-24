@@ -44,13 +44,12 @@ import java.security.spec.InvalidKeySpecException;
 
 public class KickstartUtils {
 
-    public static SSLFactory create(SSLConfig config, Trust defaultTrust, Protocols defaultProtocols,
-            Ciphers defaultCiphers) {
+    public static SSLFactory create(SSLConfig config) {
         final SSLFactory.Builder builder = SSLFactory.builder();
         config.identity().ifPresent(identity -> addIdentity(builder, identity));
-        addTrust(builder, config.trust().orElse(defaultTrust));
-        addProtocols(builder, config.protocols().orElse(defaultProtocols));
-        addCiphers(builder, config.ciphers().orElse(defaultCiphers));
+        config.trust().ifPresent(trust -> addTrust(builder, trust));
+        config.protocols().ifPresent(protocols -> addProtocols(builder, protocols));
+        config.ciphers().ifPresent(ciphers -> addCiphers(builder, ciphers));
         switch (config.clientAuthentication()) {
             case WANTED:
                 builder.withWantClientAuthentication();

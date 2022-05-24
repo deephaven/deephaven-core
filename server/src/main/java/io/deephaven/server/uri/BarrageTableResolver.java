@@ -281,10 +281,13 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     private BarrageSession newSession(DeephavenTarget target) {
-        final ClientConfig config = ClientConfig.builder()
+        return newSession(ClientConfig.builder()
                 .target(target)
                 .maxInboundMessageSize(MAX_INBOUND_MESSAGE_SIZE)
-                .build();
+                .build());
+    }
+
+    private BarrageSession newSession(ClientConfig config) {
         return newSession(ChannelHelper.channel(config));
     }
 

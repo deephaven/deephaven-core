@@ -45,14 +45,6 @@ public abstract class ClientConfig {
         return DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
     }
 
-    /**
-     * Equivalent to {@code ssl().orElseGet(SSLConfig::defaultClient)}. Useful for retrieving a suitable configuration
-     * when {@code target().isSecure()} is {@code true}.
-     */
-    public final SSLConfig sslOrDefault() {
-        return ssl().orElseGet(SSLConfig::defaultClient);
-    }
-
     @Check
     final void checkSslStatus() {
         if (!target().isSecure() && ssl().isPresent()) {

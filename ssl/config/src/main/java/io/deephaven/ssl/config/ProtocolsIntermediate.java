@@ -23,7 +23,6 @@ public abstract class ProtocolsIntermediate implements Protocols {
 
     public static final String TLSV_1_2 = "TLSv1.2";
 
-
     public static ProtocolsIntermediate of() {
         return ImmutableProtocolsIntermediate.of();
     }

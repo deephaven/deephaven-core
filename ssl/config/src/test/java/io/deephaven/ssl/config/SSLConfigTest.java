@@ -13,11 +13,6 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 public class SSLConfigTest {
 
     @Test
-    void defaultClient() throws IOException {
-        check("default-client.json", SSLConfig.defaultClient());
-    }
-
-    @Test
     void defaultExplicit() throws IOException {
         check("default-explicit.json", SSLConfig.builder().build());
     }
@@ -48,24 +43,6 @@ public class SSLConfigTest {
     @Test
     void identityProperties() throws IOException {
         check("identity-properties.json", server(IdentityProperties.of()));
-    }
-
-    @Test
-    void jdkDefaultServer() throws IOException {
-        check("server-jdk-defaults.json", SSLConfig.jdkDefaultServer(
-                IdentityPrivateKey.builder().certChainPath("ca.crt").privateKeyPath("key.pem").build()));
-    }
-
-    @Test
-    void modernServer() throws IOException {
-        check("server-modern.json", SSLConfig.modernCompatibilityServer(
-                IdentityPrivateKey.builder().certChainPath("ca.crt").privateKeyPath("key.pem").build()));
-    }
-
-    @Test
-    void intermediateServer() throws IOException {
-        check("server-intermediate.json", SSLConfig.intermediateCompatibilityServer(
-                IdentityPrivateKey.builder().certChainPath("ca.crt").privateKeyPath("key.pem").build()));
     }
 
     @Test
@@ -124,6 +101,11 @@ public class SSLConfigTest {
     }
 
     @Test
+    void ciphersIntermediate() throws IOException {
+        check("ciphers-intermediate.json", SSLConfig.builder().ciphers(CiphersIntermediate.of()).build());
+    }
+
+    @Test
     void ciphersJdk() throws IOException {
         check("ciphers-jdk.json", SSLConfig.builder().ciphers(CiphersJdk.of()).build());
     }
@@ -141,6 +123,11 @@ public class SSLConfigTest {
     @Test
     void protocolsModern() throws IOException {
         check("protocols-modern.json", SSLConfig.builder().protocols(ProtocolsModern.of()).build());
+    }
+
+    @Test
+    void protocolsIntermediate() throws IOException {
+        check("protocols-intermediate.json", SSLConfig.builder().protocols(ProtocolsIntermediate.of()).build());
     }
 
     @Test

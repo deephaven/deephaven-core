@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 /**
  * The trust material configuration.
  *
- * @see TrustDefault
  * @see TrustStore
  * @see TrustCertificates
  * @see TrustJdk

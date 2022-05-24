@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 /**
  * The TLS protocols.
  *
- * @see ProtocolsDefault
  * @see ProtocolsJdk
  * @see ProtocolsModern
  * @see ProtocolsProperties

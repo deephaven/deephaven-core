@@ -1,12 +1,13 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.ssl.config.SSLConfig;
+import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
-import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SupportedCipherSuiteFilter;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.util.NettySslUtils;
 
@@ -21,29 +22,43 @@ public final class ChannelHelper {
     /**
      * Creates a {@link ManagedChannel} according to the {@code clientConfig}.
      *
+     * <p>
+     * If the target is secure, the channel will be configured with SSL. By default, the SSL configuration inherits
+     * configuration logic from {@link TrustJdk} and {@link GrpcSslContexts#configure(SslContextBuilder)}. As mentioned
+     * there: "precisely what is set is permitted to change, so if an application requires particular settings it should
+     * override the options set".
+     *
      * @param clientConfig the Deephaven client configuration
      * @return the channel
      */
     public static ManagedChannel channel(ClientConfig clientConfig) {
-        final NettyChannelBuilder builder = NettyChannelBuilder
+        final NettyChannelBuilder channelBuilder = NettyChannelBuilder
                 .forTarget(clientConfig.target().toString())
                 .maxInboundMessageSize(clientConfig.maxInboundMessageSize());
         if (clientConfig.target().isSecure()) {
-            final SSLConfig ssl = clientConfig.sslOrDefault();
-            final SSLFactory sslFactory = KickstartUtils.create(ssl, SSLConfig.DEFAULT_CLIENT_TRUST,
-                    SSLConfig.DEFAULT_CLIENT_PROTOCOLS, SSLConfig.DEFAULT_CLIENT_CIPHERS);
-            final SslContextBuilder netty = NettySslUtils.forClient(sslFactory);
-            final SslContext grpc;
+            final SSLConfig ssl = clientConfig.ssl().orElseGet(SSLConfig::empty).orTrust(TrustJdk.of());
+            final SSLFactory sslFactory = KickstartUtils.create(ssl);
+            final SslContextBuilder sslBuilder = NettySslUtils.forClient(sslFactory);
+
+            // GrpcSslContext potentially configures the following: protocols, ciphers, sslProvider,
+            // applicationProtocolConfig, and sslContextProvider.
+            GrpcSslContexts.configure(sslBuilder);
+
+            if (ssl.protocols().isPresent() || ssl.ciphers().isPresent()) {
+                // If the user was explicit, we'll re-set protocols and ciphers
+                sslBuilder
+                        .protocols(sslFactory.getProtocols())
+                        .ciphers(sslFactory.getCiphers(), SupportedCipherSuiteFilter.INSTANCE);
+            }
             try {
-                grpc = GrpcSslContexts.configure(netty).build();
+                channelBuilder.sslContext(sslBuilder.build());
             } catch (SSLException e) {
                 throw new RuntimeException(e);
             }
-            builder.sslContext(grpc);
         } else {
-            builder.usePlaintext();
+            channelBuilder.usePlaintext();
         }
-        clientConfig.userAgent().ifPresent(builder::userAgent);
-        return builder.build();
+        clientConfig.userAgent().ifPresent(channelBuilder::userAgent);
+        return channelBuilder.build();
     }
 }

@@ -15,84 +15,22 @@ import java.util.Optional;
  *
  * @see io.deephaven.ssl.config
  */
-@Immutable
+@Immutable(copy = true)
 @BuildableStyle
 @JsonDeserialize(as = ImmutableSSLConfig.class)
 public abstract class SSLConfig {
-
-    public static final TrustJdk DEFAULT_CLIENT_TRUST = TrustJdk.of();
-    public static final ProtocolsModern DEFAULT_CLIENT_PROTOCOLS = ProtocolsModern.of();
-    public static final CiphersModern DEFAULT_CLIENT_CIPHERS = CiphersModern.of();
 
     public static Builder builder() {
         return ImmutableSSLConfig.builder();
     }
 
     /**
-     * The default client configuration is suitable for clients connecting to public Deephaven services. The default
-     * configuration is represented by the JSON:
-     * 
-     * <pre>
-     * {
-     *   "trust": {
-     *     "type": "jdk"
-     *   },
-     *   "protocols": {
-     *     "type": "modern"
-     *   },
-     *   "ciphers": {
-     *     "type": "modern"
-     *   }
-     * }
-     * </pre>
+     * An empty SSL configuration, equivalent to {@code builder().build()}.
      *
-     * @return the default client configuration
+     * @return the empty configuration
      */
-    public static SSLConfig defaultClient() {
-        return builder()
-                .trust(DEFAULT_CLIENT_TRUST)
-                .protocols(DEFAULT_CLIENT_PROTOCOLS)
-                .ciphers(DEFAULT_CLIENT_CIPHERS)
-                .build();
-    }
-
-    /**
-     * Creates a server configuration with JDK default compatibility.
-     */
-    public static SSLConfig jdkDefaultServer(Identity identity) {
-        return builder()
-                .identity(identity)
-                .protocols(ProtocolsJdk.of())
-                .ciphers(CiphersJdk.of())
-                .build();
-    }
-
-    /**
-     * Creates a server configuration with modern compatibility.
-     *
-     * @see ProtocolsModern
-     * @see CiphersModern
-     */
-    public static SSLConfig modernCompatibilityServer(Identity identity) {
-        return builder()
-                .identity(identity)
-                .protocols(ProtocolsModern.of())
-                .ciphers(CiphersModern.of())
-                .build();
-    }
-
-    /**
-     * Creates a server configuration with intermediate compatibility.
-     *
-     * @see ProtocolsIntermediate
-     * @see CiphersIntermediate
-     */
-    public static SSLConfig intermediateCompatibilityServer(Identity identity) {
-        return builder()
-                .identity(identity)
-                .protocols(ProtocolsIntermediate.of())
-                .ciphers(CiphersIntermediate.of())
-                .build();
+    public static SSLConfig empty() {
+        return builder().build();
     }
 
     public static SSLConfig parseJson(Path path) throws IOException {
@@ -133,6 +71,27 @@ public abstract class SSLConfig {
     @Default
     public ClientAuth clientAuthentication() {
         return ClientAuth.NONE;
+    }
+
+    public final SSLConfig orTrust(Trust defaultTrust) {
+        if (trust().isPresent()) {
+            return this;
+        }
+        return ((ImmutableSSLConfig) this).withTrust(defaultTrust);
+    }
+
+    public final SSLConfig orProtocols(Protocols defaultProtocols) {
+        if (protocols().isPresent()) {
+            return this;
+        }
+        return ((ImmutableSSLConfig) this).withProtocols(defaultProtocols);
+    }
+
+    public final SSLConfig orCiphers(Ciphers defaultCiphers) {
+        if (ciphers().isPresent()) {
+            return this;
+        }
+        return ((ImmutableSSLConfig) this).withCiphers(defaultCiphers);
     }
 
     public enum ClientAuth {
