@@ -766,7 +766,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
                     removedTable.getRowSet().writableCast().remove(downstream.removed());
                     removedTable.getRowSet().writableCast().compact();
-                    Assert.assertion(removedTable.getRowSet().isEmpty(), "removedTable.build().isEmpty()");
+                    Assert.assertion(removedTable.getRowSet().isEmpty(), "removedTable.getRowSet().isEmpty()");
                     removedTable.notifyListeners(downstream);
                 });
             }
