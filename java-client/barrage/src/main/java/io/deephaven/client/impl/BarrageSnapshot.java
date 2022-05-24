@@ -68,4 +68,7 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
      * @return the {@code BarrageTable}
      */
     BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException;
+
+    @Override
+    void close();
 }
