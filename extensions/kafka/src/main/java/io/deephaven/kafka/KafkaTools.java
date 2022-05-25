@@ -18,10 +18,16 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.base.Pair;
-import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
@@ -33,7 +39,6 @@ import io.deephaven.kafka.KafkaTools.TableType.Visitor;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.impl.LocalTableMap;
 import io.deephaven.engine.table.impl.StreamTableTools;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.internal.log.LoggerFactory;
@@ -42,6 +47,7 @@ import io.deephaven.kafka.ingest.*;
 import io.deephaven.kafka.publish.*;
 import io.deephaven.stream.StreamToTableAdapter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.vector.*;
 import org.apache.avro.LogicalType;
@@ -60,12 +66,12 @@ import org.apache.kafka.common.utils.Utils;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -1118,33 +1124,20 @@ public class KafkaTools {
      * Type for the result {@link Table} returned by kafka consumers.
      */
     public interface TableType {
-        static Stream stream() {
-            return ImmutableStream.of(false);
-        }
 
-        static Stream streamMap() {
-            return ImmutableStream.of(true);
+        static Stream stream() {
+            return Stream.of();
         }
 
         static Append append() {
-            return ImmutableAppend.of(false);
-        }
-
-        static Append appendMap() {
-            return ImmutableAppend.of(true);
+            return Append.of();
         }
 
         static Ring ring(int capacity) {
-            return ImmutableRing.of(capacity, false);
-        }
-
-        static Ring ringMap(int capacity) {
-            return ImmutableRing.of(capacity, true);
+            return Ring.of(capacity);
         }
 
         <T, V extends Visitor<T>> T walk(V visitor);
-
-        boolean isMap();
 
         interface Visitor<T> {
             T visit(Stream stream);
@@ -1156,8 +1149,8 @@ public class KafkaTools {
 
         /**
          * <p>
-         * Consume all partitions into a single interleaved stream table, which will present only newly-available rows
-         * to downstream operations and visualizations.
+         * Consume data into an in-memory stream table, which will present only newly-available rows to downstream
+         * operations and visualizations.
          * <p>
          * See {@link Table#STREAM_TABLE_ATTRIBUTE} for a detailed explanation of stream table semantics, and
          * {@link io.deephaven.engine.table.impl.StreamTableTools} for related tooling.
@@ -1165,8 +1158,10 @@ public class KafkaTools {
         @Immutable
         @SimpleStyle
         abstract class Stream implements TableType {
-            @Parameter
-            public abstract boolean isMap();
+
+            public static Stream of() {
+                return ImmutableStream.of();
+            }
 
             @Override
             public final <T, V extends Visitor<T>> T walk(V visitor) {
@@ -1175,15 +1170,17 @@ public class KafkaTools {
         }
 
         /**
-         * Consume all partitions into a single interleaved in-memory append-only table.
+         * Consume data into an in-memory append-only table.
          *
          * @see StreamTableTools#streamToAppendOnlyTable(Table)
          */
         @Immutable
         @SimpleStyle
         abstract class Append implements TableType {
-            @Parameter
-            public abstract boolean isMap();
+
+            public static Append of() {
+                return ImmutableAppend.of();
+            }
 
             @Override
             public final <T, V extends Visitor<T>> T walk(V visitor) {
@@ -1192,26 +1189,20 @@ public class KafkaTools {
         }
 
         /**
-         * Consume all partitions into a single interleaved in-memory ring table.
+         * Consume data into an in-memory ring table.
          *
          * @see RingTableTools#of(Table, int)
          */
         @Immutable
         @SimpleStyle
         abstract class Ring implements TableType {
-            public static Ring of(int capacity) {
-                return ImmutableRing.of(capacity, false);
-            }
 
-            public static Ring map(int capacity) {
-                return ImmutableRing.of(capacity, true);
+            public static Ring of(int capacity) {
+                return ImmutableRing.of(capacity);
             }
 
             @Parameter
             public abstract int capacity();
-
-            @Parameter
-            public abstract boolean isMap();
 
             @Override
             public final <T, V extends Visitor<T>> T walk(V visitor) {
@@ -1221,36 +1212,62 @@ public class KafkaTools {
     }
 
     /**
-     * Map "Python-friendly" table type name to a {@link TableType}.
+     * Map "Python-friendly" table type name to a {@link TableType}. Supported values are:
+     * <ol>
+     * <li>{@code "stream"}</li>
+     * <li>{@code "append"}</li>
+     * <li>{@code "ring:<capacity>"} where capacity is a integer number specifying the maximum number of trailing rows
+     * to include in the result</li>
+     * </ol>
      *
      * @param typeName The friendly name
      * @return The mapped {@link TableType}
      */
     @ScriptApi
     public static TableType friendlyNameToTableType(@NotNull final String typeName) {
-        // @formatter:off
-        switch (typeName) {
-            case "stream"    : return TableType.stream();
-            case "append"    : return TableType.append();
-            case "stream_map": return TableType.streamMap();
-            case "append_map": return TableType.appendMap();
-            default          : return null;
+        final String[] split = typeName.split(":");
+        switch (split[0].trim()) {
+            case "stream":
+                if (split.length != 1) {
+                    throw unexpectedType(typeName, null);
+                }
+                return TableType.stream();
+            case "append":
+                if (split.length != 1) {
+                    throw unexpectedType(typeName, null);
+                }
+                return TableType.append();
+            case "ring":
+                if (split.length != 2) {
+                    throw unexpectedType(typeName, null);
+                }
+                try {
+                    return TableType.ring(Integer.parseInt(split[1].trim()));
+                } catch (NumberFormatException e) {
+                    throw unexpectedType(typeName, e);
+                }
+            default:
+                throw unexpectedType(typeName, null);
         }
-        // @formatter:on
+    }
+
+    private static IllegalArgumentException unexpectedType(@NotNull final String typeName, @Nullable Exception cause) {
+        return new IllegalArgumentException("Unexpected type format \"" + typeName
+                + "\", expected \"stream\", \"append\", or \"ring:<capacity>\"", cause);
     }
 
     /**
-     * Consume from Kafka to a Deephaven table.
+     * Consume from Kafka to a Deephaven {@link Table}.
      *
-     * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
+     * @param kafkaProperties Properties to configure the result and also to be passed to create the KafkaConsumer
      * @param topic Kafka topic name
      * @param partitionFilter A predicate returning true for the partitions to consume. The convenience constant
      *        {@code ALL_PARTITIONS} is defined to facilitate requesting all partitions.
      * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
      * @param keySpec Conversion specification for Kafka record keys
      * @param valueSpec Conversion specification for Kafka record values
-     * @param resultType {@link TableType} specifying the type of the expected result
-     * @return The result table containing Kafka stream data formatted according to {@code resultType}
+     * @param tableType {@link TableType} specifying the type of the expected result
+     * @return The result {@link Table} containing Kafka stream data formatted according to {@code tableType}
      */
     @SuppressWarnings("unused")
     public static Table consumeToTable(
@@ -1260,7 +1277,129 @@ public class KafkaTools {
             @NotNull final IntToLongFunction partitionToInitialOffset,
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
-            @NotNull final TableType resultType) {
+            @NotNull final TableType tableType) {
+        return consumeToResult(
+                kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec, tableType,
+                new TableResultFactory());
+    }
+
+    /**
+     * Consume from Kafka to a Deephaven {@link PartitionedTable} containing one constituent {@link Table} per
+     * partition.
+     *
+     * @param kafkaProperties Properties to configure the result and also to be passed to create the KafkaConsumer
+     * @param topic Kafka topic name
+     * @param partitionFilter A predicate returning true for the partitions to consume. The convenience constant
+     *        {@code ALL_PARTITIONS} is defined to facilitate requesting all partitions.
+     * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
+     * @param keySpec Conversion specification for Kafka record keys
+     * @param valueSpec Conversion specification for Kafka record values
+     * @param tableType {@link TableType} specifying the type of the expected result's constituent tables
+     * @return The result {@link PartitionedTable} containing Kafka stream data formatted according to {@code tableType}
+     */
+    @SuppressWarnings("unused")
+    public static PartitionedTable consumeToPartitionedTable(
+            @NotNull final Properties kafkaProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            @NotNull final Consume.KeyOrValueSpec keySpec,
+            @NotNull final Consume.KeyOrValueSpec valueSpec,
+            @NotNull final TableType tableType) {
+        return consumeToResult(
+                kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec, valueSpec, tableType,
+                new PartitionedTableResultFactory());
+    }
+
+    private interface ResultFactory<TYPE> {
+
+        UpdateSourceRegistrar getSourceRegistrar();
+
+        Pair<TYPE, IntFunction<KafkaStreamConsumer>> makeResultAndConsumerFactoryPair(
+                @NotNull TableDefinition tableDefinition,
+                @NotNull TableType tableType,
+                @NotNull Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
+                @NotNull MutableObject<KafkaIngester> kafkaIngesterHolder);
+    }
+
+    private static class TableResultFactory implements ResultFactory<Table> {
+
+        @Override
+        public UpdateSourceRegistrar getSourceRegistrar() {
+            return UpdateGraphProcessor.DEFAULT;
+        }
+
+        @Override
+        public Pair<Table, IntFunction<KafkaStreamConsumer>> makeResultAndConsumerFactoryPair(
+                @NotNull final TableDefinition tableDefinition,
+                @NotNull final TableType tableType,
+                @NotNull final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
+                @NotNull final MutableObject<KafkaIngester> kafkaIngesterHolder) {
+            final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> singleAdapterPair =
+                    adapterFactory.get();
+            final Table streamTable = singleAdapterPair.getFirst().table();
+            final Table result = tableType.walk(new StreamTableOperation(streamTable));
+            final IntFunction<KafkaStreamConsumer> consumerFactory = (final int partition) -> {
+                singleAdapterPair.getFirst().setShutdownCallback(() -> kafkaIngesterHolder.getValue().shutdown());
+                return new SimpleKafkaStreamConsumer(singleAdapterPair.getSecond(), singleAdapterPair.getFirst());
+            };
+            return new Pair<>(result, consumerFactory);
+        }
+    }
+
+    private static class PartitionedTableResultFactory implements ResultFactory<PartitionedTable> {
+
+        private final UpdateSourceCombiner refreshCombiner = new UpdateSourceCombiner();
+
+        @Override
+        public UpdateSourceRegistrar getSourceRegistrar() {
+            return refreshCombiner;
+        }
+
+        @Override
+        public Pair<PartitionedTable, IntFunction<KafkaStreamConsumer>> makeResultAndConsumerFactoryPair(
+                @NotNull final TableDefinition tableDefinition,
+                @NotNull final TableType tableType,
+                @NotNull final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
+                @NotNull final MutableObject<KafkaIngester> kafkaIngesterHolder) {
+            final StreamPartitionedTable result = new StreamPartitionedTable(tableDefinition, refreshCombiner);
+            final IntFunction<KafkaStreamConsumer> consumerFactory = (final int partition) -> {
+                final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> partitionAdapterPair =
+                        adapterFactory.get();
+                partitionAdapterPair.getFirst()
+                        .setShutdownCallback(() -> kafkaIngesterHolder.getValue().shutdownPartition(partition));
+                final Table streamTable = partitionAdapterPair.getFirst().table();
+                final Table partitionTable = tableType.walk(new StreamTableOperation(streamTable));
+                result.enqueueAdd(partition, partitionTable);
+                return new SimpleKafkaStreamConsumer(partitionAdapterPair.getSecond(), partitionAdapterPair.getFirst());
+            };
+            return new Pair<>(result, consumerFactory);
+        }
+    }
+
+    /**
+     * Consume from Kafka to a result {@link Table} or {@link PartitionedTable}.
+     *
+     * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
+     * @param topic Kafka topic name
+     * @param partitionFilter A predicate returning true for the partitions to consume. The convenience constant
+     *        {@code ALL_PARTITIONS} is defined to facilitate requesting all partitions.
+     * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
+     * @param keySpec Conversion specification for Kafka record keys
+     * @param valueSpec Conversion specification for Kafka record values
+     * @param tableType {@link TableType} specifying the type of tables used in the result
+     * @return The result table containing Kafka stream data formatted according to {@code tableType}
+     */
+    @SuppressWarnings("unused")
+    public static <RESULT_TYPE> RESULT_TYPE consumeToResult(
+            @NotNull final Properties kafkaProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            @NotNull final Consume.KeyOrValueSpec keySpec,
+            @NotNull final Consume.KeyOrValueSpec valueSpec,
+            @NotNull final TableType tableType,
+            @NotNull final ResultFactory<RESULT_TYPE> resultFactory) {
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
         final boolean ignoreValue = valueSpec.dataFormat() == DataFormat.IGNORE;
         if (ignoreKey && ignoreValue) {
@@ -1296,10 +1435,7 @@ public class KafkaTools {
                         valueSpec);
 
         final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
-
-        final StreamTableMap streamTableMap = resultType.isMap() ? new StreamTableMap(tableDefinition) : null;
-        final UpdateSourceRegistrar updateSourceRegistrar =
-                streamTableMap == null ? UpdateGraphProcessor.DEFAULT : streamTableMap.refreshCombiner;
+        final UpdateSourceRegistrar updateSourceRegistrar = resultFactory.getSourceRegistrar();
 
         final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
             final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
@@ -1330,31 +1466,11 @@ public class KafkaTools {
         };
 
         final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
-        final Table result;
-        final IntFunction<KafkaStreamConsumer> partitionToConsumer;
-        if (resultType.isMap()) {
-            result = streamTableMap.asTable(true, true, true);
-            partitionToConsumer = (final int partition) -> {
-                final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> partitionAdapterPair =
-                        adapterFactory.get();
-                partitionAdapterPair.getFirst().setShutdownCallback(
-                        () -> kafkaIngesterHolder.getValue().shutdownPartition(partition));
-                final Table streamTable = partitionAdapterPair.getFirst().table();
-                final Table partitionTable = resultType.walk(new StreamTableOperation(streamTable));
-                streamTableMap.enqueueUpdate(() -> Assert.eqNull(streamTableMap.put(partition, partitionTable),
-                        "streamTableMap.put(partition, partitionTable)"));
-                return new SimpleKafkaStreamConsumer(partitionAdapterPair.getSecond(), partitionAdapterPair.getFirst());
-            };
-        } else {
-            final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> singleAdapterPair =
-                    adapterFactory.get();
-            final Table streamTable = singleAdapterPair.getFirst().table();
-            result = resultType.walk(new StreamTableOperation(streamTable));
-            partitionToConsumer = (final int partition) -> {
-                singleAdapterPair.getFirst().setShutdownCallback(() -> kafkaIngesterHolder.getValue().shutdown());
-                return new SimpleKafkaStreamConsumer(singleAdapterPair.getSecond(), singleAdapterPair.getFirst());
-            };
-        }
+        final Pair<RESULT_TYPE, IntFunction<KafkaStreamConsumer>> resultAndConsumerFactoryPair =
+                resultFactory.makeResultAndConsumerFactoryPair(tableDefinition, tableType, adapterFactory,
+                        kafkaIngesterHolder);
+        final RESULT_TYPE result = resultAndConsumerFactoryPair.getFirst();
+        final IntFunction<KafkaStreamConsumer> partitionToConsumer = resultAndConsumerFactoryPair.getSecond();
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
@@ -1591,27 +1707,66 @@ public class KafkaTools {
                         "and can't automatically set it for type " + dataType);
     }
 
-    private static class StreamTableMap extends LocalTableMap implements Runnable {
+    private static class StreamPartitionedTable extends PartitionedTableImpl implements Runnable {
 
-        private final UpdateSourceCombiner refreshCombiner = new UpdateSourceCombiner();
-        private final Queue<Runnable> deferredUpdates = new ConcurrentLinkedQueue<>();
+        private static final String PARTITION_COLUMN_NAME = "Partition";
+        private static final String CONSTITUENT_COLUMN_NAME = "Table";
 
-        private StreamTableMap(@NotNull final TableDefinition constituentDefinition) {
-            super(null, constituentDefinition);
-            refreshCombiner.addSource(this); // Results in managing the refreshCombiner
+        @SuppressWarnings({"FieldCanBeLocal", "unused"})
+        @ReferentialIntegrity
+        private final UpdateSourceCombiner refreshCombiner;
+
+        private volatile long lastAddedPartitionRowKey = -1L; // NULL_ROW_KEY
+
+        private StreamPartitionedTable(
+                @NotNull final TableDefinition constituentDefinition,
+                @NotNull final UpdateSourceCombiner refreshCombiner) {
+            super(makeResultTable(), Set.of(PARTITION_COLUMN_NAME), true, CONSTITUENT_COLUMN_NAME,
+                    constituentDefinition, true, false);
+            this.refreshCombiner = refreshCombiner;
+            manage(refreshCombiner);
+            refreshCombiner.addSource(this);
             UpdateGraphProcessor.DEFAULT.addSource(refreshCombiner);
         }
 
         @Override
         public void run() {
-            Runnable deferredUpdate;
-            while ((deferredUpdate = deferredUpdates.poll()) != null) {
-                deferredUpdate.run();
+            // noinspection resource
+            final WritableRowSet rowSet = table().getRowSet().writableCast();
+
+            final long newLastRowKey = lastAddedPartitionRowKey;
+            final long oldLastRowKey = rowSet.lastRowKey();
+
+            if (newLastRowKey != oldLastRowKey) {
+                final RowSet added = RowSetFactory.fromRange(oldLastRowKey + 1, newLastRowKey);
+                rowSet.insert(added);
+                ((BaseTable) table()).notifyListeners(new TableUpdateImpl(added,
+                        RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
             }
         }
 
-        private void enqueueUpdate(@NotNull final Runnable deferredUpdate) {
-            deferredUpdates.add(deferredUpdate);
+        public synchronized void enqueueAdd(final int partition, @NotNull final Table partitionTable) {
+            final long partitionRowKey = lastAddedPartitionRowKey + 1;
+            ((WritableColumnSource<Integer>) table().getColumnSource(PARTITION_COLUMN_NAME, Integer.class))
+                    .set(partitionRowKey, partition);
+            ((WritableColumnSource<Table>) table().getColumnSource(CONSTITUENT_COLUMN_NAME, Table.class))
+                    .set(partitionRowKey, partitionTable);
+            lastAddedPartitionRowKey = partitionRowKey;
+        }
+
+        private static Table makeResultTable() {
+            final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(2);
+            resultSources.put(PARTITION_COLUMN_NAME,
+                    ArrayBackedColumnSource.getMemoryColumnSource(int.class, null));
+            resultSources.put(CONSTITUENT_COLUMN_NAME,
+                    ArrayBackedColumnSource.getMemoryColumnSource(Table.class, null));
+            // noinspection resource
+            return new QueryTable(RowSetFactory.empty().toTracking(), resultSources) {
+                {
+                    setFlat();
+                    setRefreshing(true);
+                }
+            };
         }
     }
 

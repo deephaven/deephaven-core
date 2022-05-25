@@ -12,7 +12,7 @@ public class AdaptiveRowSetBuilderRandom implements RowSetBuilderRandom {
 
     @Override
     public WritableRowSet build() {
-        return new WritableRowSetImpl(builder.getTreeIndexImpl());
+        return new WritableRowSetImpl(builder.getOrderedLongSet());
     }
 
     @Override

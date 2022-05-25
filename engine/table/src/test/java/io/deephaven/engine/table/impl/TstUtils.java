@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.liveness.LivenessStateException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSetTstUtils;
@@ -2308,6 +2309,15 @@ public class TstUtils {
         RefreshingTableTestCase.printTableUpdates = origPrintTableUpdates;
         if (failed) {
             throw new RuntimeException("Debug candidate: seed=" + bestSeed + " steps=" + bestSteps);
+        }
+    }
+
+    public static void expectLivenessException(@NotNull final Runnable action) {
+        try {
+            action.run();
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted("Expected LivenessStateException");
+        } catch (LivenessStateException expected) {
         }
     }
 }

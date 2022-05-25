@@ -14,7 +14,7 @@ public final class PermanentLivenessManager implements LivenessManager {
     PermanentLivenessManager() {}
 
     @Override
-    public final boolean tryManage(@NotNull LivenessReferent referent) {
+    public boolean tryManage(@NotNull LivenessReferent referent) {
         if (Liveness.REFERENCE_TRACKING_DISABLED) {
             return true;
         }

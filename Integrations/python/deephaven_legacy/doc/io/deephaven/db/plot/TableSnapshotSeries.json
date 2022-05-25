@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.plot.TableSnapshotSeries",
- "methods": {},
- "path": "io.deephaven.db.plot.TableSnapshotSeries",
- "text": "Data series that are backed by table snapshots",
- "typeName": "interface"
-}

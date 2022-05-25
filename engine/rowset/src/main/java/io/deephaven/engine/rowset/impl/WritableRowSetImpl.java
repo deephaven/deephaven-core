@@ -346,6 +346,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         if (positions.isEmpty()) {
             return RowSetFactory.empty();
         }
+        if (positions.isContiguous()) {
+            return subSetByPositionRange(positions.firstRowKey(), positions.lastRowKey() + 1);
+        }
         final MutableLong currentOffset = new MutableLong();
         final RowSequence.Iterator iter = getRowSequenceIterator();
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();

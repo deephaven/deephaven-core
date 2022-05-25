@@ -3686,7 +3686,7 @@ public class RspBitmapTest {
         rb = rb.addRange(3 * BLOCK_SIZE, 3 * BLOCK_SIZE + BLOCK_LAST);
         final OrderedLongSet.BuilderSequential b = new OrderedLongSetBuilderSequential();
         rb.invert(b, new TrackingWritableRowSetImpl(rb).rangeIterator(), rb.getCardinality());
-        final OrderedLongSet timpl = b.getTreeIndexImpl();
+        final OrderedLongSet timpl = b.getOrderedLongSet();
         assertEquals(rb.getCardinality(), timpl.ixCardinality());
         assertTrue(timpl.ixContainsRange(0, rb.getCardinality() - 1));
     }
@@ -4300,7 +4300,7 @@ public class RspBitmapTest {
         b.appendKey(1);
         b.appendKey(BLOCK_SIZE);
         b.appendRange(BLOCK_SIZE + BLOCK_LAST - 1, BLOCK_SIZE + BLOCK_SIZE);
-        final OrderedLongSet t = b.getTreeIndexImpl();
+        final OrderedLongSet t = b.getOrderedLongSet();
         t.ixValidate();
         assertEquals(5, t.ixCardinality());
     }
@@ -4312,7 +4312,7 @@ public class RspBitmapTest {
         final RspBitmap picks = vs2rb(10, BLOCK_SIZE + 1, -(BLOCK_SIZE + BLOCK_LAST + 5), 3 * BLOCK_SIZE + 10);
         final RspBitmapBuilderSequential builder = new RspBitmapBuilderSequential();
         rb.invert(builder, picks.ixRangeIterator(), rb.getCardinality() - 1);
-        final RspBitmap result = (RspBitmap) builder.getTreeIndexImpl();
+        final RspBitmap result = (RspBitmap) builder.getOrderedLongSet();
         assertEquals(picks.getCardinality(), result.getCardinality());
         assertEquals(0, result.get(0));
         assertEquals(2, result.get(1));

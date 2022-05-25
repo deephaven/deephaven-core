@@ -144,35 +144,31 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         try {
             TableTools.merge(table1, table2);
             TestCase.fail("Expected exception");
-        } catch (UnsupportedOperationException e) {
-            // Expected
+        } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
+
         try {
             TableTools.merge(table2, table1);
             TestCase.fail("Expected exception");
-        } catch (UnsupportedOperationException e) {
-            // Expected
+        } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
+
         try {
             TableTools.merge(table2, emptyTable);
-        } catch (UnsupportedOperationException mismatchException) {
-            TestCase.assertEquals(
-                    "Column mismatch for table 1, missing columns: [GroupedInts1, StringKeys1], additional columns: [GroupedInts, StringKeys]",
-                    mismatchException.getMessage());
+            TestCase.fail("Expected exception");
+        } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, table2.updateView("S2=StringKeys1"));
-        } catch (UnsupportedOperationException mismatchException) {
-            TestCase.assertEquals("Column mismatch for table 1, additional columns: [S2]",
-                    mismatchException.getMessage());
+            TestCase.fail("Expected exception");
+        } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, table2.dropColumns("StringKeys1"));
-        } catch (UnsupportedOperationException mismatchException) {
-            TestCase.assertEquals("Column mismatch for table 1, missing columns: [StringKeys1]",
-                    mismatchException.getMessage());
+            TestCase.fail("Expected exception");
+        } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
     }
 
@@ -667,7 +663,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         // Select a prime that guarantees shifts from the merge operations.
         final int PRIME = 61409;
-        Assert.assertTrue(2 * PRIME > UnionRedirection.CHUNK_MULTIPLE);
+        Assert.assertTrue(2 * PRIME > UnionRedirection.ALLOCATION_UNIT_ROW_KEYS);
 
         for (int ii = 1; ii < 10; ++ii) {
             final int fii = PRIME * ii;
@@ -723,7 +719,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         // Select a prime that guarantees shifts from the merge operations.
         final int PRIME = 61409;
-        Assert.assertTrue(2 * PRIME > UnionRedirection.CHUNK_MULTIPLE);
+        Assert.assertTrue(2 * PRIME > UnionRedirection.ALLOCATION_UNIT_ROW_KEYS);
 
         for (int ii = 1; ii < 10; ++ii) {
             final int fii = 2 * PRIME * ii + 1;
@@ -799,7 +795,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         // Select a prime that guarantees shifts from the merge operations.
         final int SHIFT_SIZE = 4 * 61409;
-        Assert.assertTrue(SHIFT_SIZE > UnionRedirection.CHUNK_MULTIPLE);
+        Assert.assertTrue(SHIFT_SIZE > UnionRedirection.ALLOCATION_UNIT_ROW_KEYS);
 
         for (int ii = 1; ii < 10; ++ii) {
             final int fii = SHIFT_SIZE * ii + 1;
@@ -897,7 +893,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         // Select a prime that guarantees shifts from the merge operations.
         final int PRIME = 61409;
-        Assert.assertTrue(2 * PRIME > UnionRedirection.CHUNK_MULTIPLE);
+        Assert.assertTrue(2 * PRIME > UnionRedirection.ALLOCATION_UNIT_ROW_KEYS);
 
         final Consumer<Boolean> validate = (usePrev) -> {
             final RowSet origRowSet = usePrev ? table.getRowSet().copyPrev() : table.getRowSet();
@@ -1011,8 +1007,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 TstUtils.testRefreshingTable(i(0).toTracking(), intCol("IntCol", 0), charCol("CharCol", 'a'));
 
         final Table joined = testRefreshingTable.view("CharCol").join(testRefreshingTable, "CharCol", "IntCol");
-        final TableMap map = joined.partitionBy("IntCol");
-        final Table merged = map.merge();
+        final PartitionedTable partitionedTable = joined.partitionBy("IntCol");
+        final Table merged = partitionedTable.merge();
 
         final long start = System.currentTimeMillis();
         long stepStart = start;

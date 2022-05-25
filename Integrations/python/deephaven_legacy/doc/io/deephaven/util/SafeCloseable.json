@@ -1,7 +1,8 @@
 {
  "className": "io.deephaven.util.SafeCloseable",
  "methods": {
-  "closeArray": ":param safeCloseables: io.deephaven.util.SafeCloseable..."
+  "closeArray": ":param safeCloseables: io.deephaven.util.SafeCloseable...",
+  "closeSingle": ":param safeCloseable: io.deephaven.util.SafeCloseable"
  },
  "path": "io.deephaven.util.SafeCloseable",
  "text": "AutoCloseable sub-interface that does not throw a checked exception.",

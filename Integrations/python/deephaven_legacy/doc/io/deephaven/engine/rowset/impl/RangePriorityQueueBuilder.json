@@ -3,8 +3,8 @@
  "methods": {
   "addKey": ":param key: long",
   "addRange": ":param firstKey: long\n:param lastKey: long",
-  "getTreeIndexImpl": ":return: io.deephaven.engine.rowset.impl.OrderedLongSet",
-  "getTreeIndexImplAndReset": ":return: io.deephaven.engine.rowset.impl.OrderedLongSet",
+  "getOrderedLongSet": ":return: io.deephaven.engine.rowset.impl.OrderedLongSet",
+  "getOrderedLongSetAndReset": ":return: io.deephaven.engine.rowset.impl.OrderedLongSet",
   "size": "Returns our internal queue size. This is not necessarily the size of the resulting RowSet.\n\n:return: int"
  },
  "path": "io.deephaven.engine.rowset.impl.RangePriorityQueueBuilder",

@@ -2353,39 +2353,21 @@ def oneClick(*args):
       :return: (io.deephaven.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table and columns
       
     *Overload 2*  
-      :param tMap: (io.deephaven.engine.table.TableMap) - TableMap
-      :param t: io.deephaven.engine.table.Table
-      :param byColumns: (java.lang.String...) - selected columns
-      :return: (io.deephaven.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table map and columns
+      :param pTable: (io.deephaven.engine.table.PartitionedTable) - PartitionedTable
+      :return: (io.deephaven.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified partitioned table and columns
       
     *Overload 3*  
-      :param tMap: (io.deephaven.engine.table.TableMap) - TableMap
-      :param tableDefinition: io.deephaven.engine.table.TableDefinition
-      :param byColumns: (java.lang.String...) - selected columns
-      :return: (io.deephaven.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table map and columns
-      
-    *Overload 4*  
       :param t: (io.deephaven.engine.table.Table) - table
       :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display
               data when appropriate oneclicks are selected
       :param byColumns: (java.lang.String...) - selected columns
       :return: (io.deephaven.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table and columns
       
-    *Overload 5*  
-      :param tMap: (io.deephaven.engine.table.TableMap) - TableMap
-      :param t: io.deephaven.engine.table.Table
+    *Overload 4*  
+      :param pTable: (io.deephaven.engine.table.PartitionedTable) - PartitionedTable
       :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display
               data when appropriate oneclicks are selected
-      :param byColumns: (java.lang.String...) - selected columns
-      :return: (io.deephaven.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table map and columns
-      
-    *Overload 6*  
-      :param tMap: (io.deephaven.engine.table.TableMap) - TableMap
-      :param tableDefinition: io.deephaven.engine.table.TableDefinition
-      :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display
-              data when appropriate oneclicks are selected
-      :param byColumns: (java.lang.String...) - selected columns
-      :return: (io.deephaven.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table map and columns
+      :return: (io.deephaven.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified partitioned table and columns
     """
     
     return _plotting_convenience_.oneClick(*args)

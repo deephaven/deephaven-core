@@ -8,7 +8,7 @@ import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.PartitionedTable;
 
 import java.util.*;
 import java.util.function.Function;
@@ -32,7 +32,7 @@ public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInte
      * @param swappableTable table handle
      * @param x the x-axis data column in {@code swappableTable}
      * @param y the y-axis data column in {@code swappableTable}
-     * @param byColumns columns forming the keys of the table map
+     * @param byColumns columns forming the keys of the partitioned table
      */
     AbstractSwappableMultiSeries(final AxesImpl axes, final int id, final Comparable name,
             final SwappableTable swappableTable, final String x, final String y, final String[] byColumns) {
@@ -71,21 +71,21 @@ public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInte
     }
 
     @Override
-    public TableMap getTableMap() {
+    public PartitionedTable getPartitionedTable() {
         if (localTable == null) {
-            return EMPTY_TABLE_MAP;
+            return EMPTY_PARTITIONED_TABLE;
         }
 
-        if (tableMap == null) {
-            synchronized (tableMapLock) {
-                if (tableMap != null) {
-                    return tableMap;
+        if (partitionedTable == null) {
+            synchronized (partitionedTableLock) {
+                if (partitionedTable != null) {
+                    return partitionedTable;
                 }
-                tableMap = localTable.partitionBy(byColumns);
+                partitionedTable = localTable.partitionBy(byColumns);
             }
         }
 
-        return this.tableMap;
+        return this.partitionedTable;
     }
 
     @Override
@@ -115,13 +115,13 @@ public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInte
     @Override
     public void applyTransform(final String columnName, final String update, final Class[] classesToImport,
             final Map<String, Object> params, boolean columnTypesPreserved) {
-        ArgumentValidations.assertNull(tableMap, "tableMap must be null", getPlotInfo());
+        ArgumentValidations.assertNull(partitionedTable, "partitionedTable must be null", getPlotInfo());
         swappableTable.addColumn(columnName);
         final Function<Table, Table> tableTransform = t -> {
             Arrays.stream(classesToImport).forEach(QueryLibrary::importClass);
             params.forEach(QueryScope::addParam);
             return t.update(update);
         };
-        chart().figure().registerTableMapFunction(swappableTable.getTableMapHandle(), tableTransform);
+        chart().figure().registerPartitionedTableFunction(swappableTable.getPartitionedTableHandle(), tableTransform);
     }
 }

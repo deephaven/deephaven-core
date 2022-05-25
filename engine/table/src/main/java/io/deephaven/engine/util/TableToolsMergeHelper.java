@@ -1,95 +1,25 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.deephaven.engine.table.impl.TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY;
+
 /**
- * This class is not intended for public API consumers.
- *
+ * Helper for coalescing and de-unioning tables prior to a merge. Only for engine-internal usage.
  */
 public class TableToolsMergeHelper {
 
-    public static Table mergeTableMap(LocalTableMap tableMap) {
-        final List<Table> tablesToMergeOrNull = getTablesToMerge(tableMap.values().stream(), tableMap.size());
-        final List<Table> tablesToMerge = tablesToMergeOrNull == null ? Collections.emptyList() : tablesToMergeOrNull;
-        return mergeInternal(tableMap.getConstituentDefinitionOrErr(), tablesToMerge, tableMap);
-    }
-
-    /**
-     * @param tableDef = The definition to apply to the result table.
-     * @param tables = The list of tables to merge -- all elements must be non-null and un-partitioned.
-     * @return A new table, containing all the rows from tables, respecting the input ordering.
-     */
-    public static Table mergeInternal(TableDefinition tableDef, List<Table> tables,
-            NotificationQueue.Dependency parentDependency) {
-        final Set<String> targetColumnNames =
-                tableDef.getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toSet());
-
-        boolean isStatic = true;
-        for (int ti = 0; ti < tables.size(); ++ti) {
-            // verify the column names are exactly the same as our target
-            final TableDefinition definition = tables.get(ti).getDefinition();
-            final Set<String> columnNames =
-                    definition.getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toSet());
-            isStatic &= !tables.get(ti).isRefreshing();
-
-            if (!targetColumnNames.containsAll(columnNames) || !columnNames.containsAll(targetColumnNames)) {
-                final Set<String> missingTargets = new HashSet<>(targetColumnNames);
-                missingTargets.removeAll(columnNames);
-                columnNames.removeAll(targetColumnNames);
-                if (missingTargets.isEmpty()) {
-                    throw new UnsupportedOperationException(
-                            "Column mismatch for table " + ti + ", additional columns: " + columnNames);
-                } else if (columnNames.isEmpty()) {
-                    throw new UnsupportedOperationException(
-                            "Column mismatch for table " + ti + ", missing columns: " + missingTargets);
-                } else {
-                    throw new UnsupportedOperationException("Column mismatch for table " + ti + ", missing columns: "
-                            + missingTargets + ", additional columns: " + columnNames);
-                }
-            }
-
-            // TODO: Make this check better? It's slightly too permissive, if we want identical column sets, and not
-            // permissive enough if we want the "merge non-conflicting defs with nulls" behavior.
-            try {
-                definition.checkCompatibility(tableDef);
-            } catch (RuntimeException e) {
-                throw new UnsupportedOperationException("Table definition mismatch for table " + ti, e);
-            }
-        }
-
-        if (!isStatic) {
-            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
-        }
-
-        final UnionSourceManager unionSourceManager = new UnionSourceManager(tableDef, parentDependency);
-        final QueryTable queryTable = unionSourceManager.getResult();
-
-        for (Table table : tables) {
-            unionSourceManager.addTable((QueryTable) table.coalesce(), false);
-        }
-
-        queryTable.setAttribute(Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE);
-
-        return queryTable;
-    }
-
     /**
      * Given a table that consists of only UnionColumnSources, produce a list of new tables that represent each one of
-     * the unioned sources. This basically will undo the merge operation, so that the consituents can be reused in an
+     * the unioned sources. This basically will undo the merge operation, so that the constituents can be reused in a
      * new merge operation. The UnionSourceManager must be shared across all the columns.
      *
      * @param table that has only UnionSourceColumns (with the same manager)
@@ -155,7 +85,7 @@ public class TableToolsMergeHelper {
             if (table == null) {
                 return;
             }
-            if (table instanceof UncoalescedTable || table instanceof TableMapProxyHandler.TableMapProxy) {
+            if (table instanceof UncoalescedTable) {
                 table = table.coalesce();
             }
 

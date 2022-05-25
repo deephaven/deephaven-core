@@ -27,8 +27,8 @@ public interface SelectableDataSet<KEY_TYPE, VALUE_TYPE> {
      * Gets the view of the {@link Table} with the selected subset.
      *
      * @param chart chart
-     * @param tableTransform tableTransform applied to the tables in tableMaps. The purpose of this transform is to
-     *        track the table definitions for tables inside tableMap
+     * @param tableTransform tableTransform applied to the tables in partitionedTables. The purpose of this transform is
+     *        to track the table definitions for tables inside partitionedTable
      * @param cols selected columns
      * @return table view on selected subset
      */

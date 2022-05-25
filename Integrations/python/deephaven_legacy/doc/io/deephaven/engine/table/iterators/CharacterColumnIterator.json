@@ -1,10 +1,11 @@
 {
  "className": "io.deephaven.engine.table.iterators.CharacterColumnIterator",
  "methods": {
-  "forEachRemaining": ":param action: io.deephaven.base.Procedure.UnaryChar",
+  "forEachRemaining": "*Overload 1*  \n  :param action: io.deephaven.base.Procedure.UnaryChar\n  \n*Overload 2*  \n  :param action: java.util.function.Consumer<? superjava.lang.Character>",
+  "next": ":return: java.lang.Character",
   "nextChar": ":return: char"
  },
  "path": "io.deephaven.engine.table.iterators.CharacterColumnIterator",
- "text": "Iteration support for boxed or primitive characters contained with a ColumnSource.",
+ "text": "ColumnIterator implementation for chunk sources of primitive chars.",
  "typeName": "class"
 }

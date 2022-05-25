@@ -200,20 +200,15 @@ class KafkaConsumerTestCase(BaseTestCase):
         Tests to make sure deprecated TableTypes are equivalent
         """
         self.assertEqual(TableType.append(), TableType.Append)
-        self.assertEqual(TableType.appendMap(), TableType.AppendMap)
         self.assertEqual(TableType.stream(), TableType.Stream)
-        self.assertEqual(TableType.streamMap(), TableType.StreamMap)
 
     def test_table_types(self):
         """
         Tests TableType construction
         """
         _ = TableType.append()
-        _ = TableType.append_map()
         _ = TableType.stream()
-        _ = TableType.stream_map()
         _ = TableType.ring(4096)
-        _ = TableType.ring_map(4096)
 
 
 if __name__ == "__main__":

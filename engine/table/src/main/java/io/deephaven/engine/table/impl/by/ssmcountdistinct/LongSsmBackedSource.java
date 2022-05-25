@@ -36,7 +36,7 @@ public class LongSsmBackedSource extends AbstractColumnSource<LongVector>
         LongSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
         if(ssm == null) {
             //region CreateNew
-            underlying.set(key, ssm = new LongSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE));
+            underlying.set(key, ssm = new LongSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE));
             //endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);

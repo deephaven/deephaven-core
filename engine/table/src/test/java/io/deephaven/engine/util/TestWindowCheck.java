@@ -158,7 +158,7 @@ public class TestWindowCheck {
 
         class FailureListener extends InstrumentedTableUpdateListener {
             FailureListener() {
-                super("Failure ShiftObliviousListener");
+                super("Failure Listener");
             }
 
             @Override

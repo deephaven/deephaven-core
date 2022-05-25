@@ -36,7 +36,7 @@ public class ShortSsmBackedSource extends AbstractColumnSource<ShortVector>
         ShortSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
         if(ssm == null) {
             //region CreateNew
-            underlying.set(key, ssm = new ShortSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE));
+            underlying.set(key, ssm = new ShortSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE));
             //endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);

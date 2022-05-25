@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.parquet.base.Reader",
- "methods": {
-  "main": ":param args: java.lang.String[]"
- },
- "path": "io.deephaven.parquet.base.Reader",
- "typeName": "class"
-}

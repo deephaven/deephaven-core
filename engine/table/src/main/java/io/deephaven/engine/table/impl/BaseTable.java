@@ -6,8 +6,6 @@ package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.log.LogOutput;
@@ -518,7 +516,7 @@ public abstract class BaseTable extends LivenessArtifact
 
     @Override
     public boolean satisfied(final long step) {
-        if (lastSatisfiedStep == step) {
+        if (!isRefreshing() || lastSatisfiedStep == step) {
             return true;
         }
 
@@ -537,15 +535,18 @@ public abstract class BaseTable extends LivenessArtifact
             for (Object parent : parents) {
                 if (parent instanceof NotificationQueue.Dependency) {
                     if (!((NotificationQueue.Dependency) parent).satisfied(step)) {
-                        UpdateGraphProcessor.DEFAULT.logDependencies().append("Parents dependencies not satisfied for ")
-                                .append(this).append(", parent=").append((NotificationQueue.Dependency) parent).endl();
+                        UpdateGraphProcessor.DEFAULT.logDependencies()
+                                .append("Parents dependencies not satisfied for ").append(this)
+                                .append(", parent=").append((NotificationQueue.Dependency) parent)
+                                .endl();
                         return false;
                     }
                 }
             }
         }
 
-        UpdateGraphProcessor.DEFAULT.logDependencies().append("All parents dependencies satisfied ").append(this)
+        UpdateGraphProcessor.DEFAULT.logDependencies()
+                .append("All parents dependencies satisfied for ").append(this)
                 .endl();
 
         lastSatisfiedStep = step;
@@ -920,7 +921,7 @@ public abstract class BaseTable extends LivenessArtifact
 
         @Override
         public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
-            ((BaseTable) dependent).notifyListeners(new TableUpdateImpl(added.copy(), removed.copy(), modified.copy(),
+            dependent.notifyListeners(new TableUpdateImpl(added.copy(), removed.copy(), modified.copy(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         }
 
@@ -982,7 +983,7 @@ public abstract class BaseTable extends LivenessArtifact
             } else {
                 downstream = upstream.acquire();
             }
-            ((BaseTable) dependent).notifyListeners(downstream);
+            dependent.notifyListeners(downstream);
         }
 
         @Override
@@ -1348,7 +1349,6 @@ public abstract class BaseTable extends LivenessArtifact
                 }
 
                 result.setValue(resultTable);
-
                 return true;
             });
 
@@ -1420,7 +1420,7 @@ public abstract class BaseTable extends LivenessArtifact
      *
      * @param result the table derived from this table
      */
-    void propagateFlatness(QueryTable result) {
+    public void propagateFlatness(QueryTable result) {
         if (isFlat()) {
             result.setFlat();
         }

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.tables.utils.HtmlTable",
- "methods": {
-  "html": ":param source: io.deephaven.db.tables.Table\n:return: java.lang.String"
- },
- "path": "io.deephaven.db.tables.utils.HtmlTable",
- "typeName": "class"
-}

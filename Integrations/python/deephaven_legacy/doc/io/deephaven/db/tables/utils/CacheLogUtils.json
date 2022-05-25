@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.tables.utils.CacheLogUtils",
- "methods": {
-  "enumToBoolean": ":param value: int\n:param YES_CONSTANT: int\n:param NO_CONSTANT: int\n:return: java.lang.Boolean"
- },
- "path": "io.deephaven.db.tables.utils.CacheLogUtils",
- "typeName": "class"
-}

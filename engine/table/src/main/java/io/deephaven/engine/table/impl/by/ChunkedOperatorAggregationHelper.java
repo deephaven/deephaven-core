@@ -251,6 +251,12 @@ public class ChunkedOperatorAggregationHelper {
                                         keyColumnsCopied,
                                         result.getModifiedColumnSetForUpdates(), resultModifiedColumnSetFactories);
                             }
+
+                            if (downstream.empty()) {
+                                downstream.release();
+                                return;
+                            }
+
                             result.getRowSet().writableCast().update(downstream.added(), downstream.removed());
                             result.notifyListeners(downstream);
                         }
@@ -1944,13 +1950,14 @@ public class ChunkedOperatorAggregationHelper {
                                     downstream.removed = RowSetFactory.fromKeys(0);
                                     downstream.modified = RowSetFactory.empty();
                                     result.getRowSet().writableCast().remove(0);
-                                } else {
-                                    if (!anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
-                                        return;
-                                    }
+                                } else if (anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
                                     downstream.added = RowSetFactory.empty();
                                     downstream.removed = RowSetFactory.empty();
                                     downstream.modified = RowSetFactory.fromKeys(0);
+                                } else {
+                                    downstream.added = RowSetFactory.empty();
+                                    downstream.removed = RowSetFactory.empty();
+                                    downstream.modified = RowSetFactory.empty();
                                 }
                                 lastSize = newResultSize;
 
@@ -1963,6 +1970,11 @@ public class ChunkedOperatorAggregationHelper {
 
                                 extractDownstreamModifiedColumnSet(downstream, result.getModifiedColumnSetForUpdates(),
                                         modifiedOperators, upstreamModifiedColumnSet, resultModifiedColumnSetFactories);
+
+                                if (downstream.empty()) {
+                                    downstream.release();
+                                    return;
+                                }
 
                                 result.notifyListeners(downstream);
                             }
