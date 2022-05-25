@@ -69,8 +69,7 @@ The `Session` class is your connection to Deephaven. This is what allows your Py
 ```
 from pydeephaven import Session
 
-#session = Session(host=”envoy”) # Use this if you’re running the Python script in docker-compose with the Deephaven default settings
-session = Session() # Use this if you’re running the python script locally with with Deephaven default settings
+session = Session()
 ```
 
 ## Ticking table
@@ -155,13 +154,12 @@ session = Session()
 table = session.empty_table(10)
 
 # executed immediately
-table1= table.update(["MyColumn = i"]).sort(["MyColumn", descending).where(["MyColumn > 5"]);
+table1= table.update(["MyColumn = i"]).sort(["MyColumn"]).where(["MyColumn > 5"]);
 
 # create Query Object (execution is deferred until the "exec" statement)
-queryObj = session.query(table)(update(["MyColumn = i"]).sort(["MyColumn", descending).where(["MyColumn > 5"]);
+query_obj = session.query(table).update(["MyColumn = i"]).sort(["MyColumn"]).where(["MyColumn > 5"]);
 # Transmit the QueryObject to the server and execute it
-table2 = query.exec();
-
+table2 = query_obj.exec();
 
 session.bind_table(name="MyTable1", table=table1)
 session.bind_table(name="MyTable2", table=table2)
@@ -200,13 +198,13 @@ table = table.update(["Count = i", "Group = i % 2"])
 my_agg = ComboAggregation()
 my_agg = my_agg.avg(["Count"])
 
-table = table.combo_by(["Group"], my_agg)
+table = table.agg_by(my_agg, ["Group"])
 session.bind_table(name="MyTable", table=table)
 ```
 
-## Convert a pyarrow table to a Deephaven table
+## Convert a PyArrow table to a Deephaven table
 
-Deephaven natively supports [Pyarrow tables](https://arrow.apache.org/docs/python/index.html). This example converts between a Pyarrow table and a Deephaven table.
+Deephaven natively supports [PyArrow tables](https://arrow.apache.org/docs/python/index.html). This example converts between a PyArrow table and a Deephaven table.
 
 ```
 import pyarrow
@@ -234,12 +232,15 @@ from pydeephaven import Session
 session = Session()
 
 script = """
-from deephaven.TableTools import emptyTable
+from deephaven import empty_table
 
-table = emptyTable(8).update("Index = i")
+table = empty_table(8).update(["Index = i"])
 """
 
 session.run_script(script)
+
+table = session.open_table("table")
+print(table.snapshot())
 ```
 
 ## Error handling
