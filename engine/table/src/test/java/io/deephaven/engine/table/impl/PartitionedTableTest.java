@@ -1,12 +1,18 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.PartitionedTableFactory;
+import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -23,6 +29,9 @@ import junit.framework.TestCase;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.LongStream;
+
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -632,6 +641,129 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             testNoMemoize(sourceTable, t -> t.partitionBy("USym"), t -> t.partitionBy("Sentinel"));
         } finally {
             QueryTable.setMemoizeResults(old);
+        }
+    }
+
+    public void testMergeUpdating() {
+        final int seed = 0;
+        final Random random = new Random(seed);
+
+        final int size = 10_000;
+        final ColumnInfo[] columnInfo;
+        final QueryTable table = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"Sym", "IntCol", "DoubleCol"},
+                        new SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
+                        new IntGenerator(0, 100),
+                        new DoubleGenerator(0, 10)));
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return table.partitionBy().merge();
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return table.partitionBy("Sym")
+                                .sort(List.of(SortColumn.asc(ColumnName.of("Sym"))))
+                                .merge();
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return table.partitionBy("Sym", "IntCol")
+                                .sort(List.of(
+                                        SortColumn.asc(ColumnName.of("Sym")),
+                                        SortColumn.asc(ColumnName.of("IntCol"))))
+                                .merge();
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return table.partitionBy().merge().flatten().select();
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return table.partitionBy("Sym")
+                                .sort(List.of(SortColumn.asc(ColumnName.of("Sym"))))
+                                .merge()
+                                .flatten()
+                                .select();
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return table.partitionBy("Sym", "IntCol")
+                                .sort(List.of(
+                                        SortColumn.asc(ColumnName.of("Sym")),
+                                        SortColumn.asc(ColumnName.of("IntCol"))))
+                                .merge()
+                                .flatten()
+                                .select();
+                    }
+                },
+
+                new UpdateValidatorNugget(table.partitionBy().merge()),
+                new UpdateValidatorNugget(table.partitionBy("Sym").merge()),
+                new UpdateValidatorNugget(table.partitionBy("Sym", "IntCol").merge()),
+        };
+
+        for (int step = 0; step < 100; ++step) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Seed=" + seed + ", step=" + step + ", size=" + table.size());
+            }
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, table, columnInfo, en);
+        }
+    }
+
+    public void testMergeConstituentChanges() {
+        final QueryTable base = (QueryTable) emptyTable(10).update("II=ii");
+        base.setRefreshing(true);
+
+        final MutableLong step = new MutableLong(0);
+        QueryScope.addParam("step", step);
+        QueryLibrary.importStatic(TableTools.class);
+        final Table underlying = base.update(
+                "Constituent=emptyTable(1000 * step.longValue()).update(\"JJ=ii * \" + II + \" * step.longValue()\")");
+
+        final PartitionedTable partitioned = PartitionedTableFactory.of(underlying);
+        final Table merged = partitioned.merge();
+
+        final RowSet evenModifies = RowSetFactory.fromKeys(0, 2, 4, 6, 8);
+        final RowSet oddModifies = RowSetFactory.fromKeys(1, 3, 5, 7, 9);
+        final ModifiedColumnSet modifiedColumnSet = base.getModifiedColumnSetForUpdates();
+        modifiedColumnSet.clear();
+        modifiedColumnSet.setAll("II");
+        while (step.incrementAndGet() <= 100) {
+            final boolean evenStep = step.longValue() % 2 == 0;
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                base.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(),
+                        RowSetFactory.empty(),
+                        evenStep ? evenModifies.copy() : oddModifies.copy(),
+                        RowSetShiftData.EMPTY,
+                        modifiedColumnSet));
+            });
+
+            final Table[] tables = LongStream.range(0, 10).mapToObj((final long II) -> {
+                final boolean evenPos = II % 2 == 0;
+                if (evenStep == evenPos) {
+                    return emptyTable(1000 * step.longValue())
+                            .updateView("JJ = ii * " + II + " * step.longValue()");
+                } else {
+                    return emptyTable(1000 * (step.longValue() - 1))
+                            .updateView("JJ = ii * " + II + " * (step.longValue() - 1)");
+                }
+            }).toArray(Table[]::new);
+            final Table matching = TableTools.merge(tables);
+            assertTableEquals(matching, merged);
         }
     }
 }
