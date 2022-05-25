@@ -437,7 +437,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         (int) Math.min(removedKeys.size(), LARGEST_POOLED_CHUNK_CAPACITY))) {
             while (removedKeysIterator.hasMore()) {
                 final RowSequence chunkRemovedKeys =
-                        removedKeysIterator.getNextRowSequenceThrough(LARGEST_POOLED_CHUNK_CAPACITY);
+                        removedKeysIterator.getNextRowSequenceWithLength(LARGEST_POOLED_CHUNK_CAPACITY);
                 final WritableObjectChunk<? extends LivenessReferent, Values> removedValues =
                         WritableObjectChunk.makeWritableChunk(chunkRemovedKeys.intSize());
                 columnSource.fillPrevChunk(fillContext, removedValues, chunkRemovedKeys);
