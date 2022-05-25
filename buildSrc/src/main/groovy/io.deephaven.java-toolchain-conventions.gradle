@@ -5,12 +5,15 @@ plugins {
 }
 
 def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
+def compilerVendor = project.hasProperty('compilerVendor') ?  JvmVendorSpec.matching((String)project.property('compilerVendor')): null
 
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
 def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '11')
+def runtimeVendor = project.hasProperty('runtimeVendor') ?  JvmVendorSpec.matching((String)project.property('runtimeVendor')): null
 
 def testLanguageLevel = Integer.parseInt((String)project.findProperty('testLanguageLevel') ?: '11')
 def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
+def testRuntimeVendor = project.hasProperty('testRuntimeVendor') ?  JvmVendorSpec.matching((String)project.property('testRuntimeVendor')): null
 
 if (languageLevel > compilerVersion) {
   throw new IllegalArgumentException("languageLevel must be less than or equal to compileVersion")
@@ -33,23 +36,38 @@ java {
     // Note: even though we are being explicit with our compilers / launchers via task type, we want to set up the
     // plugin with our compiler version.
     languageVersion = JavaLanguageVersion.of(compilerVersion)
+    if (compilerVendor != null) {
+      vendor = compilerVendor
+    }
   }
 }
 
 def compiler = javaToolchains.compilerFor {
   languageVersion = JavaLanguageVersion.of(compilerVersion)
+  if (compilerVendor != null) {
+    vendor = compilerVendor
+  }
 } as Provider<JavaCompiler>
 
 def runtimeLauncher = javaToolchains.launcherFor {
   languageVersion = JavaLanguageVersion.of(runtimeVersion)
+  if (runtimeVendor != null) {
+    vendor = runtimeVendor
+  }
 } as Provider<JavaLauncher>
 
 def testRuntimeLauncher = javaToolchains.launcherFor {
   languageVersion = JavaLanguageVersion.of(testRuntimeVersion)
+  if (testRuntimeVendor != null) {
+    vendor = testRuntimeVendor
+  }
 } as Provider<JavaLauncher>
 
 def groovyCompilerLauncher = javaToolchains.launcherFor {
   languageVersion = JavaLanguageVersion.of(compilerVersion)
+  if (compilerVendor != null) {
+    vendor = compilerVendor
+  }
 } as Provider<JavaLauncher>
 
 tasks.withType(JavaCompile).configureEach {
