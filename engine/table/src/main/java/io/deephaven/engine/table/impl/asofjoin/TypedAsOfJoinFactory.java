@@ -70,6 +70,7 @@ public class TypedAsOfJoinFactory {
 
         builder.addStatement("final long [] oldModifiedCookie = cookieSource.getArray()");
         builder.addStatement("final long [] destModifiedCookie = new long[tableSize]");
+        builder.addStatement("Arrays.fill(destModifiedCookie, $T.NULL_LONG)", QueryConstants.class);
         builder.addStatement("cookieSource.setArray(destModifiedCookie)");
     }
 
