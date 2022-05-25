@@ -117,7 +117,7 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
                 false,
                 constituentColumnName,
                 firstConstituent.getDefinition(),
-                !table.isRefreshing(),
+                table.isRefreshing(),
                 true);
     }
 
