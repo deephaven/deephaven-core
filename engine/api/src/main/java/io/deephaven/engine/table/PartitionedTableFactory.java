@@ -2,8 +2,8 @@ package io.deephaven.engine.table;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.ServiceLoader;
-import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.UnaryOperator;
 
@@ -18,12 +18,12 @@ public class PartitionedTableFactory {
     public interface Creator {
 
         /**
-         * @see PartitionedTableFactory#of(Table, Set, boolean, String, TableDefinition, boolean) Factory method that
-         *      delegates to this method
+         * @see PartitionedTableFactory#of(Table, Collection, boolean, String, TableDefinition, boolean) Factory method
+         *      that delegates to this method
          */
         PartitionedTable of(
                 @NotNull Table table,
-                @NotNull Set<String> keyColumnNames,
+                @NotNull Collection<String> keyColumnNames,
                 boolean uniqueKeys,
                 @NotNull String constituentColumnName,
                 @NotNull TableDefinition constituentDefinition,
@@ -86,7 +86,7 @@ public class PartitionedTableFactory {
      */
     public static PartitionedTable of(
             @NotNull final Table table,
-            @NotNull final Set<String> keyColumnNames,
+            @NotNull final Collection<String> keyColumnNames,
             final boolean uniqueKeys,
             @NotNull final String constituentColumnName,
             @NotNull final TableDefinition constituentDefinition,
@@ -101,8 +101,8 @@ public class PartitionedTableFactory {
     }
 
     /**
-     * Construct a {@link PartitionedTable} as in {@link #of(Table, Set, boolean, String, TableDefinition, boolean)},
-     * inferring most parameters as follows:
+     * Construct a {@link PartitionedTable} as in
+     * {@link #of(Table, Collection, boolean, String, TableDefinition, boolean)}, inferring most parameters as follows:
      * <dl>
      * <dt>{@code keyColumnNames}</dt>
      * <dd>The names of all columns with a non-{@link Table} data type</dd>
@@ -127,7 +127,7 @@ public class PartitionedTableFactory {
     /**
      * Construct a {@link Table} with a single column containing the non-{@code null} values in {@code constituents},
      * and then use that to construct a {@link PartitionedTable} as in
-     * {@link #of(Table, Set, boolean, String, TableDefinition, boolean)}, inferring most parameters as follows:
+     * {@link #of(Table, Collection, boolean, String, TableDefinition, boolean)}, inferring most parameters as follows:
      * <dl>
      * <dt>{@code keyColumnNames}</dt>
      * <dd>An empty list</dd>
@@ -154,7 +154,7 @@ public class PartitionedTableFactory {
     /**
      * Construct a {@link Table} with a single column containing the non-{@code null} values in {@code constituents},
      * and then use that to construct a PartitionedTable as in
-     * {@link #of(Table, Set, boolean, String, TableDefinition, boolean)}, inferring most parameters as follows:
+     * {@link #of(Table, Collection, boolean, String, TableDefinition, boolean)}, inferring most parameters as follows:
      * <dl>
      * <dt>{@code keyColumnNames}</dt>
      * <dd>An empty list</dd>

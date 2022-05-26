@@ -56,7 +56,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private volatile WeakReference<Table> memoizedMerge;
 
     /**
-     * @see PartitionedTableFactory#of(Table, Set, boolean, String, TableDefinition, boolean) Factory method that
+     * @see PartitionedTableFactory#of(Table, Collection, boolean, String, TableDefinition, boolean) Factory method that
      *      delegates to this method
      * @apiNote Only engine-internal tools should call this constructor directly
      */
