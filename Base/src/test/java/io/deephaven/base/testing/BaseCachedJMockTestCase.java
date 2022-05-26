@@ -16,9 +16,9 @@ import org.jmock.api.Imposteriser;
 import org.jmock.api.Invocation;
 import org.jmock.api.Invokable;
 import org.jmock.auto.internal.Mockomatic;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.jmock.internal.ExpectationBuilder;
 import org.jmock.lib.action.CustomAction;
-import org.jmock.lib.legacy.ClassImposteriser;
 
 import java.lang.reflect.*;
 import java.util.Arrays;
@@ -33,25 +33,7 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
       // call super.setUp won't use the wrong imposteriser
         context = new Mockery();
         context.setImposteriser(CachingImposteriser.INSTANCE);
-        new Mockomatic(context) {
-            @Override
-            protected void autoInstantiate(Object parentObject, Field field) {
-                final Class<?> type = field.getType();
-                if (States.class != type && Sequence.class != type) {
-                    try {
-                        Constructor<?> constructor = type.getConstructor();
-                        Object childObject = constructor.newInstance();
-                        setAutoField(field, parentObject, childObject,
-                                "auto-instantiate " + type.getSimpleName() + " field " + field.getName());
-                        return;
-                    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException
-                            | InvocationTargetException e) {
-                        // fall through and call super implementation
-                    }
-                }
-                super.autoInstantiate(parentObject, field);
-            }
-        }.fillIn(this);
+        new Mockomatic(context).fillIn(this);
     }
 
 
@@ -77,7 +59,7 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
 
     public void assertIsSatisfied() {
         context.assertIsSatisfied();
-        context.clearHistory();
+        // context.clearHistory();
     }
 
     @Override
@@ -137,7 +119,7 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
         // ----------------------------------------------------------------
         @Override // from Imposteriser
         public boolean canImposterise(Class<?> type) {
-            return ClassImposteriser.INSTANCE.canImposterise(type);
+            return ByteBuddyClassImposteriser.INSTANCE.canImposterise(type);
         }
 
         // ----------------------------------------------------------------
@@ -191,49 +173,10 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
         }
 
         // ----------------------------------------------------------------
-        /** Based on {@link ClassImposteriser}. */
+        /** Based on {@link ByteBuddyClassImposteriser}. */
         private Function.Unary<?, Invokable> createClassConstructor(final ProxyInfo proxyInfo) {
-            final Class proxyClass;
-            try {
-                proxyClass = (Class) CREATE_PROXY_CLASS.invoke(ClassImposteriser.INSTANCE, proxyInfo.mockedType,
-                        proxyInfo.ancillaryTypes);
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                throw Assert.exceptionNeverCaught(e);
-            }
-
-            return new Function.Unary<Object, Invokable>() {
-                @Override
-                public Object call(final Invokable invokable) {
-                    try {
-                        try {
-                            SET_CONSTRUCTORS_ACCESSIBLE.invoke(ClassImposteriser.INSTANCE, proxyInfo.mockedType, true);
-                            return CREATE_PROXY.invoke(ClassImposteriser.INSTANCE, proxyClass, invokable);
-                        } finally {
-                            SET_CONSTRUCTORS_ACCESSIBLE.invoke(ClassImposteriser.INSTANCE, proxyInfo.mockedType, false);
-                        }
-                    } catch (IllegalAccessException | InvocationTargetException e) {
-                        throw Assert.exceptionNeverCaught(e);
-                    }
-                }
-            };
-        }
-
-        private static final Method CREATE_PROXY;
-        private static final Method CREATE_PROXY_CLASS;
-        private static final Method SET_CONSTRUCTORS_ACCESSIBLE;
-        static {
-            try {
-                CREATE_PROXY = ClassImposteriser.class.getDeclaredMethod("proxy", Class.class, Invokable.class);
-                CREATE_PROXY.setAccessible(true);
-                CREATE_PROXY_CLASS =
-                        ClassImposteriser.class.getDeclaredMethod("proxyClass", Class.class, Class[].class);
-                CREATE_PROXY_CLASS.setAccessible(true);
-                SET_CONSTRUCTORS_ACCESSIBLE = ClassImposteriser.class.getDeclaredMethod("setConstructorsAccessible",
-                        Class.class, boolean.class);
-                SET_CONSTRUCTORS_ACCESSIBLE.setAccessible(true);
-            } catch (NoSuchMethodException e) {
-                throw Assert.exceptionNeverCaught(e);
-            }
+            return imposter -> ByteBuddyClassImposteriser.INSTANCE.imposterise(imposter, proxyInfo.mockedType,
+                    proxyInfo.ancillaryTypes);
         }
     }
 
