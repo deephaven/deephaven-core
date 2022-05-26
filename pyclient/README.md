@@ -64,7 +64,7 @@ $ pip3 install dist/pydeephaven-0.6.0-py3-none-any.whl
 
 ## Initialize
 
-The `Session` class is your connection to Deephaven. This is what allows your Python code to interact with Deephaven.
+The `Session` class is your connection to Deephaven. This is what allows your Python code to interact with a Deephaven server.
 
 ```
 from pydeephaven import Session
@@ -224,7 +224,7 @@ pyarrow_table = table.snapshot()
 
 ## Execute a script server side
 
-`session.run_script()` can be used to execute code on the Deephaven server. This is useful when operations cannot be done on the client-side, such as creating a dynamic table writer. This example shows how to execute a script server-side.
+`session.run_script()` can be used to execute code on the Deephaven server. This is useful when operations cannot be done on the client-side, such as creating a dynamic table writer. This example shows how to execute a script server-side and retrieve a table generated from the script.
 
 ```
 from pydeephaven import Session
