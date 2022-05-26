@@ -47,8 +47,8 @@ public class RangeTest {
 
     @Test
     public void testLargeRange() {
-        long largeA = (long)Integer.MAX_VALUE + 10L;
-        long largeB = (long)Integer.MAX_VALUE + 11L;
+        long largeA = (long) Integer.MAX_VALUE + 10L;
+        long largeB = (long) Integer.MAX_VALUE + 11L;
         long largeC = Long.MAX_VALUE - 100L;
         assertEquals(largeA + 1, new Range(0, largeA).size());
         assertEquals(largeA, new Range(1, largeA).size());

@@ -412,8 +412,8 @@ public class RangeSetTest {
 
     @Test
     public void testLarge() {
-        long largeA = (long)Integer.MAX_VALUE + 10L;
-        long largeB = (long)Integer.MAX_VALUE + (long)Integer.MAX_VALUE;
+        long largeA = (long) Integer.MAX_VALUE + 10L;
+        long largeB = (long) Integer.MAX_VALUE + (long) Integer.MAX_VALUE;
         long largeC = Long.MAX_VALUE - 100L;
 
         // Add to empty range
