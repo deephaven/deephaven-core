@@ -20,7 +20,7 @@ class TableTestCase(BaseTestCase):
     def test_repr(self):
         regex = r"deephaven\.table\.Table\(io\.deephaven\.engine\.table\.Table\(objectRef=0x.+\{.+\}\)\)"
         for i in range(0, 8):
-            t = empty_table(10**i).update("a=i")
+            t = empty_table(10 ** i).update("a=i")
             result = repr(t)
             self.assertRegex(result, regex)
             self.assertLessEqual(len(result), 120)
