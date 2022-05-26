@@ -30,8 +30,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 abstract public class BaseCachedJMockTestCase extends TestCase {
     protected final Mockery context;
 
-    { // use an initializer rather than setUp so forgetting to
-      // call super.setUp won't use the wrong imposteriser
+    {
+        // use an initializer rather than setUp so forgetting to
+        // call super.setUp won't use the wrong imposteriser
         context = new Mockery();
         context.setThreadingPolicy(new Synchroniser());
         context.setImposteriser(CachingImposteriser.INSTANCE);
@@ -61,7 +62,6 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
 
     public void assertIsSatisfied() {
         context.assertIsSatisfied();
-        // context.clearHistory();
     }
 
     @Override
