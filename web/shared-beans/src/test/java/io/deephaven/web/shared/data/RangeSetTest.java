@@ -412,8 +412,9 @@ public class RangeSetTest {
 
     @Test
     public void testLarge() {
-        long largeA = 16535734029L;
-        long largeB = 36535734029L;
+        long largeA = (long)Integer.MAX_VALUE + 10L;
+        long largeB = (long)Integer.MAX_VALUE + (long)Integer.MAX_VALUE;
+        long largeC = Long.MAX_VALUE - 100L;
 
         // Add to empty range
         RangeSet rangeSet = RangeSet.empty();
@@ -428,6 +429,14 @@ public class RangeSetTest {
         rangeSet.addRange(new Range(largeA, largeB));
         assertEquals(of(new Range(largeA, largeB)), rangeSet);
 
+        rangeSet = RangeSet.empty();
+        rangeSet.addRange((new Range(0, largeC)));
+        assertEquals(of(new Range(0, largeC)), rangeSet);
+
+        rangeSet = RangeSet.empty();
+        rangeSet.addRange(new Range(largeA, largeC));
+        assertEquals(of(new Range(largeA, largeC)), rangeSet);
+
         // Remove when nothing is present
         rangeSet = RangeSet.empty();
         rangeSet.removeRange(new Range(0, largeA));
@@ -437,8 +446,13 @@ public class RangeSetTest {
         rangeSet = RangeSet.ofRange(0, largeA);
         rangeSet.removeRange(new Range(0, largeA));
         assertEquals(RangeSet.empty(), rangeSet);
+
         rangeSet = RangeSet.ofRange(1, largeA);
         rangeSet.removeRange(new Range(0, largeA));
+        assertEquals(RangeSet.empty(), rangeSet);
+
+        rangeSet = RangeSet.ofRange(largeA, largeC);
+        rangeSet.removeRange(new Range(0, largeC));
         assertEquals(RangeSet.empty(), rangeSet);
 
         // Remove section before/between/after any actual existing element (no effect)
@@ -446,10 +460,16 @@ public class RangeSetTest {
         rangeSet.removeRange(new Range(0, largeA - 2));
         rangeSet.removeRange(new Range(largeB + 1, largeB + 5));
         assertEquals(RangeSet.ofRange(largeA, largeB), rangeSet);
+
         rangeSet = RangeSet.ofItems(5, largeA, largeB);
         rangeSet.removeRange(new Range(6, largeA - 1));
         rangeSet.removeRange(new Range(largeA + 1, largeB - 1));
         assertEquals(RangeSet.ofItems(5, largeA, largeB), rangeSet);
+
+        rangeSet = RangeSet.ofItems(largeA, largeB);
+        rangeSet.removeRange(new Range(0, largeA - 1));
+        rangeSet.removeRange(new Range(largeB + 1, largeC));
+        assertEquals(RangeSet.ofItems(largeA, largeB), rangeSet);
     }
 
 }
