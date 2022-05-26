@@ -85,9 +85,7 @@ table = session.time_table(period=1000000000).update(formulas=["Col1 = i % 2"])
 session.bind_table(name="MyTable", table=table)
 ```
 
-This is the general flow of how the Python client interacts with Deephaven. You create a table (new or existing), execute some operations on it, and then bind it to Deephaven.
-
-If you don’t bind the table, it will not be updated in Deephaven.
+This is the general flow of how the Python client interacts with Deephaven. You create a table (new or existing), execute some operations on it, and then bind it to Deephaven. Binding the table gives it a named reference on the Deephaven server.
 
 ## Execute a query on a table
 
@@ -142,7 +140,7 @@ session.bind_table(name="MyTable", table=table)
 
 Query objects are a way to create and manage a sequence of Deephaven query operations as a single unit. Query objects have the potential to perform better than the corresponding individual queries, because the query object can be transmitted to the server in one request rather than several, and because the system can perform certain optimizations when it is able to see the whole sequence of queries at once. They are similar in spirit to prepared statements in SQL.
 
-The general flow of using a query object is to construct a query with a table, call operations (sort, filter, update, etc.) on the query object, and then assign your table to `query.exec()`.
+The general flow of using a query object is to construct a query with a table, call the table operations (sort, filter, update, etc.) on the query object, and then assign your table to the return value of `query.exec()`.
 
 Any operation that can be executed on a table can also be executed on a query object. This example shows two operations that compute the same result, with the first one using the table updates and the second one using a query object.
 
