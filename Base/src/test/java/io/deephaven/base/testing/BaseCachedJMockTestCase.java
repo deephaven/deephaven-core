@@ -19,6 +19,7 @@ import org.jmock.auto.internal.Mockomatic;
 import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.jmock.internal.ExpectationBuilder;
 import org.jmock.lib.action.CustomAction;
+import org.jmock.lib.concurrent.Synchroniser;
 
 import java.lang.reflect.*;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
     { // use an initializer rather than setUp so forgetting to
       // call super.setUp won't use the wrong imposteriser
         context = new Mockery();
+        context.setThreadingPolicy(new Synchroniser());
         context.setImposteriser(CachingImposteriser.INSTANCE);
         new Mockomatic(context).fillIn(this);
     }
