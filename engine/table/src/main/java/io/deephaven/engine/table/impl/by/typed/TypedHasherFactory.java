@@ -321,45 +321,6 @@ public class TypedHasherFactory {
 
             builder.addProbe(new HasherConfig.ProbeSpec("probeRightSide", "rowState",
                     true, TypedAsOfJoinFactory::incrementalProbeDecorateRightFound, null, hashSlots, sequentialBuilders));
-
-//            builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "rowState", true,
-//                    TypedAsOfJoinFactory::incrementalRemoveRightFound,
-//                    TypedAsOfJoinFactory::incrementalRemoveRightMissing,
-//                    modifiedSlotTrackerParam));
-//
-//            builder.addBuild(new HasherConfig.BuildSpec("addRightSide", "rowState", true,
-//                    true, TypedAsOfJoinFactory::incrementalRightFoundUpdate,
-//                    TypedAsOfJoinFactory::incrementalRightInsertUpdate,
-//                    modifiedSlotTrackerParam));
-//
-//            builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", "rowState", false,
-//                    TypedAsOfJoinFactory::incrementalModifyRightFound,
-//                    TypedAsOfJoinFactory::incrementalModifyRightMissing,
-//                    modifiedSlotTrackerParam));
-//
-//            ParameterSpec probeContextParam =
-//                    ParameterSpec.builder(IncrementalNaturalJoinStateManagerTypedBase.ProbeContext.class, "pc").build();
-//            builder.addProbe(new HasherConfig.ProbeSpec("applyRightShift", "rowState", true,
-//                    TypedAsOfJoinFactory::incrementalApplyRightShift,
-//                    TypedAsOfJoinFactory::incrementalApplyRightShiftMissing,
-//                    ParameterSpec.builder(long.class, "shiftDelta").build(),
-//                    modifiedSlotTrackerParam, probeContextParam));
-//
-//            builder.addBuild(new HasherConfig.BuildSpec("addLeftSide", "rowState", true,
-//                    true, TypedAsOfJoinFactory::incrementalLeftFoundUpdate,
-//                    TypedAsOfJoinFactory::incrementalLeftInsertUpdate,
-//                    ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
-//                    ParameterSpec.builder(long.class, "leftRedirectionOffset").build()));
-//
-//            builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", null, true,
-//                    TypedAsOfJoinFactory::incrementalRemoveLeftFound,
-//                    TypedAsOfJoinFactory::incrementalRemoveLeftMissing));
-//
-//            builder.addProbe(new HasherConfig.ProbeSpec("applyLeftShift", null, true,
-//                    TypedAsOfJoinFactory::incrementalShiftLeftFound,
-//                    TypedAsOfJoinFactory::incrementalShiftLeftMissing,
-//                    ParameterSpec.builder(long.class, "shiftDelta").build(),
-//                    probeContextParam));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }

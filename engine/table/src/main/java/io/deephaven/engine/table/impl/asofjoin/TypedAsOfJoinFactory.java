@@ -112,7 +112,7 @@ public class TypedAsOfJoinFactory {
         builder.beginControlFlow("if (sequentialBuilders != null)");
         builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
         builder.nextControlFlow("else");
-        builder.addStatement("addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition), rowState)");
+        builder.addStatement("addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0)");
         builder.endControlFlow();
     }
 
@@ -129,24 +129,24 @@ public class TypedAsOfJoinFactory {
         builder.endControlFlow();
     }
 
+    public static void incrementalRightInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
+        builder.addStatement("final long cookie = getCookieMain(tableLocation)");
+        builder.addStatement("assert hashSlots != null");
+        builder.addStatement("hashSlots.set(cookie, (long)tableLocation)");
+
+        builder.beginControlFlow("if (sequentialBuilders != null)");
+        builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
+        builder.nextControlFlow("else");
+        builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0)");
+        builder.endControlFlow();
+    }
+
     public static void incrementalProbeDecorateRightFound(HasherConfig<?> hasherConfig, boolean alternate,
                                                      CodeBlock.Builder builder) {
         builder.addStatement("final long cookie = getCookieMain(tableLocation)");
         builder.beginControlFlow("if (hashSlots != null)");
         builder.addStatement("hashSlots.set(cookie, (long)tableLocation)");
         builder.endControlFlow();
-        builder.beginControlFlow("if (sequentialBuilders != null)");
-        builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
-        builder.nextControlFlow("else");
-        builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), rowState)");
-        builder.endControlFlow();
-    }
-
-    public static void incrementalRightInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        builder.addStatement("final long cookie = getCookieMain(tableLocation)");
-        builder.addStatement("assert hashSlots != null");
-        builder.addStatement("hashSlots.set(cookie, (long)tableLocation)");
-
         builder.beginControlFlow("if (sequentialBuilders != null)");
         builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
         builder.nextControlFlow("else");
