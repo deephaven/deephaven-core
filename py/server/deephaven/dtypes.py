@@ -182,6 +182,10 @@ def from_jtype(j_class: Any) -> DType:
 
 def from_np_dtype(np_dtype: np.dtype) -> DType:
     """ Look up a DType that matches the numpy.dtype, if not found, return PyObject. """
+
+    if np_dtype.kind in {'U', 'S'}:
+        return string
+
     for _, dtype in _j_name_type_map.items():
         if np.dtype(dtype.np_type) == np_dtype and dtype.np_type != np.object_:
             return dtype
