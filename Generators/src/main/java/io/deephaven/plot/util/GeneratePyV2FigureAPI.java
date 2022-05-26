@@ -1,5 +1,6 @@
 package io.deephaven.plot.util;
 
+import io.deephaven.base.Pair;
 import io.deephaven.libs.GroovyStaticImportGenerator.JavaFunction;
 import org.jetbrains.annotations.NotNull;
 
@@ -831,46 +832,59 @@ public class GeneratePyV2FigureAPI {
 
             final Set<Set<String>> alreadyGenerated = new HashSet<>();
 
+            final List<Pair<Key, String[]>> items = new ArrayList<>();
+
             for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
                 final Key key = entry.getKey();
                 final ArrayList<JavaFunction> sigs = entry.getValue();
                 final List<String[]> argNames = pyArgNames(sigs, pyArgMap);
 
-                for (final String[] an : argNames) {
-                    validateArgNames(an, alreadyGenerated, signatures, pyArgMap);
-                    final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
+                for (String[] argName : argNames) {
+                    final Pair<Key, String[]> e = new Pair<>(key, argName);
+                    items.add(e);
+                }
+            }
 
-                    if (quoted_an.length == 0) {
-                        sb.append(INDENT)
-                                .append(INDENT)
-                                .append("if set()")
-                                .append(".issubset(non_null_args):\n");
-                    } else {
-                        sb.append(INDENT)
-                                .append(INDENT)
-                                .append("if {")
-                                .append(String.join(", ", quoted_an))
-                                .append("}.issubset(non_null_args):\n");
-                    }
+            // sort from largest number of args to smallest number of args so that the most specific method is called
+            items.sort((a, b) -> b.second.length - a.second.length);
+
+            for (Pair<Key, String[]> item : items) {
+                final Key key = item.first;
+                final String[] an = item.second;
+
+                validateArgNames(an, alreadyGenerated, signatures, pyArgMap);
+                final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
+
+                if (quoted_an.length == 0) {
                     sb.append(INDENT)
                             .append(INDENT)
+                            .append("if set()")
+                            .append(".issubset(non_null_args):\n");
+                } else {
+                    sb.append(INDENT)
                             .append(INDENT)
-                            .append("j_figure = j_figure.")
-                            .append(key.name)
-                            .append("(")
-                            .append(String.join(", ", an))
-                            .append(")\n")
-                            .append(INDENT)
-                            .append(INDENT)
-                            .append(INDENT)
-                            .append("non_null_args = non_null_args.difference({")
+                            .append("if {")
                             .append(String.join(", ", quoted_an))
-                            .append("})\n")
-                            .append(INDENT)
-                            .append(INDENT)
-                            .append(INDENT)
-                            .append("f_called = True\n\n");
+                            .append("}.issubset(non_null_args):\n");
                 }
+                sb.append(INDENT)
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append("j_figure = j_figure.")
+                        .append(key.name)
+                        .append("(")
+                        .append(String.join(", ", an))
+                        .append(")\n")
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append("non_null_args = non_null_args.difference({")
+                        .append(String.join(", ", quoted_an))
+                        .append("})\n")
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append("f_called = True\n\n");
             }
 
             sb.append(INDENT)
