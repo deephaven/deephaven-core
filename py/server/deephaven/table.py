@@ -1310,26 +1310,39 @@ class PartitionedTable(JObjectWrapper):
     def __init__(self, j_partitioned_table):
         self.j_partitioned_table = j_partitioned_table
         self._schema = None
+        self._table = None
+        self._key_columns = None
+        self._unique_keys = None
+        self._constituent_column = None
+        self._constituent_changes_permitted = None
 
     @property
     def table(self) -> Table:
         """The underlying Table."""
-        return Table(j_table=self.j_partitioned_table.table())
+        if self._table is None:
+            self._table = Table(j_table=self.j_partitioned_table.table())
+        return self._table
 
     @property
     def key_columns(self) -> List[str]:
         """The partition key column names."""
-        return list(self.j_partitioned_table.keyColumnNames().toArray())
+        if self._key_columns is None:
+            self._key_columns = list(self.j_partitioned_table.keyColumnNames().toArray())
+        return self._key_columns
 
     @property
     def unique_keys(self) -> bool:
         """Whether the keys in the underlying table are unique."""
-        return self.j_partitioned_table.uniqueKeys()
+        if self._unique_keys is None:
+            self._unique_keys = self.j_partitioned_table.uniqueKeys()
+        return self._unique_keys
 
     @property
     def constituent_column(self) -> str:
         """The constituent column name."""
-        return self.j_partitioned_table.constituentColumnName()
+        if self._constituent_column is None:
+            self._constituent_column = self.j_partitioned_table.constituentColumnName()
+        return self._constituent_column
 
     @property
     def constituent_table_columns(self) -> List[Column]:
@@ -1348,7 +1361,9 @@ class PartitionedTable(JObjectWrapper):
         table is refreshing. Also note that the underlying partitioned table must be refreshing if it contains
         any refreshing constituents.
         """
-        return self.j_partitioned_table.constituentChangesPermitted()
+        if self._constituent_changes_permitted is None:
+            self._constituent_changes_permitted = self.j_partitioned_table.constituentChangesPermitted()
+        return self._constituent_changes_permitted
 
     def merge(self) -> Table:
         """Makes a new Table that contains all the rows from all the constituent tables."""
