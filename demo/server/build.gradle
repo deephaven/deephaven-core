@@ -18,12 +18,12 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     it.from('src/main/app.d') {
         into 'app.d'
     }
-    it.from(configurations.runtimeClasspath) {
-        into 'libs'
-    }
-    it.from(jar) {
-        into 'libs'
-    }
+//    it.from(configurations.runtimeClasspath) {
+//        into 'libs'
+//    }
+//    it.from(jar) {
+//        into 'libs'
+//    }
     it.into dockerfileDir
 }
 

@@ -2,7 +2,7 @@ ARG SERVER_TYPE=-all-ai
 FROM deephaven/server$SERVER_TYPE:local-build
 
 # Add the extra libraries to the classpath
-COPY libs/ /app/libs
+#COPY libs/ /app/libs
 
 HEALTHCHECK --interval=3s --retries=10 --timeout=11s CMD /bin/grpc_health_probe \
     -addr=localhost:8888 \

@@ -7,7 +7,7 @@ unlocks the unique power of Deephaven to the Python community.
 """
 import os
 
-__version__ = os.environ.get('DEEPHAVEN_VERSION') or "0.12.0"
+__version__ = os.environ.get('DEEPHAVEN_VERSION') or "0.12.15"
 
 from .dherror import DHError
 from .table import SortDirection, AsOfMatchRule
