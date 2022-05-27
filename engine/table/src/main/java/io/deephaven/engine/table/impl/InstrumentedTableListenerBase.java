@@ -31,9 +31,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         implements TableListener, NotificationQueue.Dependency {
+
+    private static final AtomicLongFieldUpdater<InstrumentedTableListenerBase> LAST_COMPLETED_STEP_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(InstrumentedTableListenerBase.class, "lastCompletedStep");
+    private static final AtomicLongFieldUpdater<InstrumentedTableListenerBase> LAST_ENQUEUED_STEP_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(InstrumentedTableListenerBase.class, "lastEnqueuedStep");
 
     private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
 
@@ -87,25 +93,40 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     @Override
     public boolean satisfied(final long step) {
         if (lastCompletedStep == step) {
-            UpdateGraphProcessor.DEFAULT.logDependencies().append("Already completed notification for ").append(this)
-                    .endl();
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("Already completed notification for ").append(this).append(", step=").append(step).endl();
             return true;
         }
 
+        // This notification could be enqueued during the course of canExecute, but checking if we're enqueued is a very
+        // cheap check that may let us avoid recursively checking all the dependencies.
         if (lastEnqueuedStep == step) {
-            UpdateGraphProcessor.DEFAULT.logDependencies().append("Enqueued notification for ").append(this).endl();
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("Enqueued notification for ").append(this).append(", step=").append(step).endl();
             return false;
         }
 
-        if (canExecute(step)) {
-            UpdateGraphProcessor.DEFAULT.logDependencies().append("Dependencies satisfied for ").append(this).endl();
-            lastCompletedStep = step;
-            return true;
+        if (!canExecute(step)) {
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("Dependencies not yet satisfied for ").append(this).append(", step=").append(step).endl();
+            return false;
         }
 
-        UpdateGraphProcessor.DEFAULT.logDependencies().append("Dependencies not yet satisfied for ").append(this)
-                .endl();
-        return false;
+        // We check the queued notification step again after the dependency check. It is possible that something
+        // enqueued us while we were evaluating the dependencies, and we must not miss that race.
+        if (lastEnqueuedStep == step) {
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("Enqueued notification after dependency check for ").append(this)
+                    .append(", step=").append(step)
+                    .endl();
+            return false;
+        }
+
+        UpdateGraphProcessor.DEFAULT.logDependencies()
+                .append("Dependencies satisfied for ").append(this).append(", step=").append(step).endl();
+        final long oldLastCompletedStep = LAST_COMPLETED_STEP_UPDATER.getAndSet(this, step);
+        Assert.lt(oldLastCompletedStep, "oldLastCompletedStep", step, "step");
+        return true;
     }
 
     @Override
@@ -177,11 +198,17 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         NotificationBase(final TableUpdate update) {
             super(terminalListener);
             this.update = update.acquire();
-            if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
-                throw Assert.statementNeverExecuted(
-                        "Enqueued after lastCompletedStep already set to current step: " + toString());
+
+            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            if (lastCompletedStep == currentStep) {
+                //noinspection ThrowableNotThrown
+                Assert.statementNeverExecuted("Enqueued after lastCompletedStep already set to current step: " + this
+                        + ", step=" + currentStep + ", lastCompletedStep=" + lastCompletedStep);
             }
-            lastEnqueuedStep = LogicalClock.DEFAULT.currentStep();
+
+            final long oldLastEnqueuedStep =
+                    LAST_ENQUEUED_STEP_UPDATER.getAndSet(InstrumentedTableListenerBase.this, currentStep);
+            Assert.lt(oldLastEnqueuedStep, "oldLastEnqueuedStep", currentStep, "currentStep");
         }
 
         @Override
@@ -222,10 +249,13 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
             entry.onUpdateStart(update.added(), update.removed(), update.modified(), update.shifted());
 
+            final long currentStep = LogicalClock.DEFAULT.currentStep();
             try {
-                if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
+                Assert.eq(lastEnqueuedStep, "lastEnqueuedStep", currentStep, "currentStep");
+                if (lastCompletedStep >= currentStep) {
                     throw new IllegalStateException(
-                            "Executed after lastCompletedStep already set to current step: " + this);
+                            "Execution began after lastCompletedStep already set to current step: " + this
+                                    + ", step=" + currentStep + ", lastCompletedStep=" + lastCompletedStep);
                 }
 
                 invokeOnUpdate.run();
@@ -261,7 +291,9 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 onFailureInternal(e, entry);
             } finally {
                 entry.onUpdateEnd();
-                lastCompletedStep = LogicalClock.DEFAULT.currentStep();
+                final long oldLastCompletedStep =
+                        LAST_COMPLETED_STEP_UPDATER.getAndSet(InstrumentedTableListenerBase.this, currentStep);
+                Assert.lt(oldLastCompletedStep, "oldLastCompletedStep", currentStep, "currentStep");
             }
         }
     }

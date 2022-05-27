@@ -150,26 +150,41 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     @Override
     public boolean satisfied(final long step) {
         if (lastCompletedStep == step) {
-            UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has previously been completed ")
-                    .append(this).endl();
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("MergedListener has previously been completed ").append(this).endl();
             return true;
         }
+        // This notification could be enqueued during the course of canExecute, but checking if we're enqueued is a very
+        // cheap check that may let us avoid recursively checking all the dependencies.
         if (queuedNotificationStep == step) {
-            UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has queued notification ")
-                    .append(this)
-                    .endl();
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("MergedListener has queued notification ").append(this).endl();
             return false;
         }
-        if (canExecute(step)) {
-            UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has dependencies satisfied ")
-                    .append(this)
-                    .endl();
-            // mark this node as completed, because all our parents have been satisfied; but we are not enqueued; so we
-            // can never actually execute
-            lastCompletedStep = step;
-            return true;
+
+        if (!canExecute(step)) {
+            return false;
         }
-        return false;
+
+        // We check the queued notification step again after the dependency check. It is possible that something
+        // enqueued us while we were evaluating the dependencies, and we must not miss that race.
+        if (queuedNotificationStep == step) {
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("MergedListener has queued notification after dependency check ").append(this).endl();
+            return false;
+        }
+
+        UpdateGraphProcessor.DEFAULT.logDependencies()
+                .append("MergedListener has dependencies satisfied ").append(this)
+                .append(", lastCompleted=").append(lastCompletedStep)
+                .append(", lastQueued=").append(queuedNotificationStep)
+                .append(", step=").append(step)
+                .endl();
+
+        // Mark this node as completed. All our parents have been satisfied, but we are not enqueued, so we
+        // can never actually execute.
+        lastCompletedStep = step;
+        return true;
     }
 
     private class MergedNotification extends AbstractNotification {

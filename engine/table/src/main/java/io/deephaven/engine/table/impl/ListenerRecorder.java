@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -60,7 +61,9 @@ public class ListenerRecorder extends InstrumentedTableUpdateListener {
     @Override
     public void onUpdate(final TableUpdate upstream) {
         this.update = upstream.acquire();
-        this.notificationStep = LogicalClock.DEFAULT.currentStep();
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        Assert.lt(this.notificationStep, "this.notificationStep", currentStep, "currentStep");
+        this.notificationStep = currentStep;
 
         // notify the downstream listener merger
         if (mergedListener == null) {
