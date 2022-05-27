@@ -13,7 +13,11 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -22,6 +26,28 @@ import java.util.stream.Stream;
  * the ability to get a CompressionCodecName enum value having loaded the codec in this way.
  */
 public class DeephavenCodecFactory {
+
+    private static final List<Class<?>> CODECS = io.deephaven.configuration.Configuration.getInstance()
+            .getStringSetFromPropertyWithDefault("DeephavenCodecFactory.codecs", Collections.emptySet()).stream().map((String className) -> {
+                try {
+                    return Class.forName(className);
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException("Can't find codec with name " + className);
+                }
+            }).collect(Collectors.toList());
+    private static DeephavenCodecFactory INSTANCE = new DeephavenCodecFactory(CODECS);
+
+    public static synchronized void setInstance(DeephavenCodecFactory factory) {
+        INSTANCE = factory;
+    }
+
+    public static synchronized DeephavenCodecFactory getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new DeephavenCodecFactory(CODECS);
+        }
+        return INSTANCE;
+    }
+
     public static class CodecWrappingCompressor implements Compressor {
         private final CompressionCodec compressionCodec;
 

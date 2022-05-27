@@ -32,6 +32,8 @@ import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
 public class ColumnChunkReaderImpl implements ColumnChunkReader {
+    private static final DeephavenCodecFactory CODEC_FACTORY = DeephavenCodecFactory.getInstance();
+
     private final ColumnChunk columnChunk;
     private final SeekableChannelsProvider channelsProvider;
     private final Path rootPath;
@@ -46,15 +48,14 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     ColumnChunkReaderImpl(
             ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider,
-            Path rootPath, DeephavenCodecFactory codecFactory, MessageType type,
-            OffsetIndex offsetIndex, List<Type> fieldTypes) {
+            Path rootPath, MessageType type, OffsetIndex offsetIndex, List<Type> fieldTypes) {
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
         this.rootPath = rootPath;
         this.path = type
                 .getColumnDescription(columnChunk.meta_data.getPath_in_schema().toArray(new String[0]));
         if (columnChunk.getMeta_data().isSetCodec()) {
-            decompressor = codecFactory.getByName(columnChunk.getMeta_data().getCodec().name());
+            decompressor = CODEC_FACTORY.getByName(columnChunk.getMeta_data().getCodec().name());
         } else {
             decompressor = Compressor.PASSTHRU;
         }

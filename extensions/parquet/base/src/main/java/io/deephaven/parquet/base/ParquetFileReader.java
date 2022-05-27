@@ -27,7 +27,6 @@ public class ParquetFileReader {
     static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
     public final FileMetaData fileMetaData;
     private final SeekableChannelsProvider channelsProvider;
-    private static final DeephavenCodecFactory codecFactory = new DeephavenCodecFactory(Collections.emptyList());
     private final Path rootPath;
     private final MessageType type;
 
@@ -175,7 +174,6 @@ public class ParquetFileReader {
                 fileMetaData.getRow_groups().get(groupNumber),
                 channelsProvider,
                 rootPath,
-                codecFactory,
                 type,
                 getSchema());
     }
