@@ -35,8 +35,9 @@ public interface Compressor {
 
 
     /**
-     * Creates a new output stream that will take uncompressed writes, and flush data to the provided
-     * stream as compressed data.
+     * Creates a new output stream that will take uncompressed writes, and flush data to the provided stream as
+     * compressed data.
+     * 
      * @param os the output stream to write compressed contents to
      * @return an output stream that can accept writes
      * @throws IOException thrown if an error occurs writing data
@@ -44,8 +45,9 @@ public interface Compressor {
     OutputStream compress(OutputStream os) throws IOException;
 
     /**
-     * Returns a new input stream that when read will provide the uncompressed data, by wrapping an
-     * input stream containing the compressed data.
+     * Returns a new input stream that when read will provide the uncompressed data, by wrapping an input stream
+     * containing the compressed data.
+     * 
      * @param is an input stream that can be read to see compressed data
      * @return an input stream that can be read to see uncompressed data
      * @throws IOException thrown if an error occurs reading data
@@ -53,8 +55,8 @@ public interface Compressor {
     InputStream decompress(InputStream is) throws IOException;
 
     /**
-     * Returns an in-memory instance of BytesInput containing the fully decompressed results of the
-     * input stream.
+     * Returns an in-memory instance of BytesInput containing the fully decompressed results of the input stream.
+     * 
      * @param inputStream an input stream containing compressed data
      * @param compressedSize the number of bytes in the compressed data
      * @param uncompressedSize the number of bytes that should be present when decompressed

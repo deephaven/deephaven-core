@@ -19,14 +19,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Deephaven flavor of the Hadoop/Parquet CompressionCodec factory, offering support for picking
- * codecs from configuration or from the classpath (via service loaders), while still offering
- * the ability to get a CompressionCodecName enum value having loaded the codec in this way.
+ * Deephaven flavor of the Hadoop/Parquet CompressionCodec factory, offering support for picking codecs from
+ * configuration or from the classpath (via service loaders), while still offering the ability to get a
+ * CompressionCodecName enum value having loaded the codec in this way.
  */
 public class DeephavenCodecFactory {
 
     private static final List<Class<?>> CODECS = io.deephaven.configuration.Configuration.getInstance()
-            .getStringSetFromPropertyWithDefault("DeephavenCodecFactory.codecs", Collections.emptySet()).stream().map((String className) -> {
+            .getStringSetFromPropertyWithDefault("DeephavenCodecFactory.codecs", Collections.emptySet()).stream()
+            .map((String className) -> {
                 try {
                     return Class.forName(className);
                 } catch (ClassNotFoundException e) {
@@ -65,6 +66,7 @@ public class DeephavenCodecFactory {
         public OutputStream compress(OutputStream os) throws IOException {
             return compressionCodec.createOutputStream(os);
         }
+
         @Override
         public InputStream decompress(InputStream is) throws IOException {
             return compressionCodec.createInputStream(is);
@@ -78,7 +80,8 @@ public class DeephavenCodecFactory {
         }
 
         @Override
-        public BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize) throws IOException {
+        public BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize)
+                throws IOException {
             Decompressor decompressor = CodecPool.getDecompressor(compressionCodec);
             if (decompressor != null) {
                 // It is permitted for a decompressor to be null, otherwise we want to reset() it to
@@ -105,7 +108,7 @@ public class DeephavenCodecFactory {
 
     private static Configuration configurationWithCodecClasses(List<Class<?>> codecClasses) {
         Configuration conf = new Configuration();
-        //noinspection unchecked, rawtypes
+        // noinspection unchecked, rawtypes
         CompressionCodecFactory.setCodecClasses(conf, (List) codecClasses);
         return conf;
     }
@@ -121,10 +124,9 @@ public class DeephavenCodecFactory {
     }
 
     /**
-     * Returns a compressor with the given codec name. Do not use this to get a
-     * "no-op" codec, instead use {@link Compressor#PASSTHRU}. Names are identified
-     * using the {@link CompressionCodecFactory} rules (roughly, the first word in
-     * the class's name).
+     * Returns a compressor with the given codec name. Do not use this to get a "no-op" codec, instead use
+     * {@link Compressor#PASSTHRU}. Names are identified using the {@link CompressionCodecFactory} rules (roughly, the
+     * first word in the class's name).
      *
      * @param codecName the name of the codec to search for.
      * @return a compressor instance with a name matching the given codec.
