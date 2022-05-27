@@ -1344,8 +1344,8 @@ class PartitionedTable(JObjectWrapper):
         """Whether the constituents of the underlying partitioned table can change, specifically whether the values of
         the constituent column can change.
 
-        This is unrelated to whether the constituent tables are refreshing,or whether the underlying partitioned
-        table is refreshing. Note that the underlying partitioned table must be refreshing if it contains
+        Note, this is unrelated to whether the constituent tables are refreshing, or whether the underlying partitioned
+        table is refreshing. Also note that the underlying partitioned table must be refreshing if it contains
         any refreshing constituents.
         """
         return self.j_partitioned_table.constituentChangesPermitted()
