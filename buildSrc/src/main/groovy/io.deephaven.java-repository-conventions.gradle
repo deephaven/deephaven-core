@@ -7,4 +7,11 @@ repositories {
             includeGroup 'com.github.rdblue'
         }
     }
+    maven {
+        url 'https://packages.confluent.io/maven'
+        content {
+            includeGroup 'io.confluent'
+            includeGroup 'org.apache.kafka'
+        }
+    }
 }
