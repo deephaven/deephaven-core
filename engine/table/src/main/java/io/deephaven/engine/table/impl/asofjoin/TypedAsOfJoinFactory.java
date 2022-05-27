@@ -111,7 +111,7 @@ public class TypedAsOfJoinFactory {
 
         builder.beginControlFlow("if (sequentialBuilders != null)");
         builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
-        builder.add("// the state is actually empty, we'll create the SSA from the outside");
+        builder.addStatement("// the state is actually empty, we'll create the SSA from the outside");
         builder.addStatement("stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY))");
         builder.nextControlFlow("else");
         builder.addStatement("addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0)");
@@ -138,7 +138,7 @@ public class TypedAsOfJoinFactory {
 
         builder.beginControlFlow("if (sequentialBuilders != null)");
         builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
-        builder.add("// the state is actually empty, we'll create the SSA from the outside");
+        builder.addStatement("// the state is actually empty, we'll create the SSA from the outside");
         builder.addStatement("stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY))");
         builder.nextControlFlow("else");
         builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0)");

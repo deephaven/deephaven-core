@@ -63,7 +63,8 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
                     hashSlots.set(cookie, (long)tableLocation);
                     if (sequentialBuilders != null) {
                         addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
-                        // the state is actually empty, we'll create the SSA from the outsidestateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY));
+                        // the state is actually empty, we'll create the SSA from the outside;
+                        stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY));
                     } else {
                         addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0);
                     }
@@ -107,7 +108,8 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
                     hashSlots.set(cookie, (long)tableLocation);
                     if (sequentialBuilders != null) {
                         addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
-                        // the state is actually empty, we'll create the SSA from the outsidestateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY));
+                        // the state is actually empty, we'll create the SSA from the outside;
+                        stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY));
                     } else {
                         addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0);
                     }
