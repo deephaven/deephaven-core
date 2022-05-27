@@ -176,10 +176,11 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
 
         final BytesInput payload;
         int compressedPageSize = pageHeader.getCompressed_page_size();
-        if (decompressor != null && compressedPageSize > 0) {
-            payload = decompressor.decompress(inputStream, compressedPageSize, pageHeader.getUncompressed_page_size());
+        if (compressedPageSize == 0) {
+            // Sometimes the size is explicitly empty, just use an empty payload
+            payload = BytesInput.empty();
         } else {
-            payload = Helpers.readBytes(file, compressedPageSize);
+            payload = decompressor.decompress(inputStream, compressedPageSize, pageHeader.getUncompressed_page_size());
         }
 
         final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(),

@@ -100,9 +100,8 @@ public class DeephavenCodecFactory {
     public Compressor getByName(String codecName) {
         CompressionCodec codec = compressionCodecFactory.getCodecByName(codecName);
         if (codec == null) {
-            return null;
+            throw new IllegalArgumentException("Failed to find a compression codec with name " + codecName);
         }
         return new CodecWrappingCompressor(codec);
     }
-
 }

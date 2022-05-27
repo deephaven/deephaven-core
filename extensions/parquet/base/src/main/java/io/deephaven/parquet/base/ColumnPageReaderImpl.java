@@ -139,10 +139,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
         switch (pageHeader.type) {
             case DATA_PAGE:
-                BufferedInputStream bufferedInputStream =
-                        IOUtils.buffer(Channels.newInputStream(file), compressedPageSize);
                 final BytesInput decompressedInput =
-                        compressor.decompress(bufferedInputStream, compressedPageSize, uncompressedPageSize);
+                        compressor.decompress(Channels.newInputStream(file), compressedPageSize, uncompressedPageSize);
 
                 DataPageHeader dataHeaderV1 = pageHeader.getData_page_header();
                 return readRowCountFromPageV1(new DataPageV1(
