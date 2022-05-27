@@ -31,7 +31,7 @@ class PartitionedTableTestCase(BaseTestCase):
         self.assertTrue(self.partitioned_table.unique_keys)
 
     def test_constituent_change_permitted(self):
-        self.assertFalse(self.partitioned_table.constituent_change_permitted)
+        self.assertFalse(self.partitioned_table.constituent_changes_permitted)
 
     def test_constituent_table_columns(self):
         self.assertEqual(self.test_table.columns, self.partitioned_table.constituent_table_columns)

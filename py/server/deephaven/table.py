@@ -1340,8 +1340,14 @@ class PartitionedTable(JObjectWrapper):
         return self._schema
 
     @property
-    def constituent_change_permitted(self) -> bool:
-        """Whether the constituents of the underlying partitioned table can change."""
+    def constituent_changes_permitted(self) -> bool:
+        """Whether the constituents of the underlying partitioned table can change, specifically whether the values of
+        the constituent column can change.
+
+        This is unrelated to whether the constituent tables are refreshing,or whether the underlying partitioned
+        table is refreshing. Note that the underlying partitioned table must be refreshing if it contains
+        any refreshing constituents.
+        """
         return self.j_partitioned_table.constituentChangesPermitted()
 
     def merge(self) -> Table:
