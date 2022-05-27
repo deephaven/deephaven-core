@@ -47,7 +47,6 @@ public class EmbeddedServer {
 
     public EmbeddedServer(int port, PyObject dict) throws IOException {
         final Configuration config = Main.init(new String[0], EmbeddedServer.class);
-        PyDictWrapper pyConfig = dict.asDict();
 
         int httpSessionExpireMs = config.getIntegerWithDefault("http.session.durationMs", 300000);
         int schedulerPoolSize = config.getIntegerWithDefault("scheduler.poolSize", 4);
@@ -67,15 +66,8 @@ public class EmbeddedServer {
 
     public void start() throws Exception {
         server.run();
+        checkGlobals(scriptSession.get(), null);
         System.out.println("Server started on port " + server.server().getPort());
-        new Thread(() -> {
-            try {
-                checkGlobals(scriptSession.get(), null);
-                server.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }).start();
     }
 
     private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {

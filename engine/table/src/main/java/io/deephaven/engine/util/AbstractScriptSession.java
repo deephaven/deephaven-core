@@ -103,8 +103,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
     protected synchronized void publishInitial() {
-        try (S snapshot = takeSnapshot()) {
-            applyDiff(emptySnapshot(), snapshot, null);
+        try (S empty = emptySnapshot(); S snapshot = takeSnapshot()) {
+            applyDiff(empty, snapshot, null);
         }
     }
 
