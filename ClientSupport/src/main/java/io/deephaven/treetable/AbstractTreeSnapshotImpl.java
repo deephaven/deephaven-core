@@ -34,7 +34,7 @@ import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
  * The basic implementation used to produce a viewport-ready snapshot of a tree table, taking into account the set of
  * expanded rows at each level.
  */
-public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTableInfo, CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>> {
+public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTableInfo> {
     private static final RowSet EMPTY_ROW_SET = RowSetFactory.empty();
     private static final boolean DEBUG =
             Configuration.getInstance().getBooleanWithDefault("AbstractTreeSnapshotImpl.debug", false);
@@ -50,7 +50,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
 
     private final Set<TreeSnapshotQuery.Operation> includedOps;
 
-    private final CLIENT_TYPE client;
+    private final TreeTableClientTableManager.Client client;
     private final HierarchicalTable baseTable;
     private final int baseTableId;
     private final INFO_TYPE info;
@@ -80,7 +80,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             BitSet columns,
             @NotNull WhereFilter[] filters,
             @NotNull List<SortDirective> sorts,
-            CLIENT_TYPE client,
+            TreeTableClientTableManager.Client client,
             Set<TreeSnapshotQuery.Operation> includedOps) {
         Assert.leq(firstRow, "firstRow", lastRow, "lastRow");
         Assert.leq(lastRow - firstRow, "lastRow - firstRow", Integer.MAX_VALUE, "Integer.MAX_VALUE");
@@ -778,7 +778,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         return baseTable;
     }
 
-    CLIENT_TYPE getClient() {
+    TreeTableClientTableManager.Client getClient() {
         return client;
     }
 
