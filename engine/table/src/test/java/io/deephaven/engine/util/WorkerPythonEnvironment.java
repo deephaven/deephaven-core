@@ -7,7 +7,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.util.jpy.JpyInit;
 import org.jpy.PyObject;
 
 import java.io.FileNotFoundException;
@@ -25,7 +24,7 @@ import java.util.concurrent.TimeoutException;
 public enum WorkerPythonEnvironment {
     DEFAULT;
 
-    private final PythonEvaluator evaluator;
+    private final PythonEvaluatorJpy evaluator;
     private final PythonScope<?> scope;
     private final String pythonVersion;
     private final String[] pythonVersionParts;
@@ -40,7 +39,7 @@ public enum WorkerPythonEnvironment {
     WorkerPythonEnvironment() {
         log = LoggerFactory.getLogger(WorkerPythonEnvironment.class);
         try {
-            JpyInit.init(log);
+            evaluator = PythonEvaluatorJpy.withGlobalCopy();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (InterruptedException e) {
@@ -49,9 +48,7 @@ public enum WorkerPythonEnvironment {
         } catch (TimeoutException e) {
             throw new UncheckedDeephavenException(e);
         }
-        PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
-        evaluator = jpy;
-        scope = jpy.getScope();
+        scope = evaluator.getScope();
         pythonVersion = evaluator.getPythonVersion();
         pythonVersionParts = pythonVersion.split("\\.", 0); // NB: you have to escape "." ...
         if (pythonVersionParts.length > 2) {

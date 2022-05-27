@@ -73,22 +73,17 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
      * @param isDefaultScriptSession true if this is in the default context of a worker jvm
+     * @param pythonEvaluator
      * @throws IOException if an IO error occurs running initialization scripts
-     * @throws InterruptedException if the current thread is interrupted while starting JPY
-     * @throws TimeoutException if jpy times out while obtaining configuration details
      */
     public PythonDeephavenSession(
             ObjectTypeLookup objectTypeLookup, @Nullable final Listener listener, boolean runInitScripts,
-            boolean isDefaultScriptSession)
-            throws IOException, InterruptedException, TimeoutException {
+            boolean isDefaultScriptSession, PythonEvaluatorJpy pythonEvaluator)
+            throws IOException {
         super(objectTypeLookup, listener, isDefaultScriptSession);
 
-        // Start Jpy, if not already running from the python instance
-        JpyInit.init(log);
-
-        PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
-        evaluator = jpy;
-        scope = jpy.getScope();
+        evaluator = pythonEvaluator;
+        scope = pythonEvaluator.getScope();
         this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
                 .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);

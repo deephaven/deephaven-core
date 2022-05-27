@@ -3,6 +3,7 @@ package io.deephaven.python.server;
 import dagger.Component;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.server.console.python.PythonGlobalScopeModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.jetty.JettyServerModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
@@ -11,7 +12,6 @@ import io.deephaven.server.runner.DeephavenApiServerComponent;
 import io.deephaven.server.runner.DeephavenApiServerModule;
 import io.deephaven.server.runner.Main;
 import io.deephaven.server.util.Scheduler;
-import org.jpy.PyDictWrapper;
 import org.jpy.PyObject;
 
 import javax.annotation.Nullable;
@@ -19,12 +19,12 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
 public class EmbeddedServer {
     @Singleton
     @Component(modules = {
             DeephavenApiServerModule.class,
+            PythonGlobalScopeModule.class,
             HealthCheckModule.class,
             PythonPluginsRegistration.Module.class,
             JettyServerModule.class
@@ -89,9 +89,4 @@ public class EmbeddedServer {
             checkGlobals(scriptSession, s);
         });
     }
-
-    public void bind(String name, Object value) {
-        scriptSession.get().setVariable(name, value);
-    }
-
 }
