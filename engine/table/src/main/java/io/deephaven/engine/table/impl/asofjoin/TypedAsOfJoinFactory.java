@@ -111,6 +111,8 @@ public class TypedAsOfJoinFactory {
 
         builder.beginControlFlow("if (sequentialBuilders != null)");
         builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
+        builder.add("// the state is actually empty, we'll create the SSA from the outside");
+        builder.addStatement("stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY))");
         builder.nextControlFlow("else");
         builder.addStatement("addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0)");
         builder.endControlFlow();
@@ -136,6 +138,8 @@ public class TypedAsOfJoinFactory {
 
         builder.beginControlFlow("if (sequentialBuilders != null)");
         builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
+        builder.add("// the state is actually empty, we'll create the SSA from the outside");
+        builder.addStatement("stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY))");
         builder.nextControlFlow("else");
         builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0)");
         builder.endControlFlow();
@@ -143,11 +147,10 @@ public class TypedAsOfJoinFactory {
 
     public static void incrementalProbeDecorateRightFound(HasherConfig<?> hasherConfig, boolean alternate,
                                                      CodeBlock.Builder builder) {
-        builder.addStatement("final long cookie = getCookieMain(tableLocation)");
-        builder.beginControlFlow("if (hashSlots != null)");
-        builder.addStatement("hashSlots.set(cookie, (long)tableLocation)");
-        builder.endControlFlow();
         builder.beginControlFlow("if (sequentialBuilders != null)");
+        builder.addStatement("final long cookie = getCookieMain(tableLocation)");
+        builder.addStatement("assert hashSlots != null");
+        builder.addStatement("hashSlots.set(cookie, (long)tableLocation)");
         builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
         builder.nextControlFlow("else");
         builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), rowState)");

@@ -269,17 +269,6 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         }
     }
 
-    private int fillSlotsFromHashTable(@NotNull final LongArraySource slotArray, long slotCount, byte match) {
-        slotArray.ensureCapacity(tableSize);
-        for (long slotIdx = 0; slotIdx < tableSize; slotIdx++) {
-            Byte rowState = stateSource.get(slotIdx);
-            if (rowState != null && rowState == match) {
-                slotArray.set(slotCount++, slotIdx);
-            }
-        }
-        return (int) slotCount;
-    }
-
     @Override
     public int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources,
                                  @NotNull final LongArraySource addedSlots) {
@@ -287,8 +276,9 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             return 0;
         }
         try (final BuildContext bc = makeBuildContext(leftSources, leftRowSet.size())) {
+            int startCookie = nextCookie;
             buildTable(true, bc, leftRowSet, leftSources, new LeftBuildHandler(addedSlots));
-            return fillSlotsFromHashTable(addedSlots, 0L, ENTRY_INITIAL_STATE_LEFT);
+            return nextCookie - startCookie;
         }
     }
 
@@ -299,8 +289,9 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             return usedSlots;
         }
         try (final BuildContext bc = makeBuildContext(rightSources, rightRowSet.size())) {
+            int startCookie = nextCookie;
             buildTable(true, bc, rightRowSet, rightSources, new RightBuildHandler(addedSlots));
-            return fillSlotsFromHashTable(addedSlots, usedSlots, ENTRY_INITIAL_STATE_RIGHT);
+            return usedSlots + (nextCookie - startCookie);
         }
     }
 
