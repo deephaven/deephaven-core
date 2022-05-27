@@ -135,7 +135,7 @@ eth_trades = trades_stream.where(["Instrument = `ETH/USD`"])
 btc_trades = trades_stream.where(["Instrument = `BTC/USD`"])
 
 time_series_join_eth_btc = eth_trades.view(["Eth_Time = KafkaTimestamp", "Eth_Price = Price"])\
-    .aj(btc_trades, on=["Eth_Time = KafkaTimestamp"],joins=["Btc_Price = Price, Btc_Time = KafkaTimestamp"])\
+    .aj(btc_trades, on=["Eth_Time = KafkaTimestamp"],joins=["Btc_Price = Price", "Btc_Time = KafkaTimestamp"])\
     .update_view(["Ratio_Each_Trade = Btc_Price / Eth_Price"])
 ```
 \
