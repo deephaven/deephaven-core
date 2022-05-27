@@ -1,7 +1,6 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import io.deephaven.parquet.compress.DeephavenCodecFactory;
 import org.apache.parquet.format.ColumnChunk;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.format.Util;

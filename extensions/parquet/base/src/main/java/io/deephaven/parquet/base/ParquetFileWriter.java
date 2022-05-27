@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,6 @@ import static org.apache.parquet.format.Util.writeFileMetaData;
 public class ParquetFileWriter {
     private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
     private static final int VERSION = 1;
-    private static final DeephavenCodecFactory CODEC_FACTORY = DeephavenCodecFactory.getInstance();
 
     private final SeekableByteChannel writeChannel;
     private final MessageType type;
@@ -55,7 +53,7 @@ public class ParquetFileWriter {
         writeChannel = channelsProvider.getWriteChannel(filePath, false); // TODO add support for appending
         this.type = type;
         this.channelsProvider = channelsProvider;
-        this.compressor = CODEC_FACTORY.getByName(codecName);
+        this.compressor = DeephavenCodecFactory.getInstance().getByName(codecName);
     }
 
     @SuppressWarnings("unused")

@@ -1,7 +1,6 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.Compressor;
 import io.deephaven.parquet.compress.DeephavenCodecFactory;
@@ -32,7 +31,6 @@ import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
 public class ColumnChunkReaderImpl implements ColumnChunkReader {
-    private static final DeephavenCodecFactory CODEC_FACTORY = DeephavenCodecFactory.getInstance();
 
     private final ColumnChunk columnChunk;
     private final SeekableChannelsProvider channelsProvider;
@@ -55,7 +53,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.path = type
                 .getColumnDescription(columnChunk.meta_data.getPath_in_schema().toArray(new String[0]));
         if (columnChunk.getMeta_data().isSetCodec()) {
-            decompressor = CODEC_FACTORY.getByName(columnChunk.getMeta_data().getCodec().name());
+            decompressor = DeephavenCodecFactory.getInstance().getByName(columnChunk.getMeta_data().getCodec().name());
         } else {
             decompressor = Compressor.PASSTHRU;
         }

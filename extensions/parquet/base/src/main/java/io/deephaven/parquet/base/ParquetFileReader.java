@@ -2,7 +2,6 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import io.deephaven.parquet.compress.DeephavenCodecFactory;
 import org.apache.parquet.format.*;
 import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
