@@ -92,6 +92,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     @Override
     public boolean satisfied(final long step) {
+        // Check and see if we've already been completed.
         if (lastCompletedStep == step) {
             UpdateGraphProcessor.DEFAULT.logDependencies()
                     .append("Already completed notification for ").append(this).append(", step=").append(step).endl();
@@ -106,24 +107,42 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
             return false;
         }
 
+        // Recursively check to see if our dependencies have been satisfied.
         if (!canExecute(step)) {
             UpdateGraphProcessor.DEFAULT.logDependencies()
                     .append("Dependencies not yet satisfied for ").append(this).append(", step=").append(step).endl();
             return false;
         }
 
+        // Let's check again and see if we got lucky and another thread completed us while we were checking our
+        // dependencies.
+        if (lastCompletedStep == step) {
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("Already completed notification during dependency check for ").append(this)
+                    .append(", step=").append(step)
+                    .endl();
+            return true;
+        }
+
         // We check the queued notification step again after the dependency check. It is possible that something
         // enqueued us while we were evaluating the dependencies, and we must not miss that race.
         if (lastEnqueuedStep == step) {
             UpdateGraphProcessor.DEFAULT.logDependencies()
-                    .append("Enqueued notification after dependency check for ").append(this)
+                    .append("Enqueued notification during dependency check for ").append(this)
                     .append(", step=").append(step)
                     .endl();
             return false;
         }
 
         UpdateGraphProcessor.DEFAULT.logDependencies()
-                .append("Dependencies satisfied for ").append(this).append(", step=").append(step).endl();
+                .append("Dependencies satisfied for ").append(this)
+                .append(", lastCompleted=").append(lastCompletedStep)
+                .append(", lastQueued=").append(lastEnqueuedStep)
+                .append(", step=").append(step)
+                .endl();
+
+        // Mark this node as completed. All our dependencies have been satisfied, but we are not enqueued, so we can
+        // never actually execute.
         final long oldLastCompletedStep = LAST_COMPLETED_STEP_UPDATER.getAndSet(this, step);
         Assert.lt(oldLastCompletedStep, "oldLastCompletedStep", step, "step");
         return true;
