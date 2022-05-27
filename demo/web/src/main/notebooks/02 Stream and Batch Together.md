@@ -21,7 +21,7 @@ def get_trades_stream():
           'schema.registry.url' : 'http://demo-kafka.c.deephaven-oss.internal:8081' },
         'io.deephaven.crypto.kafka.TradesTopic',
         key_spec = KeyValueSpec.IGNORE,
-        value = ck.avro_spec('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
+        value_spec = ck.avro_spec('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
         offsets = ck.ALL_PARTITIONS_SEEK_TO_END,
         table_type = TableType.Append)
 
@@ -48,7 +48,7 @@ Feel free to scroll around at
 
 ```python
 from deephaven import parquet as pt
-t_parquet = pt.read(path="/data/large/misc/10b-x.snappy.parquet").coalesce().restrict_sort_to()
+t_parquet = pt.read(path="/data/large/misc/10b-x.snappy.parquet").coalesce().restrict_sort_to(["X"])
 # Allowing users to sort 10 bb rows in the UI is not best practice.
 ```
 \
@@ -56,7 +56,7 @@ t_parquet = pt.read(path="/data/large/misc/10b-x.snappy.parquet").coalesce().res
 \
 You can see the row count by hovering on the column header or running this script.
 ```python
-t_parquet_row_count = t_parquet.countBy(col="Row_Count")
+t_parquet_row_count = t_parquet.countBy("Row_Count")
 ```
 \
 \
@@ -94,10 +94,12 @@ The following scripts will demonstrate much the same with two examples:
 
 ```python
 # the table decoration
-from deephaven.time import format_date
+from deephaven.time import format_date, nanos_to_datetime, TimeZone
+
+TZ_NY = TimeZone(TimeZone.NY)
 
 add_column_streaming = trades_stream_view.update_view(formulas=["Date = format_date(KafkaTimestamp, TZ_NY)"])
-add_column_batch     = trades_batch_view .update_view(formulas=["Date = format_date(Timestamp, TZ_NY)"])
+add_column_batch = trades_batch_view .update_view(formulas=["Date = format_date(nanos_to_datetime(Timestamp), TZ_NY)"])
 
 # the table aggregation
 from deephaven import agg
@@ -128,8 +130,7 @@ Below you'll merge the two raw tables (with each other), then the two aggregatio
 from deephaven.table_factory import merge
 merge_trade_views = merge([add_column_streaming, add_column_streaming])
 
-merge_aggs = merge([agg_streaming, agg_batch])\
-    .format_column_where(col="Date", cond="Date = currentDateNy()", formula="Date = `IVORY`")
+merge_aggs = merge([agg_streaming, agg_batch])
 ```
 
 \
@@ -144,7 +145,7 @@ Please note that you do not have to think about whether a named_table happens to
 
 ```python
 join_stream_batch = agg_streaming.rename_columns(cols=["Price_Streaming = Price", "Avg_Price_Streaming = Avg_Price"])\
-    .naturalJoin(table=agg_batch, on=["Exchange, Instrument"], joins=["Date_Batch = Date, Price_Batch = Price, Avg_Price_Batch = Avg_Price"])\
+    .natural_join(table=agg_batch, on=["Exchange, Instrument"], joins=["Date_Batch = Date", "Price_Batch = Price", "Avg_Price_Batch = Avg_Price"])\
     .format_columns(formulas=["Date = `IVORY`", "Date_Batch = `SKYBLUE`"])\
     .update_view(formulas=["Avg_Price_Change = Avg_Price_Streaming - Avg_Price_Batch"])
 ```
