@@ -2890,26 +2890,56 @@ public class QueryTable extends BaseTable {
                 });
     }
 
+    /**
+     * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
+     * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
+     *
+     * The result will not update on its own, the caller must also establish an appropriate listener to update
+     * {@code rowSet} and propagate {@link TableUpdate updates}.
+     *
+     * No {@link QueryPerformanceNugget nugget} is opened for this table, to prevent operations that call this
+     * repeatedly from having an inordinate performance penalty. If callers require a nugget, they must create one in
+     * the enclosing operation.
+     *
+     * @param rowSet The result's {@link #getRowSet() row set}
+     * @return A new table sharing this table's column sources with the specified row set
+     */
     @Override
     public QueryTable getSubTable(TrackingRowSet rowSet) {
         return getSubTable(rowSet, null, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
     }
 
-    public QueryTable getSubTable(@NotNull final TrackingRowSet rowSet,
+    /**
+     * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
+     * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
+     *
+     * The result will not update on its own, the caller must also establish an appropriate listener to update
+     * {@code rowSet} and propagate {@link TableUpdate updates}.
+     *
+     * This method is intended to be used for composing alternative engine operations, in particular
+     * {@link #partitionBy(boolean, String...)}.
+     *
+     * No {@link QueryPerformanceNugget nugget} is opened for this table, to prevent operations that call this
+     * repeatedly from having an inordinate performance penalty. If callers require a nugget, they must create one in
+     * the enclosing operation.
+     *
+     * @param rowSet The result's {@link #getRowSet() row set}
+     * @param resultModifiedColumnSet The result's {@link #getModifiedColumnSetForUpdates() modified column set}
+     * @param parents Parent references for the result table
+     * @return A new table sharing this table's column sources with the specified row set
+     */
+    public QueryTable getSubTable(
+            @NotNull final TrackingRowSet rowSet,
             @Nullable final ModifiedColumnSet resultModifiedColumnSet,
             @NotNull final Object... parents) {
-        return QueryPerformanceRecorder.withNugget("getSubTable", sizeForInstrumentation(), () -> {
-            // there is no operation check here, because partitionBy calls it internally; and the RowSet
-            // results are not updated internally, but rather externally.
-            final QueryTable result = new QueryTable(definition, rowSet, columns, resultModifiedColumnSet);
-            for (Object parent : parents) {
-                result.addParentReference(parent);
-            }
-
-            result.setLastNotificationStep(getLastNotificationStep());
-
-            return result;
-        });
+        // There is no checkInitiateOperation check here, because partitionBy calls it internally and the RowSet
+        // results are not updated internally, but rather externally.
+        final QueryTable result = new QueryTable(definition, rowSet, columns, resultModifiedColumnSet);
+        for (final Object parent : parents) {
+            result.addParentReference(parent);
+        }
+        result.setLastNotificationStep(getLastNotificationStep());
+        return result;
     }
 
     /**
