@@ -1412,6 +1412,7 @@ public abstract class BaseTable extends LivenessArtifact
         // NB: We should not assert things about empty listener lists, here, given that listener cleanup might never
         // happen or happen out of order if the listeners were GC'd and not explicitly left unmanaged.
         childListenerReferences.clear();
+        childShiftAwareListenerReferences.clear();
         parents.clear();
     }
 
