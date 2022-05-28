@@ -26,8 +26,6 @@ import java.util.stream.Stream;
 public class TableDefinition implements Externalizable, LogOutputAppendable, Copyable<TableDefinition> {
     private static final long serialVersionUID = -120432133075760976L;
 
-    private static final String NEW_LINE = System.getProperty("line.separator");
-
     public static TableDefinition of(ColumnDefinition<?>... columnDefinitions) {
         return new TableDefinition(columnDefinitions);
     }
@@ -252,6 +250,9 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
             @NotNull final TableDefinition other,
             @NotNull final String lhsName,
             @NotNull final String rhsName) {
+        if (this == other) {
+            return this;
+        }
         final TableDefinition result = checkCompatibilityInternal(other, false);
         if (result == null || other.checkCompatibilityInternal(this, false) == null) {
             final List<String> differences = describeCompatibilityDifferences(other, lhsName, rhsName);
@@ -299,6 +300,9 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     public TableDefinition checkCompatibility(
             @NotNull final TableDefinition other,
             final boolean ignorePartitioningColumns) {
+        if (this == other) {
+            return this;
+        }
         final TableDefinition minimized = checkCompatibilityInternal(other, ignorePartitioningColumns);
         if (minimized != null) {
             return minimized;
@@ -377,6 +381,9 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     private List<String> describeDifferences(
             @NotNull final TableDefinition other, @NotNull final String lhs, @NotNull final String rhs,
             @NotNull final ColumnDefinitionEqualityTest test, final boolean includeColumnType) {
+        if (this == other) {
+            return Collections.emptyList();
+        }
         final List<String> differences = new ArrayList<>();
 
         final Map<String, ColumnDefinition<?>> otherColumns = other.getColumnNameMap();
@@ -426,6 +433,9 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean equalsIgnoreOrder(@NotNull final TableDefinition other) {
+        if (this == other) {
+            return true;
+        }
         if (columns.length != other.columns.length) {
             return false;
         }

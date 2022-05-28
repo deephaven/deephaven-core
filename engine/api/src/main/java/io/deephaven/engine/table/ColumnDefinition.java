@@ -424,6 +424,9 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
      * @return True if the ColumnDefinition defines a column whose data is compatible with this ColumnDefinition.
      */
     public boolean isCompatible(ColumnDefinition<?> other) {
+        if (this == other) {
+            return true;
+        }
         return this.name.equals(other.name)
                 && this.dataType.equals(other.dataType)
                 && this.componentType == other.componentType;
@@ -456,6 +459,9 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     public void describeDifferences(@NotNull List<String> differences, @NotNull final ColumnDefinition<?> other,
             @NotNull final String lhs, @NotNull final String rhs, @NotNull final String prefix,
             final boolean includeColumnType) {
+        if (this == other) {
+            return;
+        }
         if (!name.equals(other.name)) {
             differences.add(prefix + lhs + " name '" + name + "' does not match " + rhs + " name '" + other.name + "'");
         }
@@ -475,6 +481,9 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
         if (!(other instanceof ColumnDefinition)) {
             return false;
         }
