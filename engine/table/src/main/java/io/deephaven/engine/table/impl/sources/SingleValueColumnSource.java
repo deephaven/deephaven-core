@@ -15,14 +15,10 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback, Serializable {
+        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback {
 
     protected transient long changeTime;
     protected boolean isTrackingPrevValues;
-
-    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
-        ois.defaultReadObject();
-    }
 
     SingleValueColumnSource(Class<T> type) {
         super(type);

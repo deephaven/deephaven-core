@@ -55,7 +55,7 @@ import java.util.stream.Stream;
  * Base abstract class all standard table implementations.
  */
 public abstract class BaseTable extends LivenessArtifact
-        implements TableWithDefaults, Serializable, NotificationStepReceiver, NotificationStepSource {
+        implements TableWithDefaults, NotificationStepReceiver, NotificationStepSource {
 
     private static final long serialVersionUID = 1L;
 
@@ -88,7 +88,7 @@ public abstract class BaseTable extends LivenessArtifact
     private transient SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences;
     private transient volatile long lastNotificationStep;
     private transient volatile long lastSatisfiedStep;
-    private transient boolean isFailed;
+    private transient volatile boolean isFailed;
 
     public BaseTable(@NotNull final TableDefinition definition, @NotNull final String description) {
         this.definition = definition;
@@ -114,11 +114,6 @@ public abstract class BaseTable extends LivenessArtifact
                         : new WeakSimpleReference<>(listener),
                 true);
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
-    }
-
-    private void readObject(ObjectInputStream objectInputStream) throws IOException, ClassNotFoundException {
-        objectInputStream.defaultReadObject();
-        initializeTransientFields();
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -729,9 +724,8 @@ public abstract class BaseTable extends LivenessArtifact
         String serializedIndices = null;
         if (PRINT_SERIALIZED_UPDATE_OVERLAPS) {
             // The indices are really rather complicated, if we fail this check let's generate a serialized
-            // representation
-            // of them that can later be loaded into a debugger. If this fails, we'll ignore it and continue with our
-            // regularly scheduled exception.
+            // representation of them that can later be loaded into a debugger. If this fails, we'll ignore it and
+            // continue with our regularly scheduled exception.
             try {
                 final StringBuilder outputBuffer = new StringBuilder();
                 final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();

@@ -65,8 +65,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
 import java.util.*;
@@ -294,11 +292,6 @@ public class QueryTable extends BaseTable {
         if (modifiedColumnSet == null) {
             modifiedColumnSet = new ModifiedColumnSet(columns);
         }
-    }
-
-    private void readObject(ObjectInputStream objectInputStream) throws IOException, ClassNotFoundException {
-        objectInputStream.defaultReadObject();
-        initializeTransientFields();
     }
 
     @Override
