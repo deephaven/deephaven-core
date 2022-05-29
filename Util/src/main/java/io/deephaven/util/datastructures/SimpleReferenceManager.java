@@ -15,7 +15,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * A helper for manging a list of References. It hides the internal management of expired references and provides for
+ * A helper for managing a list of References. It hides the internal management of expired references and provides for
  * iteration over the valid ones
  */
 public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
