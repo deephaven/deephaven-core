@@ -45,9 +45,11 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -68,6 +70,19 @@ public abstract class BaseTable extends LivenessArtifact
 
     private static final Logger log = LoggerFactory.getLogger(BaseTable.class);
 
+    private static final AtomicReferenceFieldUpdater<BaseTable, Condition> CONDITION_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Condition.class, "updateGraphProcessorCondition");
+    private static final AtomicReferenceFieldUpdater<BaseTable, Collection> PARENTS_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Collection.class, "parents");
+    private static final Collection<Object> EMPTY_PARENTS = Collections.emptyList();
+    private static final AtomicReferenceFieldUpdater<BaseTable, SimpleReferenceManager> CHILD_LISTENER_REFERENCES_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(
+                    BaseTable.class, SimpleReferenceManager.class, "childListenerReferences");
+    private static final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> EMPTY_CHILD_LISTENER_REFERENCES =
+            new SimpleReferenceManager<>((final TableUpdateListener listener) -> {
+                throw new UnsupportedOperationException("EMPTY_CHILDREN does not support adds");
+            }, Collections.emptyList());
+
     /**
      * This table's definition.
      */
@@ -82,11 +97,14 @@ public abstract class BaseTable extends LivenessArtifact
     protected final ConcurrentHashMap<String, Object> attributes = new ConcurrentHashMap<>();
 
     // Fields for DynamicNode implementation and update propagation support
-    private boolean refreshing;
-    private final Condition updateGraphProcessorCondition;
-    private final Collection<Object> parents;
-    private final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences;
-
+    private volatile boolean refreshing;
+    @SuppressWarnings({"FieldMayBeFinal", "unused"}) // Set via ensureField with CONDITION_UPDATER
+    private volatile Condition updateGraphProcessorCondition;
+    @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with PARENTS_UPDATER
+    private volatile Collection<Object> parents = EMPTY_PARENTS;
+    @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with CHILD_LISTENER_REFERENCES_UPDATER
+    private volatile SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences
+            = EMPTY_CHILD_LISTENER_REFERENCES;
     private volatile long lastNotificationStep;
     private volatile long lastSatisfiedStep;
     private volatile boolean isFailed;
@@ -94,13 +112,6 @@ public abstract class BaseTable extends LivenessArtifact
     public BaseTable(@NotNull final TableDefinition definition, @NotNull final String description) {
         this.definition = definition;
         this.description = description;
-        updateGraphProcessorCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
-        parents = new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance());
-        childListenerReferences = new SimpleReferenceManager<>((final TableUpdateListener listener) ->
-                listener instanceof LegacyListenerAdapter
-                        ? (LegacyListenerAdapter) listener
-                        : new WeakSimpleReference<>(listener),
-                true);
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
         initializeSystemicAttribute();
     }
@@ -497,11 +508,41 @@ public abstract class BaseTable extends LivenessArtifact
     public final void addParentReference(@NotNull final Object parent) {
         if (DynamicNode.notDynamicOrIsRefreshing(parent)) {
             setRefreshing(true);
-            parents.add(parent);
+            //noinspection unchecked
+            ensureField(PARENTS_UPDATER, EMPTY_PARENTS, () ->
+                    new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance())
+            ).add(parent);
             if (parent instanceof LivenessReferent) {
                 manage((LivenessReferent) parent);
             }
         }
+    }
+
+    /**
+     * Ensure a field is initialized exactly once, and get the current value after possibly initializing it.
+     *
+     * @param updater An {@link AtomicReferenceFieldUpdater} associated with the field
+     * @param defaultValue The reference value that signifies that the field has not been initialized
+     * @param valueFactory A factory for new values; may be called concurrently by multiple threads as they race to
+     *        initialize the field
+     * @return The initialized value of the field
+     */
+    <FIELD_TYPE> FIELD_TYPE ensureField(
+            @NotNull final AtomicReferenceFieldUpdater<BaseTable, FIELD_TYPE> updater,
+            @Nullable final FIELD_TYPE defaultValue,
+            @NotNull final Supplier<FIELD_TYPE> valueFactory) {
+        final FIELD_TYPE currentValue = updater.get(this);
+        if (currentValue != defaultValue) {
+            // The field has previously been initialized, return the current value we already retrieved
+            return currentValue;
+        }
+        final FIELD_TYPE candidateValue = valueFactory.get();
+        if (updater.compareAndSet(this, defaultValue, candidateValue)) {
+            // This thread won the initialization race, return the candidate value we set
+            return candidateValue;
+        }
+        // This thread lost the initialization race, re-read and return the current value
+        return updater.get(this);
     }
 
     @Override
@@ -510,19 +551,20 @@ public abstract class BaseTable extends LivenessArtifact
             return true;
         }
 
-        // noinspection SynchronizeOnNonFinalField
-        synchronized (parents) {
-            // If we have no parents whatsoever then we are a source, and have no dependency chain other than the UGP
-            // itself
-            if (parents.isEmpty()) {
-                if (UpdateGraphProcessor.DEFAULT.satisfied(step)) {
-                    UpdateGraphProcessor.DEFAULT.logDependencies().append("Root node satisfied ").append(this).endl();
-                    return true;
-                }
-                return false;
+        final Collection<Object> localParents = parents;
+        // If we have no parents whatsoever then we are a source, and have no dependency chain other than the UGP
+        // itself
+        if (localParents.isEmpty()) {
+            if (UpdateGraphProcessor.DEFAULT.satisfied(step)) {
+                UpdateGraphProcessor.DEFAULT.logDependencies().append("Root node satisfied ").append(this).endl();
+                return true;
             }
+            return false;
+        }
 
-            for (Object parent : parents) {
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (localParents) {
+            for (Object parent : localParents) {
                 if (parent instanceof NotificationQueue.Dependency) {
                     if (!((NotificationQueue.Dependency) parent).satisfied(step)) {
                         UpdateGraphProcessor.DEFAULT.logDependencies()
@@ -546,16 +588,27 @@ public abstract class BaseTable extends LivenessArtifact
 
     @Override
     public void awaitUpdate() throws InterruptedException {
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(updateGraphProcessorCondition::await);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ensureCondition()::await);
     }
 
     @Override
     public boolean awaitUpdate(long timeout) throws InterruptedException {
         final MutableBoolean result = new MutableBoolean(false);
         UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .doLocked(() -> result.setValue(updateGraphProcessorCondition.await(timeout, TimeUnit.MILLISECONDS)));
+                .doLocked(() -> result.setValue(ensureCondition().await(timeout, TimeUnit.MILLISECONDS)));
 
         return result.booleanValue();
+    }
+
+    private Condition ensureCondition() {
+        return ensureField(CONDITION_UPDATER, null, () -> UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition());
+    }
+
+    private void maybeSignal() {
+        final Condition localCondition = updateGraphProcessorCondition;
+        if (localCondition != null) {
+            UpdateGraphProcessor.DEFAULT.requestSignal(localCondition);
+        }
     }
 
     @Override
@@ -578,7 +631,14 @@ public abstract class BaseTable extends LivenessArtifact
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
         if (isRefreshing()) {
-            childListenerReferences.add(listener);
+            //noinspection unchecked
+            ensureField(CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES, () ->
+                    new SimpleReferenceManager<>((final TableUpdateListener tableUpdateListener) ->
+                            tableUpdateListener instanceof LegacyListenerAdapter
+                                    ? (LegacyListenerAdapter) tableUpdateListener
+                                    : new WeakSimpleReference<>(tableUpdateListener),
+                            true)
+            ).add(listener);
         }
     }
 
@@ -644,7 +704,7 @@ public abstract class BaseTable extends LivenessArtifact
             return;
         }
 
-        UpdateGraphProcessor.DEFAULT.requestSignal(updateGraphProcessorCondition);
+        maybeSignal();
 
         final boolean hasNoListeners = !hasListeners();
         if (hasNoListeners) {
@@ -794,8 +854,7 @@ public abstract class BaseTable extends LivenessArtifact
     public final void notifyListenersOnError(final Throwable e,
             @Nullable final TableListener.Entry sourceEntry) {
         isFailed = true;
-        UpdateGraphProcessor.DEFAULT.requestSignal(updateGraphProcessorCondition);
-
+        maybeSignal();
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
 
         final NotificationQueue notificationQueue = getNotificationQueue();
