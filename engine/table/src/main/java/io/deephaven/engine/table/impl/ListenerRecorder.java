@@ -9,11 +9,8 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.table.impl.util.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import javax.naming.ldap.PagedResultsControl;
 
 /**
  * A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a
@@ -131,15 +128,5 @@ public class ListenerRecorder extends InstrumentedTableUpdateListener {
 
     public TableUpdate getUpdate() {
         return recordedVariablesAreValid() ? update : null;
-    }
-
-    /**
-     * The caller is responsible for closing the {@link RowSetShiftDataExpander}.
-     * 
-     * @return a backwards compatible version of added / removed / modified that account for shifting
-     */
-    public RowSetShiftDataExpander getExpandedARM() {
-        return recordedVariablesAreValid() ? new RowSetShiftDataExpander(update, getParent().getRowSet())
-                : RowSetShiftDataExpander.EMPTY;
     }
 }

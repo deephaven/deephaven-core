@@ -14,6 +14,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -37,7 +38,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
     /**
      * Generates the backwards compatible ARM from an ARMS update.
      * 
-     * @param update The usptream update.
+     * @param update The upstream update.
      */
     public RowSetShiftDataExpander(final TableUpdate update, final TrackingRowSet sourceRowSet) {
         // do we even need changes?
@@ -91,6 +92,9 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             modified.remove(added);
         } catch (Exception e) {
             throw new RuntimeException("Could not expand update: " + update, e);
+        }
+        if (BaseTable.VALIDATE_UPDATE_OVERLAPS) {
+            validate(update, sourceRowSet);
         }
     }
 
@@ -148,7 +152,8 @@ public class RowSetShiftDataExpander implements SafeCloseable {
      * @param update The update originally passed at construction time, used only for logging debug info on error
      * @param sourceRowSet The underlying RowSet that applies to added/removed/modified
      */
-    public void validate(final TableUpdate update, final TrackingRowSet sourceRowSet) {
+    @VisibleForTesting
+    void validate(final TableUpdate update, final TrackingRowSet sourceRowSet) {
         final boolean previousContainsAdds;
         final boolean previousMissingRemovals;
         final boolean previousMissingModifications;

@@ -9,6 +9,7 @@ import com.google.common.collect.HashBiMap;
 import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -25,7 +26,6 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
-import io.deephaven.engine.table.impl.util.RowSetShiftDataExpander;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.hash.KeyedObjectHashSet;
@@ -61,7 +61,7 @@ public abstract class BaseTable extends LivenessArtifact
 
     private static final boolean VALIDATE_UPDATE_INDICES =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateIndices", false);
-    private static final boolean VALIDATE_UPDATE_OVERLAPS =
+    public static final boolean VALIDATE_UPDATE_OVERLAPS =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateOverlaps", true);
     public static final boolean PRINT_SERIALIZED_UPDATE_OVERLAPS =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.printSerializedUpdateOverlaps", false);
@@ -85,8 +85,7 @@ public abstract class BaseTable extends LivenessArtifact
     private transient boolean refreshing;
     private transient Condition updateGraphProcessorCondition;
     private transient Collection<Object> parents;
-    private transient SimpleReferenceManager<ShiftObliviousListener, WeakSimpleReference<ShiftObliviousListener>> childListenerReferences;
-    private transient SimpleReferenceManager<TableUpdateListener, WeakSimpleReference<TableUpdateListener>> childShiftAwareListenerReferences;
+    private transient SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences;
     private transient volatile long lastNotificationStep;
     private transient volatile long lastSatisfiedStep;
     private transient boolean isFailed;
@@ -109,8 +108,11 @@ public abstract class BaseTable extends LivenessArtifact
         isFailed = false;
         updateGraphProcessorCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
         parents = new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance());
-        childListenerReferences = new SimpleReferenceManager<>(WeakSimpleReference::new, true);
-        childShiftAwareListenerReferences = new SimpleReferenceManager<>(WeakSimpleReference::new, true);
+        childListenerReferences = new SimpleReferenceManager<>((final TableUpdateListener listener) ->
+                listener instanceof LegacyListenerAdapter
+                        ? (LegacyListenerAdapter) listener
+                        : new WeakSimpleReference<>(listener),
+                true);
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
     }
 
@@ -568,15 +570,15 @@ public abstract class BaseTable extends LivenessArtifact
 
     @Override
     public void listenForUpdates(final ShiftObliviousListener listener, final boolean replayInitialImage) {
-        if (isFailed) {
-            throw new IllegalStateException("Can not listen to failed table " + description);
-        }
-        if (isRefreshing()) {
-            childListenerReferences.add(listener);
-        }
-        if (replayInitialImage && getRowSet().isNonempty()) {
-            listener.setInitialImage(getRowSet());
-            listener.onUpdate(getRowSet(), RowSetFactory.empty(), RowSetFactory.empty());
+        listenForUpdates(new LegacyListenerAdapter(listener, getRowSet()));
+        if (replayInitialImage) {
+            if (isRefreshing()) {
+                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+            }
+            if (getRowSet().isNonempty()) {
+                listener.setInitialImage(getRowSet());
+                listener.onUpdate(getRowSet(), RowSetFactory.empty(), RowSetFactory.empty());
+            }
         }
     }
 
@@ -586,18 +588,21 @@ public abstract class BaseTable extends LivenessArtifact
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
         if (isRefreshing()) {
-            childShiftAwareListenerReferences.add(listener);
+            childListenerReferences.add(listener);
         }
     }
 
     @Override
     public void removeUpdateListener(final ShiftObliviousListener listenerToRemove) {
-        childListenerReferences.remove(listenerToRemove);
+        childListenerReferences.removeIf((final TableUpdateListener listener) ->
+                listener instanceof LegacyListenerAdapter
+                        && ((LegacyListenerAdapter) listener).matches(listenerToRemove)
+        );
     }
 
     @Override
     public void removeUpdateListener(final TableUpdateListener listenerToRemove) {
-        childShiftAwareListenerReferences.remove(listenerToRemove);
+        childListenerReferences.remove(listenerToRemove);
     }
 
     @Override
@@ -616,7 +621,7 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     public boolean hasListeners() {
-        return !childListenerReferences.isEmpty() || !childShiftAwareListenerReferences.isEmpty();
+        return !childListenerReferences.isEmpty();
     }
 
     /**
@@ -688,16 +693,6 @@ public abstract class BaseTable extends LivenessArtifact
             validateUpdateOverlaps(update);
         }
 
-        // Expand if we are testing or have children listening using old ShiftObliviousListener API.
-        final boolean childNeedsExpansion = !childListenerReferences.isEmpty();
-        final RowSetShiftDataExpander shiftExpander =
-                childNeedsExpansion ? new RowSetShiftDataExpander(update, getRowSet()) : RowSetShiftDataExpander.EMPTY;
-
-        if (childNeedsExpansion && VALIDATE_UPDATE_OVERLAPS) {
-            // Check that expansion is valid w.r.t. historical expectations.
-            shiftExpander.validate(update, getRowSet());
-        }
-
         // tables may only be updated once per cycle
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
@@ -706,26 +701,8 @@ public abstract class BaseTable extends LivenessArtifact
 
         // notify children
         final NotificationQueue notificationQueue = getNotificationQueue();
-        childListenerReferences.forEach((listenerRef, listener) -> {
-            final NotificationQueue.Notification notification =
-                    listener.getNotification(shiftExpander.getAdded(), shiftExpander.getRemoved(),
-                            shiftExpander.getModified());
-            notificationQueue.addNotification(notification);
-        });
-        childShiftAwareListenerReferences.forEach((listenerRef, listener) -> {
-            final NotificationQueue.Notification notification = listener.getNotification(update);
-            notificationQueue.addNotification(notification);
-        });
-
-        // eventually clean up shiftExpander's data.
-        if (childNeedsExpansion) {
-            notificationQueue.addNotification(new TerminalNotification() {
-                @Override
-                public void run() {
-                    shiftExpander.close();
-                }
-            });
-        }
+        childListenerReferences.forEach((listenerRef, listener) ->
+                notificationQueue.addNotification(listener.getNotification(update)));
 
         update.release();
     }
@@ -832,12 +809,9 @@ public abstract class BaseTable extends LivenessArtifact
 
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
 
-        childListenerReferences.forEach((listenerRef, listener) -> UpdateGraphProcessor.DEFAULT
-                .addNotification(listener.getErrorNotification(e, sourceEntry)));
-
-        // Notify ShiftAwareListeners
-        childShiftAwareListenerReferences.forEach((listenerRef, listener) -> UpdateGraphProcessor.DEFAULT
-                .addNotification(listener.getErrorNotification(e, sourceEntry)));
+        final NotificationQueue notificationQueue = getNotificationQueue();
+        childListenerReferences.forEach((listenerRef, listener) ->
+                notificationQueue.addNotification(listener.getErrorNotification(e, sourceEntry)));
     }
 
     /**
@@ -1412,7 +1386,6 @@ public abstract class BaseTable extends LivenessArtifact
         // NB: We should not assert things about empty listener lists, here, given that listener cleanup might never
         // happen or happen out of order if the listeners were GC'd and not explicitly left unmanaged.
         childListenerReferences.clear();
-        childShiftAwareListenerReferences.clear();
         parents.clear();
     }
 
