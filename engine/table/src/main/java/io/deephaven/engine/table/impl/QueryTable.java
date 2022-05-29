@@ -154,13 +154,13 @@ public class QueryTable extends BaseTable {
 
     private final TrackingRowSet rowSet;
     private final LinkedHashMap<String, ColumnSource<?>> columns;
-    protected transient ModifiedColumnSet modifiedColumnSet;
+    protected final ModifiedColumnSet modifiedColumnSet;
 
     // Cached data columns
-    private transient Map<String, IndexedDataColumn> indexedDataColumns;
+    private final Map<String, IndexedDataColumn> indexedDataColumns;
 
     // Flattened table support
-    private transient boolean flat;
+    private boolean flat;
 
     // Should we save results of potentially expensive operations (can be disabled for unit tests)
     private static boolean memoizeResults =
@@ -256,16 +256,20 @@ public class QueryTable extends BaseTable {
      * @param columns The column source map for the table, which is not copied.
      * @param modifiedColumnSet Optional {@link ModifiedColumnSet} that should be re-used if supplied
      */
-    private QueryTable(TableDefinition definition, TrackingRowSet rowSet,
-            LinkedHashMap<String, ColumnSource<?>> columns,
-            @Nullable ModifiedColumnSet modifiedColumnSet) {
+    private QueryTable(
+            @NotNull final TableDefinition definition,
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final LinkedHashMap<String, ColumnSource<?>> columns,
+            @Nullable final ModifiedColumnSet modifiedColumnSet) {
         super(definition, "QueryTable"); // TODO: Better descriptions composed from query chain
         this.rowSet = rowSet;
         this.columns = columns;
-        this.modifiedColumnSet = modifiedColumnSet;
-        initializeTransientFields();
+        this.modifiedColumnSet = Objects.requireNonNullElseGet(modifiedColumnSet,
+                () -> new ModifiedColumnSet(this.columns));
+        indexedDataColumns = new HashMap<>();
+        cachedOperations = new ConcurrentHashMap<>();
 
-        TableDefinition inferred = TableDefinition.inferFrom(columns);
+        final TableDefinition inferred = TableDefinition.inferFrom(columns);
         definition.checkMutualCompatibility(inferred);
     }
 
@@ -283,15 +287,6 @@ public class QueryTable extends BaseTable {
     public QueryTable withDefinitionUnsafe(TableDefinition template) {
         TableDefinition inOrder = template.checkMutualCompatibility(definition);
         return (QueryTable) copy(inOrder, StandardOptions.COPY_ALL);
-    }
-
-    private void initializeTransientFields() {
-        indexedDataColumns = new HashMap<>();
-        cachedOperations = new ConcurrentHashMap<>();
-        flat = false;
-        if (modifiedColumnSet == null) {
-            modifiedColumnSet = new ModifiedColumnSet(columns);
-        }
     }
 
     @Override

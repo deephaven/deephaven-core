@@ -82,30 +82,18 @@ public abstract class BaseTable extends LivenessArtifact
     protected final ConcurrentHashMap<String, Object> attributes = new ConcurrentHashMap<>();
 
     // Fields for DynamicNode implementation and update propagation support
-    private transient boolean refreshing;
-    private transient Condition updateGraphProcessorCondition;
-    private transient Collection<Object> parents;
-    private transient SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences;
-    private transient volatile long lastNotificationStep;
-    private transient volatile long lastSatisfiedStep;
-    private transient volatile boolean isFailed;
+    private boolean refreshing;
+    private final Condition updateGraphProcessorCondition;
+    private final Collection<Object> parents;
+    private final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences;
+
+    private volatile long lastNotificationStep;
+    private volatile long lastSatisfiedStep;
+    private volatile boolean isFailed;
 
     public BaseTable(@NotNull final TableDefinition definition, @NotNull final String description) {
         this.definition = definition;
         this.description = description;
-        initializeTransientFields();
-        initializeSystemicAttribute();
-    }
-
-    private void initializeSystemicAttribute() {
-        if (SystemicObjectTracker.isSystemicThread()) {
-            markSystemic();
-        }
-    }
-
-    private void initializeTransientFields() {
-        refreshing = false;
-        isFailed = false;
         updateGraphProcessorCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
         parents = new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance());
         childListenerReferences = new SimpleReferenceManager<>((final TableUpdateListener listener) ->
@@ -114,6 +102,13 @@ public abstract class BaseTable extends LivenessArtifact
                         : new WeakSimpleReference<>(listener),
                 true);
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
+        initializeSystemicAttribute();
+    }
+
+    private void initializeSystemicAttribute() {
+        if (SystemicObjectTracker.isSystemicThread()) {
+            markSystemic();
+        }
     }
 
     // ------------------------------------------------------------------------------------------------------------------
