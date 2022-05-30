@@ -183,7 +183,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                     recorder.getRemoved().copy(),
                     recorder.getModified().copy(),
                     recorder.getShifted(),
-                    resultTable.modifiedColumnSet);
+                    resultTable.getModifiedColumnSetForUpdates());
 
             transformer.clearAndTransform(recorder.getModifiedColumnSet(), downstream.modifiedColumnSet());
 
@@ -232,7 +232,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                                         RowSetFactory.empty(),
                                         RowSetFactory.empty(),
                                         RowSetShiftData.EMPTY,
-                                        resultTable.modifiedColumnSet);
+                                        resultTable.getModifiedColumnSetForUpdates());
                     }
 
                     downstream.modifiedColumnSet().setAll(holder.getColumnName());

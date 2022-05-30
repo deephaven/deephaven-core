@@ -257,8 +257,8 @@ public class GenerateTableUpdates {
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             } else {
                 final ArrayList<String> modifiedColumns = new ArrayList<>();
-                update.modifiedColumnSet = table.modifiedColumnSet;
-                update.modifiedColumnSet().clear();
+                update.modifiedColumnSet = table.getModifiedColumnSetForUpdates();
+                update.modifiedColumnSet.clear();
 
                 final String mustModifyColumn = (mutableColumns.length == 0) ? null
                         : mutableColumns[random.nextInt(mutableColumns.length)].name;

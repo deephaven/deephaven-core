@@ -185,10 +185,10 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         Assert.eq(downstream.modified().size(), "update.modified.size()", upstream.modified().size(),
                 "upstream.modified.size()");
 
-        downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
-        downstream.modifiedColumnSet().clear();
+        downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+        downstream.modifiedColumnSet.clear();
         if (downstream.modified().isNonempty()) {
-            mcsTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
+            mcsTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
         }
 
         if (rowSet.size() != parentRowSet.size()) {

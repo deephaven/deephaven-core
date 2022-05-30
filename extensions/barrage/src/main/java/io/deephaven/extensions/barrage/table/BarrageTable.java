@@ -251,6 +251,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         if (DEBUG_ENABLED) {
             saveForDebugging(update);
 
+            final ModifiedColumnSet modifiedColumnSet = getModifiedColumnSetForUpdates();
             modifiedColumnSet.clear();
             final WritableRowSet mods = RowSetFactory.empty();
             for (int ci = 0; ci < update.modColumnData.length; ++ci) {
@@ -374,6 +375,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 }
             }
 
+            final ModifiedColumnSet modifiedColumnSet = getModifiedColumnSetForUpdates();
             modifiedColumnSet.clear();
             for (int ii = 0; ii < update.modColumnData.length; ++ii) {
                 final BarrageMessage.ModColumnData column = update.modColumnData[ii];

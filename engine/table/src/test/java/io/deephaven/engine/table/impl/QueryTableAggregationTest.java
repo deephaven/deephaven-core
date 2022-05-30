@@ -359,26 +359,26 @@ public class QueryTableAggregationTest {
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[4].modifiedColumnSet.clear();
-            inputs[4].modifiedColumnSet.setAll("StrCol");
+            inputs[4].getModifiedColumnSetForUpdates().clear();
+            inputs[4].getModifiedColumnSetForUpdates().setAll("StrCol");
             inputs[4].notifyListeners(new TableUpdateImpl(i(), i(), ir(0, mergeChunkMultiple / 2),
-                    RowSetShiftData.EMPTY, inputs[4].modifiedColumnSet));
+                    RowSetShiftData.EMPTY, inputs[4].getModifiedColumnSetForUpdates()));
         });
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[4].modifiedColumnSet.clear();
-            inputs[4].modifiedColumnSet.setAll("IntCol");
+            inputs[4].getModifiedColumnSetForUpdates().clear();
+            inputs[4].getModifiedColumnSetForUpdates().setAll("IntCol");
             inputs[4].notifyListeners(new TableUpdateImpl(i(), i(), ir(0, mergeChunkMultiple / 2),
-                    RowSetShiftData.EMPTY, inputs[4].modifiedColumnSet));
+                    RowSetShiftData.EMPTY, inputs[4].getModifiedColumnSetForUpdates()));
         });
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[4].modifiedColumnSet.clear();
-            inputs[4].modifiedColumnSet.setAll("TimeCol");
+            inputs[4].getModifiedColumnSetForUpdates().clear();
+            inputs[4].getModifiedColumnSetForUpdates().setAll("TimeCol");
             inputs[4].notifyListeners(new TableUpdateImpl(i(), i(), ir(0, mergeChunkMultiple / 2),
-                    RowSetShiftData.EMPTY, inputs[4].modifiedColumnSet));
+                    RowSetShiftData.EMPTY, inputs[4].getModifiedColumnSetForUpdates()));
         });
         TstUtils.validate(ens);
     }

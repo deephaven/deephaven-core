@@ -213,6 +213,9 @@ public class QueryTable extends BaseTable {
     public static boolean USE_CHUNKED_CROSS_JOIN =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.chunkedJoin", true);
 
+    private static final AtomicReferenceFieldUpdater<QueryTable, ModifiedColumnSet> MODIFIED_COLUMN_SET_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, ModifiedColumnSet.class, "modifiedColumnSet");
+
     private static final AtomicReferenceFieldUpdater<QueryTable, Map> INDEXED_DATA_COLUMNS_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, Map.class, "indexedDataColumns");
     private static final Map<String, IndexedDataColumn<?>> EMPTY_INDEXED_DATA_COLUMNS = Collections.emptyMap();
@@ -223,7 +226,8 @@ public class QueryTable extends BaseTable {
 
     private final TrackingRowSet rowSet;
     private final LinkedHashMap<String, ColumnSource<?>> columns;
-    protected final ModifiedColumnSet modifiedColumnSet;
+    @SuppressWarnings("FieldMayBeFinal") // Set via MODIFIED_COLUMN_SET_UPDATER if not initialized
+    private volatile ModifiedColumnSet modifiedColumnSet;
 
     // Cached data columns
     @SuppressWarnings("FieldMayBeFinal") // Set via INDEXED_DATA_COLUMNS_UPDATER
@@ -278,8 +282,7 @@ public class QueryTable extends BaseTable {
         super(definition, "QueryTable", attributes); // TODO: Better descriptions composed from query chain
         this.rowSet = rowSet;
         this.columns = columns;
-        this.modifiedColumnSet = Objects.requireNonNullElseGet(modifiedColumnSet,
-                () -> new ModifiedColumnSet(this.columns));
+        this.modifiedColumnSet = modifiedColumnSet;
     }
 
     /**
@@ -347,7 +350,7 @@ public class QueryTable extends BaseTable {
      * @return the modified column set for this table
      */
     public ModifiedColumnSet getModifiedColumnSetForUpdates() {
-        return modifiedColumnSet;
+        return ensureField(MODIFIED_COLUMN_SET_UPDATER, null, () -> new ModifiedColumnSet(columns));
     }
 
     /**
@@ -360,7 +363,7 @@ public class QueryTable extends BaseTable {
         if (columnNames.length == 0) {
             return ModifiedColumnSet.EMPTY;
         }
-        final ModifiedColumnSet newSet = new ModifiedColumnSet(modifiedColumnSet);
+        final ModifiedColumnSet newSet = new ModifiedColumnSet(getModifiedColumnSetForUpdates());
         newSet.setAll(columnNames);
         return newSet;
     }
@@ -411,7 +414,7 @@ public class QueryTable extends BaseTable {
      */
     public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(final String[] columnNames,
             final ModifiedColumnSet[] columnSets) {
-        return modifiedColumnSet.newTransformer(columnNames, columnSets);
+        return getModifiedColumnSetForUpdates().newTransformer(columnNames, columnSets);
     }
 
     /**
@@ -423,7 +426,7 @@ public class QueryTable extends BaseTable {
      */
     public ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(
             final Map<String, ColumnSource<?>> newColumns) {
-        return modifiedColumnSet.newIdentityTransformer(newColumns);
+        return getModifiedColumnSetForUpdates().newIdentityTransformer(newColumns);
     }
 
     /**
@@ -435,9 +438,9 @@ public class QueryTable extends BaseTable {
      */
     public ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(final Table other) {
         if (other instanceof QueryTable) {
-            return modifiedColumnSet.newIdentityTransformer(((QueryTable) other).columns);
+            return getModifiedColumnSetForUpdates().newIdentityTransformer(((QueryTable) other).columns);
         }
-        return modifiedColumnSet.newIdentityTransformer(other.getColumnSourceMap());
+        return getModifiedColumnSetForUpdates().newIdentityTransformer(other.getColumnSourceMap());
     }
 
     @Override
@@ -1221,7 +1224,7 @@ public class QueryTable extends BaseTable {
     public SelectValidationResult validateSelect(final SelectColumn... selectColumns) {
         final SelectColumn[] clones = Arrays.stream(selectColumns).map(SelectColumn::copy).toArray(SelectColumn[]::new);
         SelectAndViewAnalyzer analyzer = SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.SELECT_STATIC, columns,
-                rowSet, modifiedColumnSet, true, clones);
+                rowSet, getModifiedColumnSetForUpdates(), true, clones);
         return new SelectValidationResult(analyzer, clones);
     }
 
@@ -1244,7 +1247,7 @@ public class QueryTable extends BaseTable {
                     }
                     final boolean publishTheseSources = flavor == Flavor.Update;
                     final SelectAndViewAnalyzer analyzer =
-                            SelectAndViewAnalyzer.create(mode, columns, rowSet, modifiedColumnSet,
+                            SelectAndViewAnalyzer.create(mode, columns, rowSet, getModifiedColumnSetForUpdates(),
                                     publishTheseSources, selectColumns);
 
                     // Init all the rows by cooking up a fake Update
@@ -1421,7 +1424,7 @@ public class QueryTable extends BaseTable {
                                 final boolean publishTheseSources = flavor == Flavor.UpdateView;
                                 final SelectAndViewAnalyzer analyzer =
                                         SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.VIEW_EAGER,
-                                                columns, rowSet, modifiedColumnSet, publishTheseSources, viewColumns);
+                                                columns, rowSet, getModifiedColumnSetForUpdates(), publishTheseSources, viewColumns);
                                 final QueryTable queryTable =
                                         new QueryTable(rowSet, analyzer.getPublishedColumnSources());
                                 if (swapListener != null) {
@@ -1487,8 +1490,8 @@ public class QueryTable extends BaseTable {
         @Override
         public void onUpdate(final TableUpdate upstream) {
             final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-            downstream.modifiedColumnSet = dependent.modifiedColumnSet;
-            transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
+            downstream.modifiedColumnSet = dependent.getModifiedColumnSetForUpdates();
+            transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
             dependent.notifyListeners(downstream);
         }
     }
@@ -1502,7 +1505,7 @@ public class QueryTable extends BaseTable {
 
                     final SelectAndViewAnalyzer analyzer =
                             SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.VIEW_LAZY,
-                                    columns, rowSet, modifiedColumnSet, true, selectColumns);
+                                    columns, rowSet, getModifiedColumnSetForUpdates(), true, selectColumns);
                     final QueryTable result = new QueryTable(rowSet, analyzer.getPublishedColumnSources());
                     if (isRefreshing()) {
                         listenForUpdates(new ListenerImpl(
@@ -1556,16 +1559,18 @@ public class QueryTable extends BaseTable {
                                 @Override
                                 public void onUpdate(final TableUpdate upstream) {
                                     final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
+                                    final ModifiedColumnSet resultModifiedColumnSet =
+                                            resultTable.getModifiedColumnSetForUpdates();
                                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
-                                            resultTable.modifiedColumnSet);
-                                    if (upstream.modified().isEmpty() || resultTable.modifiedColumnSet.empty()) {
+                                            resultModifiedColumnSet);
+                                    if (upstream.modified().isEmpty() || resultModifiedColumnSet.empty()) {
                                         downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                         if (downstream.modified().isNonempty()) {
                                             downstream.modified().close();
                                             downstream.modified = RowSetFactory.empty();
                                         }
                                     } else {
-                                        downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
+                                        downstream.modifiedColumnSet = resultModifiedColumnSet;
                                     }
                                     resultTable.notifyListeners(downstream);
                                 }
@@ -1632,12 +1637,12 @@ public class QueryTable extends BaseTable {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
                                 final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                                downstream.modifiedColumnSet = queryTable.modifiedColumnSet;
+                                downstream.modifiedColumnSet = queryTable.getModifiedColumnSetForUpdates();
                                 if (upstream.modified().isNonempty()) {
                                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
-                                            downstream.modifiedColumnSet());
+                                            downstream.modifiedColumnSet);
                                 } else {
-                                    downstream.modifiedColumnSet().clear();
+                                    downstream.modifiedColumnSet.clear();
                                 }
                                 queryTable.notifyListeners(downstream);
                             }
@@ -3201,8 +3206,8 @@ public class QueryTable extends BaseTable {
         public void process() {
             ModifiedColumnSet sourceModColumns = recorder.getModifiedColumnSet();
             if (sourceModColumns == null) {
-                result.modifiedColumnSet.clear();
-                sourceModColumns = result.modifiedColumnSet;
+                sourceModColumns = result.getModifiedColumnSetForUpdates();
+                sourceModColumns.clear();
             }
 
             if (result.refilterRequested()) {
@@ -3251,8 +3256,8 @@ public class QueryTable extends BaseTable {
 
             ModifiedColumnSet modifiedColumnSet = sourceModColumns;
             if (modified.isEmpty()) {
-                result.modifiedColumnSet.clear();
-                modifiedColumnSet = result.modifiedColumnSet;
+                modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                modifiedColumnSet.clear();
             }
 
             // note shifts are pass-through since filter will never translate keyspace

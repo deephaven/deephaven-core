@@ -995,7 +995,7 @@ public abstract class BaseTable extends LivenessArtifact
             if (parent instanceof QueryTable && dependent instanceof QueryTable) {
                 final QueryTable pqt = (QueryTable) parent;
                 final QueryTable dqt = (QueryTable) dependent;
-                canReuseModifiedColumnSet = !pqt.modifiedColumnSet.requiresTransformer(dqt.modifiedColumnSet);
+                canReuseModifiedColumnSet = !pqt.getModifiedColumnSetForUpdates().requiresTransformer(dqt.getModifiedColumnSetForUpdates());
             } else {
                 // We cannot reuse the modifiedColumnSet since there are no assumptions that can be made w.r.t. parent's
                 // and dependent's column source mappings.
