@@ -1089,8 +1089,9 @@ public class TableTools {
      */
     @ScriptApi
     public static Table roundDecimalColumns(Table table) {
-        Set<String> columnsToRound = new HashSet<>(table.getColumns().length);
-        for (ColumnDefinition<?> columnDefinition : table.getDefinition().getColumns()) {
+        final ColumnDefinition<?>[] columnDefinitions = table.getDefinition().getColumns();
+        Set<String> columnsToRound = new HashSet<>(columnDefinitions.length);
+        for (ColumnDefinition<?> columnDefinition : columnDefinitions) {
             Class<?> type = columnDefinition.getDataType();
             if (type.equals(double.class) || type.equals(float.class)) {
                 columnsToRound.add(columnDefinition.getName());
@@ -1112,8 +1113,9 @@ public class TableTools {
         Set<String> columnsNotToRoundSet = new HashSet<>(columnsNotToRound.length * 2);
         Collections.addAll(columnsNotToRoundSet, columnsNotToRound);
 
-        Set<String> columnsToRound = new HashSet<>(table.getColumns().length);
-        for (ColumnDefinition<?> columnDefinition : table.getDefinition().getColumns()) {
+        final ColumnDefinition<?>[] columnDefinitions = table.getDefinition().getColumns();
+        Set<String> columnsToRound = new HashSet<>(columnDefinitions.length);
+        for (ColumnDefinition<?> columnDefinition : columnDefinitions) {
             Class<?> type = columnDefinition.getDataType();
             String colName = columnDefinition.getName();
             if ((type.equals(double.class) || type.equals(float.class)) && !columnsNotToRoundSet.contains(colName)) {
@@ -1139,7 +1141,7 @@ public class TableTools {
         }
         List<String> updateDescriptions = new LinkedList<>();
         for (String colName : columns) {
-            Class<?> colType = table.getColumn(colName).getType();
+            Class<?> colType = table.getDefinition().getColumn(colName).getDataType();
             if (!(colType.equals(double.class) || colType.equals(float.class)))
                 throw new IllegalArgumentException("Column \"" + colName + "\" is not a decimal column!");
             updateDescriptions.add(colName + "=round(" + colName + ')');

@@ -145,7 +145,7 @@ public class TestParquetTools {
         ParquetTools.writeTable(test, path);
         Table test2 = ParquetTools.readTable(path);
         Assert.assertEquals(10, test2.size());
-        Assert.assertEquals(2, test2.getColumns().length);
+        Assert.assertEquals(2, test2.getDefinition().getColumns().length);
         Assert.assertEquals(Arrays.asList(toString((Enum[]) test.getColumn("enumC").get(0, 10))),
                 Arrays.asList(toString((Enum[]) test2.getColumn("enumC").get(0, 10))));
         StringSet[] objects = (StringSet[]) test.getColumn("enumSet").get(0, 10);
@@ -162,7 +162,7 @@ public class TestParquetTools {
         ParquetTools.writeTable(test, path);
         test2 = ParquetTools.readTable(path);
         Assert.assertEquals(10, test2.size());
-        Assert.assertEquals(2, test2.getColumns().length);
+        Assert.assertEquals(2, test2.getDefinition().getColumns().length);
         Assert.assertEquals(Arrays.asList(test.getColumn("enumC").get(0, 10)),
                 Arrays.asList(test2.getColumn("enumC").get(0, 10)));
         Assert.assertEquals(Arrays.asList(test.getColumn("enumSet").get(0, 10)),

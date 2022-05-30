@@ -6,13 +6,13 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.QueryConstants;
@@ -392,7 +392,7 @@ public class DynamicTableWriter implements TableWriter {
         this.columnNames = new String[nCols];
         this.arrayColumnSources = new ArrayBackedColumnSource[nCols];
         int ii = 0;
-        final DataColumn[] columns = table.getColumns();
+        final ColumnDefinition<?>[] columns = table.getDefinition().getColumns();
         for (Map.Entry<String, ColumnSource<?>> entry : sources.entrySet()) {
             columnNames[ii] = entry.getKey();
             ColumnSource<?> source = entry.getValue();
@@ -404,7 +404,7 @@ public class DynamicTableWriter implements TableWriter {
             }
             final int index = ii;
             factoryMap.put(columns[index].getName(),
-                    (currentRow) -> createRowSetter(columns[index].getType(), arrayColumnSources[index]));
+                    (currentRow) -> createRowSetter(columns[index].getDataType(), arrayColumnSources[index]));
             ++ii;
         }
         UpdateGraphProcessor.DEFAULT.addSource(table);

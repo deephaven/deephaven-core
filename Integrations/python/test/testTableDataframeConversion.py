@@ -269,7 +269,7 @@ class TestTableDataframeConversion(unittest.TestCase):
             ('MyDouble', 'io.deephaven.vector.DoubleVector'),
         ]:
             with self.subTest(msg="type for original column {}".format(colName)):
-                self.assertEqual(arrayTable.getColumn(colName).getType().getName(), arrayType)
+                self.assertEqual(arrayTable.getDefinition().getColumn(colName).getDataType().getName(), arrayType)
                 self.assertEqual(dataFrame[colName].values.dtype, numpy.object)
 
         for colName, dtype in [
@@ -310,7 +310,7 @@ class TestTableDataframeConversion(unittest.TestCase):
             ('MyDouble', 'io.deephaven.vector.DoubleVectorDirect'),
         ]:
             with self.subTest(msg="type for reverted column for {}".format(colName)):
-                self.assertEqual(backTable.getColumn(colName).getType().getName(), arrayType)
+                self.assertEqual(backTable.getDefinition().getColumn(colName).getDataType().getName(), arrayType)
         with self.subTest(msg="element type for reverted column MyBoolean"):
             self.assertEqual(backTable.getColumn('MyBoolean').get(0).getComponentType().getName(), 'java.lang.Boolean')
         with self.subTest(msg="element type for reverted column MyString"):
@@ -363,7 +363,7 @@ class TestTableDataframeConversion(unittest.TestCase):
                 nparray[:] = [numpy.zeros((3, 4), dtype=dtypename) for i in range(2)]
                 df = pandas.DataFrame({'test': nparray})
                 tab = dataFrameToTable(df)
-                self.assertTrue(tab.getColumn('test').getType().getName(), 'io.deephaven.vector.ObjectVectorDirect')
+                self.assertTrue(tab.getDefinition().getColumn('test').getDataType().getName(), 'io.deephaven.vector.ObjectVectorDirect')
                 self.assertEqual(tab.getColumn('test').get(0).getClass().getName(), array_type)
 
         with self.subTest(msg="nested array exception check"):

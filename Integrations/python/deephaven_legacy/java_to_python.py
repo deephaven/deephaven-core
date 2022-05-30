@@ -570,7 +570,7 @@ def tableToDataFrame(table, convertNulls=NULL_CONVERSION.ERROR, categoricals=Non
 
         if series is None:
             logging.warning("Conversion failed for column {} of "
-                            "type {}".format(columnName, table.getColumn(columnName).getType().getName()))
+                            "type {}".format(columnName, table.getDefinition().getColumn(columnName).getDataType().getName()))
         else:
             useColumnNames.append(columnName)
             data[columnName] = series

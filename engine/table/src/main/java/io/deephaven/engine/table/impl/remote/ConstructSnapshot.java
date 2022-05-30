@@ -1487,8 +1487,9 @@ public class ConstructSnapshot {
      * @return the estimated snapshot size in bytes.
      */
     public static long estimateSnapshotSize(Table table) {
-        final BitSet columns = new BitSet(table.getColumns().length);
-        columns.set(0, table.getColumns().length);
+        final ColumnDefinition<?>[] columnDefinitions = table.getDefinition().getColumns();
+        final BitSet columns = new BitSet(columnDefinitions.length);
+        columns.set(0, columnDefinitions.length);
         return estimateSnapshotSize(table.getDefinition(), columns, table.size());
     }
 

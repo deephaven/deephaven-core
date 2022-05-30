@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 public class TestMoveColumns extends TestCase {
     private static final Table table = TableTools.emptyTable(1).update("a=1", "b=2", "c=3", "d=4", "e=5");
-    private static final int numCols = table.getColumns().length;
+    private static final int numCols = table.getDefinition().getColumns().length;
 
     public void testMoveColumns() {
         // Basic moving

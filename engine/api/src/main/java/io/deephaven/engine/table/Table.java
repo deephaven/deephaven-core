@@ -54,6 +54,14 @@ public interface Table extends
     String getDescription();
 
     /**
+     * Get the number of columns defined for this table. Equivalent to {@code getDefinition().getColumns().length}.
+     *
+     * @return The number of columns defined for this table
+     */
+    @ConcurrentMethod
+    int numColumns();
+
+    /**
      * Determines whether this Table contains a column for each string in the specified array of {@code columnNames}.
      *
      * @param columnNames The array of column names to be checked for inclusion in this table. Must not be {@code null}.

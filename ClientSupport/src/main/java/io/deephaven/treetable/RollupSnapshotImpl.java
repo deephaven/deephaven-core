@@ -136,7 +136,7 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
                                 return false;
                             }
 
-                            if (currentColumn.getType() != baseTable.getColumn(colName).getType()) {
+                            if (currentColumn.getType() != baseTable.getDefinition().getColumn(colName).getDataType()) {
                                 return false;
                             }
                         }

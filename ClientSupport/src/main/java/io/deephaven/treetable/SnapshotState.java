@@ -343,7 +343,7 @@ class SnapshotState {
             matchPairs.stream()
                     .filter(p -> originalTable.hasColumns(p.rightColumn))
                     .forEach(col -> constituentCopiers.computeIfAbsent(col.rightColumn,
-                            (name) -> makeCopier(originalTable.getColumn(name).getType())));
+                            (name) -> makeCopier(originalTable.getDefinition().getColumn(name).getDataType())));
         }
     }
 

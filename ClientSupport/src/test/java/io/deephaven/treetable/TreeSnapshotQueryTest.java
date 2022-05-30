@@ -242,8 +242,8 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // public void testTsq() throws CsvReaderException {
     // final Table t = makeNyMunisTreeTable();
     // final TTState state = new TTState(t);
-    // final BitSet allColumns = new BitSet(t.getColumns().length);
-    // allColumns.set(0, t.getColumns().length);
+    // final BitSet allColumns = new BitSet(t.getDefinition().getColumns().length);
+    // allColumns.set(0, t.getDefinition().getColumns().length);
     //
     // final long halfTableSize = t.size() / 2;
     //
@@ -480,8 +480,8 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // public void testSortandFilter() throws CsvReaderException {
     // final Table t = makeNyMunisTreeTable();
     // final TTState state = new TTState(t);
-    // final BitSet allColumns = new BitSet(t.getColumns().length);
-    // allColumns.set(0, t.getColumns().length);
+    // final BitSet allColumns = new BitSet(t.getDefinition().getColumns().length);
+    // allColumns.set(0, t.getDefinition().getColumns().length);
     //
     // state.addExpanded(ROOT_TABLE_KEY, munisKey("Chenango"));
     // state.addExpanded(ROOT_TABLE_KEY, munisKey("Fulton"));
@@ -533,8 +533,8 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // final Table rollup = t.rollup(List.of(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
     //
     // final TTState state = new TTState(rollup);
-    // final BitSet allColumns = new BitSet(rollup.getColumns().length);
-    // allColumns.set(0, rollup.getColumns().length);
+    // final BitSet allColumns = new BitSet(rollup.getDefinition().getColumns().length);
+    // allColumns.set(0, rollup.getDefinition().getColumns().length);
     //
     // final SmartKey nullSmartKey = new SmartKey();
     // state.addExpanded(ROOT_TABLE_KEY, nullSmartKey);
@@ -575,7 +575,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // final Table rollup = t.rollup(List.of(AggLast("Dtest"), AggSum("I")), true, "Bagel", "Test");
     //
     // final TTState state = new TTState(rollup);
-    // final BitSet allColumns = new BitSet(rollup.getColumns().length);
+    // final BitSet allColumns = new BitSet(rollup.getDefinition().getColumns().length);
     // allColumns.set(0, rollup.getColumns().length);
     //
     // final SmartKey nullSmartKey = new SmartKey();
