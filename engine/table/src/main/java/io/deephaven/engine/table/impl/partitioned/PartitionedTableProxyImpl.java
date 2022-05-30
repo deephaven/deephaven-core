@@ -225,9 +225,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         final QueryTable coalescedParent = (QueryTable) parent.coalesce();
         final QueryTable child = coalescedParent.getSubTable(
                 coalescedParent.getRowSet(),
-                coalescedParent.getModifiedColumnSetForUpdates());
+                coalescedParent.getModifiedColumnSetForUpdates(),
+                coalescedParent.getAttributes());
         coalescedParent.propagateFlatness(child);
-        coalescedParent.copyAttributes(child, a -> true);
 
         final List<ListenerRecorder> recorders = new ArrayList<>(1 + dependentValidations.length);
 

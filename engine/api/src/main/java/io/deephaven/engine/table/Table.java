@@ -206,11 +206,11 @@ public interface Table extends
     /**
      * Set the value of an attribute.
      *
-     * @param key the name of the attribute
-     * @param object the value
+     * @param key The name of the attribute; must not be {@code null}
+     * @param object The value to be assigned; must not be {@code null}
      */
     @ConcurrentMethod
-    void setAttribute(@NotNull String key, @Nullable Object object);
+    void setAttribute(@NotNull String key, @NotNull Object object);
 
     /**
      * Get the value of the specified attribute.
@@ -243,16 +243,16 @@ public interface Table extends
     /**
      * Get all attributes from this Table.
      *
-     * @return A map containing all attributes from this Table
+     * @return An unmodifiable map containing all attributes from this Table
      */
     @ConcurrentMethod
     Map<String, Object> getAttributes();
 
     /**
-     * Get all attributes from this Table except the items that appear in excluded.
+     * Get all attributes from this Table except the items that appear in {@code excluded}.
      *
      * @param excluded A set of attributes to exclude from the result
-     * @return This Table's attributes, except the ones present in excluded
+     * @return An unmodifiable map containing Table's attributes, except the ones present in {@code excluded}
      */
     @ConcurrentMethod
     Map<String, Object> getAttributes(Collection<String> excluded);

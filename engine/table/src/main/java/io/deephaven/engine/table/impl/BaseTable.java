@@ -70,11 +70,17 @@ public abstract class BaseTable extends LivenessArtifact
 
     private static final Logger log = LoggerFactory.getLogger(BaseTable.class);
 
+    private static final AtomicReferenceFieldUpdater<BaseTable, Map> ATTRIBUTES_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Map.class, "attributes");
+    private static final Map<String, Object> EMPTY_ATTRIBUTES = Collections.emptyMap();
+
     private static final AtomicReferenceFieldUpdater<BaseTable, Condition> CONDITION_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Condition.class, "updateGraphProcessorCondition");
+
     private static final AtomicReferenceFieldUpdater<BaseTable, Collection> PARENTS_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Collection.class, "parents");
     private static final Collection<Object> EMPTY_PARENTS = Collections.emptyList();
+
     private static final AtomicReferenceFieldUpdater<BaseTable, SimpleReferenceManager> CHILD_LISTENER_REFERENCES_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(
                     BaseTable.class, SimpleReferenceManager.class, "childListenerReferences");
@@ -93,8 +99,8 @@ public abstract class BaseTable extends LivenessArtifact
      */
     protected final String description;
 
-    // Attribute support
-    protected final ConcurrentHashMap<String, Object> attributes = new ConcurrentHashMap<>();
+    // Attribute support, set via ensureField with ATTRIBUTES_UPDATER if not initialized
+    volatile Map<String, Object> attributes;
 
     // Fields for DynamicNode implementation and update propagation support
     private volatile boolean refreshing;
@@ -109,11 +115,49 @@ public abstract class BaseTable extends LivenessArtifact
     private volatile long lastSatisfiedStep;
     private volatile boolean isFailed;
 
-    public BaseTable(@NotNull final TableDefinition definition, @NotNull final String description) {
+    /**
+     * @param definition The definition for this table
+     * @param description A description of this table
+     * @param attributes The attributes map to use, or else {@code null} to allocate a new one
+     */
+    public BaseTable(
+            @NotNull final TableDefinition definition,
+            @NotNull final String description,
+            @Nullable final Map<String, Object> attributes) {
         this.definition = definition;
         this.description = description;
+        this.attributes = Objects.requireNonNullElse(attributes, EMPTY_ATTRIBUTES);
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
         initializeSystemicAttribute();
+    }
+
+    /**
+     * Ensure a field is initialized exactly once, and get the current value after possibly initializing it.
+     *
+     * @param updater An {@link AtomicReferenceFieldUpdater} associated with the field
+     * @param defaultValue The reference value that signifies that the field has not been initialized
+     * @param valueFactory A factory for new values; may be called concurrently by multiple threads as they race to
+     *        initialize the field
+     * @return The initialized value of the field
+     */
+    <FIELD_TYPE, INSTANCE_TYPE extends BaseTable> FIELD_TYPE ensureField(
+            @NotNull final AtomicReferenceFieldUpdater<INSTANCE_TYPE, FIELD_TYPE> updater,
+            @Nullable final FIELD_TYPE defaultValue,
+            @NotNull final Supplier<FIELD_TYPE> valueFactory) {
+        //noinspection unchecked
+        final INSTANCE_TYPE instance = (INSTANCE_TYPE) this;
+        final FIELD_TYPE currentValue = updater.get(instance);
+        if (currentValue != defaultValue) {
+            // The field has previously been initialized, return the current value we already retrieved
+            return currentValue;
+        }
+        final FIELD_TYPE candidateValue = valueFactory.get();
+        if (updater.compareAndSet(instance, defaultValue, candidateValue)) {
+            // This thread won the initialization race, return the candidate value we set
+            return candidateValue;
+        }
+        // This thread lost the initialization race, re-read and return the current value
+        return updater.get(instance);
     }
 
     private void initializeSystemicAttribute() {
@@ -151,11 +195,16 @@ public abstract class BaseTable extends LivenessArtifact
     // ------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public void setAttribute(@NotNull final String key, final Object object) {
+    public void setAttribute(@NotNull final String key, @NotNull final Object object) {
         if (object instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(object)) {
             manage((LivenessReferent) object);
         }
-        attributes.put(key, object);
+        ensureAttributes().put(key, object);
+    }
+
+    private Map<String, Object> ensureAttributes() {
+        //noinspection unchecked
+        return ensureField(ATTRIBUTES_UPDATER, EMPTY_ATTRIBUTES, ConcurrentHashMap::new);
     }
 
     @Override
@@ -181,9 +230,11 @@ public abstract class BaseTable extends LivenessArtifact
             return Collections.unmodifiableMap(attributes);
         }
 
-        return Collections
-                .unmodifiableMap(attributes.entrySet().stream().filter(ent -> !excludedAttrs.contains(ent.getKey()))
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+        return attributes.entrySet().stream()
+                .filter(ent -> !excludedAttrs.contains(ent.getKey()))
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue),
+                        Collections::unmodifiableMap));
     }
 
     public enum CopyAttributeOperation {
@@ -489,7 +540,6 @@ public abstract class BaseTable extends LivenessArtifact
         return StreamTableTools.isStream(this);
     }
 
-
     @Override
     public Table dropStream() {
         if (!isStream()) {
@@ -508,41 +558,17 @@ public abstract class BaseTable extends LivenessArtifact
     public final void addParentReference(@NotNull final Object parent) {
         if (DynamicNode.notDynamicOrIsRefreshing(parent)) {
             setRefreshing(true);
-            //noinspection unchecked
-            ensureField(PARENTS_UPDATER, EMPTY_PARENTS, () ->
-                    new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance())
-            ).add(parent);
+            ensureParents().add(parent);
             if (parent instanceof LivenessReferent) {
                 manage((LivenessReferent) parent);
             }
         }
     }
 
-    /**
-     * Ensure a field is initialized exactly once, and get the current value after possibly initializing it.
-     *
-     * @param updater An {@link AtomicReferenceFieldUpdater} associated with the field
-     * @param defaultValue The reference value that signifies that the field has not been initialized
-     * @param valueFactory A factory for new values; may be called concurrently by multiple threads as they race to
-     *        initialize the field
-     * @return The initialized value of the field
-     */
-    <FIELD_TYPE> FIELD_TYPE ensureField(
-            @NotNull final AtomicReferenceFieldUpdater<BaseTable, FIELD_TYPE> updater,
-            @Nullable final FIELD_TYPE defaultValue,
-            @NotNull final Supplier<FIELD_TYPE> valueFactory) {
-        final FIELD_TYPE currentValue = updater.get(this);
-        if (currentValue != defaultValue) {
-            // The field has previously been initialized, return the current value we already retrieved
-            return currentValue;
-        }
-        final FIELD_TYPE candidateValue = valueFactory.get();
-        if (updater.compareAndSet(this, defaultValue, candidateValue)) {
-            // This thread won the initialization race, return the candidate value we set
-            return candidateValue;
-        }
-        // This thread lost the initialization race, re-read and return the current value
-        return updater.get(this);
+    private Collection<Object> ensureParents() {
+        //noinspection unchecked
+        return ensureField(PARENTS_UPDATER, EMPTY_PARENTS, () ->
+                new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance()));
     }
 
     @Override
@@ -631,15 +657,19 @@ public abstract class BaseTable extends LivenessArtifact
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
         if (isRefreshing()) {
-            //noinspection unchecked
-            ensureField(CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES, () ->
-                    new SimpleReferenceManager<>((final TableUpdateListener tableUpdateListener) ->
-                            tableUpdateListener instanceof LegacyListenerAdapter
-                                    ? (LegacyListenerAdapter) tableUpdateListener
-                                    : new WeakSimpleReference<>(tableUpdateListener),
-                            true)
-            ).add(listener);
+            ensureChildListenerReferences().add(listener);
         }
+    }
+
+    private SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> ensureChildListenerReferences() {
+        //noinspection unchecked
+        return ensureField(CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES, () ->
+                new SimpleReferenceManager<>((final TableUpdateListener tableUpdateListener) ->
+                        tableUpdateListener instanceof LegacyListenerAdapter
+                                ? (LegacyListenerAdapter) tableUpdateListener
+                                : new WeakSimpleReference<>(tableUpdateListener),
+                        true)
+        );
     }
 
     @Override
@@ -891,7 +921,9 @@ public abstract class BaseTable extends LivenessArtifact
 
     @Override
     public void markSystemic() {
-        setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE);
+        if (!isSystemicObject()) {
+            setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE);
+        }
     }
 
     /**
@@ -1046,7 +1078,10 @@ public abstract class BaseTable extends LivenessArtifact
 
     @Override
     public Table clearSortingRestrictions() {
-        attributes.remove(SORTABLE_COLUMNS_ATTRIBUTE);
+        final Map<String, Object> localAttributes = attributes;
+        if (localAttributes != EMPTY_ATTRIBUTES) {
+            localAttributes.remove(SORTABLE_COLUMNS_ATTRIBUTE);
+        }
         return this;
     }
 

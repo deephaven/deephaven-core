@@ -284,7 +284,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public QueryTable getSubTable(TrackingRowSet rowSet) {
+    public QueryTable getSubTable(@NotNull TrackingRowSet rowSet) {
         return throwUnsupported("getSubTable()");
     }
 

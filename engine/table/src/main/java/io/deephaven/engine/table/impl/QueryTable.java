@@ -71,6 +71,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -152,16 +153,6 @@ public class QueryTable extends BaseTable {
 
     static final Logger log = LoggerFactory.getLogger(QueryTable.class);
 
-    private final TrackingRowSet rowSet;
-    private final LinkedHashMap<String, ColumnSource<?>> columns;
-    protected final ModifiedColumnSet modifiedColumnSet;
-
-    // Cached data columns
-    private final Map<String, IndexedDataColumn> indexedDataColumns;
-
-    // Flattened table support
-    private boolean flat;
-
     // Should we save results of potentially expensive operations (can be disabled for unit tests)
     private static boolean memoizeResults =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.memoizeResults", true);
@@ -222,9 +213,28 @@ public class QueryTable extends BaseTable {
     public static boolean USE_CHUNKED_CROSS_JOIN =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.chunkedJoin", true);
 
+    private static final AtomicReferenceFieldUpdater<QueryTable, Map> INDEXED_DATA_COLUMNS_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, Map.class, "indexedDataColumns");
+    private static final Map<String, IndexedDataColumn<?>> EMPTY_INDEXED_DATA_COLUMNS = Collections.emptyMap();
+
+    private static final AtomicReferenceFieldUpdater<QueryTable, Map> CACHED_OPERATIONS_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, Map.class, "cachedOperations");
+    private static final Map<MemoizedOperationKey, MemoizedResult<?>> EMPTY_CACHED_OPERATIONS = Collections.emptyMap();
+
+    private final TrackingRowSet rowSet;
+    private final LinkedHashMap<String, ColumnSource<?>> columns;
+    protected final ModifiedColumnSet modifiedColumnSet;
+
+    // Cached data columns
+    @SuppressWarnings("FieldMayBeFinal") // Set via INDEXED_DATA_COLUMNS_UPDATER
+    private volatile Map<String, IndexedDataColumn<?>> indexedDataColumns = EMPTY_INDEXED_DATA_COLUMNS;
+
+    // Flattened table support
+    private boolean flat;
 
     // Cached results
-    transient Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations;
+    @SuppressWarnings("FieldMayBeFinal") // Set via CACHED_OPERATIONS_UPDATER
+    private volatile Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations = EMPTY_CACHED_OPERATIONS;
 
     /**
      * Creates a new abstract table, inferring a definition but creating a new column source map.
@@ -233,19 +243,21 @@ public class QueryTable extends BaseTable {
      * @param columns The column source map for the table, which will be copied into a new column source map
      */
     public QueryTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
-        this(TableDefinition.inferFrom(columns), rowSet, columns);
+        this(TableDefinition.inferFrom(columns), rowSet, new LinkedHashMap<>(columns), null, null);
     }
 
     /**
      * Creates a new abstract table, reusing a definition but creating a new column source map.
      *
-     * @param definition The definition to use for this table
+     * @param definition The definition to use for this table, which will be re-ordered to match the same order as
+     *        {@code columns} if it does not match
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which will be copied into a new column source map
      */
     public QueryTable(TableDefinition definition, TrackingRowSet rowSet,
             Map<String, ? extends ColumnSource<?>> columns) {
-        this(definition, Require.neqNull(rowSet, "rowSet"), new LinkedHashMap<>(columns), null);
+        this(definition.checkMutualCompatibility(TableDefinition.inferFrom(columns)),
+                Require.neqNull(rowSet, "rowSet"), new LinkedHashMap<>(columns), null, null);
     }
 
     /**
@@ -255,22 +267,19 @@ public class QueryTable extends BaseTable {
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which is not copied.
      * @param modifiedColumnSet Optional {@link ModifiedColumnSet} that should be re-used if supplied
+     * @param attributes Optional value to use for {@link #attributes}
      */
     private QueryTable(
             @NotNull final TableDefinition definition,
             @NotNull final TrackingRowSet rowSet,
             @NotNull final LinkedHashMap<String, ColumnSource<?>> columns,
-            @Nullable final ModifiedColumnSet modifiedColumnSet) {
-        super(definition, "QueryTable"); // TODO: Better descriptions composed from query chain
+            @Nullable final ModifiedColumnSet modifiedColumnSet,
+            @Nullable final Map<String, Object> attributes) {
+        super(definition, "QueryTable", attributes); // TODO: Better descriptions composed from query chain
         this.rowSet = rowSet;
         this.columns = columns;
         this.modifiedColumnSet = Objects.requireNonNullElseGet(modifiedColumnSet,
                 () -> new ModifiedColumnSet(this.columns));
-        indexedDataColumns = new HashMap<>();
-        cachedOperations = new ConcurrentHashMap<>();
-
-        final TableDefinition inferred = TableDefinition.inferFrom(columns);
-        definition.checkMutualCompatibility(inferred);
     }
 
     /**
@@ -285,7 +294,7 @@ public class QueryTable extends BaseTable {
      */
     @Deprecated
     public QueryTable withDefinitionUnsafe(TableDefinition template) {
-        TableDefinition inOrder = template.checkMutualCompatibility(definition);
+        final TableDefinition inOrder = template.checkMutualCompatibility(definition);
         return (QueryTable) copy(inOrder, StandardOptions.COPY_ALL);
     }
 
@@ -320,12 +329,13 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public DataColumn getColumn(String columnName) {
-        IndexedDataColumn<?> result;
-        if ((result = indexedDataColumns.get(columnName)) == null) {
-            indexedDataColumns.put(columnName, result = new IndexedDataColumn<>(columnName, this));
-        }
-        return result;
+    public DataColumn getColumn(@NotNull final String columnName) {
+        return ensureIndexedDataColumns().computeIfAbsent(columnName, cn -> new IndexedDataColumn<>(cn, this));
+    }
+
+    private Map<String, IndexedDataColumn<?>> ensureIndexedDataColumns() {
+        //noinspection unchecked
+        return ensureField(INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS, ConcurrentHashMap::new);
     }
 
     /**
@@ -816,7 +826,7 @@ public class QueryTable extends BaseTable {
 
         public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source,
                 final WhereFilter[] filters) {
-            super(source.getDefinition(), currentMapping, source.columns, null);
+            super(source.getDefinition(), currentMapping, source.columns, null, null);
             this.source = source;
             this.filters = filters;
             for (final WhereFilter f : filters) {
@@ -2893,8 +2903,8 @@ public class QueryTable extends BaseTable {
      * @return A new table sharing this table's column sources with the specified row set
      */
     @Override
-    public QueryTable getSubTable(TrackingRowSet rowSet) {
-        return getSubTable(rowSet, null, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+    public QueryTable getSubTable(@NotNull final TrackingRowSet rowSet) {
+        return getSubTable(rowSet, null, null, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
     }
 
     /**
@@ -2912,17 +2922,20 @@ public class QueryTable extends BaseTable {
      * the enclosing operation.
      *
      * @param rowSet The result's {@link #getRowSet() row set}
-     * @param resultModifiedColumnSet The result's {@link #getModifiedColumnSetForUpdates() modified column set}
+     * @param resultModifiedColumnSet The result's {@link #getModifiedColumnSetForUpdates() modified column set}, or
+     *        {@code null} for default initialization
+     * @param attributes The result's {@link #attributes}, * or {@code null} for default initialization
      * @param parents Parent references for the result table
      * @return A new table sharing this table's column sources with the specified row set
      */
     public QueryTable getSubTable(
             @NotNull final TrackingRowSet rowSet,
             @Nullable final ModifiedColumnSet resultModifiedColumnSet,
+            @Nullable final Map<String, Object> attributes,
             @NotNull final Object... parents) {
         // There is no checkInitiateOperation check here, because partitionBy calls it internally and the RowSet
         // results are not updated internally, but rather externally.
-        final QueryTable result = new QueryTable(definition, rowSet, columns, resultModifiedColumnSet);
+        final QueryTable result = new QueryTable(definition, rowSet, columns, resultModifiedColumnSet, attributes);
         for (final Object parent : parents) {
             result.addParentReference(parent);
         }
@@ -2990,7 +3003,7 @@ public class QueryTable extends BaseTable {
         private final QueryTable parent;
 
         private CopiedTable(TableDefinition definition, QueryTable parent) {
-            super(definition, parent.rowSet, parent.columns, null);
+            super(definition, parent.rowSet, parent.columns, null, null);
             this.parent = parent;
         }
 
@@ -3055,8 +3068,13 @@ public class QueryTable extends BaseTable {
             return operation.get();
         }
 
-        final MemoizedResult<R> cachedResult = getMemoizedResult(memoKey, cachedOperations);
+        final MemoizedResult<R> cachedResult = getMemoizedResult(memoKey, ensureCachedOperations());
         return cachedResult.getOrCompute(operation);
+    }
+
+    private Map<MemoizedOperationKey, MemoizedResult<?>> ensureCachedOperations() {
+        //noinspection unchecked
+        return ensureField(CACHED_OPERATIONS_UPDATER, EMPTY_CACHED_OPERATIONS, ConcurrentHashMap::new);
     }
 
     @NotNull
