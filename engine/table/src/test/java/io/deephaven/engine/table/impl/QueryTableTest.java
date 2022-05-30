@@ -2491,7 +2491,7 @@ public class QueryTableTest extends QueryTableTestBase {
             assertEquals(Arrays.asList(1, 1, 1, 2, 2), Arrays.asList(t1.getColumn("X").get(0, 5)));
             assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList(t1.getColumn("Y").get(0, 5)));
 
-            final ErrorListener errorListener = new ErrorListener(table);
+            final ErrorListener errorListener = new ErrorListener(t1);
             t1.listenForUpdates(errorListener);
 
             // This is too big, we should fail
@@ -2504,7 +2504,7 @@ public class QueryTableTest extends QueryTableTestBase {
             TableTools.showWithRowSet(t1);
 
             if (errorListener.originalException() == null) {
-                fail("errorListener.originalException 1= null");
+                fail("errorListener.originalException == null");
             }
             if (!(errorListener.originalException() instanceof IllegalStateException)) {
                 fail("!(errorListener.originalException instanceof IllegalStateException)");
