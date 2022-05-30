@@ -847,13 +847,13 @@ public class QueryTableSelectUpdateTest {
         String a = new String(new char[32000]).replace("\0", "A");
         String b = new String(new char[32000]).replace("\0", "B");
         Table x = TableTools.emptyTable(1).update("C=`" + a + "` + `" + b + "`");
-        TestCase.assertEquals(1, x.getDefinition().getColumns().length);
+        TestCase.assertEquals(1, x.numColumns());
 
         a = new String(new char[40000]).replace("\0", "A");
         b = new String(new char[40000]).replace("\0", "B");
         x = TableTools.emptyTable(1)
                 .update("C=String.join(\"" + a + "\", Integer.toString(new Random().nextInt()), \"" + b + "\")");
-        TestCase.assertEquals(1, x.getDefinition().getColumns().length);
+        TestCase.assertEquals(1, x.numColumns());
     }
 
     @Test

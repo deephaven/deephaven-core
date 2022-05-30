@@ -561,8 +561,8 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     private void assertSchemaMatchesTable(Schema schema, Table table) {
-        Assert.eq(schema.getFields().size(), "schema.getFields().size()", table.getDefinition().getColumns().length,
-                "table.getDefinition().getColumns().length");
+        Assert.eq(schema.getFields().size(), "schema.getFields().size()", table.numColumns(),
+                "table.numColumns()");
         Assert.equals(BarrageUtil.convertArrowSchema(schema).tableDef,
                 "BarrageUtil.convertArrowSchema(schema)",
                 table.getDefinition(), "table.getDefinition()");

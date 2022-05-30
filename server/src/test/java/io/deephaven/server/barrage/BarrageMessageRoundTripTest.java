@@ -243,7 +243,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 toCheck = toCheck
                         .getSubTable(toCheck.getRowSet().subSetForPositions(viewport, reverseViewport).toTracking());
             }
-            if (subscribedColumns.cardinality() != expected.getDefinition().getColumns().length) {
+            if (subscribedColumns.cardinality() != expected.numColumns()) {
                 final List<Selectable> columns = new ArrayList<>();
                 for (int i = subscribedColumns.nextSetBit(0); i >= 0; i = subscribedColumns.nextSetBit(i + 1)) {
                     columns.add(ColumnName.of(expected.getDefinition().getColumns()[i].getName()));
@@ -271,7 +271,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 expected = expected.getSubTable(expected.getRowSet().subSetForPositions(viewport).toTracking());
                 toCheck = toCheck.getSubTable(toCheck.getRowSet().subSetForPositions(viewport).toTracking());
             }
-            if (subscribedColumns.cardinality() != expected.getDefinition().getColumns().length) {
+            if (subscribedColumns.cardinality() != expected.numColumns()) {
                 final List<Selectable> columns = new ArrayList<>();
                 for (int i = subscribedColumns.nextSetBit(0); i >= 0; i = subscribedColumns.nextSetBit(i + 1)) {
                     columns.add(ColumnName.of(expected.getDefinition().getColumns()[i].getName()));
@@ -495,7 +495,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         void createNuggetsForTableMaker(final Supplier<Table> makeTable) {
             nuggets.add(new RemoteNugget(makeTable));
             final BitSet subscribedColumns = new BitSet();
-            subscribedColumns.set(0, nuggets.get(nuggets.size() - 1).originalTable.getDefinition().getColumns().length);
+            subscribedColumns.set(0, nuggets.get(nuggets.size() - 1).originalTable.numColumns());
             nuggets.get(nuggets.size() - 1).newClient(null, subscribedColumns, "full");
 
             nuggets.add(new RemoteNugget(makeTable));
@@ -544,7 +544,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             nuggets.add(nugget);
 
             final BitSet subscribedColumns = new BitSet();
-            subscribedColumns.set(0, nugget.originalTable.getDefinition().getColumns().length);
+            subscribedColumns.set(0, nugget.originalTable.numColumns());
 
             nugget.newClient(null, subscribedColumns, "full");
 
@@ -795,7 +795,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                 {
                                     for (final RemoteNugget nugget : nuggets) {
                                         final BitSet columns = new BitSet();
-                                        columns.set(0, nugget.originalTable.getDefinition().getColumns().length / 2);
+                                        columns.set(0, nugget.originalTable.numColumns() / 2);
                                         nugget.clients.add(
                                                 new RemoteClient(
                                                         RowSetFactory.fromRange(size / 5,
@@ -812,7 +812,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                     for (final RemoteNugget nugget : nuggets) {
                                         final RemoteClient client = nugget.clients.get(nugget.clients.size() - 1);
                                         final BitSet columns = new BitSet();
-                                        final int numColumns = nugget.originalTable.getDefinition().getColumns().length;
+                                        final int numColumns = nugget.originalTable.numColumns();
                                         columns.set(numColumns / 2, numColumns);
                                         client.setSubscribedColumns(columns);
                                     }

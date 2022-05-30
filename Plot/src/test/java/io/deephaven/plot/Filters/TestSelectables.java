@@ -60,7 +60,7 @@ public class TestSelectables extends BaseArrayTestCase {
         assertNotNull(t1);
         assertNotNull(t2);
         final List<String> columnNames = t1.getDefinition().getColumnNames();
-        assertEquals(columnNames.size(), t2.getDefinition().getColumns().length);
+        assertEquals(columnNames.size(), t2.numColumns());
         t2.hasColumns(columnNames);
     }
 }

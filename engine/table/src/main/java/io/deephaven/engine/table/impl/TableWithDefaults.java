@@ -373,7 +373,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table moveColumnsDown(String... columnsToMove) {
-        return moveColumns(getDefinition().getColumns().length - columnsToMove.length, true, columnsToMove);
+        return moveColumns(numColumns() - columnsToMove.length, true, columnsToMove);
     }
 
     @Override

@@ -492,21 +492,21 @@ public class QueryTableTest extends QueryTableTestBase {
 
         Table table = newTable(3, Arrays.asList("String", "Int"),
                 Arrays.asList(TableTools.objColSource("c", "e", "g"), TableTools.colSource(2, 4, 6)));
-        assertEquals(2, table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().length);
+        assertEquals(2, table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).numColumns());
         assertEquals(table.getDefinition().getColumns()[0].getName(),
                 table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns()[0].getName());
         assertEquals(table.getDefinition().getColumns()[1].getName(),
                 table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns()[1].getName());
 
-        assertEquals(2, table.view("String", "Int").getDefinition().getColumns().length);
+        assertEquals(2, table.view("String", "Int").numColumns());
         assertEquals(table.getDefinition().getColumns()[0].getName(), table.view("String", "Int").getDefinition().getColumns()[0].getName());
         assertEquals(table.getDefinition().getColumns()[1].getName(), table.view("String", "Int").getDefinition().getColumns()[1].getName());
 
-        assertEquals(2, table.view("Int", "String").getDefinition().getColumns().length);
+        assertEquals(2, table.view("Int", "String").numColumns());
         assertEquals(table.getDefinition().getColumns()[0].getName(), table.view("Int", "String").getDefinition().getColumns()[1].getName());
         assertEquals(table.getDefinition().getColumns()[1].getName(), table.view("Int", "String").getDefinition().getColumns()[0].getName());
 
-        assertEquals(2, table.view("Int1=Int", "String1=String").getDefinition().getColumns().length);
+        assertEquals(2, table.view("Int1=Int", "String1=String").numColumns());
         assertSame(table.getDefinition().getColumns()[0].getDataType(),
                 table.view("Int1=Int", "String1=String").getDefinition().getColumns()[1].getDataType());
         assertSame(table.getDefinition().getColumns()[1].getDataType(),
@@ -600,7 +600,7 @@ public class QueryTableTest extends QueryTableTestBase {
         } catch (RuntimeException ignored) {
         }
 
-        assertEquals(1, table.dropColumns("String").dropColumns("Int").getDefinition().getColumns().length);
+        assertEquals(1, table.dropColumns("String").dropColumns("Int").numColumns());
         columnSourcesAfterDrop = table.dropColumns("String").dropColumns("Int").getColumnSources();
         columnsAfterDrop = columnSourcesAfterDrop.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         columnSources = table.getColumnSources();
@@ -652,7 +652,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertSame(table.getColumnSource("Double"),
                 table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Double"));
 
-        assertEquals(3, table.renameColumns("NewInt=Int").getDefinition().getColumns().length);
+        assertEquals(3, table.renameColumns("NewInt=Int").numColumns());
         assertEquals(table.getColumnSources().toArray()[0],
                 table.renameColumns("NewInt=Int").getColumnSources().toArray()[0]);
         assertArrayEquals((int[]) table.getColumn(1).getDirect(),
@@ -669,7 +669,7 @@ public class QueryTableTest extends QueryTableTestBase {
         } catch (RuntimeException ignored) {
         }
 
-        assertEquals(3, table.renameColumns("NewInt=Int", "NewString=String").getDefinition().getColumns().length);
+        assertEquals(3, table.renameColumns("NewInt=Int", "NewString=String").numColumns());
         assertArrayEquals((String[]) table.getColumn(0).getDirect(),
                 (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumn(0).getDirect());
         assertArrayEquals((int[]) table.getColumn(1).getDirect(),
@@ -693,7 +693,7 @@ public class QueryTableTest extends QueryTableTestBase {
         } catch (RuntimeException ignored) {
         }
 
-        assertEquals(3, table.renameColumns("NewInt=Int").renameColumns("NewString=String").getDefinition().getColumns().length);
+        assertEquals(3, table.renameColumns("NewInt=Int").renameColumns("NewString=String").numColumns());
         assertArrayEquals((String[]) table.getColumn(0).getDirect(),
                 (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumn(0).getDirect());
         assertArrayEquals((int[]) table.getColumn(1).getDirect(),
