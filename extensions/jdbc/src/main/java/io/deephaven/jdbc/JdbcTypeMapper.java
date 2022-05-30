@@ -640,7 +640,7 @@ public class JdbcTypeMapper {
 
     public static class BooleanDataTypeMapping extends DataTypeMapping<Boolean> {
         BooleanDataTypeMapping(int sqlType) {
-            super(sqlType, boolean.class);
+            super(sqlType, Boolean.class);
         }
 
         @Override
@@ -818,7 +818,9 @@ public class JdbcTypeMapper {
                 ResultSet resultSet, int columnIndex, Context context) throws SQLException {
             final WritableObjectChunk<LocalTime, Values> objectChunk = destChunk.asWritableObjectChunk();
             final java.sql.Time timeValue = resultSet.getTime(columnIndex, context.getSourceCalendar());
-            objectChunk.set(destOffset, timeValue == null ? null : timeValue.toLocalTime());
+            final LocalTime localTime = timeValue == null ? null : timeValue.toLocalTime();
+            final int millis = timeValue == null ? 0 : (int) (timeValue.getTime() % 1000);
+            objectChunk.set(destOffset, millis == 0 ? localTime : localTime.plusNanos(millis * MILLIS_TO_NANOS));
         }
 
         @Override
@@ -928,9 +930,10 @@ public class JdbcTypeMapper {
     private static final Map<Integer, MappingCollection> dataTypeMappings;
     static {
 
-        dataTypeMappings = Map.ofEntries(Map.entry(Types.CHAR, MappingCollection.builder(String.class)
-                .mapping(char.class, new CharDataTypeMapping())
-                .mapping(String.class, new StringDataTypeMapping(Types.CHAR)).build()),
+        dataTypeMappings = Map.ofEntries(
+                Map.entry(Types.CHAR, MappingCollection.builder(String.class)
+                        .mapping(char.class, new CharDataTypeMapping())
+                        .mapping(String.class, new StringDataTypeMapping(Types.CHAR)).build()),
                 Map.entry(Types.NCHAR, new MappingCollection(String.class, new StringDataTypeMapping(Types.NCHAR))),
                 Map.entry(Types.VARCHAR, MappingCollection.builder(String.class)
                         .mapping(String.class, new StringDataTypeMapping(Types.VARCHAR))
@@ -956,7 +959,7 @@ public class JdbcTypeMapper {
                         .mapping(float.class, new DecimalToFloatDataTypeMapping(Types.DECIMAL))
                         .mapping(Float.class, new DecimalToFloatDataTypeMapping(Types.DECIMAL))
                         .build()),
-                Map.entry(Types.BOOLEAN, MappingCollection.builder(boolean.class)
+                Map.entry(Types.BOOLEAN, MappingCollection.builder(Boolean.class)
                         .mapping(boolean.class, new BooleanDataTypeMapping(Types.BOOLEAN))
                         .mapping(Boolean.class, new BooleanDataTypeMapping(Types.BOOLEAN)).build()),
                 Map.entry(Types.BIT, MappingCollection.builder(boolean.class)

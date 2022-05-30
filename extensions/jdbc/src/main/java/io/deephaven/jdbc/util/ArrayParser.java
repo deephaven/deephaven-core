@@ -29,29 +29,24 @@ public class ArrayParser {
         return parserMap.computeIfAbsent(delimiter, ArrayParser::new);
     }
 
-    private void checkFormat(String value) {
+    private String checkFormat(String value, boolean strict) {
         if (value.length() < 2) {
-            throw new InputMismatchException("Value submitted for Array parsing too short.");
+            if (strict) {
+                throw new InputMismatchException("Value submitted for Array parsing too short.");
+            }
+            return value;
         }
-        final char start = value.charAt(0);
-        final char expectedEnd;
-        switch (start) {
-            case '[':
-                expectedEnd = ']';
-                break;
-            case '{':
-                expectedEnd = '}';
-                break;
-            case '(':
-                expectedEnd = ')';
-                break;
-            default:
-                throw new InputMismatchException("Value submitted for Array parsing doesn't match needed format, " +
-                        "unexpected opening character: " + start);
+        final char startChar = value.charAt(0);
+        final int start = "[{(".indexOf(startChar);
+        final char endChar = value.charAt(value.length() - 1);
+        final int end = "]})".indexOf(endChar);
+
+        if (strict && (start != end || start == -1)) {
+            throw new InputMismatchException("Value submitted for Array parsing doesn't match needed format, " +
+                    "opening character: " + startChar + " closing character: " + endChar);
         }
-        if (value.charAt(value.length() - 1) != expectedEnd) {
-            throw new InputMismatchException("Missing expected closing character: " + expectedEnd);
-        }
+
+        return value.substring(start == -1 ? 0 : 1, value.length() - (end == -1 ? 0 : 1));
     }
 
     /**
@@ -97,17 +92,14 @@ public class ArrayParser {
      * @return a stream of strings for each element of the array
      */
     private Stream<String> toStringStream(String value, boolean strict) {
-        value = value.trim();
-        if (strict) {
-            checkFormat(value);
-        }
+        value = checkFormat(value.trim(), strict);
 
-        if (value.length() <= 2) {
+        if (value.isEmpty()) {
             return Stream.empty();
         }
 
         try {
-            return Arrays.stream(pattern.split(value.substring(1, value.length() - 1))).map(String::trim);
+            return Arrays.stream(pattern.split(value)).map(String::trim);
         } catch (Exception e) {
             throw new IllegalArgumentException(
                     "Value submitted for Array parsing doesn't match needed format: " + value, e);

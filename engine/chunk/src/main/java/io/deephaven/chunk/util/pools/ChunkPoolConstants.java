@@ -2,6 +2,7 @@ package io.deephaven.chunk.util.pools;
 
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.VisibleForTesting;
 
 /**
  * Repository for constants used by {@link ChunkPool} implementations.
