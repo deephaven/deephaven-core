@@ -86,6 +86,8 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     /**
      * Tracks changes in the script session bindings until the SnapshotScope is closed.
      *
+     * This API should be considered unstable, see deephaven-core#2453.
+     *
      * @param previousIfPresent if non-null, will be closed atomically with the new scope being opened.
      * @return a new SnapshotScope, so that the caller can control when to stop tracking changes to bindings.
      */

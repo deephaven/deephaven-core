@@ -10,7 +10,7 @@ from .start_jvm import start_jvm
 # before the JVM was running.
 class Server:
     """
-    Creates a Deephaven embedded server. Only one instance can be created at this time.
+    Represents a Deephaven server that can be created from Python.
     """
 
     instance = None
@@ -20,6 +20,10 @@ class Server:
         return self.j_server
 
     def __init__(self, port:int = 8080, jvm_args:List[str] = None, dh_args: Dict[str, str] = {}):
+        """
+        Creates a Deephaven embedded server. Only one instance can be created at this time.
+        """
+        # TODO deephaven-core#2453 consider providing @dataclass for arguments
         if Server.instance is not None:
             import deephaven.DHError
             raise deephaven.DHError('Cannot create more than one instance of the server')
@@ -36,4 +40,8 @@ class Server:
         Server.instance = self
 
     def start(self):
+        """
+        Starts the server. Presently once the server is started, it cannot be stopped until the
+        python process halts.
+        """
         self.j_server.start()

@@ -71,6 +71,7 @@ public class EmbeddedServer {
     }
 
     private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {
+        //TODO deephaven-core#2453 make this more generic, ideally by pushing this in whole or part into script session
         ScriptSession.SnapshotScope nextSnapshot;
         try {
             nextSnapshot = scriptSession.snapshot(lastSnapshot);

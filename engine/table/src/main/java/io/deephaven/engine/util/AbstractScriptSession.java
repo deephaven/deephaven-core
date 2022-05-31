@@ -114,6 +114,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     @Override
     public synchronized SnapshotScope snapshot(@Nullable SnapshotScope previousIfPresent) {
+        //TODO deephaven-core#2453 this should be redone, along with other scope change handling
         if (previousIfPresent != null) {
             previousIfPresent.close();
         }
