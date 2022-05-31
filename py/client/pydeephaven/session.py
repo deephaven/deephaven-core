@@ -69,6 +69,8 @@ class Session:
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
         self._session_type = session_type
+        self._list_fields = None
+        self._field_update_thread = None
 
         self._connect()
 
@@ -127,12 +129,37 @@ class Session:
 
             return self._last_ticket
 
+    def subscribe_fields(self):
+        """
+        Allows tables created/removed on the server to be automatically seen on the client
+        """
+
+        with self._r_lock:
+            if self._field_update_thread is None:
+                self._field_update_thread = threading.Thread(target=self._update_fields)
+                self._field_update_thread.daemon = True
+                self._field_update_thread.start()
+
+    def _update_fields(self):
+        """
+        Constant loop that checks for any server-side table changes and adds them to the local list
+        """
+
+        while True:
+            fields_change = next(self._list_fields)
+            with self._r_lock:
+                self._parse_fields_change(fields_change)
+
     def _connect(self):
         with self._r_lock:
             self.grpc_channel, self.session_token, self._timeout = self.session_service.connect()
             self.is_connected = True
+
             if self._never_timeout:
                 self._keep_alive()
+            
+            self._list_fields = self.console_service.list_fields()
+            self._parse_fields_change(next(self._list_fields))
 
     def _keep_alive(self):
         if self._keep_alive_timer:
@@ -181,20 +208,23 @@ class Session:
     def release(self, ticket):
         self.session_service.release(ticket)
 
-    def _parse_script_response(self, response):
-        if response.changes.created:
-            for t in response.changes.created:
+    def _parse_fields_change(self, fields_change):
+        if fields_change.created:
+            for t in fields_change.created:
                 t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
                 self._tables[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
-        if response.changes.updated:
-            for t in response.changes.updated:
+        if fields_change.updated:
+            for t in fields_change.updated:
                 t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
                 self._tables[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
-        if response.changes.removed:
-            for t in response.changes.removed:
+        if fields_change.removed:
+            for t in fields_change.removed:
                 self._tables.pop(t.field_name, None)
+
+    def _parse_script_response(self, response):
+        self._parse_fields_change(response.changes)
 
     # convenience/factory methods
     def run_script(self, script: str) -> None:

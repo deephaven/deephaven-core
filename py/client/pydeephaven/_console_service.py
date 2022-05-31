@@ -3,7 +3,7 @@
 #
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import console_pb2_grpc, console_pb2
+from pydeephaven.proto import console_pb2_grpc, console_pb2, application_pb2_grpc, application_pb2
 from pydeephaven.table import Table
 
 
@@ -11,7 +11,18 @@ class ConsoleService:
     def __init__(self, session):
         self.session = session
         self._grpc_console_stub = console_pb2_grpc.ConsoleServiceStub(session.grpc_channel)
+        self._grpc_app_stub = application_pb2_grpc.ApplicationServiceStub(session.grpc_channel)
         self.console_id = None
+
+    def list_fields(self):
+        try:
+            fields = self._grpc_app_stub.ListFields(
+                application_pb2.ListFieldsRequest(),
+                metadata=self.session.grpc_metadata
+            )
+            return fields
+        except Exception as e:
+            raise DHError("failed to list fields.") from e
 
     def start_console(self):
         if self.console_id:
