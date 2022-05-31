@@ -5,6 +5,7 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.cache.OpenAddressedCanonicalizationCache;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
@@ -23,6 +24,8 @@ import java.util.stream.Stream;
  * Table definition for all Deephaven tables.
  */
 public class TableDefinition implements LogOutputAppendable {
+
+    private static final OpenAddressedCanonicalizationCache INTERNED_DEFINITIONS = new OpenAddressedCanonicalizationCache();
 
     public static TableDefinition of(ColumnDefinition<?>... columnDefinitions) {
         return new TableDefinition(new ArrayList<>(Arrays.asList(columnDefinitions)));
@@ -132,6 +135,16 @@ public class TableDefinition implements LogOutputAppendable {
             throw new IllegalArgumentException("Supplied ColumnDefinitions include duplicate names " + duplicateNames);
         }
         return columns;
+    }
+
+    /**
+     * Intern {@code this} TableDefinition in order to avoid storing many identical instances. Useful (for example) in
+     * heavily partitioned workloads.
+     *
+     * @return An interned TableDefinition that is equal to {@code this}
+     */
+    public TableDefinition intern() {
+        return INTERNED_DEFINITIONS.getCachedItem(this);
     }
 
     @Override

@@ -246,8 +246,11 @@ public class QueryTable extends BaseTable {
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which will be copied into a new column source map
      */
-    public QueryTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
-        this(TableDefinition.inferFrom(columns), rowSet, new LinkedHashMap<>(columns), null, null);
+    public QueryTable(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final Map<String, ? extends ColumnSource<?>> columns) {
+        this(TableDefinition.inferFrom(columns).intern(),
+                Require.neqNull(rowSet, "rowSet"), new LinkedHashMap<>(columns), null, null);
     }
 
     /**
@@ -258,9 +261,11 @@ public class QueryTable extends BaseTable {
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which will be copied into a new column source map
      */
-    public QueryTable(TableDefinition definition, TrackingRowSet rowSet,
-            Map<String, ? extends ColumnSource<?>> columns) {
-        this(definition.checkMutualCompatibility(TableDefinition.inferFrom(columns)),
+    public QueryTable(
+            @NotNull final TableDefinition definition,
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final Map<String, ? extends ColumnSource<?>> columns) {
+        this(definition.checkMutualCompatibility(TableDefinition.inferFrom(columns)).intern(),
                 Require.neqNull(rowSet, "rowSet"), new LinkedHashMap<>(columns), null, null);
     }
 
