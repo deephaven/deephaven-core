@@ -3,7 +3,6 @@
  "methods": {
   "canExecute": ":param step: long\n:return: boolean",
   "getAdded": ":return: io.deephaven.engine.rowset.RowSet",
-  "getExpandedARM": "The caller is responsible for closing the RowSetShiftDataExpander.\n\n:return: (io.deephaven.engine.table.impl.util.RowSetShiftDataExpander) a backwards compatible version of added / removed / modified that account for shifting",
   "getModified": ":return: io.deephaven.engine.rowset.RowSet",
   "getModifiedColumnSet": ":return: io.deephaven.engine.table.ModifiedColumnSet",
   "getModifiedPreShift": ":return: io.deephaven.engine.rowset.RowSet",

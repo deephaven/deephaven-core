@@ -13,6 +13,6 @@
   "size": "Return the number of valid references in the list.\n\n Note that each reference is checked for validity, making this operation linear in the number of references.\n\n:return: (int) the number of valid references in the list"
  },
  "path": "io.deephaven.util.datastructures.SimpleReferenceManager",
- "text": "A helper for manging a list of References. It hides the internal management of expired references and provides for\n iteration over the valid ones",
+ "text": "A helper for managing a list of References. It hides the internal management of expired references and provides for\n iteration over the valid ones",
  "typeName": "class"
 }

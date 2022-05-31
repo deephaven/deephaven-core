@@ -25,7 +25,8 @@ import java.util.stream.Stream;
  */
 public class TableDefinition implements LogOutputAppendable {
 
-    private static final OpenAddressedCanonicalizationCache INTERNED_DEFINITIONS = new OpenAddressedCanonicalizationCache();
+    private static final OpenAddressedCanonicalizationCache INTERNED_DEFINITIONS =
+            new OpenAddressedCanonicalizationCache();
 
     public static TableDefinition of(ColumnDefinition<?>... columnDefinitions) {
         return new TableDefinition(new ArrayList<>(Arrays.asList(columnDefinitions)));

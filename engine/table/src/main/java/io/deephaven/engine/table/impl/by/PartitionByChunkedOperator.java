@@ -147,7 +147,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         resultModifiedColumnSet = new ModifiedColumnSet(parentTable.getModifiedColumnSetForUpdates());
 
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            //noinspection resource
+            // noinspection resource
             final QueryTable attributeDestination = parentTable.getSubTable(RowSetFactory.empty().toTracking());
             // NB: Sub-table inherits "systemicness" from current thread at construction
             attributeCopier.copyAttributes(parentTable, attributeDestination);

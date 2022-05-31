@@ -109,8 +109,8 @@ public abstract class BaseTable extends LivenessArtifact
     @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with PARENTS_UPDATER
     private volatile Collection<Object> parents = EMPTY_PARENTS;
     @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with CHILD_LISTENER_REFERENCES_UPDATER
-    private volatile SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences
-            = EMPTY_CHILD_LISTENER_REFERENCES;
+    private volatile SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences =
+            EMPTY_CHILD_LISTENER_REFERENCES;
     private volatile long lastNotificationStep;
     private volatile long lastSatisfiedStep;
     private volatile boolean isFailed;
@@ -144,7 +144,7 @@ public abstract class BaseTable extends LivenessArtifact
             @NotNull final AtomicReferenceFieldUpdater<INSTANCE_TYPE, FIELD_TYPE> updater,
             @Nullable final FIELD_TYPE defaultValue,
             @NotNull final Supplier<FIELD_TYPE> valueFactory) {
-        //noinspection unchecked
+        // noinspection unchecked
         final INSTANCE_TYPE instance = (INSTANCE_TYPE) this;
         final FIELD_TYPE currentValue = updater.get(instance);
         if (currentValue != defaultValue) {
@@ -203,7 +203,7 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     private Map<String, Object> ensureAttributes() {
-        //noinspection unchecked
+        // noinspection unchecked
         return ensureField(ATTRIBUTES_UPDATER, EMPTY_ATTRIBUTES, ConcurrentHashMap::new);
     }
 
@@ -566,9 +566,9 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     private Collection<Object> ensureParents() {
-        //noinspection unchecked
-        return ensureField(PARENTS_UPDATER, EMPTY_PARENTS, () ->
-                new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance()));
+        // noinspection unchecked
+        return ensureField(PARENTS_UPDATER, EMPTY_PARENTS,
+                () -> new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance()));
     }
 
     @Override
@@ -588,7 +588,7 @@ public abstract class BaseTable extends LivenessArtifact
             return false;
         }
 
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (localParents) {
             for (Object parent : localParents) {
                 if (parent instanceof NotificationQueue.Dependency) {
@@ -662,22 +662,20 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     private SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> ensureChildListenerReferences() {
-        //noinspection unchecked
-        return ensureField(CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES, () ->
-                new SimpleReferenceManager<>((final TableUpdateListener tableUpdateListener) ->
-                        tableUpdateListener instanceof LegacyListenerAdapter
+        // noinspection unchecked
+        return ensureField(CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES,
+                () -> new SimpleReferenceManager<>((
+                        final TableUpdateListener tableUpdateListener) -> tableUpdateListener instanceof LegacyListenerAdapter
                                 ? (LegacyListenerAdapter) tableUpdateListener
                                 : new WeakSimpleReference<>(tableUpdateListener),
-                        true)
-        );
+                        true));
     }
 
     @Override
     public void removeUpdateListener(final ShiftObliviousListener listenerToRemove) {
-        childListenerReferences.removeIf((final TableUpdateListener listener) ->
-                listener instanceof LegacyListenerAdapter
-                        && ((LegacyListenerAdapter) listener).matches(listenerToRemove)
-        );
+        childListenerReferences
+                .removeIf((final TableUpdateListener listener) -> listener instanceof LegacyListenerAdapter
+                        && ((LegacyListenerAdapter) listener).matches(listenerToRemove));
     }
 
     @Override
@@ -781,8 +779,8 @@ public abstract class BaseTable extends LivenessArtifact
 
         // notify children
         final NotificationQueue notificationQueue = getNotificationQueue();
-        childListenerReferences.forEach((listenerRef, listener) ->
-                notificationQueue.addNotification(listener.getNotification(update)));
+        childListenerReferences.forEach(
+                (listenerRef, listener) -> notificationQueue.addNotification(listener.getNotification(update)));
 
         update.release();
     }
@@ -888,15 +886,15 @@ public abstract class BaseTable extends LivenessArtifact
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
 
         final NotificationQueue notificationQueue = getNotificationQueue();
-        childListenerReferences.forEach((listenerRef, listener) ->
-                notificationQueue.addNotification(listener.getErrorNotification(e, sourceEntry)));
+        childListenerReferences.forEach((listenerRef, listener) -> notificationQueue
+                .addNotification(listener.getErrorNotification(e, sourceEntry)));
     }
 
     /**
      * Get the notification queue to insert notifications into as they are generated by listeners during
-     * {@link #notifyListeners} and {@link #notifyListenersOnError(Throwable, TableListener.Entry)}.
-     * This method may be overridden to provide a different notification queue than the
-     * {@link UpdateGraphProcessor#DEFAULT} instance for more complex behavior.
+     * {@link #notifyListeners} and {@link #notifyListenersOnError(Throwable, TableListener.Entry)}. This method may be
+     * overridden to provide a different notification queue than the {@link UpdateGraphProcessor#DEFAULT} instance for
+     * more complex behavior.
      *
      * @return The {@link NotificationQueue} to add to
      */
@@ -995,7 +993,8 @@ public abstract class BaseTable extends LivenessArtifact
             if (parent instanceof QueryTable && dependent instanceof QueryTable) {
                 final QueryTable pqt = (QueryTable) parent;
                 final QueryTable dqt = (QueryTable) dependent;
-                canReuseModifiedColumnSet = !pqt.getModifiedColumnSetForUpdates().requiresTransformer(dqt.getModifiedColumnSetForUpdates());
+                canReuseModifiedColumnSet =
+                        !pqt.getModifiedColumnSetForUpdates().requiresTransformer(dqt.getModifiedColumnSetForUpdates());
             } else {
                 // We cannot reuse the modifiedColumnSet since there are no assumptions that can be made w.r.t. parent's
                 // and dependent's column source mappings.

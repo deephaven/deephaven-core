@@ -342,7 +342,7 @@ public class QueryTable extends BaseTable {
     }
 
     private Map<String, IndexedDataColumn<?>> ensureIndexedDataColumns() {
-        //noinspection unchecked
+        // noinspection unchecked
         return ensureField(INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS, ConcurrentHashMap::new);
     }
 
@@ -1429,7 +1429,8 @@ public class QueryTable extends BaseTable {
                                 final boolean publishTheseSources = flavor == Flavor.UpdateView;
                                 final SelectAndViewAnalyzer analyzer =
                                         SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.VIEW_EAGER,
-                                                columns, rowSet, getModifiedColumnSetForUpdates(), publishTheseSources, viewColumns);
+                                                columns, rowSet, getModifiedColumnSetForUpdates(), publishTheseSources,
+                                                viewColumns);
                                 final QueryTable queryTable =
                                         new QueryTable(rowSet, analyzer.getPublishedColumnSources());
                                 if (swapListener != null) {
@@ -3083,7 +3084,7 @@ public class QueryTable extends BaseTable {
     }
 
     private Map<MemoizedOperationKey, MemoizedResult<?>> ensureCachedOperations() {
-        //noinspection unchecked
+        // noinspection unchecked
         return ensureField(CACHED_OPERATIONS_UPDATER, EMPTY_CACHED_OPERATIONS, ConcurrentHashMap::new);
     }
 

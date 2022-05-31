@@ -40,7 +40,7 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
      * @param concurrent Use CopyOnWriteArrayList for internal storage if true, else ArrayList
      */
     public SimpleReferenceManager(@NotNull final Function<T, R> referenceFactory, final boolean concurrent) {
-        this (referenceFactory, concurrent ? new CopyOnWriteArrayList<>() : new ArrayList<>());
+        this(referenceFactory, concurrent ? new CopyOnWriteArrayList<>() : new ArrayList<>());
     }
 
     /**

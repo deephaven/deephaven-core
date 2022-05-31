@@ -499,12 +499,16 @@ public class QueryTableTest extends QueryTableTestBase {
                 table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().get(1).getName());
 
         assertEquals(2, table.view("String", "Int").numColumns());
-        assertEquals(table.getDefinition().getColumns().get(0).getName(), table.view("String", "Int").getDefinition().getColumns().get(0).getName());
-        assertEquals(table.getDefinition().getColumns().get(1).getName(), table.view("String", "Int").getDefinition().getColumns().get(1).getName());
+        assertEquals(table.getDefinition().getColumns().get(0).getName(),
+                table.view("String", "Int").getDefinition().getColumns().get(0).getName());
+        assertEquals(table.getDefinition().getColumns().get(1).getName(),
+                table.view("String", "Int").getDefinition().getColumns().get(1).getName());
 
         assertEquals(2, table.view("Int", "String").numColumns());
-        assertEquals(table.getDefinition().getColumns().get(0).getName(), table.view("Int", "String").getDefinition().getColumns().get(1).getName());
-        assertEquals(table.getDefinition().getColumns().get(1).getName(), table.view("Int", "String").getDefinition().getColumns().get(0).getName());
+        assertEquals(table.getDefinition().getColumns().get(0).getName(),
+                table.view("Int", "String").getDefinition().getColumns().get(1).getName());
+        assertEquals(table.getDefinition().getColumns().get(1).getName(),
+                table.view("Int", "String").getDefinition().getColumns().get(0).getName());
 
         assertEquals(2, table.view("Int1=Int", "String1=String").numColumns());
         assertSame(table.getDefinition().getColumns().get(0).getDataType(),

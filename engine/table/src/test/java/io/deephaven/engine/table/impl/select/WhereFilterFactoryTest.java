@@ -47,7 +47,8 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
         WhereFilter filter = WhereFilterFactory.getExpression("Maturity in amExpiry,pmExpiry , \"AGAIN\"  ");
         assertEquals(MatchFilter.class, filter.getClass());
-        TableDefinition tableDef = TableDefinition.from(Collections.singletonList("Maturity"), Collections.singletonList((Class) String.class));
+        TableDefinition tableDef = TableDefinition.from(Collections.singletonList("Maturity"),
+                Collections.singletonList((Class) String.class));
 
         filter.init(tableDef);
         Object[] values = ((MatchFilter) filter).getValues();

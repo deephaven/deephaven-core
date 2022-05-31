@@ -411,8 +411,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 PARTITIONING_COLUMN_DEFINITION,
                 CHARACTER_COLUMN_DEFINITION,
                 INTEGER_COLUMN_DEFINITION,
-                DOUBLE_COLUMN_DEFINITION
-        );
+                DOUBLE_COLUMN_DEFINITION);
 
         final Map<Class, ColumnSource> dataTypeToColumnSource = new HashMap<>();
         includedColumns1.forEach((final ColumnDefinition columnDefinition) -> {
@@ -476,8 +475,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         final List<ColumnDefinition<?>> includedColumns2 = List.of(
                 PARTITIONING_COLUMN_DEFINITION,
                 INTEGER_COLUMN_DEFINITION,
-                DOUBLE_COLUMN_DEFINITION
-        );
+                DOUBLE_COLUMN_DEFINITION);
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
@@ -528,8 +526,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         // Setup the table
         final List<ColumnDefinition<?>> includedColumns3 = List.of(
                 INTEGER_COLUMN_DEFINITION,
-                PARTITIONING_COLUMN_DEFINITION
-        );
+                PARTITIONING_COLUMN_DEFINITION);
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),

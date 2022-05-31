@@ -220,7 +220,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
             final long currentStep = LogicalClock.DEFAULT.currentStep();
             if (lastCompletedStep == currentStep) {
-                //noinspection ThrowableNotThrown
+                // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("Enqueued after lastCompletedStep already set to current step: " + this
                         + ", step=" + currentStep + ", lastCompletedStep=" + lastCompletedStep);
             }
