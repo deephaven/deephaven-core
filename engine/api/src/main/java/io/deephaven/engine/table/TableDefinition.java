@@ -51,6 +51,8 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         return new TableDefinition(definitions);
     }
 
+    private ColumnDefinition<?>[] columns;
+
     private transient Map<String, ColumnDefinition<?>> columnNameMap;
 
     public TableDefinition() {}
@@ -72,8 +74,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         this.columnNameMap = other.columnNameMap;
     }
 
-    public static TableDefinition tableDefinition(@NotNull final Class<?>[] types,
-            @NotNull final String[] columnNames) {
+    public static TableDefinition tableDefinition(@NotNull final Class<?>[] types, @NotNull final String[] columnNames) {
         return new TableDefinition(getColumnDefinitions(types, columnNames));
     }
 
@@ -93,7 +94,17 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         return logOutput;
     }
 
-    public void setColumns(final ColumnDefinition<?>[] columns) {
+    /**
+     * Return the internal {@code columns} array representing this TableDefinition. Callers must not mutate the array
+     * contents.
+     *
+     * @return The internal {@code columns} array
+     */
+    public ColumnDefinition<?>[] getColumns() {
+        return columns;
+    }
+
+    private void setColumns(final ColumnDefinition<?>[] columns) {
         Require.elementsNeqNull(columns, "columns");
         final Set<String> columnNames = new HashSet<>();
         for (final ColumnDefinition<?> column : columns) {
@@ -650,12 +661,6 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         public IncompatibleTableDefinitionException(Throwable cause) {
             super(cause);
         }
-    }
-
-    protected ColumnDefinition<?>[] columns;
-
-    public ColumnDefinition<?>[] getColumns() {
-        return columns;
     }
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
