@@ -5,6 +5,37 @@ In this notebook, we show how to perform joins with our time series data.
 Let's start again by simulating measurements of our values every minute, but this time using two tables with slightly different timestamps. This is great for a simulation because there's no guarantee that a real example will collect data with exact timestamp matches.
 
 ```python
+from deephaven import time_table
+
+import random
+import string
+
+def random_int():
+    return random.randint(1,100)
+def random_character():
+    return random.choice(string.ascii_uppercase)
+def random_boolean():
+    return random.choice([True, False])
+
+def create_random_table(time_interval, start_time=None):
+    """
+    Creates a Deephaven table containing rows of random integers from 1 to 99, random
+    uppercase characters, and timestamps.
+
+    Parameters:
+        time_interval (str||int): String or int representation of the time interval between rows.
+        start_time (str||DateTime): Optional string or DateTime representation of the start time.
+    Returns:
+        A Deephaven Table containing the random data.
+    """
+    table = None
+    if start_time is None:
+        table = time_table(time_interval)
+    else:
+        table = time_table(period=time_interval, start_time=start_time)
+
+    return table.update(formulas=["Number = (int)(byte)random_int()", "Character = (String)random_character()", "Boolean = (boolean)random_boolean()"])
+
 from deephaven.time import now, to_nanos, minus
 
 time_interval = to_nanos("00:01:00")
