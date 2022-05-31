@@ -44,7 +44,6 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
 
     protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             LongArraySource hashSlots, ObjectArraySource sequentialBuilders) {
-        Assert.eqZero(rehashPointer, "rehashPointer");
         final LongChunk<Values> keyChunk0 = sourceKeyChunks[0].asLongChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -56,14 +55,34 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
             MAIN_SEARCH: while (true) {
                 byte rowState = stateSource.getUnsafe(tableLocation);
                 if (rowState == ENTRY_EMPTY_STATE) {
+                    final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                    int alternateTableLocation = firstAlternateTableLocation;
+                    while (alternateTableLocation < rehashPointer) {
+                        rowState = alternateStateSource.getUnsafe(alternateTableLocation);
+                        if (rowState == ENTRY_EMPTY_STATE) {
+                            break;
+                        } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                            final long cookie = getCookieAlternate(alternateTableLocation);
+                            assert hashSlots != null;
+                            hashSlots.set(cookie, (long)alternateTableLocation);
+                            if (sequentialBuilders != null) {
+                                addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
+                            } else {
+                                addAlternateLeftIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState);
+                            }
+                            break MAIN_SEARCH;
+                        } else {
+                            alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                        }
+                    }
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    final long cookie = getCookieMain(tableLocation);
+                    final long cookie = makeCookieMain(tableLocation);
                     assert hashSlots != null;
                     hashSlots.set(cookie, (long)tableLocation);
                     if (sequentialBuilders != null) {
                         addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
-                        // the state is actually empty, we'll create the SSA from the outside;
                         stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY));
                     } else {
                         addLeftIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0);
@@ -89,7 +108,6 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
 
     protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             LongArraySource hashSlots, ObjectArraySource sequentialBuilders) {
-        Assert.eqZero(rehashPointer, "rehashPointer");
         final LongChunk<Values> keyChunk0 = sourceKeyChunks[0].asLongChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -101,14 +119,34 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
             MAIN_SEARCH: while (true) {
                 byte rowState = stateSource.getUnsafe(tableLocation);
                 if (rowState == ENTRY_EMPTY_STATE) {
+                    final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                    int alternateTableLocation = firstAlternateTableLocation;
+                    while (alternateTableLocation < rehashPointer) {
+                        rowState = alternateStateSource.getUnsafe(alternateTableLocation);
+                        if (rowState == ENTRY_EMPTY_STATE) {
+                            break;
+                        } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                            final long cookie = getCookieAlternate(alternateTableLocation);
+                            assert hashSlots != null;
+                            hashSlots.set(cookie, (long)alternateTableLocation);
+                            if (sequentialBuilders != null) {
+                                addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
+                            } else {
+                                addAlternateRightIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState);
+                            }
+                            break MAIN_SEARCH;
+                        } else {
+                            alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                        }
+                    }
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    final long cookie = getCookieMain(tableLocation);
+                    final long cookie = makeCookieMain(tableLocation);
                     assert hashSlots != null;
                     hashSlots.set(cookie, (long)tableLocation);
                     if (sequentialBuilders != null) {
                         addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
-                        // the state is actually empty, we'll create the SSA from the outside;
                         stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY));
                     } else {
                         addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0);
@@ -167,12 +205,12 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
                     while ((rowState = alternateStateSource.getUnsafe(alternateTableLocation)) != ENTRY_EMPTY_STATE) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             if (sequentialBuilders != null) {
-                                final long cookie = getCookieMain(tableLocation);
+                                final long cookie = getCookieAlternate(alternateTableLocation);
                                 assert hashSlots != null;
-                                hashSlots.set(cookie, (long)tableLocation);
+                                hashSlots.set(cookie, (long)alternateTableLocation);
                                 addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
                             } else {
-                                addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), rowState);
+                                addAlternateRightIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState);
                             }
                             break;
                         }
@@ -189,7 +227,7 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
         return hash;
     }
 
-    private boolean migrateOneLocation(int locationToMigrate) {
+    private boolean migrateOneLocation(int locationToMigrate, LongArraySource hashSlots) {
         final byte currentStateValue = alternateStateSource.getUnsafe(locationToMigrate);
         if (currentStateValue == ENTRY_EMPTY_STATE) {
             return false;
@@ -207,17 +245,16 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
         rightRowSetSource.set(destinationTableLocation, alternateRightRowSetSource.getUnsafe(locationToMigrate));
         alternateRightRowSetSource.set(locationToMigrate, null);
         final long cookie  = alternateCookieSource.getUnsafe(locationToMigrate);
-        cookieSource.set(destinationTableLocation, cookie);
-        alternateCookieSource.set(locationToMigrate, -1L);
+        migrateCookie(cookie, destinationTableLocation, hashSlots);
         alternateStateSource.set(locationToMigrate, ENTRY_EMPTY_STATE);
         return true;
     }
 
     @Override
-    protected int rehashInternalPartial(int entriesToRehash) {
+    protected int rehashInternalPartial(int entriesToRehash, LongArraySource hashSlots) {
         int rehashedEntries = 0;
         while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer)) {
+            if (migrateOneLocation(--rehashPointer, hashSlots)) {
                 rehashedEntries++;
             }
         }
@@ -238,9 +275,9 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
     }
 
     @Override
-    protected void migrateFront() {
+    protected void migrateFront(LongArraySource hashSlots) {
         int location = 0;
-        while (migrateOneLocation(location++));
+        while (migrateOneLocation(location++, hashSlots));
     }
 
     @Override
@@ -258,10 +295,10 @@ final class RightIncrementalAsOfJoinHasherLong extends RightIncrementalAsOfJoinS
         final Object [] oldRightSource = rightRowSetSource.getArray();
         final Object [] destRightSource = new Object[tableSize];
         rightRowSetSource.setArray(destRightSource);
-        final long [] oldModifiedCookie = cookieSource.getArray();
+        final long [] oldModifiedCookie = mainCookieSource.getArray();
         final long [] destModifiedCookie = new long[tableSize];
         Arrays.fill(destModifiedCookie, QueryConstants.NULL_LONG);
-        cookieSource.setArray(destModifiedCookie);
+        mainCookieSource.setArray(destModifiedCookie);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final byte currentStateValue = originalStateArray[sourceBucket];
             if (currentStateValue == ENTRY_EMPTY_STATE) {

@@ -290,12 +290,10 @@ public class TypedHasherFactory {
                     true, TypedAsOfJoinFactory::staticProbeDecorateRightFound, null));
 
         } else if (baseClass.equals(RightIncrementalAsOfJoinStateManagerTypedBase.class)) {
-//            final ParameterSpec modifiedSlotTrackerParam =
-//                    ParameterSpec.builder(AsOfJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
-
             final TypeName longArraySource = TypeName.get(LongArraySource.class);
             final ParameterSpec hashSlots = ParameterSpec.builder(longArraySource, "hashSlots").build();
-            final ParameterSpec sequentialBuilders = ParameterSpec.builder(ObjectArraySource.class, "sequentialBuilders").build();
+            final ParameterSpec sequentialBuilders =
+                    ParameterSpec.builder(ObjectArraySource.class, "sequentialBuilders").build();
 
             builder.classPrefix("RightIncrementalAsOfJoinHasher").packageGroup("asofjoin")
                     .packageMiddle("rightincopen")
@@ -305,22 +303,23 @@ public class TypedHasherFactory {
                     .emptyStateName("ENTRY_EMPTY_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
-//                    .addExtraPartialRehashParameter(modifiedSlotTrackerParam)
-                    .moveMainFull(TypedAsOfJoinFactory::incrementalMoveMainFull)
-                    .moveMainAlternate(TypedAsOfJoinFactory::incrementalMoveMainAlternate)
+                    .addExtraPartialRehashParameter(hashSlots)
+                    .moveMainFull(TypedAsOfJoinFactory::rightIncrementalMoveMainFull)
+                    .moveMainAlternate(TypedAsOfJoinFactory::rightIncrementalMoveMainAlternate)
                     .alwaysMoveMain(true)
-                    .rehashFullSetup(TypedAsOfJoinFactory::incrementalRehashSetup);
+                    .rehashFullSetup(TypedAsOfJoinFactory::rightIncrementalRehashSetup);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rowState",
-                    true, false, TypedAsOfJoinFactory::incrementalBuildLeftFound,
-                    TypedAsOfJoinFactory::incrementalBuildLeftInsert, hashSlots, sequentialBuilders));
+                    true, true, TypedAsOfJoinFactory::rightIncrementalBuildLeftFound,
+                    TypedAsOfJoinFactory::rightIncrementalBuildLeftInsert, hashSlots, sequentialBuilders));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rowState", true,
-                    false, TypedAsOfJoinFactory::incrementalRightFound,
-                    TypedAsOfJoinFactory::incrementalRightInsert, hashSlots, sequentialBuilders));
+                    true, TypedAsOfJoinFactory::rightIncrementalRightFound,
+                    TypedAsOfJoinFactory::rightIncrementalRightInsert, hashSlots, sequentialBuilders));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probeRightSide", "rowState",
-                    true, TypedAsOfJoinFactory::incrementalProbeDecorateRightFound, null, hashSlots, sequentialBuilders));
+                    true, TypedAsOfJoinFactory::rightIncrementalProbeDecorateRightFound, null, hashSlots,
+                    sequentialBuilders));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }

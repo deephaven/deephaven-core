@@ -571,8 +571,8 @@ public class AsOfJoinHelper {
 
         final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager = USE_TYPED_STATE_MANAGER
                 ? TypedHasherFactory.make(RightIncrementalAsOfJoinStateManagerTypedBase.class,
-                    leftSources, originalLeftSources, tableSize,
-                    control.getMaximumLoadFactor(), control.getTargetLoadFactor())
+                        leftSources, originalLeftSources, tableSize,
+                        control.getMaximumLoadFactor(), control.getTargetLoadFactor())
                 : new RightIncrementalChunkedAsOfJoinStateManager(leftSources, tableSize, originalLeftSources);
 
         final LongArraySource slots = new LongArraySource();
@@ -952,12 +952,12 @@ public class AsOfJoinHelper {
                 SegmentedSortedArray.makeFactory(stampChunkType, reverse, control.rightSsaNodeSize());
         final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
 
-        final int tableSize = control.initialBuildSize();
+        final int tableSize = 2; // control.initialBuildSize();
 
         final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager = USE_TYPED_STATE_MANAGER
                 ? TypedHasherFactory.make(RightIncrementalAsOfJoinStateManagerTypedBase.class,
-                    leftSources, originalLeftSources, tableSize,
-                    control.getMaximumLoadFactor(), control.getTargetLoadFactor())
+                        leftSources, originalLeftSources, tableSize,
+                        control.getMaximumLoadFactor(), control.getTargetLoadFactor())
                 : new RightIncrementalChunkedAsOfJoinStateManager(leftSources, tableSize, originalLeftSources);
 
         final LongArraySource slots = new LongArraySource();
