@@ -35,7 +35,7 @@ public class DeephavenCodecFactory {
                 }
             }).collect(Collectors.toList());
 
-    private static volatile DeephavenCodecFactory INSTANCE = new DeephavenCodecFactory(CODECS);
+    private static volatile DeephavenCodecFactory INSTANCE;
 
     public static synchronized void setInstance(DeephavenCodecFactory factory) {
         if (INSTANCE != null) {
