@@ -82,7 +82,7 @@ from pydeephaven import Session
 session = Session()
 
 table = session.time_table(period=1000000000).update(formulas=["Col1 = i % 2"])
-session.bind_table(name="MyTable", table=table)
+session.bind_table(name="my_table", table=table)
 ```
 
 This is the general flow of how the Python client interacts with Deephaven. You create a table (new or existing), execute some operations on it, and then bind it to Deephaven. Binding the table gives it a named reference on the Deephaven server.
@@ -101,7 +101,7 @@ table = session.empty_table(3)
 # Create derived table having a new column MyColumn populated with the row index "i"
 table = table.update(["MyColumn = i"])
 # Update the Deephaven Web Console with this new table
-session.bind_table(name="MyTable", table=table)
+session.bind_table(name="my_table", table=table)
 ```
 
 ## Sort a table
@@ -117,7 +117,7 @@ table = session.empty_table(5)
 table = table.update(["SortColumn = 4-i"])
 
 table = table.sort(["SortColumn"])
-session.bind_table(name="MyTable", table=table)
+session.bind_table(name="my_table", table=table)
 ```
 
 ## Filter a table
@@ -133,7 +133,7 @@ table = session.empty_table(5)
 table = table.update(["Values = i"])
 
 table = table.where(["Values % 2 == 1"])
-session.bind_table(name="MyTable", table=table)
+session.bind_table(name="my_table", table=table)
 ```
 
 ## Query objects
@@ -159,8 +159,8 @@ query_obj = session.query(table).update(["MyColumn = i"]).sort(["MyColumn"]).whe
 # Transmit the QueryObject to the server and execute it
 table2 = query_obj.exec();
 
-session.bind_table(name="MyTable1", table=table1)
-session.bind_table(name="MyTable2", table=table2)
+session.bind_table(name="my_table1", table=table1)
+session.bind_table(name="my_table2", table=table2)
 ```
 
 ## Join two tables
@@ -178,7 +178,7 @@ table2 = session.empty_table(5)
 table2 = table2.update(["Values2 = i + 10", "Group = i"])
 
 table = table1.join(table2, on=["Group"])
-session.bind_table(name="MyTable", table=table)
+session.bind_table(name="my_table", table=table)
 ```
 
 ## Use a combo aggregation on a table
@@ -197,7 +197,7 @@ my_agg = ComboAggregation()
 my_agg = my_agg.avg(["Count"])
 
 table = table.agg_by(my_agg, ["Group"])
-session.bind_table(name="MyTable", table=table)
+session.bind_table(name="my_table", table=table)
 ```
 
 ## Convert a PyArrow table to a Deephaven table
@@ -214,7 +214,7 @@ arr = pyarrow.array([4,5,6], type=pyarrow.int32())
 pyarrow_table = pyarrow.Table.from_arrays([arr], names=["Integers"])
 
 table = session.import_table(pyarrow_table)
-session.bind_table(name="MyTable", table=table)
+session.bind_table(name="my_table", table=table)
 
 #Convert the Deephaven table back to a pyarrow table
 pyarrow_table = table.snapshot()
