@@ -1140,9 +1140,9 @@ public class QueryTableAggregationTest {
                 c("doubleCol", 0.1, 0.2, 0.3, 0.5));
         Table result = table.avgBy("Sym");
         TestCase.assertEquals(3, result.numColumns());
-        TestCase.assertEquals(result.getDefinition().getColumns()[0].getName(), "Sym");
-        TestCase.assertEquals(result.getDefinition().getColumns()[1].getName(), "intCol");
-        TestCase.assertEquals(result.getDefinition().getColumns()[2].getName(), "doubleCol");
+        TestCase.assertEquals(result.getDefinition().getColumns().get(0).getName(), "Sym");
+        TestCase.assertEquals(result.getDefinition().getColumns().get(1).getName(), "intCol");
+        TestCase.assertEquals(result.getDefinition().getColumns().get(2).getName(), "doubleCol");
         TestCase.assertEquals(result.size(), 2);
         TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
         TestCase.assertEquals(Arrays.asList(30.0, 20.0), Arrays.asList(result.getColumn("intCol").get(0, 2)));
@@ -1150,9 +1150,9 @@ public class QueryTableAggregationTest {
 
         result = table.sumBy("Sym");
         TestCase.assertEquals(3, result.numColumns());
-        TestCase.assertEquals(result.getDefinition().getColumns()[0].getName(), "Sym");
-        TestCase.assertEquals(result.getDefinition().getColumns()[1].getName(), "intCol");
-        TestCase.assertEquals(result.getDefinition().getColumns()[2].getName(), "doubleCol");
+        TestCase.assertEquals(result.getDefinition().getColumns().get(0).getName(), "Sym");
+        TestCase.assertEquals(result.getDefinition().getColumns().get(1).getName(), "intCol");
+        TestCase.assertEquals(result.getDefinition().getColumns().get(2).getName(), "doubleCol");
         TestCase.assertEquals(result.size(), 2);
         TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
         TestCase.assertEquals(Arrays.asList(90L, 20L), Arrays.asList(result.getColumn("intCol").get(0, 2)));
@@ -1160,9 +1160,9 @@ public class QueryTableAggregationTest {
 
         result = table.stdBy("Sym");
         TestCase.assertEquals(3, result.numColumns());
-        TestCase.assertEquals(result.getDefinition().getColumns()[0].getName(), "Sym");
-        TestCase.assertEquals(result.getDefinition().getColumns()[1].getName(), "intCol");
-        TestCase.assertEquals(result.getDefinition().getColumns()[2].getName(), "doubleCol");
+        TestCase.assertEquals(result.getDefinition().getColumns().get(0).getName(), "Sym");
+        TestCase.assertEquals(result.getDefinition().getColumns().get(1).getName(), "intCol");
+        TestCase.assertEquals(result.getDefinition().getColumns().get(2).getName(), "doubleCol");
         TestCase.assertEquals(result.size(), 2);
         TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
         TestCase.assertEquals(Arrays.asList(20.0, Double.NaN), Arrays.asList(result.getColumn("intCol").get(0, 2)));
@@ -1227,7 +1227,7 @@ public class QueryTableAggregationTest {
         result = table.view("intCol").avgBy();
         TestCase.assertEquals(result.size(), 1);
         TestCase.assertEquals(1, result.numColumns());
-        TestCase.assertEquals(result.getDefinition().getColumns()[0].getName(), "intCol");
+        TestCase.assertEquals(result.getDefinition().getColumns().get(0).getName(), "intCol");
         TestCase.assertEquals(Collections.singletonList(27.5), Arrays.asList(result.getColumn("intCol").get(0, 1)));
 
         result = table.lastBy("Sym");

@@ -117,10 +117,10 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                             metadataFile, commonMetadataFile, fullDefinition.getName(), differences));
                 }
             }
-            definition = new TableDefinition(adjustedColumnDefinitions);
+            definition = TableDefinition.of(adjustedColumnDefinitions);
             instructions = fullSchemaInfo.getSecond();
         } else {
-            definition = new TableDefinition(leafSchemaInfo.getFirst());
+            definition = TableDefinition.of(leafSchemaInfo.getFirst());
             instructions = leafSchemaInfo.getSecond();
         }
 

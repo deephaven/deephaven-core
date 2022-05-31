@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;
@@ -392,19 +391,20 @@ public class DynamicTableWriter implements TableWriter {
         this.columnNames = new String[nCols];
         this.arrayColumnSources = new ArrayBackedColumnSource[nCols];
         int ii = 0;
-        final ColumnDefinition<?>[] columns = table.getDefinition().getColumns();
         for (Map.Entry<String, ColumnSource<?>> entry : sources.entrySet()) {
-            columnNames[ii] = entry.getKey();
-            ColumnSource<?> source = entry.getValue();
-            if (source instanceof ArrayBackedColumnSource) {
-                arrayColumnSources[ii] = (ArrayBackedColumnSource) source;
-            }
-            if (constantValues.containsKey(columnNames[ii])) {
+            final String columnName = columnNames[ii] = entry.getKey();
+            final ColumnSource<?> source = entry.getValue();
+            if (constantValues.containsKey(columnName)) {
                 continue;
             }
-            final int index = ii;
-            factoryMap.put(columns[index].getName(),
-                    (currentRow) -> createRowSetter(columns[index].getDataType(), arrayColumnSources[index]));
+            if (source instanceof ArrayBackedColumnSource) {
+                arrayColumnSources[ii] = (ArrayBackedColumnSource) source;
+            } else {
+                throw new IllegalStateException(
+                        "Expected ArrayBackedColumnSource, instead found " + source.getClass());
+            }
+            factoryMap.put(columnName,
+                    (currentRow) -> createRowSetter(source.getType(), (ArrayBackedColumnSource) source));
             ++ii;
         }
         UpdateGraphProcessor.DEFAULT.addSource(table);

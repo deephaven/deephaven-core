@@ -646,8 +646,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             final TableDefinition tableDefinition,
             final Map<String, String> attributes,
             final boolean isViewPort) {
-        final ColumnDefinition<?>[] columns = tableDefinition.getColumns();
-        final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.length];
+        final List<ColumnDefinition<?>> columns = tableDefinition.getColumns();
+        final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.size()];
         final WritableRowRedirection rowRedirection =
                 new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
         final LinkedHashMap<String, ColumnSource<?>> finalColumns =
@@ -669,17 +669,19 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
      * @apiNote emptyRowRedirection must be initialized and empty.
      */
     @NotNull
-    protected static LinkedHashMap<String, ColumnSource<?>> makeColumns(final ColumnDefinition<?>[] columns,
+    protected static LinkedHashMap<String, ColumnSource<?>> makeColumns(
+            final List<ColumnDefinition<?>> columns,
             final WritableColumnSource<?>[] writableSources,
             final WritableRowRedirection emptyRowRedirection) {
-        final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>();
-        for (int ii = 0; ii < columns.length; ii++) {
-            writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[ii].getDataType(),
-                    columns[ii].getComponentType());
-            finalColumns.put(columns[ii].getName(),
+        final int numColumns = columns.size();
+        final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>(numColumns);
+        for (int ii = 0; ii < numColumns; ii++) {
+            final ColumnDefinition<?> column = columns.get(ii);
+            writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(
+                    0, column.getDataType(), column.getComponentType());
+            finalColumns.put(column.getName(),
                     new WritableRedirectedColumnSource<>(emptyRowRedirection, writableSources[ii], 0));
         }
-
         return finalColumns;
     }
 

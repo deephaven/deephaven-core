@@ -165,7 +165,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
     private Map<String, ? extends DeferredGroupingColumnSource<?>> getIncludedColumnsMap(final int... indices) {
         return IntStream.of(indices)
-                .mapToObj(ci -> new Pair<>(TABLE_DEFINITION.getColumns()[ci].getName(), columnSources[ci]))
+                .mapToObj(ci -> new Pair<>(TABLE_DEFINITION.getColumns().get(ci).getName(), columnSources[ci]))
                 .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, Assert::neverInvoked, LinkedHashMap::new));
     }
 
@@ -407,16 +407,15 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     private void doTestRedefinition() {
         // Note: We expect redefinition to make a new CSM, but no work until we force a coalesce by asking for column
         // sources
-        final ColumnDefinition[] includedColumns1 = new ColumnDefinition[] {
+        final List<ColumnDefinition<?>> includedColumns1 = List.of(
                 PARTITIONING_COLUMN_DEFINITION,
                 CHARACTER_COLUMN_DEFINITION,
                 INTEGER_COLUMN_DEFINITION,
                 DOUBLE_COLUMN_DEFINITION
-        };
+        );
 
         final Map<Class, ColumnSource> dataTypeToColumnSource = new HashMap<>();
-        IntStream.range(0, includedColumns1.length).forEach(ci -> {
-            final ColumnDefinition columnDefinition = includedColumns1[ci];
+        includedColumns1.forEach((final ColumnDefinition columnDefinition) -> {
             final ColumnSource columnSource =
                     mock(ColumnSource.class, "_CS_" + columnDefinition.getDataType().getSimpleName());
             dataTypeToColumnSource.put(columnDefinition.getDataType(), columnSource);
@@ -460,11 +459,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(columnSourceManager).refresh();
                 will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
-                will(returnValue(
-                        Arrays.stream(includedColumns1)
-                                .collect(Collectors.toMap(ColumnDefinition::getName,
-                                        cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked,
-                                        LinkedHashMap::new))));
+                will(returnValue(includedColumns1.stream()
+                        .collect(Collectors.toMap(ColumnDefinition::getName,
+                                cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked,
+                                LinkedHashMap::new))));
             }
         });
         assertEquals(NUM_COLUMNS - 1, dropColumnsResult1.getColumnSources().size());
@@ -475,11 +473,11 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
         // Test 2: Drop another column
         // Setup the table
-        final ColumnDefinition[] includedColumns2 = new ColumnDefinition[] {
+        final List<ColumnDefinition<?>> includedColumns2 = List.of(
                 PARTITIONING_COLUMN_DEFINITION,
                 INTEGER_COLUMN_DEFINITION,
                 DOUBLE_COLUMN_DEFINITION
-        };
+        );
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
@@ -504,11 +502,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(columnSourceManager).refresh();
                 will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
-                will(returnValue(
-                        Arrays.stream(includedColumns2)
-                                .collect(Collectors.toMap(ColumnDefinition::getName,
-                                        cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked,
-                                        LinkedHashMap::new))));
+                will(returnValue(includedColumns2.stream()
+                        .collect(Collectors.toMap(ColumnDefinition::getName,
+                                cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked,
+                                LinkedHashMap::new))));
             }
         });
         assertEquals(NUM_COLUMNS - 2, dropColumnsResult2.getColumnSources().size());
@@ -529,10 +526,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
         // Test 4: Use view to slice us down to one column
         // Setup the table
-        final ColumnDefinition[] includedColumns3 = new ColumnDefinition[] {
+        final List<ColumnDefinition<?>> includedColumns3 = List.of(
                 INTEGER_COLUMN_DEFINITION,
-                PARTITIONING_COLUMN_DEFINITION,
-        };
+                PARTITIONING_COLUMN_DEFINITION
+        );
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
@@ -557,11 +554,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(columnSourceManager).refresh();
                 will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
-                will(returnValue(
-                        Arrays.stream(includedColumns3)
-                                .collect(Collectors.toMap(ColumnDefinition::getName,
-                                        cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked,
-                                        LinkedHashMap::new))));
+                will(returnValue(includedColumns3.stream()
+                        .collect(Collectors.toMap(ColumnDefinition::getName,
+                                cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked,
+                                LinkedHashMap::new))));
             }
         });
         assertEquals(NUM_COLUMNS - 4, viewResult1.getColumnSources().size());

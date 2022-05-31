@@ -359,9 +359,9 @@ public class QueryTableJoinTest {
 
         assertEquals(3, result.size());
         assertEquals(3, result.numColumns());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(asList(null, null, "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("a", "b", "c"), asList((Object[]) result.getColumn("indx").getDirect()));
         assertEquals(asList(null, null, 2), asList((Object[]) result.getColumn("Int").get(0, 3)));
@@ -369,16 +369,16 @@ public class QueryTableJoinTest {
         result = lookUpValue1.aj(table, "indx=String", "Int,String");
 
         assertEquals(3, result.size());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
 
         lookUpValue1 = testRefreshingTable(c("indx", "c", "d", "e"));
         result = lookUpValue1.aj(table, "indx=String", "String,Int");
         assertEquals(3, result.size());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
         assertEquals(asList("c", "c", "e"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("c", "d", "e"), asList((Object[]) result.getColumn("indx").getDirect()));
@@ -387,9 +387,9 @@ public class QueryTableJoinTest {
         lookUpValue1 = testRefreshingTable(c("indx", "h", "e", "a"));
         result = lookUpValue1.aj(table, "indx=String", "String,Int");
         assertEquals(3, result.size());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
         assertEquals(asList("g", "e", null), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
@@ -399,8 +399,8 @@ public class QueryTableJoinTest {
         lookUpValue1 = testRefreshingTable(c("indx", "h", "e", "a"));
         result = lookUpValue1.aj(table, "indx=String", "String");
         assertEquals(3, result.size());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals(2, result.numColumns());
         assertEquals(asList("g", "e", null), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
@@ -408,9 +408,9 @@ public class QueryTableJoinTest {
         lookUpValue1 = testRefreshingTable(c("String", "h", "e", "a"));
         result = lookUpValue1.aj(table, "String", "xString=String,Int");
         assertEquals(3, result.size());
-        assertEquals("String", result.getDefinition().getColumns()[0].getName());
-        assertEquals("xString", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("String", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("xString", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
         assertEquals(asList("g", "e", null), asList((Object[]) result.getColumn("xString").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("String").getDirect()));
@@ -458,9 +458,9 @@ public class QueryTableJoinTest {
 
         assertEquals(3, result.size());
         assertEquals(3, result.numColumns());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(asList(null, null, "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("a", "c", "d"), asList((Object[]) result.getColumn("indx").getDirect()));
         assertEquals(asList(null, null, 2), asList((Object[]) result.getColumn("Int").get(0, 3)));
@@ -469,9 +469,9 @@ public class QueryTableJoinTest {
 
         result = lookUpValue1.aj(table, "indx<String", "String,Int");
         assertEquals(3, result.size());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
         assertEquals(asList(null, "c", "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("c", "d", "e"), asList((Object[]) result.getColumn("indx").getDirect()));
@@ -481,9 +481,9 @@ public class QueryTableJoinTest {
         result = lookUpValue1.aj(table, "indx<String", "String,Int");
 
         assertEquals(3, result.size());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
         assertEquals(asList("g", "c", null), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
@@ -500,8 +500,8 @@ public class QueryTableJoinTest {
         TableTools.show(result);
 
         assertEquals(3, result.size());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals(2, result.numColumns());
         assertEquals(asList("g", "c", null), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
@@ -509,9 +509,9 @@ public class QueryTableJoinTest {
         lookUpValue1 = testRefreshingTable(c("String", "h", "e", "a"));
         result = lookUpValue1.aj(table, "String<String", "xString=String,Int");
         assertEquals(3, result.size());
-        assertEquals("String", result.getDefinition().getColumns()[0].getName());
-        assertEquals("xString", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("String", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("xString", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
         assertEquals(asList("g", "c", null), asList((Object[]) result.getColumn("xString").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("String").getDirect()));
@@ -627,9 +627,9 @@ public class QueryTableJoinTest {
         show(result, 10);
         assertEquals(Arrays.asList("Ticker", "Timestamp", "OptionBid"), result.getDefinition().getColumnNames());
         assertEquals(3, result.size());
-        assertEquals("Ticker", result.getDefinition().getColumns()[0].getName());
-        assertEquals("Timestamp", result.getDefinition().getColumns()[1].getName());
-        assertEquals("OptionBid", result.getDefinition().getColumns()[2].getName());
+        assertEquals("Ticker", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("Timestamp", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("OptionBid", result.getDefinition().getColumns().get(2).getName());
         assertEquals(asList("AAPL", "IBM", "AAPL"), asList((Object[]) result.getColumn("Ticker").getDirect()));
         assertEquals(asList(1L, 10L, 50L), asList((Object[]) result.getColumn("Timestamp").get(0, 3)));
         assertEquals(asList(.1, .4, .5), asList((Object[]) result.getColumn("OptionBid").get(0, 3)));
@@ -651,9 +651,9 @@ public class QueryTableJoinTest {
 
         assertEquals(3, result.size());
         assertEquals(3, result.numColumns());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(asList("c", "c", "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("a", "b", "c"), asList((Object[]) result.getColumn("indx").getDirect()));
         assertEquals(asList(2, 2, 2), asList((Object[]) result.getColumn("Int").get(0, 3)));
@@ -664,9 +664,9 @@ public class QueryTableJoinTest {
 
         assertEquals(3, result.size());
         assertEquals(3, result.numColumns());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(asList("g", "g", null), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("f", "g", "h"), asList((Object[]) result.getColumn("indx").getDirect()));
         assertEquals(asList(6, 6, null), asList((Object[]) result.getColumn("Int").get(0, 3)));
@@ -674,9 +674,9 @@ public class QueryTableJoinTest {
         result = lookUpValue1.raj(table, "indx=String", "Int,String");
 
         assertEquals(3, result.size());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
 
         lookUpValue1 = testRefreshingTable(c("indx", "c", "d", "e"));
 
@@ -687,9 +687,9 @@ public class QueryTableJoinTest {
         show(result);
 
         assertEquals(3, result.size());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
         assertEquals(asList("c", "e", "e"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("c", "d", "e"), asList((Object[]) result.getColumn("indx").getDirect()));
@@ -698,9 +698,9 @@ public class QueryTableJoinTest {
         lookUpValue1 = testRefreshingTable(c("indx", "j", "e", "a"));
         result = lookUpValue1.raj(table, "indx=String", "String,Int");
         assertEquals(3, result.size());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
         assertEquals(asList(null, "e", "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("j", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
@@ -710,8 +710,8 @@ public class QueryTableJoinTest {
         lookUpValue1 = testRefreshingTable(c("indx", "j", "e", "a"));
         result = lookUpValue1.raj(table, "indx=String", "String");
         assertEquals(3, result.size());
-        assertEquals("indx", result.getDefinition().getColumns()[0].getName());
-        assertEquals("String", result.getDefinition().getColumns()[1].getName());
+        assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals(2, result.numColumns());
         assertEquals(asList(null, "e", "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("j", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
@@ -719,9 +719,9 @@ public class QueryTableJoinTest {
         lookUpValue1 = testRefreshingTable(c("String", "j", "e", "a"));
         result = lookUpValue1.raj(table, "String", "xString=String,Int");
         assertEquals(3, result.size());
-        assertEquals("String", result.getDefinition().getColumns()[0].getName());
-        assertEquals("xString", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[2].getName());
+        assertEquals("String", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("xString", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
         assertEquals(asList(null, "e", "c"), asList((Object[]) result.getColumn("xString").getDirect()));
         assertEquals(asList("j", "e", "a"), asList((Object[]) result.getColumn("String").getDirect()));
@@ -845,8 +845,8 @@ public class QueryTableJoinTest {
         showWithRowSet(result);
         assertEquals(6, result.size());
         assertEquals(2, result.numColumns());
-        assertEquals("X", result.getDefinition().getColumns()[0].getName());
-        assertEquals("Y", result.getDefinition().getColumns()[1].getName());
+        assertEquals("X", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("Y", result.getDefinition().getColumns().get(1).getName());
         assertEquals(Arrays.asList("a", "a", "b", "b", "c", "c"), Arrays.asList(result.getColumn("X").get(0, 6)));
         assertEquals(Arrays.asList("x", "y", "x", "y", "x", "y"), Arrays.asList(result.getColumn("Y").get(0, 6)));
 
@@ -855,9 +855,9 @@ public class QueryTableJoinTest {
         result = lTable.join(rTable, "X=Y");
         assertEquals(3, result.size());
         assertEquals(3, result.numColumns());
-        assertEquals("X", result.getDefinition().getColumns()[0].getName());
-        assertEquals("Y", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Z", result.getDefinition().getColumns()[2].getName());
+        assertEquals("X", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("Y", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Z", result.getDefinition().getColumns().get(2).getName());
         assertEquals(Arrays.asList("a", "b", "b"), Arrays.asList(result.getColumn("X").get(0, 3)));
         assertEquals(Arrays.asList("a", "b", "b"), Arrays.asList(result.getColumn("Y").get(0, 3)));
         assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(result.getColumn("Z").get(0, 3)));
@@ -868,8 +868,8 @@ public class QueryTableJoinTest {
         show(result);
         assertEquals(2, result.size());
         assertEquals(2, result.numColumns());
-        assertEquals("X", result.getDefinition().getColumns()[0].getName());
-        assertEquals("Y", result.getDefinition().getColumns()[1].getName());
+        assertEquals("X", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("Y", result.getDefinition().getColumns().get(1).getName());
         assertEquals(Arrays.asList("a", "b"), Arrays.asList(result.getColumn("X").get(0, 2)));
         assertEquals(Arrays.asList("a", "b"), Arrays.asList(result.getColumn("Y").get(0, 2)));
 
@@ -879,7 +879,7 @@ public class QueryTableJoinTest {
         show(result);
         assertEquals(2, result.size());
         assertEquals(1, result.numColumns());
-        assertEquals("X", result.getDefinition().getColumns()[0].getName());
+        assertEquals("X", result.getDefinition().getColumns().get(0).getName());
         assertEquals(Arrays.asList("a", "b"), Arrays.asList(result.getColumn("X").get(0, 2)));
     }
 
@@ -898,12 +898,12 @@ public class QueryTableJoinTest {
 
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals("u", pairMatch.getDefinition().getColumns()[2].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(IntVector.class, pairMatch.getDefinition().getColumns()[1].getDataType());
-        assertEquals(DoubleVector.class, pairMatch.getDefinition().getColumns()[2].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals("u", pairMatch.getDefinition().getColumns().get(2).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(IntVector.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
+        assertEquals(DoubleVector.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         IntVector[] vValues = (IntVector[]) pairMatch.getColumn("v").getDirect();
         assertEquals(1, vValues[0].get(0));
@@ -921,10 +921,10 @@ public class QueryTableJoinTest {
         pairMatch = table1.naturalJoin(table2.groupBy("String"), "String", "v");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(IntVector.class, pairMatch.getDefinition().getColumns()[1].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(IntVector.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         vValues = (IntVector[]) pairMatch.getColumn("v").getDirect();
         assertEquals(1, vValues[0].get(0));
@@ -936,12 +936,12 @@ public class QueryTableJoinTest {
         pairMatch = table1.naturalJoin(table2.groupBy("String"), "String", "u,v");
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("u", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[2].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(DoubleVector.class, pairMatch.getDefinition().getColumns()[1].getDataType());
-        assertEquals(IntVector.class, pairMatch.getDefinition().getColumns()[2].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("u", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(2).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(DoubleVector.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
+        assertEquals(IntVector.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         vValues = (IntVector[]) pairMatch.getColumn("v").getDirect();
         assertEquals(1, vValues[0].get(0));
@@ -959,10 +959,10 @@ public class QueryTableJoinTest {
         pairMatch = table1.naturalJoin(table2.groupBy("String"), "String=String");
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(IntVector.class, pairMatch.getDefinition().getColumns()[1].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(IntVector.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         vValues = (IntVector[]) pairMatch.getColumn("v").getDirect();
         assertEquals(1, vValues[0].get(0));
@@ -980,12 +980,12 @@ public class QueryTableJoinTest {
         final Table noPairMatch = table1.naturalJoin(table2.groupBy(), "");
         assertEquals(3, noPairMatch.size());
         assertEquals(3, noPairMatch.numColumns());
-        assertEquals("String1", noPairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("String2", noPairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals("v", noPairMatch.getDefinition().getColumns()[2].getName());
-        assertEquals(String.class, noPairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(ObjectVector.class, noPairMatch.getDefinition().getColumns()[1].getDataType());
-        assertEquals(IntVector.class, noPairMatch.getDefinition().getColumns()[2].getDataType());
+        assertEquals("String1", noPairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("String2", noPairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals("v", noPairMatch.getDefinition().getColumns().get(2).getName());
+        assertEquals(String.class, noPairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(ObjectVector.class, noPairMatch.getDefinition().getColumns().get(1).getDataType());
+        assertEquals(IntVector.class, noPairMatch.getDefinition().getColumns().get(2).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) noPairMatch.getColumn(0).getDirect()));
         // noinspection unchecked
         final ObjectVector<String>[] aggregateString =
@@ -1001,12 +1001,12 @@ public class QueryTableJoinTest {
         pairMatch = table1.naturalJoin(table2.groupBy("String2"), "String1=String2");
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.numColumns());
-        assertEquals("String1", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("String2", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[2].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[1].getDataType());
-        assertEquals(IntVector.class, pairMatch.getDefinition().getColumns()[2].getDataType());
+        assertEquals("String1", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("String2", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(2).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
+        assertEquals(IntVector.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
 
         final String[] stringColumn = (String[]) pairMatch.getColumn("String2").getDirect();

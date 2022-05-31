@@ -202,7 +202,7 @@ public class CompletionRequest {
                         .endl();
             }
         }
-        return new TableDefinition(columns);
+        return TableDefinition.of(columns);
     }
 
     private String toStringLiteral(final Node node) {

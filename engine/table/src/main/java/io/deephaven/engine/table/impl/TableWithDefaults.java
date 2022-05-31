@@ -85,7 +85,7 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     @FinalDefault
     default int numColumns() {
-        return getDefinition().getColumns().length;
+        return getDefinition().numColumns();
     }
 
     @Override
@@ -148,8 +148,8 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
-    default DataColumn getColumn(int columnIndex) {
-        return getColumn(this.getDefinition().getColumns()[columnIndex].getName());
+    default DataColumn getColumn(final int columnIndex) {
+        return getColumn(this.getDefinition().getColumns().get(columnIndex).getName());
     }
 
     // -----------------------------------------------------------------------------------------------------------------

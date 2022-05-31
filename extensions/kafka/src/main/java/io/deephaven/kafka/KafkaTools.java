@@ -140,7 +140,7 @@ public class KafkaTools {
             final Predicate<String> exclude,
             final MutableObject<Properties> colPropsOut) {
         SchemaBuilder.FieldAssembler<Schema> fass = SchemaBuilder.record(schemaName).namespace(namespace).fields();
-        final ColumnDefinition<?>[] colDefs = t.getDefinition().getColumns();
+        final List<ColumnDefinition<?>> colDefs = t.getDefinition().getColumns();
         colPropsOut.setValue(colProps);
         for (final ColumnDefinition<?> colDef : colDefs) {
             if (includeOnly != null && !includeOnly.test(colDef.getName())) {
@@ -1434,7 +1434,7 @@ public class KafkaTools {
                 getIngestData(KeyOrValue.VALUE, kafkaProperties, columnDefinitions, nextColumnIndexMut,
                         valueSpec);
 
-        final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
+        final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
         final UpdateSourceRegistrar updateSourceRegistrar = resultFactory.getSourceRegistrar();
 
         final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {

@@ -30,8 +30,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
         VariableProvider variables = Mock(VariableProvider) {
                 (0..1) * getVariableNames() >> ['t']
                 (0..1) * getVariableType('t') >> Table
-                (0..1) * getTableDefinition('t') >> new TableDefinition(
-                        [String, DateTime], ['Date', 'DateTime']
+                (0..1) * getTableDefinition('t') >> TableDefinition.from(['Date', 'DateTime'], [String, DateTime]
                 )
             }
 
@@ -76,7 +75,8 @@ t = t.updateView ( 'D
 
         Logger log = LoggerFactory.getLogger(CompletionHandler)
         VariableProvider variables = Mock() {
-            (0..1) * getTableDefinition('t') >> new TableDefinition([String, Long, Integer], ['Date', 'Delta', 'NotMeThough'])
+            (0..1) * getTableDefinition('t') >> TableDefinition.from(
+                    ['Date', 'Delta', 'NotMeThough'], [String, Long, Integer])
             (0..1) * getVariableType('t') >> Table
             (0..1) * getVariableNames() >> []
         }
@@ -115,7 +115,7 @@ t = t.update('A=') .update( 'B=')
 
         Logger log = LoggerFactory.getLogger(CompletionHandler)
         VariableProvider variables = Mock(VariableProvider) {
-            _ * getTableDefinition('t') >> new TableDefinition([Long, Integer], ['A1', 'A2'])
+            _ * getTableDefinition('t') >> TableDefinition.from(['A1', 'A2'], [Long, Integer])
             0 * _
         }
 

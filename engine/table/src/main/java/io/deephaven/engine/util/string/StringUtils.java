@@ -59,8 +59,7 @@ public class StringUtils implements Serializable {
         if (!USE_COMPRESSED_STRINGS) {
             return tableDefinition;
         }
-        final ColumnDefinition<?>[] resultColumns =
-                Arrays.copyOf(tableDefinition.getColumns(), tableDefinition.getColumns().length);
+        final ColumnDefinition<?>[] resultColumns = tableDefinition.getColumnsArray();
         for (int ci = 0; ci < resultColumns.length; ++ci) {
             final ColumnDefinition<?> column = resultColumns[ci];
             if (column.getDataType() == String.class
@@ -68,7 +67,7 @@ public class StringUtils implements Serializable {
                 resultColumns[ci] = column.withDataType(CompressedString.class);
             }
         }
-        return new TableDefinition(resultColumns);
+        return TableDefinition.of(resultColumns);
     }
 
     // ------------------------------------------------------------------------------------------------------------------

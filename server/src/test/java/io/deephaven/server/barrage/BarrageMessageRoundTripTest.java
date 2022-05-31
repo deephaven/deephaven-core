@@ -246,7 +246,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             if (subscribedColumns.cardinality() != expected.numColumns()) {
                 final List<Selectable> columns = new ArrayList<>();
                 for (int i = subscribedColumns.nextSetBit(0); i >= 0; i = subscribedColumns.nextSetBit(i + 1)) {
-                    columns.add(ColumnName.of(expected.getDefinition().getColumns()[i].getName()));
+                    columns.add(ColumnName.of(expected.getDefinition().getColumns().get(i).getName()));
                 }
                 expected = (QueryTable) expected.view(columns);
                 toCheck = (QueryTable) toCheck.view(columns);
@@ -274,7 +274,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             if (subscribedColumns.cardinality() != expected.numColumns()) {
                 final List<Selectable> columns = new ArrayList<>();
                 for (int i = subscribedColumns.nextSetBit(0); i >= 0; i = subscribedColumns.nextSetBit(i + 1)) {
-                    columns.add(ColumnName.of(expected.getDefinition().getColumns()[i].getName()));
+                    columns.add(ColumnName.of(expected.getDefinition().getColumns().get(i).getName()));
                 }
                 expected = (QueryTable) expected.view(columns);
                 toCheck = (QueryTable) toCheck.view(columns);

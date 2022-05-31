@@ -8,7 +8,6 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.table.impl.NaturalJoinHelper;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
@@ -850,9 +849,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table result = lTable.naturalJoin(rTable, "String", "Int2=Int");
         assertEquals(3, result.size());
         assertEquals(3, result.numColumns());
-        assertEquals("String", result.getDefinition().getColumns()[0].getName());
-        assertEquals("Int", result.getDefinition().getColumns()[1].getName());
-        assertEquals("Int2", result.getDefinition().getColumns()[2].getName());
+        assertEquals("String", result.getDefinition().getColumns().get(0).getName());
+        assertEquals("Int", result.getDefinition().getColumns().get(1).getName());
+        assertEquals("Int2", result.getDefinition().getColumns().get(2).getName());
         assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(result.getColumn("String").get(0, 3)));
         assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(result.getColumn("Int").get(0, 3)));
         assertEquals(Arrays.asList(10, 20, 30), Arrays.asList(result.getColumn("Int2").get(0, 3)));
@@ -865,10 +864,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         Table pairMatch = table1.naturalJoin(table2, "String", "v");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(int.class, pairMatch.getDefinition().getColumns()[1].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         assertEquals(asList(1, 2, null), asList(pairMatch.getColumn("v").get(0, 3)));
 
@@ -879,30 +878,30 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         pairMatch = table1.naturalJoin(table2, "String", "v");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(int.class, pairMatch.getDefinition().getColumns()[1].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
 
         pairMatch = table2.naturalJoin(table1, "String", "");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(int.class, pairMatch.getDefinition().getColumns()[1].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
 
         pairMatch = table1.naturalJoin(table2, "String=String", "v");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(int.class, pairMatch.getDefinition().getColumns()[1].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
 
@@ -910,10 +909,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(int.class, pairMatch.getDefinition().getColumns()[1].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         assertEquals(1, pairMatch.getColumn("v").getInt(0));
         assertEquals(2, pairMatch.getColumn("v").getInt(1));
@@ -931,12 +930,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.numColumns());
-        assertEquals("String1", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("String2", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[2].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[1].getDataType());
-        assertEquals(int.class, pairMatch.getDefinition().getColumns()[2].getDataType());
+        assertEquals("String1", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("String2", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(2).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
+        assertEquals(int.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(1).getDirect()));
         assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn(2).get(0, 3)));
@@ -946,9 +945,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.numColumns());
-        assertEquals("String2", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals("String1", pairMatch.getDefinition().getColumns()[2].getName());
+        assertEquals("String2", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals("String1", pairMatch.getDefinition().getColumns().get(2).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String1").getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String2").getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumn("v").getDataType());
@@ -1447,30 +1446,30 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         Table pairMatch = table1.exactJoin(table2, "String");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(int.class, pairMatch.getDefinition().getColumns()[1].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
 
         pairMatch = table2.exactJoin(table1, "String");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(int.class, pairMatch.getDefinition().getColumns()[1].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
 
         pairMatch = table1.exactJoin(table2, "String=String");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(int.class, pairMatch.getDefinition().getColumns()[1].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
 
@@ -1478,10 +1477,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
-        assertEquals("String", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(int.class, pairMatch.getDefinition().getColumns()[1].getDataType());
+        assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         assertEquals(1, pairMatch.getColumn("v").getInt(0));
         assertEquals(2, pairMatch.getColumn("v").getInt(1));
@@ -1495,12 +1494,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         pairMatch = table1.exactJoin(table2, "String1=String2");
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.numColumns());
-        assertEquals("String1", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("String2", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[2].getName());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[0].getDataType());
-        assertEquals(String.class, pairMatch.getDefinition().getColumns()[1].getDataType());
-        assertEquals(int.class, pairMatch.getDefinition().getColumns()[2].getDataType());
+        assertEquals("String1", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("String2", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(2).getName());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
+        assertEquals(String.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
+        assertEquals(int.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(0).getDirect()));
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumn(1).getDirect()));
         assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn(2).get(0, 3)));
@@ -1510,9 +1509,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.numColumns());
-        assertEquals("String2", pairMatch.getDefinition().getColumns()[0].getName());
-        assertEquals("v", pairMatch.getDefinition().getColumns()[1].getName());
-        assertEquals("String1", pairMatch.getDefinition().getColumns()[2].getName());
+        assertEquals("String2", pairMatch.getDefinition().getColumns().get(0).getName());
+        assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
+        assertEquals("String1", pairMatch.getDefinition().getColumns().get(2).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String1").getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String2").getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumn("v").getDataType());

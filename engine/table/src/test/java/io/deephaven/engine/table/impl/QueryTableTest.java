@@ -493,26 +493,26 @@ public class QueryTableTest extends QueryTableTestBase {
         Table table = newTable(3, Arrays.asList("String", "Int"),
                 Arrays.asList(TableTools.objColSource("c", "e", "g"), TableTools.colSource(2, 4, 6)));
         assertEquals(2, table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).numColumns());
-        assertEquals(table.getDefinition().getColumns()[0].getName(),
-                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns()[0].getName());
-        assertEquals(table.getDefinition().getColumns()[1].getName(),
-                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns()[1].getName());
+        assertEquals(table.getDefinition().getColumns().get(0).getName(),
+                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().get(0).getName());
+        assertEquals(table.getDefinition().getColumns().get(1).getName(),
+                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().get(1).getName());
 
         assertEquals(2, table.view("String", "Int").numColumns());
-        assertEquals(table.getDefinition().getColumns()[0].getName(), table.view("String", "Int").getDefinition().getColumns()[0].getName());
-        assertEquals(table.getDefinition().getColumns()[1].getName(), table.view("String", "Int").getDefinition().getColumns()[1].getName());
+        assertEquals(table.getDefinition().getColumns().get(0).getName(), table.view("String", "Int").getDefinition().getColumns().get(0).getName());
+        assertEquals(table.getDefinition().getColumns().get(1).getName(), table.view("String", "Int").getDefinition().getColumns().get(1).getName());
 
         assertEquals(2, table.view("Int", "String").numColumns());
-        assertEquals(table.getDefinition().getColumns()[0].getName(), table.view("Int", "String").getDefinition().getColumns()[1].getName());
-        assertEquals(table.getDefinition().getColumns()[1].getName(), table.view("Int", "String").getDefinition().getColumns()[0].getName());
+        assertEquals(table.getDefinition().getColumns().get(0).getName(), table.view("Int", "String").getDefinition().getColumns().get(1).getName());
+        assertEquals(table.getDefinition().getColumns().get(1).getName(), table.view("Int", "String").getDefinition().getColumns().get(0).getName());
 
         assertEquals(2, table.view("Int1=Int", "String1=String").numColumns());
-        assertSame(table.getDefinition().getColumns()[0].getDataType(),
-                table.view("Int1=Int", "String1=String").getDefinition().getColumns()[1].getDataType());
-        assertSame(table.getDefinition().getColumns()[1].getDataType(),
-                table.view("Int1=Int", "String1=String").getDefinition().getColumns()[0].getDataType());
-        assertEquals("Int1", table.view("Int1=Int", "String1=String").getDefinition().getColumns()[0].getName());
-        assertEquals("String1", table.view("Int1=Int", "String1=String").getDefinition().getColumns()[1].getName());
+        assertSame(table.getDefinition().getColumns().get(0).getDataType(),
+                table.view("Int1=Int", "String1=String").getDefinition().getColumns().get(1).getDataType());
+        assertSame(table.getDefinition().getColumns().get(1).getDataType(),
+                table.view("Int1=Int", "String1=String").getDefinition().getColumns().get(0).getDataType());
+        assertEquals("Int1", table.view("Int1=Int", "String1=String").getDefinition().getColumns().get(0).getName());
+        assertEquals("String1", table.view("Int1=Int", "String1=String").getDefinition().getColumns().get(1).getName());
 
         table = TableTools.emptyTable(3);
         table = table.view("x = i*2", "y = \"\" + x");

@@ -25,7 +25,7 @@ public abstract class AbstractGeneratedTable extends AbstractBenchmarkTable {
                 .map(ColumnGenerator::getDefinition)
                 .map(ColumnDefinition::withNormal)
                 .collect(Collectors.toList());
-        definition = new TableDefinition(definitions);
+        definition = TableDefinition.of(definitions);
     }
 
     protected Table generateTable() {

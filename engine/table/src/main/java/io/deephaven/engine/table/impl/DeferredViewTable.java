@@ -247,10 +247,10 @@ public class DeferredViewTable extends RedefinableTable {
 
     @Override
     protected Table redefine(TableDefinition newDefinition) {
-        ColumnDefinition<?>[] cDefs = newDefinition.getColumns();
-        SelectColumn[] newView = new SelectColumn[cDefs.length];
-        for (int cdi = 0; cdi < cDefs.length; ++cdi) {
-            newView[cdi] = new SourceColumn(cDefs[cdi].getName());
+        final List<ColumnDefinition<?>> cDefs = newDefinition.getColumns();
+        SelectColumn[] newView = new SelectColumn[cDefs.size()];
+        for (int cdi = 0; cdi < newView.length; ++cdi) {
+            newView[cdi] = new SourceColumn(cDefs.get(cdi).getName());
         }
         DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinition, description + "-redefined",
                 new SimpleTableReference(this), null, newView, null);

@@ -350,8 +350,8 @@ public class TestParquetTools {
                 ColumnDefinition.fromGenericType("Date", String.class, null, ColumnDefinition.ColumnType.Partitioning));
         allColumns.add(
                 ColumnDefinition.fromGenericType("Num", int.class, null, ColumnDefinition.ColumnType.Partitioning));
-        allColumns.addAll(table1.getDefinition().getColumnList());
-        final TableDefinition partitionedDefinition = new TableDefinition(allColumns);
+        allColumns.addAll(table1.getDefinition().getColumns());
+        final TableDefinition partitionedDefinition = TableDefinition.of(allColumns);
 
         final Table result = ParquetTools.readPartitionedTableInferSchema(
                 new ParquetKeyValuePartitionedLayout(testRootFile, 2), ParquetInstructions.EMPTY);

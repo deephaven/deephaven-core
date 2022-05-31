@@ -22,8 +22,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 
 import static io.deephaven.engine.util.TableTools.*;
 
@@ -41,8 +40,9 @@ public class TestStreamToTableAdapter {
 
     @Test
     public void testSimple() {
-        final TableDefinition tableDefinition = new TableDefinition(
-                Arrays.asList(String.class, int.class, long.class, double.class), Arrays.asList("S", "I", "L", "D"));
+        final TableDefinition tableDefinition = TableDefinition.from(
+                List.of("S", "I", "L", "D"),
+                List.of(String.class, int.class, long.class, double.class));
         final Table empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
@@ -216,8 +216,9 @@ public class TestStreamToTableAdapter {
 
     @Test
     public void testWrappedTypes() {
-        final TableDefinition tableDefinition = new TableDefinition(
-                Arrays.asList(String.class, Boolean.class, DateTime.class), Arrays.asList("S", "B", "D"));
+        final TableDefinition tableDefinition = TableDefinition.from(
+                List.of("S", "B", "D"),
+                List.of(String.class, Boolean.class, DateTime.class));
         final Table empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
@@ -285,8 +286,9 @@ public class TestStreamToTableAdapter {
 
     @Test
     public void testArrayTypes() {
-        final TableDefinition tableDefinition =
-                new TableDefinition(Arrays.asList(String[].class, int[].class), Arrays.asList("SA", "IA"));
+        final TableDefinition tableDefinition = TableDefinition.from(
+                List.of("SA", "IA"),
+                List.of(String[].class, int[].class));
         final Table empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
@@ -345,8 +347,7 @@ public class TestStreamToTableAdapter {
 
     @Test
     public void testBig() {
-        final TableDefinition tableDefinition =
-                new TableDefinition(Collections.singletonList(long.class), Arrays.asList("L"));
+        final TableDefinition tableDefinition = TableDefinition.from(List.of("L"), List.of(long.class));
         final Table empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
@@ -420,8 +421,9 @@ public class TestStreamToTableAdapter {
 
     @Test
     public void testError() {
-        final TableDefinition tableDefinition = new TableDefinition(
-                Arrays.asList(String.class, int.class, long.class, double.class), Arrays.asList("S", "I", "L", "D"));
+        final TableDefinition tableDefinition = TableDefinition.from(
+                List.of("S", "I", "L", "D"),
+                List.of(String.class, int.class, long.class, double.class));
         final DummyStreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToTableAdapter adapter =

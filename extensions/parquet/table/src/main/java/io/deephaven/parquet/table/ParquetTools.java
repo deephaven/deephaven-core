@@ -216,7 +216,7 @@ public class ParquetTools {
             @NotNull final File destFile,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions) {
-        if (definition.getColumns().length == 0) {
+        if (definition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
         final File firstCreated = prepareDestinationFileLocation(destFile);
@@ -302,7 +302,7 @@ public class ParquetTools {
             @NotNull final File[] destinations,
             @NotNull final String[] groupingColumns) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
-        if (tableDefinition.getColumns().length == 0) {
+        if (tableDefinition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
         final File[] absoluteDestinations =
@@ -387,7 +387,7 @@ public class ParquetTools {
                         tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                         instructions);
                 return readSingleFileTable(tableLocationKey, schemaInfo.getSecond(),
-                        new TableDefinition(schemaInfo.getFirst()));
+                        TableDefinition.of(schemaInfo.getFirst()));
             }
             if (sourceFileName.equals(ParquetMetadataFileLayout.METADATA_FILE_NAME)) {
                 return readPartitionedTableWithMetadata(source.getParentFile(), instructions);
@@ -515,7 +515,7 @@ public class ParquetTools {
         }
         allColumns.addAll(schemaInfo.getFirst());
         return readPartitionedTable(recordingLocationKeyFinder, schemaInfo.getSecond(),
-                new TableDefinition(allColumns));
+                TableDefinition.of(allColumns));
     }
 
     /**
@@ -624,7 +624,7 @@ public class ParquetTools {
                 tableLocationKey.getFileReader().getSchema(),
                 tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                 readInstructionsIn);
-        final TableDefinition def = new TableDefinition(schemaInfo.getFirst());
+        final TableDefinition def = TableDefinition.of(schemaInfo.getFirst());
         if (instructionsOut != null) {
             instructionsOut.setValue(schemaInfo.getSecond());
         }

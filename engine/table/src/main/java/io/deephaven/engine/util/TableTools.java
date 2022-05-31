@@ -762,7 +762,7 @@ public class TableTools {
      */
     public static Table newTable(TableDefinition definition) {
         Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
-        for (ColumnDefinition<?> columnDefinition : definition.getColumnList()) {
+        for (ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0,
                     columnDefinition.getDataType(), columnDefinition.getComponentType()));
         }
@@ -1089,8 +1089,8 @@ public class TableTools {
      */
     @ScriptApi
     public static Table roundDecimalColumns(Table table) {
-        final ColumnDefinition<?>[] columnDefinitions = table.getDefinition().getColumns();
-        Set<String> columnsToRound = new HashSet<>(columnDefinitions.length);
+        final List<ColumnDefinition<?>> columnDefinitions = table.getDefinition().getColumns();
+        Set<String> columnsToRound = new HashSet<>(columnDefinitions.size());
         for (ColumnDefinition<?> columnDefinition : columnDefinitions) {
             Class<?> type = columnDefinition.getDataType();
             if (type.equals(double.class) || type.equals(float.class)) {
@@ -1113,8 +1113,8 @@ public class TableTools {
         Set<String> columnsNotToRoundSet = new HashSet<>(columnsNotToRound.length * 2);
         Collections.addAll(columnsNotToRoundSet, columnsNotToRound);
 
-        final ColumnDefinition<?>[] columnDefinitions = table.getDefinition().getColumns();
-        Set<String> columnsToRound = new HashSet<>(columnDefinitions.length);
+        final List<ColumnDefinition<?>> columnDefinitions = table.getDefinition().getColumns();
+        Set<String> columnsToRound = new HashSet<>(columnDefinitions.size());
         for (ColumnDefinition<?> columnDefinition : columnDefinitions) {
             Class<?> type = columnDefinition.getDataType();
             String colName = columnDefinition.getName();
@@ -1179,7 +1179,7 @@ public class TableTools {
 
         // Now add in the Table definition
         final TableDefinition def = source.getDefinition();
-        for (final ColumnDefinition<?> cd : def.getColumnList()) {
+        for (final ColumnDefinition<?> cd : def.getColumns()) {
             osw.writeChars(cd.getName());
             osw.writeChars(cd.getDataType().getName());
         }

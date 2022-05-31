@@ -1487,9 +1487,8 @@ public class ConstructSnapshot {
      * @return the estimated snapshot size in bytes.
      */
     public static long estimateSnapshotSize(Table table) {
-        final ColumnDefinition<?>[] columnDefinitions = table.getDefinition().getColumns();
-        final BitSet columns = new BitSet(columnDefinitions.length);
-        columns.set(0, columnDefinitions.length);
+        final BitSet columns = new BitSet(table.numColumns());
+        columns.set(0, table.numColumns());
         return estimateSnapshotSize(table.getDefinition(), columns, table.size());
     }
 
@@ -1506,15 +1505,16 @@ public class ConstructSnapshot {
         long sizePerRow = 0;
         long totalSize = 0;
 
-        final ColumnDefinition[] columnDefinitions = tableDefinition.getColumns();
-        for (int ii = 0; ii < columnDefinitions.length; ++ii) {
+        final int numColumns = tableDefinition.numColumns();
+        final List<ColumnDefinition<?>> columnDefinitions = tableDefinition.getColumns();
+        for (int ii = 0; ii < numColumns; ++ii) {
             if (!columns.get(ii)) {
                 continue;
             }
 
             totalSize += 44; // for an array
 
-            final ColumnDefinition definition = columnDefinitions[ii];
+            final ColumnDefinition<?> definition = columnDefinitions.get(ii);
             if (definition.getDataType() == byte.class || definition.getDataType() == char.class
                     || definition.getDataType() == Boolean.class) {
                 sizePerRow += 1;

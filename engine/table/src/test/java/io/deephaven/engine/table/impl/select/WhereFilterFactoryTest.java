@@ -22,6 +22,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
@@ -46,8 +47,7 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
         WhereFilter filter = WhereFilterFactory.getExpression("Maturity in amExpiry,pmExpiry , \"AGAIN\"  ");
         assertEquals(MatchFilter.class, filter.getClass());
-        TableDefinition tableDef = new TableDefinition(Collections.singletonList((Class) String.class),
-                Collections.singletonList("Maturity"));
+        TableDefinition tableDef = TableDefinition.from(Collections.singletonList("Maturity"), Collections.singletonList((Class) String.class));
 
         filter.init(tableDef);
         Object[] values = ((MatchFilter) filter).getValues();
@@ -58,8 +58,7 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
         filter = WhereFilterFactory.getExpression("Maturity in amExpiry,1 , \"AGAIN\"  ");
         assertEquals(MatchFilter.class, filter.getClass());
-        tableDef = new TableDefinition(Collections.singletonList((Class) String.class),
-                Collections.singletonList("Maturity"));
+        tableDef = TableDefinition.from(List.of("Maturity"), List.of(String.class));
 
         try {
             filter.init(tableDef);
