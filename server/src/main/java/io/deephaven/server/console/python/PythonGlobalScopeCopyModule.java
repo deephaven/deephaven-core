@@ -8,10 +8,10 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 @Module
-public class PythonGlobalScopeCopyModule {
+public interface PythonGlobalScopeCopyModule {
 
     @Provides
-    PythonEvaluatorJpy providePythonEvaluatorJpy() {
+    static PythonEvaluatorJpy providePythonEvaluatorJpy() {
         try {
             return PythonEvaluatorJpy.withGlobalCopy();
         } catch (IOException | InterruptedException | TimeoutException e) {
