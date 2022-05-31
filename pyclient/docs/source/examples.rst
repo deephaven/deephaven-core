@@ -1,19 +1,17 @@
 
 Python Client Examples
-#####################
+######################
 
 This page shows how to perform common operations with the Deephaven Python Client.
 
 Initialize
 ##########
 
-The `Session` class is your connection to Deephaven. This is what allows your Python code to interact with Deephaven:
+The `Session` class is your connection to Deephaven. This is what allows your Python code to interact with a Deephaven server:
 
     from pydeephaven import Session
 
-    #session = Session(host=”envoy”) # Use this if you’re running the python script in docker-compose with the Deephaven default settings
-
-    session = Session() # Use this if you’re running the python script locally with with Deephaven default settings
+    session = Session()
 
 Ticking table
 #############
@@ -26,22 +24,20 @@ The `Session` class has many methods that create tables. This example creates a 
 
     table = session.time_table(period=1000000000).update(formulas=["Col1 = i % 2"])
 
-    session.bind_table(name="MyTable", table=table)
+    session.bind_table(name="my_table", table=table)
 
-This is the general flow of how the Python client interacts with Deephaven. You create a table (new or existing), execute some operations on it, and then bind it to Deephaven.
-
-If you don’t bind the table, it will not be updated in Deephaven.
+This is the general flow of how the Python client interacts with Deephaven. You create a table (new or existing), execute some operations on it, and then bind it to Deephaven. Binding the table gives it a named reference on the Deephaven server.
 
 Execute a query on a table
 ##########################
 
-`table.update()` can be used to execute an update on a table. This example updates a table with a query string:
+`table.update()` can be used to execute an update on a table. This updates a table with a query string:
 
     from pydeephaven import Session
 
     session = Session()
 
-    # create a table with no columns and three rows
+    # Create a table with no columns and 3 rows
 
     table = session.empty_table(3)
 
@@ -51,7 +47,7 @@ Execute a query on a table
 
     # Update the Deephaven Web Console with this new table
 
-    session.bind_table(name="MyTable", table=table)
+    session.bind_table(name="my_table", table=table)
 
 Sort a table
 ############
@@ -68,7 +64,7 @@ Sort a table
 
     table = table.sort(["SortColumn"])
 
-    session.bind_table(name="MyTable", table=table)
+    session.bind_table(name="my_table", table=table)
 
 Filter a table
 ##############
@@ -85,14 +81,14 @@ Filter a table
 
     table = table.where(["Values % 2 == 1"])
 
-    session.bind_table(name="MyTable", table=table)
+    session.bind_table(name="my_table", table=table)
 
 Query objects
 #############
 
 Query objects are a way to create and manage a sequence of Deephaven query operations as a single unit. Query objects have the potential to perform better than the corresponding individual queries, because the query object can be transmitted to the server in one request rather than several, and because the system can perform certain optimizations when it is able to see the whole sequence of queries at once. They are similar in spirit to prepared statements in SQL.
 
-The general flow of using a query object is to construct a query with a table, call operations (sort, filter, update, etc) on the query object, and then assign your table to `query.exec()`.
+The general flow of using a query object is to construct a query with a table, call the table operations (sort, filter, update, etc.) on the query object, and then assign your table to the return value of `query.exec()`.
 
 Any operation that can be executed on a table can also be executed on a query object. This example shows two operations that compute the same result, with the first one using the table updates and the second one using a query object:
 
@@ -104,19 +100,19 @@ Any operation that can be executed on a table can also be executed on a query ob
 
     # executed immediately
 
-    table1= table.update(["MyColumn = i"]).sort(["MyColumn", descending).where(["MyColumn > 5"]);
+    table1= table.update(["MyColumn = i"]).sort(["MyColumn"]).where(["MyColumn > 5"]);
 
     # create Query Object (execution is deferred until the "exec" statement)
 
-    queryObj = session.query(table)(update(["MyColumn = i"]).sort(["MyColumn", descending).where(["MyColumn > 5"]);
+    query_obj = session.query(table).update(["MyColumn = i"]).sort(["MyColumn"]).where(["MyColumn > 5"]);
 
     # Transmit the QueryObject to the server and execute it
 
-    table2 = query.exec();
+    table2 = query_obj.exec();
 
-    session.bind_table(name="MyTable1", table=table1)
+    session.bind_table(name="my_table1", table=table1)
 
-    session.bind_table(name="MyTable2", table=table2)
+    session.bind_table(name="my_table2", table=table2)
 
 Join 2 tables
 #############
@@ -137,7 +133,7 @@ Join 2 tables
 
     table = table1.join(table2, on=["Group"])
 
-    session.bind_table(name="MyTable", table=table)
+    session.bind_table(name="my_table", table=table)
 
 Use a combo aggregation on a table
 ##################################
@@ -156,14 +152,14 @@ Combined aggregations can be executed on tables in the Python client. This examp
 
     my_agg = my_agg.avg(["Count"])
 
-    table = table.combo_by(["Group"], my_agg)
+    table = table.agg_by(my_agg, ["Group"])
 
-    session.bind_table(name="MyTable", table=table)
+    session.bind_table(name="my_table", table=table)
 
-Convert a pyarrow table to a Deephaven table
+Convert a PyArrow table to a Deephaven table
 ############################################
 
-Deephaven natively supports Pyarrow tables. This example converts between a Pyarrow table and a Deephaven table:
+Deephaven natively supports PyArrow tables. This example converts between a PyArrow table and a Deephaven table:
 
     import pyarrow
 
@@ -177,7 +173,7 @@ Deephaven natively supports Pyarrow tables. This example converts between a Pyar
 
     table = session.import_table(pyarrow_table)
 
-    session.bind_table(name="MyTable", table=table)
+    session.bind_table(name="my_table", table=table)
 
     #Convert the Deephaven table back to a pyarrow table
 
@@ -186,21 +182,25 @@ Deephaven natively supports Pyarrow tables. This example converts between a Pyar
 Execute a script server side
 ############################
 
-`session.run_script()` can be used to execute code on the Deephaven server. This is useful when operations cannot be done on the client-side, such as creating a dynamic table writer. This example shows how to execute a script server-side:
+`session.run_script()` can be used to execute code on the Deephaven server. This is useful when operations cannot be done on the client-side, such as creating a dynamic table writer. This example shows how to execute a script server-side and retrieve a table generated from the script:
 
     from pydeephaven import Session
 
     session = Session()
 
     script = """
-    
-    from deephaven.TableTools import emptyTable
 
-    table = emptyTable(8).update("Index = i")
+    from deephaven import empty_table
+
+    table = empty_table(8).update(["Index = i"])
 
     """
 
     session.run_script(script)
+
+    table = session.open_table("table")
+
+    print(table.snapshot())
 
 Error handling
 ##############
@@ -210,12 +210,17 @@ The `DHError` is thrown whenever the client package encounters an error. This ex
     from pydeephaven import Session, DHError
 
     try:
+
         session = Session(host="invalid_host")
+
     except DHError as e:
+
         print("Deephaven error when connecting to session")
 
         print(e)
+
     except Exception as e:
+
         print("Unknown error")
 
         print(e)
