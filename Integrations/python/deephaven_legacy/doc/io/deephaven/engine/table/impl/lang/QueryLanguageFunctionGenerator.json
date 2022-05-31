@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.lang.QueryLanguageFunctionGenerator",
+ "methods": {
+  "main": ":param args: java.lang.String[]",
+  "plus": ":param a: double[]\n:param b: int\n:return: double[]"
+ },
+ "path": "io.deephaven.engine.table.impl.lang.QueryLanguageFunctionGenerator",
+ "typeName": "class"
+}

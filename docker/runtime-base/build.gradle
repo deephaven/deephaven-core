@@ -1,0 +1,40 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+}
+
+evaluationDependsOn Docker.registryProject('server-base')
+
+configurations {
+    pythonWheel
+}
+
+dependencies {
+    pythonWheel project(path: ':deephaven-jpy', targetConfiguration: 'pythonWheel')
+    pythonWheel project(':deephaven-legacy-wheel')
+    pythonWheel project(':py-server')
+}
+
+def dockerContext = project.layout.buildDirectory.dir('context')
+
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+
+    from (configurations.pythonWheel) {
+        into 'wheels/'
+    }
+
+    from 'src/main/docker'
+    into dockerContext
+}
+
+def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
+    dependsOn prepareDocker
+
+    inputs.files Docker.registryFiles(project, 'server-base')
+
+    inputDir.set dockerContext
+
+    images.add('deephaven/runtime-base:local-build')
+}
+
+assemble.dependsOn buildDocker

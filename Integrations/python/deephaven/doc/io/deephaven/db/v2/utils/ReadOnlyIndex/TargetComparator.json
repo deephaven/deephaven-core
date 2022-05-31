@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.ReadOnlyIndex$TargetComparator",
- "methods": {
-  "compareTargetTo": ":param rKey: long\n:param direction: int\n:return: int"
- },
- "path": "io.deephaven.db.v2.utils.ReadOnlyIndex.TargetComparator",
- "typeName": "interface"
-}

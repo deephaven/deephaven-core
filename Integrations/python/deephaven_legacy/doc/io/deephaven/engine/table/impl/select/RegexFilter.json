@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.RegexFilter",
+ "methods": {
+  "copy": "Create a copy of this WhereFilter.\n\n:return: (io.deephaven.engine.table.impl.select.RegexFilter) an independent copy of this WhereFilter.",
+  "renameFilter": ":param newName: java.lang.String\n:return: io.deephaven.engine.table.impl.select.RegexFilter",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.select.RegexFilter",
+ "text": "A filter that matches using a regular expression.",
+ "typeName": "class"
+}

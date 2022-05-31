@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator$BucketedContext",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.BucketedContext",
+ "text": "Context interface for bucketed operator updates.",
+ "typeName": "interface"
+}

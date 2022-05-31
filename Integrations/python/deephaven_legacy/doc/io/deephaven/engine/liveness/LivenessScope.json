@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.liveness.LivenessScope",
+ "methods": {
+  "release": "Release all referents previously added to this scope in its capacity as a LivenessManager, unless other\n references to this scope are retained in its capacity as a LivenessReferent.",
+  "transferTo": "Transfer all retained LivenessReferents from this LivenessScope to a compatible\n LivenessManager. Transfer support compatibility is implementation defined.\n\n:param other: (io.deephaven.engine.liveness.LivenessManager) - The other LivenessManager"
+ },
+ "path": "io.deephaven.engine.liveness.LivenessScope",
+ "text": "LivenessNode implementation for providing external scope to one or more LivenessReferents.",
+ "typeName": "class"
+}

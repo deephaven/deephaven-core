@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.plot.datasets.interval.IntervalXYDataSeriesArray",
+ "methods": {
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.plot.AxesImpl) - new axes.\n:return: (io.deephaven.plot.datasets.interval.IntervalXYDataSeriesArray) copy of the series on a different set of axes.",
+  "getEndX": "Gets the right-most point of the bar.\n\n*Overload 1*  \n  :param item: (int) - index\n  :return: (double) right-most point of the bar\n  \n*Overload 2*  \n  :return: io.deephaven.plot.datasets.data.IndexableNumericData",
+  "getEndY": "Gets the top-most point of the bar.\n\n*Overload 1*  \n  :param item: (int) - index\n  :return: (double) top-most point of the bar\n  \n*Overload 2*  \n  :return: io.deephaven.plot.datasets.data.IndexableNumericData",
+  "getStartX": "Gets the left-most point of the bar.\n\n*Overload 1*  \n  :param item: (int) - index\n  :return: (double) left-most point of the bar\n  \n*Overload 2*  \n  :return: io.deephaven.plot.datasets.data.IndexableNumericData",
+  "getStartY": "Gets the bottom-most point of the bar.\n\n*Overload 1*  \n  :param item: (int) - index\n  :return: (double) bottom-most point of the bar\n  \n*Overload 2*  \n  :return: io.deephaven.plot.datasets.data.IndexableNumericData"
+ },
+ "path": "io.deephaven.plot.datasets.interval.IntervalXYDataSeriesArray",
+ "text": "An XYDataSeriesArray suitable for bar charts.",
+ "typeName": "class"
+}

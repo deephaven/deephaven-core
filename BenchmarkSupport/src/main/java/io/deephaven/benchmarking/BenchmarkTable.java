@@ -1,6 +1,6 @@
 package io.deephaven.benchmarking;
 
-import io.deephaven.db.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.TestUseOnly;
 

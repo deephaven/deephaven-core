@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionInt$Constant",
+ "methods": {
+  "fillChunkAppend": "Appends the values repeating value length times to destination.\n\n:param context: io.deephaven.engine.table.ChunkSource.FillContext\n:param destination: io.deephaven.chunk.WritableChunk<? superColumnRegionInt.Constant.ATTR>\n:param length: int",
+  "getInt": "Get a single int from this region.\n\n:param elementIndex: (long) - Element row key in the table's address space\n:return: (int) The int value at the specified element row key"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionInt.Constant",
+ "typeName": "class"
+}

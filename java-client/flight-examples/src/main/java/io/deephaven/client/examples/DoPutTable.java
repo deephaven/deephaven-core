@@ -1,9 +1,10 @@
 package io.deephaven.client.examples;
 
+import io.deephaven.client.impl.ExportId;
 import io.deephaven.client.impl.FlightSession;
-import io.deephaven.client.impl.HasTicket;
+import io.deephaven.client.impl.HasTicketId;
+import io.deephaven.client.impl.ScopeId;
 import io.deephaven.client.impl.TableHandle;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
 import picocli.CommandLine;
@@ -18,19 +19,31 @@ import java.util.concurrent.ExecutionException;
         description = "Do Put Table", version = "0.1.0")
 class DoPutTable extends FlightExampleBase {
 
-    @Option(names = {"-e", "--efficient"}, description = "Use the more efficient version",
-            defaultValue = "false")
-    boolean efficient;
+    enum Method {
+        HANDLE, TICKET, DIRECT
+    }
+
+    @Option(names = {"-m", "--method"}, description = "The method to use. [ ${COMPLETION-CANDIDATES} ]",
+            defaultValue = "HANDLE")
+    Method method;
 
     @Parameters(arity = "1", paramLabel = "VAR", description = "Variable name to publish.")
     String variableName;
 
     @Override
     protected void execute(FlightSession flight) throws Exception {
-        if (efficient) {
-            moreEfficient(flight);
-        } else {
-            easy(flight);
+        switch (method) {
+            case HANDLE:
+                handle(flight);
+                break;
+            case TICKET:
+                ticket(flight);
+                break;
+            case DIRECT:
+                direct(flight);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected method " + method);
         }
     }
 
@@ -55,25 +68,30 @@ class DoPutTable extends FlightExampleBase {
                 .newTable();
     }
 
-    private void publish(FlightSession flight, HasTicket ticket) throws InterruptedException, ExecutionException {
-        flight.session().publish(variableName, ticket).get();
+    private void publish(FlightSession flight, HasTicketId ticketId) throws InterruptedException, ExecutionException {
+        flight.session().publish(variableName, ticketId).get();
     }
 
-    private void easy(FlightSession flight) throws Exception {
+    private void handle(FlightSession flight) throws Exception {
         // This version is "prettier", but uses one extra ticket and round trip
-        try (final TableHandle destHandle = flight.put(newTable(), bufferAllocator)) {
+        try (final TableHandle destHandle = flight.putExport(newTable(), bufferAllocator)) {
             publish(flight, destHandle);
         }
     }
 
-    private void moreEfficient(FlightSession flight) throws Exception {
-        // This version is more efficient, but requires manual management of a ticket
-        final Ticket ticket = flight.putTicket(newTable(), bufferAllocator);
+    private void ticket(FlightSession flight) throws Exception {
+        // This version is more efficient, but requires manual management of an export ticket
+        final ExportId exportId = flight.putExportManual(newTable(), bufferAllocator);
         try {
-            publish(flight, () -> ticket);
+            publish(flight, exportId);
         } finally {
-            flight.release(ticket);
+            flight.release(exportId);
         }
+    }
+
+    private void direct(FlightSession flight) {
+        // This version is most efficient, but the RHS is ephemeral and can't be re-referenced
+        flight.put(new ScopeId(variableName), newTable(), bufferAllocator);
     }
 
     public static void main(String[] args) {

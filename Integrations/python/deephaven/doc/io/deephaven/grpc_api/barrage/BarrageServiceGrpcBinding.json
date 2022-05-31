@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.barrage.BarrageServiceGrpcBinding",
- "methods": {
-  "bindService": ":return: io.grpc.ServerServiceDefinition",
-  "getClientDoSubscribeDescriptor": "Fetch the client side descriptor for a specific table schema.\n\nNote: Java generics information - <Options>\n\n:param options: (Options) - the set of options that last across the entire life of the subscription\n:param columnChunkTypes: (io.deephaven.db.v2.sources.chunk.ChunkType[]) - the chunk types per column\n:param columnTypes: (java.lang.Class<?>[]) - the class type per column\n:param componentTypes: (java.lang.Class<?>[]) - the component class type per column\n:param streamReader: (io.deephaven.grpc_api.barrage.BarrageMessageConsumer.StreamReader<Options>) - the stream reader - intended to be thread safe and re-usable\n:return: (io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.SubscriptionRequest,io.deephaven.db.v2.utils.BarrageMessage>) the client side method descriptor"
- },
- "path": "io.deephaven.grpc_api.barrage.BarrageServiceGrpcBinding",
- "typeName": "class"
-}

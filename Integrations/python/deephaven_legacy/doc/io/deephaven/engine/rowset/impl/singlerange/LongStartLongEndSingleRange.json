@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.singlerange.LongStartLongEndSingleRange",
+ "methods": {
+  "copy": ":return: io.deephaven.engine.rowset.impl.singlerange.LongStartLongEndSingleRange",
+  "getCardinality": ":return: long",
+  "rangeEnd": ":return: long",
+  "rangeStart": ":return: long"
+ },
+ "path": "io.deephaven.engine.rowset.impl.singlerange.LongStartLongEndSingleRange",
+ "typeName": "class"
+}

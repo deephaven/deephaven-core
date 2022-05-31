@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.TableMap$KeyListener",
+ "methods": {
+  "handleKeyAdded": "Notification that a new key has been added to the map.\n\n:param key: (java.lang.Object) - key"
+ },
+ "path": "io.deephaven.engine.table.TableMap.KeyListener",
+ "text": "Table map key change listener.",
+ "typeName": "interface"
+}

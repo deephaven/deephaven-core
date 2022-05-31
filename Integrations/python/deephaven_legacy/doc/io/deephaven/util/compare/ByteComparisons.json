@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.util.compare.ByteComparisons",
+ "methods": {
+  "compare": ":param lhs: byte\n:param rhs: byte\n:return: int",
+  "eq": ":param lhs: byte\n:param rhs: byte\n:return: boolean",
+  "geq": ":param lhs: byte\n:param rhs: byte\n:return: boolean",
+  "gt": ":param lhs: byte\n:param rhs: byte\n:return: boolean",
+  "leq": ":param lhs: byte\n:param rhs: byte\n:return: boolean",
+  "lt": ":param lhs: byte\n:param rhs: byte\n:return: boolean"
+ },
+ "path": "io.deephaven.util.compare.ByteComparisons",
+ "typeName": "class"
+}

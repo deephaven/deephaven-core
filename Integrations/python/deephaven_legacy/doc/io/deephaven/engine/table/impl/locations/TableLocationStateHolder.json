@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.TableLocationStateHolder",
+ "methods": {
+  "getLastModifiedTimeMillis": ":return: (long) The last modified time for a table location, in milliseconds from the epoch: \nNULL_TIME: Modification time information is unknown or does not exist for this\n         location \n>= 0: The time this table was last modified, in milliseconds from the UTC epoch",
+  "getRowSet": ":return: (io.deephaven.engine.rowset.RowSet) The (possibly-empty) RowSet of a table location, or null if RowSet information is unknown\n         or does not exist for this table location.",
+  "getSize": ":return: (long) The size of a table location: \nNULL_SIZE: Size information is unknown or does not exist for this location \n>= 0: The table location exists and has (possibly empty) data",
+  "getStateLock": ":return: (java.lang.Object) The Object that accessors should synchronize on if they want to invoke multiple getters with consistent\n         results.",
+  "setValues": "Set all state values.\n\n:param rowSet: (io.deephaven.engine.rowset.RowSet) - The new RowSet. Ownership passes to this holder; callers should copy it if\n        necessary.\n:param lastModifiedTimeMillis: (long) - The new modification time\n:return: (boolean) Whether any of the values changed"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.TableLocationStateHolder",
+ "text": "Tool for generic multi-field \"atomic\" get/set of state values for a table location. NB: Possibly-concurrent usages\n should be externally synchronized.",
+ "typeName": "class"
+}

@@ -1,0 +1,21 @@
+{
+ "className": "io.deephaven.engine.table.impl.ssa.IntSegmentedSortedArray",
+ "methods": {
+  "applyShift": ":param stampChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Any>\n:param keyChunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param shiftDelta: long",
+  "applyShiftReverse": ":param stampChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Any>\n:param keyChunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param shiftDelta: long",
+  "forAllKeys": "Call the longConsumer for each of the long row keys in this SegmentedSortedArray.\n\n:param longConsumer: (java.util.function.LongConsumer) - the long consumer to call",
+  "getFirst": ":return: (long) the first row key in this SSA, RowSet.NULL_ROW_KEY when empty.",
+  "getLast": ":return: (long) the last row key in this SSA, RowSet.NULL_ROW_KEY when empty.",
+  "getNodeSize": ":return: int",
+  "insert": "Insert new valuesToInsert into this SSA. The valuesToInsert to insert must be sorted.\n\n:param valuesToInsert: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Any>) - the valuesToInsert to insert\n:param rowKeysToInsert: (io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - the corresponding indicesToInsert",
+  "insertAndGetNextValue": "Note: Java generics information - <T extends io.deephaven.chunk.attributes.Any>\n\n:param valuesToInsert: io.deephaven.chunk.Chunk<T>\n:param rowKeysToInsert: io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param nextValue: io.deephaven.chunk.WritableChunk<T>\n:return: int",
+  "isReversed": ":return: boolean",
+  "makeChecker": ":return: io.deephaven.engine.table.impl.ssa.SsaChecker",
+  "remove": "Remove valuesToRemove from this SSA. The valuesToRemove to remove must be sorted.\n\n:param valuesToRemove: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Any>) - the valuesToRemove to remove\n:param rowKeysToRemove: (io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - the corresponding indices",
+  "removeAndGetPrior": "Remove the values and indices referenced in stampChunk and indicesToRemove. Fill priorRedirections with the\n redirection value immediately preceding the removed value.\n\n:param stampChunk: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Any>) - the values to remove\n:param rowKeysToRemove: (io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - the indices (parallel to the values)\n:param priorRedirections: (io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - the output prior redirections (parallel to valeus/indices)",
+  "size": "The size of this data structure.\n\n:return: (long) The size"
+ },
+ "path": "io.deephaven.engine.table.impl.ssa.IntSegmentedSortedArray",
+ "text": "For keeping track of incremental states of sorted values, we would ideally like to hold them in an Array or a Chunk;\n with parallel row keys.  However, if we just put them in an array we can not insert or remove values without\n unnecessarily shifting everything.\n\n The segmented array allows us to either insert or remove elements and only shift values in a \"leaf\" block and\n possibly a \"directory\" block.  It can be thought of as similar to a single-level b+ tree with only keys.\n\n We must be totally ordered, which is accomplished by sorting on the int values, and then on the corresponding\n row key.",
+ "typeName": "class"
+}

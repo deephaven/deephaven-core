@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.updategraph.UpdateGraphLock",
+ "methods": {
+  "installInstrumentation": ":param instrumentation: io.deephaven.engine.updategraph.UpdateGraphLock.Instrumentation"
+ },
+ "path": "io.deephaven.engine.updategraph.UpdateGraphLock",
+ "text": "Lock class to support UpdateGraphProcessor.",
+ "typeName": "class"
+}

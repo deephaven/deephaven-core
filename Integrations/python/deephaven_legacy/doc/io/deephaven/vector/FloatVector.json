@@ -1,0 +1,20 @@
+{
+ "className": "io.deephaven.vector.FloatVector",
+ "methods": {
+  "equals": "Helper method for implementing Object.equals(Object).\n\n:param aArray: (io.deephaven.vector.FloatVector) - The LHS of the equality test (always a FloatVector)\n:param b: (java.lang.Object) - The RHS of the equality test\n:return: (boolean) Whether the two inputs are equal",
+  "floatValToString": ":param val: java.lang.Object\n:return: java.lang.String",
+  "get": ":param i: long\n:return: float",
+  "getComponentType": ":return: java.lang.Class",
+  "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: io.deephaven.vector.FloatVector",
+  "hashCode": "Helper method for implementing Object.hashCode(). Follows the pattern in\n Arrays.hashCode(Object[]).\n\n:param array: (io.deephaven.vector.FloatVector) - The FloatVector to hash\n:return: (int) The hash code",
+  "primitiveFloatValToString": ":param val: float\n:return: java.lang.String",
+  "size": "The size of this data structure.\n\n:return: (long) The size",
+  "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.vector.FloatVector",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.FloatVector",
+  "toArray": ":return: float[]",
+  "toString": "Helper method for implementing Object.toString().\n\n*Overload 1*  \n  :param prefixLength: int\n  :return: java.lang.String\n  \n*Overload 2*  \n  :param array: (io.deephaven.vector.FloatVector) - The FloatVector to convert to a String\n  :param prefixLength: (int) - The maximum prefix of the array to convert\n  :return: (java.lang.String) The String representation of array",
+  "type": ":return: io.deephaven.qst.type.PrimitiveVectorType<io.deephaven.vector.FloatVector,java.lang.Float>"
+ },
+ "path": "io.deephaven.vector.FloatVector",
+ "typeName": "interface"
+}

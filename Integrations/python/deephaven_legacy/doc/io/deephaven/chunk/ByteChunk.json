@@ -1,0 +1,23 @@
+{
+ "className": "io.deephaven.chunk.ByteChunk",
+ "methods": {
+  "applyDecoder": "*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :param decoder: io.deephaven.util.codec.ObjectDecoder<T>\n  :return: T\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param decoder: io.deephaven.util.codec.ObjectDecoder<T>\n  :param offsetSrc: int\n  :param length: int\n  :return: T",
+  "chunkWrap": "*Overload 1*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param data: byte[]\n  :return: io.deephaven.chunk.ByteChunk<ATTR>\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param data: byte[]\n  :param offset: int\n  :param capacity: int\n  :return: io.deephaven.chunk.ByteChunk<ATTR>",
+  "copyToArray": "Copy a subrange of this Chunk to the subrange of the 'dest' array.\n\n:param srcOffset: (int) - Starting position in 'this' (the source)\n:param dest: (java.lang.Object) - Destination array.\n:param destOffset: (int) - Starting offset in the destination.\n:param length: (int) - Number of values to copy",
+  "copyToBuffer": "Copy a sub-range of this chunk to a Buffer. This is an optional method, as some chunk types do not have a\n corresponding buffer type.\n\n \n Implementations are free to copy data as efficiently as they may, and will use absolute rather than positional\n access where possible. To facilitate this pattern, destOffset is an absolute offset from position 0,\n rather than a relative offset from destBuffer.position().\n\n \n It is required that destBuffer.limit() is at least destOffset + length.\n\n \ndestBuffer's position may be modified, but will always be restored to its initial value upon successful\n return.\n\n:param srcOffset: (int) - The offset into this chunk to start copying from\n:param destBuffer: (java.nio.Buffer) - The destination Buffer\n:param destOffset: (int) - The absolute offset into destBuffer to start copying to\n:param length: (int) - The number of elements to copy",
+  "copyToChunk": "Copy a subrange of this Chunk to the subrange of the 'dest' writable chunk.\n\n:param srcOffset: (int) - Starting position in 'this' (the source)\n:param dest: (io.deephaven.chunk.WritableChunk<? superByteChunk.ATTR>) - Destination writable chunk.\n:param destOffset: (int) - Starting offset in the destination.\n:param length: (int) - Number of values to copy",
+  "copyToTypedArray": ":param srcOffset: int\n:param destData: byte[]\n:param destOffset: int\n:param length: int",
+  "copyToTypedBuffer": "Copy a sub-range of this ByteChunk to a ByteBuffer.\n\n See copyToBuffer(int, Buffer, int, int) for general documentation.\n\n:param srcOffset: (int) - The offset into this chunk to start copying from\n:param destBuffer: (java.nio.ByteBuffer) - The destination ByteBuffer\n:param destOffset: (int) - The absolute offset into destBuffer to start copying to\n:param length: (int) - The number of elements to copy",
+  "downcast": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any,\nATTR_DERIV extends ATTR>\n\n:param self: io.deephaven.chunk.WritableByteChunk<ATTR>\n:return: io.deephaven.chunk.WritableByteChunk<ATTR_DERIV>",
+  "get": ":param index: int\n:return: byte",
+  "getChunkType": ":return: (io.deephaven.chunk.ChunkType) The underlying chunk type",
+  "getEmptyChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.ByteChunk<ATTR>",
+  "isAlias": "*Overload 1*  \n  :param array: java.lang.Object\n  :return: (boolean) true iff this and array are aliases, that is they refer to the same underlying data\n  \n*Overload 2*  \n  :param chunk: io.deephaven.chunk.Chunk\n  :return: (boolean) true iff this and chunk are aliases, that is they refer to the same underlying data",
+  "makeArray": ":param capacity: int\n:return: byte[]",
+  "slice": "Make a new Chunk that represents either exactly the same view on the underlying data as this Chunk, or a subrange\n of that view. The view is defined as [0..size) (in the coordinate space of this Chunk).\n\n:param offset: (int) - Offset of the new Chunk, relative to this Chunk. 0   offset   this.size\n:param capacity: (int) - Capacity and initial size of the new Chunk. 0   capacity   this.size - offset.\n:return: (io.deephaven.chunk.ByteChunk<ByteChunk.ATTR>) The new Chunk. A new Chunk will always be returned, even if the Chunks represent the same view.",
+  "walk": "Note: Java generics information - <V extends io.deephaven.chunk.Chunk.Visitor<ByteChunk.ATTR>>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.chunk.ByteChunk",
+ "text": "Chunk implementation for byte data.",
+ "typeName": "class"
+}

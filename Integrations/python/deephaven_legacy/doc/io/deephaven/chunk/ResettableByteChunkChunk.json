@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.chunk.ResettableByteChunkChunk",
+ "methods": {
+  "makeResettableChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.ResettableByteChunkChunk<ATTR>",
+  "resetFromArray": "Reset the data and bounds of this chunk to a range or sub-range of the specified array.\n\n:param array: (java.lang.Object) - The array\n:param offset: (int) - The offset into array\n:param capacity: (int) - The capacity this should have after reset",
+  "resetFromChunk": "Reset the data and bounds of this chunk to a range or sub-range of the specified ChunkChunk.\n\n:param other: (io.deephaven.chunk.ChunkChunk<ResettableByteChunkChunk.ATTR>) - The other ChunkChunk\n:param offset: (int) - The offset into other\n:param capacity: (int) - The capacity this should have after reset",
+  "resetFromTypedArray": ":param data: io.deephaven.chunk.ByteChunk<ResettableByteChunkChunk.ATTR>[]\n:param offset: int\n:param capacity: int",
+  "resetFromTypedChunk": ":param other: io.deephaven.chunk.ByteChunkChunk<ResettableByteChunkChunk.ATTR>\n:param offset: int\n:param capacity: int",
+  "slice": ":param offset: int\n:param capacity: int\n:return: io.deephaven.chunk.ResettableByteChunkChunk<ResettableByteChunkChunk.ATTR>"
+ },
+ "path": "io.deephaven.chunk.ResettableByteChunkChunk",
+ "typeName": "class"
+}

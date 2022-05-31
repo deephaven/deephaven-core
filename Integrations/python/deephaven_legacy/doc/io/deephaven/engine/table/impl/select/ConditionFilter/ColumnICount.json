@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.ConditionFilter$ColumnICount",
+ "methods": {
+  "getChunk": ":param context: io.deephaven.engine.table.Context\n:param rowSequence: io.deephaven.engine.rowset.RowSequence\n:return: io.deephaven.chunk.Chunk"
+ },
+ "path": "io.deephaven.engine.table.impl.select.ConditionFilter.ColumnICount",
+ "typeName": "class"
+}

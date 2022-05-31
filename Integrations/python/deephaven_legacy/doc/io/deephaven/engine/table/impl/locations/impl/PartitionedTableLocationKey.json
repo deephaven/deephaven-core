@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.impl.PartitionedTableLocationKey",
+ "methods": {
+  "getPartitionKeys": "Get the set of available partition keys.\n\n:return: (java.util.Set<java.lang.String>) The set of available partition keys",
+  "getPartitionValue": "Lookup the value of one of the table partitions enclosing the location keyed by this.\n\n:param partitionKey: (java.lang.String) - The name of the partition\n:return: (PARTITION_VALUE_TYPE) The partition value"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.impl.PartitionedTableLocationKey",
+ "text": "Base ImmutableTableLocationKey implementation for table locations that may be enclosed by partitions.\n Sub-classes should be sure to invoke the partition-map comparator at higher priority than other comparisons when\n implementing Comparable.compareTo(Object), and to include the partitions in their Object.equals(Object)\n implementations.",
+ "typeName": "class"
+}

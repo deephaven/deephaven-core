@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.chunk.Attributes$EncodedObjects",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.chunk.Attributes.EncodedObjects",
- "text": "The chunk contains bytes of objects which need to be decoded.",
- "typeName": "interface"
-}

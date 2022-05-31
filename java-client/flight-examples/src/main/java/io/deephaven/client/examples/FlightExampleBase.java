@@ -4,11 +4,9 @@ import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.FlightSessionFactory;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import picocli.CommandLine.ArgGroup;
-import picocli.CommandLine.Option;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;

@@ -6,58 +6,59 @@ gradle.ext.buildStartTime = new Date()
 
 rootProject.name='Deephaven Community Core'
 
-String[] bins = ['configs', 'test-configs' ]
-
-String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'DB', 'Plot',
-        'CompilerTools', 'Generators',
-        'Integrations', 'ModelFarm', 'ClientSupport',
-        'BenchmarkSupport', 'DB-test', 'DbTypes', 'DbTypesImpl', 'Parquet',
-        'Kafka', 'grpc-api', 'table-api', 'qst']
+String[] mods = [
+        'Util',
+        'Numerics',
+        'TableLogger',
+        'Plot',
+        'CompilerTools',
+        'Generators',
+        'Integrations',
+        'ModelFarm',
+        'ClientSupport',
+        'BenchmarkSupport',
+        'python-engine-test',
+        'server',
+        'table-api',
+        'qst'
+]
 
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.
 String[] webMods = [
+        'web',
         'web-client-api', // compiled javascript api client
         'web-client-ide', // IDE-only additions to open-api javascript client
         'web-client-ui', // React IDE client app
-        'web-jupyter-grid', // React Jupyter grid client app
         'web-shared-beans', // shared data types and common interfaces
         'web-client-backplane', // shared data types and common interfaces
         'open-api-lang-parser', // a javacc generated general-purpose language parser.
         'open-api-lang-tools', // language processing tools that we want to be accessible to many modules
         'open-api-shared-fu', // general purpose tools and dtos for both client and server
-        'open-api-shared-rpc', // contains the open api rpc interfaces, and all relevant dependencies
         'open-api-shared-ide', // ide-related dto and configuration objects for both client and server
 ]
 
-Map<String, String> pyMods = [
-        'deephaven-jpy' : 'py/jpy',
-        'deephaven-jpy-config': 'py/jpy-config',
-        'deephaven-jpy-ext': 'py/jpy-ext',
-        'jpy-integration': 'py/jpy-integration',
-        'py36': 'py/py36',
-        'py37': 'py/py37',
-        'sphinx': 'sphinx',
-        'pyclient': 'pyclient',
-]
-
 // Include our modules
-include bins
 include webMods
 include mods
 
-pyMods.each {
-    name, dir ->
-        include(name)
-        project(":$name").projectDir = file(dir)
-}
+include 'bom'
 
-include 'fishconfig-local'
+include(':configs')
+project(':configs').projectDir = file('props/configs')
+
+include(':test-configs')
+project(':test-configs').projectDir = file('props/test-configs')
+
+include 'combined-javadoc'
+
+include 'grpc-java:grpc-servlet-jakarta'
+include 'grpc-java:grpc-servlet-websocket-jakarta'
+
 include 'DHProcess'
 include 'proto:proto-backplane-grpc'
 include 'proto:proto-backplane-grpc-flight'
 include 'proto:raw-js-openapi'
-include 'protoc'
 
 // logger
 include 'log-factory'
@@ -98,23 +99,20 @@ project(':log-example-stream').projectDir = file('log-factory/examples/example-s
 include(':log-example-file')
 project(':log-example-file').projectDir = file('log-factory/examples/example-file')
 
-include(':grpc-api-server-docker')
-project(':grpc-api-server-docker').projectDir = file('grpc-api/server/docker')
+include(':server-test')
+project(':server-test').projectDir = file('server/test')
 
-include(':grpc-api-server-native')
-project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
+include(':server-netty')
+project(':server-netty').projectDir = file('server/netty')
 
-include(':grpc-api-client-console')
-project(':grpc-api-client-console').projectDir = file('grpc-api-client/console')
+include(':server-netty-app')
+project(':server-netty-app').projectDir = file('server/netty-app')
 
-include(':extensions-barrage')
-project(':extensions-barrage').projectDir = file('extensions/barrage')
+include(':server-jetty')
+project(':server-jetty').projectDir = file('server/jetty')
 
-include(':extensions-classgraph')
-project(':extensions-classgraph').projectDir = file('extensions/classgraph')
-
-include(':extensions-suanshu')
-project(':extensions-suanshu').projectDir = file('extensions/suanshu')
+include(':server-jetty-app')
+project(':server-jetty-app').projectDir = file('server/jetty-app')
 
 include(':Base')
 
@@ -136,9 +134,94 @@ include(':Container')
 
 include(':ParquetHadoop')
 
+include(':codegen')
+
+include(':replication-util')
+project(':replication-util').projectDir = file('replication/util')
+
+include(':replication-static')
+project(':replication-static').projectDir = file('replication/static')
+
+include(':replication-reflective')
+project(':replication-reflective').projectDir = file('replication/reflective')
+
+include(':engine-chunk')
+project(':engine-chunk').projectDir = file('engine/chunk')
+
+include(':engine-vector')
+project(':engine-vector').projectDir = file('engine/vector')
+
+include(':engine-stringset')
+project(':engine-stringset').projectDir = file('engine/stringset')
+
+include(':engine-function')
+project(':engine-function').projectDir = file('engine/function')
+
+include(':engine-time')
+project(':engine-time').projectDir = file('engine/time')
+
+include(':engine-tuple')
+project(':engine-tuple').projectDir = file('engine/tuple')
+
+include(':engine-updategraph')
+project(':engine-updategraph').projectDir = file('engine/updategraph')
+
+include(':engine-api')
+project(':engine-api').projectDir = file('engine/api')
+
+include(':engine-rowset')
+project(':engine-rowset').projectDir = file('engine/rowset')
+
+include(':engine-base')
+project(':engine-base').projectDir = file('engine/base')
+
+include(':engine-tuplesource')
+project(':engine-tuplesource').projectDir = file('engine/tuplesource')
+
+include(':engine-table')
+project(':engine-table').projectDir = file('engine/table')
+
+include(':engine-benchmark')
+project(':engine-benchmark').projectDir = file('engine/benchmark')
+
+include(':extensions-csv')
+project(':extensions-csv').projectDir = file('extensions/csv')
+
+include(':extensions-kafka')
+project(':extensions-kafka').projectDir = file('extensions/kafka')
+
+include(':extensions-parquet-base')
+project(':extensions-parquet-base').projectDir = file('extensions/parquet/base')
+
+include(':extensions-parquet-table')
+project(':extensions-parquet-table').projectDir = file('extensions/parquet/table')
+
+include(':extensions-barrage')
+project(':extensions-barrage').projectDir = file('extensions/barrage')
+
+include(':extensions-classgraph')
+project(':extensions-classgraph').projectDir = file('extensions/classgraph')
+
+include(':extensions-jdbc')
+project(':extensions-jdbc').projectDir = file('extensions/jdbc')
+
+include(':extensions-suanshu')
+project(':extensions-suanshu').projectDir = file('extensions/suanshu')
+
+include(':plugin')
+
+include(':plugin-dagger')
+project(':plugin-dagger').projectDir = file('plugin/dagger')
+
+include(':plugin-figure')
+project(':plugin-figure').projectDir = file('plugin/figure')
+
 include(':envoy')
 
 include(':grpc-proxy')
+
+include(':uri')
+project(':uri').projectDir = file('java-client/uri')
 
 include(':java-client-session')
 project(':java-client-session').projectDir = file('java-client/session')
@@ -167,12 +250,68 @@ project(':java-client-flight-examples').projectDir = file('java-client/flight-ex
 include(':java-client-barrage-examples')
 project(':java-client-barrage-examples').projectDir = file('java-client/barrage-examples')
 
+include(':java-client-example-utilities')
+project(':java-client-example-utilities').projectDir = file('java-client/example-utilities')
+
 include(':qst:graphviz')
 
 include(':application-mode')
 
 include(':util-immutables')
 project(':util-immutables').projectDir = file('Util/util-immutables')
+
+include(':deephaven-jpy')
+project(':deephaven-jpy').projectDir = file('py/jpy')
+
+include(':deephaven-jpy-config')
+project(':deephaven-jpy-config').projectDir = file('py/jpy-config')
+
+include(':deephaven-jpy-ext')
+project(':deephaven-jpy-ext').projectDir = file('py/jpy-ext')
+
+include(':jpy-integration')
+project(':jpy-integration').projectDir = file('py/jpy-integration')
+
+include(':py-client')
+project(':py-client').projectDir = file('py/client')
+
+include(':py-server')
+project(':py-server').projectDir = file('py/server')
+
+include(':deephaven-legacy-wheel')
+project(':deephaven-legacy-wheel').projectDir = file('py/deephaven-legacy-wheel')
+
+include(':sphinx')
+project(':sphinx').buildFileName = 'sphinx.gradle'
+
+include(':docker-runtime-base')
+project(':docker-runtime-base').projectDir = file('docker/runtime-base')
+
+include(':docker-server')
+project(':docker-server').projectDir = file('docker/server')
+
+include(':docker-web')
+project(':docker-web').projectDir = file('docker/web')
+
+include(':docker-web-plugin-packager')
+project(':docker-web-plugin-packager').projectDir = file('docker/web-plugin-packager')
+
+include(':docker-server-slim')
+project(':docker-server-slim').projectDir = file('docker/server-slim')
+
+include(':hotspot')
+project(':hotspot').projectDir = file('hotspot')
+
+include(':hotspot-impl')
+project(':hotspot-impl').projectDir = file('hotspot-impl')
+
+file("${rootDir}/docker/registry").list().each { name ->
+    if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
+        include(":docker-${name}")
+        project(":docker-${name}").projectDir = file("${rootDir}/docker/registry/${name}")
+    }
+}
+
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {
@@ -191,22 +330,6 @@ mods.each {
     source.projectDir = sourceDir
 }
 
-// "bin modules" are projects with a single directory filled with static resources we put into jars.
-// In order to use "separate modules per sourceset" option in IntelliJ, we must give these projects
-// a different directory than their resource directory to use as the project root.
-// We'll use "$rootDir/projects/bin" for the project root of the :bin project,
-// with $rootDir/bin as the resource root, so IntelliJ doesn't blow up (a resource dir cannot contain project root dir).
-bins.each {
-    String mod->
-    def source = project(":$mod")
-    File sourceDir = new File(root, 'projects')
-    source.projectDir = new File(sourceDir, mod)
-    File buildscript = new File(source.projectDir, "${mod}.gradle".toString())
-    if (buildscript.file) {
-        source.buildFileName = buildscript.name
-    }
-}
-
 Closure configureWebModule = {
     ProjectDescriptor p ->
         p.projectDir = file(p.name.replace('web-', "web$File.separator").replace('open-api-', "open-api$File.separator"))
@@ -215,16 +338,6 @@ Closure configureWebModule = {
 }
 
 webMods.collect({ project(":$it")}).each configureWebModule
-
-Closure configurePyModule = {
-    ProjectDescriptor p, String path ->
-        File f = new File("$p.projectDir", "${p.name}.gradle")
-        if (f.exists()) {
-            p.buildFileName = "${p.name}.gradle".toString()
-        }
-}
-
-pyMods.forEach {String k, String v -> configurePyModule(project(":$k"), v) }
 
 buildCache {
     local {

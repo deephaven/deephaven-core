@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker$IntervalLevelDetails",
+ "methods": {
+  "getIntervalDurationNanos": ":return: long",
+  "getIntervalEndTimeMillis": ":return: long",
+  "getIntervalStartTimeMillis": ":return: long"
+ },
+ "path": "io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.IntervalLevelDetails",
+ "text": "Holder for logging details that are the same for every Entry in an interval",
+ "typeName": "class"
+}

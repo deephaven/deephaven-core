@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.util.ExpressionFactory",
+ "methods": {
+  "getExpression": ":param expression: java.lang.String\n:param matcher: java.util.regex.Matcher\n:param args: java.lang.Object...\n:return: ExpressionFactory.TYPE",
+  "getPattern": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.util.ExpressionFactory",
+ "typeName": "interface"
+}

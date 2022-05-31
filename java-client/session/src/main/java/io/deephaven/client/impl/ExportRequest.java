@@ -1,8 +1,8 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.qst.table.TableSpec;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;

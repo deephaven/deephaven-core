@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.MatchPairFactory",
+ "methods": {
+  "getExpression": ":param match: java.lang.String\n:return: io.deephaven.engine.table.MatchPair",
+  "getExpressions": "*Overload 1*  \n  :param matches: java.lang.String...\n  :return: io.deephaven.engine.table.MatchPair[]\n  \n*Overload 2*  \n  :param matches: java.util.Collection<java.lang.String>\n  :return: io.deephaven.engine.table.MatchPair[]"
+ },
+ "path": "io.deephaven.engine.table.impl.select.MatchPairFactory",
+ "text": "Parses strings of the form \"Column\" or \"Column1=Column2\" into a MatchPair (or array of them).",
+ "typeName": "class"
+}

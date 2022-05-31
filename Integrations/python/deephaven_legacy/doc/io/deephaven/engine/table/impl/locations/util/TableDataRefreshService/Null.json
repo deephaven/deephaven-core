@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.util.TableDataRefreshService$Null",
+ "methods": {
+  "scheduleTableLocationProviderRefresh": "Schedule run for an AbstractTableLocationProvider.\n\n:param tableLocationProvider: (io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider) - The table location provider\n:return: (io.deephaven.engine.table.impl.locations.util.TableDataRefreshService.CancellableSubscriptionToken) A subscription token to be used for matching, which also supports cancellation",
+  "scheduleTableLocationRefresh": "Schedule run for an AbstractTableLocation.\n\n:param tableLocation: (io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation) - The table location\n:return: (io.deephaven.engine.table.impl.locations.util.TableDataRefreshService.CancellableSubscriptionToken) A subscription token to be used for matching, which also supports cancellation",
+  "submitOneTimeAsyncTask": "Submit a one-time task to be run asynchronously.\n\n:param task: (java.lang.Runnable) - The task to run"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.util.TableDataRefreshService.Null",
+ "text": "\"Null\" instance, intended for unit tests and other standalone scenarios.",
+ "typeName": "class"
+}

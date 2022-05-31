@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.plot.datasets.xy.XYDataSeriesFunctionImpl",
+ "methods": {
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.plot.AxesImpl) - new axes.\n:return: (io.deephaven.plot.datasets.xy.XYDataSeriesFunctionImpl) copy of the series on a different set of axes.",
+  "funcNPoints": "Sets the number of data points in this dataset.\n\n:param npoints: (int) - number of points\n:return: (io.deephaven.plot.datasets.xy.XYDataSeriesFunctionImpl) this data series with the specified number of points.",
+  "funcNPointsInternal": "Sets the number of data points in this dataset if the user did not set funcNPoints.\n\n:param npoints: (int) - number of points\n:return: (io.deephaven.plot.datasets.xy.XYDataSeriesFunctionImpl) this data series with the specified number of points.",
+  "funcRange": "Sets the data range for this series.\n\n*Overload 1*  \n  :param xmin: (double) - range minimum\n  :param xmax: (double) - range maximum\n  :return: (io.deephaven.plot.datasets.xy.XYDataSeriesFunctionImpl) this data series with the new range\n  \n*Overload 2*  \n  :param xmin: (double) - range minimum\n  :param xmax: (double) - range maximum\n  :param npoints: (int) - number of data points\n  :return: (io.deephaven.plot.datasets.xy.XYDataSeriesFunctionImpl) this data series with the new range",
+  "funcRangeInternal": "**Incompatible overloads text - text from the first overload:**\n\nSets the data range and number of points for this series if the user did not set funcRange.\n\n*Overload 1*  \n  :param xmin: (double) - range minimum\n  :param xmax: (double) - range maximum\n  :return: (io.deephaven.plot.datasets.xy.XYDataSeriesFunctionImpl) this data series with the new range\n  \n*Overload 2*  \n  :param xmin: (double) - range minimum\n  :param xmax: (double) - range maximum\n  :param npoints: (int) - number of data points\n  :return: (io.deephaven.plot.datasets.xy.XYDataSeriesFunctionImpl) this data series with the new range",
+  "getX": "Gets the x value of the data point at index i.\n\n:param i: (int) - index\n:return: (double) x value of this data point at index i",
+  "getY": "Gets the y value of the data point at index i.\n\n:param i: (int) - index\n:return: (double) x value of this data point at index i",
+  "invokeRecompute": "Invokes a funcRangeInternal if xmin or xmax has changed.\n\n:param xmin: double\n:param xmax: double\n:param name: java.lang.String\n:param sessionId: int",
+  "size": "Gets the size of this data set.\n\n:return: (int) size of this data set"
+ },
+ "path": "io.deephaven.plot.datasets.xy.XYDataSeriesFunctionImpl",
+ "text": "XYDataSeriesInternal based on a function.\n\n By default, this calculates at least 200 data points inside the plots existing range. The number of points can be\n increased for a finer grained plot, or decreased if less resolution is needed. The points are recomputed as the\n Chart's x-range changes.",
+ "typeName": "class"
+}

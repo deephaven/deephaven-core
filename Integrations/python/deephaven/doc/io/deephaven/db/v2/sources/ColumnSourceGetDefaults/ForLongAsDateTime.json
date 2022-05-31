@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.ColumnSourceGetDefaults$ForLongAsDateTime",
- "methods": {
-  "get": ":param index: long\n:return: io.deephaven.db.tables.utils.DBDateTime"
- },
- "path": "io.deephaven.db.v2.sources.ColumnSourceGetDefaults.ForLongAsDateTime",
- "text": "Default interface for DBDateTime ColumnSource implementations.",
- "typeName": "interface"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.util.scripts.ScriptPathLoaderState",
- "methods": {
-  "toAbbreviatedString": ":return: java.lang.String"
- },
- "path": "io.deephaven.db.util.scripts.ScriptPathLoaderState",
- "text": "Tagging interface to be used to transmit ScriptPathLoader states.",
- "typeName": "interface"
-}

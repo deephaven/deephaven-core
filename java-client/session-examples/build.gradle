@@ -1,12 +1,14 @@
 plugins {
-    id 'java'
     id 'application'
+    id 'io.deephaven.project.register'
 }
 
 dependencies {
     implementation project(':java-client-session-dagger')
+    implementation project(':java-client-example-utilities')
 
-    implementation 'info.picocli:picocli:4.6.1'
+    Classpaths.inheritGrpcPlatform(project)
+    runtimeOnly 'io.grpc:grpc-netty'
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
@@ -21,86 +23,30 @@ test {
 
 startScripts.enabled = false
 
-task createHammerSessionsScripts(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.HammerSessions'
-    applicationName = 'hammer-sessions'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createPublishTablesScripts(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.PublishTables'
-    applicationName = 'publish-tables'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createWriteQstsScripts(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.WriteExampleQsts'
-    applicationName = 'write-qsts'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication',
-            '-Xss16M' ]
-}
-
-task createTableManagerScripts(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.TableManagerExample'
-    applicationName = 'table-manager'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-
-task createExecuteScriptScripts(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.ExecuteScript'
-    applicationName = 'execute-script'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createExecuteCodeScripts(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.ExecuteCode'
-    applicationName = 'execute-code'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
+def createApplication = { String name, String mainClass ->
+    project.tasks.register("create-${name}", CreateStartScripts) {script ->
+        script.mainClass.set mainClass
+        script.applicationName = name
+        script.outputDir = project.layout.buildDirectory.dir(name).get().asFile
+        script.classpath = startScripts.classpath
+        script.defaultJvmOpts = [
+                '-server',
+                '-XX:+UseG1GC',
+                '-XX:MaxGCPauseMillis=100',
+                '-XX:+UseStringDeduplication' ]
+    }
 }
 
 applicationDistribution.into('bin') {
-    from(createHammerSessionsScripts)
-    from(createPublishTablesScripts)
-    from(createWriteQstsScripts)
-    from(createTableManagerScripts)
-    from(createExecuteScriptScripts)
-    from(createExecuteCodeScripts)
+    from(createApplication('hammer-sessions', 'io.deephaven.client.examples.HammerSessions'))
+    from(createApplication('publish-tables', 'io.deephaven.client.examples.PublishTables'))
+    from(createApplication('write-qsts', 'io.deephaven.client.examples.WriteExampleQsts'))
+    from(createApplication('table-manager', 'io.deephaven.client.examples.TableManagerExample'))
+    from(createApplication('execute-script', 'io.deephaven.client.examples.ExecuteScript'))
+    from(createApplication('execute-code', 'io.deephaven.client.examples.ExecuteCode'))
+    from(createApplication('subscribe-fields', 'io.deephaven.client.examples.SubscribeToFields'))
+    from(createApplication('connect-check', 'io.deephaven.client.examples.ConnectCheck'))
+    from(createApplication('fetch-object', 'io.deephaven.client.examples.FetchObject'))
     fileMode = 0755
 }
+

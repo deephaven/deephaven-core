@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.LongAbortableConsumer",
- "methods": {
-  "accept": "Provides a value to this consumer.  A false return value indicates that the application\n providing values to this consumer should not invoke it again.\n\n:param v: (long) - the value\n:return: (boolean) false if don't want any more values after this one, true otherwise."
- },
- "path": "io.deephaven.db.v2.utils.LongAbortableConsumer",
- "text": "Note this is similar to java.util.function.LongPredicate; we don't use that\n since it could create confusion as for intended semantics for use.",
- "typeName": "interface"
-}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.LongSparseArraySource",
+ "methods": {
+  "set": ":param key: long\n:param value: java.lang.Long"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.LongSparseArraySource",
+ "text": "Simple array source for Long.",
+ "typeName": "class"
+}

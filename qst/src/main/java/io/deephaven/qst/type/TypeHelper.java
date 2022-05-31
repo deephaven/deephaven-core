@@ -2,7 +2,6 @@ package io.deephaven.qst.type;
 
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,9 +36,9 @@ class TypeHelper {
                 dbPrimitiveArrayTypes());
     }
 
-    static Stream<DbPrimitiveArrayType<?, ?>> dbPrimitiveArrayTypes() {
+    static Stream<PrimitiveVectorType<?, ?>> dbPrimitiveArrayTypes() {
         try {
-            return DbPrimitiveArrayType.types().stream();
+            return PrimitiveVectorType.types().stream();
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException
                 | IllegalAccessException e) {
             return Stream.empty();
@@ -145,15 +144,15 @@ class TypeHelper {
                 }
 
                 @Override
-                public void visit(DbPrimitiveArrayType<?, ?> dbArrayPrimitiveType) {
-                    addUnchecked(dbArrayPrimitiveType.clazz(), dbArrayPrimitiveType);
+                public void visit(PrimitiveVectorType<?, ?> vectorPrimitiveType) {
+                    addUnchecked(vectorPrimitiveType.clazz(), vectorPrimitiveType);
                 }
 
                 @Override
-                public void visit(DbGenericArrayType<?, ?> dbGenericArrayType) {
-                    // The db array type by itself is not specific enough
+                public void visit(GenericVectorType<?, ?> genericVectorType) {
+                    // The engine array type by itself is not specific enough
                     throw new IllegalStateException(
-                            "Should not be adding DbGenericArrayType as static mapping");
+                            "Should not be adding GenericVectorType as static mapping");
                 }
             });
         }

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.ShiftData",
+ "methods": {
+  "applyDataShift": ":param shiftCallback: io.deephaven.engine.table.impl.util.ShiftData.ShiftCallback",
+  "getAddedPos": ":return: io.deephaven.engine.rowset.RowSet"
+ },
+ "path": "io.deephaven.engine.table.impl.util.ShiftData",
+ "typeName": "class"
+}

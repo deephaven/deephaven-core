@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.MemoryTableLoggers",
+ "methods": {
+  "getInstance": ":return: io.deephaven.engine.table.impl.util.MemoryTableLoggers",
+  "getProcessInfo": ":return: io.deephaven.process.ProcessInfo",
+  "getProcessInfoQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable",
+  "getProcessMetricsQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable",
+  "getQoplLogger": ":return: io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger",
+  "getQoplLoggerQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable",
+  "getQplLogger": ":return: io.deephaven.engine.tablelogger.QueryPerformanceLogLogger",
+  "getQplLoggerQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable",
+  "maybeStartStatsCollection": ":return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.util.MemoryTableLoggers",
+ "typeName": "class"
+}

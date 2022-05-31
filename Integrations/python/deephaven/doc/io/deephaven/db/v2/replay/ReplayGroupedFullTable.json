@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.replay.ReplayGroupedFullTable",
- "methods": {
-  "refresh": "Refresh this LiveTable."
- },
- "path": "io.deephaven.db.v2.replay.ReplayGroupedFullTable",
- "typeName": "class"
-}

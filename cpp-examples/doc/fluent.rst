@@ -282,15 +282,15 @@ objects. These operations have the semantics described in the Deephaven document
 DateTimeExpression
 ^^^^^^^^^^^^^^^^^^
 
-`DBDateTime terminals` are:
+`DateTime terminals` are:
 
 * C++ string literals, variables or string expressions in Deephaven
-  :cpp:class:`StringExpression <deephaven::client::highlevel::DBDateTime>`
+  :cpp:class:`StringExpression <deephaven::client::highlevel::DateTime>`
   format, e.g. ``"2020-03-01T09:45:00.123456 NY"``.
 * Client-side variables/expressions of type
-  :cpp:class:`StringExpression <deephaven::client::highlevel::DBDateTime>`
+  :cpp:class:`StringExpression <deephaven::client::highlevel::DateTime>`
 
-:cpp:class:`StringExpression <deephaven::client::highlevel::DBDateTime>`
+:cpp:class:`StringExpression <deephaven::client::highlevel::DateTime>`
 is the standard Deephaven Date/Time type, representing nanoseconds since January 1, 1970 UTC.
 
 .. _BooleanExpression:

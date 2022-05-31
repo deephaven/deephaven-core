@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionLong",
+ "methods": {
+  "createNull": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param pageMask: long\n:return: io.deephaven.engine.table.impl.sources.regioned.ColumnRegionLong<ATTR>",
+  "getChunkType": "Get the most suitable ChunkType for use with this ChunkSource.\n\n:return: (io.deephaven.chunk.ChunkType) The ChunkType",
+  "getLong": "Get a single long from this region.\n\n*Overload 1*  \n  :param elementIndex: (long) - Element row key in the table's address space\n  :return: (long) The long value at the specified element row key\n  \n*Overload 2*  \n  :param context: (io.deephaven.engine.table.ChunkSource.FillContext) - A RegionContextHolder to enable resource caching where suitable, with current\n                       region index pointing to this region\n  :param elementIndex: (long) - Element row key in the table's address space\n  :return: (long) The long value at the specified element row key"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionLong",
+ "text": "Column region interface for regions that support fetching primitive longs.",
+ "typeName": "interface"
+}

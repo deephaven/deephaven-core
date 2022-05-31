@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.by.ssmpercentile.IntPercentileTypeMedianHelper",
- "methods": {
-  "setResult": ":param ssmLo: io.deephaven.db.v2.ssms.SegmentedSortedMultiSet\n:param ssmHi: io.deephaven.db.v2.ssms.SegmentedSortedMultiSet\n:param destination: long\n:return: boolean",
-  "setResultNull": ":param destination: long\n:return: boolean"
- },
- "path": "io.deephaven.db.v2.by.ssmpercentile.IntPercentileTypeMedianHelper",
- "typeName": "class"
-}

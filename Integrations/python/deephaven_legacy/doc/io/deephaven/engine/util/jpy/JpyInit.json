@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.util.jpy.JpyInit",
+ "methods": {
+  "init": "First, checks Configuration.getInstance() for any explicit jpy properties. If none are set, it will\n source the configuration from JpyConfigFromSubprocess.fromSubprocess(Duration).\n\n*Overload 1*  \n  :param log: (io.deephaven.io.logger.Logger) - the log\n  \n*Overload 2*  \n  :param log: io.deephaven.io.logger.Logger\n  :param jpyConfig: io.deephaven.jpy.JpyConfigExt"
+ },
+ "path": "io.deephaven.engine.util.jpy.JpyInit",
+ "text": "Initializes Jpy.\n\n A guarded initialization via JpyConfigExt.startPython()",
+ "typeName": "class"
+}

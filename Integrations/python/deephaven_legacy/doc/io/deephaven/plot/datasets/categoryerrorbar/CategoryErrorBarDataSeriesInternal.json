@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesInternal",
+ "methods": {
+  "drawYError": ":return: boolean"
+ },
+ "path": "io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesInternal",
+ "text": "An CategoryDataSeriesInternal with error bars.",
+ "typeName": "interface"
+}

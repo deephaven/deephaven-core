@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.plot.datasets.AbstractDataSeries",
+ "methods": {
+  "chart": "Gets the chart on which this data will be plotted.\n\n:return: (io.deephaven.plot.ChartImpl) chart on which this data will be plotted",
+  "getErrorBarColor": "Gets the color of the error bars.\n\n:return: (io.deephaven.gui.color.Paint) error bar color",
+  "getGradientVisible": "Gets whether the bar gradient is visible.\n\n:return: (boolean) whether the bar gradient is visible",
+  "getLineColor": "Gets the line color.\n\n:return: (io.deephaven.gui.color.Paint) line color",
+  "getLineStyle": "Gets the line style.\n\n:return: (io.deephaven.plot.LineStyle) line style",
+  "getLinesVisible": "Gets whether lines are visible.\n\n:return: (java.lang.Boolean) whether lines are visible",
+  "getPointLabelFormat": "Gets the point label format.\n\n:return: (java.lang.String) point label format",
+  "getPointsVisible": "Gets whether points are visible.\n\n:return: (java.lang.Boolean) whether points are visible",
+  "getXToolTipPattern": "Gets the tooltip format for x-values.\n\n:return: (java.lang.String) x-value tooltip format",
+  "getYToolTipPattern": "Gets the tooltip format for y-values.\n\n:return: (java.lang.String) y-value tooltip format"
+ },
+ "path": "io.deephaven.plot.datasets.AbstractDataSeries",
+ "text": "Base class for DataSeriesInternal.",
+ "typeName": "class"
+}

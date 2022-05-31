@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfillers.FloatChunkFiller",
+ "methods": {
+  "fillByIndices": "*Overload 1*  \n  :param src: io.deephaven.engine.table.ElementSource\n  :param keys: io.deephaven.engine.rowset.RowSequence\n  :param dest: io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>\n  \n*Overload 2*  \n  :param src: io.deephaven.engine.table.ElementSource\n  :param chunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>\n  :param dest: io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>",
+  "fillByRanges": ":param src: io.deephaven.engine.table.ElementSource\n:param keys: io.deephaven.engine.rowset.RowSequence\n:param dest: io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>",
+  "fillFromSingleValue": "This doesn't really belong here but we are putting it here for now for implementation convenience. In the long\n run we may want to generalize this functionality, or, at the very least, move it to some \"ColumnSourceFiller\"\n class.\n\n:param src: io.deephaven.engine.table.ElementSource\n:param srcKey: long\n:param dest: io.deephaven.engine.table.WritableColumnSource\n:param destKeys: io.deephaven.engine.rowset.RowSequence",
+  "fillPrevByIndices": "*Overload 1*  \n  :param src: io.deephaven.engine.table.ElementSource\n  :param keys: io.deephaven.engine.rowset.RowSequence\n  :param dest: io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>\n  \n*Overload 2*  \n  :param src: io.deephaven.engine.table.ElementSource\n  :param chunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>\n  :param dest: io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>",
+  "fillPrevByRanges": ":param src: io.deephaven.engine.table.ElementSource\n:param keys: io.deephaven.engine.rowset.RowSequence\n:param dest: io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfillers.FloatChunkFiller",
+ "typeName": "class"
+}

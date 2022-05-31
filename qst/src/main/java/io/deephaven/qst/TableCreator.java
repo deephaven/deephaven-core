@@ -3,6 +3,7 @@ package io.deephaven.qst;
 import io.deephaven.api.TableOperations;
 import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.EmptyTable;
+import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
@@ -85,6 +86,14 @@ public interface TableCreator<TABLE> {
      * @return the ticket table
      */
     TABLE of(TicketTable ticketTable);
+
+    /**
+     * Creates an input table.
+     *
+     * @param inputTable the input table specifications
+     * @return the input table
+     */
+    TABLE of(InputTable inputTable);
 
     /**
      * Merges the given {@code tables}.

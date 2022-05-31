@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.util.type.ArrayTypeUtils$ObjectArrayAccessor",
+ "methods": {
+  "copyArray": ":param sourceArray: java.lang.Object\n:param pos: int\n:param length: int",
+  "fill": ":param from: int\n:param to: int\n:param value: ArrayTypeUtils.ObjectArrayAccessor.T",
+  "get": ":param index: int\n:return: ArrayTypeUtils.ObjectArrayAccessor.T",
+  "getArray": ":return: java.lang.Object",
+  "length": ":return: int",
+  "set": ":param index: int\n:param value: ArrayTypeUtils.ObjectArrayAccessor.T"
+ },
+ "path": "io.deephaven.util.type.ArrayTypeUtils.ObjectArrayAccessor",
+ "typeName": "class"
+}

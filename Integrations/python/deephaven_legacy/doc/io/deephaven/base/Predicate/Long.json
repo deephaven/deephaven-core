@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Predicate$Long",
+ "methods": {
+  "call": ":param arg: long\n:return: boolean"
+ },
+ "path": "io.deephaven.base.Predicate.Long",
+ "typeName": "interface"
+}

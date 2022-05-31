@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.select.chunkfilters.ByteRangeComparator",
- "methods": {
-  "makeByteFilter": ":param lower: byte\n:param upper: byte\n:param lowerInclusive: boolean\n:param upperInclusive: boolean\n:return: io.deephaven.db.v2.select.ChunkFilter.ByteChunkFilter"
- },
- "path": "io.deephaven.db.v2.select.chunkfilters.ByteRangeComparator",
- "typeName": "class"
-}

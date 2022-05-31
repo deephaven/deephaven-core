@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults$ForFloat",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults.ForFloat",
- "text": "Default interface for immutable float ColumnSource implementations.",
- "typeName": "interface"
-}

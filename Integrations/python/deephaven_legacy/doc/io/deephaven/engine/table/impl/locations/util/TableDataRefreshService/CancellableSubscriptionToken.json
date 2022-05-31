@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.util.TableDataRefreshService$CancellableSubscriptionToken",
+ "methods": {
+  "cancel": "Cancel this subscription."
+ },
+ "path": "io.deephaven.engine.table.impl.locations.util.TableDataRefreshService.CancellableSubscriptionToken",
+ "text": "A subscription token interface with cancellation support.",
+ "typeName": "interface"
+}

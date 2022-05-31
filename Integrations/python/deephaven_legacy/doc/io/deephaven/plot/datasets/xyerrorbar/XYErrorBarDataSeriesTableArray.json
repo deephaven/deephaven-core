@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesTableArray",
+ "methods": {
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.plot.AxesImpl) - new axes.\n:return: (io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesTableArray) copy of the series on a different set of axes."
+ },
+ "path": "io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesTableArray",
+ "typeName": "class"
+}

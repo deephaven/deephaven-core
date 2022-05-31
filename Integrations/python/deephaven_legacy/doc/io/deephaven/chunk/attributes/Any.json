@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.chunk.attributes.Any",
+ "methods": {},
+ "path": "io.deephaven.chunk.attributes.Any",
+ "text": "Base Chunk attribute.",
+ "typeName": "interface"
+}

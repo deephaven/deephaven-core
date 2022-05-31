@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.client.impl.BarrageSnapshot$Factory",
+ "methods": {
+  "snapshot": "**Incompatible overloads text - text from the first overload:**\n\nSources a barrage snapshot from a TableHandle. A new reference of the handle is created. The original\n tableHandle is still owned by the caller.\n\n*Overload 1*  \n  :param tableSpec: (io.deephaven.qst.table.TableSpec) - the tableSpec to resolve and then snapshot\n  :param options: (io.deephaven.extensions.barrage.BarrageSnapshotOptions) - the options configuring the details of this snapshot\n  :return: (io.deephaven.client.impl.BarrageSnapshot) the BarrageSnapshot\n  \n*Overload 2*  \n  :param tableHandle: (io.deephaven.client.impl.TableHandle) - the table handle to snapshot\n  :param options: (io.deephaven.extensions.barrage.BarrageSnapshotOptions) - the options configuring the details of this snapshot\n  :return: (io.deephaven.client.impl.BarrageSnapshot) the BarrageSnapshot"
+ },
+ "path": "io.deephaven.client.impl.BarrageSnapshot.Factory",
+ "typeName": "interface"
+}

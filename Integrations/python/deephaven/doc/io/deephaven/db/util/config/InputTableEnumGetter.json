@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.util.config.InputTableEnumGetter",
- "methods": {
-  "getEnumsForColumn": ":param columnName: java.lang.String\n:return: java.lang.Object[]"
- },
- "path": "io.deephaven.db.util.config.InputTableEnumGetter",
- "text": "Accessor interface for enumeration constants for an input table column.",
- "typeName": "interface"
-}

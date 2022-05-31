@@ -19,7 +19,6 @@ public class PropertySaverTest {
     // Add this to IntelliJ Unit Test Run Configuration to mimic gradle test
     //
     // -ea -DConfiguration.rootFile=dh-tests.prop -Dworkspace=./tmp/workspace -Ddevroot=.
-    // -Dlog4j.configuration=log4j.teamcity.xml
     // -ea is for JVM to honor assertions
     //
     // CommandLine:

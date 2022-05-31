@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.arrow.ArrowFlightUtil$DoExchangeMarshaller$Factory",
+ "methods": {
+  "openExchange": ":param session: io.deephaven.server.session.SessionState\n:param observer: io.grpc.stub.StreamObserver<java.io.InputStream>\n:return: io.deephaven.server.arrow.ArrowFlightUtil.DoExchangeMarshaller"
+ },
+ "path": "io.deephaven.server.arrow.ArrowFlightUtil.DoExchangeMarshaller.Factory",
+ "typeName": "interface"
+}

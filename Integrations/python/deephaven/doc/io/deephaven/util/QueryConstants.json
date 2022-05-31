@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.QueryConstants",
- "methods": {},
- "path": "io.deephaven.util.QueryConstants",
- "text": "Constants for null and infinite values within the Deephaven engine.",
- "typeName": "class"
-}

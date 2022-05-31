@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.InstrumentedShiftAwareListener$Notification",
- "methods": {},
- "path": "io.deephaven.db.v2.InstrumentedShiftAwareListener.Notification",
- "text": "Delivers the desired update, bracketed by performance instrumentation.",
- "typeName": "class"
-}

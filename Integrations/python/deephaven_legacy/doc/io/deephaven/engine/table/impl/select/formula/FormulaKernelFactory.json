@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory",
+ "methods": {
+  "createInstance": ":param arrays: io.deephaven.vector.Vector<?>[]\n:param params: io.deephaven.engine.table.lang.QueryScopeParam<?>[]\n:return: io.deephaven.engine.table.impl.select.formula.FormulaKernel"
+ },
+ "path": "io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory",
+ "typeName": "interface"
+}

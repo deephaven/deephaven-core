@@ -34,7 +34,7 @@ public class SomeJavaClassOutTest extends PythonTest {
     public void setUp() {
         out = IdentityOut.create(getCreateModule(), SJCOut.class);
         pyOut = IdentityOut.create(getCreateModule(), PyObjectIdentityOut.class);
-        ref = ReferenceCounting.create();
+        ref = ReferenceCounting.create(getCreateModule());
         jpy = JpyModule.create();
         // jpy.setFlags(EnumSet.of(Flag.ALL));
     }

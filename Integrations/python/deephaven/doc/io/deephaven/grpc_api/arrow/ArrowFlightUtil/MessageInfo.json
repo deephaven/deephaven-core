@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.arrow.ArrowFlightUtil$MessageInfo",
- "methods": {},
- "path": "io.deephaven.grpc_api.arrow.ArrowFlightUtil.MessageInfo",
- "typeName": "class"
-}

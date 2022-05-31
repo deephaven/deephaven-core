@@ -9,4 +9,4 @@ Deephaven python modules.
 
 
     ./code/jpy
-    ./code/deephaven
+    ./code/deephaven_legacy

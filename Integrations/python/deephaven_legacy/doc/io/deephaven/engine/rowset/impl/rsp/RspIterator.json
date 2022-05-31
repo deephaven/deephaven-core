@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.rsp.RspIterator",
+ "methods": {
+  "copyTo": "*Overload 1*  \n  :param vs: long[]\n  :param offset: int\n  :param max: int\n  :return: int\n  \n*Overload 2*  \n  :param chunk: io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>\n  :param offset: int\n  :param max: int\n  :return: int",
+  "forEachLong": ":param lc: io.deephaven.util.datastructures.LongAbortableConsumer\n:return: boolean",
+  "hasNext": ":return: boolean",
+  "nextLong": ":return: long"
+ },
+ "path": "io.deephaven.engine.rowset.impl.rsp.RspIterator",
+ "typeName": "class"
+}

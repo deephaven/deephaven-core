@@ -1,0 +1,23 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
+configurations {
+    js
+}
+
+dependencies {
+    js project(path: ':web-client-ui', configuration: 'js')
+    js project(path: ':web-client-ide', configuration: 'js')
+}
+
+/**
+ * Attach the static js/html/css to the main jar so that can be served from jetty
+ */
+tasks.named(JavaPlugin.JAR_TASK_NAME, Jar, { jar ->
+    jar.from(configurations.js)
+})
+
+artifacts {
+    js layout.buildDirectory.dir('empty')
+}

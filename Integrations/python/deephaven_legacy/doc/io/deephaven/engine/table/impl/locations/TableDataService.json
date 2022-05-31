@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.TableDataService",
+ "methods": {
+  "describe": "Get a detailed description string.\n\n:return: (java.lang.String) A description string",
+  "getName": "Get an optional name for this service, or null if no name is defined.\n\n:return: (java.lang.String) The service name, or null",
+  "getTableLocationProvider": "Request a TableLocationProvider from this service.\n\n:param tableKey: (io.deephaven.engine.table.impl.locations.TableKey) - The TableKey to lookup\n:return: (io.deephaven.engine.table.impl.locations.TableLocationProvider) A TableLocationProvider for the specified TableKey",
+  "reset": "**Incompatible overloads text - text from the first overload:**\n\nForget all state for subsequent requests for a single table.\n\n*Overload 1*  \n  \n  \n*Overload 2*  \n  :param tableKey: (io.deephaven.engine.table.impl.locations.TableKey) - TableKey to forget state for"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.TableDataService",
+ "text": "Service responsible for TableLocation discovery.",
+ "typeName": "interface"
+}

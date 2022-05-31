@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel",
+ "methods": {
+  "expandDuplicates": "Expands entries values from chunkToExpand in-place, using keyRunLengths to determine how many copies. The\n keyRunLengths chunk is parallel to the original chunkToExpand; it is never modified.\n\n:param expandedSize: (int) - the sum of all entries in keyRunLengths\n:param chunkToExpand: (io.deephaven.chunk.WritableChunk<? extendsio.deephaven.chunk.attributes.Any>) - the values to expand in-place (this writable chunk must have capacity >= expandedSize)\n:param keyRunLengths: (io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkLengths>) - the key run-lengths parallel to chunkToExpand",
+  "makeDupExpand": ":param chunkType: io.deephaven.chunk.ChunkType\n:return: io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel"
+ },
+ "path": "io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel",
+ "typeName": "interface"
+}

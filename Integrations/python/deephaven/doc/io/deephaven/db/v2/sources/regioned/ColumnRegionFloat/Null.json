@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionFloat$Null",
- "methods": {
-  "getFloat": "Get a single float from this region.\n\n:param elementIndex: (long) - Element (float) index in the table's address space\n:return: (float) The float value at the specified element (float) index"
- },
- "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionFloat.Null",
- "typeName": "class"
-}

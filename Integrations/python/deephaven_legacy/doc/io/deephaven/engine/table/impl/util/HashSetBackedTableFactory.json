@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.HashSetBackedTableFactory",
+ "methods": {
+  "create": "Create a ticking table based on a setGenerator.\n\n:param setGenerator: (io.deephaven.base.Function.Nullary<java.util.HashSet<io.deephaven.datastructures.util.SmartKey>>) - a function that returns a HashSet of SmartKeys, each SmartKey is a row in the output.\n:param refreshIntervalMs: (int) - how often to run the table, if less than or equal to 0 the table does not tick.\n:param colNames: (java.lang.String...) - the column names for the output table, must match the number of elements in each SmartKey.\n:return: (io.deephaven.engine.table.Table) a table representing the Set returned by the setGenerator"
+ },
+ "path": "io.deephaven.engine.table.impl.util.HashSetBackedTableFactory",
+ "text": "An abstract table that represents a hashset of smart keys. Since we are representing a set, there we are not defining\n an order to our output. Whatever order the table happens to end up in, is fine.\n\n The table will run by regenerating the full hashset (using the setGenerator Function passed in); and then comparing\n that to the existing hash set.",
+ "typeName": "class"
+}

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.BaseTable$ListenerImpl",
+ "methods": {
+  "canExecute": ":param step: long\n:return: boolean",
+  "onFailureInternal": ":param originalException: java.lang.Throwable\n:param sourceEntry: io.deephaven.engine.table.TableListener.Entry",
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates."
+ },
+ "path": "io.deephaven.engine.table.impl.BaseTable.ListenerImpl",
+ "text": "Simplest appropriate InstrumentedShiftAwareListener implementation for BaseTable and descendants. It's expected\n that most use-cases will require overriding onUpdate() - the default implementation simply passes rowSet updates\n through to the dependent's listeners.",
+ "typeName": "class"
+}

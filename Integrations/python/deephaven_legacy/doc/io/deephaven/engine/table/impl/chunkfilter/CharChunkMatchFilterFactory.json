@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfilter.CharChunkMatchFilterFactory",
+ "methods": {
+  "makeFilter": ":param invertMatch: boolean\n:param values: char...\n:return: io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.CharChunkFilter"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfilter.CharChunkMatchFilterFactory",
+ "text": "Creates chunk filters for char values.\n\n The strategy is that for one, two, or three values we have specialized\n classes that will do the appropriate simple equality check.\n\n For more values, we use a trove set and check contains for each value in the chunk.",
+ "typeName": "class"
+}

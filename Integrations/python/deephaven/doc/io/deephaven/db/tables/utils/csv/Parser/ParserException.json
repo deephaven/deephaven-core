@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.tables.utils.csv.Parser$ParserException",
- "methods": {
-  "value": ":return: java.lang.String"
- },
- "path": "io.deephaven.db.tables.utils.csv.Parser.ParserException",
- "text": "A parser exception.",
- "typeName": "class"
-}

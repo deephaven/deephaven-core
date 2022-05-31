@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.server.appmode.AppModeModule",
+ "methods": {
+  "bindApplicationServiceImpl": ":param applicationService: io.deephaven.server.appmode.ApplicationServiceGrpcImpl\n:return: io.grpc.BindableService",
+  "bindApplicationStateListener": ":param applicationService: io.deephaven.server.appmode.ApplicationServiceGrpcImpl\n:return: io.deephaven.appmode.ApplicationState.Listener",
+  "bindApplicationStates": ":param resolver: io.deephaven.server.appmode.ApplicationTicketResolver\n:return: io.deephaven.server.appmode.ApplicationStates",
+  "bindApplicationTicketResolver": ":param resolver: io.deephaven.server.appmode.ApplicationTicketResolver\n:return: io.deephaven.server.session.TicketResolver",
+  "bindScriptSessionListener": ":param applicationService: io.deephaven.server.appmode.ApplicationServiceGrpcImpl\n:return: io.deephaven.engine.util.ScriptSession.Listener"
+ },
+ "path": "io.deephaven.server.appmode.AppModeModule",
+ "typeName": "interface"
+}

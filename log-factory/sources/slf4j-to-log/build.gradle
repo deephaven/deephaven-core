@@ -1,8 +1,10 @@
 plugins {
 	id 'java-library'
+	id 'io.deephaven.project.register'
 }
 
 dependencies {
 	implementation project(':log-factory')
 	Classpaths.inheritSlf4j(project, 'slf4j-api', 'compileOnly') // users must provide their own api hooks
+	Classpaths.inheritAutoService(project)
 }

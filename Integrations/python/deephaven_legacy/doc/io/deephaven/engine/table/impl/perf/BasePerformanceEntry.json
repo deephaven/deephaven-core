@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.engine.table.impl.perf.BasePerformanceEntry",
+ "methods": {
+  "accumulate": ":param entry: io.deephaven.engine.table.impl.perf.BasePerformanceEntry",
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "getIntervalAllocatedBytes": ":return: long",
+  "getIntervalCpuNanos": ":return: long",
+  "getIntervalPoolAllocatedBytes": ":return: long",
+  "getIntervalUsageNanos": ":return: long",
+  "getIntervalUserCpuNanos": ":return: long"
+ },
+ "path": "io.deephaven.engine.table.impl.perf.BasePerformanceEntry",
+ "text": "A smaller entry that simply records usage data, meant for aggregating into the larger entry.",
+ "typeName": "class"
+}

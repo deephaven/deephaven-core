@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource",
+ "methods": {
+  "exposesChunkedBackingStore": "**Incompatible overloads text - text from the first overload:**\n\nDoes this column source provide a chunked exposed backing store?\n\n*Overload 1*  \n  :param cs: (io.deephaven.engine.table.ColumnSource<?>) - the column source to test\n  :return: (boolean) true if the column source exposes a chunked backing store\n  \n*Overload 2*  \n  :return: (boolean) true if this column source provides a chunked backing store, false otherwise",
+  "resetWritableChunkToBackingStore": "Resets the given chunk to provide a write-through reference to our backing array.\n \n Note: This is unsafe to use if previous tracking has been enabled!\n\n:param chunk: (io.deephaven.chunk.ResettableWritableChunk<?>) - the writable chunk to reset to our backing array.\n:param position: (long) - position that we require\n:return: (long) the first position addressable by the chunk",
+  "resetWritableChunkToBackingStoreSlice": "Resets the given chunk to provide a write-through reference to our backing array.\n \n Note: This is unsafe to use if previous tracking has been enabled!\n\n:param chunk: (io.deephaven.chunk.ResettableWritableChunk<?>) - the writable chunk to reset to a slice of our backing array.\n:param position: (long) - position of the first value in the returned chunk\n:return: (long) the capacity of the returned chunk"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource",
+ "text": "Writable sources that use simple arrays to back contiguous regions may implement this interface, allowing callers to\n reach directly into their storage in order to fill them without the need for additional array copies.",
+ "typeName": "interface"
+}

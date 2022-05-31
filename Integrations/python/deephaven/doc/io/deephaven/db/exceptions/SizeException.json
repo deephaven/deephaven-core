@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.exceptions.SizeException",
- "methods": {},
- "path": "io.deephaven.db.exceptions.SizeException",
- "text": "Unchecked exception thrown when Index, Table or\n DataColumn operations are invoked (directly, or indirectly as data updates) that\n cannot be completed correctly due to size constraints on the underlying data structures.\n \n For example, the current implementations of RedirectionIndex, required for\n Table.sort(io.deephaven.db.tables.SortPair...), can only support an 32-bit integer number of keys.",
- "typeName": "class"
-}

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.time.DateTimeUtils$Result",
+ "methods": {
+  "getConvertedFormula": ":return: java.lang.String",
+  "getInstanceVariablesString": ":return: java.lang.String",
+  "getNewVariables": ":return: java.util.HashMap<java.lang.String,java.lang.Class<?>>"
+ },
+ "path": "io.deephaven.time.DateTimeUtils.Result",
+ "text": "A container object for the result of DateTimeUtils.convertExpression(String), which includes the converted formula\n String, a String of instance variable declarations, and a map describing the names and types of these instance\n variables.",
+ "typeName": "class"
+}

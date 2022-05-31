@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet$RemoveContext",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet.RemoveContext",
+ "typeName": "class"
+}

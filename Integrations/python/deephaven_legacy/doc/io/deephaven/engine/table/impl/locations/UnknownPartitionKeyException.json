@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.UnknownPartitionKeyException",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.locations.UnknownPartitionKeyException",
+ "text": "Exception thrown when a requested partition value cannot be found because the partition key is unknown.",
+ "typeName": "class"
+}

@@ -1,0 +1,81 @@
+plugins {
+  id 'com.bmuschko.docker-remote-api'
+  id 'io.deephaven.project.register'
+}
+
+evaluationDependsOn ':docker-runtime-base' // runtimeBase
+
+configurations {
+  testCompile.extendsFrom fishIoTest
+}
+
+test {
+  exclude "**/*" // make sure IntelliJ doesn't assume this test task is the one to use to run classes.
+  onlyIf { false } // don't run tests, we'll set up ones for each python env.
+}
+
+dependencies {
+  testCompile project(':CompilerTools'),
+          project(':engine-table'),
+          TestTools.projectDependency(project, 'engine-table')
+
+  // This allows us to access jpy-integration javaToPython code around setting up python
+  // for testing purposes
+  testCompile project.dependencies.project([
+      path: ':jpy-integration',
+      configuration: 'javaToPythonRuntime'
+  ])
+
+  // needed for access to dh-tests.prop
+  testRuntime project(path: ':test-configs'),
+          project(path: ':configs'),
+          project(':Integrations'),
+          project(':engine-table')
+
+  // todo: IDO-322 (io.deephaven.numerics.suanshu.SuanShuIntegration)
+  testRuntime project(':Numerics')
+  testRuntime project(':extensions-suanshu')
+}
+
+def gradleWrapper = tasks.register("dockerGradleInit", Wrapper.class) { wrapper ->
+  wrapper.scriptFile "${buildDir}/template-project/gradlew"
+  wrapper.jarFile "${buildDir}/template-project/gradle/wrapper/gradle-wrapper.jar"
+  wrapper.gradleVersion '7.2'
+}
+
+tasks.getByName('check').dependsOn Docker.registerDockerTask(project, 'test-in-docker') {
+  copyIn {
+    dependsOn gradleWrapper
+    from ("${buildDir}/template-project") {
+      into 'project'
+    }
+    from(project.file('src/test/build.gradle.template')) {
+      into 'project'
+      rename { file -> 'build.gradle' }
+    }
+    from (sourceSets.test.runtimeClasspath) {
+      into 'classpath'
+    }
+    from (sourceSets.test.output.getClassesDirs()) {
+      into 'classes'
+    }
+  }
+  parentContainers = [project(':docker-runtime-base').tasks.findByName('buildDocker')] // deephaven/runtime-base
+  dockerfile {
+    // base image with default java, python, wheels
+    from 'deephaven/runtime-base:local-build'
+
+    // set up the project
+    copyFile 'project', '/project'
+    workingDir '/project'
+    // run once with no actual classes, so that gradle is preinstalled and cached
+    runCommand '/project/gradlew --version'
+    copyFile 'classpath', '/classpath'
+    copyFile 'classes', '/classes'
+  }
+  entrypoint = ['/project/gradlew', 'test', '--info']
+  containerOutPath = '/project/build/test-results/test/'
+  copyOut {
+    into "${buildDir}/test-results/test-in-docker"
+  }
+}

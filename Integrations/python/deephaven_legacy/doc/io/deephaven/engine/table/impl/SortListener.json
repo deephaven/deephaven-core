@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.SortListener",
+ "methods": {
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates."
+ },
+ "path": "io.deephaven.engine.table.impl.SortListener",
+ "typeName": "class"
+}

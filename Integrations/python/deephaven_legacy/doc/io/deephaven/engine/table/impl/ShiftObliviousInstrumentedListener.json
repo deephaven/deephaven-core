@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener",
+ "methods": {
+  "getNotification": "Creates a notification for the table changes.\n\n:param added: (io.deephaven.engine.rowset.RowSet) - rows added\n:param removed: (io.deephaven.engine.rowset.RowSet) - rows removed\n:param modified: (io.deephaven.engine.rowset.RowSet) - rows modified\n:return: (io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener.Notification) table change notification",
+  "setInitialImage": "Sets the RowSet for the initial data.\n\n:param initialImage: (io.deephaven.engine.rowset.RowSet) - initial image"
+ },
+ "path": "io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener",
+ "typeName": "class"
+}

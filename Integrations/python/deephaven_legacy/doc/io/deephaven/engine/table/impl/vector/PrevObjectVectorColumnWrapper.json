@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.table.impl.vector.PrevObjectVectorColumnWrapper",
+ "methods": {
+  "get": ":param i: long\n:return: PrevObjectVectorColumnWrapper.T",
+  "getComponentType": ":return: java.lang.Class<PrevObjectVectorColumnWrapper.T>",
+  "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: io.deephaven.vector.ObjectVector<PrevObjectVectorColumnWrapper.T>",
+  "size": "The size of this data structure.\n\n:return: (long) The size",
+  "subVector": ":param fromIndexInclusive: long\n:param toIndexExclusive: long\n:return: io.deephaven.vector.ObjectVector<PrevObjectVectorColumnWrapper.T>",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.ObjectVector<PrevObjectVectorColumnWrapper.T>",
+  "toArray": "*Overload 1*  \n  :return: PrevObjectVectorColumnWrapper.T[]\n  \n*Overload 2*  \n  :param shouldBeNullIfOutofBounds: boolean\n  :param maxSize: int\n  :return: PrevObjectVectorColumnWrapper.T[]"
+ },
+ "path": "io.deephaven.engine.table.impl.vector.PrevObjectVectorColumnWrapper",
+ "typeName": "class"
+}

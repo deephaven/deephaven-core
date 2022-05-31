@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.Series",
+ "methods": {},
+ "path": "io.deephaven.plot.Series",
+ "text": "Base series that all data series inherit from.",
+ "typeName": "interface"
+}

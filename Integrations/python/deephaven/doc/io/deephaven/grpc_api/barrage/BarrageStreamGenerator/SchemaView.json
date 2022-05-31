@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator$SchemaView",
- "methods": {
-  "forEachStream": ":param visitor: java.util.function.Consumer<java.io.InputStream>"
- },
- "path": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator.SchemaView",
- "typeName": "class"
-}

@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys",
+ "text": "Attribute that specifies that a Chunk contains positions within another Chunk that represents a dictionary of\n values.",
+ "typeName": "interface"
+}

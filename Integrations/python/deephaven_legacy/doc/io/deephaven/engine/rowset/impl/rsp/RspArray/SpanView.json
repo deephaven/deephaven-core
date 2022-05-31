@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.rsp.RspArray$SpanView",
+ "methods": {
+  "getContainer": ":return: io.deephaven.engine.rowset.impl.rsp.container.Container",
+  "getFullBlockSpanLen": ":return: long",
+  "getKey": ":return: long",
+  "getSingletonSpanValue": ":return: long",
+  "getSpanInfo": ":return: long",
+  "init": "*Overload 1*  \n  :param arr: io.deephaven.engine.rowset.impl.rsp.RspArray<?>\n  :param arrIdx: int\n  \n*Overload 2*  \n  :param arr: io.deephaven.engine.rowset.impl.rsp.RspArray<?>\n  :param arrIdx: int\n  :param spanInfo: long\n  :param span: java.lang.Object",
+  "isFullBlockSpan": ":return: boolean",
+  "isSingletonSpan": ":return: boolean"
+ },
+ "path": "io.deephaven.engine.rowset.impl.rsp.RspArray.SpanView",
+ "typeName": "class"
+}

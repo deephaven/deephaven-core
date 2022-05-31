@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.SharedContext",
+ "methods": {
+  "close": "Close implementation which invokes SafeCloseable.close() on all values registered via\n getOrCreate(Key, Supplier), and then forgets all registered values.\n\n \n Sub-classes should be sure to call super.close().",
+  "getOrCreate": "Get or create the ResettableContext value for a SharedContext.Key key. If the value is computed, the result\n value will be associated with the key until the SharedContext is close()ed.\n\n:param key: (K) - The key\n:param valueFactory: (java.util.function.Supplier<V>) - The value factory, to be invoked if key is not found within this\n        SharedContext\n:return: (V) The value associated with key, possibly newly-created",
+  "makeSharedContext": "Construct a new, empty shared context.\n\n:return: io.deephaven.engine.table.SharedContext",
+  "reset": "Reset implementation which invokes ResettableContext.reset() on all values registered via\n getOrCreate(Key, Supplier).\n\n \n Sub-classes should be sure to call super.reset()."
+ },
+ "path": "io.deephaven.engine.table.SharedContext",
+ "text": "ResettableContext used as a holder for other ResettableContexts that may be shared across components.\n\n \n This serves as a place to cache re-usable computations or resources, but must be reset() for every step of\n an operation (usually a chunk of ordered keys).\n\n \n For example, redirected data sources that share the same mappings may cache a chunk of redirections for the most\n recent chunk of row keys they have been handed.\n\n \n It's important that \"nested\" usage follows the convention of creating a new instance and passing that instance to\n context creation methods. Said nested instance should be (or be attached to) an entry in the parent context, and\n reset/closed when said entry is. It should always be safe to skip nested SharedContext creation if all sources that\n may be using a given instance will be passed the same ordered keys.",
+ "typeName": "class"
+}

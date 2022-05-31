@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionLong$Null",
- "methods": {
-  "getLong": "Get a single long from this region.\n\n:param elementIndex: (long) - Element (long) index in the table's address space\n:return: (long) The long value at the specified element (long) index"
- },
- "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionLong.Null",
- "typeName": "class"
-}

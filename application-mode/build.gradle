@@ -1,11 +1,12 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.register'
 }
 
 dependencies {
     Classpaths.inheritImmutables(project)
 
-    // we'll rely on the DB to provide the necessary groovy dependencies
+    // we'll rely on the engine-table module to provide the necessary groovy dependencies
     Classpaths.inheritGroovy(project, 'groovy', 'compileOnly')
 
     api project(':proto:proto-backplane-grpc')

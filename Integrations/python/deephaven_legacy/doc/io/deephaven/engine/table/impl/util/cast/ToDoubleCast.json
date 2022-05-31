@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.cast.ToDoubleCast",
+ "methods": {
+  "cast": "Note: Java generics information - <T>\n\n:param extend: io.deephaven.chunk.Chunk<?\n:return: io.deephaven.chunk.DoubleChunk<? extends T>",
+  "makeToDoubleCast": "Create a kernel that casts the values in an input chunk to an double.\n\n:param type: (io.deephaven.chunk.ChunkType) - the type of chunk, must be an integral primitive type\n:param size: (int) - the size of the largest chunk that can be cast by this kernel\n:return: (io.deephaven.engine.table.impl.util.cast.ToDoubleCast) a ToIntFunctor that can be applied to chunks of type in order to produce a DoubleChunk of values"
+ },
+ "path": "io.deephaven.engine.table.impl.util.cast.ToDoubleCast",
+ "typeName": "interface"
+}

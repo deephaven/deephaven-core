@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.EvenlyDividedTableMap",
- "methods": {},
- "path": "io.deephaven.db.v2.EvenlyDividedTableMap",
- "text": "Divide a table evenly into slices and put the slices into a TableMap.\n\n This enables the use of parallelism on a table without the full cost of a byExternal operation.",
- "typeName": "class"
-}

@@ -2,7 +2,6 @@ package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TableSpecAdapter;
 
@@ -29,8 +28,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @see TableHandleManager
  */
-public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle>
-        implements Closeable, HasTicket {
+public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle> implements Closeable, HasExportId {
 
     public interface Lifecycle {
         void onInit(TableHandle handle);
@@ -139,13 +137,23 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     }
 
     @Override
-    public Ticket ticket() {
-        return export.ticket();
+    public ExportId exportId() {
+        return export.exportId();
+    }
+
+    @Override
+    public TicketId ticketId() {
+        return export.ticketId();
+    }
+
+    @Override
+    public PathId pathId() {
+        return export.pathId();
     }
 
     public TableHandle newRef() {
         TableHandle handle = new TableHandle(table(), lifecycle);
-        handle.init(export.newReference(new ResponseAdapter()));
+        handle.init(export.newReference(handle.responseAdapter()));
         return handle;
     }
 
@@ -249,7 +257,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     }
 
     private ExportRequest exportRequest() {
-        return ExportRequest.of(table(), new ResponseAdapter());
+        return ExportRequest.of(table(), responseAdapter());
     }
 
     /**
@@ -289,6 +297,10 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
                 lifecycle.onRelease(this);
             }
         }
+    }
+
+    private ResponseAdapter responseAdapter() {
+        return new ResponseAdapter();
     }
 
     private class ResponseAdapter implements Listener {

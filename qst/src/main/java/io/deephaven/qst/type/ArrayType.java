@@ -6,8 +6,8 @@ package io.deephaven.qst.type;
  * @param <T> the array type representing {@code this}
  * @param <ComponentType> the component type
  * @see NativeArrayType
- * @see DbPrimitiveArrayType
- * @see DbGenericArrayType
+ * @see PrimitiveVectorType
+ * @see GenericVectorType
  */
 public interface ArrayType<T, ComponentType> extends GenericType<T> {
 
@@ -23,8 +23,8 @@ public interface ArrayType<T, ComponentType> extends GenericType<T> {
     interface Visitor {
         void visit(NativeArrayType<?, ?> nativeArrayType);
 
-        void visit(DbPrimitiveArrayType<?, ?> dbArrayPrimitiveType);
+        void visit(PrimitiveVectorType<?, ?> vectorPrimitiveType);
 
-        void visit(DbGenericArrayType<?, ?> dbGenericArrayType);
+        void visit(GenericVectorType<?, ?> genericVectorType);
     }
 }

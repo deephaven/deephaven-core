@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.proto.flight.util.ArrowHelper",
+ "methods": {
+  "descriptor": "*Overload 1*  \n  :param impl: org.apache.arrow.flight.impl.Flight.FlightDescriptor\n  :return: org.apache.arrow.flight.FlightDescriptor\n  \n*Overload 2*  \n  :param path: java.util.List<java.lang.String>\n  :return: org.apache.arrow.flight.FlightDescriptor",
+  "ticket": ":param ticket: org.apache.arrow.flight.impl.Flight.Ticket\n:return: org.apache.arrow.flight.Ticket"
+ },
+ "path": "io.deephaven.proto.flight.util.ArrowHelper",
+ "typeName": "class"
+}

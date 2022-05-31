@@ -164,12 +164,10 @@ public class ActiveTableBinding implements HasTableState<ClientTableState> {
                 if (table.getBinding() == sub) {
                     // we were the head of the table, go back and find a good node
                     sub.rollback();
-                    sub.setRollback(null);
                 }
+                sub.setRollback(null);
             }, () -> {
-                if (table.isAlive() && table.getBinding() == sub) {
-                    sub.setRollback(null);
-                }
+                sub.setRollback(null);
             });
         }
         return sub;

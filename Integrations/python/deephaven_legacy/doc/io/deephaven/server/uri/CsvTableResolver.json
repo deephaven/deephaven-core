@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.server.uri.CsvTableResolver",
+ "methods": {
+  "get": ":return: io.deephaven.server.uri.CsvTableResolver",
+  "isResolvable": "Returns true if the resolver can resolve the uri.\n\n:param uri: (java.net.URI) - the uri\n:return: (boolean) true if this resolver can resolve uri",
+  "read": ":param uri: java.net.URI\n:return: io.deephaven.engine.table.Table",
+  "resolve": "Resolve uri into an object.\n\n:param uri: (java.net.URI) - the URI\n:return: (io.deephaven.engine.table.Table) the object",
+  "schemes": "The supported schemes.\n\n:return: (java.util.Set<java.lang.String>) the schemes"
+ },
+ "path": "io.deephaven.server.uri.CsvTableResolver",
+ "text": "The csv table resolver is able to resolve CSV for schemes csv+http, http+csv, csv+https,\n https+csv, csv+file, file+csv, and csv into tables.\n\n \n For example, csv+https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv.\n\n \n For more advanced use cases, see CsvTools.",
+ "typeName": "class"
+}

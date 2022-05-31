@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.updategraph.NotificationQueue",
+ "methods": {
+  "addNotification": "Add a notification for this NotificationQueue to deliver (by invoking its run() method). Note that\n implementations may have restrictions as to how and when this method may be used for non-terminal notifications,\n e.g. by only supporting notification queuing from threads that can guarantee they are part of an update cycle.\n\n:param notification: (io.deephaven.engine.updategraph.NotificationQueue.Notification) - The notification to add",
+  "maybeAddNotification": "Add a notification for this NotificationQueue to deliver (by invoking its run() method), iff the delivery step is\n the current step and the update cycle for that step is still in process. This is only supported for non-terminal\n notifications.\n\n:param notification: (io.deephaven.engine.updategraph.NotificationQueue.Notification) - The notification to add\n:param deliveryStep: (long) - The step to deliver this notification on\n:return: boolean"
+ },
+ "path": "io.deephaven.engine.updategraph.NotificationQueue",
+ "text": "Interface for notification of update graph node changes.",
+ "typeName": "interface"
+}

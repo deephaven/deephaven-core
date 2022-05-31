@@ -1,0 +1,24 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Engine RowSets: Data structures for working with row keys'
+
+dependencies {
+    api project(':engine-chunk')
+
+    implementation project(':Container'),
+            project(':engine-updategraph')
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    testImplementation 'junit:junit:4.13.2'
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+TestTools.addEngineOutOfBandTest(project)

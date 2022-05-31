@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.InMemoryColumnSource",
+ "methods": {
+  "getImmutableMemoryColumnSource": "**Incompatible overloads text - text from the first overload:**\n\nCreate an immutable in-memory column source that is capable of holding longSize elements.\n\n Note, that the backing array may not be allocated after this call; you still must call\n WritableColumnSource.ensureCapacity(long).\n\n*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :param longSize: (long) - the minimum required size that the column source must support\n  :param dataType: (java.lang.Class<T>) - the data type of the resultant column source\n  :param componentType: (java.lang.Class<?>) - the component type for column sources of arrays or Vectors\n  :return: (io.deephaven.engine.table.WritableColumnSource<T>) an immutable WritableColumnSource\n  \n*Overload 2*  \n  :param dataArray: (java.lang.Object) - The array to turn into a ColumnSource\n  :return: (io.deephaven.engine.table.ColumnSource<?>) An Immutable ColumnSource that directly wraps the input array.\n  \n*Overload 3*  \n  Note: Java generics information - <T>\n  \n  :param dataArray: (java.lang.Object) - The array to turn into a ColumnSource\n  :param dataType: (java.lang.Class<T>) - the data type of the resultant column source\n  :param componentType: (java.lang.Class<?>) - the component type for column sources of arrays or Vectors\n  :return: (io.deephaven.engine.table.ColumnSource<T>) An Immutable ColumnSource that directly wraps the input array.",
+  "makeImmutable2DSource": "Note: Java generics information - <T>\n\n:param dataType: java.lang.Class<T>\n:param componentType: java.lang.Class<?>\n:return: io.deephaven.engine.table.WritableColumnSource<T>",
+  "makeImmutableSource": "Note: Java generics information - <T>\n\n:param dataType: java.lang.Class<T>\n:param componentType: java.lang.Class<?>\n:return: io.deephaven.engine.table.WritableColumnSource<T>"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.InMemoryColumnSource",
+ "text": "This is a marker interface for a column source that is entirely within memory; therefore select operations should not\n try to copy it into memory a second time.",
+ "typeName": "interface"
+}

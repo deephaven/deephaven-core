@@ -1,6 +1,6 @@
 package io.deephaven.benchmarking.generator;
 
-import io.deephaven.db.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 
 /**
  * A {@link ColumnGenerator} that can be used to generate a typed number column

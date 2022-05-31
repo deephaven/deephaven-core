@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.DeferredColumnRegionInt",
+ "methods": {
+  "getInt": "Get a single int from this region.\n\n*Overload 1*  \n  :param elementIndex: (long) - Element row key in the table's address space\n  :return: (int) The int value at the specified element row key\n  \n*Overload 2*  \n  :param context: (io.deephaven.engine.table.ChunkSource.FillContext) - A RegionContextHolder to enable resource caching where suitable, with current\n                       region index pointing to this region\n  :param elementIndex: (long) - Element row key in the table's address space\n  :return: (int) The int value at the specified element row key"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.DeferredColumnRegionInt",
+ "text": "ColumnRegionInt implementation for deferred regions, i.e. regions that will be properly constructed on\n first access.",
+ "typeName": "class"
+}

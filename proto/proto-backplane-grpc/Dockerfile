@@ -1,4 +1,4 @@
-FROM deephaven/protoc:local-build
+FROM deephaven/protoc-base:local-build
 
 COPY src/main/proto /includes
 
@@ -18,9 +18,11 @@ RUN set -eux; \
     /dependencies/BrowserFlight.proto \
     /includes/deephaven/proto/ticket.proto \
     /includes/deephaven/proto/console.proto \
+    /includes/deephaven/proto/object.proto \
     /includes/deephaven/proto/session.proto \
     /includes/deephaven/proto/table.proto \
-    /includes/deephaven/proto/application.proto; \
+    /includes/deephaven/proto/application.proto \
+    /includes/deephaven/proto/inputtable.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-ts=/usr/src/app/node_modules/.bin/protoc-gen-ts \
     --js_out=import_style=commonjs:/generated/js \
@@ -31,15 +33,19 @@ RUN set -eux; \
     /dependencies/Flight.proto \
     /includes/deephaven/proto/ticket.proto \
     /includes/deephaven/proto/console.proto \
+    /includes/deephaven/proto/object.proto \
     /includes/deephaven/proto/session.proto \
     /includes/deephaven/proto/table.proto \
-    /includes/deephaven/proto/application.proto; \
+    /includes/deephaven/proto/application.proto \
+    /includes/deephaven/proto/inputtable.proto; \
   python3 -m grpc_tools.protoc \
     --grpc_python_out=/generated/python \
     --python_out=/generated/python \
     -I/includes \
     /includes/deephaven/proto/ticket.proto \
     /includes/deephaven/proto/console.proto \
+    /includes/deephaven/proto/object.proto \
     /includes/deephaven/proto/session.proto \
     /includes/deephaven/proto/table.proto \
-    /includes/deephaven/proto/application.proto;
+    /includes/deephaven/proto/application.proto \
+    /includes/deephaven/proto/inputtable.proto;

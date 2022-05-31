@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkattributes.EncodedObjects",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.chunkattributes.EncodedObjects",
+ "text": "Attribute that specifies that a Chunk contains the bytes of objects which need to be decoded.",
+ "typeName": "interface"
+}

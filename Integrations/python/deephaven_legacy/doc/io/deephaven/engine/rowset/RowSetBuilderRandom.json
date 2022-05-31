@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.rowset.RowSetBuilderRandom",
+ "methods": {
+  "addKey": ":param rowKey: long",
+  "addKeys": ":param it: java.util.PrimitiveIterator.OfLong",
+  "addOrderedRowKeysChunk": "*Overload 1*  \n  :param chunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>\n  \n*Overload 2*  \n  :param chunk: io.deephaven.chunk.IntChunk<? extendsio.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>",
+  "addRange": ":param firstRowKey: long\n:param lastRowKey: long",
+  "addRanges": ":param it: io.deephaven.util.datastructures.LongRangeIterator",
+  "addRowKeysChunk": "*Overload 1*  \n  :param chunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>\n  \n*Overload 2*  \n  :param chunk: io.deephaven.chunk.IntChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>",
+  "addRowSet": ":param rowSet: io.deephaven.engine.rowset.RowSet",
+  "build": ":return: io.deephaven.engine.rowset.WritableRowSet"
+ },
+ "path": "io.deephaven.engine.rowset.RowSetBuilderRandom",
+ "text": "Builder interface for RowSet construction in arbitrary order.",
+ "typeName": "interface"
+}

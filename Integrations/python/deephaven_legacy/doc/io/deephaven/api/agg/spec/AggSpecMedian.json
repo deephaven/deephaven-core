@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecMedian",
+ "methods": {
+  "averageEvenlyDivided": "Whether to average the highest low-bucket value and lowest high-bucket value, when the low-bucket and high-bucket\n are of equal size. Only applies to numeric types.\n\n:return: (boolean) Whether to average the two result candidates for evenly-divided input sets of numeric types",
+  "description": "Get a simple description for this AggSpec.\n\n:return: (java.lang.String) The description",
+  "of": "*Overload 1*  \n  :return: io.deephaven.api.agg.spec.AggSpecMedian\n  \n*Overload 2*  \n  :param averageEvenlyDivided: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecMedian",
+  "walk": "Glue method to deliver this AggSpec to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecMedian",
+ "text": "Specifier for a column aggregation that produces a median value from the input column's values for each group. Only\n works for numeric or Comparable input types.",
+ "typeName": "class"
+}

@@ -1,0 +1,48 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+
+import "deephaven/proto/ticket.proto";
+
+/*
+ * This service offers methods to manipulate the contents of input tables.
+ */
+service InputTableService {
+    /*
+     * Adds the provided table to the specified input table. The new data to add must only have
+     * columns (name, types, and order) which match the given input table's columns.
+     */
+    rpc AddTableToInputTable(AddTableRequest) returns (AddTableResponse) {}
+
+    /*
+    * Removes the provided table from the specified input tables. The tables indicating which rows
+    * to remove are expected to only have columns that match the key columns of the input table.
+    */
+    rpc DeleteTableFromInputTable(DeleteTableRequest) returns (DeleteTableResponse) {}
+
+}
+
+message AddTableRequest {
+    Ticket input_table = 1;
+    Ticket table_to_add = 2;
+}
+
+message AddTableResponse {
+
+}
+
+message DeleteTableRequest {
+    Ticket input_table = 1;
+    Ticket table_to_remove = 2;
+}
+
+message DeleteTableResponse {
+
+}

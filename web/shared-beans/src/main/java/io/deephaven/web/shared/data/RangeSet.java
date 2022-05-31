@@ -89,6 +89,11 @@ public class RangeSet implements Serializable {
                     end = i - 1;
                     break;
                 }
+                if (overlap.equals(existing)) {
+                    // the entire range to be added existed within an existing range, we're done
+                    return;
+                }
+
                 // grow the region used for replacing
                 merged = overlap;
             }
@@ -101,7 +106,7 @@ public class RangeSet implements Serializable {
             }
             newArray[index] = merged;
             if (end < sortedRanges.length - 1) {
-                System.arraycopy(sortedRanges, end, newArray, index + 1, sortedRanges.length - end);
+                System.arraycopy(sortedRanges, end + 1, newArray, index + 1, sortedRanges.length - 1 - end);
             }
             sortedRanges = newArray;
         } else {

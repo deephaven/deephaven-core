@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.remote.WrappedDelegatingTable$DoNotWrap",
- "methods": {},
- "path": "io.deephaven.db.v2.remote.WrappedDelegatingTable.DoNotWrap",
- "text": "Marks a Function.Unary.call(Object) method as opting out of being re-wrapped, as a\n WrappedDelegatingTable would normally do.",
- "typeName": "class"
-}

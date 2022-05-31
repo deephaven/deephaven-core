@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4",
+ "methods": {
+  "capacity": ":return: int",
+  "get": ":param key: long\n:return: long",
+  "iterator": ":return: gnu.trove.iterator.TLongLongIterator",
+  "keys": "*Overload 1*  \n  :return: long[]\n  \n*Overload 2*  \n  :param array: long[]\n  :return: long[]",
+  "put": ":param key: long\n:param value: long\n:return: long",
+  "putIfAbsent": ":param key: long\n:param value: long\n:return: long",
+  "remove": ":param key: long\n:return: long",
+  "values": "*Overload 1*  \n  :return: long[]\n  \n*Overload 2*  \n  :param array: long[]\n  :return: long[]"
+ },
+ "path": "io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4",
+ "typeName": "class"
+}

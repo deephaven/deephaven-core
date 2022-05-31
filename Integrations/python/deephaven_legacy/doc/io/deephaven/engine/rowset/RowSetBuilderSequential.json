@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.engine.rowset.RowSetBuilderSequential",
+ "methods": {
+  "appendKey": ":param rowKey: long",
+  "appendKeys": ":param it: java.util.PrimitiveIterator.OfLong",
+  "appendOrderedRowKeyRangesChunk": ":param chunk: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges>",
+  "appendOrderedRowKeysChunk": ":param chunk: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>",
+  "appendRange": ":param rangeFirstRowKey: long\n:param rangeLastRowKey: long",
+  "appendRanges": ":param it: io.deephaven.util.datastructures.LongRangeIterator",
+  "appendRowSequence": "Appends a RowSequence to this builder.\n\n:param rowSequence: (io.deephaven.engine.rowset.RowSequence) - The RowSequence to append",
+  "appendRowSequenceWithOffset": "Appends a RowSequence shifted by the provided offset to this builder.\n\n:param rowSequence: (io.deephaven.engine.rowset.RowSequence) - The RowSequence to append\n:param offset: (long) - An offset to apply to every range in the RowSet",
+  "build": ":return: io.deephaven.engine.rowset.WritableRowSet",
+  "execute": ":param value: long\n:return: boolean",
+  "setDomain": "Hint to call, but if called, (a) should be called before providing any values, and (b) no value should be\n provided outside the domain. Implementations may be able to use this information to improve memory utilization.\n Either of the arguments may be given as RowSequence.NULL_ROW_KEY, indicating that the respective value is not\n known.\n\n:param minRowKey: (long) - The minimum row key to be provided, or RowSequence.NULL_ROW_KEY if not known\n:param maxRowKey: (long) - The maximum row key to be provided, or RowSequence.NULL_ROW_KEY if not known"
+ },
+ "path": "io.deephaven.engine.rowset.RowSetBuilderSequential",
+ "text": "Builder interface for RowSet construction in strict sequential order.",
+ "typeName": "interface"
+}

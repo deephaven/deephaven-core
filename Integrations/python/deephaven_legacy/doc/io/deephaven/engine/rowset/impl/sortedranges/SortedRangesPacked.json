@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.sortedranges.SortedRangesPacked",
+ "methods": {
+  "addInternal": ":param v: long\n:param writeCheck: boolean\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
+  "addRangeInternal": ":param start: long\n:param end: long\n:param writeCheck: boolean\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
+  "appendInternal": ":param v: long\n:param writeCheck: boolean\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
+  "appendRangeInternal": ":param start: long\n:param end: long\n:param writeCheck: boolean\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
+  "applyShift": ":param shiftOffset: long\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
+  "applyShiftOnNew": ":param shiftOffset: long\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
+  "fits": "*Overload 1*  \n  :param value: long\n  :return: boolean\n  \n*Overload 2*  \n  :param start: long\n  :param end: long\n  :return: boolean",
+  "fitsForAppend": ":param end: long\n:return: boolean",
+  "removeInternal": ":param v: long\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
+  "removeRangeInternal": ":param start: long\n:param end: long\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges"
+ },
+ "path": "io.deephaven.engine.rowset.impl.sortedranges.SortedRangesPacked",
+ "typeName": "class"
+}

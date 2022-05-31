@@ -18,11 +18,11 @@ public class CompletionContext implements Serializable {
         this();
 
         if (source.has("triggerKind")) {
-            triggerKind = source.getAny("triggerKind").asInt();
+            triggerKind = source.getAsAny("triggerKind").asInt();
         }
 
         if (source.has("triggerCharacter")) {
-            triggerCharacter = source.getAny("triggerCharacter").asString();
+            triggerCharacter = source.getAsAny("triggerCharacter").asString();
         }
     }
 }

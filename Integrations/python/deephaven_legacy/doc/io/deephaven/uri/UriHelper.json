@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.uri.UriHelper",
+ "methods": {
+  "isLocalPath": "A URI is a \"local path\" when the only components are scheme and path; and path starts with \"/\".\n\n:param uri: (java.net.URI) - the URI\n:return: (boolean) true if uri is a \"local path\"",
+  "isRemotePath": "A URI is a \"remote path\" when the only components are scheme, host,\n and path; and path starts with \"/\".\n\n:param uri: (java.net.URI) - the URI\n:return: (boolean) true if uri is a \"remote path\"",
+  "isRemoteQuery": "A URI is a \"remote query\" when the only components are scheme, host, query, and path; and path is empty.\n\n:param uri: (java.net.URI) - the URI\n:return: (boolean) true if uri is a \"remote query\"",
+  "isRemoteTarget": "A URI is a \"remote target\" when the only components are scheme, host, and path; and path is empty.\n\n:param uri: (java.net.URI) - the URI\n:return: (boolean) true if uri is a \"remote target\"",
+  "isUriSafe": ":param part: java.lang.String\n:return: boolean"
+ },
+ "path": "io.deephaven.uri.UriHelper",
+ "typeName": "class"
+}

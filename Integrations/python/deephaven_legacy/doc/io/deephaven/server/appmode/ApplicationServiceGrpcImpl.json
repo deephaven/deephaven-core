@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.server.appmode.ApplicationServiceGrpcImpl",
+ "methods": {
+  "listFields": "Request the list of the fields exposed via the worker.\n - The first received message contains all fields that are currently available\n   on the worker. None of these fields will be RemovedFields.\n - Subsequent messages modify the existing state. Fields are identified by\n   their ticket and may be replaced or removed.\n \n\n:param request: io.deephaven.proto.backplane.grpc.ListFieldsRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.FieldsChangeUpdate>",
+  "onNewField": ":param app: io.deephaven.appmode.ApplicationState\n:param field: io.deephaven.appmode.Field<?>",
+  "onRemoveField": ":param app: io.deephaven.appmode.ApplicationState\n:param oldField: io.deephaven.appmode.Field<?>",
+  "onScopeChanges": ":param scriptSession: io.deephaven.engine.util.ScriptSession\n:param changes: io.deephaven.engine.util.ScriptSession.Changes"
+ },
+ "path": "io.deephaven.server.appmode.ApplicationServiceGrpcImpl",
+ "typeName": "class"
+}

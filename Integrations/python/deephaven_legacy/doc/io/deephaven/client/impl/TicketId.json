@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.client.impl.TicketId",
+ "methods": {
+  "table": ":return: io.deephaven.qst.table.TicketTable",
+  "ticketId": "Get the ticket ID.\n\n:return: (io.deephaven.client.impl.TicketId) the ticket ID"
+ },
+ "path": "io.deephaven.client.impl.TicketId",
+ "text": "An opaque holder that represents a generic flight ticket.",
+ "typeName": "class"
+}

@@ -1,10 +1,15 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
 configurations {
     compile.extendsFrom dhNumerics
     testCompile.extendsFrom fishBaseTest
 }
 
 dependencies {
-    compile project(':DB')
+    compile project(':engine-table'),
+            project(':engine-function')
 
     testRuntime project(path: ':configs'), project(path: ':test-configs')
 }

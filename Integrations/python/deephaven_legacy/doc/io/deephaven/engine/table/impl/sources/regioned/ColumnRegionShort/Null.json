@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionShort$Null",
+ "methods": {
+  "getShort": "Get a single short from this region.\n\n:param elementIndex: (long) - Element row key in the table's address space\n:return: (short) The short value at the specified element row key"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionShort.Null",
+ "typeName": "class"
+}

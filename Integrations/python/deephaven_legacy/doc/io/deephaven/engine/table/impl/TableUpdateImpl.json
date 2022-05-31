@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.engine.table.impl.TableUpdateImpl",
+ "methods": {
+  "acquire": "Increment the reference count on this object.\n\n:return: (io.deephaven.engine.table.impl.TableUpdateImpl) this for convenience",
+  "added": "rows added (post-shift keyspace)\n\n:return: io.deephaven.engine.rowset.RowSet",
+  "copy": "Make a deep copy of a TableUpdate.\n\n:param tableUpdate: io.deephaven.engine.table.TableUpdate\n:return: io.deephaven.engine.table.impl.TableUpdateImpl",
+  "getModifiedPreShift": ":return: (io.deephaven.engine.rowset.RowSet) a cached copy of the modified RowSet in pre-shift keyspace",
+  "modified": "rows modified (post-shift keyspace)\n\n:return: io.deephaven.engine.rowset.RowSet",
+  "modifiedColumnSet": "the set of columns that might have changed for rows in the modified() RowSet\n\n:return: io.deephaven.engine.table.ModifiedColumnSet",
+  "release": "Decrement the reference count on this object.",
+  "removed": "rows removed (pre-shift keyspace)\n\n:return: io.deephaven.engine.rowset.RowSet",
+  "shifted": "rows that shifted to new indices\n\n:return: io.deephaven.engine.rowset.RowSetShiftData",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.TableUpdateImpl",
+ "text": "Implementation of TableUpdate.",
+ "typeName": "class"
+}

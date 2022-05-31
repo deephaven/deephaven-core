@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.ImmutableTableKey",
+ "methods": {
+  "makeImmutable": "Get an ImmutableTableKey that is equal to this.\n\n:return: (io.deephaven.engine.table.impl.locations.ImmutableTableKey) An immutable version of this key"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.ImmutableTableKey",
+ "text": "Sub-interface of TableKey to mark immutable implementations.",
+ "typeName": "interface"
+}

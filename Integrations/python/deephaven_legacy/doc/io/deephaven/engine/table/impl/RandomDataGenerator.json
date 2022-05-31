@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.engine.table.impl.RandomDataGenerator",
+ "methods": {
+  "getBooleanArray": ":return: java.lang.Boolean[]",
+  "getByteArray": ":param size: int\n:return: byte[]",
+  "getCharArray": ":param size: int\n:return: char[]",
+  "getDoubleArray": ":param size: int\n:return: double[]",
+  "getFloatArray": ":param size: int\n:return: float[]",
+  "getIntArray": ":param size: int\n:return: int[]",
+  "getLongArray": ":param size: int\n:return: long[]",
+  "getShortArray": ":param size: int\n:return: short[]"
+ },
+ "path": "io.deephaven.engine.table.impl.RandomDataGenerator",
+ "typeName": "class"
+}

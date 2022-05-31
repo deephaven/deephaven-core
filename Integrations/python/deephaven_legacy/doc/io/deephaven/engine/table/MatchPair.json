@@ -1,0 +1,27 @@
+{
+ "className": "io.deephaven.engine.table.MatchPair",
+ "methods": {
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "existingColumn": "The existing column name, from the right table of a join operation.\n\n:return: (io.deephaven.api.ColumnName) the existing column name",
+  "fromAddition": ":param matches: java.util.Collection<? extendsio.deephaven.api.JoinAddition>\n:return: io.deephaven.engine.table.MatchPair[]",
+  "fromMatches": ":param matches: java.util.Collection<? extendsio.deephaven.api.JoinMatch>\n:return: io.deephaven.engine.table.MatchPair[]",
+  "fromPairs": ":param pairs: java.util.Collection<? extendsio.deephaven.api.agg.Pair>\n:return: io.deephaven.engine.table.MatchPair[]",
+  "getLeftColumns": ":param matchPairs: io.deephaven.engine.table.MatchPair...\n:return: java.lang.String[]",
+  "getRightColumns": ":param matchPairs: io.deephaven.engine.table.MatchPair...\n:return: java.lang.String[]",
+  "hashCode": ":return: int",
+  "input": "The input column.\n\n:return: (io.deephaven.api.ColumnName) the input column",
+  "left": "The column from the left table.\n\n:return: (io.deephaven.api.ColumnName) the left column name",
+  "leftColumn": ":return: java.lang.String",
+  "matchString": "*Overload 1*  \n  :param matchPairArray: io.deephaven.engine.table.MatchPair[]\n  :return: java.lang.String\n  \n*Overload 2*  \n  :param matchPair: io.deephaven.engine.table.MatchPair\n  :return: java.lang.String",
+  "newColumn": "The new column name, to be added to the new table.\n\n:return: (io.deephaven.api.ColumnName) the new column name",
+  "of": "*Overload 1*  \n  :param pair: io.deephaven.api.agg.Pair\n  :return: io.deephaven.engine.table.MatchPair\n  \n*Overload 2*  \n  :param match: io.deephaven.api.JoinMatch\n  :return: io.deephaven.engine.table.MatchPair\n  \n*Overload 3*  \n  :param addition: io.deephaven.api.JoinAddition\n  :return: io.deephaven.engine.table.MatchPair",
+  "output": "The output column.\n\n:return: (io.deephaven.api.ColumnName) the output column",
+  "outputs": ":param pairs: java.util.Collection<io.deephaven.engine.table.MatchPair>\n:return: java.util.stream.Stream<io.deephaven.api.ColumnName>",
+  "right": "The column name from the right table.\n\n:return: (io.deephaven.api.ColumnName) the right column name",
+  "rightColumn": ":return: java.lang.String",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.MatchPair",
+ "text": "Holds a pair of column names.",
+ "typeName": "class"
+}

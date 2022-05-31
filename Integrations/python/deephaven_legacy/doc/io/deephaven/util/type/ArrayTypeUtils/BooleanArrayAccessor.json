@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.util.type.ArrayTypeUtils$BooleanArrayAccessor",
+ "methods": {
+  "copyArray": ":param sourceArray: java.lang.Object\n:param pos: int\n:param length: int",
+  "fill": ":param from: int\n:param to: int\n:param value: java.lang.Boolean",
+  "get": ":param index: int\n:return: java.lang.Boolean",
+  "getArray": ":return: java.lang.Object",
+  "length": ":return: int",
+  "set": ":param index: int\n:param value: java.lang.Boolean"
+ },
+ "path": "io.deephaven.util.type.ArrayTypeUtils.BooleanArrayAccessor",
+ "typeName": "class"
+}

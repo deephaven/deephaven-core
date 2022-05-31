@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.TableMap$Listener",
+ "methods": {
+  "handleTableAdded": "Notification that a table has been added to the map.\n\n:param key: (java.lang.Object) - key\n:param table: (io.deephaven.engine.table.Table) - table"
+ },
+ "path": "io.deephaven.engine.table.TableMap.Listener",
+ "text": "Table map change listener.",
+ "typeName": "interface"
+}

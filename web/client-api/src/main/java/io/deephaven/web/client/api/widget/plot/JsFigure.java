@@ -3,23 +3,19 @@ package io.deephaven.web.client.api.widget.plot;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.dom.CustomEventInit;
-import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
-import io.deephaven.web.client.api.Callback;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.fu.JsLog;
-import io.deephaven.web.client.fu.JsPromise;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
-import io.deephaven.web.shared.data.InitialTableDefinition;
-import io.deephaven.web.shared.data.TableHandle;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
@@ -28,7 +24,12 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -50,11 +51,11 @@ public class JsFigure extends HasEventHandling {
             EVENT_DOWNSAMPLENEEDED = "downsampleneeded";
 
     public interface FigureFetch {
-        void fetch(JsBiConsumer<Object, FetchFigureResponse> callback);
+        void fetch(JsBiConsumer<Object, FetchObjectResponse> callback);
     }
 
     public interface FigureTableFetch {
-        Promise<FigureTableFetchData> fetch(JsFigure figure, FigureDescriptor descriptor);
+        Promise<FigureTableFetchData> fetch(JsFigure figure, FetchObjectResponse descriptor);
     }
 
     public interface FigureClose {
@@ -129,13 +130,13 @@ public class JsFigure extends HasEventHandling {
         plotHandlesToTables = new HashMap<>();
 
         return Callbacks.grpcUnaryPromise(fetch::fetch).then(response -> {
-            this.descriptor = response.getFigureDescriptor();
+            this.descriptor = FigureDescriptor.deserializeBinary(response.getData_asU8());
 
             charts = descriptor.getChartsList().asList().stream()
                     .map(chartDescriptor -> new JsChart(chartDescriptor, this)).toArray(JsChart[]::new);
             JsObject.freeze(charts);
 
-            return this.tableFetch.fetch(this, descriptor);
+            return this.tableFetch.fetch(this, response);
         }).then(tableFetchData -> {
             // all tables are wired up, need to map them to the series instances
             tables = tableFetchData.tables;
@@ -143,7 +144,7 @@ public class JsFigure extends HasEventHandling {
             plotHandlesToTableMaps = tableFetchData.plotHandlesToTableMaps;
             onClose = tableFetchData.onClose;
 
-            for (int i = 0; i < descriptor.getTablesList().length; i++) {
+            for (int i = 0; i < tables.length; i++) {
                 JsTable table = tables[i];
                 registerTableWithId(table, Js.cast(JsArray.of((double) i)));
             }
@@ -381,7 +382,7 @@ public class JsFigure extends HasEventHandling {
         }
         for (int i = 0; i < s.getSources().length; i++) {
             SeriesDataSource source = s.getSources()[i];
-            if (!source.getColumnType().equals("io.deephaven.db.tables.utils.DBDateTime")) {
+            if (!source.getColumnType().equals("io.deephaven.time.DateTime")) {
                 continue;
             }
             DownsampledAxisDetails downsampledAxisDetails = downsampled.get(source.getAxis().getDescriptor());
@@ -631,12 +632,39 @@ public class JsFigure extends HasEventHandling {
         }
 
         @Override
-        public Promise fetch(JsFigure figure, FigureDescriptor descriptor) {
-            JsTable[] tables;
+        public Promise fetch(JsFigure figure, FetchObjectResponse response) {
+            JsTable[] tables = new JsTable[0];
+            TableMap[] tableMaps = new TableMap[0];
+
+            Promise<?>[] promises = new Promise[response.getTypedExportIdList().length];
+
+            response.getTypedExportIdList().forEach((p0, p1, p2) -> {
+                if (!p0.getType().equals("Table")) {
+                    // TODO (deephaven-core#62) implement fetch for tablemaps
+                    assert false : p0.getType() + " found in figure, not yet supported";
+                    return null;
+                }
+
+
+                // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
+                // reconnect in this way without refetching the entire figure anyway.
+                promises[p1] = Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
+                    connection.tableServiceClient().getExportedTableCreationResponse(p0.getTicket(),
+                            connection.metadata(),
+                            c::apply);
+                }).then(etcr -> {
+                    ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for figure");
+                    JsTable table = new JsTable(connection, cts);
+                    // never attempt a reconnect, since we might have a different figure schema entirely
+                    table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
+                    tables[tables.length] = table;
+                    return Promise.resolve(table);
+                });
+                return null;
+            });
 
             // TODO (deephaven-core#62) implement fetch for tablemaps
             // // iterate through the tablemaps we're supposed to have, fetch keys for them, and construct them
-            TableMap[] tableMaps = new TableMap[0];// new TableMap[descriptor.getTableMapIdsList().length];
             // Promise<?>[] tableMapPromises = new Promise[descriptor.getTablemapsList().length];
             Map<Integer, TableMap> plotHandlesToTableMaps = new HashMap<>();
             // for (int i = 0; i < descriptor.getTablemapsList().length; i++) {
@@ -664,23 +692,14 @@ public class JsFigure extends HasEventHandling {
             // });
             // }
 
-            // iterate through the table handles we're supposed to have and prep TableHandles for them
-            tables = new JsTable[descriptor.getTablesList().length];
+            return Promise.all(promises)
+                    .then(ignore -> {
+                        connection.registerFigure(figure);
 
-            for (int i = 0; i < descriptor.getTablesList().length; i++) {
-                ClientTableState clientTableState = connection
-                        .newStateFromUnsolicitedTable(descriptor.getTablesList().getAt(i), "table " + i + " for plot");
-                JsTable table = new JsTable(connection, clientTableState);
-                // never attempt a reconnect, since we might have a different figure schema entirely
-                table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
-                tables[i] = table;
-            }
-
-            connection.registerFigure(figure);
-
-            return Promise.resolve(
-                    new FigureTableFetchData(tables, tableMaps, plotHandlesToTableMaps,
-                            f -> this.connection.releaseFigure(f)));
+                        return Promise.resolve(
+                                new FigureTableFetchData(tables, tableMaps, plotHandlesToTableMaps,
+                                        f -> this.connection.releaseFigure(f)));
+                    });
         }
     }
 }

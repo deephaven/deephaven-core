@@ -379,7 +379,7 @@ public:
 };
 
 class DateTimeExpression : public Expression {
-  typedef deephaven::client::highlevel::DBDateTime DBDateTime;
+  typedef deephaven::client::highlevel::DateTime DateTime;
 
 public:
   /**
@@ -402,10 +402,10 @@ public:
    */
   DateTimeExpression(std::string value);  // NOLINT(google-explicit-constructor)
   /**
-   * Implicit conversion from DBDateTime
+   * Implicit conversion from DateTime
    * @param value The value
    */
-  DateTimeExpression(const DBDateTime &value);  // NOLINT(google-explicit-constructor)
+  DateTimeExpression(const DateTime &value);  // NOLINT(google-explicit-constructor)
   /**
    * Move constructor.
    */

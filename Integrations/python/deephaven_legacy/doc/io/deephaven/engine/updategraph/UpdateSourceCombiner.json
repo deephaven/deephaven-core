@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.updategraph.UpdateSourceCombiner",
+ "methods": {
+  "addSource": "Add a source to this registrar.\n\n:param updateSource: (java.lang.Runnable) - The table to add",
+  "destroy": "Attempt to release (destructively when necessary) resources held by this object. This may render the object\n unusable for subsequent operations. Implementations should be sure to call super.destroy().\n \n This is intended to only ever be used as a side effect of decreasing the reference count to 0.",
+  "removeSource": "Remove a source from this registrar.\n\n:param updateSource: (java.lang.Runnable) - The table to remove",
+  "requestRefresh": "Passes through to the update graph processor."
+ },
+ "path": "io.deephaven.engine.updategraph.UpdateSourceCombiner",
+ "text": "Update source that combines multiple sources in order to force them to be refreshed as a unit within the\n update graph processor.",
+ "typeName": "class"
+}

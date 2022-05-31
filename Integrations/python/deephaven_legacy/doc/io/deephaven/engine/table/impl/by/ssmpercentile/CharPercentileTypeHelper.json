@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.ssmpercentile.CharPercentileTypeHelper",
+ "methods": {
+  "pivot": "*Overload 1*  \n  :param segmentedSortedMultiSet: io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet\n  :param valueCopy: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n  :param counts: io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkLengths>\n  :param startPosition: int\n  :param runLength: int\n  :param leftOvers: org.apache.commons.lang3.mutable.MutableInt\n  :return: int\n  \n*Overload 2*  \n  :param segmentedSortedMultiSet: io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet\n  :param valueCopy: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n  :param counts: io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkLengths>\n  :param startPosition: int\n  :param runLength: int\n  :return: int",
+  "setResult": ":param ssmLo: io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet\n:param ssmHi: io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet\n:param destination: long\n:return: boolean",
+  "setResultNull": ":param destination: long\n:return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.by.ssmpercentile.CharPercentileTypeHelper",
+ "typeName": "class"
+}

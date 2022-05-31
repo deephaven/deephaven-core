@@ -4,17 +4,21 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.TableMap;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.live.NotificationQueue;
-import io.deephaven.db.tables.select.SelectColumnFactory;
-import io.deephaven.db.v2.*;
-import io.deephaven.db.v2.remote.ConstructSnapshot;
-import io.deephaven.db.v2.select.SelectColumn;
-import io.deephaven.db.v2.select.SelectFilter;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.table.sort.SortDirective;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -30,8 +34,8 @@ import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
  * The basic implementation used to produce a viewport-ready snapshot of a tree table, taking into account the set of
  * expanded rows at each level.
  */
-public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTableInfo, CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>> {
-    private static final Index EMPTY_INDEX = Index.FACTORY.getEmptyIndex();
+public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTableInfo> {
+    private static final RowSet EMPTY_ROW_SET = RowSetFactory.empty();
     private static final boolean DEBUG =
             Configuration.getInstance().getBooleanWithDefault("AbstractTreeSnapshotImpl.debug", false);
 
@@ -39,14 +43,14 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
     private final long lastViewportRow;
     private final BitSet columns;
 
-    private final SelectFilter[] filters;
+    private final WhereFilter[] filters;
     private final PreparedSort preparedSort;
 
     private final Map<Object, TableDetails> tablesByKey;
 
     private final Set<TreeSnapshotQuery.Operation> includedOps;
 
-    private final CLIENT_TYPE client;
+    private final TreeTableClientTableManager.Client client;
     private final HierarchicalTable baseTable;
     private final int baseTableId;
     private final INFO_TYPE info;
@@ -74,9 +78,9 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             Map<Object, TableDetails> tablesByKey,
             long firstRow, long lastRow,
             BitSet columns,
-            @NotNull SelectFilter[] filters,
+            @NotNull WhereFilter[] filters,
             @NotNull List<SortDirective> sorts,
-            CLIENT_TYPE client,
+            TreeTableClientTableManager.Client client,
             Set<TreeSnapshotQuery.Operation> includedOps) {
         Assert.leq(firstRow, "firstRow", lastRow, "lastRow");
         Assert.leq(lastRow - firstRow, "lastRow - firstRow", Integer.MAX_VALUE, "Integer.MAX_VALUE");
@@ -181,14 +185,14 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
     }
 
     /**
-     * Check if a particular index key is valid with respect to t.
+     * Check if a particular row key is valid with respect to t.
      *
      * @implNote This is used to allow for {@link TreeTableSnapshotImpl} to share {@link ReverseLookup RLLs} across all
      *           child tables.
      *
      * @param usePrev if previous values should be used while validating.
      * @param t The table to validate K with
-     * @param key The index key to validate.
+     * @param key The row key to validate.
      * @return true if key is contained within t
      */
     abstract boolean isKeyValid(boolean usePrev, Table t, long key);
@@ -322,7 +326,8 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         // NB: Our snapshot control must be notification-aware, because if source ticks we cannot guarantee that we
         // won't observe some newly created components on their instantiation step.
         final ConstructSnapshot.SnapshotControl control =
-                ConstructSnapshot.makeSnapshotControl(true, ((NotificationStepSource) baseTable.getSourceTable()));
+                ConstructSnapshot.makeSnapshotControl(true, baseTable.isRefreshing(),
+                        ((NotificationStepSource) baseTable.getSourceTable()));
         final MutableObject<SnapshotState> finalState = new MutableObject<>();
         ConstructSnapshot.callDataSnapshotFunction(getClass().getSimpleName(), control,
                 (final boolean usePrev, final long beforeClockValue) -> {
@@ -473,7 +478,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
     private void compute(final boolean usePrev, final TableDetails current, @NotNull final SnapshotState state) {
         if (current == null) {
             ConstructSnapshot.failIfConcurrentAttemptInconsistent();
-            // If this happens that means that the child table has gone away between when we computed the child index,
+            // If this happens that means that the child table has gone away between when we computed the child RowSet,
             // and now.
             // which means the LogicalClock has ticked, and the snapshot is going to fail, so we'll abort mission now.
             Assert.neqNull(current, "Child table ticked away during computation");
@@ -483,14 +488,14 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         final Table curTable = current.getTable();
         final TableMap curTableMap = getTableMap(curTable);
         final Set<Object> curChildren = current.getChildren();
-        final Index expanded = getExpandedIndex(usePrev, curTable, curChildren);
-        final Index.Iterator exIter = expanded.iterator();
+        final RowSet expanded = getExpandedIndex(usePrev, curTable, curChildren);
+        final RowSet.Iterator exIter = expanded.iterator();
 
         // Keep track of the position of the first viewported row after taking into account
         // rows skipped.
         long vkUpper;
 
-        final Index currentIndex = usePrev ? curTable.getIndex().getPrevIndex() : curTable.getIndex();
+        final RowSet currentRowSet = usePrev ? curTable.getRowSet().copyPrev() : curTable.getRowSet();
 
         // If the first row of the viewport is beyond the current table, we'll use an upper that's
         // guaranteed to be beyond the table. One of two things will happen:
@@ -498,10 +503,10 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         // child rows are consumed.
         // 2) Even after all the child rows are consumed, it's beyond, in which case we'll
         // skip all of the remaining rows in the table.
-        if (firstViewportRow - state.skippedRows >= currentIndex.size()) {
+        if (firstViewportRow - state.skippedRows >= currentRowSet.size()) {
             vkUpper = Long.MAX_VALUE;
         } else {
-            vkUpper = currentIndex.get(firstViewportRow - state.skippedRows);
+            vkUpper = currentRowSet.get(firstViewportRow - state.skippedRows);
         }
 
         // within this table
@@ -529,12 +534,12 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
                 final Object tableKey = usePrev ? columnSource.getPrev(expandedRow) : columnSource.get(expandedRow);
                 final TableDetails child = tablesByKey.get(tableKey);
 
-                // If the expanded row doesn't exist in the current table index, something at a higher level is broken.
-                final long expandedPosition = currentIndex.find(expandedRow);
+                // If the expanded row doesn't exist in the current table RowSet, something at a higher level is broken.
+                final long expandedPosition = currentRowSet.find(expandedRow);
 
                 if (expandedPosition < 0) {
                     ConstructSnapshot.failIfConcurrentAttemptInconsistent();
-                    Assert.geqZero(expandedPosition, "current.getIndex().find(expandedRow)");
+                    Assert.geqZero(expandedPosition, "current.build().find(expandedRow)");
                 }
 
                 // Since we know that this expanded row is before the viewport start, we need to accumulate the rows
@@ -558,29 +563,27 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
                     Assert.lt(state.skippedRows, "state.skippedRows", firstViewportRow, "firstViewportRow");
                 }
 
-                // Finally, we need to shift the index of the viewport start wrt to this table, by the number of row's
-                // we've skipped, less the current position
-                // because the current position has already been accounted for in state.skippedRows
+                // Finally, we need to shift the row position of the viewport start wrt to this table, by the number of
+                // rows we've skipped, less the current position because the current position has already been accounted
+                // for in state.skippedRows
                 final long newTarget = firstViewportRow - state.skippedRows + currentPosition;
-                if (newTarget >= currentIndex.size()) {
+                if (newTarget >= currentRowSet.size()) {
                     vkUpper = Long.MAX_VALUE;
                 } else {
-                    vkUpper = currentIndex.get(newTarget);
+                    vkUpper = currentRowSet.get(newTarget);
                 }
             }
         }
 
         // When we get to here, we've found the table and row in that table where the viewport begins, so should start
-        // accumulating
-        // by table index.
+        // accumulating by table RowSet.
 
         // There were no more expanded children, so we need to skip the remaining rows in our table, or up to the
-        // viewport row
-        // whichever comes first.
+        // viewport row whichever comes first.
         if (state.skippedRows < firstViewportRow) {
             final long remaining = firstViewportRow - state.skippedRows;
-            if (remaining >= currentIndex.size() - currentPosition) {
-                state.skippedRows += currentIndex.size() - currentPosition;
+            if (remaining >= currentRowSet.size() - currentPosition) {
+                state.skippedRows += currentRowSet.size() - currentPosition;
                 return;
             } else {
                 state.skippedRows += remaining;
@@ -592,16 +595,16 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             nextExpansion = exIter.nextLong();
         }
 
-        if (currentPosition >= currentIndex.size()) {
+        if (currentPosition >= currentRowSet.size()) {
             return;
         }
 
-        final Index.SearchIterator currentIt = currentIndex.searchIterator();
-        if (!currentIt.advance(currentIndex.get(currentPosition))) {
+        final RowSet.SearchIterator currentIt = currentRowSet.searchIterator();
+        if (!currentIt.advance(currentRowSet.get(currentPosition))) {
             return;
         }
 
-        Index.SequentialBuilder sequentialBuilder = Index.FACTORY.getSequentialBuilder();
+        RowSetBuilderSequential sequentialBuilder = RowSetFactory.builderSequential();
         long currentIndexKey = currentIt.currentValue();
 
         while (state.consumed < state.actualViewportSize) {
@@ -609,9 +612,9 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             state.consumed++;
 
             if (nextExpansion == currentIndexKey) {
-                // Copy everything so far, and start a new index.
-                state.addToSnapshot(usePrev, curTable, current.getKey(), curTableMap, sequentialBuilder.getIndex());
-                sequentialBuilder = Index.FACTORY.getSequentialBuilder();
+                // Copy everything so far, and start a new RowSet.
+                state.addToSnapshot(usePrev, curTable, current.getKey(), curTableMap, sequentialBuilder.build());
+                sequentialBuilder = RowSetFactory.builderSequential();
 
                 final Object tableKey = usePrev ? columnSource.getPrev(nextExpansion) : columnSource.get(nextExpansion);
                 final TableDetails child = tablesByKey.get(tableKey);
@@ -636,30 +639,30 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             currentIndexKey = currentIt.nextLong();
         }
 
-        final Index remainingToCopy = sequentialBuilder.getIndex();
-        if (!remainingToCopy.empty()) {
+        final RowSet remainingToCopy = sequentialBuilder.build();
+        if (!remainingToCopy.isEmpty()) {
             state.addToSnapshot(usePrev, curTable, current.getKey(), curTableMap, remainingToCopy);
         }
     }
 
     /**
      * Use the {@link ReverseLookup} provided by the specific implementation to locate where client-expanded rows have
-     * moved within the table, and return an index of these rows.
+     * moved within the table, and return a RowSet of these rows.
      *
      * @param usePrev If we should use previous values
      * @param t The table to look in
      * @param childKeys The keys of the child tables to find
-     * @return An index containing the rows that represent the indices of the tables indicated in childKeys, if they
+     * @return A RowSet containing the rows that represent the indices of the tables indicated in childKeys, if they
      *         still exist.
      */
-    private Index getExpandedIndex(boolean usePrev, Table t, Set<Object> childKeys) {
+    private RowSet getExpandedIndex(boolean usePrev, Table t, Set<Object> childKeys) {
         final ReverseLookup lookup = getReverseLookup(t);
 
         if (lookup == null) {
-            return EMPTY_INDEX;
+            return EMPTY_ROW_SET;
         }
 
-        final Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         childKeys.stream().filter(k -> {
             final TableDetails td = tablesByKey.get(k);
             return td != null && !td.isRemoved();
@@ -670,7 +673,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             }
         });
 
-        return builder.getIndex();
+        return builder.build();
     }
 
     Table applySorts(@NotNull final Table table) {
@@ -758,9 +761,9 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
     }
 
     /**
-     * @return The set of {@link SelectFilter filters} to be applied to the table.
+     * @return The set of {@link WhereFilter filters} to be applied to the table.
      */
-    SelectFilter[] getFilters() {
+    WhereFilter[] getFilters() {
         return filters;
     }
 
@@ -775,7 +778,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         return baseTable;
     }
 
-    CLIENT_TYPE getClient() {
+    TreeTableClientTableManager.Client getClient() {
         return client;
     }
 

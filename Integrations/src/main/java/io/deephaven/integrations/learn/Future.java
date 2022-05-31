@@ -1,6 +1,11 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
+
 import java.util.function.Function;
 
 /**
@@ -9,9 +14,12 @@ import java.util.function.Function;
 public class Future {
 
     private final Function<Object[], Object> func;
-    private final ColumnSource<?>[][] colSets;
     private final Input[] inputs;
-    private IndexSet indexSet;
+    private final ColumnSource<?>[][] colSets;
+    private final int batchSize;
+    private long count = 0;
+    private boolean rowSetBuilt = false;
+    private RowSetBuilderRandom rowSetBuilder;
     private boolean called;
     private Object result;
 
@@ -26,8 +34,9 @@ public class Future {
 
         this.func = func;
         this.inputs = inputs;
-        this.indexSet = new IndexSet(batchSize);
         this.colSets = colSets;
+        this.batchSize = batchSize;
+        this.rowSetBuilder = RowSetFactory.builderRandom();
         this.called = false;
         this.result = null;
     }
@@ -40,15 +49,18 @@ public class Future {
     public Object get() {
 
         if (!called) {
-            Object[] gathered = new Object[inputs.length];
+            try (final RowSet rowSet = makeRowSet()) {
+                Object[] gathered = new Object[inputs.length];
 
-            for (int i = 0; i < inputs.length; i++) {
-                gathered[i] = gather(inputs[i], colSets[i]);
+                for (int i = 0; i < inputs.length; i++) {
+                    gathered[i] = gather(inputs[i], colSets[i], rowSet);
+                }
+
+                result = func.apply(gathered);
+            } finally {
+                rowSetBuilder = null;
+                called = true;
             }
-
-            result = func.apply(gathered);
-            indexSet = null;
-            called = true;
         }
 
         return result;
@@ -59,18 +71,54 @@ public class Future {
      *
      * @param input input that contains the gather function and the column names to gather.
      * @param colSet set of column sources from which to extract data.
+     * @param rowSet row set to gather.
      * @return gathered data
      */
-    Object gather(Input input, ColumnSource<?>[] colSet) {
-        return input.getGatherFunc().apply(new Object[] {this.indexSet, colSet});
+    Object gather(final Input input, final ColumnSource<?>[] colSet, final RowSet rowSet) {
+        return input.getGatherFunc().apply(new Object[] {rowSet, colSet});
     }
 
     /**
-     * Gets the current index set.
+     * Makes the row set.
      *
-     * @return the current index set.
+     * To avoid memory leaks, the result must be used in a try-with-resources statement or closed explicitly.
+     *
+     * @return row set.
      */
-    IndexSet getIndexSet() {
-        return indexSet;
+    RowSet makeRowSet() {
+        Assert.eqFalse(rowSetBuilt, "RowSet has already been built");
+        rowSetBuilt = true;
+        return rowSetBuilder.build();
+    }
+
+    /**
+     * Add a new row key to those being processed by this future.
+     *
+     * @param key row key
+     */
+    void addRowKey(long key) {
+        Assert.eqFalse(rowSetBuilt, "RowSet has already been built");
+        Assert.assertion(!isFull(), "Attempting to insert into a full Future");
+        count++;
+        rowSetBuilder.addKey(key);
+    }
+
+    /**
+     * Number of keys being processed by this future.
+     *
+     * @return number of keys being processed by this future.
+     */
+    long size() {
+        return count;
+    }
+
+    /**
+     * Returns true if this future is full of keys to process; false otherwise. The future is full of keys if the size
+     * is equal to the batch size.
+     *
+     * @return true if this future is full of keys to process; false otherwise.
+     */
+    boolean isFull() {
+        return size() >= batchSize;
     }
 }

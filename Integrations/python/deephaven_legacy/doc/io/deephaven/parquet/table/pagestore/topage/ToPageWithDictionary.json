@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.parquet.table.pagestore.topage.ToPageWithDictionary",
+ "methods": {
+  "convertResult": ":param result: java.lang.Object\n:return: (ToPageWithDictionary.DATA_TYPE[]) Produce the array of values from the result",
+  "getChunkType": ":return: (io.deephaven.chunk.ChunkType) The chunk type used to wrap the arrays produced by this object.",
+  "getDictionaryChunk": ":return: (io.deephaven.chunk.ObjectChunk<ToPageWithDictionary.DATA_TYPE,ToPageWithDictionary.ATTR>) the dictionary stored for this column, if one exists, otherwise null.",
+  "getDictionaryKeysToPage": ":return: (io.deephaven.parquet.table.pagestore.topage.ToPage<io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys,long[]>) an object implementing ToPage which will read the integral Dictionary Indices when there's a dictionary\n         for this column (as opposed to the values, which this object's toPage will return). This will return null\n         iff ToPage.getDictionaryChunk() returns null.",
+  "getNativeType": ":return: (java.lang.Class<ToPageWithDictionary.DATA_TYPE>) The native type for the elements of the arrays produced by this object.",
+  "getResult": ":param columnPageReader: io.deephaven.parquet.base.ColumnPageReader\n:return: (java.lang.Object) Gets the result from the columnPageReader.",
+  "getReversibleLookup": ":return: (io.deephaven.stringset.LongBitmapStringSet.ReversibleLookup<ToPageWithDictionary.DATA_TYPE>) an reverse lookup map of the dictionary."
+ },
+ "path": "io.deephaven.parquet.table.pagestore.topage.ToPageWithDictionary",
+ "typeName": "class"
+}

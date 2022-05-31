@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.MemoizedOperationKey$Provider",
- "methods": {
-  "getMemoKey": ":return: io.deephaven.db.v2.MemoizedOperationKey"
- },
- "path": "io.deephaven.db.v2.MemoizedOperationKey.Provider",
- "typeName": "interface"
-}

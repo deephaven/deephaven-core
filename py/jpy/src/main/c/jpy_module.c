@@ -244,6 +244,10 @@ jmethodID JPy_Throwable_getCause_MID = NULL;
 // stack trace element
 jclass JPy_StackTraceElement_JClass = NULL;
 
+// java.util.function.Supplier
+jclass JPy_Supplier_JClass = NULL;
+jmethodID JPy_Supplier_get_MID = NULL;
+
 // }}}
 
 
@@ -318,7 +322,7 @@ PyMODINIT_FUNC JPY_MODULE_INIT_FUNC(void)
     if (PyType_Ready(&JType_Type) < 0) {
         JPY_RETURN(NULL);
     }
-    Py_INCREF(&JType_Type);
+    JPy_INCREF(&JType_Type);
     PyModule_AddObject(JPy_Module, "JType", (PyObject*) &JType_Type);
 
     /////////////////////////////////////////////////////////////////////////
@@ -326,7 +330,7 @@ PyMODINIT_FUNC JPY_MODULE_INIT_FUNC(void)
     if (PyType_Ready(&JMethod_Type) < 0) {
         JPY_RETURN(NULL);
     }
-    Py_INCREF(&JMethod_Type);
+    JPy_INCREF(&JMethod_Type);
     PyModule_AddObject(JPy_Module, "JMethod", (PyObject*) &JMethod_Type);
 
     /////////////////////////////////////////////////////////////////////////
@@ -334,7 +338,7 @@ PyMODINIT_FUNC JPY_MODULE_INIT_FUNC(void)
     if (PyType_Ready(&JOverloadedMethod_Type) < 0) {
         JPY_RETURN(NULL);
     }
-    Py_INCREF(&JOverloadedMethod_Type);
+    JPy_INCREF(&JOverloadedMethod_Type);
     PyModule_AddObject(JPy_Module, "JOverloadedMethod", (PyObject*) &JOverloadedMethod_Type);
 
     /////////////////////////////////////////////////////////////////////////
@@ -342,31 +346,31 @@ PyMODINIT_FUNC JPY_MODULE_INIT_FUNC(void)
     if (PyType_Ready(&JField_Type) < 0) {
         JPY_RETURN(NULL);
     }
-    Py_INCREF(&JField_Type);
+    JPy_INCREF(&JField_Type);
     PyModule_AddObject(JPy_Module, "JField", (PyObject*) &JField_Type);
 
     /////////////////////////////////////////////////////////////////////////
 
     JException_Type = PyErr_NewException("jpy.JException", NULL, NULL);
-    Py_INCREF(JException_Type);
+    JPy_INCREF(JException_Type);
     PyModule_AddObject(JPy_Module, "JException", JException_Type);
 
     /////////////////////////////////////////////////////////////////////////
 
     JPy_Types = PyDict_New();
-    Py_INCREF(JPy_Types);
+    JPy_INCREF(JPy_Types);
     PyModule_AddObject(JPy_Module, JPy_MODULE_ATTR_NAME_TYPES, JPy_Types);
 
     /////////////////////////////////////////////////////////////////////////
 
     JPy_Type_Callbacks = PyDict_New();
-    Py_INCREF(JPy_Type_Callbacks);
+    JPy_INCREF(JPy_Type_Callbacks);
     PyModule_AddObject(JPy_Module, JPy_MODULE_ATTR_NAME_TYPE_CALLBACKS, JPy_Type_Callbacks);
 
     /////////////////////////////////////////////////////////////////////////
 
     JPy_Type_Translations = PyDict_New();
-    Py_INCREF(JPy_Type_Translations);
+    JPy_INCREF(JPy_Type_Translations);
     PyModule_AddObject(JPy_Module, JPy_MODULE_ATTR_NAME_TYPE_TRANSLATIONS, JPy_Type_Translations);
 
     /////////////////////////////////////////////////////////////////////////
@@ -374,10 +378,10 @@ PyMODINIT_FUNC JPY_MODULE_INIT_FUNC(void)
     if (PyType_Ready(&Diag_Type) < 0) {
         JPY_RETURN(NULL);
     }
-    //Py_INCREF(&DiagFlags_Type);
+    //JPy_INCREF(&DiagFlags_Type);
     {
         PyObject* pyDiag = Diag_New();
-        Py_INCREF(pyDiag);
+        JPy_INCREF(pyDiag);
         PyModule_AddObject(JPy_Module, "diag", pyDiag);
     }
 
@@ -386,7 +390,7 @@ PyMODINIT_FUNC JPY_MODULE_INIT_FUNC(void)
     }
     {
         PyObject* pyVerboseExceptions = VerboseExceptions_New();
-        Py_INCREF(pyVerboseExceptions);
+        JPy_INCREF(pyVerboseExceptions);
         PyModule_AddObject(JPy_Module, "VerboseExceptions", pyVerboseExceptions);
     }
 
@@ -437,7 +441,7 @@ PyObject* JPy_create_jvm(PyObject* self, PyObject* args, PyObject* kwds)
 
     if (JPy_JVM != NULL) {
         JPy_DIAG_PRINT(JPy_DIAG_F_JVM + JPy_DIAG_F_ERR, "JPy_create_jvm: WARNING: Java VM is already running.\n");
-        Py_DECREF(options);
+        JPy_DECREF(options);
         return Py_BuildValue("");
     }
 
@@ -470,7 +474,7 @@ PyObject* JPy_create_jvm(PyObject* self, PyObject* args, PyObject* kwds)
             PyMem_Del(jvmOptions);
             return NULL;
         }
-        Py_DECREF(option);
+        JPy_DECREF(option);
     }
 
     jvmInitArgs.version = JPY_JNI_VERSION;
@@ -679,12 +683,13 @@ JPy_JType* JPy_GetNonObjectJType(JNIEnv* jenv, jclass classRef)
     }
 
     type = JType_GetType(jenv, primClassRef, JNI_FALSE);
+    JPy_DELETE_LOCAL_REF(primClassRef);
     if (type == NULL) {
         return NULL;
     }
 
     type->isResolved = JNI_TRUE; // Primitive types are always resolved.
-    Py_INCREF((PyObject*) type);
+    JPy_INCREF((PyObject*) type);
 
     return type;
 }
@@ -701,7 +706,7 @@ jclass JPy_GetClass(JNIEnv* jenv, const char* name)
     }
 
     globalClassRef = (*jenv)->NewGlobalRef(jenv, localClassRef);
-    //(*jenv)->DeleteLocalRef(jenv, localClassRef);
+    JPy_DELETE_LOCAL_REF(localClassRef);
     if (globalClassRef == NULL) {
         PyErr_NoMemory();
         return NULL;
@@ -892,6 +897,8 @@ int JPy_InitGlobalVars(JNIEnv* jenv)
     DEFINE_METHOD(JPy_Character_Init_MID, JPy_Character_JClass, "<init>", "(C)V");
     DEFINE_METHOD(JPy_Character_CharValue_MID, JPy_Character_JClass, "charValue", "()C");
 
+    DEFINE_CLASS(JPy_Number_JClass, "java/lang/Number");
+
     DEFINE_CLASS(JPy_Byte_JClass, "java/lang/Byte");
     DEFINE_METHOD(JPy_Byte_Init_MID, JPy_Byte_JClass, "<init>", "(B)V");
 
@@ -950,6 +957,9 @@ int JPy_InitGlobalVars(JNIEnv* jenv)
     DEFINE_OBJECT_TYPE(JPy_JStackTraceElement, JPy_StackTraceElement_JClass);
     DEFINE_METHOD(JPy_Throwable_getCause_MID, JPy_Throwable_JClass, "getCause", "()Ljava/lang/Throwable;");
     DEFINE_METHOD(JPy_Throwable_getStackTrace_MID, JPy_Throwable_JClass, "getStackTrace", "()[Ljava/lang/StackTraceElement;");
+
+    DEFINE_CLASS(JPy_Supplier_JClass, "java/util/function/Supplier");
+    DEFINE_METHOD(JPy_Supplier_get_MID, JPy_Supplier_JClass, "get", "()Ljava/lang/Object;")
 
     // JType_AddClassAttribute is actually called from within JType_GetType(), but not for
     // JPy_JObject and JPy_JClass for an obvious reason. So we do it now:
@@ -1042,25 +1052,25 @@ void JPy_ClearGlobalVars(JNIEnv* jenv)
     JPy_PyObject_GetPointer_MID = NULL;
     JPy_PyObject_UnwrapProxy_SMID = NULL;
 
-    Py_XDECREF(JPy_JBoolean);
-    Py_XDECREF(JPy_JChar);
-    Py_XDECREF(JPy_JByte);
-    Py_XDECREF(JPy_JShort);
-    Py_XDECREF(JPy_JInt);
-    Py_XDECREF(JPy_JLong);
-    Py_XDECREF(JPy_JFloat);
-    Py_XDECREF(JPy_JDouble);
-    Py_XDECREF(JPy_JVoid);
-    Py_XDECREF(JPy_JBooleanObj);
-    Py_XDECREF(JPy_JCharacterObj);
-    Py_XDECREF(JPy_JByteObj);
-    Py_XDECREF(JPy_JShortObj);
-    Py_XDECREF(JPy_JIntegerObj);
-    Py_XDECREF(JPy_JLongObj);
-    Py_XDECREF(JPy_JFloatObj);
-    Py_XDECREF(JPy_JDoubleObj);
-    Py_XDECREF(JPy_JPyObject);
-    Py_XDECREF(JPy_JPyModule);
+    JPy_XDECREF(JPy_JBoolean);
+    JPy_XDECREF(JPy_JChar);
+    JPy_XDECREF(JPy_JByte);
+    JPy_XDECREF(JPy_JShort);
+    JPy_XDECREF(JPy_JInt);
+    JPy_XDECREF(JPy_JLong);
+    JPy_XDECREF(JPy_JFloat);
+    JPy_XDECREF(JPy_JDouble);
+    JPy_XDECREF(JPy_JVoid);
+    JPy_XDECREF(JPy_JBooleanObj);
+    JPy_XDECREF(JPy_JCharacterObj);
+    JPy_XDECREF(JPy_JByteObj);
+    JPy_XDECREF(JPy_JShortObj);
+    JPy_XDECREF(JPy_JIntegerObj);
+    JPy_XDECREF(JPy_JLongObj);
+    JPy_XDECREF(JPy_JFloatObj);
+    JPy_XDECREF(JPy_JDoubleObj);
+    JPy_XDECREF(JPy_JPyObject);
+    JPy_XDECREF(JPy_JPyModule);
 
     JPy_JBoolean = NULL;
     JPy_JChar = NULL;
@@ -1158,7 +1168,7 @@ void JPy_HandleJavaException(JNIEnv* jenv)
                         allocError = 1;
                         break;
                     }
-                    (*jenv)->DeleteLocalRef(jenv, message);
+                    JPy_DELETE_LOCAL_REF(message);
                 }
 
                 /* We should assemble a string based on the stack trace. */
@@ -1263,13 +1273,13 @@ void JPy_HandleJavaException(JNIEnv* jenv)
                     PyErr_SetString(PyExc_RuntimeError,
                                     "Java VM exception occurred, but failed to allocate message text");
                 }
-                (*jenv)->DeleteLocalRef(jenv, message);
+                JPy_DELETE_LOCAL_REF(message);
             } else {
                 PyErr_SetString(PyExc_RuntimeError, "Java VM exception occurred, no message");
             }
         }
 
-        (*jenv)->DeleteLocalRef(jenv, error);
+        JPy_DELETE_LOCAL_REF(error);
         (*jenv)->ExceptionClear(jenv);
     }
 }

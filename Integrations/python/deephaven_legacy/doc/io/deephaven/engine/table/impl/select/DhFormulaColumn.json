@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.DhFormulaColumn",
+ "methods": {
+  "copy": "Create a copy of this SelectColumn.\n\n:return: (io.deephaven.engine.table.impl.select.SelectColumn) an independent copy of this SelectColumn.",
+  "getFormulaColumnPython": ":return: io.deephaven.engine.table.impl.select.python.FormulaColumnPython",
+  "getVectorType": ":param declaredType: java.lang.Class<?>\n:return: java.lang.Class<?>",
+  "initDef": "Initialize any internal column definitions from the provided initial.\n\n:param columnDefinitionMap: (java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnDefinition<?>>) - the starting set of column definitions\n:return: (java.util.List<java.lang.String>) a list of columns on which the result of this is dependent",
+  "isStateless": "Returns true if this column is stateless (i.e. one row does not depend on the order of evaluation for another\n row).\n\n:return: boolean",
+  "preventsParallelization": "Does this formula column use Python (which would cause us to hang the GIL if we evaluate it off thread?)\n\n:return: (boolean) true if this column has the potential to hang the gil"
+ },
+ "path": "io.deephaven.engine.table.impl.select.DhFormulaColumn",
+ "typeName": "class"
+}

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.select.formula.FormulaFactory",
- "methods": {
-  "createFormula": ":param index: io.deephaven.db.v2.utils.Index\n:param initLazyMap: boolean\n:param columnsToData: java.util.Map<java.lang.String,? extendsio.deephaven.db.v2.sources.ColumnSource>\n:param params: io.deephaven.db.tables.select.Param...\n:return: io.deephaven.db.v2.select.Formula"
- },
- "path": "io.deephaven.db.v2.select.formula.FormulaFactory",
- "typeName": "interface"
-}

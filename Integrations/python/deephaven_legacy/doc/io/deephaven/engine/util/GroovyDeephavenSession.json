@@ -1,0 +1,32 @@
+{
+ "className": "io.deephaven.engine.util.GroovyDeephavenSession",
+ "methods": {
+  "addScriptImportClass": "*Overload 1*  \n  :param c: java.lang.String\n  \n*Overload 2*  \n  :param c: java.lang.Class<?>",
+  "addScriptImportStatic": "*Overload 1*  \n  :param c: java.lang.String\n  \n*Overload 2*  \n  :param c: java.lang.Class<?>",
+  "clearScriptPathLoader": "Removes the currently configured script path loader from this script.",
+  "findScript": ":param relativePath: java.lang.String\n:return: java.io.InputStream",
+  "getBinding": ":return: groovy.lang.Binding",
+  "getDynamicClass": ":param name: java.lang.String\n:return: byte[]",
+  "getShell": ":return: groovy.lang.GroovyShell",
+  "getVariable": "**Incompatible overloads text - text from the first overload:**\n\nRetrieve a variable from the script session's bindings.\n \n Please use ScriptSession.getVariable(String, Object) if you expect the variable may not exist.\n\n*Overload 1*  \n  :param name: (java.lang.String) - the variable to retrieve\n  :return: (java.lang.Object) the variable\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param name: (java.lang.String) - the variable to retrieve\n  :param defaultValue: (T) - the value to use when no value is present in the session's scope\n  :return: (T) the value of the variable, or defaultValue if not present",
+  "getVariableNames": "Retrieves all of the variable names present in the session's scope\n\n:return: (java.util.Set<java.lang.String>) an unmodifiable set of variable names",
+  "getVariables": "Retrieves all of the variables present in the session's scope (e.g., Groovy binding, Python globals()).\n\n:return: (java.util.Map<java.lang.String,java.lang.Object>) an unmodifiable map with variable names as the keys, and the Objects as the result",
+  "hasExecutedScript": ":param scriptName: java.lang.String\n:return: boolean",
+  "hasVariableName": "Check if the scope has the given variable name\n\n:param name: (java.lang.String) - the variable name\n:return: (boolean) True iff the scope has the given variable name",
+  "isValidImportString": "Ensure that the given importString is valid. Return a canonical version of the import string if it is valid.\n\n:param log: io.deephaven.io.logger.Logger\n:param importString: (java.lang.String) - the string to check. importString is \"[import] [static]\n        package.class[.innerclass...][.field|.method][.*][;]\".\n:return: (java.lang.String) null if importString is not valid, else a string of the form \"import [static]\n         package.class.part.part[.*];\"",
+  "newQueryScope": ":return: (io.deephaven.engine.table.lang.QueryScope) a query scope for this session; only invoked during construction",
+  "onApplicationInitializationBegin": "Called before Application initialization, should setup sourcing from the controller (as required).\n\n:param pathLoaderSupplier: java.util.function.Supplier<io.deephaven.engine.util.scripts.ScriptPathLoader>\n:param scriptLoaderState: io.deephaven.engine.util.scripts.ScriptPathLoaderState",
+  "onApplicationInitializationEnd": "Called after Application initialization.",
+  "removeComments": "Remove comments from an import statement. /* comments take precedence over eol (//) comments. This ignores\n escaping and quoting, as they are not valid in an import statement.\n\n:param s: (java.lang.String) - import statement string from which to remove comments\n:return: (java.lang.String) the input string with comments removed, and whitespace trimmed",
+  "runScript": ":param script: java.lang.String",
+  "runScriptOnce": ":param script: java.lang.String",
+  "sanitizeThrowable": "If this script session can throw unserializable exceptions, this method is responsible for turning those\n exceptions into something suitable for sending back to a client.\n\n:param e: (java.lang.Throwable) - the exception to (possibly) sanitize\n:return: (java.lang.Throwable) the sanitized exception",
+  "scriptType": ":return: (java.lang.String) a textual description of this script session's language for use in messages.",
+  "setScriptPathLoader": "Sets the scriptPathLoader that is in use for this session.\n\n:param pathLoaderSupplier: (java.util.function.Supplier<io.deephaven.engine.util.scripts.ScriptPathLoader>) - a supplier of a script path loader\n:param caching: (boolean) - whether the source operation should cache results",
+  "setUseOriginalScriptLoaderState": "Informs the session whether or not we should be using the original ScriptLoaderState for source commands.\n\n:param useOriginal: (boolean) - whether to use the script loader state at persistent query initialization\n:return: boolean",
+  "setVariable": "Inserts a value into the script's scope.\n\n:param name: (java.lang.String) - the variable name to set\n:param newValue: (java.lang.Object) - the new value of the variable"
+ },
+ "path": "io.deephaven.engine.util.GroovyDeephavenSession",
+ "text": "Groovy ScriptSession. Not safe for concurrent use.",
+ "typeName": "class"
+}

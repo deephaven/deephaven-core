@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.chunk.util.LongChunkRangeIterator",
+ "methods": {
+  "end": ":return: long",
+  "forEachLongRange": ":param lrc: io.deephaven.util.datastructures.LongRangeAbortableConsumer\n:return: boolean",
+  "hasNext": ":return: boolean",
+  "start": ":return: long"
+ },
+ "path": "io.deephaven.chunk.util.LongChunkRangeIterator",
+ "typeName": "class"
+}

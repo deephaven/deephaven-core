@@ -1,12 +1,15 @@
 plugins {
   id 'java-library'
+  id 'io.deephaven.project.register'
 }
 
 dependencies {
-  compileOnly project(':DB')
+  compileOnly project(':engine-table')
   compileOnly project(':Util')
 
   compileOnly 'javax.inject:javax.inject:1'
 
   api 'io.github.classgraph:classgraph:4.8.103'
+
+  Classpaths.inheritAutoService(project)
 }

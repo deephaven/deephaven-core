@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.ViewColumnSource$VCSFillContext",
- "methods": {
-  "close": "Release any resources associated with this context. The context should not be used afterwards."
- },
- "path": "io.deephaven.db.v2.sources.ViewColumnSource.VCSFillContext",
- "typeName": "class"
-}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.AbstractHierarchicalTableInfo",
+ "methods": {
+  "getColumnFormats": "Gets the column formats.\n\n:return: (java.lang.String[]) the column formats, null if there are none"
+ },
+ "path": "io.deephaven.engine.table.impl.AbstractHierarchicalTableInfo",
+ "text": "Base class containing common code for implementers of HierarchicalTableInfo",
+ "typeName": "class"
+}

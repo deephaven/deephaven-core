@@ -4,23 +4,24 @@
 
 package io.deephaven.extensions.barrage.chunk.array;
 
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.CharChunk;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.IntChunk;
-import io.deephaven.db.v2.sources.chunk.ObjectChunk;
-import io.deephaven.db.v2.sources.chunk.WritableCharChunk;
-import io.deephaven.db.v2.sources.chunk.WritableChunk;
-import io.deephaven.db.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
-import io.deephaven.db.v2.sources.chunk.sized.SizedCharChunk;
+import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.sized.SizedCharChunk;
 
 public class CharArrayExpansionKernel implements ArrayExpansionKernel {
     private final static char[] ZERO_LEN_ARRAY = new char[0];
     public final static CharArrayExpansionKernel INSTANCE = new CharArrayExpansionKernel();
 
     @Override
-    public <T, A extends Attributes.Any> WritableChunk<A> expand(final ObjectChunk<T, A> source, final WritableIntChunk<Attributes.ChunkPositions> perElementLengthDest) {
+    public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source, final WritableIntChunk<ChunkPositions> perElementLengthDest) {
         if (source.size() == 0) {
             perElementLengthDest.setSize(0);
             return WritableCharChunk.makeWritableChunk(0);
@@ -48,27 +49,39 @@ public class CharArrayExpansionKernel implements ArrayExpansionKernel {
     }
 
     @Override
-    public <T, A extends Attributes.Any> WritableObjectChunk<T, A> contract(
-            final Chunk<A> source, final IntChunk<Attributes.ChunkPositions> perElementLengthDest) {
+    public <T, A extends Any> WritableObjectChunk<T, A> contract(
+            final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest,
+            final WritableChunk<A> outChunk, final int outOffset, final int totalRows) {
         if (perElementLengthDest.size() == 0) {
-            return WritableObjectChunk.makeWritableChunk(0);
+            if (outChunk != null) {
+                return outChunk.asWritableObjectChunk();
+            }
+            return WritableObjectChunk.makeWritableChunk(totalRows);
         }
 
+        final int itemsInBatch = perElementLengthDest.size() - 1;
         final CharChunk<A> typedSource = source.asCharChunk();
-        final WritableObjectChunk<Object, A> result = WritableObjectChunk.makeWritableChunk(perElementLengthDest.size() - 1);
+        final WritableObjectChunk<Object, A> result;
+        if (outChunk != null) {
+            result = outChunk.asWritableObjectChunk();
+        } else {
+            final int numRows = Math.max(itemsInBatch, totalRows);
+            result = WritableObjectChunk.makeWritableChunk(numRows);
+            result.setSize(numRows);
+        }
 
         int lenRead = 0;
-        for (int i = 0; i < result.size(); ++i) {
+        for (int i = 0; i < itemsInBatch; ++i) {
             final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (ROW_LEN == 0) {
-                result.set(i, ZERO_LEN_ARRAY);
+                result.set(outOffset + i, ZERO_LEN_ARRAY);
             } else {
                 final char[] row = new char[ROW_LEN];
                 for (int j = 0; j < ROW_LEN; ++j) {
                     row[j] = typedSource.get(lenRead + j);
                 }
                 lenRead += ROW_LEN;
-                result.set(i, row);
+                result.set(outOffset + i, row);
             }
         }
 

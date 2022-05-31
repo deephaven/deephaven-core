@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.util.SimpleTypeMap",
+ "methods": {
+  "create": "Note: Java generics information - <V>\n\n:param forBoolean: V\n:param forChar: V\n:param forByte: V\n:param forShort: V\n:param forInt: V\n:param forLong: V\n:param forFloat: V\n:param forDouble: V\n:param forObject: V\n:return: io.deephaven.util.SimpleTypeMap<V>",
+  "get": ":param simpleType: java.lang.Class<?>\n:return: SimpleTypeMap.V"
+ },
+ "path": "io.deephaven.util.SimpleTypeMap",
+ "typeName": "class"
+}

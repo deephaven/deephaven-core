@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.time.DateTimeUtils$DateTimeOverflowException",
+ "methods": {},
+ "path": "io.deephaven.time.DateTimeUtils.DateTimeOverflowException",
+ "text": "A type of RuntimeException thrown when operations resulting in DateTime values would exceed the range\n available by max or min long nanoseconds.",
+ "typeName": "class"
+}

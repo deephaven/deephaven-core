@@ -8,7 +8,7 @@ import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 import java.util.function.Function;
 
-import static io.deephaven.integrations.python.PythonUtilities.pyApplyFunc;
+import static io.deephaven.integrations.python.PythonUtils.pyApplyFunc;
 
 /**
  * A class which calls a Python callable.

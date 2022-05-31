@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.FillContextMaker",
+ "methods": {
+  "makeFillContext": "**Incompatible overloads text - text from the first overload:**\n\nAllocate a new ChunkSource.FillContext for filling chunks from this FillContextMaker, typically a\n ChunkSource, without a SharedContext.\n\n*Overload 1*  \n  :param chunkCapacity: (int) - The maximum size of any WritableChunk that will be filled with this context\n  :param sharedContext: (io.deephaven.engine.table.SharedContext) - Shared store of intermediate results.\n  :return: (io.deephaven.engine.table.ChunkSource.FillContext) A context for use with fill operations\n  \n*Overload 2*  \n  :param chunkCapacity: (int) - The maximum size of any WritableChunk that will be filled with this context\n  :return: (io.deephaven.engine.table.ChunkSource.FillContext) A context for use with fill operations"
+ },
+ "path": "io.deephaven.engine.table.FillContextMaker",
+ "typeName": "interface"
+}

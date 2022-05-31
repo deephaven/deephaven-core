@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.KeyedTableListener$KeyUpdateListener",
- "methods": {
-  "update": ":param keyedTableListener: io.deephaven.db.v2.KeyedTableListener\n:param key: io.deephaven.datastructures.util.SmartKey\n:param index: long\n:param event: io.deephaven.db.v2.KeyedTableListener.KeyEvent"
- },
- "path": "io.deephaven.db.v2.KeyedTableListener.KeyUpdateListener",
- "typeName": "interface"
-}

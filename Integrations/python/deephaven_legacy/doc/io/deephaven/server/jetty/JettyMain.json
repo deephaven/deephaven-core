@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.jetty.JettyMain",
+ "methods": {
+  "main": ":param args: java.lang.String[]"
+ },
+ "path": "io.deephaven.server.jetty.JettyMain",
+ "typeName": "class"
+}

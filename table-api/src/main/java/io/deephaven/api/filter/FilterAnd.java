@@ -25,6 +25,10 @@ public abstract class FilterAnd extends FilterBase implements Iterable<Filter> {
         return builder().addFilters(filters).build();
     }
 
+    public static FilterAnd of(Iterable<? extends Filter> filters) {
+        return builder().addAllFilters(filters).build();
+    }
+
     /**
      * The filters.
      *

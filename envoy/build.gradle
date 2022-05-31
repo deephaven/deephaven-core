@@ -3,22 +3,32 @@ import io.deephaven.tools.License
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
 }
 
-def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
+evaluationDependsOn Docker.registryProject('envoyproxy')
 
-task prepareDocker(type: Sync) {
+def dockerLicenses = License.createFrom(project).syncDockerLicense()
+
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    // TODO(deephaven-core#1596): Remove extra dependencies for build-ci.yml
+    inputs.files Docker.registryFiles(project, 'envoyproxy')
+
     from 'Dockerfile'
     from ('contents') {
         into 'contents'
     }
-    from (dockerLicenses.outputs) {
+    from (dockerLicenses.get().outputs) {
         into 'contents'
     }
     into 'build/docker'
 }
 
-task buildDocker(type: DockerBuildImage) {
-    dependsOn prepareDocker
+def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
+    inputs.files prepareDocker.get().outputs.files
+    inputs.files Docker.registryFiles(project, 'envoyproxy')
+    buildArgs.put('DEEPHAVEN_VERSION', project.version)
     images.add('deephaven/envoy:local-build')
 }
+
+assemble.dependsOn buildDocker

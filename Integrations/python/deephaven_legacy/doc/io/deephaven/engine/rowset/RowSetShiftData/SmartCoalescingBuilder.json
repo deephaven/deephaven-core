@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.rowset.RowSetShiftData$SmartCoalescingBuilder",
+ "methods": {
+  "build": "Make final modifications to the RowSetShiftData and return it. Invoke close() to minimize\n the lifetime of the pre-shift RowSequence.Iterator.\n\n:return: (io.deephaven.engine.rowset.RowSetShiftData) The built RowSetShiftData",
+  "nonempty": ":return: (boolean) true iff there is at least one shift appended to this builder",
+  "shiftRange": "Shift a range of keys. The shift must be consistent with previously added shifts.\n\n:param beginRange: (long) - first key to shift (inclusive)\n:param endRange: (long) - last key to shift (inclusive)\n:param shiftDelta: (long) - offset to shift by; may be negative"
+ },
+ "path": "io.deephaven.engine.rowset.RowSetShiftData.SmartCoalescingBuilder",
+ "text": "Helper utility to build instances of RowSetShiftData with internally consistent data. No other ranges\n should be added to this builder after RowSetShiftData.Builder.build() is invoked.\n \n Differs from RowSetShiftData.Builder in that it coalesces ranges with the same delta if they have no intervening keys in\n the pre-shift keys of the input.\n \n\n The data should be presented to the builder in shift iterator order, meaning the first contiguous run with a\n given polarity is presented to the builder, then the next run is presented with the opposite polarity. When the\n polarity is reversed (i.e., the delta is positive); the ranges must be presented in reverse (descending) order\n within the run. When the polarity is not reversed (i.e., the delta is negative); the ranges must be presented in\n ascending order.",
+ "typeName": "class"
+}

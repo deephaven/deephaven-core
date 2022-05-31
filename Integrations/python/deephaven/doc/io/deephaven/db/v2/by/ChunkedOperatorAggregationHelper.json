@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.by.ChunkedOperatorAggregationHelper",
- "methods": {
-  "aggregation": "*Overload 1*  \n  :param aggregationContextFactory: io.deephaven.db.v2.by.AggregationContextFactory\n  :param queryTable: io.deephaven.db.v2.QueryTable\n  :param groupByColumns: io.deephaven.db.v2.select.SelectColumn[]\n  :return: io.deephaven.db.v2.QueryTable\n  \n*Overload 2*  \n  :param control: io.deephaven.db.v2.by.AggregationControl\n  :param aggregationContextFactory: io.deephaven.db.v2.by.AggregationContextFactory\n  :param queryTable: io.deephaven.db.v2.QueryTable\n  :param groupByColumns: io.deephaven.db.v2.select.SelectColumn[]\n  :return: io.deephaven.db.v2.QueryTable",
-  "chunkSize": "Return the minimum of our chunk size and the size of an input.\n\n:param size: (long) - the input size\n:return: (int) an appropriate chunk size to use"
- },
- "path": "io.deephaven.db.v2.by.ChunkedOperatorAggregationHelper",
- "typeName": "class"
-}

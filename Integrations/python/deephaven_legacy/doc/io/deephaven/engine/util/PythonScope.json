@@ -1,0 +1,21 @@
+{
+ "className": "io.deephaven.engine.util.PythonScope",
+ "methods": {
+  "containsKey": "Finds out if a variable is in scope\n\n:param name: (java.lang.String) - the name of the python variable\n:return: (boolean) true iff the scope contains the variable",
+  "convertStringKey": "The helper method to turn a raw key into a string key.\n \n Note: this assumes that all the keys are strings, which is not always true. Indices can also be tuples. TODO:\n revise interface as appropriate if this becomes an issue.\n\n:param key: (PythonScope.PyObj) - the raw key\n:return: (java.lang.String) the string key",
+  "convertValue": "The helper method to turn a raw value into an implementation specific object.\n \n This method should NOT convert PyObj of None type to null - we need to preserve the None object so it works with\n other Optional return values.\n\n:param value: (PythonScope.PyObj) - the raw value\n:return: (java.lang.Object) the converted object value",
+  "getEntries": "Equivalent to getEntriesRaw(), where the keys have been converted via convertStringKey(PyObj)\n and the values via convertValue(PyObj)\n\n:return: (java.util.stream.Stream<java.util.Map.Entry<java.lang.String,java.lang.Object>>) the string keys and converted values",
+  "getEntriesMap": "Equivalent to getEntries().collect(someMapCollector)\n\n:return: (java.util.Map<java.lang.String,java.lang.Object>) the string keys and converted values, as a map",
+  "getEntriesRaw": "Retrieves all keys and values from the given scope.\n \n No conversion is done.\n\n:return: (java.util.stream.Stream<java.util.Map.Entry<PythonScope.PyObj,PythonScope.PyObj>>) the keys and values",
+  "getKeys": "Equivalent to getKeysRaw().map(convertStringKey(PyObj))\n\n:return: (java.util.stream.Stream<java.lang.String>) the string keys",
+  "getKeysCollection": "Equivalent to getKeys().collect(someCollector)\n\n:return: (java.util.Collection<java.lang.String>) the string keys, as a collection",
+  "getKeysRaw": "Retrieves all keys from the give scope.\n \n No conversion is done.\n \n Technically, the keys can be tuples...\n\n:return: (java.util.stream.Stream<PythonScope.PyObj>) the keys",
+  "getValue": "**Incompatible overloads text - text from the first overload:**\n\nEquivalent to getValue(String).map(clazz.Class.cast(Object))\n\n*Overload 1*  \n  :param name: (java.lang.String) - the name of the python variable\n  :return: (java.util.Optional<java.lang.Object>) the converted object value, or empty\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param name: (java.lang.String) - the name of the python variable\n  :param clazz: (java.lang.Class<T>) - the class to cast to\n  :return: (java.util.Optional<T>) the converted casted value, or empty",
+  "getValueRaw": "Retrieves a value from the given scope.\n \n No conversion is done.\n\n:param name: (java.lang.String) - the name of the python variable\n:return: (java.util.Optional<PythonScope.PyObj>) the value, or empty",
+  "getValueUnchecked": "Equivalent to getValue(String).map(x -> (T)x);\n\nNote: Java generics information - <T>\n\n:param name: (java.lang.String) - the name of the python variable\n:return: (java.util.Optional<T>) the converted casted value, or empty",
+  "globals": ":return: org.jpy.PyDictWrapper"
+ },
+ "path": "io.deephaven.engine.util.PythonScope",
+ "text": "A collection of methods around retrieving objects from the given Python scope.\n \n The scope is likely coming from some sort of Python dictionary. The scope might be local, global, or other.",
+ "typeName": "interface"
+}

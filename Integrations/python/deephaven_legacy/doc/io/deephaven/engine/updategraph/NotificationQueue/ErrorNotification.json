@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.updategraph.NotificationQueue$ErrorNotification",
+ "methods": {},
+ "path": "io.deephaven.engine.updategraph.NotificationQueue.ErrorNotification",
+ "text": "Marker interface for error notifications, only relevant to unit testing framework.",
+ "typeName": "interface"
+}

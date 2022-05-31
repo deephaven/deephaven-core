@@ -9,7 +9,6 @@ import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.Procedure;
 import io.deephaven.base.verify.Require;
-import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,26 +37,20 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
 
     protected final LockFreeArrayQueue<T> pool; // TODO: a stack would be nice here
     private final Procedure.Unary<T> clearingProcedure;
-    private final String logPfx;
-    private final Logger log;
 
-    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory, Procedure.Unary<T> clearingProcedure,
-            @Nullable Logger log, @Nullable String logPfx) {
-        this(size, Require.neqNull(factory, "factory"), clearingProcedure, log, logPfx, false);
+    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory,
+            Procedure.Unary<T> clearingProcedure) {
+        this(size, Require.neqNull(factory, "factory"), clearingProcedure, false);
     }
 
-    protected ThreadSafeFixedSizePool(int size, Procedure.Unary<T> clearingProcedure, Logger log, String logPfx) {
-        this(size, null, clearingProcedure, log, logPfx, false);
+    protected ThreadSafeFixedSizePool(int size, Procedure.Unary<T> clearingProcedure) {
+        this(size, null, clearingProcedure, false);
     }
 
     private ThreadSafeFixedSizePool(int size, @Nullable Function.Nullary<T> factory,
-            Procedure.Unary<T> clearingProcedure, Logger log, String logPfx, boolean dummy) {
+            Procedure.Unary<T> clearingProcedure, boolean dummy) {
         Require.geq(size, "size", MIN_SIZE, "MIN_SIZE");
-        Require.requirement((log == null) == (logPfx == null),
-                "log and logPfx must either both be null, or both non-null");
         this.clearingProcedure = clearingProcedure;
-        this.log = log;
-        this.logPfx = logPfx;
         this.pool = new LockFreeArrayQueue<T>(MathUtil.ceilLog2(size + 2));
         if (factory == null) {
             // If factory is null, we expect to have all items supplied via give().
@@ -71,12 +64,6 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
         }
     }
 
-    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory, Procedure.Unary<T> clearingProcedure) {
-        this(size, factory, clearingProcedure, null, null);
-    }
-
-    volatile long nextGiveLog = 0;
-
     public void give(T item) {
         if (null == item) {
             return;
@@ -88,38 +75,14 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
             // happy path
             return;
         }
-        int spins = 0, yields = 0;
-        long t0 = log != null ? System.nanoTime() / 1000 : 0;
-        try {
-            while (!pool.enqueue(item)) {
-                if (++spins > SPIN_COUNT) {
-                    yields++;
-                    if (log != null) {
-                        long now = System.nanoTime() / 1000;
-                        if (now > nextGiveLog) {
-                            nextGiveLog = (now + 100000) - (now % 100000);
-                            long dt = (now - t0);
-                            log.warn(logPfx + ": give() can't enqueue returned item, yield count = " + yields);
-                        }
-                    }
-                    Thread.yield();
-                    spins = 0;
-                }
-            }
-        } finally {
-            if (log != null) {
-                long now = System.nanoTime() / 1000;
-                if (now > nextGiveLog) {
-                    nextGiveLog = (now + 100000) - (now % 100000);
-                    long dt = (now - t0);
-                    log.warn(logPfx + ": give() took " + dt + " micros, with " + yields + " yields and " + spins
-                            + " additional spins");
-                }
+        int spins = 0;
+        while (!pool.enqueue(item)) {
+            if (++spins > SPIN_COUNT) {
+                Thread.yield();
+                spins = 0;
             }
         }
     }
-
-    volatile long nextTakeLog = 0;
 
     public T take() {
         T item = pool.dequeue();
@@ -127,36 +90,13 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
             // happy path
             return item;
         }
-        int spins = 0, yields = 0;
-        long t0 = log != null ? System.nanoTime() / 1000 : 0;
-        try {
-            while ((item = pool.dequeue()) == null) {
-                if (++spins > SPIN_COUNT) {
-                    yields++;
-                    if (log != null) {
-                        long now = System.nanoTime() / 1000;
-                        if (now > nextTakeLog) {
-                            nextTakeLog = (now + 100000) - (now % 100000);
-                            long dt = (now - t0);
-                            log.warn(logPfx + ": take() can't dequeue from pool, waiting for " + dt
-                                    + " micros, yield count = " + yields);
-                        }
-                    }
-                    Thread.yield();
-                    spins = 0;
-                }
-            }
-            return item;
-        } finally {
-            if (log != null) {
-                long now = System.nanoTime() / 1000;
-                if (now > nextTakeLog) {
-                    nextTakeLog = (now + 100000) - (now % 100000);
-                    long dt = (now - t0);
-                    log.warn(logPfx + ": take() took " + dt + " micros, with " + yields + " yields and " + spins
-                            + " additional spins");
-                }
+        int spins = 0;
+        while ((item = pool.dequeue()) == null) {
+            if (++spins > SPIN_COUNT) {
+                Thread.yield();
+                spins = 0;
             }
         }
+        return item;
     }
 }

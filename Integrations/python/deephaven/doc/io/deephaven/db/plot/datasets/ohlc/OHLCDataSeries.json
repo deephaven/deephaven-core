@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.plot.datasets.ohlc.OHLCDataSeries",
- "methods": {},
- "path": "io.deephaven.db.plot.datasets.ohlc.OHLCDataSeries",
- "text": "XYDataSeriesInternal for open-high-low-close charts.",
- "typeName": "interface"
-}

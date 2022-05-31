@@ -2,7 +2,6 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.condition.DataCase;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -844,7 +843,7 @@ public class Condition {
 
     public native ContainsCondition getContains();
 
-    public native DataCase getDataCase();
+    public native int getDataCase();
 
     public native InCondition getIn();
 

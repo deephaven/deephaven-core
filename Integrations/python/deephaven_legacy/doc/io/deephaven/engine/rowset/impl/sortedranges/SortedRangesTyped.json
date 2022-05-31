@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.sortedranges.SortedRangesTyped",
+ "methods": {
+  "tryCompactUnsafe": ":param k: (int) - if k == 0, compact if count < capacity. k > 0, compact if (capacity - count > (capacity\n        >> k).\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges"
+ },
+ "path": "io.deephaven.engine.rowset.impl.sortedranges.SortedRangesTyped",
+ "typeName": "class"
+}

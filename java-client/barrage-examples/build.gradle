@@ -1,19 +1,17 @@
 plugins {
-    id 'java'
     id 'application'
+    id 'io.deephaven.project.register'
 }
 
 dependencies {
     implementation project(':java-client-barrage-dagger')
-    implementation project(':java-client-flight-examples')
-
-    implementation 'info.picocli:picocli:4.6.1'
+    implementation project(':java-client-example-utilities')
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
-    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
+    runtimeOnly project(':log-to-slf4j')
     Classpaths.inheritLogbackClassic(project)
 }
 
@@ -23,44 +21,24 @@ test {
 
 startScripts.enabled = false
 
-task createSubscribeBarrageScripts(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.SubscribeApplicationField'
-    applicationName = 'subscribe-application-field'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createSubscribeQST(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.SubscribeQST'
-    applicationName = 'subscribe-qst'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createSubscribeQueryScope(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.SubscribeQueryScope'
-    applicationName = 'subscribe-query-scope'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
+def createApplication = { String name, String mainClass ->
+    project.tasks.register("create-${name}", CreateStartScripts) {script ->
+        script.mainClass.set mainClass
+        script.applicationName = name
+        script.outputDir = project.layout.buildDirectory.dir(name).get().asFile
+        script.classpath = startScripts.classpath
+        script.defaultJvmOpts = [
+                '-server',
+                '-XX:+UseG1GC',
+                '-XX:MaxGCPauseMillis=100',
+                '-XX:+UseStringDeduplication',
+                '-DConfiguration.rootFile=dh-defaults.prop']
+    }
 }
 
 applicationDistribution.into('bin') {
-    from(createSubscribeBarrageScripts)
+    from(createApplication('subscribe-table', 'io.deephaven.client.examples.SubscribeTable'))
+    from(createApplication('snapshot-table', 'io.deephaven.client.examples.SnapshotTable'))
     fileMode = 0755
 }
 

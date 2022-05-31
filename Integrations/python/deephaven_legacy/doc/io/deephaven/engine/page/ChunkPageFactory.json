@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.page.ChunkPageFactory",
+ "methods": {
+  "forChunkType": ":param chunkType: io.deephaven.chunk.ChunkType\n:return: io.deephaven.engine.page.ChunkPageFactory",
+  "forElementType": ":param clazz: java.lang.Class<?>\n:return: io.deephaven.engine.page.ChunkPageFactory",
+  "pageWrap": "*Overload 1*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param beginRow: long\n  :param array: java.lang.Object\n  :param mask: long\n  :return: io.deephaven.engine.page.ChunkPage<ATTR>\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param beginRow: long\n  :param array: java.lang.Object\n  :param offset: int\n  :param capacity: int\n  :param mask: long\n  :return: io.deephaven.engine.page.ChunkPage<ATTR>",
+  "valueOf": "Returns the enum constant of this type with the specified name.\nThe string must match exactly an identifier used to declare an\nenum constant in this type.  (Extraneous whitespace characters are \nnot permitted.)\n\n:param name: (java.lang.String) - the name of the enum constant to be returned.\n:return: (io.deephaven.engine.page.ChunkPageFactory) the enum constant with the specified name",
+  "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.engine.page.ChunkPageFactory[]) an array containing the constants of this enum type, in the order they are declared"
+ },
+ "path": "io.deephaven.engine.page.ChunkPageFactory",
+ "text": "Factory for wrapping native arrays as ChunkPage instances.",
+ "typeName": "enum"
+}

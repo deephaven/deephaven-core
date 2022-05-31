@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.WritableSourceWithEnsurePrevious",
+ "methods": {
+  "ensurePrevious": "Prepare this column source such that all values in rowSet may be accessed using getPrev. Further operations in\n this cycle need not check for previous when writing data to the column source; you must provide a row set that\n contains every row that may be written to this column source.\n\n:param rowSet: (io.deephaven.engine.rowset.RowSet) - the rowset of values that will change on this cycle",
+  "providesEnsurePrevious": "Does the specified WritableColumnSource provide the ensurePrevious function?\n\n:param wcs: (io.deephaven.engine.table.WritableColumnSource<?>) - the WritableColumnSource to check\n:return: (boolean) true if ensurePrevious can be called on wcs"
+ },
+ "path": "io.deephaven.engine.table.WritableSourceWithEnsurePrevious",
+ "text": "A writable source that allows setting all previous values with one operation rather than on each set.",
+ "typeName": "interface"
+}

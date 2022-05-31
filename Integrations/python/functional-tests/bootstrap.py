@@ -1,5 +1,5 @@
 import os
-from deephaven import start_jvm, jpy
+from deephaven_legacy import start_jvm, jpy
 
 
 def build_py_session():
@@ -15,7 +15,6 @@ def build_py_session():
             'devroot': DEFAULT_DEVROOT,
             'verbose': False,
             'propfile': DEFAULT_PROPFILE,
-            'java_home': os.environ.get('JDK_HOME', None),
             'jvm_properties': {},
             'jvm_options': {'-Djava.awt.headless=true',
                             '-Xms1g',
@@ -30,6 +29,6 @@ def build_py_session():
         start_jvm(**kwargs)
 
         # set up a Deephaven Python session
-        py_scope_jpy = jpy.get_type("io.deephaven.db.util.PythonScopeJpyImpl").ofMainGlobals()
-        py_dh_session = jpy.get_type("io.deephaven.db.util.PythonDeephavenSession")(py_scope_jpy)
-        jpy.get_type("io.deephaven.db.tables.select.QueryScope").setScope(py_dh_session.newQueryScope())
+        py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
+        py_dh_session = jpy.get_type("io.deephaven.engine.util.PythonDeephavenSession")(py_scope_jpy)
+        jpy.get_type("io.deephaven.engine.table.lang.QueryScope").setScope(py_dh_session.newQueryScope())

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.figure.FigureWidgetTranslator",
+ "methods": {
+  "translate": ":param figure: io.deephaven.plot.FigureWidget\n:param exporter: io.deephaven.plugin.type.ObjectType.Exporter\n:return: io.deephaven.proto.backplane.script.grpc.FigureDescriptor"
+ },
+ "path": "io.deephaven.figure.FigureWidgetTranslator",
+ "typeName": "class"
+}

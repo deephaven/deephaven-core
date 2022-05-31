@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.reverse.ReverseKernel",
+ "methods": {
+  "makeReverseKernel": ":param chunkType: io.deephaven.chunk.ChunkType\n:return: io.deephaven.engine.table.impl.util.reverse.ReverseKernel",
+  "reverse": "Reverse chunk values in place.\n\nNote: Java generics information - <T extends io.deephaven.chunk.attributes.Any>\n\n:param chunkToReverse: (io.deephaven.chunk.WritableChunk<T>) - the chunk to reverse"
+ },
+ "path": "io.deephaven.engine.table.impl.util.reverse.ReverseKernel",
+ "typeName": "interface"
+}

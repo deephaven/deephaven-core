@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.util.compare.ObjectComparisons",
+ "methods": {
+  "compare": ":param lhs: java.lang.Object\n:param rhs: java.lang.Object\n:return: int",
+  "eq": ":param lhs: java.lang.Object\n:param rhs: java.lang.Object\n:return: boolean",
+  "geq": ":param lhs: java.lang.Object\n:param rhs: java.lang.Object\n:return: boolean",
+  "gt": ":param lhs: java.lang.Object\n:param rhs: java.lang.Object\n:return: boolean",
+  "leq": ":param lhs: java.lang.Object\n:param rhs: java.lang.Object\n:return: boolean",
+  "lt": ":param lhs: java.lang.Object\n:param rhs: java.lang.Object\n:return: boolean"
+ },
+ "path": "io.deephaven.util.compare.ObjectComparisons",
+ "typeName": "class"
+}

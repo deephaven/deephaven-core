@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.util.Formatter",
+ "methods": {
+  "formatTableDataService": "Add new lines and indentation to a String produced by TableDataService#toString()\n\n:param tdsStr: (java.lang.String) - the output of TableDataService#toString()\n:return: (java.lang.String) the same string with newlines and tabs."
+ },
+ "path": "io.deephaven.engine.util.Formatter",
+ "text": "Formatters to transform strings into more usable forms.",
+ "typeName": "class"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.web.shared.fu.ReverseListIterable",
+ "methods": {
+  "iterator": ":return: java.util.Iterator<ReverseListIterable.T>"
+ },
+ "path": "io.deephaven.web.shared.fu.ReverseListIterable",
+ "typeName": "class"
+}

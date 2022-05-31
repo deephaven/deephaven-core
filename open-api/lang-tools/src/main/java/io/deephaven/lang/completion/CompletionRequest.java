@@ -1,10 +1,9 @@
 package io.deephaven.lang.completion;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.util.VariableProvider;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.generated.ChunkerAssign;
@@ -54,8 +53,8 @@ public class CompletionRequest {
         this.offset = this.candidate = offset;
         this.completer = completer;
         this.localDefs = localDefs;
-        Require.requirement(offset >= 0, "offset >= 0");
-        Require.requirement(offset <= command.length(), "offset <= command.length()");
+        Require.geqZero(offset, "offset");
+        Require.leq(offset, "offset", command.length(), "command.length()");
     }
 
     public String getSource() {

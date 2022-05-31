@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.remote.DeltaUpdates",
+ "methods": {
+  "asUpdate": ":param modified: io.deephaven.engine.rowset.RowSet\n:param mcs: io.deephaven.engine.table.ModifiedColumnSet\n:return: io.deephaven.engine.table.TableUpdate",
+  "clone": ":return: io.deephaven.engine.table.impl.remote.DeltaUpdates",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.remote.DeltaUpdates",
+ "typeName": "class"
+}

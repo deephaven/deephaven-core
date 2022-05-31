@@ -1,5 +1,6 @@
 package io.deephaven.utils;
 
+import io.deephaven.util.BigDecimalUtils;
 import junit.framework.TestCase;
 
 import java.math.BigDecimal;

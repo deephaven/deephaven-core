@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.HashTableAnnotations$StateColumnSource",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.HashTableAnnotations.StateColumnSource",
+ "text": "We tag the state ColumnSource with this annotation, so we know what its name is in the source and destination.",
+ "typeName": "class"
+}

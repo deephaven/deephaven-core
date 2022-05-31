@@ -2,12 +2,12 @@ package io.deephaven.treetable;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.base.Pair;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.v2.QueryTable;
-import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -137,16 +137,18 @@ public class TreeSnapshotResult {
             if (data[i] != null) {
                 final ColumnDefinition<?> colDef = originalTree.getDefinition().getColumn(columnNames.get(i));
                 // noinspection unchecked
-                sources.put(columnNames.get(i), ArrayBackedColumnSource.getImmutableMemoryColumnSource(data[i],
+                sources.put(columnNames.get(i), InMemoryColumnSource.getImmutableMemoryColumnSource(data[i],
                         colDef.getDataType(), colDef.getComponentType()));
             }
         }
 
         sources.put(TreeTableConstants.TABLE_KEY_COLUMN,
-                ArrayBackedColumnSource.getImmutableMemoryColumnSource(tableKeyColumn));
+                InMemoryColumnSource.getImmutableMemoryColumnSource(tableKeyColumn));
         sources.put(TreeTableConstants.CHILD_PRESENCE_COLUMN, new BitSetColumnSource(childPresenceColumn));
 
-        return new QueryTable(Index.FACTORY.getFlatIndex((snapshotEnd - snapshotStart) + 1), sources);
+        return new QueryTable(
+                RowSetFactory.flat((snapshotEnd - snapshotStart) + 1).toTracking(),
+                sources);
     }
 
     public Table getUpdatedSource() {

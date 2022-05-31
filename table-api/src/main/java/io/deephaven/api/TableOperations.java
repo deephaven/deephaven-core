@@ -1,6 +1,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 
 import java.util.Collection;
@@ -258,65 +259,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     // -------------------------------------------------------------------------------------------
 
     /**
-     * Perform a left-join with the {@code rightTable}.
-     *
-     * <p>
-     * Delegates to {@link #leftJoin(Object, Collection, Collection)}.
-     *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
-     *        "columnFoundInBoth")
-     * @return the left-joined table
-     */
-    TOPS leftJoin(TABLE rightTable, String columnsToMatch);
-
-    /**
-     * Perform a left-join with the {@code rightTable}.
-     *
-     * <p>
-     * Delegates to {@link #leftJoin(Object, Collection, Collection)}.
-     *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
-     *        "columnFoundInBoth")
-     * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
-     *        side as a result of the match.
-     * @return the left-joined table
-     */
-    TOPS leftJoin(TABLE rightTable, String columnsToMatch, String columnsToAdd);
-
-    /**
-     * Perform a left-join with the {@code rightTable}.
-     *
-     * <p>
-     * Returns a table that has one column for each of {@code this} table's columns, and one column corresponding to
-     * each of the {@code rightTable} columns from {@code columnsToAdd} (or all the columns whose names don't overlap
-     * with the name of a column from the source table if {@code columnsToAdd} is empty). The new columns (those
-     * corresponding to the {@code rightTable}) contain an aggregation of all values from the left side that match the
-     * join criteria. Consequently the types of all right side columns not involved in a join criteria, is an array of
-     * the original column type. If the two tables have columns with matching names then the method will fail with an
-     * exception unless the columns with corresponding names are found in one of the matching criteria.
-     *
-     * <p>
-     * NOTE: leftJoin operation does not involve an actual data copy, or an in-memory table creation. In order to
-     * produce an actual in memory table you need to apply a select call on the join result.
-     *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch The match pair conditions.
-     * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
-     *        match.
-     * @return a table that has one column for each original table's columns, and one column corresponding to each
-     *         column listed in columnsToAdd. If {@code columnsToAdd.isEmpty()} one column corresponding to each column
-     *         of the input table (right table) columns whose names don't overlap with the name of a column from the
-     *         source table is added. The new columns (those corresponding to the input table) contain an aggregation of
-     *         all values from the left side that match the join criteria.
-     */
-    TOPS leftJoin(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd);
-
-    // -------------------------------------------------------------------------------------------
-
-    /**
      * Perform a cross join with the {@code rightTable}.
      *
      * <p>
@@ -381,8 +323,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * updates.
      *
      * <p>
-     * An io.deephaven.db.v2.utils.OutOfKeySpaceException is thrown when the total number of bits needed to express the
-     * result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds:
+     * An io.deephaven.engine.table.impl.util.OutOfKeySpaceException is thrown when the total number of bits needed to
+     * express the result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds:
      *
      * <p>
      * - If the left table is sparse, consider flattening the left table.
@@ -540,12 +482,175 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
-    TOPS by();
+    TOPS groupBy();
 
-    TOPS by(String... groupByColumns);
+    TOPS groupBy(String... groupByColumns);
 
-    TOPS by(Collection<? extends Selectable> groupByColumns);
+    TOPS groupBy(Collection<? extends Selectable> groupByColumns);
 
-    TOPS by(Collection<? extends Selectable> groupByColumns,
-            Collection<? extends Aggregation> aggregations);
+    // -------------------------------------------------------------------------------------------
+
+    TOPS aggAllBy(AggSpec spec);
+
+    TOPS aggAllBy(AggSpec spec, String... groupByColumns);
+
+    TOPS aggAllBy(AggSpec spec, Selectable... groupByColumns);
+
+    TOPS aggAllBy(AggSpec spec, Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS aggBy(Aggregation aggregation);
+
+    TOPS aggBy(Aggregation aggregation, String... groupByColumns);
+
+    TOPS aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns);
+
+    TOPS aggBy(Collection<? extends Aggregation> aggregations);
+
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns);
+
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS selectDistinct();
+
+    TOPS selectDistinct(String... groupByColumns);
+
+    TOPS selectDistinct(Selectable... groupByColumns);
+
+    TOPS selectDistinct(Collection<? extends Selectable> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS countBy(String countColumnName);
+
+    TOPS countBy(String countColumnName, String... groupByColumns);
+
+    TOPS countBy(String countColumnName, Selectable... groupByColumns);
+
+    TOPS countBy(String countColumnName, Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS firstBy();
+
+    TOPS firstBy(String... groupByColumns);
+
+    TOPS firstBy(Selectable... groupByColumns);
+
+    TOPS firstBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS lastBy();
+
+    TOPS lastBy(String... groupByColumns);
+
+    TOPS lastBy(Selectable... groupByColumns);
+
+    TOPS lastBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS minBy();
+
+    TOPS minBy(String... groupByColumns);
+
+    TOPS minBy(Selectable... groupByColumns);
+
+    TOPS minBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS maxBy();
+
+    TOPS maxBy(String... groupByColumns);
+
+    TOPS maxBy(Selectable... groupByColumns);
+
+    TOPS maxBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS sumBy();
+
+    TOPS sumBy(String... groupByColumns);
+
+    TOPS sumBy(Selectable... groupByColumns);
+
+    TOPS sumBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS avgBy();
+
+    TOPS avgBy(String... groupByColumns);
+
+    TOPS avgBy(Selectable... groupByColumns);
+
+    TOPS avgBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS medianBy();
+
+    TOPS medianBy(String... groupByColumns);
+
+    TOPS medianBy(Selectable... groupByColumns);
+
+    TOPS medianBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS stdBy();
+
+    TOPS stdBy(String... groupByColumns);
+
+    TOPS stdBy(Selectable... groupByColumns);
+
+    TOPS stdBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS varBy();
+
+    TOPS varBy(String... groupByColumns);
+
+    TOPS varBy(Selectable... groupByColumns);
+
+    TOPS varBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS absSumBy();
+
+    TOPS absSumBy(String... groupByColumns);
+
+    TOPS absSumBy(Selectable... groupByColumns);
+
+    TOPS absSumBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS wsumBy(String weightColumn);
+
+    TOPS wsumBy(String weightColumn, String... groupByColumns);
+
+    TOPS wsumBy(String weightColumn, Selectable... groupByColumns);
+
+    TOPS wsumBy(String weightColumn, Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS wavgBy(String weightColumn);
+
+    TOPS wavgBy(String weightColumn, String... groupByColumns);
+
+    TOPS wavgBy(String weightColumn, Selectable... groupByColumns);
+
+    TOPS wavgBy(String weightColumn, Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }

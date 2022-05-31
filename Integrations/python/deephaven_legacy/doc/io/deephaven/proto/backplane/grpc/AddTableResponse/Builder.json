@@ -1,0 +1,24 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.AddTableResponse$Builder",
+ "methods": {
+  "addRepeatedField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder",
+  "build": ":return: io.deephaven.proto.backplane.grpc.AddTableResponse",
+  "buildPartial": ":return: io.deephaven.proto.backplane.grpc.AddTableResponse",
+  "clear": ":return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder",
+  "clearField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder",
+  "clearOneof": ":param oneof: com.google.protobuf.Descriptors.OneofDescriptor\n:return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder",
+  "clone": ":return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder",
+  "getDefaultInstanceForType": ":return: io.deephaven.proto.backplane.grpc.AddTableResponse",
+  "getDescriptor": ":return: com.google.protobuf.Descriptors.Descriptor",
+  "getDescriptorForType": ":return: com.google.protobuf.Descriptors.Descriptor",
+  "isInitialized": ":return: boolean",
+  "mergeFrom": "*Overload 1*  \n  :param other: com.google.protobuf.Message\n  :return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder\n  \n*Overload 2*  \n  :param other: io.deephaven.proto.backplane.grpc.AddTableResponse\n  :return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder\n  \n*Overload 3*  \n  :param input: com.google.protobuf.CodedInputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder",
+  "mergeUnknownFields": ":param unknownFields: com.google.protobuf.UnknownFieldSet\n:return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder",
+  "setField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder",
+  "setRepeatedField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param index: int\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder",
+  "setUnknownFields": ":param unknownFields: com.google.protobuf.UnknownFieldSet\n:return: io.deephaven.proto.backplane.grpc.AddTableResponse.Builder"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.AddTableResponse.Builder",
+ "text": "Protobuf type io.deephaven.proto.backplane.grpc.AddTableResponse",
+ "typeName": "class"
+}

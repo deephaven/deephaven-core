@@ -5,18 +5,19 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.util.pools.PoolableChunk;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.Values>> implements ChunkInputStreamGenerator {
+public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> implements ChunkInputStreamGenerator {
     public static final byte[] PADDING_BUFFER = new byte[8];
     public static final int REMAINDER_MOD_8_MASK = 0x7;
 
@@ -57,15 +58,15 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.V
     }
 
     abstract class BaseChunkInputStream extends DrainableColumn {
-        protected final BarrageSubscriptionOptions options;
-        protected final OrderedKeys subset;
+        protected final StreamReaderOptions options;
+        protected final RowSequence subset;
         protected boolean read = false;
 
-        BaseChunkInputStream(final T chunk, final BarrageSubscriptionOptions options, final Index subset) {
+        BaseChunkInputStream(final T chunk, final StreamReaderOptions options, final RowSet subset) {
             this.options = options;
-            this.subset = chunk.size() == 0 ? OrderedKeys.EMPTY : subset != null ? subset.clone() : OrderedKeys.forRange(0, chunk.size() - 1);
+            this.subset = chunk.size() == 0 ? RowSequenceFactory.EMPTY : subset != null ? subset.copy() : RowSequenceFactory.forRange(0, chunk.size() - 1);
             REFERENCE_COUNT_UPDATER.incrementAndGet(BaseChunkInputStreamGenerator.this);
-            Assert.leq(this.subset.lastKey(), "this.subset.lastKey()", Integer.MAX_VALUE, "Integer.MAX_VALUE");
+            Assert.leq(this.subset.lastRowKey(), "this.subset.lastRowKey()", Integer.MAX_VALUE, "Integer.MAX_VALUE");
         }
 
         @Override

@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.lang.QueryLibraryImports",
+ "methods": {
+  "classes": ":return: java.util.Set<java.lang.Class<?>>",
+  "copyFrom": ":param other: io.deephaven.engine.table.lang.QueryLibraryImports\n:return: io.deephaven.engine.table.lang.QueryLibraryImports",
+  "copyFromServiceLoader": ":return: io.deephaven.engine.table.lang.QueryLibraryImports",
+  "packages": ":return: java.util.Set<java.lang.Package>",
+  "statics": ":return: java.util.Set<java.lang.Class<?>>"
+ },
+ "path": "io.deephaven.engine.table.lang.QueryLibraryImports",
+ "typeName": "interface"
+}

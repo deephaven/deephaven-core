@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.impl.ParallelDeferredGroupingProvider",
+ "methods": {
+  "addSource": "Add a column location for consideration when constructing groupings.\n\n:param columnLocation: (io.deephaven.engine.table.impl.locations.ColumnLocation) - The column location to add\n:param locationRowSetInTable: (io.deephaven.engine.rowset.RowSet) - The location's RowSet in the table",
+  "getGroupToRange": "**Incompatible overloads text - text from the first overload:**\n\nReturns a grouping structure, possibly constructed on-demand.\n\n*Overload 1*  \n  :return: (java.util.Map<ParallelDeferredGroupingProvider.DATA_TYPE,io.deephaven.engine.rowset.RowSet>) a Map from grouping keys to Indices, or null if the group could not be constructed\n  \n*Overload 2*  \n  :param hint: (io.deephaven.engine.rowset.RowSet) - required indices within the resultant Map\n  :return: (io.deephaven.base.Pair<java.util.Map<ParallelDeferredGroupingProvider.DATA_TYPE,io.deephaven.engine.rowset.RowSet>,java.lang.Boolean>) a Pair containing a Map from grouping keys to Indices, which includes at least the hint indices; and a\n           Boolean which indicates that the grouping is complete"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.impl.ParallelDeferredGroupingProvider",
+ "text": "Grouping provider that loads column location metadata and assembles grouping indexes lazily on demand.",
+ "typeName": "class"
+}

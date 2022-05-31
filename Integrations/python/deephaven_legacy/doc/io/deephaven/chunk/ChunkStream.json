@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.chunk.ChunkStream",
+ "methods": {
+  "of": "*Overload 1*  \n  :param chunk: io.deephaven.chunk.DoubleChunk<? extendsio.deephaven.chunk.attributes.Any>\n  :param offset: int\n  :param capacity: int\n  :return: java.util.stream.DoubleStream\n  \n*Overload 2*  \n  :param chunk: io.deephaven.chunk.IntChunk<? extendsio.deephaven.chunk.attributes.Any>\n  :param offset: int\n  :param capacity: int\n  :return: java.util.stream.IntStream\n  \n*Overload 3*  \n  :param chunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.chunk.attributes.Any>\n  :param offset: int\n  :param capacity: int\n  :return: java.util.stream.LongStream"
+ },
+ "path": "io.deephaven.chunk.ChunkStream",
+ "typeName": "class"
+}

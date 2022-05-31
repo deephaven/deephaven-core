@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.uri.StructuredUri$Visitor",
+ "methods": {
+  "visit": "*Overload 1*  \n  :param queryScopeUri: io.deephaven.uri.QueryScopeUri\n  \n*Overload 2*  \n  :param applicationUri: io.deephaven.uri.ApplicationUri\n  \n*Overload 3*  \n  :param fieldUri: io.deephaven.uri.FieldUri\n  \n*Overload 4*  \n  :param remoteUri: io.deephaven.uri.RemoteUri\n  \n*Overload 5*  \n  :param customUri: java.net.URI"
+ },
+ "path": "io.deephaven.uri.StructuredUri.Visitor",
+ "typeName": "interface"
+}

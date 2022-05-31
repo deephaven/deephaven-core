@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.exceptions.UncheckedTableException",
- "methods": {},
- "path": "io.deephaven.db.exceptions.UncheckedTableException",
- "text": "A generic unchecked exception for problems related to Table operations.",
- "typeName": "class"
-}

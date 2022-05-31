@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.TableLocation",
+ "methods": {
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "getColumnLocation": ":param name: (java.lang.CharSequence) - The column name\n:return: (io.deephaven.engine.table.impl.locations.ColumnLocation) The ColumnLocation for the defined column under this table location",
+  "getKey": ":return: (io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey) An ImmutableTableLocationKey instance for this location",
+  "getTableKey": ":return: (io.deephaven.engine.table.impl.locations.ImmutableTableKey) An ImmutableTableKey instance for the enclosing table",
+  "refresh": "Initialize or run state information.",
+  "subscribe": "Subscribe to pushed location updates. Subscribing more than once with the same listener without an intervening\n unsubscribe is an error, and may result in undefined behavior.\n \n This is a possibly asynchronous operation - listener will receive 1 or more handleUpdate callbacks, followed by 0\n or 1 handleException callbacks during invocation and continuing after completion, on a thread determined by the\n implementation. Don't hold a lock that prevents notification delivery while subscribing!\n \n This method only guarantees eventually consistent state. To force a state update, use run() after subscription\n completes.\n\n:param listener: (io.deephaven.engine.table.impl.locations.TableLocation.Listener) - A listener",
+  "supportsSubscriptions": "Does this location support subscriptions? That is, can this location ever have ticking data?\n\n:return: (boolean) True if this location supports subscriptions",
+  "toGenericString": "Format the table key without implementation specific bits.\n\n:return: (java.lang.String) a formatted string",
+  "toStringDetailed": "Optional toString path with more implementation detail.\n\n:return: (java.lang.String) detailed conversion to string",
+  "toStringHelper": ":return: java.lang.String",
+  "unsubscribe": "Unsubscribe from pushed location updates.\n\n:param listener: (io.deephaven.engine.table.impl.locations.TableLocation.Listener) - The listener to forget about"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.TableLocation",
+ "text": "Building block for Deephaven \"source\" tables, with helper methods for discovering locations and their sizes. A\n location allows access to columns, size, and possibly other metadata for a single partition that may be included in a\n source table.",
+ "typeName": "interface"
+}

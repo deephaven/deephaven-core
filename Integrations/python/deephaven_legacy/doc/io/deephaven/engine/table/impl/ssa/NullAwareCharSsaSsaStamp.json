@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.ssa.NullAwareCharSsaSsaStamp",
+ "methods": {
+  "applyShift": ":param leftSsa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param rightStampChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n:param rightStampKeys: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param shiftDelta: long\n:param rowRedirection: io.deephaven.engine.table.impl.util.WritableRowRedirection\n:param disallowExactMatch: boolean",
+  "findModified": ":param leftSsa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param rowRedirection: io.deephaven.engine.table.impl.util.RowRedirection\n:param rightStampChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n:param rightStampIndices: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param modifiedBuilder: io.deephaven.engine.rowset.RowSetBuilderRandom\n:param disallowExactMatch: boolean",
+  "processEntry": ":param leftSsa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param rightSsa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param rowRedirection: io.deephaven.engine.table.impl.util.WritableRowRedirection\n:param disallowExactMatch: boolean",
+  "processInsertion": ":param leftSsa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param rightStampChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n:param rightKeys: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param nextRightValue: io.deephaven.chunk.Chunk<io.deephaven.chunk.attributes.Values>\n:param rowRedirection: io.deephaven.engine.table.impl.util.WritableRowRedirection\n:param modifiedBuilder: io.deephaven.engine.rowset.RowSetBuilderRandom\n:param endsWithLastValue: boolean\n:param disallowExactMatch: boolean",
+  "processRemovals": ":param leftSsa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param rightStampChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n:param rightKeys: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param priorRedirections: io.deephaven.chunk.WritableLongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param rowRedirection: io.deephaven.engine.table.impl.util.WritableRowRedirection\n:param modifiedBuilder: io.deephaven.engine.rowset.RowSetBuilderRandom\n:param disallowExactMatch: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.ssa.NullAwareCharSsaSsaStamp",
+ "text": "Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.",
+ "typeName": "class"
+}

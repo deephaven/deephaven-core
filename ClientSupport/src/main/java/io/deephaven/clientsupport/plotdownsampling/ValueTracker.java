@@ -1,13 +1,14 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.v2.sources.BooleanArraySource;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.sources.LongArraySource;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.engine.table.impl.sources.BooleanArraySource;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.chunk.Chunk;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -73,7 +74,7 @@ public abstract class ValueTracker {
 
     // May contain any non-negative value, or NULL_LONG if there is no value. We track NULL_LONG in cases where we
     // aren't tracking which indexes are null, so we know that the entire bucket contains nulls and we should only
-    // include first/last index in the bucket's total index. This being null is not the same as the value being
+    // include first/last row key in the bucket's total row set. This being null is not the same as the value being
     // invalid.
     private final LongArraySource indexes = new LongArraySource();
 
@@ -97,30 +98,30 @@ public abstract class ValueTracker {
      * we have the largest or smallest value at that offset.
      *
      * Implementations must take care to check if the value is null. If so, if {@code nulls} is present, the current
-     * index should be added to it. If the
+     * row key should be added to it. If the
      *
      * @param offset the offset of the bucket state to use - use this with minValuePosition/maxValuePosition to compute
      *               the actual position in the underlying array sources
-     * @param rowIndex the index in the original table of the specified value. If the current given value is interesting
+     * @param rowKey the row key in the original table of the specified value. If the current given value is interesting
      *                 in some way, record this using setMinIndex/setMaxIndex so we can construct the full downsampled
-     *                 table index later
+     *                 table row set later
      * @param valuesChunk the chunk that we're currently examining
      * @param indexInChunk the index in the chunk that we're currently examining
      */
-    public abstract void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable Index nulls);
+    public abstract void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls);
 
     /**
-     * Indicates that a row was removed from the original table being downsampled. If that index was previously
+     * Indicates that a row was removed from the original table being downsampled. If that row key was previously
      * considered to be interesting, mark this offset as invalid, so that we can rescan later to find the next
      * interesting value.
      * @param offset the offset of the bucket state to use
-     * @param rowIndex the index in the original table.
+     * @param rowKey the row key in the original table.
      */
-    public final void remove(final int offset, final long rowIndex) {
-        if (rowIndex == maxIndex(offset)) {
+    public final void remove(final int offset, final long rowKey) {
+        if (rowKey == maxIndex(offset)) {
             maxValueValid(offset, false);
         }
-        if (rowIndex == minIndex(offset)) {
+        if (rowKey == minIndex(offset)) {
             minValueValid(offset, false);
         }
     }
@@ -144,13 +145,13 @@ public abstract class ValueTracker {
      *
      * @param offset the offset of the bucket state to use - use this with minValuePosition/maxValuePosition to compute
      *               the actual position in the underlying array sources
-     * @param rowIndex the index in the original table of the specified value. If the current given value is interesting
+     * @param rowKey the row key in the original table of the specified value. If the current given value is interesting
      *                 in some way, record this using setMinIndex/setMaxIndex so we can construct the full downsampled
-     *                 table index later
+     *                 table row set later
      * @param valuesChunk the chunk that we're currently examining
      * @param chunkIndex the index in the chunk that we're currently examining
      */
-    public abstract void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int chunkIndex, @Nullable Index nulls);
+    public abstract void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int chunkIndex, @Nullable WritableRowSet nulls);
 
     /**
      * Transforms the given BucketState.offset into the position in the array sources that represents the min value
@@ -205,9 +206,9 @@ public abstract class ValueTracker {
      * Scan the given chunk and confirm that whichever values are currently selected as max and min are correct, and
      * that the current data is now valid.
      */
-    public abstract void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable Index nulls);
+    public abstract void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls);
 
-    public final void shiftMaxIndex(final int offset, final IndexShiftData shiftData) {
+    public final void shiftMaxIndex(final int offset, final RowSetShiftData shiftData) {
         final long maxIndex = maxIndex(offset);
         if (maxIndex == QueryConstants.NULL_LONG) {
             return;
@@ -232,7 +233,7 @@ public abstract class ValueTracker {
         }
     }
 
-    public final void shiftMinIndex(final int offset, final IndexShiftData shiftData) {
+    public final void shiftMinIndex(final int offset, final RowSetShiftData shiftData) {
         final long minIndex = minIndex(offset);
         if (minIndex == QueryConstants.NULL_LONG) {
             return;

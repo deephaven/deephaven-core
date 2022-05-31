@@ -35,7 +35,7 @@ public class TypeUtils {
         LinkedHashMap<Class<?>, Class<?>> primitiveToBoxedTemp = new LinkedHashMap<>();
         LinkedHashMap<Class<?>, Class<?>> boxedToPrimitiveTemp = new LinkedHashMap<>();
 
-        // Note: ordering here matters! Tests in TestDBLanguageParser depend on it.
+        // Note: ordering here matters! Tests in TestLanguageParser depend on it.
         primitiveToBoxedTemp.put(byte.class, Byte.class);
         primitiveToBoxedTemp.put(short.class, Short.class);
         primitiveToBoxedTemp.put(char.class, Character.class);
@@ -513,10 +513,10 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is a DBDateTime or Date.
+     * Whether the class is a DateTime or Date.
      *
      * @param type The class.
-     * @return true if the type is a DBDateTime or {@link Date}.
+     * @return true if the type is a DateTime or {@link Date}.
      */
     public static boolean isDateTime(Class<?> type) {
         return Date.class.isAssignableFrom(type) || type.getAnnotation(IsDateTime.class) != null

@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.session.SessionCloseableObserver",
+ "methods": {},
+ "path": "io.deephaven.server.session.SessionCloseableObserver",
+ "typeName": "class"
+}

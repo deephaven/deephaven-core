@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.plot.datasets.ohlc.OHLCDataSeriesInternal",
+ "methods": {
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.plot.AxesImpl) - new axes.\n:return: (io.deephaven.plot.datasets.ohlc.OHLCDataSeriesInternal) copy of the series on a different set of axes.",
+  "getClose": "Gets the close value at index i.\n\n:param i: (int) - index\n:return: (double) close value at given index",
+  "getHigh": "Gets the high value at index i.\n\n:param i: (int) - index\n:return: (double) high value at given index",
+  "getLow": "Gets the low value at index i.\n\n:param i: (int) - index\n:return: (double) low value at given index",
+  "getOpen": "Gets the open value at index i.\n\n:param i: (int) - index\n:return: (double) open value at given index"
+ },
+ "path": "io.deephaven.plot.datasets.ohlc.OHLCDataSeriesInternal",
+ "text": "XYDataSeriesInternal for open-high-low-close charts.",
+ "typeName": "interface"
+}

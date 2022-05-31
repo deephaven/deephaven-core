@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.alternatingcolumnsource.ObjectAlternatingColumnSourceUnorderedMergeKernel",
+ "methods": {
+  "mergeContext": ":param dest: io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>\n:param outerKeys: io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param src: io.deephaven.chunk.Chunk<? superio.deephaven.chunk.attributes.Values>\n:param alternatePosition: int"
+ },
+ "path": "io.deephaven.engine.table.impl.by.alternatingcolumnsource.ObjectAlternatingColumnSourceUnorderedMergeKernel",
+ "typeName": "class"
+}

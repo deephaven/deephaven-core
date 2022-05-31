@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.tables.utils.PathUtil",
- "methods": {
-  "open": "Opens a file, returning an input stream. Paths that end in \".tar.zip\", \".tar.bz2\", \".tar.gz\", \".tar.7z\",\n \".tar.zst\", \".zip\", \".bz2\", \".gz\", \".7z\", \".zst\", or \".tar\" will have appropriate decompression applied. The\n returned stream may or may not be buffered.\n\n:param path: (java.nio.file.Path) - the path\n:return: (java.io.InputStream) the input stream, potentially decompressed"
- },
- "path": "io.deephaven.db.tables.utils.PathUtil",
- "typeName": "class"
-}

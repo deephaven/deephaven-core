@@ -6,11 +6,11 @@ package io.deephaven.modelfarm.util;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.dbarrays.*;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.engine.table.Table;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.vector.*;
+import io.deephaven.time.DateTime;
+import io.deephaven.engine.util.TableTools;
 
 public class TestModelFarmUtils extends BaseArrayTestCase {
 
@@ -39,53 +39,53 @@ public class TestModelFarmUtils extends BaseArrayTestCase {
 
     public void testArrayString() {
         final String[] target = {"A", "B", "C"};
-        final String[] result = ModelFarmUtils.arrayString(new DbArrayDirect<>(target));
+        final String[] result = ModelFarmUtils.arrayString(new ObjectVectorDirect<>(target));
         assertEquals(target, result);
         assertNull(ModelFarmUtils.arrayString(null));
     }
 
-    public void testArrayDBDateTime() {
-        final DBDateTime[] target = {DBTimeUtils.convertDateTime("2018-01-11T01:01:01 NY"),
-                DBTimeUtils.convertDateTime("2018-02-11T01:01:01 NY"),
-                DBTimeUtils.convertDateTime("2018-03-11T01:01:01 NY")};
-        final DBDateTime[] result = ModelFarmUtils.arrayDBDateTime(new DbArrayDirect<>(target));
+    public void testArrayDateTime() {
+        final DateTime[] target = {DateTimeUtils.convertDateTime("2018-01-11T01:01:01 NY"),
+                DateTimeUtils.convertDateTime("2018-02-11T01:01:01 NY"),
+                DateTimeUtils.convertDateTime("2018-03-11T01:01:01 NY")};
+        final DateTime[] result = ModelFarmUtils.arrayDateTime(new ObjectVectorDirect<>(target));
         assertEquals(target, result);
-        assertNull(ModelFarmUtils.arrayDBDateTime(null));
+        assertNull(ModelFarmUtils.arrayDateTime(null));
     }
 
     public void testArrayFloat() {
         final float[] target = {1.1f, 2.2f, 3.3f};
-        final float[] result = ModelFarmUtils.arrayFloat(new DbFloatArrayDirect(target));
+        final float[] result = ModelFarmUtils.arrayFloat(new FloatVectorDirect(target));
         assertEquals(target, result);
         assertNull(ModelFarmUtils.arrayFloat(null));
     }
 
     public void testArrayDouble() {
         final double[] target = {1.1, 2.2, 3.3};
-        final double[] result = ModelFarmUtils.arrayDouble(new DbDoubleArrayDirect(target));
+        final double[] result = ModelFarmUtils.arrayDouble(new DoubleVectorDirect(target));
         assertEquals(target, result);
         assertNull(ModelFarmUtils.arrayDouble(null));
     }
 
     public void testArrayInt() {
         final int[] target = {1, 2, 3};
-        final int[] result = ModelFarmUtils.arrayInt(new DbIntArrayDirect(target));
+        final int[] result = ModelFarmUtils.arrayInt(new IntVectorDirect(target));
         assertEquals(target, result);
         assertNull(ModelFarmUtils.arrayInt(null));
     }
 
     public void testArrayLong() {
         final long[] target = {1, 2, 3};
-        final long[] result = ModelFarmUtils.arrayLong(new DbLongArrayDirect(target));
+        final long[] result = ModelFarmUtils.arrayLong(new LongVectorDirect(target));
         assertEquals(target, result);
         assertNull(ModelFarmUtils.arrayLong(null));
     }
 
     public void testArray2Double() {
         final double[][] target = {{1.1, 2.2, 3.3}, {5, 6}};
-        final DbArray dba = new DbArrayDirect(
-                new DbDoubleArrayDirect(target[0]),
-                new DbDoubleArrayDirect(target[1]));
+        final ObjectVector dba = new ObjectVectorDirect(
+                new DoubleVectorDirect(target[0]),
+                new DoubleVectorDirect(target[1]));
         final double[][] result = ModelFarmUtils.array2Double(dba);
         assertEquals(target, result);
         assertNull(ModelFarmUtils.array2Double(null));

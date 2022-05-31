@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.sparse.ShortOneOrN$Block2",
+ "methods": {
+  "ensureIndex": ":param idx: int\n:param recycler: io.deephaven.util.SoftRecycler<short[][]>",
+  "get": ":param idx: int\n:return: short[]",
+  "maybeRecycle": ":param recycler: io.deephaven.util.SoftRecycler<short[][]>",
+  "set": ":param idx: int\n:param value: short[]"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.sparse.ShortOneOrN.Block2",
+ "typeName": "class"
+}

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier",
+ "methods": {
+  "reportError": ":param t: java.lang.Throwable",
+  "setReporter": ":param reporter: io.deephaven.engine.table.impl.UpdateErrorReporter\n:return: io.deephaven.engine.table.impl.UpdateErrorReporter"
+ },
+ "path": "io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier",
+ "text": "When we get an error from a table in the listener tree, we want to send an appropriate command to the clients\n indicating that something has gone wrong with the table.",
+ "typeName": "class"
+}

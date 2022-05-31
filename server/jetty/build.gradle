@@ -1,0 +1,32 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    api project(':server')
+    runtimeOnly(project(':web'))
+
+    Classpaths.inheritDagger(project)
+    Classpaths.inheritDagger(project, /* test */ true)
+
+    Classpaths.inheritGrpcPlatform(project)
+
+    implementation('org.eclipse.jetty:jetty-servlet:11.0.8')
+    implementation 'org.eclipse.jetty:jetty-webapp:11.0.8'
+    implementation 'org.eclipse.jetty.http2:http2-server:11.0.8'
+
+//    implementation 'io.grpc:grpc-servlet-jakarta'
+    implementation project(':grpc-java:grpc-servlet-jakarta')
+    implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
+    implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server:11.0.8'
+
+    testImplementation project(':server-test')
+
+    testRuntimeOnly project(':log-to-slf4j')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+test.systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
+
+apply plugin: 'io.deephaven.java-open-nio'

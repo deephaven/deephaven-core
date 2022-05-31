@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger",
+ "methods": {
+  "getColumnDbTypes": ":return: java.lang.Class<?>[]",
+  "getColumnNames": ":return: java.lang.String[]",
+  "getDefaultTableName": ":return: java.lang.String",
+  "getTableDefinition": ":return: io.deephaven.engine.table.TableDefinition",
+  "log": "*Overload 1*  \n  :param intervalLevelDetails: io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.IntervalLevelDetails\n  :param performanceEntry: io.deephaven.engine.table.impl.perf.PerformanceEntry\n  \n*Overload 2*  \n  :param flags: io.deephaven.tablelogger.Row.Flags\n  :param intervalLevelDetails: io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.IntervalLevelDetails\n  :param performanceEntry: io.deephaven.engine.table.impl.perf.PerformanceEntry"
+ },
+ "path": "io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger",
+ "typeName": "class"
+}

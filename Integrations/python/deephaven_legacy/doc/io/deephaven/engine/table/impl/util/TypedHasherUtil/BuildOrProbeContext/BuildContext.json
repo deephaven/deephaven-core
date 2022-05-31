@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.TypedHasherUtil$BuildOrProbeContext$BuildContext",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext",
+ "typeName": "class"
+}

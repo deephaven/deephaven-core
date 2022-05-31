@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.formula.FormulaFactory",
+ "methods": {
+  "createFormula": ":param rowSet: io.deephaven.engine.rowset.TrackingRowSet\n:param initLazyMap: boolean\n:param columnsToData: java.util.Map<java.lang.String,? extendsio.deephaven.engine.table.ColumnSource>\n:param params: io.deephaven.engine.table.lang.QueryScopeParam...\n:return: io.deephaven.engine.table.impl.select.Formula"
+ },
+ "path": "io.deephaven.engine.table.impl.select.formula.FormulaFactory",
+ "typeName": "interface"
+}

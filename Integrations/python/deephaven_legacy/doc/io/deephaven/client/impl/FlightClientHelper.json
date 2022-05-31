@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.client.impl.FlightClientHelper",
+ "methods": {
+  "get": ":param client: org.apache.arrow.flight.FlightClient\n:param ticket: io.deephaven.client.impl.HasTicketId\n:param callOptions: org.apache.arrow.flight.CallOption...\n:return: org.apache.arrow.flight.FlightStream",
+  "getSchema": ":param client: org.apache.arrow.flight.FlightClient\n:param pathId: io.deephaven.client.impl.HasPathId\n:param callOptions: org.apache.arrow.flight.CallOption...\n:return: org.apache.arrow.flight.SchemaResult",
+  "put": "*Overload 1*  \n  :param client: org.apache.arrow.flight.FlightClient\n  :param pathId: io.deephaven.client.impl.HasPathId\n  :param table: io.deephaven.qst.table.NewTable\n  :param allocator: org.apache.arrow.memory.BufferAllocator\n  :param callOptions: org.apache.arrow.flight.CallOption...\n  \n*Overload 2*  \n  :param client: org.apache.arrow.flight.FlightClient\n  :param pathId: io.deephaven.client.impl.HasPathId\n  :param input: org.apache.arrow.flight.FlightStream\n  :param callOptions: org.apache.arrow.flight.CallOption...\n  \n*Overload 3*  \n  :param client: org.apache.arrow.flight.FlightClient\n  :param descriptor: org.apache.arrow.flight.FlightDescriptor\n  :param table: io.deephaven.qst.table.NewTable\n  :param allocator: org.apache.arrow.memory.BufferAllocator\n  :param callOptions: org.apache.arrow.flight.CallOption...\n  \n*Overload 4*  \n  :param client: org.apache.arrow.flight.FlightClient\n  :param descriptor: org.apache.arrow.flight.FlightDescriptor\n  :param input: org.apache.arrow.flight.FlightStream\n  :param callOptions: org.apache.arrow.flight.CallOption..."
+ },
+ "path": "io.deephaven.client.impl.FlightClientHelper",
+ "typeName": "class"
+}

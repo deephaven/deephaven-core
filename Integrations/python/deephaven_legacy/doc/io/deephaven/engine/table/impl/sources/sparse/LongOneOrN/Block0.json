@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.sparse.LongOneOrN$Block0",
+ "methods": {
+  "ensureIndex": ":param idx: int\n:param recycler: io.deephaven.util.SoftRecycler<io.deephaven.engine.table.impl.sources.sparse.LongOneOrN.Block1[]>",
+  "enumerate": ":param nullValue: long\n:param consumer: java.util.function.LongConsumer",
+  "get": ":param idx: int\n:return: io.deephaven.engine.table.impl.sources.sparse.LongOneOrN.Block1",
+  "getInnermostBlockByKeyOrNull": ":param key: long\n:return: long[]",
+  "maybeRecycle": ":param recycler: io.deephaven.util.SoftRecycler<io.deephaven.engine.table.impl.sources.sparse.LongOneOrN.Block1[]>",
+  "set": ":param idx: int\n:param value: io.deephaven.engine.table.impl.sources.sparse.LongOneOrN.Block1"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.sparse.LongOneOrN.Block0",
+ "typeName": "class"
+}

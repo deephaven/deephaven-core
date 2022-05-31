@@ -5,7 +5,7 @@
 package io.deephaven.modelfarm;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.modelfarm.util.KeyedPriorityBlockingQueue;
@@ -35,7 +35,7 @@ public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
             Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmRealTimePerformance", false);
 
     private final ModelFarmBase.GetDataLockType GETDATA_LOCK_TYPE = ModelFarmBase.GetDataLockType.valueOf(Configuration
-            .getInstance().getStringWithDefault("ModelFarm.ModelFarmRealTime.getDataLockType", "LTM_READ_LOCK"));
+            .getInstance().getStringWithDefault("ModelFarm.ModelFarmRealTime.getDataLockType", "UGP_READ_LOCK"));
     private final KeyedPriorityBlockingQueue<KEYTYPE> execQueue = new KeyedPriorityBlockingQueue<>();
     private final ExecPrioritizer<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE> prioritizer;
     private final ModelFarmBase.MostRecentDataGetter<KEYTYPE, DATATYPE> mostRecentDataGetter;
@@ -60,13 +60,13 @@ public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     }
 
     @Override
-    protected void onDataUpdate(Index added, Index removed, Index modified) {
+    protected void onDataUpdate(RowSet added, RowSet removed, RowSet modified) {
         updateQueue(added);
         updateQueue(modified);
     }
 
-    private void updateQueue(final Index index) {
-        for (Index.Iterator it = index.iterator(); it.hasNext();) {
+    private void updateQueue(final RowSet rowSet) {
+        for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             final long i = it.nextLong();
             final KEYTYPE key = dataManager.uniqueIdCurrent(i);
             final int priority = prioritizer == null ? 0 : prioritizer.priority(dataManager, i);

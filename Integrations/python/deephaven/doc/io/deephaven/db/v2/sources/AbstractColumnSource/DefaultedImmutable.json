@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.AbstractColumnSource$DefaultedImmutable",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.AbstractColumnSource.DefaultedImmutable",
- "typeName": "class"
-}

@@ -1,0 +1,23 @@
+{
+ "className": "io.deephaven.chunk.util.factories.ObjectChunkFactory",
+ "methods": {
+  "chunkArrayBuilder": ":return: java.util.function.IntFunction<io.deephaven.chunk.Chunk[]>",
+  "chunkChunkWrap": "*Overload 1*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param array: io.deephaven.chunk.Chunk<ATTR>[]\n  :return: io.deephaven.chunk.ObjectChunkChunk<ObjectChunkFactory.T,ATTR>\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param array: io.deephaven.chunk.Chunk<ATTR>[]\n  :param offset: int\n  :param capacity: int\n  :return: io.deephaven.chunk.ObjectChunkChunk<ObjectChunkFactory.T,ATTR>",
+  "chunkWrap": "*Overload 1*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param array: java.lang.Object\n  :return: io.deephaven.chunk.ObjectChunk<ObjectChunkFactory.T,ATTR>\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param array: java.lang.Object\n  :param offset: int\n  :param capacity: int\n  :return: io.deephaven.chunk.ObjectChunk<ObjectChunkFactory.T,ATTR>",
+  "getEmptyChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.ObjectChunk<ObjectChunkFactory.T,ATTR>",
+  "getEmptyChunkChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.ObjectChunkChunk<ObjectChunkFactory.T,ATTR>",
+  "makeArray": ":param capacity: int\n:return: ObjectChunkFactory.T[]",
+  "makeChunkArray": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param capacity: int\n:return: io.deephaven.chunk.ObjectChunk<ObjectChunkFactory.T,ATTR>[]",
+  "makeResettableChunkChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.ResettableChunkChunk<ATTR>",
+  "makeResettableReadOnlyChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.ResettableReadOnlyChunk<ATTR>",
+  "makeResettableWritableChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.ResettableWritableChunk<ATTR>",
+  "makeResettableWritableChunkChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.ResettableWritableChunkChunk<ATTR>",
+  "makeWritableChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param capacity: int\n:return: io.deephaven.chunk.WritableObjectChunk<ObjectChunkFactory.T,ATTR>",
+  "makeWritableChunkChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param capacity: int\n:return: io.deephaven.chunk.WritableObjectChunkChunk<ObjectChunkFactory.T,ATTR>",
+  "writableChunkArrayBuilder": ":return: java.util.function.IntFunction<io.deephaven.chunk.WritableChunk[]>",
+  "writableChunkChunkWrap": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param array: io.deephaven.chunk.WritableChunk<ATTR>[]\n:param offset: int\n:param capacity: int\n:return: io.deephaven.chunk.WritableChunkChunk<ATTR>",
+  "writableChunkWrap": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param array: java.lang.Object\n:param offset: int\n:param capacity: int\n:return: io.deephaven.chunk.WritableObjectChunk<ObjectChunkFactory.T,ATTR>"
+ },
+ "path": "io.deephaven.chunk.util.factories.ObjectChunkFactory",
+ "typeName": "class"
+}

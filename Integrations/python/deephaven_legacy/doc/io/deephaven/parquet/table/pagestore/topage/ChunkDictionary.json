@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.parquet.table.pagestore.topage.ChunkDictionary",
+ "methods": {
+  "get": "Forward lookup from the integral index.\n\n:param index: long\n:return: (ChunkDictionary.T) the DATA_TYPE associated with the index.",
+  "length": ":return: int",
+  "rget": "Reverse lookup of the DATA_TYPE.\n\n:param highestIndex: int\n:param value: ChunkDictionary.T\n:return: (int) the integral index associated with the DATA_TYPE."
+ },
+ "path": "io.deephaven.parquet.table.pagestore.topage.ChunkDictionary",
+ "text": "Chunk-backed dictionary for use by ToPage implementations.",
+ "typeName": "class"
+}

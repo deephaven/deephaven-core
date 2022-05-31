@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.WouldMatchPairFactory",
+ "methods": {
+  "getExpression": ":param match: java.lang.String\n:return: io.deephaven.engine.table.WouldMatchPair",
+  "getExpressions": "*Overload 1*  \n  :param matches: java.lang.String...\n  :return: io.deephaven.engine.table.WouldMatchPair[]\n  \n*Overload 2*  \n  :param matches: java.util.Collection<java.lang.String>\n  :return: io.deephaven.engine.table.WouldMatchPair[]"
+ },
+ "path": "io.deephaven.engine.table.impl.select.WouldMatchPairFactory",
+ "text": "Parses strings of the form \"Column1=expression\" into a WouldMatchPair (or array of them).",
+ "typeName": "class"
+}

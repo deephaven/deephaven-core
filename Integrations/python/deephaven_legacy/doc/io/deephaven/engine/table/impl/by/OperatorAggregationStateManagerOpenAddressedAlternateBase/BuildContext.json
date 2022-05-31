@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerOpenAddressedAlternateBase$BuildContext",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerOpenAddressedAlternateBase.BuildContext",
+ "typeName": "class"
+}

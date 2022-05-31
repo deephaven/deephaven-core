@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.parquet.ParquetTableWriter$SomeSillyTest",
- "methods": {
-  "equals": ":param obj: java.lang.Object\n:return: boolean",
-  "toString": ":return: java.lang.String"
- },
- "path": "io.deephaven.db.v2.parquet.ParquetTableWriter.SomeSillyTest",
- "typeName": "class"
-}

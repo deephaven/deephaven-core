@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.parquet.table.layout.ParquetSingleFileLayout",
+ "methods": {
+  "findKeys": "Find keys and deliver them to the locationKeyObserver.\n\n:param locationKeyObserver: (java.util.function.Consumer<io.deephaven.parquet.table.location.ParquetTableLocationKey>) - Per-key callback",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.parquet.table.layout.ParquetSingleFileLayout",
+ "text": "Parquet location finder that will discover a single file.",
+ "typeName": "class"
+}

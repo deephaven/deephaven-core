@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.rowset.RowSet$Evaluator",
+ "methods": {
+  "value": ":param key: long\n:return: RowSet.Evaluator.T"
+ },
+ "path": "io.deephaven.engine.rowset.RowSet.Evaluator",
+ "typeName": "interface"
+}

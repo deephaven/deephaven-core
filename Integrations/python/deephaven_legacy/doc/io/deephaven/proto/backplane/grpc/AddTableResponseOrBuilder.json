@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.AddTableResponseOrBuilder",
+ "methods": {},
+ "path": "io.deephaven.proto.backplane.grpc.AddTableResponseOrBuilder",
+ "typeName": "interface"
+}

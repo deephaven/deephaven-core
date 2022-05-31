@@ -1,0 +1,33 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest$InputTableKind$InMemoryKeyBacked$Builder",
+ "methods": {
+  "addAllKeyColumns": "repeated string key_columns = 1;\n\n:param values: (java.lang.Iterable<java.lang.String>) - The keyColumns to add.\n:return: (io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder) This builder for chaining.",
+  "addKeyColumns": "repeated string key_columns = 1;\n\n:param value: (java.lang.String) - The keyColumns to add.\n:return: (io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder) This builder for chaining.",
+  "addKeyColumnsBytes": "repeated string key_columns = 1;\n\n:param value: (com.google.protobuf.ByteString) - The bytes of the keyColumns to add.\n:return: (io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder) This builder for chaining.",
+  "addRepeatedField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "build": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked",
+  "buildPartial": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked",
+  "clear": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "clearField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "clearKeyColumns": "repeated string key_columns = 1;\n\n:return: (io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder) This builder for chaining.",
+  "clearOneof": ":param oneof: com.google.protobuf.Descriptors.OneofDescriptor\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "clone": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "getDefaultInstanceForType": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked",
+  "getDescriptor": ":return: com.google.protobuf.Descriptors.Descriptor",
+  "getDescriptorForType": ":return: com.google.protobuf.Descriptors.Descriptor",
+  "getKeyColumns": "repeated string key_columns = 1;\n\n:param index: (int) - The index of the element to return.\n:return: (java.lang.String) The keyColumns at the given index.",
+  "getKeyColumnsBytes": "repeated string key_columns = 1;\n\n:param index: (int) - The index of the value to return.\n:return: (com.google.protobuf.ByteString) The bytes of the keyColumns at the given index.",
+  "getKeyColumnsCount": "repeated string key_columns = 1;\n\n:return: (int) The count of keyColumns.",
+  "getKeyColumnsList": "repeated string key_columns = 1;\n\n:return: (com.google.protobuf.ProtocolStringList) A list containing the keyColumns.",
+  "isInitialized": ":return: boolean",
+  "mergeFrom": "*Overload 1*  \n  :param other: com.google.protobuf.Message\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder\n  \n*Overload 2*  \n  :param other: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder\n  \n*Overload 3*  \n  :param input: com.google.protobuf.CodedInputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "mergeUnknownFields": ":param unknownFields: com.google.protobuf.UnknownFieldSet\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "setField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "setKeyColumns": "repeated string key_columns = 1;\n\n:param index: (int) - The index to set the value at.\n:param value: (java.lang.String) - The keyColumns to set.\n:return: (io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder) This builder for chaining.",
+  "setRepeatedField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param index: int\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "setUnknownFields": ":param unknownFields: com.google.protobuf.UnknownFieldSet\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+ "text": "Creates an in-memory table that supports updates and deletes by keys.\n \n\n Protobuf type io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked",
+ "typeName": "class"
+}

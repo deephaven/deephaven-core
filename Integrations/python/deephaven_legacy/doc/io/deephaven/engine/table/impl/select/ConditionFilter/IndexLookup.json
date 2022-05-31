@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.ConditionFilter$IndexLookup",
+ "methods": {
+  "getChunk": ":param context: io.deephaven.engine.table.Context\n:param rowSequence: io.deephaven.engine.rowset.RowSequence\n:return: io.deephaven.chunk.Chunk",
+  "getContext": ":param chunkSize: int\n:return: io.deephaven.engine.table.impl.select.ConditionFilter.IndexLookup.Context"
+ },
+ "path": "io.deephaven.engine.table.impl.select.ConditionFilter.IndexLookup",
+ "typeName": "class"
+}

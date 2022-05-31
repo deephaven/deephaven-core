@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.SelectFactoryConstants",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.select.SelectFactoryConstants",
+ "text": "A set of constants used to build consistent patterns to process query parameters.",
+ "typeName": "class"
+}

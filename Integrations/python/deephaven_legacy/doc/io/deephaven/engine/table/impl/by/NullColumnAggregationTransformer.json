@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.NullColumnAggregationTransformer",
+ "methods": {
+  "resultColumnFixup": "After we have created the key columns, and the default result columns, allow each transformer to add additional\n columns to the result set that are not handled by the regular modified column set transformer, etc. logic.\n\n:param resultColumns: java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnSource<?>>"
+ },
+ "path": "io.deephaven.engine.table.impl.by.NullColumnAggregationTransformer",
+ "typeName": "class"
+}

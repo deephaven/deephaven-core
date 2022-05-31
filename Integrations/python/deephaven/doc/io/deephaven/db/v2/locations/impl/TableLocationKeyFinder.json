@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.impl.TableLocationKeyFinder",
- "methods": {
-  "findKeys": "Find keys and deliver them to the locationKeyObserver.\n\n:param locationKeyObserver: (java.util.function.Consumer<TableLocationKeyFinder.TLK>) - Per-key callback"
- },
- "path": "io.deephaven.db.v2.locations.impl.TableLocationKeyFinder",
- "text": "Interface for TableLocationKey discovery with delivery to a callback.",
- "typeName": "interface"
-}

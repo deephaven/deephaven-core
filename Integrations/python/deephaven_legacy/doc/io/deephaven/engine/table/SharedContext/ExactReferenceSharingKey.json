@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.SharedContext$ExactReferenceSharingKey",
+ "methods": {
+  "equals": ":param other: java.lang.Object\n:return: boolean",
+  "hashCode": ":return: int"
+ },
+ "path": "io.deephaven.engine.table.SharedContext.ExactReferenceSharingKey",
+ "text": "Abstract SharedContext.Key implementation for use when a simple Object reference coupled with sub-class identity can\n determine equality for sharing purposes.",
+ "typeName": "class"
+}

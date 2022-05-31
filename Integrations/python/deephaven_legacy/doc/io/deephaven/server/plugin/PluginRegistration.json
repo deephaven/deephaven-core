@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.server.plugin.PluginRegistration",
+ "methods": {},
+ "path": "io.deephaven.server.plugin.PluginRegistration",
+ "text": "Provides a registerAll() entrypoint to invoke all registrations with a\n Registration.Callback. Logs details.",
+ "typeName": "class"
+}

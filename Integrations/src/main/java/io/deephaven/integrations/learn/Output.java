@@ -1,6 +1,6 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.db.tables.utils.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.integrations.python.PythonFunctionCaller;
 import org.jpy.PyObject;
 
@@ -14,6 +14,7 @@ import java.util.function.Function;
 public class Output {
 
     private final String colName;
+    private final boolean isPythonScatterFunc;
     private final Function<Object[], Object> scatterFunc;
     private final String type;
 
@@ -25,7 +26,7 @@ public class Output {
      * @param type desired datatype of the new column.
      */
     public Output(String colName, PyObject scatterFunc, String type) {
-        this(colName, new PythonFunctionCaller(Require.neqNull(scatterFunc, "scatterFunc")), type);
+        this(colName, true, new PythonFunctionCaller(Require.neqNull(scatterFunc, "scatterFunc")), type);
     }
 
     /**
@@ -36,6 +37,19 @@ public class Output {
      * @param type desired datatype of the new column.
      */
     public Output(String colName, Function<Object[], Object> scatterFunc, String type) {
+        this(colName, false, scatterFunc, type);
+    }
+
+    /**
+     * Creates a new Output.
+     *
+     * @param colName name of new column to store results.
+     * @param isPythonScatterFunc true if the scatter function is a Python function; false otherwise.
+     * @param scatterFunc function to scatter the results of a Python object into the table column.
+     * @param type desired datatype of the new column.
+     */
+    public Output(final String colName, final boolean isPythonScatterFunc, final Function<Object[], Object> scatterFunc,
+            final String type) {
 
         Require.neqNull(colName, "colName");
         Require.neqNull(scatterFunc, "scatterFunc");
@@ -43,6 +57,7 @@ public class Output {
         NameValidator.validateColumnName(colName);
 
         this.colName = colName;
+        this.isPythonScatterFunc = isPythonScatterFunc;
         this.scatterFunc = scatterFunc;
         this.type = type;
     }
@@ -54,6 +69,15 @@ public class Output {
      */
     public String getColName() {
         return colName;
+    }
+
+    /**
+     * Is the scatter function a Python scatter function?
+     *
+     * @return true if the scatter function is a Python scatter function; false otherwise.
+     */
+    public boolean isPythonScatterFunc() {
+        return isPythonScatterFunc;
     }
 
     /**
@@ -78,6 +102,7 @@ public class Output {
     public String toString() {
         return "Output{" +
                 "colName='" + colName + '\'' +
+                ", isPythonScatterFunc=" + isPythonScatterFunc +
                 ", scatterFunc=" + scatterFunc +
                 ", type='" + type + '\'' +
                 '}';

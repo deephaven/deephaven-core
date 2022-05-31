@@ -24,9 +24,41 @@ import static org.gradle.api.plugins.JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURA
 //@CompileStatic
 class TestTools {
 
-    static final String TEST_GROUP = "~Iris Test"
+    static final String TEST_GROUP = "~Deephaven Test"
 
-    static Test addDbTest(Project project, String type, boolean parallel=false, boolean passwordEnabled=false, boolean isolated=false) {
+    static boolean allowParallel(Project project) {
+        return Boolean.parseBoolean(project.findProperty('allowParallel') as String ?: 'false')
+    }
+
+    static Test addEngineSerialTest(Project project) {
+        def allowParallel = allowParallel(project)
+        // testSerial: non-parallel, not a engine test, isolated
+        return TestTools.addEngineTest(project, 'Serial', allowParallel, false, true)
+    }
+
+    static Test addEngineParallelTest(Project project) {
+        def allowParallel = allowParallel(project)
+        // Add @Category(ParallelTest.class) to have your tests run in parallel
+        // Note: Supports JUnit4 or greater only (you use @Test annotations to mark test methods).
+
+        // The Parallel tests are now by default functionally equivalent to the Serial test logic
+        // TODO (deephaven-core#643): Fix "leaking" parallel tests
+        return TestTools.addEngineTest(project, 'Parallel', allowParallel, false, !allowParallel)
+    }
+
+    static Test addEngineOutOfBandTest(Project project) {
+        def allowParallel = allowParallel(project)
+        // testOutOfBand: non-parallel, not a engine test, not isolated
+        return TestTools.addEngineTest(project, 'OutOfBand', allowParallel, false, false)
+    }
+
+    static Test addEngineTest(
+        Project project,
+        String type,
+        boolean parallel = false,
+        boolean passwordEnabled = false,
+        boolean isolated = false
+    ) {
         Test mainTest = project.tasks.getByName('test') as Test
         Test t = project.tasks.create("test$type", Test)
 
@@ -52,7 +84,14 @@ By default only runs in CI; to run locally:
             dependsOn project.tasks.findByName('testClasses')
 
             if (parallel) {
-                maxParallelForks = 12
+                if (project.hasProperty('maxParallelForks')) {
+                    maxParallelForks = project.property('maxParallelForks') as int
+                } else {
+                    maxParallelForks = 12
+                }
+                if (project.hasProperty('forkEvery')) {
+                    forkEvery = project.property('forkEvery') as int
+                }
             } else {
                 maxParallelForks = 1
                 // == safe for strings in groovy
@@ -115,21 +154,25 @@ By default only runs in CI; to run locally:
             // we want to give each test it's own output files for jacoco analysis,
             // so we don't accidentally stomp on previous output.
             // TODO: verify jenkins is analyzing _all_ information here.
-            (t['jacoco'] as JacocoTaskExtension).with {
-                destinationFile = project.provider({ new File(project.buildDir, "jacoco/${type}.exec".toString()) } as Callable<File>)
-                classDumpDir = new File(project.buildDir, "jacoco/${type}Dumps".toString())
-            }
-            (project['jacocoTestReport'] as JacocoReport).with {
-                reports {
-                    JacocoReportsContainer c ->
+            if (project.findProperty('jacoco.enabled') == "true") {
+                (t['jacoco'] as JacocoTaskExtension).with {
+                    destinationFile = project.provider({ new File(project.buildDir, "jacoco/${type}.exec".toString()) } as Callable<File>)
+                    classDumpDir = new File(project.buildDir, "jacoco/${type}Dumps".toString())
+                }
+                (project['jacocoTestReport'] as JacocoReport).with {
+                    reports {
+                        JacocoReportsContainer c ->
                         c.xml.enabled = true
                         c.csv.enabled = true
                         c.html.enabled = true
+                    }
                 }
             }
 
         }
-        project.tasks.findByName('jacocoTestReport').mustRunAfter(t)
+        if (project.findProperty('jacoco.enabled') == "true") {
+            project.tasks.findByName('jacocoTestReport').mustRunAfter(t)
+        }
 
         return t
     }

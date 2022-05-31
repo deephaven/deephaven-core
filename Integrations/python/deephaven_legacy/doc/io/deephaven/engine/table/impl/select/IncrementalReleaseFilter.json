@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.IncrementalReleaseFilter",
+ "methods": {
+  "copy": "Create a copy of this WhereFilter.\n\n:return: (io.deephaven.engine.table.impl.select.IncrementalReleaseFilter) an independent copy of this WhereFilter."
+ },
+ "path": "io.deephaven.engine.table.impl.select.IncrementalReleaseFilter",
+ "text": "This will filter a table starting off with the first N rows, and then adding new rows to the table on each run.",
+ "typeName": "class"
+}

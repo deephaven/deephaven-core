@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.chunk.Attributes$ChunkLengths",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.chunk.Attributes.ChunkLengths",
- "typeName": "interface"
-}

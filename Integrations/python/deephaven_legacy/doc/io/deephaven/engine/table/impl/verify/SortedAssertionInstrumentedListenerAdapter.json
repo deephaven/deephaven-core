@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.verify.SortedAssertionInstrumentedListenerAdapter",
+ "methods": {
+  "doCheckStatic": ":param toProcess: io.deephaven.engine.rowset.RowSet\n:param parentColumnSource: io.deephaven.engine.table.ColumnSource<?>\n:param sortCheck: io.deephaven.engine.table.impl.sortcheck.SortCheck\n:param description: java.lang.String\n:param column: java.lang.String\n:param order: io.deephaven.engine.table.impl.SortingOrder",
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates."
+ },
+ "path": "io.deephaven.engine.table.impl.verify.SortedAssertionInstrumentedListenerAdapter",
+ "typeName": "class"
+}

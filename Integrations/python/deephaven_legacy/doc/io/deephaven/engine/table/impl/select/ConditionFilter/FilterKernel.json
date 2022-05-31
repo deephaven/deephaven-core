@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.ConditionFilter$FilterKernel",
+ "methods": {
+  "filter": ":param context: ConditionFilter.FilterKernel.CONTEXT\n:param indices: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>\n:param inputChunks: io.deephaven.chunk.Chunk...\n:return: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>",
+  "getContext": ":param maxChunkSize: int\n:return: ConditionFilter.FilterKernel.CONTEXT"
+ },
+ "path": "io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel",
+ "typeName": "interface"
+}

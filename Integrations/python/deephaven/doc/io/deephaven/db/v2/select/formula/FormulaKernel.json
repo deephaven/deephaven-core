@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.select.formula.FormulaKernel",
- "methods": {
-  "applyFormulaChunk": ":param __context: io.deephaven.db.v2.select.Formula.FillContext\n:param __destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? superio.deephaven.db.v2.sources.chunk.Attributes.Values>\n:param __sources: io.deephaven.db.v2.sources.chunk.Chunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>[]",
-  "makeFillContext": ":param __chunkCapacity: int\n:return: io.deephaven.db.v2.select.Formula.FillContext"
- },
- "path": "io.deephaven.db.v2.select.formula.FormulaKernel",
- "typeName": "interface"
-}

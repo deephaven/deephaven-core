@@ -23,21 +23,30 @@ import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.*;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage;
@@ -48,43 +57,49 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Tabl
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
+import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
-import io.deephaven.web.client.api.csv.CsvTypeParser;
+import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
+import io.deephaven.web.client.api.parse.JsDataHandler;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
+import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
-import io.deephaven.web.shared.data.ConnectToken;
-import io.deephaven.web.shared.data.DeltaUpdates;
-import io.deephaven.web.shared.data.InitialTableDefinition;
-import io.deephaven.web.shared.data.LogItem;
-import io.deephaven.web.shared.data.TableMapHandle;
-import io.deephaven.web.shared.data.TableSnapshot;
-import io.deephaven.web.shared.data.TableSubscriptionRequest;
+import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
-import io.deephaven.web.shared.ide.VariableType;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.*;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -111,7 +126,7 @@ public class WorkerConnection {
 
     static {
         // TODO configurable, let us support this even when ssl?
-        if (DomGlobal.window.location.getProtocol().equals("http:")) {
+        if (DomGlobal.window.location.protocol.equals("http:")) {
             useWebsockets = true;
             Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
         } else {
@@ -159,6 +174,8 @@ public class WorkerConnection {
     private ApplicationServiceClient applicationServiceClient;
     private FlightServiceClient flightServiceClient;
     private BrowserFlightServiceClient browserFlightServiceClient;
+    private InputTableServiceClient inputTableServiceClient;
+    private ObjectServiceClient objectServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -199,6 +216,9 @@ public class WorkerConnection {
                 new ApplicationServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         browserFlightServiceClient =
                 new BrowserFlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        inputTableServiceClient =
+                new InputTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        objectServiceClient = new ObjectServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -633,17 +653,25 @@ public class WorkerConnection {
         info.failureHandled(throwable.toString());
     }
 
-    public Promise<JsTable> getTable(JsVariableDefinition varDef) {
+    public Promise<JsTable> getTable(JsVariableDefinition varDef, @Nullable Boolean applyPreviewColumns) {
         return whenServerReady("get a table").then(serve -> {
             JsLog.debug("innerGetTable", varDef.getTitle(), " started");
             return newState(info,
                     (c, cts, metadata) -> {
                         JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
                                 " (" + LazyString.of(cts::getHandle), ")");
-                        FetchTableRequest fetch = new FetchTableRequest();
-                        fetch.setSourceId(TableTicket.createTableRef(varDef));
-                        fetch.setResultId(cts.getHandle().makeTicket());
-                        tableServiceClient.fetchTable(fetch, metadata, c::apply);
+                        // TODO (deephaven-core#188): eliminate this branch by applying preview cols before subscribing
+                        if (applyPreviewColumns == null || applyPreviewColumns) {
+                            ApplyPreviewColumnsRequest req = new ApplyPreviewColumnsRequest();
+                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setResultId(cts.getHandle().makeTicket());
+                            tableServiceClient.applyPreviewColumns(req, metadata, c::apply);
+                        } else {
+                            FetchTableRequest req = new FetchTableRequest();
+                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setResultId(cts.getHandle().makeTicket());
+                            tableServiceClient.fetchTable(req, metadata, c::apply);
+                        }
                     }, "fetch table " + varDef.getTitle()).then(cts -> {
                         JsLog.debug("innerGetTable", varDef.getTitle(), " succeeded ", cts);
                         JsTable table = new JsTable(this, cts);
@@ -652,41 +680,16 @@ public class WorkerConnection {
         });
     }
 
-    public Promise<JsTable> getPandas(JsVariableDefinition varDef) {
-        return whenServerReady("get a pandas table").then(serve -> {
-            JsLog.debug("innerGetPandasTable", varDef.getTitle(), " started");
-            return newState(info,
-                    (c, cts, metadata) -> {
-                        JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
-                                " (" + LazyString.of(cts::getHandle), ")");
-                        throw new UnsupportedOperationException("getPandas");
-
-                    }, "fetch pandas table " + varDef.getTitle()).then(cts -> {
-                        JsLog.debug("innerGetPandasTable", varDef.getTitle(), " succeeded ", cts);
-                        JsTable table = new JsTable(this, cts);
-                        return Promise.resolve(table);
-                    });
-        });
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public Promise<Object> getObject(JsVariableDefinition definition) {
-        switch (VariableType.valueOf(definition.getType())) {
-            case Table:
-                return (Promise) getTable(definition);
-            case TreeTable:
-                return (Promise) getTreeTable(definition);
-            case Figure:
-                return (Promise) getFigure(definition);
-            case Pandas:
-                return (Promise) getPandas(definition);
-            // case OtherWidget:
-            // return (Promise) getWidget(definition.getName());
-            // case TableMap:
-            // return (Promise) getTableMap(definition.getName());
-            default:
-                return Promise.reject(
-                        new Error("Object " + definition.getTitle() + " unknown type " + definition.getType() + "."));
+    public Promise<?> getObject(JsVariableDefinition definition) {
+        if (JsVariableChanges.TABLE.equals(definition.getType())) {
+            return getTable(definition, null);
+        } else if (JsVariableChanges.FIGURE.equals(definition.getType())) {
+            return getFigure(definition);
+        } else if (JsVariableChanges.PANDAS.equals(definition.getType())) {
+            return getWidget(definition)
+                    .then(widget -> widget.getExportedObjects()[0].fetch());
+        } else {
+            return getWidget(definition);
         }
     }
 
@@ -704,7 +707,7 @@ public class WorkerConnection {
 
                 JsArray<FieldInfo> removedFI = data.getRemovedList();
                 for (int i = 0; i < removedFI.length; ++i) {
-                    String removedId = removedFI.getAt(i).getTicket().getTicket_asB64();
+                    String removedId = removedFI.getAt(i).getTypedTicket().getTicket().getTicket_asB64();
                     JsVariableDefinition result = knownFields.get(removedId);
                     removed[removed.length] = result;
                     knownFields.remove(removedId);
@@ -786,7 +789,7 @@ public class WorkerConnection {
     }
 
     public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
-        return getTable(varDef).then(t -> {
+        return getTable(varDef, null).then(t -> {
             Promise<JsTreeTable> result = Promise.resolve(new JsTreeTable(t.state(), this).finishFetch());
             t.close();
             return result;
@@ -794,12 +797,30 @@ public class WorkerConnection {
     }
 
     public Promise<JsFigure> getFigure(JsVariableDefinition varDef) {
+        if (!varDef.getType().equals("Figure")) {
+            throw new IllegalArgumentException("Can't load as a figure: " + varDef.getType());
+        }
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this, c -> {
-                    FetchFigureRequest request = new FetchFigureRequest();
-                    request.setSourceId(TableTicket.createTicket(varDef));
-                    consoleServiceClient().fetchFigure(request, metadata(), c::apply);
+                    FetchObjectRequest request = new FetchObjectRequest();
+                    TypedTicket typedTicket = new TypedTicket();
+                    typedTicket.setTicket(TableTicket.createTicket(varDef));
+                    typedTicket.setType(varDef.getType());
+                    request.setSourceId(typedTicket);
+                    objectServiceClient().fetchObject(request, metadata(), c::apply);
                 }).refetch());
+    }
+
+    public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
+        return whenServerReady("get a widget")
+                .then(server -> Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
+                    FetchObjectRequest request = new FetchObjectRequest();
+                    TypedTicket typedTicket = new TypedTicket();
+                    typedTicket.setTicket(TableTicket.createTicket(varDef));
+                    typedTicket.setType(varDef.getType());
+                    request.setSourceId(typedTicket);
+                    objectServiceClient().fetchObject(request, metadata(), c::apply);
+                })).then(response -> Promise.resolve(new JsWidget(this, response)));
     }
 
     public void registerFigure(JsFigure figure) {
@@ -827,6 +848,18 @@ public class WorkerConnection {
         return flightServiceClient;
     }
 
+    public BrowserFlightServiceClient browserFlightServiceClient() {
+        return browserFlightServiceClient;
+    }
+
+    public InputTableServiceClient inputTableServiceClient() {
+        return inputTableServiceClient;
+    }
+
+    public ObjectServiceClient objectServiceClient() {
+        return objectServiceClient;
+    }
+
     public BrowserHeaders metadata() {
         return metadata;
     }
@@ -835,13 +868,13 @@ public class WorkerConnection {
         return new BiDiStream.Factory<>(this::metadata, config::newTicketInt, useWebsockets);
     }
 
-    public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone,
+    public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone,
             HasEventHandling failHandler) {
         // Store the ref to the data using an array we can clear out, so the data is garbage collected later
         // This means the table can only be created once, but that's probably what we want in this case anyway
-        final String[][][] dataRef = new String[][][] {data};
+        final Object[][][] dataRef = new Object[][][] {data};
         return newState(failHandler, (c, cts, metadata) -> {
-            final String[][] d = dataRef[0];
+            final Object[][] d = dataRef[0];
             if (d == null) {
                 c.apply("Data already released, cannot re-create table", null);
                 return;
@@ -852,14 +885,14 @@ public class WorkerConnection {
             Builder schema = new Builder(1024);
 
             // while we're examining columns, build the copiers for data
-            List<CsvTypeParser.CsvColumn> columns = new ArrayList<>();
+            List<JsDataHandler> columns = new ArrayList<>();
 
             double[] fields = new double[columnNames.length];
             for (int i = 0; i < columnNames.length; i++) {
                 String columnName = columnNames[i];
                 String columnType = types[i];
 
-                CsvTypeParser.CsvColumn writer = CsvTypeParser.getColumn(columnType);
+                JsDataHandler writer = JsDataHandler.getHandler(columnType);
                 columns.add(writer);
 
                 double nameOffset = schema.createString(columnName);
@@ -897,9 +930,9 @@ public class WorkerConnection {
             // table's creation, which can race this
             BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
                     headers -> flightServiceClient.doPut(headers),
-                    (firstPayload, headers) -> browserFlightServiceClient.openDoPut(firstPayload, headers),
-                    (nextPayload, headers, callback) -> browserFlightServiceClient.nextDoPut(nextPayload, headers,
-                            callback::apply));
+                    (first, headers) -> browserFlightServiceClient.openDoPut(first, headers),
+                    (next, headers, callback) -> browserFlightServiceClient.nextDoPut(next, headers, callback::apply),
+                    new FlightData());
             stream.send(schemaMessage);
 
             stream.onEnd(status -> {
@@ -925,9 +958,13 @@ public class WorkerConnection {
 
             // iterate each column, building buffers and fieldnodes, as well as building the actual payload
             List<Uint8Array> buffers = new ArrayList<>();
-            List<CsvTypeParser.Node> nodes = new ArrayList<>();
+            List<JsDataHandler.Node> nodes = new ArrayList<>();
+            JsDataHandler.ParseContext context = new JsDataHandler.ParseContext();
+            if (userTimeZone != null) {
+                context.timeZone = JsTimeZone.getTimeZone(userTimeZone);
+            }
             for (int i = 0; i < data.length; i++) {
-                columns.get(i).writeColumn(data[i], nodes::add, buffers::add);
+                columns.get(i).write(data[i], context, nodes::add, buffers::add);
             }
 
             // write down the buffers for the RecordBatch
@@ -948,7 +985,7 @@ public class WorkerConnection {
 
             RecordBatch.startNodesVector(bodyData, nodes.size());
             for (int i = nodes.size() - 1; i >= 0; i--) {
-                CsvTypeParser.Node node = nodes.get(i);
+                JsDataHandler.Node node = nodes.get(i);
                 FieldNode.createFieldNode(bodyData, Long.create(node.length(), 0), Long.create(node.nullCount(), 0));
             }
             double nodesOffset = bodyData.endVector();
@@ -1165,6 +1202,21 @@ public class WorkerConnection {
 
         for (ClientTableState state : statesToFlush) {
             if (state.hasNoSubscriptions()) {
+                // state may be retained if it is held by at least one paused binding;
+                // it is either an unsubscribed active table, an interim state for an
+                // active table, or a pending rollback for an operation that has not
+                // yet completed (we leave orphaned nodes paused until a request completes).
+                if (state.isSubscribed()) {
+                    state.setSubscribed(false);
+                    if (state.getHandle().isConnected()) {
+                        BiDiStream<FlightData, FlightData> stream = subscriptionStreams.remove(state);
+                        if (stream != null) {
+                            stream.end();
+                            stream.cancel();
+                        }
+                    }
+                }
+
                 if (state.isEmpty()) {
                     // completely empty; perform release
                     final ClientTableState.ResolutionState previousState = state.getResolution();
@@ -1177,21 +1229,6 @@ public class WorkerConnection {
                         // don't send a release message to the server if the table isn't really there
                         if (state.getHandle().isConnected()) {
                             releaseHandle(state.getHandle());
-                        }
-                    }
-                } else {
-                    // state is still retained as it is held by at least one paused binding;
-                    // it is either an unsubscribed active table, an interim state for an
-                    // active table, or a pending rollback for an operation that has not
-                    // yet completed (we leave orphaned nodes paused until a request completes).
-                    if (state.isSubscribed()) {
-                        state.setSubscribed(false);
-                        if (state.getHandle().isConnected()) {
-                            BiDiStream<FlightData, FlightData> stream = subscriptionStreams.remove(state);
-                            if (stream != null) {
-                                stream.end();
-                                stream.cancel();
-                            }
                         }
                     }
                 }
@@ -1214,8 +1251,8 @@ public class WorkerConnection {
                     result.or(bs2);
                     return result;
                 }).orElseThrow(() -> new IllegalStateException("Cannot call subscribe with zero subscriptions"));
-                String[] columnTypes = Arrays.stream(state.getAllColumns())
-                        .map(Column::getType)
+                String[] columnTypes = Arrays.stream(state.getTableDef().getColumns())
+                        .map(ColumnDefinition::getType)
                         .toArray(String[]::new);
 
                 state.setSubscribed(true);
@@ -1248,9 +1285,9 @@ public class WorkerConnection {
 
                 BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
                         headers -> flightServiceClient.doExchange(headers),
-                        (firstPayload, headers) -> browserFlightServiceClient.openDoExchange(firstPayload, headers),
-                        (nextPayload, headers, c) -> browserFlightServiceClient.nextDoExchange(nextPayload, headers,
-                                c::apply));
+                        (first, headers) -> browserFlightServiceClient.openDoExchange(first, headers),
+                        (next, headers, c) -> browserFlightServiceClient.nextDoExchange(next, headers, c::apply),
+                        new FlightData());
 
                 stream.send(request);
                 stream.onData(new JsConsumer<FlightData>() {
@@ -1270,7 +1307,7 @@ public class WorkerConnection {
                                 BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
                                         new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
                                                 data.getAppMetadata_asU8()));
-                        if (barrageMessageWrapper.msgType() == 0) {
+                        if (barrageMessageWrapper.msgType() == BarrageMessageType.None) {
                             // continue previous message, just read RecordBatch
                             appendAndMaybeFlush(header, body);
                         } else {

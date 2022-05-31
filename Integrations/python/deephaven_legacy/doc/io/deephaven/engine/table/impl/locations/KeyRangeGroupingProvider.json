@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.KeyRangeGroupingProvider",
+ "methods": {
+  "addSource": "Add a column location for consideration when constructing groupings.\n\n:param columnLocation: (io.deephaven.engine.table.impl.locations.ColumnLocation) - The column location to add\n:param locationRowSetInTable: (io.deephaven.engine.rowset.RowSet) - The location's RowSet in the table"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.KeyRangeGroupingProvider",
+ "text": "Interface for GroupingProviders that operate on metadata derived from a ColumnLocation for a given\n RowSet key range.",
+ "typeName": "interface"
+}

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.plot.chartmodifiers.OneClickChartModifier",
+ "methods": {
+  "getPlotInfo": ":return: (io.deephaven.plot.errors.PlotInfo) the plot info",
+  "getValueColumn": ":return: (java.lang.String) the value column",
+  "getVisibilityLevel": ":return: (io.deephaven.plot.chartmodifiers.OneClickChartModifier.VisibilityLevel) the visibility level"
+ },
+ "path": "io.deephaven.plot.chartmodifiers.OneClickChartModifier",
+ "text": "Framework for a class which modifies a chart on a OneClick event",
+ "typeName": "class"
+}

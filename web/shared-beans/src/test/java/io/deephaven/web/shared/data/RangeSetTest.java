@@ -78,6 +78,48 @@ public class RangeSetTest {
         rangeSet.addRange(new Range(0, 1));
         assertEquals(26, rangeSet.size());
         assertEquals(Collections.singletonList(new Range(0, 25)), asList(rangeSet));
+
+        rangeSet = new RangeSet();
+        rangeSet.addRange(new Range(1, 1));
+        rangeSet.addRange(new Range(20, 21));
+
+        // shared start; ranges follow
+        rangeSet.addRange(new Range(1, 10));
+        assertEquals(12, rangeSet.size());
+    }
+
+    @Test
+    public void testAddExistingRange() {
+        RangeSet rangeSet = RangeSet.ofRange(5, 10);
+        rangeSet.addRange(new Range(5, 10));
+        rangeSet.addRange(new Range(5, 6));
+        rangeSet.addRange(new Range(6, 8));
+        rangeSet.addRange(new Range(8, 10));
+        assertEquals(RangeSet.ofRange(5, 10), rangeSet);
+
+        rangeSet = RangeSet.ofItems(5, 10, 15);
+        rangeSet.addRange(new Range(5, 5));
+        rangeSet.addRange(new Range(10, 10));
+        rangeSet.addRange(new Range(15, 15));
+        assertEquals(rangeSet, RangeSet.ofItems(5, 10, 15));
+
+        rangeSet = RangeSet.ofItems(5, 6, 7, 11, 12, 13, 26, 27, 28);
+        rangeSet.addRange(new Range(5, 7));
+        rangeSet.addRange(new Range(11, 13));
+        rangeSet.addRange(new Range(26, 28));
+
+        rangeSet.addRange(new Range(5, 6));
+        rangeSet.addRange(new Range(6, 6));
+        rangeSet.addRange(new Range(6, 7));
+
+        rangeSet.addRange(new Range(11, 12));
+        rangeSet.addRange(new Range(12, 12));
+        rangeSet.addRange(new Range(12, 13));
+
+        rangeSet.addRange(new Range(26, 27));
+        rangeSet.addRange(new Range(27, 27));
+        rangeSet.addRange(new Range(27, 28));
+        assertEquals(RangeSet.ofItems(5, 6, 7, 11, 12, 13, 26, 27, 28), rangeSet);
     }
 
     @Test
@@ -366,8 +408,68 @@ public class RangeSetTest {
         assertEquals(of(
                 new Range(5, 10),
                 new Range(15, 20)), rangeSet);
+    }
 
+    @Test
+    public void testLarge() {
+        long largeA = (long) Integer.MAX_VALUE + 10L;
+        long largeB = (long) Integer.MAX_VALUE + (long) Integer.MAX_VALUE;
+        long largeC = Long.MAX_VALUE - 100L;
 
+        // Add to empty range
+        RangeSet rangeSet = RangeSet.empty();
+        rangeSet.addRange(new Range(0, largeA));
+        assertEquals(of(new Range(0, largeA)), rangeSet);
+
+        rangeSet = RangeSet.empty();
+        rangeSet.addRange(new Range(largeA, largeA));
+        assertEquals(of(new Range(largeA, largeA)), rangeSet);
+
+        rangeSet = RangeSet.empty();
+        rangeSet.addRange(new Range(largeA, largeB));
+        assertEquals(of(new Range(largeA, largeB)), rangeSet);
+
+        rangeSet = RangeSet.empty();
+        rangeSet.addRange((new Range(0, largeC)));
+        assertEquals(of(new Range(0, largeC)), rangeSet);
+
+        rangeSet = RangeSet.empty();
+        rangeSet.addRange(new Range(largeA, largeC));
+        assertEquals(of(new Range(largeA, largeC)), rangeSet);
+
+        // Remove when nothing is present
+        rangeSet = RangeSet.empty();
+        rangeSet.removeRange(new Range(0, largeA));
+        assertEquals(RangeSet.empty(), rangeSet);
+
+        // Remove until nothing is left
+        rangeSet = RangeSet.ofRange(0, largeA);
+        rangeSet.removeRange(new Range(0, largeA));
+        assertEquals(RangeSet.empty(), rangeSet);
+
+        rangeSet = RangeSet.ofRange(1, largeA);
+        rangeSet.removeRange(new Range(0, largeA));
+        assertEquals(RangeSet.empty(), rangeSet);
+
+        rangeSet = RangeSet.ofRange(largeA, largeC);
+        rangeSet.removeRange(new Range(0, largeC));
+        assertEquals(RangeSet.empty(), rangeSet);
+
+        // Remove section before/between/after any actual existing element (no effect)
+        rangeSet = RangeSet.ofRange(largeA, largeB);
+        rangeSet.removeRange(new Range(0, largeA - 2));
+        rangeSet.removeRange(new Range(largeB + 1, largeB + 5));
+        assertEquals(RangeSet.ofRange(largeA, largeB), rangeSet);
+
+        rangeSet = RangeSet.ofItems(5, largeA, largeB);
+        rangeSet.removeRange(new Range(6, largeA - 1));
+        rangeSet.removeRange(new Range(largeA + 1, largeB - 1));
+        assertEquals(RangeSet.ofItems(5, largeA, largeB), rangeSet);
+
+        rangeSet = RangeSet.ofItems(largeA, largeB);
+        rangeSet.removeRange(new Range(0, largeA - 1));
+        rangeSet.removeRange(new Range(largeB + 1, largeC));
+        assertEquals(RangeSet.ofItems(largeA, largeB), rangeSet);
     }
 
 }

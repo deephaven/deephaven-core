@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.rowset.chunkattributes.UnorderedRowKeys",
+ "methods": {},
+ "path": "io.deephaven.engine.rowset.chunkattributes.UnorderedRowKeys",
+ "text": "Attribute that specifies that a Chunk contains unordered row keys, which may be in any order or be\n duplicative.",
+ "typeName": "interface"
+}

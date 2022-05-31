@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.util.GroovyDeephavenSession$RunScripts",
+ "methods": {
+  "none": ":return: io.deephaven.engine.util.GroovyDeephavenSession.RunScripts",
+  "of": ":param initScripts: java.lang.Iterable<io.deephaven.engine.util.GroovyDeephavenSession.InitScript>\n:return: io.deephaven.engine.util.GroovyDeephavenSession.RunScripts",
+  "oldConfiguration": ":return: io.deephaven.engine.util.GroovyDeephavenSession.RunScripts",
+  "serviceLoader": ":return: io.deephaven.engine.util.GroovyDeephavenSession.RunScripts"
+ },
+ "path": "io.deephaven.engine.util.GroovyDeephavenSession.RunScripts",
+ "typeName": "class"
+}

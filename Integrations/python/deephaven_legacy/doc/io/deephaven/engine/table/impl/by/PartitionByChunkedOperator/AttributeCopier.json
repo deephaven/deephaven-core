@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.PartitionByChunkedOperator$AttributeCopier",
+ "methods": {
+  "copyAttributes": ":param parentTable: io.deephaven.engine.table.impl.QueryTable\n:param subTable: io.deephaven.engine.table.impl.QueryTable"
+ },
+ "path": "io.deephaven.engine.table.impl.by.PartitionByChunkedOperator.AttributeCopier",
+ "typeName": "interface"
+}

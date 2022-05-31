@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.chunk.Attributes$Any",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.chunk.Attributes.Any",
- "text": "All attributes must extend from Any.",
- "typeName": "interface"
-}

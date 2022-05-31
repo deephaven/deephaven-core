@@ -30,19 +30,19 @@ public class JsRollupConfig {
         this();
 
         if (source.has("aggregations")) {
-            aggregations = source.getAny("aggregations").cast();
+            aggregations = source.getAsAny("aggregations").cast();
         }
         if (source.has("groupingColumns")) {
-            groupingColumns = source.getAny("groupingColumns").cast();
+            groupingColumns = source.getAsAny("groupingColumns").cast();
         }
         if (source.has("includeConstituents")) {
-            includeConstituents = source.getAny("includeConstituents").asBoolean();
+            includeConstituents = source.getAsAny("includeConstituents").asBoolean();
         }
         if (source.has("includeOriginalColumns")) {
-            includeOriginalColumns = source.getAny("includeOriginalColumns").asBoolean();
+            includeOriginalColumns = source.getAsAny("includeOriginalColumns").asBoolean();
         }
         if (source.has("includeDescriptions")) {
-            includeDescriptions = source.getAny("includeDescriptions").asBoolean();
+            includeDescriptions = source.getAsAny("includeDescriptions").asBoolean();
         }
     }
 

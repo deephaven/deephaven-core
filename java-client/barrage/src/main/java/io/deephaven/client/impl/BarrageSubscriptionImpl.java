@@ -11,150 +11,265 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
-import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
-import io.deephaven.extensions.barrage.util.BarrageStreamReader;
-import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.util.liveness.ReferenceCountedLivenessNode;
-import io.deephaven.db.v2.sources.chunk.ChunkType;
-import io.deephaven.db.v2.utils.BarrageMessage;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
+import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
+import io.grpc.Context;
 import io.grpc.MethodDescriptor;
 import io.grpc.protobuf.ProtoUtils;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
-import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.FlightData;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implements BarrageSubscription {
     private static final Logger log = LoggerFactory.getLogger(BarrageSubscriptionImpl.class);
 
     private final String logName;
-    private final Export export;
+    private final TableHandle tableHandle;
     private final BarrageSubscriptionOptions options;
-    private final ClientCall<Flight.FlightData, BarrageMessage> call;
+    private final ClientCallStreamObserver<FlightData> observer;
 
-    private Runnable performRelease;
     private BarrageTable resultTable;
 
+    private volatile Condition completedCondition;
+    private volatile boolean completed = false;
+    private volatile Throwable exceptionWhileCompleting = null;
+    private InstrumentedTableUpdateListener listener = null;
+
     private boolean subscribed = false;
-    private volatile boolean connected = false;
+    private volatile boolean connected = true;
 
     /**
      * Represents a BarrageSubscription.
      *
-     * @param session the deephaven session that this export belongs to
-     * @param export the export to subscribe to (ownership is transferred to the subscription)
+     * @param session the Deephaven session that this export belongs to
+     * @param executorService an executor service used to flush stats
+     * @param tableHandle the tableHandle to subscribe to (ownership is transferred to the subscription)
      * @param options the transport level options for this subscription
-     * @param tableDefinition the expected table definition
-     * @param performRelease a callback that is invoked when this subscription is closed/destroyed/garbage-collected
      */
     public BarrageSubscriptionImpl(
-            final BarrageSession session, final Export export, final BarrageSubscriptionOptions options,
-            final TableDefinition tableDefinition, @Nullable final Runnable performRelease) {
+            final BarrageSession session, final ScheduledExecutorService executorService,
+            final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
         super(false);
 
-        this.logName = ExportTicketHelper.toReadableString(export.ticket(), "export.ticket()");
+        this.logName = tableHandle.exportId().toString();
         this.options = options;
-        this.performRelease = performRelease;
-        this.export = export;
+        this.tableHandle = tableHandle;
 
-        resultTable = BarrageTable.make(tableDefinition, false);
+        final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
+        final TableDefinition tableDefinition = schema.tableDef;
+        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, false);
         resultTable.addParentReference(this);
 
-        final MethodDescriptor<Flight.FlightData, BarrageMessage> subscribeDescriptor =
+        final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
                 getClientDoExchangeDescriptor(options, resultTable.getWireChunkTypes(), resultTable.getWireTypes(),
-                        resultTable.getWireComponentTypes(), new BarrageStreamReader());
+                        resultTable.getWireComponentTypes(),
+                        new BarrageStreamReader(resultTable.getDeserializationTmConsumer()));
 
-        this.call = session.channel().newCall(subscribeDescriptor, CallOptions.DEFAULT);
+        // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
+        // from a Deephaven server RPC thread. If we need to generalize this in the future, we may wrap this logic in a
+        // Channel or interceptor; inject the appropriate Context to use; or have the server RPC set a more appropriate
+        // Context along the stack.
+        final ClientCall<FlightData, BarrageMessage> call;
+        final Context previous = Context.ROOT.attach();
+        try {
+            call = session.channel().newCall(subscribeDescriptor, CallOptions.DEFAULT);
+        } finally {
+            Context.ROOT.detach(previous);
+        }
+        observer = (ClientCallStreamObserver<FlightData>) ClientCalls
+                .asyncBidiStreamingCall(call, new DoExchangeObserver());
 
-        ClientCalls.asyncBidiStreamingCall(call, new ClientResponseObserver<Flight.FlightData, BarrageMessage>() {
-            @Override
-            public void beforeStart(final ClientCallStreamObserver<Flight.FlightData> requestStream) {
-                requestStream.disableAutoInboundFlowControl();
+        // Allow the server to send us all commands when there is sufficient bandwidth:
+        observer.request(Integer.MAX_VALUE);
+    }
+
+    private class DoExchangeObserver implements ClientResponseObserver<FlightData, BarrageMessage> {
+        @Override
+        public void beforeStart(final ClientCallStreamObserver<FlightData> requestStream) {
+            requestStream.disableAutoInboundFlowControl();
+        }
+
+        @Override
+        public void onNext(final BarrageMessage barrageMessage) {
+            if (barrageMessage == null) {
+                return;
             }
-
-            @Override
-            public void onNext(final BarrageMessage barrageMessage) {
-                if (barrageMessage == null) {
-                    return;
-                }
-                try {
-                    final BarrageMessage.Listener listener = resultTable;
-                    if (!connected || listener == null) {
-                        return;
-                    }
-                    listener.handleBarrageMessage(barrageMessage);
-                } finally {
-                    barrageMessage.close();
-                }
-            }
-
-            @Override
-            public void onError(final Throwable t) {
-                log.error().append(BarrageSubscriptionImpl.this)
-                        .append(": Error detected in subscription: ")
-                        .append(t).endl();
-
-                final BarrageMessage.Listener listener = resultTable;
+            try (barrageMessage) {
+                final Listener listener = resultTable;
                 if (!connected || listener == null) {
                     return;
                 }
-                listener.handleBarrageError(t);
-                handleDisconnect();
+                listener.handleBarrageMessage(barrageMessage);
             }
+        }
 
-            @Override
-            public void onCompleted() {
-                handleDisconnect();
+        @Override
+        public void onError(final Throwable t) {
+            log.error().append(BarrageSubscriptionImpl.this)
+                    .append(": Error detected in subscription: ")
+                    .append(t).endl();
+
+            final Listener listener = resultTable;
+            if (!connected || listener == null) {
+                return;
             }
-        });
+            listener.handleBarrageError(t);
+            handleDisconnect();
+        }
 
-        // Allow the server to send us all commands when there is sufficient bandwidth:
-        call.request(Integer.MAX_VALUE);
-
-        // Although this is a white lie, the call is established
-        this.connected = true;
+        @Override
+        public void onCompleted() {
+            handleDisconnect();
+        }
     }
 
     @Override
-    public synchronized BarrageTable entireTable() {
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    @Override
+    public BarrageTable entireTable() throws InterruptedException {
+        return entireTable(true);
+    }
+
+    @Override
+    public BarrageTable entireTable(boolean blockUntilComplete) throws InterruptedException {
+        return partialTable(null, null, false, blockUntilComplete);
+    }
+
+    @Override
+    public BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+        return partialTable(viewport, columns, false, true);
+    }
+
+    @Override
+    public BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
+            throws InterruptedException {
+        return partialTable(viewport, columns, reverseViewport, true);
+    }
+
+    @Override
+    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
+            boolean blockUntilComplete) throws InterruptedException {
         if (!connected) {
             throw new UncheckedDeephavenException(
                     this + " is no longer an active subscription and cannot be retained further");
         }
-        if (!subscribed) {
+        if (subscribed) {
+            throw new UncheckedDeephavenException(
+                    "BarrageSubscription objects cannot be reused.");
+        } else {
+            // test lock conditions
+            if (UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
+                throw new UnsupportedOperationException(
+                        "Cannot create subscription while holding the UpdateGraphProcessor shared lock");
+            }
+
+            if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+                completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+            }
+
             // Send the initial subscription:
-            call.sendMessage(Flight.FlightData.newBuilder()
-                    .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(null, null, options)))
+            observer.onNext(FlightData.newBuilder()
+                    .setAppMetadata(
+                            ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
                     .build());
             subscribed = true;
+
+            // use a listener to decide when the table is complete
+            listener = new InstrumentedTableUpdateListener("example-listener") {
+                @Override
+                protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
+                    exceptionWhileCompleting = originalException;
+                    if (completedCondition != null) {
+                        UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+                    } else {
+                        synchronized (BarrageSubscriptionImpl.this) {
+                            BarrageSubscriptionImpl.this.notifyAll();
+                        }
+                    }
+                }
+
+                @Override
+                public void onUpdate(final TableUpdate upstream) {
+                    // test to see if the viewport matches the requested
+                    if (viewport == null && resultTable.getServerViewport() == null) {
+                        completed = true;
+                    } else if (viewport != null && resultTable.getServerViewport() != null
+                            && reverseViewport == resultTable.getServerReverseViewport()) {
+                        completed = viewport.subsetOf(resultTable.getServerViewport());
+                    } else {
+                        completed = false;
+                    }
+
+                    if (completed) {
+                        if (completedCondition != null) {
+                            UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+                        } else {
+                            synchronized (BarrageSubscriptionImpl.this) {
+                                BarrageSubscriptionImpl.this.notifyAll();
+                            }
+                        }
+
+                        // no longer need to listen for completion
+                        resultTable.removeUpdateListener(this);
+                        listener = null;
+                    }
+                }
+            };
+
+            resultTable.listenForUpdates(listener);
+
+            if (blockUntilComplete) {
+                while (!completed && exceptionWhileCompleting == null) {
+                    // handle the condition where this function may have the exclusive lock
+                    if (completedCondition != null) {
+                        completedCondition.await();
+                    } else {
+                        wait(); // barragesubscriptionimpl lock
+                    }
+                }
+            }
         }
 
-        return resultTable;
+        if (exceptionWhileCompleting == null) {
+            return resultTable;
+        } else {
+            throw new UncheckedDeephavenException("Error while handling subscription:", exceptionWhileCompleting);
+        }
     }
 
     @Override
-    protected synchronized void destroy() {
+    protected void destroy() {
         super.destroy();
         close();
     }
 
-    private synchronized void handleDisconnect() {
+    private void handleDisconnect() {
         if (!connected) {
             return;
         }
@@ -167,18 +282,14 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (!connected) {
             return;
         }
-        call.halfClose();
+        observer.onCompleted();
         cleanup();
     }
 
     private void cleanup() {
         this.connected = false;
-        this.export.close();
+        this.tableHandle.close();
         resultTable = null;
-        if (performRelease != null) {
-            performRelease.run();
-            performRelease = null;
-        }
     }
 
     @Override
@@ -188,9 +299,11 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     private ByteBuffer makeRequestInternal(
-            @Nullable final Index viewport,
+            @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
+            boolean reverseViewport,
             @Nullable BarrageSubscriptionOptions options) {
+
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
         int colOffset = 0;
@@ -207,13 +320,13 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             optOffset = options.appendTo(metadata);
         }
 
-        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata,
-                export.ticket().getTicket().asReadOnlyByteBuffer());
+        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, tableHandle.ticketId().bytes());
         BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
         BarrageSubscriptionRequest.addColumns(metadata, colOffset);
         BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
         BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
         BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
+        BarrageSubscriptionRequest.addReverseViewport(metadata, reverseViewport);
         metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
 
         final FlatBufferBuilder wrapper = new FlatBufferBuilder();
@@ -252,35 +365,34 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * @param columnTypes the class type per column
      * @param componentTypes the component class type per column
      * @param streamReader the stream reader - intended to be thread safe and re-usable
-     * @param <Options> the options related to deserialization
      * @return the client side method descriptor
      */
-    public static <Options> MethodDescriptor<Flight.FlightData, BarrageMessage> getClientDoExchangeDescriptor(
-            final Options options,
+    public static MethodDescriptor<FlightData, BarrageMessage> getClientDoExchangeDescriptor(
+            final BarrageSubscriptionOptions options,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
-            final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+            final StreamReader streamReader) {
         return descriptorFor(
                 MethodDescriptor.MethodType.BIDI_STREAMING, FlightServiceGrpc.SERVICE_NAME, "DoExchange",
-                ProtoUtils.marshaller(Flight.FlightData.getDefaultInstance()),
-                new BarrageDataMarshaller<>(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
+                ProtoUtils.marshaller(FlightData.getDefaultInstance()),
+                new BarrageDataMarshaller(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
                 FlightServiceGrpc.getDoExchangeMethod());
     }
 
-    public static class BarrageDataMarshaller<Options> implements MethodDescriptor.Marshaller<BarrageMessage> {
-        private final Options options;
+    public static class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {
+        private final BarrageSubscriptionOptions options;
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
         private final Class<?>[] componentTypes;
-        private final BarrageMessageConsumer.StreamReader<Options> streamReader;
+        private final StreamReader streamReader;
 
         public BarrageDataMarshaller(
-                final Options options,
+                final BarrageSubscriptionOptions options,
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,
                 final Class<?>[] componentTypes,
-                final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+                final StreamReader streamReader) {
             this.options = options;
             this.columnChunkTypes = columnChunkTypes;
             this.columnTypes = columnTypes;
@@ -296,7 +408,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes, stream);
+            return streamReader.safelyParseFrom(options, null, columnChunkTypes, columnTypes, componentTypes, stream);
         }
     }
 }

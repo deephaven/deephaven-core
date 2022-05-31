@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.files.ResourceResolution",
- "methods": {
-  "findResources": "Find all resources associated with a list of resources\n\n:param suffix: (java.lang.String) - filename suffix to be searched for\n:param consumer: (java.util.function.BiConsumer<java.net.URL,java.lang.String>) - operation to perform on each found resource (URL, file name pair)"
- },
- "path": "io.deephaven.util.files.ResourceResolution",
- "typeName": "class"
-}

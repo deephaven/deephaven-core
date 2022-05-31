@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.client.impl.SchemaAdapter",
+ "methods": {
+  "of": "Convert a header into a Schema.\n\n:param header: (io.deephaven.qst.table.TableHeader) - the header\n:return: (org.apache.arrow.vector.types.pojo.Schema) the schema"
+ },
+ "path": "io.deephaven.client.impl.SchemaAdapter",
+ "text": "Utilities for creating Schema.",
+ "typeName": "class"
+}

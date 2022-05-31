@@ -22,10 +22,10 @@ import org.gradle.internal.Actions
 class Classpaths {
 
     static final String ELEMENTAL_GROUP = 'com.google.elemental2'
-    static final String ELEMENTAL_VERSION = '1.0.0-RC1'
+    static final String ELEMENTAL_VERSION = '1.1.0'
 
     static final String GWT_GROUP = 'com.google.gwt'
-    static final String GWT_VERSION = '2.8.2'
+    static final String GWT_VERSION = '2.9.0'
 
     static final String JAVA_PARSER_GROUP = 'com.github.javaparser'
     static final String JAVA_PARSER_NAME = 'javaparser-core'
@@ -43,24 +43,29 @@ class Classpaths {
     static final String JGIT_VERSION = '5.8.1.202007141445-r'
 
     static final String JS_INTEROP_GROUP = 'com.google.jsinterop'
-    static final String JS_INTEROP_VERSION = '1.0.2'
+    static final String JS_INTEROP_VERSION = '2.0.0'
 
     static final String COMMONS_GROUP = 'org.apache.commons'
 
     static final String ARROW_GROUP = 'org.apache.arrow'
-    static final String ARROW_VERSION = '5.0.0'
+    static final String ARROW_VERSION = '7.0.0'
 
     static final String SLF4J_GROUP = 'org.slf4j'
-    static final String SLF4J_VERSION = '1.7.32'
+    static final String SLF4J_VERSION = '2.0.0-alpha5'
 
     static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
     static final String FLATBUFFER_NAME = 'flatbuffers-java'
-    static final String FLATBUFFER_VERSION = '1.12.0'
+    static final String FLATBUFFER_VERSION = '2.0.3'
 
     static final String DAGGER_GROUP = 'com.google.dagger'
     static final String DAGGER_NAME = 'dagger'
     static final String DAGGER_COMPILER = 'dagger-compiler'
     static final String DAGGER_VERSION = '2.31.1'
+
+    static final String AUTOSERVICE_GROUP = 'com.google.auto.service'
+    static final String AUTOSERVICE_NAME = 'auto-service-annotations'
+    static final String AUTOSERVICE_COMPILER = 'auto-service'
+    static final String AUTOSERVICE_VERSION = '1.0.1'
 
     static final String IMMUTABLES_GROUP = 'org.immutables'
     static final String IMMUTABLES_NAME = 'value'
@@ -76,10 +81,24 @@ class Classpaths {
 
     static final String LOGBACK_GROUP = 'ch.qos.logback'
     static final String LOGBACK_NAME = 'logback-classic'
-    static final String LOGBACK_VERSION = '1.2.3'
+    static final String LOGBACK_VERSION = '1.3.0-alpha12'
 
     static final String GROOVY_GROUP = 'org.codehaus.groovy'
     static final String GROOVY_VERSION = '3.0.9'
+
+    static final String GRPC_GROUP = 'io.grpc'
+    static final String GRPC_NAME = 'grpc-bom'
+    static final String GRPC_VERSION = '1.46.0'
+
+    // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
+    static final String PROTOBUF_GROUP = 'com.google.protobuf'
+    static final String PROTOBUF_NAME = 'protobuf-java'
+    static final String PROTOBUF_VERSION = '3.20.1'
+
+    // See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
+    static final String BORINGSSL_GROUP = 'io.netty'
+    static final String BORINGSSL_NAME = 'netty-tcnative-boringssl-static'
+    static final String BORINGSSL_VERSION = '2.0.46.Final'
 
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
@@ -130,7 +149,7 @@ class Classpaths {
         addDependency compile, JS_INTEROP_GROUP, name,
                 // google is annoying, and have different versions released for the same groupId
                 // :base: is the only one that is different, so we'll use it in the ternary.
-                name == 'base'? '1.0.0-RC1' : JS_INTEROP_VERSION
+                name == 'base'? '1.0.0' : JS_INTEROP_VERSION
     }
 
     static void inheritElemental(Project p, String name = 'elemental2-core') {
@@ -165,6 +184,18 @@ class Classpaths {
         addDependency(ap, DAGGER_GROUP, DAGGER_COMPILER, DAGGER_VERSION)
     }
 
+    /**
+     * Auto service is an annotation processor that will generate META-INF/services/ files.
+     *
+     * @see <a href="https://github.com/google/auto/tree/master/service">google/auto/tree/master/service</a>
+     */
+    static void inheritAutoService(Project p, boolean test = false) {
+        Configuration ic = p.configurations.getByName(test ? 'testCompileOnly' : 'compileOnly')
+        addDependency(ic, AUTOSERVICE_GROUP, AUTOSERVICE_NAME, AUTOSERVICE_VERSION)
+        Configuration ap = p.configurations.getByName(test ? 'testAnnotationProcessor' : 'annotationProcessor')
+        addDependency(ap, AUTOSERVICE_GROUP, AUTOSERVICE_COMPILER, AUTOSERVICE_VERSION)
+    }
+
     static void inheritImmutables(Project p) {
         Configuration ap = p.configurations.getByName('annotationProcessor')
         addDependency(ap, IMMUTABLES_GROUP, IMMUTABLES_NAME, IMMUTABLES_VERSION)
@@ -194,5 +225,20 @@ class Classpaths {
     static void inheritGroovy(Project p, String name, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, GROOVY_GROUP, name, GROOVY_VERSION)
+    }
+
+    static void inheritGrpcPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform(GRPC_GROUP + ":" + GRPC_NAME + ":" + GRPC_VERSION))
+    }
+
+    static void inheritProtobuf(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, PROTOBUF_GROUP, PROTOBUF_NAME, PROTOBUF_VERSION)
+    }
+
+    static void inheritBoringSsl(Project p, String configName = JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, BORINGSSL_GROUP, BORINGSSL_NAME, BORINGSSL_VERSION)
     }
 }

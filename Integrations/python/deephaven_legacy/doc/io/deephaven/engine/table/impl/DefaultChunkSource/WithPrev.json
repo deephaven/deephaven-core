@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.DefaultChunkSource$WithPrev",
+ "methods": {
+  "getPrevChunk": "**Incompatible overloads text - text from the first overload:**\n\nReturns a chunk of previous data corresponding to the keys from the given RowSequence.\n\n*Overload 1*  \n  :param context: (io.deephaven.engine.table.ChunkSource.GetContext) - A context containing all mutable/state related data used in retrieving the Chunk. In\n          particular, the Context may be used to provide a Chunk data pool\n  :param rowSequence: (io.deephaven.engine.rowset.RowSequence) - An RowSequence representing the keys to be fetched\n  :return: (io.deephaven.chunk.Chunk<? extends DefaultChunkSource.WithPrev.ATTR>) A chunk of data corresponding to the keys from the given RowSequence\n  \n*Overload 2*  \n  :param context: io.deephaven.engine.table.ChunkSource.GetContext\n  :param firstKey: long\n  :param lastKey: long\n  :return: io.deephaven.chunk.Chunk<? extends DefaultChunkSource.WithPrev.ATTR>",
+  "getPrevChunkByFilling": ":param context: io.deephaven.engine.table.ChunkSource.GetContext\n:param rowSequence: io.deephaven.engine.rowset.RowSequence\n:return: io.deephaven.chunk.Chunk<DefaultChunkSource.WithPrev.ATTR>",
+  "getPrevSource": ":return: (io.deephaven.engine.table.ChunkSource<DefaultChunkSource.WithPrev.ATTR>) a chunk source which accesses the previous values."
+ },
+ "path": "io.deephaven.engine.table.impl.DefaultChunkSource.WithPrev",
+ "typeName": "interface"
+}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sort.permute.BytePermuteKernel",
+ "methods": {
+  "permute": "*Overload 1*  \n  Note: Java generics information - <T extends io.deephaven.chunk.attributes.Any>\n  \n  :param extend: io.deephaven.chunk.ByteChunk<?\n  :param outputPositions: io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkPositions>\n  :param supe: io.deephaven.chunk.WritableByteChunk<?\n  \n*Overload 2*  \n  Note: Java generics information - <T extends io.deephaven.chunk.attributes.Any>\n  \n  :param inputPositions: io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkPositions>\n  :param extend: io.deephaven.chunk.ByteChunk<?\n  :param outputPositions: io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkPositions>\n  :param supe: io.deephaven.chunk.WritableByteChunk<?",
+  "permuteInput": "Note: Java generics information - <T extends io.deephaven.chunk.attributes.Any>\n\n:param extend: io.deephaven.chunk.ByteChunk<?\n:param inputPositions: io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkPositions>\n:param supe: io.deephaven.chunk.WritableByteChunk<?"
+ },
+ "path": "io.deephaven.engine.table.impl.sort.permute.BytePermuteKernel",
+ "typeName": "class"
+}

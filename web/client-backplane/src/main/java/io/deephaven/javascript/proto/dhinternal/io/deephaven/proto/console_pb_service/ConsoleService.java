@@ -189,50 +189,6 @@ public class ConsoleService {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface FetchFigureType {
-        @JsOverlay
-        static ConsoleService.FetchFigureType create() {
-            return Js.uncheckedCast(JsPropertyMap.of());
-        }
-
-        @JsProperty
-        String getMethodName();
-
-        @JsProperty
-        Object getRequestType();
-
-        @JsProperty
-        Object getResponseType();
-
-        @JsProperty
-        Object getService();
-
-        @JsProperty
-        boolean isRequestStream();
-
-        @JsProperty
-        boolean isResponseStream();
-
-        @JsProperty
-        void setMethodName(String methodName);
-
-        @JsProperty
-        void setRequestStream(boolean requestStream);
-
-        @JsProperty
-        void setRequestType(Object requestType);
-
-        @JsProperty
-        void setResponseStream(boolean responseStream);
-
-        @JsProperty
-        void setResponseType(Object responseType);
-
-        @JsProperty
-        void setService(Object service);
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetConsoleTypesType {
         @JsOverlay
         static ConsoleService.GetConsoleTypesType create() {
@@ -456,7 +412,6 @@ public class ConsoleService {
     public static ConsoleService.BindTableToVariableType BindTableToVariable;
     public static ConsoleService.CancelCommandType CancelCommand;
     public static ConsoleService.ExecuteCommandType ExecuteCommand;
-    public static ConsoleService.FetchFigureType FetchFigure;
     public static ConsoleService.GetConsoleTypesType GetConsoleTypes;
     public static ConsoleService.NextAutoCompleteStreamType NextAutoCompleteStream;
     public static ConsoleService.OpenAutoCompleteStreamType OpenAutoCompleteStream;

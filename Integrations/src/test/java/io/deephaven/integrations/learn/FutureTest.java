@@ -1,7 +1,10 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.db.v2.InMemoryTable;
-import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.InMemoryTable;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -25,6 +28,7 @@ public class FutureTest {
 
     }
 
+    @SafeVarargs
     private static Input[] createInputs(Function<Object[], Object>... gatherFuncs) {
         return new Input[] {new Input(new String[] {"Column1", "Column2"}, gatherFuncs[0]),
                 new Input("Column3", gatherFuncs[1])};
@@ -37,9 +41,9 @@ public class FutureTest {
     private static Future createFuture(Function<Object[], Object> modelFunc, Input[] inputs, int batchSize) {
         return new Future(modelFunc, inputs,
                 new ColumnSource[][] {
-                        table.view(new String[] {"Column1", "Column2"}).getColumnSources()
+                        table.view("Column1", "Column2").getColumnSources()
                                 .toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
-                        table.view(new String[] {"Column3"}).getColumnSources()
+                        table.view("Column3").getColumnSources()
                                 .toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY)},
                 batchSize);
     }
@@ -50,7 +54,7 @@ public class FutureTest {
         final Input[] inputs = createInputs(args -> args);
 
         final int batchSize = 7;
-        final IndexSet[] indexSetTarget = new IndexSet[1];
+        final RowSet[] rowSetTarget = new RowSet[1];
         final ColumnSource<?>[][] colSourceTarget = new ColumnSource[inputs.length][];
 
         for (int i = 0; i < inputs.length; i++) {
@@ -59,7 +63,7 @@ public class FutureTest {
 
         Function<Object[], Object> myGather1 = (params) -> {
             Assert.assertEquals(2, params.length);
-            Assert.assertEquals(indexSetTarget[0], params[0]);
+            Assert.assertEquals(rowSetTarget[0], params[0]);
             Assert.assertTrue(Objects.deepEquals(new Object[] {colSourceTarget[0]}[0], params[1]));
 
             return 4;
@@ -67,7 +71,7 @@ public class FutureTest {
 
         Function<Object[], Object> myGather2 = (params) -> {
             Assert.assertEquals(2, params.length);
-            Assert.assertEquals(indexSetTarget[0], params[0]);
+            Assert.assertEquals(rowSetTarget[0], params[0]);
             Assert.assertTrue(Objects.deepEquals(new Object[] {colSourceTarget[1]}[0], params[1]));
 
             return 5;
@@ -79,12 +83,16 @@ public class FutureTest {
 
         Future future = createFuture(modelFunc, thisInput, batchSize);
 
-        for (int i = 0; i < 9; i++) {
-            indexSetTarget[0] = future.getIndexSet();
+        try (final WritableRowSet rowSet = RowSetFactory.empty()) {
+            for (int i = 0; i < 3; i++) {
+                rowSet.insert(i);
+                future.addRowKey(i);
+            }
+
+            rowSetTarget[0] = rowSet;
+            Assert.assertEquals(3, future.get());
+            rowSetTarget[0] = null;
         }
-
-        Assert.assertEquals(3, future.get());
-
     }
 
     @Test
@@ -93,7 +101,7 @@ public class FutureTest {
         final Input[] inputs = createInputs(args -> args);
 
         final int batchSize = 7;
-        final IndexSet[] indexSetTarget = new IndexSet[1];
+        final RowSet[] rowSetTarget = new RowSet[1];
         final ColumnSource<?>[][] colSourceTarget = new ColumnSource[inputs.length][];
 
         for (int i = 0; i < inputs.length; i++) {
@@ -102,7 +110,7 @@ public class FutureTest {
 
         Function<Object[], Object> myGather1 = (params) -> {
             Assert.assertEquals(2, params.length);
-            Assert.assertEquals(indexSetTarget[0], params[0]);
+            Assert.assertEquals(rowSetTarget[0], params[0]);
             Assert.assertTrue(Objects.deepEquals(new Object[] {colSourceTarget[0]}[0], params[1]));
 
             return 10;
@@ -110,7 +118,7 @@ public class FutureTest {
 
         Function<Object[], Object> myGather2 = (params) -> {
             Assert.assertEquals(2, params.length);
-            Assert.assertEquals(indexSetTarget[0], params[0]);
+            Assert.assertEquals(rowSetTarget[0], params[0]);
             Assert.assertTrue(Objects.deepEquals(new Object[] {colSourceTarget[1]}[0], params[1]));
 
             return 11;
@@ -122,13 +130,20 @@ public class FutureTest {
 
         Future future = createFuture(modelFunc, thisInput, batchSize);
 
-        for (int i = 0; i < 9; i++) {
-            indexSetTarget[0] = future.getIndexSet();
-        }
+        try (final WritableRowSet rowSet = RowSetFactory.empty()) {
+            for (int i = 0; i < 3; i++) {
+                rowSet.insert(i);
+                future.addRowKey(i);
+            }
 
-        for (int i = 0; i < thisInput.length; i++) {
-            Assert.assertEquals((i == 0) ? 10 : 11,
-                    future.gather(thisInput[i], thisInput[i].createColumnSource(table)));
+            rowSetTarget[0] = rowSet;
+
+            for (int i = 0; i < thisInput.length; i++) {
+                Assert.assertEquals((i == 0) ? 10 : 11,
+                        future.gather(thisInput[i], thisInput[i].createColumnSource(table), rowSet));
+            }
+
+            rowSetTarget[0] = null;
         }
     }
 
@@ -141,21 +156,23 @@ public class FutureTest {
 
         Function<Object[], Object> modelFunc = (params) -> 3;
 
+        for (int i = 0; i < batchSize; i++) {
+            getIndexSetTest(modelFunc, thisInput, batchSize, i);
+        }
+    }
+
+    public void getIndexSetTest(final Function<Object[], Object> modelFunc, final Input[] thisInput,
+            final int batchSize, final int n) {
         Future future = createFuture(modelFunc, thisInput, batchSize);
 
-        IndexSet indexSetTarget = new IndexSet(batchSize);
+        try (final WritableRowSet rowSetTarget = RowSetFactory.empty()) {
+            for (int i = 0; i < n; i++) {
+                rowSetTarget.insert(i);
+                future.addRowKey(i);
+            }
 
-        for (int i = 0; i < 9; i++) {
-            if (i % batchSize != 0) {
-                indexSetTarget.add(i);
-                future.getIndexSet().add(i);
-                Assert.assertEquals(indexSetTarget.getSize(), future.getIndexSet().getSize());
-                Assert.assertEquals(indexSetTarget.isFull(), future.getIndexSet().isFull());
-                Assert.assertEquals(indexSetTarget.iterator().next(), future.getIndexSet().iterator().next());
-                Assert.assertEquals(indexSetTarget.iterator().hasNext(), future.getIndexSet().iterator().hasNext());
-            } else {
-                future = createFuture(modelFunc, thisInput, batchSize);
-                indexSetTarget = new IndexSet(batchSize);
+            try (final RowSet rowSet = future.makeRowSet()) {
+                Assert.assertEquals(rowSetTarget, rowSet);
             }
         }
     }

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.chunk.ChunkBase",
+ "methods": {
+  "internalCapacity": "DO NOT CALL THIS INTERNAL METHOD. Call WritableChunk.capacity() That method is the only legal caller of\n this method in the entire system.\n\n:param password: long\n:return: int",
+  "internalSetSize": "DO NOT CALL THIS INTERNAL METHOD. If you want to set a size, call WritableChunk.setSize(int). That method is\n the only legal caller of this method in the entire system.\n\n:param newSize: int\n:param password: long",
+  "size": ":return: (int) The length of the data in the chunk"
+ },
+ "path": "io.deephaven.chunk.ChunkBase",
+ "text": "A generic object intended to serve as a thin wrapper around an array region.",
+ "typeName": "class"
+}

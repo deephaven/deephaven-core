@@ -47,8 +47,8 @@ JPy_JMethod* JMethod_New(JPy_JType* declaringClass,
     method->isVarArgs = isVarArgs;
     method->mid = mid;
 
-    Py_INCREF(declaringClass);
-    Py_INCREF(method->name);
+    JPy_INCREF(declaringClass);
+    JPy_INCREF(method->name);
 
     return method;
 }
@@ -61,16 +61,16 @@ void JMethod_dealloc(JPy_JMethod* self)
 {
     JNIEnv* jenv;
 
-    Py_DECREF(self->declaringClass);
-    Py_DECREF(self->name);
+    JPy_DECREF(self->declaringClass);
+    JPy_DECREF(self->name);
 
     jenv = JPy_GetJNIEnv();
     if (jenv != NULL) {
         int i;
         for (i = 0; i < self->paramCount; i++) {
-            Py_DECREF((self->paramDescriptors + i)->type);
+            JPy_DECREF((self->paramDescriptors + i)->type);
         }
-        Py_DECREF((self->returnDescriptor + i)->type);
+        JPy_DECREF((self->returnDescriptor + i)->type);
     }
 
     PyMem_Del(self->paramDescriptors);
@@ -231,7 +231,7 @@ PyObject* JMethod_FromJObject(JNIEnv* jenv, JPy_JMethod* method, PyObject* pyArg
         //printf("JMethod_FromJObject: paramIndex=%d, jArg=%p, isNone=%d\n", paramIndex, jArg, pyReturnArg == Py_None);
         if ((JObj_Check(pyReturnArg) || PyObject_CheckBuffer(pyReturnArg))
             && (*jenv)->IsSameObject(jenv, jReturnValue, jArg)) {
-             Py_INCREF(pyReturnArg);
+             JPy_INCREF(pyReturnArg);
              return pyReturnArg;
         }
     }
@@ -268,51 +268,83 @@ PyObject* JMethod_InvokeMethod(JNIEnv* jenv, JPy_JMethod* method, PyObject* pyAr
         JPy_DIAG_PRINT(JPy_DIAG_F_EXEC, "JMethod_InvokeMethod: calling static Java method %s#%s\n", declaringClass->javaName, JPy_AS_UTF8(method->name));
 
         if (returnType == JPy_JVoid) {
+            Py_BEGIN_ALLOW_THREADS;
             (*jenv)->CallStaticVoidMethodA(jenv, classRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JVOID();
         } else if (returnType == JPy_JBoolean) {
-            jboolean v = (*jenv)->CallStaticBooleanMethodA(jenv, classRef, method->mid, jArgs);
+            jboolean v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallStaticBooleanMethodA(jenv, classRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JBOOLEAN(v);
         } else if (returnType == JPy_JChar) {
-            jchar v = (*jenv)->CallStaticCharMethodA(jenv, classRef, method->mid, jArgs);
+            jchar v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallStaticCharMethodA(jenv, classRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JCHAR(v);
         } else if (returnType == JPy_JByte) {
-            jbyte v = (*jenv)->CallStaticByteMethodA(jenv, classRef, method->mid, jArgs);
+            jbyte v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallStaticByteMethodA(jenv, classRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JBYTE(v);
         } else if (returnType == JPy_JShort) {
-            jshort v = (*jenv)->CallStaticShortMethodA(jenv, classRef, method->mid, jArgs);
+            jshort v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallStaticShortMethodA(jenv, classRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JSHORT(v);
         } else if (returnType == JPy_JInt) {
-            jint v = (*jenv)->CallStaticIntMethodA(jenv, classRef, method->mid, jArgs);
+            jint v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallStaticIntMethodA(jenv, classRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JINT(v);
         } else if (returnType == JPy_JLong) {
-            jlong v = (*jenv)->CallStaticLongMethodA(jenv, classRef, method->mid, jArgs);
+            jlong v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallStaticLongMethodA(jenv, classRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JLONG(v);
         } else if (returnType == JPy_JFloat) {
-            jfloat v = (*jenv)->CallStaticFloatMethodA(jenv, classRef, method->mid, jArgs);
+            jfloat v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallStaticFloatMethodA(jenv, classRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JFLOAT(v);
         } else if (returnType == JPy_JDouble) {
-            jdouble v = (*jenv)->CallStaticDoubleMethodA(jenv, classRef, method->mid, jArgs);
+            jdouble v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallStaticDoubleMethodA(jenv, classRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JDOUBLE(v);
         } else if (returnType == JPy_JString) {
-            jstring v = (*jenv)->CallStaticObjectMethodA(jenv, classRef, method->mid, jArgs);
+            jstring v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallStaticObjectMethodA(jenv, classRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FromJString(jenv, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         } else {
-            jobject v = (*jenv)->CallStaticObjectMethodA(jenv, classRef, method->mid, jArgs);
+            jobject v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallStaticObjectMethodA(jenv, classRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JMethod_FromJObject(jenv, method, pyArgs, jArgs, 0, returnType, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         }
 
     } else {
@@ -326,51 +358,83 @@ PyObject* JMethod_InvokeMethod(JNIEnv* jenv, JPy_JMethod* method, PyObject* pyAr
         objectRef = ((JPy_JObj*) self)->objectRef;
 
         if (returnType == JPy_JVoid) {
+            Py_BEGIN_ALLOW_THREADS;
             (*jenv)->CallVoidMethodA(jenv, objectRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JVOID();
         } else if (returnType == JPy_JBoolean) {
-            jboolean v = (*jenv)->CallBooleanMethodA(jenv, objectRef, method->mid, jArgs);
+            jboolean v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallBooleanMethodA(jenv, objectRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JBOOLEAN(v);
         } else if (returnType == JPy_JChar) {
-            jchar v = (*jenv)->CallCharMethodA(jenv, objectRef, method->mid, jArgs);
+            jchar v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallCharMethodA(jenv, objectRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JCHAR(v);
         } else if (returnType == JPy_JByte) {
-            jbyte v = (*jenv)->CallByteMethodA(jenv, objectRef, method->mid, jArgs);
+            jbyte v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallByteMethodA(jenv, objectRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JBYTE(v);
         } else if (returnType == JPy_JShort) {
-            jshort v = (*jenv)->CallShortMethodA(jenv, objectRef, method->mid, jArgs);
+            jshort v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallShortMethodA(jenv, objectRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JSHORT(v);
         } else if (returnType == JPy_JInt) {
-            jint v = (*jenv)->CallIntMethodA(jenv, objectRef, method->mid, jArgs);
+            jint v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallIntMethodA(jenv, objectRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JINT(v);
         } else if (returnType == JPy_JLong) {
-            jlong v = (*jenv)->CallLongMethodA(jenv, objectRef, method->mid, jArgs);
+            jlong v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallLongMethodA(jenv, objectRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JLONG(v);
         } else if (returnType == JPy_JFloat) {
-            jfloat v = (*jenv)->CallFloatMethodA(jenv, objectRef, method->mid, jArgs);
+            jfloat v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallFloatMethodA(jenv, objectRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JFLOAT(v);
         } else if (returnType == JPy_JDouble) {
-            jdouble v = (*jenv)->CallDoubleMethodA(jenv, objectRef, method->mid, jArgs);
+            jdouble v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallDoubleMethodA(jenv, objectRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FROM_JDOUBLE(v);
         } else if (returnType == JPy_JString) {
-            jstring v = (*jenv)->CallObjectMethodA(jenv, objectRef, method->mid, jArgs);
+            jstring v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallObjectMethodA(jenv, objectRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FromJString(jenv, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         } else {
-            jobject v = (*jenv)->CallObjectMethodA(jenv, objectRef, method->mid, jArgs);
+            jobject v;
+            Py_BEGIN_ALLOW_THREADS;
+            v = (*jenv)->CallObjectMethodA(jenv, objectRef, method->mid, jArgs);
+            Py_END_ALLOW_THREADS;
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JMethod_FromJObject(jenv, method, pyArgs, jArgs, 1, returnType, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         }
     }
 
@@ -507,7 +571,7 @@ PyObject* JMethod_repr(JPy_JMethod* self)
 
 PyObject* JMethod_str(JPy_JMethod* self)
 {
-    Py_INCREF(self->name);
+    JPy_INCREF(self->name);
     return self->name;
 }
 
@@ -536,7 +600,7 @@ PyObject* JMethod_get_param_type(JPy_JMethod* self, PyObject* args)
     }
     JMethod_CHECK_PARAMETER_INDEX(self, index);
     type = (PyObject*) self->paramDescriptors[index].type;
-    Py_INCREF(type);
+    JPy_INCREF(type);
     return type;
 }
 
@@ -868,9 +932,9 @@ JPy_JOverloadedMethod* JOverloadedMethod_New(JPy_JType* declaringClass, PyObject
     overloadedMethod->name = name;
     overloadedMethod->methodList = PyList_New(0);
 
-    Py_INCREF((PyObject*) overloadedMethod->declaringClass);
-    Py_INCREF((PyObject*) overloadedMethod->name);
-    Py_INCREF((PyObject*) overloadedMethod);
+    JPy_INCREF((PyObject*) overloadedMethod->declaringClass);
+    JPy_INCREF((PyObject*) overloadedMethod->name);
+    JPy_INCREF((PyObject*) overloadedMethod);
 
     JOverloadedMethod_AddMethod(overloadedMethod, method);
 
@@ -907,9 +971,9 @@ int JOverloadedMethod_AddMethod(JPy_JOverloadedMethod* overloadedMethod, JPy_JMe
  */
 void JOverloadedMethod_dealloc(JPy_JOverloadedMethod* self)
 {
-    Py_DECREF((PyObject*) self->declaringClass);
-    Py_DECREF((PyObject*) self->name);
-    Py_DECREF((PyObject*) self->methodList);
+    JPy_DECREF((PyObject*) self->declaringClass);
+    JPy_DECREF((PyObject*) self->name);
+    JPy_DECREF((PyObject*) self->methodList);
     Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
@@ -962,7 +1026,7 @@ static PyMemberDef JOverloadedMethod_members[] =
  */
 PyObject* JOverloadedMethod_str(JPy_JOverloadedMethod* self)
 {
-    Py_INCREF(self->name);
+    JPy_INCREF(self->name);
     return self->name;
 }
 

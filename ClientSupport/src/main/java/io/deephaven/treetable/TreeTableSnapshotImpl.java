@@ -1,11 +1,12 @@
 package io.deephaven.treetable;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.live.NotificationQueue;
-import io.deephaven.db.v2.*;
-import io.deephaven.db.v2.select.SelectFilter;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.table.sort.SortDirective;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,8 +18,7 @@ import java.util.Set;
 import static io.deephaven.treetable.TreeTableConstants.RE_TREE_KEY;
 import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
 
-class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>>
-        extends AbstractTreeSnapshotImpl<TreeTableInfo, CLIENT_TYPE> {
+class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
     private static final boolean NODE_SORT_MODE =
             Configuration.getInstance().getBooleanWithDefault("TreeTableSnapshotImpl.sortAtNodes", true);
 
@@ -48,9 +48,9 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
             long firstRow,
             long lastRow,
             BitSet columns,
-            @NotNull SelectFilter[] filters,
+            @NotNull WhereFilter[] filters,
             @NotNull List<SortDirective> sorts,
-            CLIENT_TYPE client,
+            TreeTableClientTableManager.Client client,
             Set<TreeSnapshotQuery.Operation> includedOps) {
         super(baseTableId, baseTable, tablesByKey, firstRow, lastRow, columns, filters, sorts, client, includedOps);
     }
@@ -60,7 +60,7 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
         final HierarchicalTable baseTable = getBaseTable();
         Table prepared = tryGetRetainedTable(ROOT_TABLE_KEY);
         if (prepared == null) {
-            final SelectFilter[] filters = getFilters();
+            final WhereFilter[] filters = getFilters();
             final List<SortDirective> directives = getDirectives();
 
             if (filters.length == 0 && directives.isEmpty()) {
@@ -148,13 +148,13 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
 
     @Override
     boolean isKeyValid(boolean usePrev, Table t, long key) {
-        return (usePrev ? t.getIndex().findPrev(key) : t.getIndex().find(key)) >= 0;
+        return (usePrev ? t.getRowSet().findPrev(key) : t.getRowSet().find(key)) >= 0;
     }
 
     @Override
     boolean verifyChild(TableDetails parentDetail, TableDetails childDetail, long childKeyPos, boolean usePrev) {
-        final Index parentIndex = parentDetail.getTable().getIndex();
-        return usePrev ? parentIndex.getPrevIndex().find(childKeyPos) >= 0
-                : parentIndex.find(childKeyPos) >= 0;
+        final TrackingRowSet parentRowSet = parentDetail.getTable().getRowSet();
+        return usePrev ? parentRowSet.findPrev(childKeyPos) >= 0
+                : parentRowSet.find(childKeyPos) >= 0;
     }
 }

@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.chunk.attributes.HashCodes",
+ "methods": {},
+ "path": "io.deephaven.chunk.attributes.HashCodes",
+ "text": "Attribute that specifies that a Chunk contains integer hash codes.",
+ "typeName": "interface"
+}

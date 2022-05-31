@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.RowSetUtils",
+ "methods": {
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:param it: io.deephaven.engine.rowset.RowSet.RangeIterator\n:return: io.deephaven.base.log.LogOutput",
+  "fillKeyIndicesChunk": ":param index: io.deephaven.engine.rowset.RowSet\n:param chunkToFill: io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>",
+  "fillKeyRangesChunk": ":param index: io.deephaven.engine.rowset.RowSet\n:param chunkToFill: io.deephaven.chunk.WritableLongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges>",
+  "forAllInvertedLongRanges": "This is equivalent to `sourceRowSet.invert(destRowSet).forAllRowKeyRanges(lrc)`, but requires O(1) space. Note\n that coalescing adjacent position-space runs enables callers to make minimal System.arraycopy calls.\n\n:param sourceRowSet: (io.deephaven.engine.rowset.RowSet) - RowSet to find the destRowSet keys in - ranges in the callback will be on this RowSet\n:param destRowSet: (io.deephaven.engine.rowset.RowSet) - RowSet values to look for within sourceRowSet\n:param lrc: (io.deephaven.util.datastructures.LongRangeConsumer) - consumer to handle each inverted range that is encountered",
+  "rangeSearch": "Look for the biggest value of i that satisfies begin <= i <= end and comp.directionToTargetFrom(i) > 0,\n or some value that satisfies comp.directionToTargetFrom(i) == 0.\n\n:param begin: (long) - The beginning of the range (inclusive)\n:param end: (long) - The end of the range (inclusive)\n:param comp: (io.deephaven.engine.rowset.impl.RowSetUtils.Comparator) - a Comparator.\n:return: (long) the last position i inside the provided range that satisfies comp.directionToTargetFrom(i) > 0, or\n         some position that satisfies comp.directionToTargetFrom(i) == 0."
+ },
+ "path": "io.deephaven.engine.rowset.impl.RowSetUtils",
+ "typeName": "class"
+}

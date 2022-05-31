@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.by.IterativeChunkedAggregationOperator$SingletonContext",
- "methods": {},
- "path": "io.deephaven.db.v2.by.IterativeChunkedAggregationOperator.SingletonContext",
- "text": "Context interface for singleton (that is, one aggregation state) operator updates.",
- "typeName": "interface"
-}

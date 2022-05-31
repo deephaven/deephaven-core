@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.IncrementalOperatorAggregationStateManager",
+ "methods": {
+  "add": ":param bc: io.deephaven.util.SafeCloseable\n:param rowSequence: io.deephaven.engine.rowset.RowSequence\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param nextOutputPosition: org.apache.commons.lang3.mutable.MutableInt\n:param outputPositions: io.deephaven.chunk.WritableIntChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>",
+  "addForUpdate": ":param bc: io.deephaven.util.SafeCloseable\n:param rowSequence: io.deephaven.engine.rowset.RowSequence\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param nextOutputPosition: org.apache.commons.lang3.mutable.MutableInt\n:param outputPositions: io.deephaven.chunk.WritableIntChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param reincarnatedPositions: io.deephaven.chunk.WritableIntChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>",
+  "beginUpdateCycle": "Allow our managers to do a little bit of work at the very start of the update cycle.  We have this method so that\n even if nothing is to be done, we rehash a little bit on each cycle to avoid always rehashing when there is other\n work to be done.",
+  "findModifications": ":param pc: io.deephaven.util.SafeCloseable\n:param rowSequence: io.deephaven.engine.rowset.RowSequence\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param outputPositions: io.deephaven.chunk.WritableIntChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>",
+  "findPositionForKey": ":param key: java.lang.Object\n:return: int",
+  "getKeyHashTableSources": ":return: io.deephaven.engine.table.ColumnSource[]",
+  "makeAggregationStateBuildContext": ":param buildSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.util.SafeCloseable",
+  "makeProbeContext": ":param probeSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.util.SafeCloseable",
+  "remove": ":param pc: io.deephaven.util.SafeCloseable\n:param rowSequence: io.deephaven.engine.rowset.RowSequence\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param outputPositions: io.deephaven.chunk.WritableIntChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param emptiedPositions: io.deephaven.chunk.WritableIntChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>",
+  "setRowSize": ":param outputPosition: int\n:param size: long"
+ },
+ "path": "io.deephaven.engine.table.impl.by.IncrementalOperatorAggregationStateManager",
+ "text": "Interface for ChunkedOperatorAggregationHelper to process incremental updates.",
+ "typeName": "interface"
+}

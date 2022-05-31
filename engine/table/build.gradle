@@ -1,0 +1,129 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Engine Table: Implementation and closely-coupled utilities'
+
+sourceSets {
+    main {
+        resources {
+            srcDir 'groovy'
+            include 'core/*.groovy'
+        }
+        resources {
+            srcDir 'python'
+            include 'core/*.py'
+        }
+        resources {
+            srcDir 'src/main/resources'
+            include '**'
+        }
+    }
+}
+
+dependencies {
+    api project(':Util'),
+            project(':TableLogger'),
+            project(':engine-stringset'),
+            project(':engine-base'),
+            project(':deephaven-jpy'),
+            project(':deephaven-jpy-ext'),
+            project(':hotspot')
+
+    implementation project(':CompilerTools'),
+            project(':DHProcess'),
+            project(':engine-function'),
+            project(':engine-tuple'),
+            'com.github.f4b6a3:uuid-creator:3.6.0',
+            "org.eclipse.jgit:org.eclipse.jgit:$Classpaths.JGIT_VERSION",
+            'com.tdunning:t-digest:3.2',
+	    'com.squareup:javapoet:1.9.0'
+
+    implementation project(':plugin')
+
+    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
+    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
+    Classpaths.inheritJavaParser(project)
+    Classpaths.inheritAutoService(project)
+
+    Classpaths.inheritImmutables(project)
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    runtimeOnly project(':engine-tuplesource')
+
+    implementation 'com.google.guava:guava:19.0'
+
+    testImplementation TestTools.projectDependency(project, 'Base'),
+            TestTools.projectDependency(project, 'Util'),
+            TestTools.projectDependency(project, 'engine-chunk'),
+            TestTools.projectDependency(project, 'engine-rowset'),
+            project(':Base'),
+            project(':BenchmarkSupport'),
+            project(':extensions-csv'),
+            project(':extensions-parquet-table'),
+            'junit:junit:4.13.2'
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/generated/**',
+                '**/*Boolean*.java',
+                '**/*Byte*.java',
+                '**/*Char*.java',
+                '**/*Short*.java',
+                '**/*Int*.java',
+                '**/*Long*.java',
+                '**/*Float*.java',
+                '**/*Double*.java',
+                '**/*Object*.java',
+                '**/*StateManager.java',
+                '**/incagg/gen/*.java',
+                '**/incopenagg/gen/*.java',
+                '**/staticagg/gen/*.java',
+                '**/staticopenagg/gen/*.java',
+                '**/naturaljoin/staticopen/gen/*.java',
+                '**/naturaljoin/incopen/gen/*.java',
+                '**/naturaljoin/rightincopen/gen/*.java',
+                'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
+                'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
+                'src/test/java/**/*Sample.java'
+        )
+    }
+}
+
+test {
+    maxParallelForks = Integer.parseInt(findProperty('maxParallelForks') as String ?: '1')
+    forkEvery = Integer.parseInt(findProperty('forkEvery') as String ?: '1')
+    //  For now, if you apply @Category(ParallelTest.class) to tests which are not huge CPU/RAM hogs, you can get parallelism
+    //  If you have CPU/RAM-heavy tasks that you don't want gumming up :engine-table:test runs, apply @Category(SerialTest.class) instead
+    //  (note that the above only works for junit 4 tests; see the documentation on SerialTest class and others for porting instructions)
+
+    def props = project.properties.subMap(["jpy.pythonLib", "jpy.jpyLib", "jpy.jdlLib"])
+    systemProperties props
+}
+
+// Adds a custom testParallel task which is allowed to run tests in parallel.
+// Add @Category(ParallelTest.class) to have your tests run in parallel
+// Note: Supports JUnit4 or greater only (you use @Test annotations to mark test methods).
+
+TestTools.addEngineParallelTest(project)
+TestTools.addEngineSerialTest(project)
+TestTools.addEngineOutOfBandTest(project)
+
+def maxHeapSize = findProperty('maxHeapSize') as String ?: '6g'
+
+tasks.testParallel.maxHeapSize = maxHeapSize
+tasks.testSerial.maxHeapSize = maxHeapSize
+tasks.testOutOfBand.maxHeapSize = maxHeapSize
+tasks.test.maxHeapSize = maxHeapSize

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.chunk.SharedContext$Key",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.chunk.SharedContext.Key",
- "text": "Key marker interface.",
- "typeName": "interface"
-}

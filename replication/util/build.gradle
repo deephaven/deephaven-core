@@ -1,0 +1,13 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Replication Tools: Utilities for source code generation and replication'
+
+dependencies {
+    implementation project(':Base'),
+            'commons-io:commons-io:2.6'
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+}

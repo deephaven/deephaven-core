@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.TupleSource",
+ "methods": {
+  "createPreviousTuple": "Create a tuple for previous key column values at the supplied row key.\n\n:param rowKey: (long) - The row key\n:return: (TupleSource.TUPLE_TYPE) The resulting tuple",
+  "createTuple": "Create a tuple for key column values at the supplied row key.\n\n:param rowKey: (long) - The row key\n:return: (TupleSource.TUPLE_TYPE) The resulting tuple",
+  "createTupleFromReinterpretedValues": "Create a tuple for the supplied reinterpreted values.\n\n:param values: (java.lang.Object...) - The values\n:return: (TupleSource.TUPLE_TYPE) The resulting tuple",
+  "createTupleFromValues": "Create a tuple for the supplied (boxed) values.\n\n:param values: (java.lang.Object...) - The values\n:return: (TupleSource.TUPLE_TYPE) The resulting tuple",
+  "getColumnSources": "Get the ColumnSources backing this tuple source.\n\n:return: (java.util.List<io.deephaven.engine.table.ColumnSource>) The column sources"
+ },
+ "path": "io.deephaven.engine.table.TupleSource",
+ "text": "Factory to produce immutable tuples from a long row key.",
+ "typeName": "interface"
+}

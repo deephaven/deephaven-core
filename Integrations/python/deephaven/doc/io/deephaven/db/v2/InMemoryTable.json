@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.InMemoryTable",
- "methods": {
-  "from": "Defers to ArrayBackedColumnSource.from(io.deephaven.qst.array.Array) to construct the appropriate\n column sources (this involves copying the data).\n\n:param table: (io.deephaven.qst.table.NewTable) - the new table qst\n:return: (io.deephaven.db.v2.InMemoryTable) the in memory table"
- },
- "path": "io.deephaven.db.v2.InMemoryTable",
- "typeName": "class"
-}

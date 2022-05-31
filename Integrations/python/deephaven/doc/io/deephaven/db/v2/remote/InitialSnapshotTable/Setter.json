@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.remote.InitialSnapshotTable$Setter",
- "methods": {
-  "set": ":param array: InitialSnapshotTable.Setter.T\n:param arrayIndex: int\n:param destIndex: long"
- },
- "path": "io.deephaven.db.v2.remote.InitialSnapshotTable.Setter",
- "typeName": "interface"
-}

@@ -1,9 +1,9 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.db.v2.InMemoryTable;
-import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.engine.table.impl.InMemoryTable;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.api.util.NameValidator;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -49,40 +49,42 @@ public class InputTest {
                 input.createColumnSource(table));
     }
 
-    @Test(expected = io.deephaven.db.tables.utils.NameValidator.InvalidNameException.class)
+    @Test(expected = NameValidator.InvalidNameException.class)
     public void nullColumnNameEntryTest() {
 
         final String[] colNames = new String[] {"Column1", null};
         final Function<Object[], Object> func = args -> args;
 
-        Input input = new Input(colNames, func);
+        new Input(colNames, func);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullColumnNameArrayTest() {
 
         final String[] colNames = null;
         final Function<Object[], Object> func = args -> args;
 
-        Input input = new Input(colNames, func);
+        new Input(colNames, func);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullGatherFunctionTest() {
 
         final String[] colNames = new String[] {"Column1", "Column2"};
         final Function<Object[], Object> func = null;
 
-        Input input = new Input(colNames, func);
+        new Input(colNames, func);
     }
 
-    @Test(expected = io.deephaven.db.tables.utils.NameValidator.InvalidNameException.class)
+    @Test(expected = NameValidator.InvalidNameException.class)
     public void invalidColumnNameTest() {
 
         final String[] colNames = new String[] {" Column1", "Column2"};
         final Function<Object[], Object> func = args -> args;
 
-        Input input = new Input(colNames, func);
+        new Input(colNames, func);
     }
 
     @Test
@@ -93,7 +95,7 @@ public class InputTest {
 
         Input input = new Input(colNames, func);
 
-        Assert.assertEquals(colNames, input.getColNames());
+        Assert.assertArrayEquals(colNames, input.getColNames());
     }
 
     @Test

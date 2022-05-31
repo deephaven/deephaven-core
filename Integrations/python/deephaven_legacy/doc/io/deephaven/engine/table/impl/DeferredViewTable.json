@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.DeferredViewTable",
+ "methods": {
+  "selectDistinct": ":param selectables: java.util.Collection<? extendsio.deephaven.api.Selectable>\n:return: io.deephaven.engine.table.Table",
+  "where": ":param filters: java.util.Collection<? extendsio.deephaven.api.filter.Filter>\n:return: io.deephaven.engine.table.Table"
+ },
+ "path": "io.deephaven.engine.table.impl.DeferredViewTable",
+ "text": "An uncoalesced table with view and where operations to be applied after UncoalescedTable.coalesce() is forced.",
+ "typeName": "class"
+}

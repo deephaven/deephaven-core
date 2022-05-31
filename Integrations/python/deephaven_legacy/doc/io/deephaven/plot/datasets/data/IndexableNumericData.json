@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.plot.datasets.data.IndexableNumericData",
+ "methods": {
+  "doubleIterator": "Gets the iterator over this dataset.\n\n:return: (java.util.Spliterator.OfDouble) dataset iterator",
+  "get": "Gets the value at the specified index as a double.\n\n:param index: (int) - index\n:return: (double) value at index as a double",
+  "getPlotInfo": ":return: io.deephaven.plot.errors.PlotInfo",
+  "size": "Gets the size of this dataset.\n\n:return: (int) size of this dataset",
+  "stream": "Gets the values of this dataset as a stream of doubles.\n\n:return: (java.util.stream.DoubleStream) stream of this dataset's values as doubles"
+ },
+ "path": "io.deephaven.plot.datasets.data.IndexableNumericData",
+ "text": "Dataset with indexed numeric values.",
+ "typeName": "class"
+}

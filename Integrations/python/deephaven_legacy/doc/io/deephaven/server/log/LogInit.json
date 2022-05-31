@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.log.LogInit",
+ "methods": {},
+ "path": "io.deephaven.server.log.LogInit",
+ "typeName": "class"
+}

@@ -1,13 +1,13 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.db.tables.ColumnDefinition
-import io.deephaven.db.tables.TableDefinition
-import io.deephaven.db.util.VariableProvider
+import io.deephaven.engine.table.ColumnDefinition
+import io.deephaven.engine.table.TableDefinition
+import io.deephaven.engine.util.VariableProvider
+import io.deephaven.internal.log.LoggerFactory
 import io.deephaven.io.logger.Logger
 import io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest.TextDocumentContentChangeEvent
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
-import io.deephaven.util.process.ProcessEnvironment
-import io.deephaven.db.tables.Table
+import io.deephaven.engine.table.Table
 import io.deephaven.lang.parse.CompletionParser
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -114,10 +114,9 @@ u = t.'''
                 }
             }
         }
-        // TODO(deephaven-core#875): Auto-complete on instance should not suggest static methods
-        // This is what we *want*, but due to issue above, we need to hack around it for now.
-        //results.size() == 0
-        results.size() != 0
+        // TODO (deephaven-core#875): Auto-complete on instance should not suggest static methods. Table doesn't have
+        //                            anymore, though, so we don't need to hack around that here.
+        results.size() == 0
     }
 
     def "Completion should offer binding-scoped variables after an empty assign="() {
@@ -126,7 +125,7 @@ u = t.'''
         String src = "t ="
         doc = p.parse(src)
 
-        ProcessEnvironment.getDefaultLog(CompletionHandler)
+        LoggerFactory.getLogger(CompletionHandler)
         VariableProvider variables = Mock(VariableProvider) {
             _ * getVariableNames() >> ['emptyTable']
             0 * _
@@ -142,7 +141,7 @@ u = t.'''
 
     def "Completion should work correctly after making edits"() {
         given:
-        Logger log = ProcessEnvironment.getDefaultLog(CompletionHandler)
+        Logger log = LoggerFactory.getLogger(CompletionHandler)
         CompletionParser p = new CompletionParser()
         String uri = "testing://"
         String src1 = """a = 1
@@ -168,6 +167,31 @@ c = 3
 b = 2
 c = 3
 t = emptyTable."""
+    }
+
+    def "Completion should not error out in a comment between two lines"() {
+        given:
+        CompletionParser p = new CompletionParser()
+        String beforeCursor = """
+a = 1
+# hello world a."""
+        String afterCursor = """
+b = 2
+"""
+        String src = beforeCursor + afterCursor;
+
+        doc = p.parse(src)
+
+        LoggerFactory.getLogger(CompletionHandler)
+        VariableProvider variables = Mock(VariableProvider) {
+            _ * getVariableNames() >> ['emptyTable']
+            0 * _
+        }
+
+        when: "Cursor is in the comment after the variablename+dot and completion is requested"
+        Set<CompletionItem> result = performSearch(doc, beforeCursor.length(), variables)
+        then: "Expect the completion result to suggest nothing"
+        result.size() == 0
     }
     @Override
     VariableProvider getVariables() {

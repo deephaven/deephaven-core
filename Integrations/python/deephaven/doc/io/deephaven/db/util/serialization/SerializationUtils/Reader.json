@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.util.serialization.SerializationUtils$Reader",
- "methods": {},
- "path": "io.deephaven.db.util.serialization.SerializationUtils.Reader",
- "typeName": "interface"
-}

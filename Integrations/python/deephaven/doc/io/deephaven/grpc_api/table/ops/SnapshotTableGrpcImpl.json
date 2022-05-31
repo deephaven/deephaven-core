@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.table.ops.SnapshotTableGrpcImpl",
- "methods": {
-  "create": "This actually performs the operation. It will typically be performed after the\n\n:param request: (io.deephaven.proto.backplane.grpc.SnapshotTableRequest) - the original request from the user\n:param sourceTables: (java.util.List<io.deephaven.grpc_api.session.SessionState.ExportObject<io.deephaven.db.tables.Table>>) - the source tables that this operation may or may not need\n:return: (io.deephaven.db.tables.Table) the resulting table"
- },
- "path": "io.deephaven.grpc_api.table.ops.SnapshotTableGrpcImpl",
- "typeName": "class"
-}

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.util.ColumnFormattingValues",
+ "methods": {
+  "getDateFormatColumn": ":param baseColumn: (java.lang.String) - The column.\n:return: (java.lang.String) The name of the Date formatting column for the specified base column.",
+  "getNumberFormatColumn": ":param baseColumn: (java.lang.String) - The column.\n:return: (java.lang.String) The name of the number formatting column for the specified base column.",
+  "isFormattingColumn": "Returns true if this column name is a hidden formatting column.\n\n:param columnName: (java.lang.String) - the column name to check\n:return: (boolean) true if the columnName is a formatting column; false otherwise"
+ },
+ "path": "io.deephaven.engine.util.ColumnFormattingValues",
+ "text": "Container for magic String values used to indicate formatted rows",
+ "typeName": "interface"
+}

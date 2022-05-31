@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.JoinRedirectionIndex",
- "methods": {},
- "path": "io.deephaven.db.v2.JoinRedirectionIndex",
- "text": "Makes a redirection Index based on the type provided by the join control.",
- "typeName": "class"
-}

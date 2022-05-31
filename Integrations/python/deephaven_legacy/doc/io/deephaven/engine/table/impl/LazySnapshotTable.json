@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.LazySnapshotTable",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.LazySnapshotTable",
+ "text": "This interface represents a table that will not update itself on the run cycle, but instead run itself when the run\n for snapshot is called.",
+ "typeName": "interface"
+}

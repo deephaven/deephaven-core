@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.server.table.ops.filter.FilterPrinter",
+ "methods": {
+  "onAnd": ":param filtersList: java.util.List<io.deephaven.proto.backplane.grpc.Condition>\n:return: java.lang.Void",
+  "onComparison": ":param operation: io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation\n:param caseSensitivity: io.deephaven.proto.backplane.grpc.CaseSensitivity\n:param lhs: io.deephaven.proto.backplane.grpc.Value\n:param rhs: io.deephaven.proto.backplane.grpc.Value\n:return: java.lang.Void",
+  "onContains": ":param reference: io.deephaven.proto.backplane.grpc.Reference\n:param searchString: java.lang.String\n:param caseSensitivity: io.deephaven.proto.backplane.grpc.CaseSensitivity\n:param matchType: io.deephaven.proto.backplane.grpc.MatchType\n:return: java.lang.Void",
+  "onIn": ":param target: io.deephaven.proto.backplane.grpc.Value\n:param candidatesList: java.util.List<io.deephaven.proto.backplane.grpc.Value>\n:param caseSensitivity: io.deephaven.proto.backplane.grpc.CaseSensitivity\n:param matchType: io.deephaven.proto.backplane.grpc.MatchType\n:return: java.lang.Void",
+  "onInvoke": ":param method: java.lang.String\n:param target: io.deephaven.proto.backplane.grpc.Value\n:param argumentsList: java.util.List<io.deephaven.proto.backplane.grpc.Value>\n:return: java.lang.Void",
+  "onIsNull": ":param reference: io.deephaven.proto.backplane.grpc.Reference\n:return: java.lang.Void",
+  "onMatches": ":param reference: io.deephaven.proto.backplane.grpc.Reference\n:param regex: java.lang.String\n:param caseSensitivity: io.deephaven.proto.backplane.grpc.CaseSensitivity\n:param matchType: io.deephaven.proto.backplane.grpc.MatchType\n:return: java.lang.Void",
+  "onNot": ":param filter: io.deephaven.proto.backplane.grpc.Condition\n:return: java.lang.Void",
+  "onOr": ":param filtersList: java.util.List<io.deephaven.proto.backplane.grpc.Condition>\n:return: java.lang.Void",
+  "onSearch": ":param searchString: java.lang.String\n:param optionalReferencesList: java.util.List<io.deephaven.proto.backplane.grpc.Reference>\n:return: java.lang.Void",
+  "print": ":param condition: io.deephaven.proto.backplane.grpc.Condition\n:return: java.lang.String",
+  "printNoEscape": ":param literal: io.deephaven.proto.backplane.grpc.Literal\n:return: java.lang.String"
+ },
+ "path": "io.deephaven.server.table.ops.filter.FilterPrinter",
+ "typeName": "class"
+}

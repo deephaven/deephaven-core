@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.codegen.RichType",
+ "methods": {
+  "createGeneric": ":param type: java.lang.Class\n:param typeAttributes: java.lang.Class...\n:return: io.deephaven.engine.table.impl.select.codegen.RichType",
+  "createNonGeneric": ":param type: java.lang.Class\n:return: io.deephaven.engine.table.impl.select.codegen.RichType",
+  "getBareType": ":return: java.lang.Class",
+  "getCanonicalName": ":return: java.lang.String",
+  "getTypeAttributes": ":return: java.lang.Class[]",
+  "isGeneric": ":return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.select.codegen.RichType",
+ "typeName": "class"
+}

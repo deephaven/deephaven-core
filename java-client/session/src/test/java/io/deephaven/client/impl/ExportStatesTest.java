@@ -1,12 +1,20 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
-import io.deephaven.grpc_api.DeephavenChannel;
-import io.deephaven.grpc_api.util.OperationHelper;
-import io.deephaven.proto.backplane.grpc.*;
+import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.ReleaseRequest;
+import io.deephaven.proto.backplane.grpc.ReleaseResponse;
+import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceImplBase;
+import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceImplBase;
+import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.util.ExportTicketHelper;
+import io.deephaven.proto.util.OperationHelper;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.HeadTable;
 import io.deephaven.qst.table.TableSpec;
@@ -109,10 +117,10 @@ public class ExportStatesTest {
     }
 
     @Test
-    public void sameTicketOnSameExport() {
+    public void sameIdOnSameExport() {
         final EmptyTable empty42 = TableSpec.empty(42L);
         try (final Export ref1 = export(empty42); final Export ref2 = export(empty42)) {
-            assertThat(ref1.ticket()).isEqualTo(ref2.ticket());
+            assertThat(ref1.exportId().id()).isEqualTo(ref2.exportId().id());
         }
     }
 
@@ -131,12 +139,12 @@ public class ExportStatesTest {
     @Test
     public void newTicketAfterRelease() {
         final EmptyTable empty42 = TableSpec.empty(42L);
-        final Ticket ticket;
+        final ExportId exportId;
         try (final Export ref = export(empty42)) {
-            ticket = ref.ticket();
+            exportId = ref.exportId();
         }
         try (final Export ref = export(empty42)) {
-            assertThat(ref.ticket()).isNotEqualTo(ticket);
+            assertThat(ref.exportId()).isNotEqualTo(exportId);
         }
     }
 
@@ -204,7 +212,7 @@ public class ExportStatesTest {
         try (final Export e1 = export(empty42); final Export e2 = export(empty42head6)) {
             assertThat(batches).hasSize(2); // Check that we are re-using the
             // ticket from e1 assertThat(batches.get(1).getOpsList()).hasSize(1);
-            assertThat(batches.get(1).getOps(0)).satisfies(op -> hasSourceId(op, e1.ticket()));
+            assertThat(batches.get(1).getOps(0)).satisfies(op -> hasSourceId(op, e1.exportId().id()));
         }
     }
 
@@ -230,7 +238,7 @@ public class ExportStatesTest {
         assertThat(releases).hasSize(size);
     }
 
-    private static boolean hasSourceId(Operation op, Ticket ticket) {
+    private static boolean hasSourceId(Operation op, int exportId) {
         final List<TableReference> references =
                 OperationHelper.getSourceIds(op).limit(2).collect(Collectors.toList());
         if (references.size() != 1) {
@@ -240,6 +248,7 @@ public class ExportStatesTest {
         if (!ref.hasTicket()) {
             return false;
         }
-        return ticket.equals(ref.getTicket());
+        final int refExportId = ExportTicketHelper.ticketToExportId(ref.getTicket(), "export");
+        return exportId == refExportId;
     }
 }

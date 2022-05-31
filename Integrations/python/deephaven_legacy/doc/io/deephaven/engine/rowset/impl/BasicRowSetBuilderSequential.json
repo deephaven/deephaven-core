@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential",
+ "methods": {
+  "appendRowSequence": "Appends a RowSequence to this builder.\n\n:param rowSequence: (io.deephaven.engine.rowset.RowSequence) - The RowSequence to append",
+  "appendRowSequenceWithOffset": "Appends a RowSequence shifted by the provided offset to this builder.\n\n:param rowSequence: (io.deephaven.engine.rowset.RowSequence) - The RowSequence to append\n:param shiftAmount: (long) - An offset to apply to every range in the RowSet",
+  "build": ":return: io.deephaven.engine.rowset.WritableRowSet"
+ },
+ "path": "io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential",
+ "text": "RowSetBuilderRandom implementation that uses an OrderedLongSetBuilderSequential internally.",
+ "typeName": "class"
+}

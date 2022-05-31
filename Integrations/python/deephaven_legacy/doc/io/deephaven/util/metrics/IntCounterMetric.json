@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.util.metrics.IntCounterMetric",
+ "methods": {
+  "sample": ":param n: int"
+ },
+ "path": "io.deephaven.util.metrics.IntCounterMetric",
+ "typeName": "class"
+}

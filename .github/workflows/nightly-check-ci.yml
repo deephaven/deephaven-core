@@ -10,55 +10,74 @@ on:
     branches: [ 'nightly/**', 'release/v*' ]
 
 jobs:
-  check:
+  nightly:
+    strategy:
+      fail-fast: false
+      matrix:
+        gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
+        test-jvm-version: ['11', '17', '18']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Setup JDK 8
-        id: setup-java-8
-        uses: actions/setup-java@v2.2.0
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '8.0.302'
+          distribution: 'temurin'
+          java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
-        uses: actions/setup-java@v2.2.0
+        uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '17.0.0'
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup JDK 18
+        id: setup-java-18
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '18'
 
       - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-8.outputs.path }}" >> $GITHUB_ENV
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          echo >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }},${{ steps.setup-java-18.outputs.path }}," >> gradle.properties
+          cat gradle.properties
 
-      - name: Run gradle
+      - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }}
         uses: burrunan/gradle-cache-action@v1
         with:
-          job-id: check
-          arguments: --scan --continue --rerun-tasks check
+          job-id: gradle-run
+          arguments: --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }}
           gradle-version: wrapper
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: nightly-check-ci-results
-          path: '**/build/test-results/*/TEST-*.xml'
+          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-ci-results
+          path: |
+            **/build/test-results/*/TEST-*.xml
+            **/build/reports/tests/**
 
-      - name: Upload Test Reports
-        uses: actions/upload-artifact@v2
-        if: always()
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v3
+        if: failure()
         with:
-          name: nightly-check-ci-reports
-          path: '**/build/reports/tests/**'
+          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-ci-jvm-err
+          path: |
+            **/*_pid*.log
+            **/core.*
+          if-no-files-found: ignore
 
       - name: Publish Test Results
         uses: scacap/action-surefire-report@v1
@@ -66,218 +85,19 @@ jobs:
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
-          check_name: check report
+          # We have to make a unique report per run https://github.com/ScaCap/action-surefire-report/issues/70
+          check_name: check report ${{ matrix.gradle-task }} java${{ matrix.test-jvm-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
       - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@v1.15.0
+        uses: slackapi/slack-github-action@v1.18.0
         id: slack-nightly-failure
         if: ${{ failure() && github.repository_owner == 'deephaven' }}
-        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
-
-  testSerial:
-    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup JDK 8
-        id: setup-java-8
-        uses: actions/setup-java@v2.2.0
         with:
-          distribution: 'zulu'
-          java-version: '8.0.302'
-
-      - name: Setup JDK 17
-        id: setup-java-17
-        uses: actions/setup-java@v2.2.0
-        with:
-          distribution: 'zulu'
-          java-version: '17.0.0'
-
-      - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-8.outputs.path }}" >> $GITHUB_ENV
-
-      - name: Setup gradle properties
-        run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
-
-      - name: Run gradle
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: testSerial
-          arguments: --scan --continue --rerun-tasks testSerial
-          gradle-version: wrapper
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v2
-        if: always()
-        with:
-          name: nightly-testSerial-ci-results
-          path: '**/build/test-results/*/TEST-*.xml'
-
-      - name: Upload Test Reports
-        uses: actions/upload-artifact@v2
-        if: always()
-        with:
-          name: nightly-testSerial-ci-reports
-          path: '**/build/reports/tests/**'
-
-      - name: Publish Test Results
-        uses: scacap/action-surefire-report@v1
-        if: ${{ github.repository_owner == 'deephaven' }}
-        env:
-          NODE_OPTIONS: '--max_old_space_size=4096'
-        with:
-          check_name: testSerial report
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          report_paths: '**/build/test-results/*/TEST-*.xml'
-
-      - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@v1.15.0
-        id: slack-nightly-failure
-        if: ${{ failure() && github.repository_owner == 'deephaven' }}
-        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
-
-  testParallel:
-    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup JDK 8
-        id: setup-java-8
-        uses: actions/setup-java@v2.2.0
-        with:
-          distribution: 'zulu'
-          java-version: '8.0.302'
-
-      - name: Setup JDK 17
-        id: setup-java-17
-        uses: actions/setup-java@v2.2.0
-        with:
-          distribution: 'zulu'
-          java-version: '17.0.0'
-
-      - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-8.outputs.path }}" >> $GITHUB_ENV
-
-      - name: Setup gradle properties
-        run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
-
-      - name: Run gradle
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: testParallel
-          arguments: --scan --continue --rerun-tasks testParallel
-          gradle-version: wrapper
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v2
-        if: always()
-        with:
-          name: nightly-testParallel-ci-results
-          path: '**/build/test-results/*/TEST-*.xml'
-
-      - name: Upload Test Reports
-        uses: actions/upload-artifact@v2
-        if: always()
-        with:
-          name: nightly-testParallel-ci-reports
-          path: '**/build/reports/tests/**'
-
-      - name: Publish Test Results
-        uses: scacap/action-surefire-report@v1
-        if: ${{ github.repository_owner == 'deephaven' }}
-        env:
-          NODE_OPTIONS: '--max_old_space_size=4096'
-        with:
-          check_name: testParallel report
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          report_paths: '**/build/test-results/*/TEST-*.xml'
-
-      - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@v1.15.0
-        id: slack-nightly-failure
-        if: ${{ failure() && github.repository_owner == 'deephaven' }}
-        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
-
-  testOutOfBand:
-    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup JDK 8
-        id: setup-java-8
-        uses: actions/setup-java@v2.2.0
-        with:
-          distribution: 'zulu'
-          java-version: '8.0.302'
-
-      - name: Setup JDK 17
-        id: setup-java-17
-        uses: actions/setup-java@v2.2.0
-        with:
-          distribution: 'zulu'
-          java-version: '17.0.0'
-
-      - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-8.outputs.path }}" >> $GITHUB_ENV
-
-      - name: Setup gradle properties
-        run: |
-          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
-
-      - name: Run gradle
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: testOutOfBand
-          arguments: --scan --continue --rerun-tasks testOutOfBand
-          gradle-version: wrapper
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v2
-        if: always()
-        with:
-          name: nightly-testOutOfBand-ci-results
-          path: '**/build/test-results/*/TEST-*.xml'
-
-      - name: Upload Test Reports
-        uses: actions/upload-artifact@v2
-        if: always()
-        with:
-          name: nightly-testOutOfBand-ci-reports
-          path: '**/build/reports/tests/**'
-
-      - name: Publish Test Results
-        uses: scacap/action-surefire-report@v1
-        if: ${{ github.repository_owner == 'deephaven' }}
-        env:
-          NODE_OPTIONS: '--max_old_space_size=4096'
-        with:
-          check_name: testOutOfBand report
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          report_paths: '**/build/test-results/*/TEST-*.xml'
-
-      - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@v1.15.0
-        id: slack-nightly-failure
-        if: ${{ failure() && github.repository_owner == 'deephaven' }}
-        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
+          payload: |
+            {
+              "slack_message": "Nightly build failure in ${{ matrix.gradle-task }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.head_ref }} ${{ github.sha }}"
+            }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}

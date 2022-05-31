@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.parquet.table.metadata.TableInfo",
+ "methods": {
+  "builder": ":return: io.deephaven.parquet.table.metadata.TableInfo.Builder",
+  "columnTypeMap": ":return: java.util.Map<java.lang.String,io.deephaven.parquet.table.metadata.ColumnTypeInfo>",
+  "columnTypes": ":return: (java.util.List<io.deephaven.parquet.table.metadata.ColumnTypeInfo>) List of column types for columns requiring non-default deserialization or type\n         selection",
+  "deserializeFromJSON": ":param tableInfoRaw: java.lang.String\n:return: io.deephaven.parquet.table.metadata.TableInfo",
+  "groupingColumnMap": ":return: java.util.Map<java.lang.String,io.deephaven.parquet.table.metadata.GroupingColumnInfo>",
+  "groupingColumnNames": ":return: java.util.Set<java.lang.String>",
+  "groupingColumns": ":return: (java.util.List<io.deephaven.parquet.table.metadata.GroupingColumnInfo>) List of grouping columns for columns with grouped data",
+  "serializeToJSON": ":return: java.lang.String",
+  "version": ":return: (java.lang.String) The Deephaven release version when this metadata format was defined"
+ },
+ "path": "io.deephaven.parquet.table.metadata.TableInfo",
+ "text": "Representation class for per-table information stored in key-value metadata for Deephaven-written Parquet files.",
+ "typeName": "class"
+}

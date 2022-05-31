@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.local.FileTableLocationKey",
+ "methods": {
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "compareTo": "Precedence-wise this implementation compares order, then applies a PartitionedTableLocationKey.PartitionsComparator to\n partitions, then compares file.\n\n:param other: io.deephaven.engine.table.impl.locations.TableLocationKey\n:return: int",
+  "equals": ":param other: java.lang.Object\n:return: boolean",
+  "getFile": ":return: java.io.File",
+  "getImplementationName": "Get a name for the implementing class. Useful for abstract classes that implement\n LogOutputAppendable or override toString.\n \n The default implementation is correct, but not suitable for high-frequency usage.\n\n:return: (java.lang.String) A name for the implementing class",
+  "hashCode": ":return: int",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.local.FileTableLocationKey",
+ "text": "Base ImmutableTableLocationKey implementation for table locations that may be enclosed by partitions and\n described by a File. Sub-classes should override compareTo(TableLocationKey) and\n equals(Object) only if they need to prevent equality with other FileTableLocationKey\n implementations.",
+ "typeName": "class"
+}

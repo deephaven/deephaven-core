@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.web.shared.fu.JsProvider",
+ "methods": {
+  "valueOf": ":return: JsProvider.T"
+ },
+ "path": "io.deephaven.web.shared.fu.JsProvider",
+ "text": "A js-friendly Supplier / Provider FunctionalInterface",
+ "typeName": "interface"
+}

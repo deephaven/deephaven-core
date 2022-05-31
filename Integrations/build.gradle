@@ -1,11 +1,11 @@
-import com.bmuschko.gradle.docker.tasks.image.Dockerfile
-
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
     id 'com.avast.gradle.docker-compose'
+    id 'idea'
 }
 
-evaluationDependsOn ':deephaven-jpy'
+evaluationDependsOn ':docker-server'
 
 configurations {
     compile.extendsFrom dhIntegrations
@@ -14,12 +14,16 @@ configurations {
 
 dependencies {
 
-    compile project(':DB'), project(':DbTypes')
+    compile project(':engine-table')
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
-    testRuntime project(':configs'), project(':test-configs'),
+    testRuntime project(':configs'),
+            project(':test-configs'),
             // need these projects so session default imports / generated type wrappers resolve correctly
-            project(':Numerics'), project(':Plot'), project(':Kafka'), project(':DbTypesImpl')
+            project(':Numerics'),
+            project(':Plot'),
+            project(':extensions-kafka'),
+            project(':extensions-parquet-table')
 }
 
 sourceSets {
@@ -45,7 +49,7 @@ sourceSets {
 // we do want IntelliJ to treat them as resources in IDE.
 idea {
     module {
-        resourceDirs += [file('r'), file('python')] 
+        resourceDirs += [file('r'), file('python')]
         testResourceDirs += [file('python/test')]
     }
 }
@@ -63,77 +67,10 @@ idea {
         }
 }
 
-def buildPyWheel = { String taskName, String imgName, String sourcePath ->
-    Docker.registerDockerTask(project, taskName) {
-        copyIn {
-            from(sourcePath) {
-                into 'src'
-            }
-        }
-        imageName = imgName + ":local-build"
-        dockerfile {
-            // set up the container, env vars - things that aren't likely to change
-            from 'docker.io/library/python:3.7.10 as sources'
-            arg 'DEEPHAVEN_VERSION'
-            environmentVariable 'DEEPHAVEN_VERSION', project.version
-            workingDir '/usr/src/app'
-            copyFile '/src', '.'
-            from 'sources as build'
-            runCommand '''set -eux; \\
-                      test -n "${DEEPHAVEN_VERSION}";\\
-                      python setup.py bdist_wheel'''
-        }
-        containerOutPath='/usr/src/app/dist'
-        copyOut {
-            into 'build/wheel' + taskName
-        }
-    }
-}
-
-def buildDockerForWheel=buildPyWheel('buildDockerForWheel', 'deephaven/deephaven-wheel', 'python')
-def buildDockerForWheel2=buildPyWheel('buildDockerForWheel2', 'deephaven/deephaven2-wheel', '../pyintegration')
-
-/**
- * Produce a docker image with the prereqs to run and use deephaven python
- */
-task deephavenPythonDockerfile(type: Dockerfile) {
-    destFile.set layout.buildDirectory.file('deephaven-python-docker/Dockerfile')
-    from new Dockerfile.From('deephaven/deephaven-jpy-wheel:local-build').withStage('deephaven-jpy-wheel')
-    from new Dockerfile.From('deephaven/deephaven-wheel:local-build').withStage('deephaven-wheel')
-    from new Dockerfile.From('deephaven/deephaven2-wheel:local-build').withStage('deephaven2-wheel')
-    from new Dockerfile.From('deephaven/java-and-python:local-build')
-
-    copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-jpy-wheel'))
-    copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-wheel'))
-    copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven2-wheel'))
-
-    // liblzo2-2 below is needed for supporting LZO parquet encoding.
-    runCommand('''set -eux; \\
-                  apt update; \\
-                  apt -y install liblzo2-2; \\
-                  apt -y install curl; \\
-                  pip3 install setuptools wheel; \\
-                  pip3 install *.whl; \\
-                  rm *.whl
-                  ''')
-}
-Docker.registerDockerImage(project, 'buildDeephavenPython') {
-    def dhJpyTasks = project(':deephaven-jpy').tasks
-    inputs.files dhJpyTasks.getByName('buildDockerForRuntime').outputs.files,
-            dhJpyTasks.getByName('buildDockerForWheel').outputs.files,
-            buildDockerForWheel.get().outputs.files,
-            buildDockerForWheel2.get().outputs.files,
-            deephavenPythonDockerfile.outputs.files
-
-    inputDir.set layout.buildDirectory.dir('deephaven-python-docker')
-
-    images.add('deephaven/runtime-base:local-build')
-}
-
 JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
 SourceSet test = java.sourceSets.maybeCreate('test')
 
-def runInDocker = { String name, String sourcePath, List<String> command ->
+def runInDocker = { String name, String sourcePath, List<String> command, Closure addConfig = {} ->
     Docker.registerDockerTask(project, name) {
         copyIn {
             from(sourcePath) {
@@ -150,27 +87,23 @@ def runInDocker = { String name, String sourcePath, List<String> command ->
                 into 'python/configs'
             }
         }
-        parentContainers = [tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
+        parentContainers = [project(':docker-server').tasks.findByName('buildDocker-server')] // deephaven/server
 
         imageName = 'deephaven/py-integrations:local-build'
 
-        network = dockerCompose.projectName.toLowerCase() + '_default'
-        containerDependencies.dependsOn = dockerCompose.upTask
-        containerDependencies.finalizedBy = dockerCompose.downTask
+        addConfig(it)
 
         dockerfile {
             // set up the container, env vars - things that aren't likely to change
-            from 'deephaven/runtime-base:local-build'
+            from 'deephaven/server:local-build'
             runCommand '''set -eux; \\
                       pip3 install unittest-xml-reporting==3.0.4;\\
                       mkdir -p /out/report;\\
                       mkdir -p /workspace/cache/classes'''
-            environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath'
+            environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath:/opt/deephaven/server/lib/*:/opt/deephaven/server/lib/'
             environmentVariable 'DEEPHAVEN_WORKSPACE', '/workspace'
             environmentVariable 'DEEPHAVEN_DEVROOT', '/python'
             environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
-            environmentVariable 'JDK_HOME', '/usr/lib/jvm/zulu8/jre/'
-            environmentVariable 'JAVA_VERSION', '1.8'
             environmentVariable 'DEEPHAVEN_VERSION', project.version
 
             workingDir '/python'
@@ -186,25 +119,38 @@ def runInDocker = { String name, String sourcePath, List<String> command ->
         }
     }
 }
-def pyTest = runInDocker("test-py-37", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'])
-def pyFunctionalTest = runInDocker('py-functional-test', 'python', ['/bin/bash', 'run-functional-tests.sh'])
-def pyTest2 = runInDocker('test-py-deephaven2', '../pyintegration', ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report'])
-pyTest.configure({
-    onlyIf { TestTools.shouldRunTests(project) }
-})
-tasks.getByName('check').dependsOn(pyTest)
-
-pyFunctionalTest.configure({
-    onlyIf { TestTools.shouldRunTests(project) }
-})
-tasks.getByName('check').dependsOn(pyFunctionalTest)
-
-pyTest2.configure({
-    onlyIf { TestTools.shouldRunTests(project) }
-})
-tasks.getByName('check').dependsOn(pyTest2)
 
 // Using Integrations/docker-compose.yml, this will start redpanda and wait until it is running before letting tests proceed.
 dockerCompose {
     waitForTcpPortsTimeout = Duration.ofMinutes(2)
 }
+
+Closure composeConfig = { task ->
+    task.network = dockerCompose.projectName.toLowerCase() + '_default'
+    task.containerDependencies.dependsOn = dockerCompose.upTask
+    task.containerDependencies.finalizedBy = dockerCompose.downTask
+}
+
+def pyTestLegacy = runInDocker("test-py-37-legacy", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'], composeConfig)
+def pyFunctionalTestLegacy = runInDocker('py-functional-test-legacy', 'python', ['/bin/bash', 'run-functional-tests.sh'])
+def pyTest = runInDocker('test-py-deephaven', '../py/server', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)
+def pyTestIntegration = runInDocker('test-py-deephaven-integration', '../py/server', ['/bin/bash', '-c', 'PYTHONPATH=/python integration-tests/run-tests.sh'], composeConfig)
+pyTestLegacy.configure({
+    onlyIf { TestTools.shouldRunTests(project) }
+})
+tasks.getByName('check').dependsOn(pyTestLegacy)
+
+pyFunctionalTestLegacy.configure({
+    onlyIf { TestTools.shouldRunTests(project) }
+})
+tasks.getByName('check').dependsOn(pyFunctionalTestLegacy)
+
+pyTest.configure({
+    onlyIf { TestTools.shouldRunTests(project) }
+})
+tasks.getByName('check').dependsOn(pyTest)
+
+pyTestIntegration.configure({
+    onlyIf { TestTools.shouldRunTests(project) }
+})
+tasks.getByName('check').dependsOn(pyTestIntegration)

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sort.partition.CharPartitionKernel",
- "methods": {
-  "createContext": ":param index: io.deephaven.db.v2.utils.Index\n:param columnSource: io.deephaven.db.v2.sources.ColumnSource<java.lang.Character>\n:param chunkSize: int\n:param nPartitions: int\n:param preserveEquality: boolean\n:return: io.deephaven.db.v2.sort.partition.CharPartitionKernel.PartitionKernelContext",
-  "partition": "After we have created the context, we can determine what things are in a partition.\n\n:param context: (io.deephaven.db.v2.sort.partition.CharPartitionKernel.PartitionKernelContext) - our context, containing the pivots\n:param indexKeys: (io.deephaven.db.v2.sources.chunk.LongChunk<io.deephaven.db.v2.sources.chunk.Attributes.KeyIndices>) - a chunk of index keys to partition\n:param values: (io.deephaven.db.v2.sources.chunk.CharChunk) - a chunk of values that go with the index keys"
- },
- "path": "io.deephaven.db.v2.sort.partition.CharPartitionKernel",
- "typeName": "class"
-}

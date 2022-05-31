@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.vector.BooleanVector",
+ "methods": {
+  "equals": "Helper method for implementing Object.equals(Object).\n\n:param aArray: (io.deephaven.vector.BooleanVector) - The LHS of the equality test (always a BooleanVector)\n:param b: (java.lang.Object) - The RHS of the equality test\n:return: (boolean) Whether the two inputs are equal",
+  "get": ":param i: long\n:return: java.lang.Boolean",
+  "getComponentType": ":return: java.lang.Class",
+  "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: io.deephaven.vector.BooleanVectorDirect",
+  "hashCode": "Helper method for implementing Object.hashCode(). Follows the pattern in\n Arrays.hashCode(Object[]).\n\n:param array: (io.deephaven.vector.BooleanVector) - The BooleanVector to hash\n:return: (int) The hash code",
+  "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.vector.BooleanVector",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.BooleanVector",
+  "toArray": ":return: java.lang.Boolean[]",
+  "toString": "Helper method for implementing Object.toString().\n\n:param array: (io.deephaven.vector.BooleanVector) - The BooleanVector to convert to a String\n:return: (java.lang.String) The String representation of array",
+  "type": ":return: io.deephaven.qst.type.PrimitiveVectorType<io.deephaven.vector.BooleanVector,java.lang.Boolean>"
+ },
+ "path": "io.deephaven.vector.BooleanVector",
+ "typeName": "interface"
+}

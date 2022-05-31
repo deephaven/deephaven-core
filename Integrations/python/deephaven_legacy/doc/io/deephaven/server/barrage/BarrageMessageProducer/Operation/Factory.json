@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.barrage.BarrageMessageProducer$Operation$Factory",
+ "methods": {
+  "create": ":param parent: io.deephaven.engine.table.impl.BaseTable\n:param updateIntervalMs: long\n:return: io.deephaven.server.barrage.BarrageMessageProducer.Operation<BarrageMessageProducer.Operation.Factory.MessageView>"
+ },
+ "path": "io.deephaven.server.barrage.BarrageMessageProducer.Operation.Factory",
+ "typeName": "interface"
+}

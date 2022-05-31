@@ -8,6 +8,7 @@ include(GNUInstallDirs)
 
 find_package(Arrow REQUIRED)
 find_package(ArrowFlight REQUIRED HINTS ${Arrow_DIR})
+find_package(Flatbuffers REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Threads REQUIRED)
@@ -40,16 +41,37 @@ set(ALL_FILES
     include/private/deephaven/client/highlevel/impl/string_expression_impl.h
     include/private/deephaven/client/highlevel/impl/table_handle_impl.h
     include/private/deephaven/client/highlevel/impl/table_handle_manager_impl.h
+    include/private/deephaven/client/highlevel/impl/util.h
 
     src/highlevel/columns.cc
     src/highlevel/expressions.cc
     src/highlevel/client.cc
+    src/highlevel/ticking.cc
     src/highlevel/types.cc
+    src/highlevel/sad/chunk_filler.cc
+    src/highlevel/sad/chunk_maker.cc
+    src/highlevel/sad/sad_chunk.cc
+    src/highlevel/sad/sad_column_source.cc
+    src/highlevel/sad/sad_context.cc
+    src/highlevel/sad/sad_row_sequence.cc
+    src/highlevel/sad/sad_table.cc
+    src/highlevel/sad/sad_ticking_table.cc
+    src/highlevel/sad/sad_unwrapped_table.cc
 
     include/public/deephaven/client/highlevel/columns.h
     include/public/deephaven/client/highlevel/expressions.h
     include/public/deephaven/client/highlevel/client.h
+    include/public/deephaven/client/highlevel/ticking.h
     include/public/deephaven/client/highlevel/types.h
+    include/public/deephaven/client/highlevel/sad/chunk_filler.h
+    include/public/deephaven/client/highlevel/sad/chunk_maker.h
+    include/public/deephaven/client/highlevel/sad/sad_chunk.h
+    include/public/deephaven/client/highlevel/sad/sad_column_source.h
+    include/public/deephaven/client/highlevel/sad/sad_context.h
+    include/public/deephaven/client/highlevel/sad/sad_row_sequence.h
+    include/public/deephaven/client/highlevel/sad/sad_table.h
+    include/public/deephaven/client/highlevel/sad/sad_ticking_table.h
+    include/public/deephaven/client/highlevel/sad/sad_unwrapped_table.h
 
     src/utility/executor.cc
     include/private/deephaven/client/utility/executor.h
@@ -82,6 +104,8 @@ set(ALL_FILES
     proto/deephaven/proto/ticket.grpc.pb.h
     proto/deephaven/proto/ticket.pb.cc
     proto/deephaven/proto/ticket.pb.h
+
+    flatbuf/deephaven/flatbuf/Barrage_generated.h
     )
 
 add_library(client ${ALL_FILES})
@@ -93,11 +117,13 @@ target_compile_options(client PRIVATE -Wall -Werror)
 target_include_directories(client PRIVATE include/private)
 target_include_directories(client PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
-# Protos are doing their own thing.
+# Protos and flatbuf are doing their own thing.
 target_include_directories(client PRIVATE "./proto")
+target_include_directories(client PRIVATE "./flatbuf")
 
 target_link_libraries(client PUBLIC arrow_flight_static)
 target_link_libraries(client PUBLIC arrow_static)
 target_link_libraries(client PUBLIC protobuf::libprotobuf)
+target_link_libraries(client PUBLIC flatbuffers::flatbuffers)
 target_link_libraries(client PUBLIC gRPC::grpc++)
 target_link_libraries(client PUBLIC Threads::Threads)

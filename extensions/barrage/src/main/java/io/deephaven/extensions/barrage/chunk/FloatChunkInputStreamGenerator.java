@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkInputStreamGenerator and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -8,16 +10,19 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.db.v2.sources.chunk.FloatChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.PoolableChunk;
+import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.WritableFloatChunk;
-import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.WritableFloatChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
@@ -27,20 +32,33 @@ import java.util.Iterator;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<FloatChunk<Attributes.Values>> {
+public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<FloatChunk<Values>> {
     private static final String DEBUG_NAME = "FloatChunkInputStreamGenerator";
 
-    FloatChunkInputStreamGenerator(final FloatChunk<Attributes.Values> chunk, final int elementSize) {
+    public static FloatChunkInputStreamGenerator convertBoxed(final ObjectChunk<Float, Values> inChunk) {
+        // This code path is utilized for arrays and vectors of DateTimes, which cannot be reinterpreted.
+        WritableFloatChunk<Values> outChunk = WritableFloatChunk.makeWritableChunk(inChunk.size());
+        for (int i = 0; i < inChunk.size(); ++i) {
+            final Float value = inChunk.get(i);
+            outChunk.set(i, TypeUtils.unbox(value));
+        }
+        if (inChunk instanceof PoolableChunk) {
+            ((PoolableChunk) inChunk).close();
+        }
+        return new FloatChunkInputStreamGenerator(outChunk, Float.BYTES);
+    }
+
+    FloatChunkInputStreamGenerator(final FloatChunk<Values> chunk, final int elementSize) {
         super(chunk, elementSize);
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable Index subset) {
+    public DrainableColumn getInputStream(final StreamReaderOptions options, final @Nullable RowSet subset) {
         return new FloatChunkInputStream(options, subset);
     }
 
     private class FloatChunkInputStream extends BaseChunkInputStream {
-        private FloatChunkInputStream(final BarrageSubscriptionOptions options, final Index subset) {
+        private FloatChunkInputStream(final StreamReaderOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 
@@ -53,7 +71,7 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) == NULL_FLOAT) {
                         ++cachedNullCount;
                     }
@@ -88,51 +106,51 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
 
             long bytesWritten = 0;
             read = true;
-            try (final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream)) {
-                // write the validity array with LSB indexing
-                if (sendValidityBuffer()) {
-                    final SerContext context = new SerContext();
-                    final Runnable flush = () -> {
-                        try {
-                            dos.writeLong(context.accumulator);
-                        } catch (final IOException e) {
-                            throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
-                        }
-                        context.accumulator = 0;
-                        context.count = 0;
-                    };
-                    subset.forAllLongs(row -> {
-                        if (chunk.get((int) row) != NULL_FLOAT) {
-                            context.accumulator |= 1L << context.count;
-                        }
-                        if (++context.count == 64) {
-                            flush.run();
-                        }
-                    });
-                    if (context.count > 0) {
-                        flush.run();
-                    }
-
-                    bytesWritten += getValidityMapSerializationSizeFor(subset.intSize());
-                }
-
-                // write the included values
-                subset.forAllLongs(row -> {
+            final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
+            // write the validity array with LSB indexing
+            if (sendValidityBuffer()) {
+                final SerContext context = new SerContext();
+                final Runnable flush = () -> {
                     try {
-                        final float val = chunk.get((int) row);
-                        dos.writeFloat(val);
+                        dos.writeLong(context.accumulator);
                     } catch (final IOException e) {
                         throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
                     }
+                    context.accumulator = 0;
+                    context.count = 0;
+                };
+                subset.forAllRowKeys(row -> {
+                    if (chunk.get((int) row) != NULL_FLOAT) {
+                        context.accumulator |= 1L << context.count;
+                    }
+                    if (++context.count == 64) {
+                        flush.run();
+                    }
                 });
-
-                bytesWritten += elementSize * subset.size();
-                final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
-                if (bytesExtended > 0) {
-                    bytesWritten += 8 - bytesExtended;
-                    dos.write(PADDING_BUFFER, 0, (int)(8 - bytesExtended));
+                if (context.count > 0) {
+                    flush.run();
                 }
+
+                bytesWritten += getValidityMapSerializationSizeFor(subset.intSize());
             }
+
+            // write the included values
+            subset.forAllRowKeys(row -> {
+                try {
+                    final float val = chunk.get((int) row);
+                    dos.writeFloat(val);
+                } catch (final IOException e) {
+                    throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
+                }
+            });
+
+            bytesWritten += elementSize * subset.size();
+            final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
+            if (bytesExtended > 0) {
+                bytesWritten += 8 - bytesExtended;
+                dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
+            }
+
             return LongSizedDataStructure.intSize("FloatChunkInputStreamGenerator", bytesWritten);
         }
     }
@@ -143,36 +161,49 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
         FloatConversion IDENTITY = (float a) -> a;
     }
 
-    static Chunk<Attributes.Values> extractChunkFromInputStream(
+    static WritableChunk<Values> extractChunkFromInputStream(
             final int elementSize,
-            final BarrageSubscriptionOptions options,
+            final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
-            final DataInput is) throws IOException {
+            final DataInput is,
+            final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
         return extractChunkFromInputStreamWithConversion(
-                elementSize, options, FloatConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+                elementSize, options, FloatConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
     }
 
-    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
+    static WritableChunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
-            final BarrageSubscriptionOptions options,
+            final StreamReaderOptions options,
             final FloatConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
-            final DataInput is) throws IOException {
+            final DataInput is,
+            final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
 
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.next();
         final long payloadBuffer = bufferInfoIter.next();
 
-        final WritableFloatChunk<Attributes.Values> chunk = WritableFloatChunk.makeWritableChunk(nodeInfo.numElements);
+        final WritableFloatChunk<Values> chunk;
+        if (outChunk != null) {
+            chunk = outChunk.asWritableFloatChunk();
+        } else {
+            final int numRows = Math.max(totalRows, nodeInfo.numElements);
+            chunk = WritableFloatChunk.makeWritableChunk(numRows);
+            chunk.setSize(numRows);
+        }
 
         if (nodeInfo.numElements == 0) {
             return chunk;
         }
 
         final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
-        try (final WritableLongChunk<Attributes.Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
+        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
             if (options.useDeephavenNulls() && validityBuffer != 0) {
                 throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
             }
@@ -196,38 +227,9 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
 
             if (options.useDeephavenNulls()) {
-                if (conversion == FloatChunkInputStreamGenerator.FloatConversion.IDENTITY) {
-                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                        chunk.set(ii, is.readFloat());
-                    }
-                } else {
-                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                        final float in = is.readFloat();
-                        final float out;
-                        if (in == NULL_FLOAT) {
-                            out = in;
-                        } else {
-                            out = conversion.apply(in);
-                        }
-                        chunk.set(ii, out);
-                    }
-                }
+                useDeephavenNulls(conversion, is, nodeInfo, chunk, outOffset);
             } else {
-                long nextValid = 0;
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    if ((ii % 64) == 0) {
-                        nextValid = isValid.get(ii / 64);
-                    }
-                    final float value;
-                    if ((nextValid & 0x1) == 0x0) {
-                        value = NULL_FLOAT;
-                        is.skipBytes(elementSize);
-                    } else {
-                        value = conversion.apply(is.readFloat());
-                    }
-                    nextValid >>= 1;
-                    chunk.set(ii, value);
-                }
+                useValidityBuffer(elementSize, conversion, is, nodeInfo, chunk, outOffset, isValid);
             }
 
             final long overhangPayload = payloadBuffer - payloadRead;
@@ -236,7 +238,68 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
         }
 
-        chunk.setSize(nodeInfo.numElements);
         return chunk;
+    }
+
+    private static void useDeephavenNulls(
+            final FloatConversion conversion,
+            final DataInput is,
+            final FieldNodeInfo nodeInfo,
+            final WritableFloatChunk<Values> chunk,
+            final int offset) throws IOException {
+        if (conversion == FloatConversion.IDENTITY) {
+            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                chunk.set(offset + ii, is.readFloat());
+            }
+        } else {
+            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                final float in = is.readFloat();
+                final float out = in == NULL_FLOAT ? in : conversion.apply(in);
+                chunk.set(offset + ii, out);
+            }
+        }
+    }
+
+    private static void useValidityBuffer(
+            final int elementSize,
+            final FloatConversion conversion,
+            final DataInput is,
+            final FieldNodeInfo nodeInfo,
+            final WritableFloatChunk<Values> chunk,
+            final int offset,
+            final WritableLongChunk<Values> isValid) throws IOException {
+        final int numElements = nodeInfo.numElements;
+        final int numValidityWords = (numElements + 63) / 64;
+
+        int ei = 0;
+        int pendingSkips = 0;
+
+        for (int vi = 0; vi < numValidityWords; ++vi) {
+            int bitsLeftInThisWord = Math.min(64, numElements - vi * 64);
+            long validityWord = isValid.get(vi);
+            do {
+                if ((validityWord & 1) == 1) {
+                    if (pendingSkips > 0) {
+                        is.skipBytes(pendingSkips * elementSize);
+                        chunk.fillWithNullValue(offset + ei, pendingSkips);
+                        ei += pendingSkips;
+                        pendingSkips = 0;
+                    }
+                    chunk.set(offset + ei++, conversion.apply(is.readFloat()));
+                    validityWord >>= 1;
+                    bitsLeftInThisWord--;
+                } else {
+                    final int skips = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);
+                    pendingSkips += skips;
+                    validityWord >>= skips;
+                    bitsLeftInThisWord -= skips;
+                }
+            } while (bitsLeftInThisWord > 0);
+        }
+
+        if (pendingSkips > 0) {
+            is.skipBytes(pendingSkips * elementSize);
+            chunk.fillWithNullValue(offset + ei, pendingSkips);
+        }
     }
 }

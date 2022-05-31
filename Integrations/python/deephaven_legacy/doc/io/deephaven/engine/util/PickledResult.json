@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.util.PickledResult",
+ "methods": {
+  "getPickled": ":return: java.lang.String",
+  "getPythonVersion": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.util.PickledResult",
+ "text": "Pickled result for a Python fetch.",
+ "typeName": "class"
+}

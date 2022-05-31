@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.JoinRowRedirection",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.JoinRowRedirection",
+ "text": "Makes a redirection index based on the type provided by the join control.",
+ "typeName": "class"
+}

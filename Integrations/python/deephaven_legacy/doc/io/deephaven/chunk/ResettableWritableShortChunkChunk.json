@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.chunk.ResettableWritableShortChunkChunk",
+ "methods": {
+  "makeResettableChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.ResettableWritableShortChunkChunk<ATTR>",
+  "resetFromArray": "Reset the data and bounds of this chunk to a range or sub-range of the specified array.\n\n:param array: (java.lang.Object) - The array\n:param offset: (int) - The offset into array\n:param capacity: (int) - The capacity this should have after reset",
+  "resetFromChunk": "Reset the data and bounds of this chunk to a range or sub-range of the specified WritableChunkChunk.\n\n:param other: (io.deephaven.chunk.WritableChunkChunk<ResettableWritableShortChunkChunk.ATTR>) - The other WritableChunkChunk\n:param offset: (int) - The offset into other\n:param capacity: (int) - The capacity this should have after reset",
+  "resetFromTypedArray": ":param data: io.deephaven.chunk.WritableShortChunk<ResettableWritableShortChunkChunk.ATTR>[]\n:param offset: int\n:param capacity: int",
+  "resetFromTypedChunk": ":param other: io.deephaven.chunk.WritableShortChunkChunk<ResettableWritableShortChunkChunk.ATTR>\n:param offset: int\n:param capacity: int",
+  "slice": ":param offset: int\n:param capacity: int\n:return: io.deephaven.chunk.ResettableWritableShortChunkChunk<ResettableWritableShortChunkChunk.ATTR>"
+ },
+ "path": "io.deephaven.chunk.ResettableWritableShortChunkChunk",
+ "typeName": "class"
+}

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.select.chunkfilters.LongRangeComparator",
- "methods": {
-  "makeLongFilter": ":param lower: long\n:param upper: long\n:param lowerInclusive: boolean\n:param upperInclusive: boolean\n:return: io.deephaven.db.v2.select.ChunkFilter.LongChunkFilter"
- },
- "path": "io.deephaven.db.v2.select.chunkfilters.LongRangeComparator",
- "typeName": "class"
-}

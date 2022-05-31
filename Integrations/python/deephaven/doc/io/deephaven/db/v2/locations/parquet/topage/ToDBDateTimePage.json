@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.parquet.topage.ToDBDateTimePage",
- "methods": {
-  "create": "Note: Java generics information - <ATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param nativeType: java.lang.Class<?>\n:param unit: org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit\n:return: io.deephaven.db.v2.locations.parquet.topage.ToPage<ATTR,io.deephaven.db.tables.utils.DBDateTime[]>",
-  "getNativeComponentType": ":return: (java.lang.Class<io.deephaven.db.tables.utils.DBDateTime>) The native type for the elements of db arrays produced by this object."
- },
- "path": "io.deephaven.db.v2.locations.parquet.topage.ToDBDateTimePage",
- "typeName": "class"
-}

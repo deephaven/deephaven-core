@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.engine.table.lang.QueryLibrary",
+ "methods": {
+  "getClassImports": ":return: java.util.Collection<java.lang.Class<?>>",
+  "getImportStrings": ":return: java.util.Collection<java.lang.String>",
+  "getLibrary": ":return: io.deephaven.engine.table.lang.QueryLibrary",
+  "getPackageImports": ":return: java.util.Collection<java.lang.Package>",
+  "getStaticImports": ":return: java.util.Collection<java.lang.Class<?>>",
+  "importClass": ":param aClass: java.lang.Class",
+  "importPackage": ":param aPackage: java.lang.Package",
+  "importStatic": ":param aClass: java.lang.Class",
+  "makeNewLibrary": "*Overload 1*  \n  :return: io.deephaven.engine.table.lang.QueryLibrary\n  \n*Overload 2*  \n  :param libraryVersion: java.lang.String\n  :return: io.deephaven.engine.table.lang.QueryLibrary",
+  "setDefaultLibrary": "Sets the default library.\n\n:param library: (io.deephaven.engine.table.lang.QueryLibrary) - the script session's query library",
+  "setLibrary": ":param library: io.deephaven.engine.table.lang.QueryLibrary"
+ },
+ "path": "io.deephaven.engine.table.lang.QueryLibrary",
+ "typeName": "class"
+}

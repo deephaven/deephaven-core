@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.plot.util.PlotUtils$HashMapWithDefault",
+ "methods": {
+  "copy": ":return: io.deephaven.plot.util.PlotUtils.HashMapWithDefault<PlotUtils.HashMapWithDefault.K,PlotUtils.HashMapWithDefault.V>",
+  "get": ":param key: java.lang.Object\n:return: PlotUtils.HashMapWithDefault.V",
+  "getDefault": ":return: PlotUtils.HashMapWithDefault.V",
+  "runIfKeyExistsCast": "Note: Java generics information - <T>\n\n:param consumer: java.util.function.Consumer<T>\n:param key: PlotUtils.HashMapWithDefault.K",
+  "setDefault": ":param def: PlotUtils.HashMapWithDefault.V"
+ },
+ "path": "io.deephaven.plot.util.PlotUtils.HashMapWithDefault",
+ "typeName": "class"
+}

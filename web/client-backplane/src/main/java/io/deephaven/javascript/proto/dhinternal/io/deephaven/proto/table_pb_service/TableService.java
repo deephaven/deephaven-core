@@ -13,6 +13,50 @@ import jsinterop.base.JsPropertyMap;
         namespace = JsPackage.GLOBAL)
 public class TableService {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ApplyPreviewColumnsType {
+        @JsOverlay
+        static TableService.ApplyPreviewColumnsType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface AsOfJoinTablesType {
         @JsOverlay
         static TableService.AsOfJoinTablesType create() {
@@ -104,6 +148,50 @@ public class TableService {
     public interface ComboAggregateType {
         @JsOverlay
         static TableService.ComboAggregateType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface CreateInputTableType {
+        @JsOverlay
+        static TableService.CreateInputTableType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -1464,9 +1552,11 @@ public class TableService {
         void setService(Object service);
     }
 
+    public static TableService.ApplyPreviewColumnsType ApplyPreviewColumns;
     public static TableService.AsOfJoinTablesType AsOfJoinTables;
     public static TableService.BatchType Batch;
     public static TableService.ComboAggregateType ComboAggregate;
+    public static TableService.CreateInputTableType CreateInputTable;
     public static TableService.CrossJoinTablesType CrossJoinTables;
     public static TableService.DropColumnsType DropColumns;
     public static TableService.EmptyTableType EmptyTable;

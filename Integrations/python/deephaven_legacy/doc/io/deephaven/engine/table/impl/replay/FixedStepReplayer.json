@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.replay.FixedStepReplayer",
+ "methods": {
+  "currentTime": "Simulated time.\n\n:return: (io.deephaven.time.DateTime) simulated time.",
+  "run": "Refresh the simulated live tables.",
+  "setTime": "Sets the current replay time.\n\n:param updatedTime: (long) - new replay time."
+ },
+ "path": "io.deephaven.engine.table.impl.replay.FixedStepReplayer",
+ "typeName": "class"
+}

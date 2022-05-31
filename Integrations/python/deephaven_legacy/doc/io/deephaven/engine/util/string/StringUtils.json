@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.engine.util.string.StringUtils",
+ "methods": {
+  "charSequenceKey": "Generic accessor for the singleton CharSequenceKey instance.\n\n:return: (io.deephaven.hash.KeyedObjectKey<java.lang.CharSequence,VALUE_TYPE>) A CharSequence->StringKeyedObject key representation instance.",
+  "extractMessage": "Extracts a message from a throwable. If the message is null or empty, returns toString instead.\n\n:param t: (java.lang.Throwable) - the throwable\n:return: (java.lang.String) the message or the string",
+  "getStringCache": "Note: Java generics information - <STRING_LIKE_TYPE extends java.lang.CharSequence>\n\n:param dataType: java.lang.Class<STRING_LIKE_TYPE>\n:return: io.deephaven.base.string.cache.StringCache<STRING_LIKE_TYPE>",
+  "isNullOrEmpty": "Convenience method to combine null and isEmpty checks on a String.\n\n:param s: (java.lang.String) - a String, possibly null\n:return: (boolean) true if the string is null or is empty",
+  "nullSafeCharSequenceKey": "Generic accessor for the singleton CharSequenceKey instance, with support for null keys.\n\n:return: (io.deephaven.hash.KeyedObjectKey<java.lang.CharSequence,VALUE_TYPE>) A CharSequence->StringKeyedObject key representation instance.",
+  "nullSafeStringKey": "Generic accessor for the singleton NullSafeStringKey instance.\n\nNote: Java generics information - <VALUE_TYPE>\n\n:return: (io.deephaven.hash.KeyedObjectKey.NullSafeBasic<java.lang.String,VALUE_TYPE>) A String->StringKeyedObject key representation instance that supports null keys.",
+  "nullSafeStringKeyedObjectKey": "Generic accessor for the singleton NullSafeStringKeyedObjectKey instance.\n\n:return: (io.deephaven.hash.KeyedObjectKey.NullSafeBasic<java.lang.String,VALUE_TYPE>) A String->StringKeyedObject key representation instance that supports null keys.",
+  "replaceArrayValue": "Possibly replace an array element in one array with an array element in another array. The master strings are\n searched to see if they contain an element that starts with the startsWithValue. If so, and the strings to be\n replaced also contain an element which starts with startsWithValue, then that value is replaced with the master\n string array's value. If multiple values match, only the first value for each array is processed.\n\n:param masterStrings: (java.lang.String[]) - the string array containing the values to use\n:param toReplaceStrings: (java.lang.String[]) - the string array in which to perform the substitution\n:param startsWithValue: (java.lang.String) - the starts-with value to search for",
+  "rewriteStringColumnTypes": "Re-write all non-partitioning String columns in the definition to use CompressedString data type. Note this\n should only be called when it's known that the source will only provide String data with single-byte encodings.\n\n:param tableDefinition: (io.deephaven.engine.table.TableDefinition) - table definition\n:return: (io.deephaven.engine.table.TableDefinition) the new table definition",
+  "stringKey": "Generic accessor for the singleton StringKey instance.\n\nNote: Java generics information - <VALUE_TYPE>\n\n:return: (io.deephaven.hash.KeyedObjectKey.Basic<java.lang.String,VALUE_TYPE>) A String->StringKeyedObject key representation instance.",
+  "stringKeyedObjectKey": "Generic accessor for the singleton StringKeyedObjectKey instance.\n\n:return: (io.deephaven.hash.KeyedObjectKey.Basic<java.lang.String,VALUE_TYPE>) A String->StringKeyedObject key representation instance."
+ },
+ "path": "io.deephaven.engine.util.string.StringUtils",
+ "typeName": "class"
+}

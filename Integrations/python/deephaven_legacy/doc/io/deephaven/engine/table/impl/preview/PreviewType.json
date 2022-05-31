@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.preview.PreviewType",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.preview.PreviewType",
+ "text": "A Preview Type is used for columns that should be previewed rather than sending all of the data for each value.",
+ "typeName": "interface"
+}

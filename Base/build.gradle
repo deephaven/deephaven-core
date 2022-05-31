@@ -1,9 +1,19 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
 dependencies {
-    compile depLog4j, depTrove3, depAnnotations, depCommonsCompress
+
+    compile depTrove3, depAnnotations, depCommonsCompress
+
+    compile depCommonsLang3
 
     compile 'io.deephaven:hash:0.1.0'
 
-    testCompile fileTree(dir: "${rootDir}/test-libs", include: ['*.jar'])
+    testCompile 'junit:junit:4.13.2'
+    testCompile 'org.jmock:jmock-junit4:2.12.0'
+    testCompile 'org.jmock:jmock-imposters:2.12.0'
+
 }
 
 sourceSets {

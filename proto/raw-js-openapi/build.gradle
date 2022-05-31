@@ -1,12 +1,14 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
 }
 
 evaluationDependsOn ':proto'
 evaluationDependsOn ':proto:proto-backplane-grpc'
+evaluationDependsOn Docker.registryProject('node')
 
 def backplaneProject = project(':proto:proto-backplane-grpc')
-def webpackSourcesLocation = "${buildDir}/dhapi"
+def webpackSourcesLocation = layout.buildDirectory.dir("${buildDir}/dhapi")
 
 Docker.registerDockerTask(project, 'webpackSources') {
     copyIn {
@@ -29,11 +31,22 @@ Docker.registerDockerTask(project, 'webpackSources') {
         from ('Dockerfile')
         from ('../package.json')
         from ('../package-lock.json')
-
     }
+    parentContainers = [ Docker.registryTask(project, 'node') ]
     imageName = 'deephaven/js-out:local-build'
     containerOutPath = '/usr/src/app/raw-js-openapi/build/js-out'
     copyOut {
-        into(webpackSourcesLocation)
+        include 'dh-internal.js'
+        into(webpackSourcesLocation.get().dir('jsapi'))
+    }
+}
+
+configurations {
+    js
+}
+
+artifacts {
+    js(webpackSourcesLocation) {
+        builtBy webpackSources
     }
 }

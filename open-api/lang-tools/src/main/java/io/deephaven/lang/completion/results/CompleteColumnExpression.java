@@ -1,6 +1,5 @@
 package io.deephaven.lang.completion.results;
 
-import io.deephaven.libs.primitives.BytePrimitives;
 import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.ChunkerConstants;
@@ -9,11 +8,10 @@ import io.deephaven.lang.generated.Node;
 import io.deephaven.lang.generated.Token;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
-import io.deephaven.proto.backplane.script.grpc.TextEdit;
+import io.deephaven.function.Basic;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * A class specifically for completing column expression; to be called after the completer has discovered the a column
@@ -41,9 +39,7 @@ public class CompleteColumnExpression extends CompletionBuilder {
             CompletionRequest request,
             Method method) {
         final String displayCompletion;
-        if (method.getDeclaringClass().getSimpleName().endsWith("Primitives")
-                && method.getDeclaringClass().getPackage().equals(
-                        BytePrimitives.class.getPackage())) {
+        if (method.getDeclaringClass().getPackage().getName().startsWith(Basic.class.getPackage().getName())) {
             // reduce massive duplication from same-named primitives methods.
             // In the future, when we have better column/type inference, we should be able to delete this workaround
             displayCompletion = "*Primitives.";

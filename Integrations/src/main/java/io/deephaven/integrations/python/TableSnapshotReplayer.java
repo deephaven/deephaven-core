@@ -13,7 +13,7 @@ import io.deephaven.util.annotations.ScriptApi;
 public interface TableSnapshotReplayer {
 
     /**
-     * Replay the current table snapshot into a listener. A shared or exclusive LTM lock should be held when calling
+     * Replay the current table snapshot into a listener. A shared or exclusive UGP lock should be held when calling
      * this method.
      */
     void replay();

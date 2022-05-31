@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.numerics.suanshu.SuanShuIntegration$Script",
+ "methods": {
+  "getScriptPath": ":return: java.lang.String",
+  "priority": ":return: int"
+ },
+ "path": "io.deephaven.numerics.suanshu.SuanShuIntegration.Script",
+ "typeName": "class"
+}

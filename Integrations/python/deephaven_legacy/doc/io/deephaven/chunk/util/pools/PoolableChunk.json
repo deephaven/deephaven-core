@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.chunk.util.pools.PoolableChunk",
+ "methods": {},
+ "path": "io.deephaven.chunk.util.pools.PoolableChunk",
+ "text": "Marker interface for Chunk subclasses that can be kept with in a ChunkPool, and whose\n SafeCloseable.close() method will return them to the appropriate pool.",
+ "typeName": "interface"
+}

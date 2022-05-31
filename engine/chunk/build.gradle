@@ -1,0 +1,33 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Engine Chunks: Array-like data structures for dense, efficient data movement'
+
+dependencies {
+    api project(':Util')
+
+    testImplementation 'junit:junit:4.13.2'
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/*Boolean*.java',
+                '**/*Byte*.java',
+                '**/*Char*.java',
+                '**/*Short*.java',
+                '**/*Int*.java',
+                '**/*Long*.java',
+                '**/*Float*.java',
+                '**/*Double*.java',
+                '**/*Object*.java',
+        )
+    }
+}

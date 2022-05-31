@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.qst.type.GenericVectorType",
+ "methods": {
+  "clazz": "The class representing this type.\n\n:return: (java.lang.Class<GenericVectorType.T>) the class",
+  "componentType": "The component type.\n\n:return: (io.deephaven.qst.type.GenericType<GenericVectorType.ComponentType>) the component type",
+  "of": "Note: Java generics information - <T,\nComponentType>\n\n:param clazz: java.lang.Class<T>\n:param genericType: io.deephaven.qst.type.GenericType<ComponentType>\n:return: io.deephaven.qst.type.GenericVectorType<T,ComponentType>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.type.ArrayType.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.type.GenericVectorType",
+ "typeName": "class"
+}

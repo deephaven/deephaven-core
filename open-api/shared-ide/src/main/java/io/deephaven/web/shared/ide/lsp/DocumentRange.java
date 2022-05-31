@@ -32,11 +32,11 @@ public class DocumentRange implements Serializable {
         this();
 
         if (source.has("start")) {
-            start = new Position(source.getAny("start").asPropertyMap());
+            start = new Position(source.getAsAny("start").asPropertyMap());
         }
 
         if (source.has("end")) {
-            end = new Position(source.getAny("end").asPropertyMap());
+            end = new Position(source.getAsAny("end").asPropertyMap());
         }
     }
 

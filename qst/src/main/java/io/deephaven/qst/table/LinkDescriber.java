@@ -1,5 +1,7 @@
 package io.deephaven.qst.table;
 
+import io.deephaven.qst.table.TableSchema.Visitor;
+
 import java.util.Iterator;
 import java.util.Objects;
 
@@ -60,11 +62,6 @@ public class LinkDescriber extends TableVisitorGeneric {
     }
 
     @Override
-    public void visit(LeftJoinTable leftJoinTable) {
-        join(leftJoinTable);
-    }
-
-    @Override
     public void visit(AsOfJoinTable aj) {
         join(aj);
     }
@@ -90,5 +87,21 @@ public class LinkDescriber extends TableVisitorGeneric {
     public void visit(SnapshotTable snapshotTable) {
         consumer.link(snapshotTable.base(), "base");
         consumer.link(snapshotTable.trigger(), "trigger");
+    }
+
+    @Override
+    public void visit(InputTable inputTable) {
+        inputTable.schema().walk(new Visitor() {
+            @Override
+            public void visit(TableSpec spec) {
+                consumer.link(spec, "definition");
+            }
+
+            @Override
+            public void visit(TableHeader header) {
+                // no links
+            }
+        });
+
     }
 }

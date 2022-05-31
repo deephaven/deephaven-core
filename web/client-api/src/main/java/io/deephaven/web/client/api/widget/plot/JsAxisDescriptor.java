@@ -56,7 +56,7 @@ public class JsAxisDescriptor {
         invert = JsData.getBooleanProperty(source, "invert");
         isTimeAxis = JsData.getBooleanProperty(source, "isTimeAxis");
         if (source.has("majorTickLocations")) {
-            majorTickLocations = source.getAny("majorTickLocations").uncheckedCast();
+            majorTickLocations = source.getAsAny("majorTickLocations").uncheckedCast();
         }
     }
 }

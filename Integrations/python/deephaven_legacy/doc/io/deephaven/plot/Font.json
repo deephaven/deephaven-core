@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.plot.Font",
+ "methods": {
+  "equals": ":param obj: java.lang.Object\n:return: boolean",
+  "font": "Returns a font.\n\n*Overload 1*  \n  :param family: (java.lang.String) - font family; if null, set to Arial\n  :param style: (io.deephaven.plot.Font.FontStyle) - font style; if null, set to Font.FontStyle PLAIN\n  :param size: (int) - the point size of the Font\n  :return: (io.deephaven.plot.Font) font with the specified family, style and size\n  \n*Overload 2*  \n  :param family: (java.lang.String) - font family; if null, set to Arial\n  :param style: (java.lang.String) - font style; if null, set to Font.FontStyle PLAIN\n  :param size: (int) - the point size of the Font\n  :return: (io.deephaven.plot.Font) font with the specified family, style and size",
+  "fontFamilyNames": "Returns the names of available Font families.\n\n:return: (java.lang.String[]) array of available Font family names",
+  "fontStyle": "Returns a font style.\n\n:param style: (java.lang.String) - case insensitive font style descriptor\n:return: (io.deephaven.plot.Font.FontStyle) FontStyle corresponding to style",
+  "fontStyleNames": "Returns the names of available font styles.\n\n:return: (java.lang.String[]) array of available FontStyle names",
+  "hashCode": ":return: int",
+  "javaFont": "Returns the Java object representative of this Font.\n\n:return: (java.awt.Font) Java object representative of this Font",
+  "refamily": "Returns an instance of this Font with the family changed to the specified family\n\n:param family: (java.lang.String) - font family; if null, set to Arial\n:return: (io.deephaven.plot.Font) Font with family and this Font's style and size",
+  "resize": "Returns an instance of this Font with the size changed to the specified size\n\n:param size: (int) - point size of the font\n:return: (io.deephaven.plot.Font) Font with size and this Font's family and style",
+  "restyle": "**Incompatible overloads text - text from the first overload:**\n\nGets an instance of this Font with the style changed to the specified style\n\n*Overload 1*  \n  :param style: (io.deephaven.plot.Font.FontStyle) - font style; if null, set to Font.FontStyle PLAIN\n  :return: (io.deephaven.plot.Font) Font with style and this Font's family and size\n  \n*Overload 2*  \n  :param style: (java.lang.String) - font style; if null, set to Font.FontStyle PLAIN\n  :return: (io.deephaven.plot.Font) Font with style and this Font's family and size",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.plot.Font",
+ "text": "A font used to represent text.",
+ "typeName": "class"
+}

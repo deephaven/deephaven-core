@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.TableLocationProvider$Listener",
+ "methods": {
+  "handleTableLocationKey": "Notify the listener of a TableLocationKey encountered while initiating or maintaining the location\n subscription. This should occur at most once per location, but the order of delivery is not\n guaranteed.\n\n:param tableLocationKey: (io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey) - The new table location key"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.TableLocationProvider.Listener",
+ "text": "ShiftObliviousListener interface for anything that wants to know about new table location keys.",
+ "typeName": "interface"
+}

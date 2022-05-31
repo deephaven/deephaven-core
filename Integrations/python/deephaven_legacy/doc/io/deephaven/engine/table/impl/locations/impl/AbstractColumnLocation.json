@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.impl.AbstractColumnLocation",
+ "methods": {
+  "getName": "Get the column name for this ColumnLocation.\n\n:return: (java.lang.String) the column name for this ColumnLocation",
+  "getTableLocation": "Get the TableLocation enclosing this ColumnLocation.\n\n:return: (io.deephaven.engine.table.impl.locations.TableLocation) the TableLocation enclosing this ColumnLocation",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.impl.AbstractColumnLocation",
+ "text": "Partial ColumnLocation implementation for use by TableDataService implementations.",
+ "typeName": "class"
+}

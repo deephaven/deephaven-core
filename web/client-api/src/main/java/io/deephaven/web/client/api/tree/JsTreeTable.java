@@ -6,6 +6,7 @@ import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.subscription.ViewportData;
@@ -390,8 +391,8 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
             }
 
             // for each column _not_ in this list of names, explicitly assign a null constituent type
-            groupedColumns = JsObject.freeze(
-                    Js.cast(getColumns().filter((column, index, array) -> !presentNames.contains(column.getName()))));
+            groupedColumns = JsObject
+                    .freeze(getColumns().filter((column, index, array) -> !presentNames.contains(column.getName())));
             if (rollupDefinition.getLeafType() == RollupDefinition.LeafType.Constituent) {
                 groupedColumns.forEach((column, index, array) -> {
                     column.setConstituentType(null);
@@ -870,7 +871,7 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
             // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
             // up.
             if (!t.getFilter().asList().equals(getFilter().asList())) {
-                t.applyFilter(getFilter().asList().toArray(new FilterCondition[0]));
+                t.applyFilter(getFilter().asArray(new FilterCondition[0]));
             }
             return Promise.resolve(t.selectDistinct(columns));
         });
@@ -891,7 +892,7 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
             // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
             // up.
             if (!t.getFilter().asList().equals(getFilter().asList())) {
-                t.applyFilter(getFilter().asList().toArray(new FilterCondition[0]));
+                t.applyFilter(getFilter().asArray(new FilterCondition[0]));
             }
             return Promise.resolve(t.getTotalsTable(config));
         });

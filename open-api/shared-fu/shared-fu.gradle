@@ -1,3 +1,7 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
 apply from: "$rootDir/gradle/web-common.gradle"
 
 GwtTools.gwtLib project

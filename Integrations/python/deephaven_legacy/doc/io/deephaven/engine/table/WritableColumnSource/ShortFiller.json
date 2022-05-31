@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.WritableColumnSource$ShortFiller",
+ "methods": {
+  "accept": "Provides a value to this consumer. A false return value indicates that the application providing values to this\n consumer should not invoke it again.\n\n:param v: (long) - the value\n:return: (boolean) false if don't want any more values after this one, true otherwise."
+ },
+ "path": "io.deephaven.engine.table.WritableColumnSource.ShortFiller",
+ "typeName": "class"
+}

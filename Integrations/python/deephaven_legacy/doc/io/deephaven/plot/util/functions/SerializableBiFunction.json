@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.util.functions.SerializableBiFunction",
+ "methods": {},
+ "path": "io.deephaven.plot.util.functions.SerializableBiFunction",
+ "text": "A serializable binary function.",
+ "typeName": "interface"
+}

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.vector.ObjectVector$Indirect",
+ "methods": {
+  "equals": ":param obj: java.lang.Object\n:return: boolean",
+  "hashCode": ":return: int",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.vector.ObjectVector.Indirect",
+ "text": "Base class for all \"indirect\" Vector implementations.",
+ "typeName": "class"
+}

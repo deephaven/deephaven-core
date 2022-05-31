@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.errors.PlotRuntimeException",
+ "methods": {},
+ "path": "io.deephaven.plot.errors.PlotRuntimeException",
+ "text": "RuntimeException which contains information about the plot.",
+ "typeName": "class"
+}

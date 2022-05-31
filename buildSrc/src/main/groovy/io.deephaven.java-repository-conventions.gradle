@@ -1,0 +1,22 @@
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://jitpack.io'
+        content {
+            includeGroup 'com.github.rdblue'
+        }
+    }
+    maven {
+        url 'https://maven.twttr.com'
+        content {
+            includeGroup 'com.hadoop.gplcompression'
+        }
+    }
+    maven {
+        url 'https://packages.confluent.io/maven'
+        content {
+            includeGroup 'io.confluent'
+            includeGroup 'org.apache.kafka'
+        }
+    }
+}

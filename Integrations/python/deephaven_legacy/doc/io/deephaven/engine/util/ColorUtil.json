@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.util.ColorUtil",
+ "methods": {},
+ "path": "io.deephaven.engine.util.ColorUtil",
+ "text": "Colors moved to Color. They are left in here for backwards compatibility.\n \n Colors are encoded into longs, the 32 least significant bits representing the foreground color and the 32 most\n significant bits the background color. The 24 least significant bits of each chunk hold the color's RGB values.\n \n The 25th bit is flipped. This distinguishes between no formatting (0L) and black.\n For foreground colors, one of the remaining 7 bits denotes no foreground color overriding when the cell is\n highlighted in the table. This means the foreground color will stay the same when the cell is highlighted. TODO\n (deephaven/deephaven-core/issues/175): Move this to a new module and package",
+ "typeName": "class"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.updategraph.TerminalNotification",
+ "methods": {
+  "canExecute": "Can this notification be executed? That is, are all of it's dependencies satisfied.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) true if this notification can be executed, false if it has unmet dependencies"
+ },
+ "path": "io.deephaven.engine.updategraph.TerminalNotification",
+ "typeName": "class"
+}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.tables.verify.SortedAssertionInstrumentedListenerAdapter",
- "methods": {
-  "doCheckStatic": ":param toProcess: io.deephaven.db.v2.utils.Index\n:param parentColumnSource: io.deephaven.db.v2.sources.ColumnSource<?>\n:param sortCheck: io.deephaven.db.v2.sortcheck.SortCheck\n:param description: java.lang.String\n:param column: java.lang.String\n:param order: io.deephaven.db.tables.SortingOrder",
-  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.db.v2.ShiftAwareListener.Update) - The set of upstream table updates."
- },
- "path": "io.deephaven.db.tables.verify.SortedAssertionInstrumentedListenerAdapter",
- "typeName": "class"
-}

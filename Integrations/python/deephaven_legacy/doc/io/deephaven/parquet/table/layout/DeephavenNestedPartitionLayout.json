@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout",
+ "methods": {
+  "findKeys": "Find keys and deliver them to the locationKeyObserver.\n\n:param locationKeyObserver: (java.util.function.Consumer<DeephavenNestedPartitionLayout.TLK>) - Per-key callback",
+  "forParquet": ":param tableRootDirectory: java.io.File\n:param tableName: java.lang.String\n:param columnPartitionKey: java.lang.String\n:param internalPartitionValueFilter: java.util.function.Predicate<java.lang.String>\n:return: io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout<io.deephaven.parquet.table.location.ParquetTableLocationKey>",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout",
+ "text": "TableLocationKeyFinder that will traverse a directory hierarchy laid out in Deephaven's \"nested-partitioned\"\n format, e.g.\n \n \n tableRootDirectory/internalPartitionValue/columnPartitionValue/tableName/...\n \n \n , producing FileTableLocationKey's with two partitions, for keys \"__INTERNAL_PARTITION__\" and the\n specified columnPartitionKey.",
+ "typeName": "class"
+}

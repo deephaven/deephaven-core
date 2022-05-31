@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.uri.ResolveTools",
+ "methods": {
+  "resolve": "Resolves the uri into an object.\n\n*Overload 1*  \n  :param uri: (java.lang.String) - the URI\n  :return: (java.lang.Object) the object\n  \n*Overload 2*  \n  :param uri: (java.net.URI) - the URI\n  :return: (java.lang.Object) the object"
+ },
+ "path": "io.deephaven.uri.ResolveTools",
+ "text": "The top-level entrypoint for resolving URIs into objects. Uses the global URI resolvers\n instance from UriResolversInstance.get().\n\n \n The exact logic will depend on which URI resolvers are installed.",
+ "typeName": "class"
+}

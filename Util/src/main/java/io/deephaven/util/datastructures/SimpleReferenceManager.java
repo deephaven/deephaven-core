@@ -1,6 +1,7 @@
 package io.deephaven.util.datastructures;
 
 import io.deephaven.base.reference.SimpleReference;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -193,6 +194,19 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
      */
     public boolean isEmpty() {
         return references.isEmpty();
+    }
+
+    /**
+     * Return the number of valid references in the list.
+     *
+     * Note that each reference is checked for validity, making this operation linear in the number of references.
+     *
+     * @return the number of valid references in the list
+     */
+    public int size() {
+        final MutableInt size = new MutableInt(0);
+        forEach((ref, source) -> size.increment());
+        return size.intValue();
     }
 
     /**

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.plot.datasets.data.IndexableDataDateTime",
+ "methods": {
+  "get": "Gets the value at the given index.\n\n:param index: (int) - index\n:return: (io.deephaven.time.DateTime) value of this dataset at index",
+  "size": "Gets the size of this dataset.\n\n:return: (int) the size of this dataset"
+ },
+ "path": "io.deephaven.plot.datasets.data.IndexableDataDateTime",
+ "text": "IndexableData dataset with DateTime values.\n\n Dataset values equal to QueryConstants.NULL_LONG are treated as null.",
+ "typeName": "class"
+}

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.remote.ConstructSnapshot$SnapshotInconsistentException",
- "methods": {},
- "path": "io.deephaven.db.v2.remote.ConstructSnapshot.SnapshotInconsistentException",
- "text": "Exception thrown for \"fail-fast\" purposes when it's been detected that a snapshot will fail.",
- "typeName": "class"
-}

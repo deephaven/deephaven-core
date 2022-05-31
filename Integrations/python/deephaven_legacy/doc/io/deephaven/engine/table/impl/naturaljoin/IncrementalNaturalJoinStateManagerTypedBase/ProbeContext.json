@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase$ProbeContext",
+ "methods": {
+  "ensureShiftCapacity": ":param shiftDelta: long\n:param size: long"
+ },
+ "path": "io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase.ProbeContext",
+ "typeName": "class"
+}

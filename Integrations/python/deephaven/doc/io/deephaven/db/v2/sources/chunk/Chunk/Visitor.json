@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.chunk.Chunk$Visitor",
- "methods": {
-  "visit": "*Overload 1*  \n  :param chunk: io.deephaven.db.v2.sources.chunk.ByteChunk<Chunk.Visitor.ATTR>\n  \n*Overload 2*  \n  :param chunk: io.deephaven.db.v2.sources.chunk.BooleanChunk<Chunk.Visitor.ATTR>\n  \n*Overload 3*  \n  :param chunk: io.deephaven.db.v2.sources.chunk.CharChunk<Chunk.Visitor.ATTR>\n  \n*Overload 4*  \n  :param chunk: io.deephaven.db.v2.sources.chunk.ShortChunk<Chunk.Visitor.ATTR>\n  \n*Overload 5*  \n  :param chunk: io.deephaven.db.v2.sources.chunk.IntChunk<Chunk.Visitor.ATTR>\n  \n*Overload 6*  \n  :param chunk: io.deephaven.db.v2.sources.chunk.LongChunk<Chunk.Visitor.ATTR>\n  \n*Overload 7*  \n  :param chunk: io.deephaven.db.v2.sources.chunk.FloatChunk<Chunk.Visitor.ATTR>\n  \n*Overload 8*  \n  :param chunk: io.deephaven.db.v2.sources.chunk.DoubleChunk<Chunk.Visitor.ATTR>\n  \n*Overload 9*  \n  Note: Java generics information - <T>\n  \n  :param chunk: io.deephaven.db.v2.sources.chunk.ObjectChunk<T,Chunk.Visitor.ATTR>"
- },
- "path": "io.deephaven.db.v2.sources.chunk.Chunk.Visitor",
- "typeName": "interface"
-}

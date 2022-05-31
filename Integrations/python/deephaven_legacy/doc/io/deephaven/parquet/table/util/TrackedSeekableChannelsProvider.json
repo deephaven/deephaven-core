@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider",
+ "methods": {
+  "getInstance": ":return: io.deephaven.parquet.base.util.SeekableChannelsProvider",
+  "getReadChannel": ":param path: java.nio.file.Path\n:return: java.nio.channels.SeekableByteChannel",
+  "getWriteChannel": ":param filePath: java.nio.file.Path\n:param append: boolean\n:return: java.nio.channels.SeekableByteChannel"
+ },
+ "path": "io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider",
+ "text": "SeekableChannelsProvider implementation that is constrained by a Deephaven TrackedFileHandleFactory.",
+ "typeName": "class"
+}

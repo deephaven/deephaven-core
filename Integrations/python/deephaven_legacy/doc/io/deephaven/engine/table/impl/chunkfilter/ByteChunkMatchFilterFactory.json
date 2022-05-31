@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfilter.ByteChunkMatchFilterFactory",
+ "methods": {
+  "makeFilter": ":param invertMatch: boolean\n:param values: byte...\n:return: io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.ByteChunkFilter"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfilter.ByteChunkMatchFilterFactory",
+ "text": "Creates chunk filters for byte values.\n\n The strategy is that for one, two, or three values we have specialized\n classes that will do the appropriate simple equality check.\n\n For more values, we use a trove set and check contains for each value in the chunk.",
+ "typeName": "class"
+}

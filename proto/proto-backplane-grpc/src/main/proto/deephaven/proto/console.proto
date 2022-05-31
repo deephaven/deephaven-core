@@ -11,6 +11,7 @@ option optimize_for = SPEED;
 
 import "deephaven/proto/table.proto";
 import "deephaven/proto/ticket.proto";
+import "deephaven/proto/application.proto";
 
 /*
  * Console interaction service
@@ -43,8 +44,6 @@ service ConsoleService {
      * Other half of the browser-based implementation for AutoCompleteStream.
      */
     rpc NextAutoCompleteStream(AutoCompleteRequest) returns (BrowserNextResponse) {}
-
-    rpc FetchFigure(FetchFigureRequest) returns (FetchFigureResponse) {}
 }
 
 
@@ -83,14 +82,7 @@ message ExecuteCommandRequest {
 }
 message ExecuteCommandResponse {
     string error_message = 1;
-    repeated VariableDefinition created = 2;
-    repeated VariableDefinition updated = 3;
-    repeated VariableDefinition removed = 4;
-}
-message VariableDefinition {
-    string type = 1;
-    string title = 2;
-    io.deephaven.proto.backplane.grpc.Ticket id = 3;
+    io.deephaven.proto.backplane.grpc.FieldsChangeUpdate changes = 2;
 }
 message BindTableToVariableRequest {
     io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
@@ -213,13 +205,6 @@ message TextEdit {
     string text = 2;
 }
 
-message FetchFigureRequest {
-    io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
-}
-message FetchFigureResponse {
-    FigureDescriptor figure_descriptor = 1;
-}
-
 message FigureDescriptor {
     optional string title = 1;
     string title_font = 2;
@@ -232,7 +217,8 @@ message FigureDescriptor {
 
     repeated ChartDescriptor charts = 10;
 
-    repeated io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse tables = 11;
+    // Deprecated: not set by the server anymore. See tables (id 14).
+    reserved 11;
 
     // TODO (deephaven-core#62) implement once tablemaps are ready
     reserved 12;// reserved for tablemaps

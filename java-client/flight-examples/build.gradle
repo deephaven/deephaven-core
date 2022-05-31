@@ -1,12 +1,13 @@
 plugins {
-    id 'java'
     id 'application'
+    id 'io.deephaven.project.register'
 }
 
 dependencies {
     implementation project(':java-client-flight-dagger')
+    implementation project(':java-client-example-utilities')
 
-    implementation 'info.picocli:picocli:4.6.1'
+    implementation "io.deephaven.barrage:barrage-format:0.4.0"
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
@@ -22,124 +23,42 @@ test {
 
 startScripts.enabled = false
 
-task createGetSchemaScripts(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.GetSchema'
-    applicationName = 'get-schema'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createGetTsvScripts(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.GetTsv'
-    applicationName = 'get-tsv'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createPollTsvScripts(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.PollTsv'
-    applicationName = 'poll-tsv'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createListTablesScripts(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.ListTables'
-    applicationName = 'list-tables'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createExcessiveScript(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.ExampleExcessive'
-    applicationName = 'excessive'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createGetTicketTableScript(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.GetTicketTable'
-    applicationName = 'get-ticket-table'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createDoPutNewScript(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.DoPutNew'
-    applicationName = 'do-put-new'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createDoPutSprayScript(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.DoPutSpray'
-    applicationName = 'do-put-spray'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
-}
-
-task createDoPutTableScript(type: CreateStartScripts) {
-    mainClassName = 'io.deephaven.client.examples.DoPutTable'
-    applicationName = 'do-put-table'
-    outputDir = new File(project.buildDir, name)
-    classpath = startScripts.classpath
-    defaultJvmOpts = [
-            '-server',
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication' ]
+def createApplication = { String name, String mainClass ->
+    project.tasks.register("create-${name}", CreateStartScripts) {script ->
+        script.mainClass.set mainClass
+        script.applicationName = name
+        script.outputDir = project.layout.buildDirectory.dir(name).get().asFile
+        script.classpath = startScripts.classpath
+        script.defaultJvmOpts = [
+                '-server',
+                '-XX:+UseG1GC',
+                '-XX:MaxGCPauseMillis=100',
+                '-XX:+UseStringDeduplication' ]
+    }
 }
 
 applicationDistribution.into('bin') {
-    from(createGetSchemaScripts)
-    from(createGetTsvScripts)
-    from(createPollTsvScripts)
-    from(createListTablesScripts)
-    from(createExcessiveScript)
-    from(createGetTicketTableScript)
-    from(createDoPutNewScript)
-    from(createDoPutSprayScript)
-    from(createDoPutTableScript)
+    from(createApplication('get-tsv', 'io.deephaven.client.examples.GetTsv'))
+    from(createApplication('poll-tsv', 'io.deephaven.client.examples.PollTsv'))
+    from(createApplication('list-tables', 'io.deephaven.client.examples.ListTables'))
+    from(createApplication('excessive', 'io.deephaven.client.examples.ExampleExcessive'))
+    from(createApplication('aggregate-all', 'io.deephaven.client.examples.AggregateAllExample'))
+    from(createApplication('agg-by', 'io.deephaven.client.examples.AggByExample'))
+
+    from(createApplication('do-exchange', 'io.deephaven.client.examples.DoExchange'))
+
+    from(createApplication('do-put-new', 'io.deephaven.client.examples.DoPutNew'))
+    from(createApplication('do-put-spray', 'io.deephaven.client.examples.DoPutSpray'))
+    from(createApplication('do-put-table', 'io.deephaven.client.examples.DoPutTable'))
+
+    from(createApplication('add-to-input-table', 'io.deephaven.client.examples.AddToInputTable'))
+    from(createApplication('kv-input-table', 'io.deephaven.client.examples.KeyValueInputTable'))
+
+    from(createApplication('get-table', 'io.deephaven.client.examples.GetDirectTable'))
+    from(createApplication('get-schema', 'io.deephaven.client.examples.GetDirectSchema'))
+
+    from(createApplication('convert-to-table', 'io.deephaven.client.examples.ConvertToTable'))
+
     fileMode = 0755
 }
 

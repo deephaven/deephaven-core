@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.BaseTable$ShiftObliviousListenerImpl",
+ "methods": {
+  "canExecute": ":param step: long\n:return: boolean",
+  "onFailureInternal": ":param originalException: java.lang.Throwable\n:param sourceEntry: io.deephaven.engine.table.TableListener.Entry",
+  "onUpdate": "Process notification of table changes.\n\n:param added: (io.deephaven.engine.rowset.RowSet) - rows added\n:param removed: (io.deephaven.engine.rowset.RowSet) - rows removed\n:param modified: (io.deephaven.engine.rowset.RowSet) - rows modified"
+ },
+ "path": "io.deephaven.engine.table.impl.BaseTable.ShiftObliviousListenerImpl",
+ "text": "Simplest appropriate legacy ShiftObliviousInstrumentedListener implementation for BaseTable and descendants. It's\n expected that most use-cases will require overriding onUpdate() - the default implementation simply passes rowSet\n updates through to the dependent's listeners.\n\n It is preferred to use BaseTable.ListenerImpl over BaseTable.ShiftObliviousListenerImpl",
+ "typeName": "class"
+}

@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.console.groovy.InitScriptsModule",
+ "methods": {},
+ "path": "io.deephaven.server.console.groovy.InitScriptsModule",
+ "typeName": "class"
+}

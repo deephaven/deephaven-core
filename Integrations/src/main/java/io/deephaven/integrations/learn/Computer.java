@@ -1,8 +1,8 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.integrations.python.PythonFunctionCaller;
 import org.jpy.PyObject;
 
@@ -87,12 +87,12 @@ public class Computer {
      */
     public FutureOffset compute(long k) {
 
-        if (current == null || current.getIndexSet().isFull()) {
+        if (current == null || current.isFull()) {
             current = new Future(modelFunc, inputs, colSets, batchSize);
             offset = -1;
         }
 
-        current.getIndexSet().add(k);
+        current.addRowKey(k);
         offset += 1;
 
         final FutureOffset fo = new FutureOffset(current, offset);

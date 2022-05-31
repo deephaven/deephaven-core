@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.InputTableServiceGrpc$InputTableServiceFutureStub",
+ "methods": {
+  "addTableToInputTable": "Adds the provided table to the specified input table. The new data to add must only have\n columns (name, types, and order) which match the given input table's columns.\n \n\n:param request: io.deephaven.proto.backplane.grpc.AddTableRequest\n:return: com.google.common.util.concurrent.ListenableFuture<io.deephaven.proto.backplane.grpc.AddTableResponse>",
+  "deleteTableFromInputTable": "Removes the provided table from the specified input tables. The tables indicating which rows\n to remove are expected to only have columns that match the key columns of the input table.\n \n\n:param request: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n:return: com.google.common.util.concurrent.ListenableFuture<io.deephaven.proto.backplane.grpc.DeleteTableResponse>"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceFutureStub",
+ "text": "This service offers methods to manipulate the contents of input tables.",
+ "typeName": "class"
+}

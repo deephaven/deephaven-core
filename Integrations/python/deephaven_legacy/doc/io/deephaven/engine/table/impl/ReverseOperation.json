@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.table.impl.ReverseOperation",
+ "methods": {
+  "getDescription": ":return: (java.lang.String) the description of this operation",
+  "getLogPrefix": ":return: (java.lang.String) the log prefix of this operation",
+  "getMemoizedOperationKey": ":return: (io.deephaven.engine.table.impl.MemoizedOperationKey) the key that should be used to memoize off of",
+  "initialize": "Initialize this operation.\n\n:param usePrev: (boolean) - data from the previous cycle should be used (otherwise use this cycle)\n:param beforeClock: (long) - the clock value that we captured before the function began; the function can use this\n        value to bail out early if it notices something has gone wrong.\n:return: (io.deephaven.engine.table.impl.QueryTable.Operation.Result<io.deephaven.engine.table.impl.QueryTable>) the result table / listener if successful, null if it should be retried.",
+  "newSwapListener": ":param queryTable: io.deephaven.engine.table.impl.QueryTable\n:return: io.deephaven.engine.table.impl.SwapListener",
+  "transform": "Transform an outer (reversed) RowSet to the inner (unreversed) RowSet, or vice versa.\n\n*Overload 1*  \n  :param rowSetToTransform: (io.deephaven.engine.rowset.RowSet) - the outer RowSet\n  :return: (io.deephaven.engine.rowset.WritableRowSet) the corresponding inner RowSet\n  \n*Overload 2*  \n  :param outerIndex: (long) - the outer RowSet\n  :return: (long) the corresponding inner RowSet",
+  "transformPrev": "Transform an outer (reversed) RowSet to the inner (unreversed) RowSet as of the previous cycle, or vice versa.\n\n*Overload 1*  \n  :param outerRowSet: (io.deephaven.engine.rowset.RowSet) - the outer RowSet\n  :return: (io.deephaven.engine.rowset.WritableRowSet) the corresponding inner RowSet\n  \n*Overload 2*  \n  :param outerIndex: (long) - the outer RowSet\n  :return: (long) the corresponding inner RowSet"
+ },
+ "path": "io.deephaven.engine.table.impl.ReverseOperation",
+ "typeName": "class"
+}

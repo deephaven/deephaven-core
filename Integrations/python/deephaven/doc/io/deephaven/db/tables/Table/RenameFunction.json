@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.tables.Table$RenameFunction",
- "methods": {
-  "rename": ":param currentName: java.lang.String\n:return: java.lang.String"
- },
- "path": "io.deephaven.db.tables.Table.RenameFunction",
- "typeName": "interface"
-}

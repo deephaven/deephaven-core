@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.GenericColumnRegionBase",
- "methods": {
-  "mask": "This mask is applied to OrderedKeys which are passed into\n ChunkSource.getChunk(ChunkSource.GetContext, OrderedKeys) and\n ChunkSource.fillChunk(ChunkSource.FillContext, WritableChunk, OrderedKeys). This allows the PagingChunkSources to be cached, and reused even if they are properly relocated in key space.\n\n:return: (long) the mask for this page, which must be a bitmask representing the some number of lower order bits of a\n         long."
- },
- "path": "io.deephaven.db.v2.sources.regioned.GenericColumnRegionBase",
- "text": "Base ColumnRegion implementation.",
- "typeName": "class"
-}

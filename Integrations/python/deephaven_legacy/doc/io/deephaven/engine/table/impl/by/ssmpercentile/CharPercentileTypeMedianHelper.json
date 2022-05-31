@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.ssmpercentile.CharPercentileTypeMedianHelper",
+ "methods": {
+  "setResult": ":param ssmLo: io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet\n:param ssmHi: io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet\n:param destination: long\n:return: boolean",
+  "setResultNull": ":param destination: long\n:return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.by.ssmpercentile.CharPercentileTypeMedianHelper",
+ "typeName": "class"
+}

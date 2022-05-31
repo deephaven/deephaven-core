@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.singlerange.SingleRangeRowSequence",
+ "methods": {
+  "asRowSet": "Get a RowSet representation of this RowSequence.\n\n:return: (io.deephaven.engine.rowset.RowSet) A RowSet representation for the same row keys in the same order",
+  "copy": ":return: io.deephaven.engine.rowset.impl.singlerange.SingleRangeRowSequence",
+  "fillRowKeyChunk": "Fill the supplied WritableLongChunk with individual row keys from this RowSequence.\n \n The chunk's capacity is assumed to be big enough.\n\n:param chunkToFill: (io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - A chunk to fill with individual row keys",
+  "fillRowKeyRangesChunk": "Fill the supplied WritableLongChunk with row key ranges from this RowSequence.\n \n The chunk's capacity is assumed to be big enough.\n\n:param chunkToFill: (io.deephaven.chunk.WritableLongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges>) - A chunk to fill with row key ranges",
+  "firstRowKey": "Get the first row key in this RowSequence.\n\n:return: (long) The first row key, or RowSequence.NULL_ROW_KEY if there is none.",
+  "isEmpty": "True if the size of this RowSequence is zero.\n\n:return: (boolean) True if there are no elements in this RowSequence.",
+  "lastRowKey": "Get the last row key in this RowSequence.\n\n:return: (long) The last row key, or RowSequence.NULL_ROW_KEY if there is none.",
+  "rangeEnd": ":return: long",
+  "rangeStart": ":return: long",
+  "rangesCountUpperBound": ":return: long",
+  "size": "Get the number of row keys in this RowSequence.\n\n:return: (long) The size, in [0, Long.MAX_VALUE]"
+ },
+ "path": "io.deephaven.engine.rowset.impl.singlerange.SingleRangeRowSequence",
+ "typeName": "class"
+}

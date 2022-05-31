@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.util.ColumnsSpecHelper",
+ "methods": {
+  "add": ":param name: java.lang.String\n:param type: java.lang.Class\n:return: io.deephaven.engine.util.ColumnsSpecHelper",
+  "getColumnNames": ":return: java.lang.String[]",
+  "getTypes": ":return: java.lang.Class[]"
+ },
+ "path": "io.deephaven.engine.util.ColumnsSpecHelper",
+ "text": "Helper class to support easier to read in-line column definitions. You can obtain the array arguments to feed the\n buildWriter methods in TableWriterFactory.",
+ "typeName": "class"
+}

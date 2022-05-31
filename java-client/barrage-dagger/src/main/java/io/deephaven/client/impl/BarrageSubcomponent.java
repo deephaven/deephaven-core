@@ -27,7 +27,7 @@ public interface BarrageSubcomponent extends BarrageSessionFactory {
     }
 
     @Subcomponent.Builder
-    interface Builder {
+    interface Builder extends BarrageSessionFactoryBuilder {
         Builder managedChannel(@BindsInstance ManagedChannel channel);
 
         Builder scheduler(@BindsInstance ScheduledExecutorService scheduler);

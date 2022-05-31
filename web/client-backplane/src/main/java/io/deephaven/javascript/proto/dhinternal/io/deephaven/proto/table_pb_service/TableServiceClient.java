@@ -1,9 +1,11 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service;
 
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CreateInputTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
@@ -44,6 +46,100 @@ import jsinterop.base.JsPropertyMap;
         name = "dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient",
         namespace = JsPackage.GLOBAL)
 public class TableServiceClient {
+    @JsFunction
+    public interface ApplyPreviewColumnsCallbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.ApplyPreviewColumnsCallbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                TableServiceClient.ApplyPreviewColumnsCallbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
+    }
+
+    @JsFunction
+    public interface ApplyPreviewColumnsMetadata_or_callbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ApplyPreviewColumnsMetadata_or_callbackUnionType {
+        @JsOverlay
+        static TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackFn asApplyPreviewColumnsMetadata_or_callbackFn() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default BrowserHeaders asBrowserHeaders() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isApplyPreviewColumnsMetadata_or_callbackFn() {
+            return (Object) this instanceof TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackFn;
+        }
+
+        @JsOverlay
+        default boolean isBrowserHeaders() {
+            return (Object) this instanceof BrowserHeaders;
+        }
+    }
+
     @JsFunction
     public interface AsOfJoinTablesCallbackFn {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -227,6 +323,99 @@ public class TableServiceClient {
         @JsOverlay
         default boolean isComboAggregateMetadata_or_callbackFn() {
             return (Object) this instanceof TableServiceClient.ComboAggregateMetadata_or_callbackFn;
+        }
+    }
+
+    @JsFunction
+    public interface CreateInputTableCallbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.CreateInputTableCallbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                TableServiceClient.CreateInputTableCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+    }
+
+    @JsFunction
+    public interface CreateInputTableMetadata_or_callbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.CreateInputTableMetadata_or_callbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                TableServiceClient.CreateInputTableMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface CreateInputTableMetadata_or_callbackUnionType {
+        @JsOverlay
+        static TableServiceClient.CreateInputTableMetadata_or_callbackUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default BrowserHeaders asBrowserHeaders() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default TableServiceClient.CreateInputTableMetadata_or_callbackFn asCreateInputTableMetadata_or_callbackFn() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isBrowserHeaders() {
+            return (Object) this instanceof BrowserHeaders;
+        }
+
+        @JsOverlay
+        default boolean isCreateInputTableMetadata_or_callbackFn() {
+            return (Object) this instanceof TableServiceClient.CreateInputTableMetadata_or_callbackFn;
         }
     }
 
@@ -2921,6 +3110,58 @@ public class TableServiceClient {
     public TableServiceClient(String serviceHost) {}
 
     @JsOverlay
+    public final UnaryResponse applyPreviewColumns(
+            ApplyPreviewColumnsRequest requestMessage,
+            TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.ApplyPreviewColumnsCallbackFn callback) {
+        return applyPreviewColumns(
+                requestMessage,
+                Js.<TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse applyPreviewColumns(
+            ApplyPreviewColumnsRequest requestMessage,
+            TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackFn metadata_or_callback) {
+        return applyPreviewColumns(
+                requestMessage,
+                Js.<TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse applyPreviewColumns(
+            ApplyPreviewColumnsRequest requestMessage,
+            TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.ApplyPreviewColumnsCallbackFn callback);
+
+    public native UnaryResponse applyPreviewColumns(
+            ApplyPreviewColumnsRequest requestMessage,
+            TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackUnionType metadata_or_callback);
+
+    @JsOverlay
+    public final UnaryResponse applyPreviewColumns(
+            ApplyPreviewColumnsRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.ApplyPreviewColumnsCallbackFn callback) {
+        return applyPreviewColumns(
+                requestMessage,
+                Js.<TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse applyPreviewColumns(
+            ApplyPreviewColumnsRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return applyPreviewColumns(
+                requestMessage,
+                Js.<TableServiceClient.ApplyPreviewColumnsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
     public final UnaryResponse asOfJoinTables(
             AsOfJoinTablesRequest requestMessage,
             TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn metadata_or_callback,
@@ -3029,6 +3270,58 @@ public class TableServiceClient {
     public native UnaryResponse comboAggregate(
             ComboAggregateRequest requestMessage,
             TableServiceClient.ComboAggregateMetadata_or_callbackUnionType metadata_or_callback);
+
+    @JsOverlay
+    public final UnaryResponse createInputTable(
+            CreateInputTableRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.CreateInputTableCallbackFn callback) {
+        return createInputTable(
+                requestMessage,
+                Js.<TableServiceClient.CreateInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse createInputTable(
+            CreateInputTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return createInputTable(
+                requestMessage,
+                Js.<TableServiceClient.CreateInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
+    public final UnaryResponse createInputTable(
+            CreateInputTableRequest requestMessage,
+            TableServiceClient.CreateInputTableMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.CreateInputTableCallbackFn callback) {
+        return createInputTable(
+                requestMessage,
+                Js.<TableServiceClient.CreateInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse createInputTable(
+            CreateInputTableRequest requestMessage,
+            TableServiceClient.CreateInputTableMetadata_or_callbackFn metadata_or_callback) {
+        return createInputTable(
+                requestMessage,
+                Js.<TableServiceClient.CreateInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse createInputTable(
+            CreateInputTableRequest requestMessage,
+            TableServiceClient.CreateInputTableMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.CreateInputTableCallbackFn callback);
+
+    public native UnaryResponse createInputTable(
+            CreateInputTableRequest requestMessage,
+            TableServiceClient.CreateInputTableMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse crossJoinTables(

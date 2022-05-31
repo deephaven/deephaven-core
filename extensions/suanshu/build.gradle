@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.register'
 }
 
 configurations {
@@ -8,11 +9,13 @@ configurations {
 
 dependencies {
     compileOnly project(':Base')
-    compileOnly project(':DB')
+    compileOnly project(':engine-table')
 
     compileOnly 'javax.inject:javax.inject:1'
 
     api 'io.deephaven:SuanShu:0.1.0'
 
-    testImplementation project(':DB')
+    Classpaths.inheritAutoService(project)
+
+    testImplementation project(':engine-table')
 }

@@ -495,20 +495,6 @@ TableHandle TableHandle::exactJoin(const TableHandle &rightSide,
   return exactJoin(rightSide, std::move(ctmStrings), std::move(ctaStrings));
 }
 
-TableHandle TableHandle::leftJoin(const TableHandle &rightSide,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const {
-  auto qtImpl = impl_->leftJoin(*rightSide.impl_, std::move(columnsToMatch),
-      std::move(columnsToAdd));
-  return TableHandle(std::move(qtImpl));
-}
-
-TableHandle TableHandle::leftJoin(const TableHandle &rightSide,
-    std::vector<MatchWithColumn> columnsToMatch, std::vector<SelectColumn> columnsToAdd) const {
-  auto ctmStrings = toIrisRepresentation(columnsToMatch);
-  auto ctaStrings = toIrisRepresentation(columnsToAdd);
-  return leftJoin(rightSide, std::move(ctmStrings), std::move(ctaStrings));
-}
-
 void TableHandle::bindToVariable(std::string variable) const {
   auto res = SFCallback<>::createForFuture();
   bindToVariableAsync(std::move(variable), std::move(res.first));
@@ -530,6 +516,18 @@ void TableHandle::observe() const {
 
 std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::getFlightStreamReader() const {
   return getManager().createFlightWrapper().getFlightStreamReader(*this);
+}
+
+void TableHandle::subscribe(std::shared_ptr<TickingCallback> callback) {
+  impl_->subscribe(std::move(callback));
+}
+
+void TableHandle::unsubscribe(std::shared_ptr<TickingCallback> callback) {
+  impl_->unsubscribe(std::move(callback));
+}
+
+const std::string &TableHandle::getTicketAsString() const {
+  return impl_->ticket().ticket();
 }
 
 namespace internal {
@@ -569,7 +567,7 @@ void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHe
       break;
     }
     const auto *data = chunk.data.get();
-    const auto &columns = chunk.data->columns();
+    const auto &columns = data->columns();
     for (int64_t rowNum = 0; rowNum < data->num_rows(); ++rowNum) {
       if (rowNum != 0) {
         s << '\n';

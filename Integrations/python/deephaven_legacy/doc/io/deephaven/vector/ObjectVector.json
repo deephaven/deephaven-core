@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.vector.ObjectVector",
+ "methods": {
+  "defaultValToString": ":param val: java.lang.Object\n:return: java.lang.String",
+  "equals": "Helper method for implementing Object.equals(Object).\n\n:param aVector: (io.deephaven.vector.ObjectVector) - The LHS of the equality test (always a Vector)\n:param b: (java.lang.Object) - The RHS of the equality test\n:return: (boolean) Whether the two inputs are equal",
+  "get": ":param i: long\n:return: ObjectVector.T",
+  "getComponentType": ":return: java.lang.Class<ObjectVector.T>",
+  "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: io.deephaven.vector.ObjectVector<ObjectVector.T>",
+  "hashCode": "Helper method for implementing Object.hashCode(). Follows the pattern in\n Arrays.hashCode(Object[]).\n\n:param array: (io.deephaven.vector.ObjectVector) - The Vector to hash\n:return: (int) The hash code",
+  "subVector": ":param fromIndexInclusive: long\n:param toIndexExclusive: long\n:return: io.deephaven.vector.ObjectVector<ObjectVector.T>",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.ObjectVector<ObjectVector.T>",
+  "toArray": ":return: ObjectVector.T[]",
+  "toString": "Helper method for implementing Object.toString().\n\n*Overload 1*  \n  :param prefixLength: int\n  :return: java.lang.String\n  \n*Overload 2*  \n  :param array: (io.deephaven.vector.ObjectVector<?>) - The Vector to convert to a String\n  :param prefixLength: (int) - The maximum prefix of the array to convert\n  :return: (java.lang.String) The String representation of array",
+  "type": "Note: Java generics information - <T>\n\n:param genericType: io.deephaven.qst.type.GenericType<T>\n:return: io.deephaven.qst.type.GenericVectorType<io.deephaven.vector.ObjectVector,T>"
+ },
+ "path": "io.deephaven.vector.ObjectVector",
+ "typeName": "interface"
+}

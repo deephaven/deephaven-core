@@ -56,6 +56,6 @@ public class ApplicationService {
         void setService(Object service);
     }
 
-    public static ApplicationService.ListFieldsType listFields;
+    public static ApplicationService.ListFieldsType ListFields;
     public static String serviceName;
 }

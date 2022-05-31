@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.plot.util.functions.FigureImplFunction",
- "methods": {
-  "apply": ":param figure: io.deephaven.db.plot.FigureImpl\n:return: io.deephaven.db.plot.FigureImpl"
- },
- "path": "io.deephaven.db.plot.util.functions.FigureImplFunction",
- "text": "Applies a series transform to a given FigureImpl.",
- "typeName": "class"
-}

@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.kafka.publish.PublishToKafka",
+ "methods": {},
+ "path": "io.deephaven.kafka.publish.PublishToKafka",
+ "text": "This class is an internal implementation detail for io.deephaven.kafka; is not intended to be used directly by client\n code. It lives in a separate package as a means of code organization.",
+ "typeName": "class"
+}

@@ -5,7 +5,7 @@
 package io.deephaven.python;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.deephaven.db.util.string.StringUtils;
+import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.libs.GroovyStaticImportGenerator;
 
 import java.io.File;
@@ -223,8 +223,8 @@ class PythonGeneratorParser {
      */
     static ArrayList<String> getDefaultDocRoot(final String devroot) {
         ArrayList<String> docRoot = new ArrayList<>();
-        docRoot.add(devroot + "/Integrations/python/deephaven/docCustom");
-        docRoot.add(devroot + "/Integrations/python/deephaven/doc");
+        docRoot.add(devroot + "/Integrations/python/deephaven_legacy/docCustom");
+        docRoot.add(devroot + "/Integrations/python/deephaven_legacy/doc");
         return docRoot;
     }
 

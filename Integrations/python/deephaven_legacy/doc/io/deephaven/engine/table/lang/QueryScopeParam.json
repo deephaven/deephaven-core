@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.lang.QueryScopeParam",
+ "methods": {
+  "getName": ":return: java.lang.String",
+  "getValue": ":return: QueryScopeParam.T"
+ },
+ "path": "io.deephaven.engine.table.lang.QueryScopeParam",
+ "typeName": "class"
+}

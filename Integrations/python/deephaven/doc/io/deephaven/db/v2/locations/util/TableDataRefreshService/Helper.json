@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.util.TableDataRefreshService$Helper",
- "methods": {},
- "path": "io.deephaven.db.v2.locations.util.TableDataRefreshService.Helper",
- "text": "Static helper class for holding and building the shared instance.",
- "typeName": "class"
-}

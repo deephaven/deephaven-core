@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.rowset.RowSet$Iterator",
+ "methods": {
+  "forEachLong": "Starting from the current next iterator position, provide each value to the consumer, until either the\n iterator is exhausted or a call to lc.accept returns false; ie, if the consumer returns false for a value,\n stops after that value (does not provide any values after that).\n\n:param lc: (io.deephaven.util.datastructures.LongAbortableConsumer) - the consumer.\n:return: (boolean) false if the consumer ever returned false, true otherwise."
+ },
+ "path": "io.deephaven.engine.rowset.RowSet.Iterator",
+ "typeName": "interface"
+}

@@ -1,27 +1,37 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
 }
+
+evaluationDependsOn Docker.registryProject('python')
 
 configurations {
     compile.extendsFrom fishConfig, jdom
     testCompile.extendsFrom fishBaseTest
+    combinedJavadoc
 }
 
-evaluationDependsOn(':deephaven-jpy')
-
 dependencies {
+    compile project(':engine-table'),
+            project(':Plot'),
+            project(':extensions-csv'),
+            project(':extensions-kafka'),
+            project(':extensions-parquet-table')
 
-    compile project(':DB'),
-            project(':Plot')
-            project(':Kafka')
+    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
+    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
 
-    runtime project(path: ':configs'), project(path: ':test-configs'), project(':Kafka')
+    runtime project(path: ':configs'),
+            project(path: ':test-configs'),
+            project(':extensions-kafka')
 
     runtimeOnly project(':log-to-slf4j')
     Classpaths.inheritLogbackClassic(project)
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testRuntime project(path: ':configs'),
+            project(path: ':test-configs')
 
+    combinedJavadoc project(path: ':combined-javadoc', targetConfiguration: 'combinedJavadoc')
 }
 
 def workspace = "$rootDir/tmp/workspace"
@@ -51,7 +61,7 @@ task groovyStaticImportGeneratorAssert(type: JavaExec, dependsOn: 'classes') {
 task generateAxesPlotMethods(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateAxesPlotMethods'
 
-    main = 'io.deephaven.db.plot.util.GenerateAxesPlotMethods'
+    main = 'io.deephaven.plot.util.GenerateAxesPlotMethods'
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -63,7 +73,7 @@ task generateAxesPlotMethods(type: JavaExec, dependsOn: 'classes') {
 task generateAxesPlotMethodsAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateAxesPlotMethods to assert that the generated code has not changed'
 
-    main = 'io.deephaven.db.plot.util.GenerateAxesPlotMethods'
+    main = 'io.deephaven.plot.util.GenerateAxesPlotMethods'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -76,7 +86,7 @@ task generateAxesPlotMethodsAssert(type: JavaExec, dependsOn: 'classes') {
 task generateMultiSeries(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateMultiSeries'
 
-    main = 'io.deephaven.db.plot.util.GenerateMultiSeries'
+    main = 'io.deephaven.plot.util.GenerateMultiSeries'
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -88,7 +98,7 @@ task generateMultiSeries(type: JavaExec, dependsOn: 'classes') {
 task generateMultiSeriesAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateMultiSeries to assert that the generated code has not changed'
 
-    main = 'io.deephaven.db.plot.util.GenerateMultiSeries'
+    main = 'io.deephaven.plot.util.GenerateMultiSeries'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -102,7 +112,7 @@ task generateFigureImmutable(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateFigureImmutable'
     dependsOn generateAxesPlotMethods, generateMultiSeries
 
-    main = 'io.deephaven.db.plot.util.GenerateFigureImmutable'
+    main = 'io.deephaven.plot.util.GenerateFigureImmutable'
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -115,7 +125,7 @@ task generateFigureImmutableAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateFigureImmutable to assert that the generated code has not changed'
     dependsOn generateAxesPlotMethodsAssert, generateMultiSeriesAssert
 
-    main = 'io.deephaven.db.plot.util.GenerateFigureImmutable'
+    main = 'io.deephaven.plot.util.GenerateFigureImmutable'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -129,7 +139,7 @@ task generatePlottingConvenience(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePlottingConvenience'
     dependsOn generateFigureImmutable
 
-    main = 'io.deephaven.db.plot.util.GeneratePlottingConvenience'
+    main = 'io.deephaven.plot.util.GeneratePlottingConvenience'
     args devRoot
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -142,7 +152,7 @@ task generatePlottingConvenienceAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePlottingConvenience to assert that the generated code has not changed'
     dependsOn generateFigureImmutableAssert
 
-    main = 'io.deephaven.db.plot.util.GeneratePlottingConvenience'
+    main = 'io.deephaven.plot.util.GeneratePlottingConvenience'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -159,7 +169,7 @@ TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generateP
 
         // TODO move these to a later sync task, so that we detect changes and minimally build images
         // Copy existing generated JSON to where the image can get it - remove if we stop checking in JSON
-        from("$devRoot/Integrations/python/deephaven") {
+        from("$devRoot/Integrations/python/deephaven_legacy") {
             // allow javadocExtraction.py to verify existing json
             include 'doc'
             // allow manualDocstrings.py to verify existing json
@@ -167,15 +177,13 @@ TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generateP
             into 'out'
         }
         // Depend on generated javadoc so we can generate JSON from it
-        dependsOn ':allJavadoc'
-        from("$devRoot/build/docs/javadoc") {
-            // input for javadocExtraction.py
+        from(configurations.combinedJavadoc) {
             into 'javadoc'
         }
     }
 
     dockerfile {
-        from 'docker.io/library/python:3.7.10'
+        from 'deephaven/python:local-build'
 
         runCommand 'pip3 install beautifulsoup4==4.9.3 lxml==4.6.3'
 
@@ -187,10 +195,10 @@ TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generateP
                       '''
     }
 
-    parentContainers = [project(':deephaven-jpy').tasks.findByName("buildDockerForRuntime")]// deephaven/java-and-python
+    parentContainers = [ Docker.registryTask(project, 'python') ]
     imageName = 'deephaven/pydocs:local-build'
     copyOut {
-        into("$devRoot/Integrations/python/deephaven")
+        into("$devRoot/Integrations/python/deephaven_legacy")
         preserve {// only overwrite doc and docCustom directories
             include '**/*'
             exclude 'doc'
@@ -210,30 +218,25 @@ tasks.register("generatePyDocAssert") {
     }
 }
 
-def pythonStaticMethodsArgs = ['io.deephaven.util.calendar.Calendars',
-                                    '/Integrations/python/deephaven/Calendars/__init__.py',
-                               'io.deephaven.db.tables.utils.DBTimeUtils',
-                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/DBTimeUtilsPreamble.txt',
-                                    '/Integrations/python/deephaven/DBTimeUtils/__init__.py',
-                               'io.deephaven.db.tables.utils.ParquetTools',
+def pythonStaticMethodsArgs = ['io.deephaven.time.calendar.Calendars',
+                                    '/Integrations/python/deephaven_legacy/Calendars/__init__.py',
+                               'io.deephaven.time.DateTimeUtils',
+                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/DateTimeUtilsPreamble.txt',
+                                    '/Integrations/python/deephaven_legacy/DateTimeUtils/__init__.py',
+                               'io.deephaven.parquet.table.ParquetTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/ParquetToolsPreamble.txt',
-                                    '/Integrations/python/deephaven/ParquetTools/__init__.py',
-                               'io.deephaven.db.tables.utils.TableTools',
+                                    '/Integrations/python/deephaven_legacy/ParquetTools/__init__.py',
+                               'io.deephaven.engine.util.TableTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/TableToolsPreamble.txt',
-                                    '/Integrations/python/deephaven/TableTools/__init__.py',
-                               'io.deephaven.db.v2.by.ComboAggregateFactory',
-                                    '/Integrations/python/deephaven/ComboAggregateFactory/__init__.py',
-                               'io.deephaven.db.plot.colors.ColorMaps',
-                                   '/Integrations/python/deephaven/Plot/ColorMaps/__init__.py',
-                               'io.deephaven.db.tables.utils.WindowCheck',
-                                    '/Integrations/python/deephaven/TableManipulation/WindowCheck.py',
-                               'io.deephaven.db.v2.utils.TableLoggers',
-                                    '/Integrations/python/deephaven/TableLoggers/__init__.py',
-                               'io.deephaven.db.v2.utils.PerformanceQueries',
-                                    '/Integrations/python/deephaven/PerformanceQueries/__init__.py',
-                               'io.deephaven.kafka.KafkaTools',
-                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/KafkaToolsPreamble.txt',
-                                    '/Integrations/python/deephaven/KafkaTools/__init__.py']
+                                    '/Integrations/python/deephaven_legacy/TableTools/__init__.py',
+                               'io.deephaven.plot.colors.ColorMaps',
+                                   '/Integrations/python/deephaven_legacy/Plot/ColorMaps/__init__.py',
+                               'io.deephaven.engine.util.WindowCheck',
+                                    '/Integrations/python/deephaven_legacy/TableManipulation/WindowCheck.py',
+                               'io.deephaven.engine.table.impl.util.TableLoggers',
+                                    '/Integrations/python/deephaven_legacy/TableLoggers/__init__.py',
+                               'io.deephaven.engine.table.impl.util.PerformanceQueries',
+                                    '/Integrations/python/deephaven_legacy/PerformanceQueries/__init__.py']
 
 task generatePythonIntegrationStaticMethods(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePythonIntegrationStaticMethods'
@@ -289,9 +292,37 @@ task generatePythonFigureWrapperAssert(type: JavaExec, dependsOn: 'classes') {
     onlyIf { System.getenv('NO_ASSERT') != 'true' }
 }
 
+task generatePythonFigureWrapper2(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GeneratePythonFigureWrapper'
+    dependsOn generatePlottingConvenience
+
+    main = 'io.deephaven.plot.util.GeneratePyV2FigureAPI'
+    args devRoot, 'false'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+    dependsOn generatePyDoc, ':Generators:generateFigureImmutable'
+}
+
+task generatePythonFigureWrapper2Assert(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GeneratePythonFigureWrapper'
+    dependsOn generatePlottingConvenienceAssert
+
+    main = 'io.deephaven.plot.util.GeneratePyV2FigureAPI'
+    args devRoot, 'true'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+}
+
 tasks.register 'generateAllPython', {
     Task t -> t.dependsOn ':Generators:generatePythonIntegrationStaticMethods',
-            ':Generators:generatePythonFigureWrapper'
+            ':Generators:generatePythonFigureWrapper',
+            ':Generators:generatePythonFigureWrapper2'
 }
 
 
@@ -308,12 +339,13 @@ tasks.register 'generateAll', {
                            ':Generators:generatePlottingConvenience',
                            ':Generators:generateAllPython'
     t.group = '~Deephaven'
-    t.description = 'Runs all code generators; you MUST pass -PwithPy=true and run on a system capable of building python wheels / venvs'
+    t.description = 'Runs all code generators'
 }
 
-check.dependsOn groovyStaticImportGeneratorAssert,
+project.tasks.getByName('quick').dependsOn groovyStaticImportGeneratorAssert,
         generateAxesPlotMethodsAssert,
         generateMultiSeriesAssert,
         generateFigureImmutableAssert,
         generatePlottingConvenienceAssert,
-        generateAllPythonAssert
+        generateAllPythonAssert,
+        generatePythonFigureWrapper2Assert

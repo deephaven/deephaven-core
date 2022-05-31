@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.util.scripts.ScriptExtensionsMap",
- "methods": {
-  "getInstance": ":return: java.util.Map<java.lang.String,java.util.List<java.lang.String>>"
- },
- "path": "io.deephaven.db.util.scripts.ScriptExtensionsMap",
- "text": "Maps from script language name to file extensions.",
- "typeName": "class"
-}

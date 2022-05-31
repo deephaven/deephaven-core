@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.QueryTable$Operation$Result",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.QueryTable.Operation.Result",
+ "text": "The resulting table and listener of the operation.",
+ "typeName": "class"
+}

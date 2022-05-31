@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.lang.QueryLanguageParser$QueryLanguageParseException",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException",
+ "typeName": "class"
+}

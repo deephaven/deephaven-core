@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.server.uri.ParquetTableResolver",
+ "methods": {
+  "get": ":return: io.deephaven.server.uri.ParquetTableResolver",
+  "isResolvable": "Returns true if the resolver can resolve the uri.\n\n:param uri: (java.net.URI) - the uri\n:return: (boolean) true if this resolver can resolve uri",
+  "isWellFormed": ":param uri: java.net.URI\n:return: boolean",
+  "resolve": "Resolve uri into an object.\n\n:param uri: (java.net.URI) - the URI\n:return: (io.deephaven.engine.table.Table) the object",
+  "schemes": "The supported schemes.\n\n:return: (java.util.Set<java.lang.String>) the schemes"
+ },
+ "path": "io.deephaven.server.uri.ParquetTableResolver",
+ "text": "The parquet table resolver is able to resolve local parquet files, or directories for the scheme \"parquet\",\n into tables.\n\n \n For example, parquet:///data/my-file.parquet or parquet:///data/my-dir.\n\n \n For more advanced use cases, see ParquetTools.",
+ "typeName": "class"
+}

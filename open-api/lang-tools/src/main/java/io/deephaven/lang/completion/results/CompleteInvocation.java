@@ -4,14 +4,12 @@ import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.ChunkerConstants;
 import io.deephaven.lang.generated.Token;
-import io.deephaven.libs.primitives.BytePrimitives;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
-import io.deephaven.proto.backplane.script.grpc.TextEdit;
+import io.deephaven.function.Basic;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * A class specifically for completing invocations; to be called with method results when the cursor is somewhere that a
@@ -65,8 +63,7 @@ public class CompleteInvocation extends CompletionBuilder {
             range = replaceToken(replacing, request);
         }
         final String displayCompletion;
-        if (method.getDeclaringClass().getSimpleName().endsWith("Primitives") &&
-                BytePrimitives.class.getPackage().equals(method.getDeclaringClass().getPackage())) {
+        if (method.getDeclaringClass().getPackage().getName().startsWith(Basic.class.getPackage().getName())) {
             // reduce massive duplication from same-named primitives methods.
             // In the future, when we have better column/type inference, we should be able to delete this workaround
             displayCompletion = "*Primitives." + method.getName() + "(";

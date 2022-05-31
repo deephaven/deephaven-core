@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.uri.DeephavenTarget$Builder",
+ "methods": {
+  "build": ":return: io.deephaven.uri.DeephavenTarget",
+  "host": ":param host: java.lang.String\n:return: io.deephaven.uri.DeephavenTarget.Builder",
+  "isSecure": ":param isSecure: boolean\n:return: io.deephaven.uri.DeephavenTarget.Builder",
+  "port": ":param port: int\n:return: io.deephaven.uri.DeephavenTarget.Builder"
+ },
+ "path": "io.deephaven.uri.DeephavenTarget.Builder",
+ "typeName": "interface"
+}

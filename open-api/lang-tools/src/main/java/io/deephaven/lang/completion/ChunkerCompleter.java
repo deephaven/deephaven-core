@@ -1,11 +1,11 @@
 package io.deephaven.lang.completion;
 
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.select.QueryScope.MissingVariableException;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.util.VariableProvider;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.lang.QueryScope.MissingVariableException;
+import io.deephaven.time.DateTime;
+import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.api.HasScope;
 import io.deephaven.lang.api.IsScope;
@@ -636,6 +636,10 @@ public class ChunkerCompleter implements CompletionHandler {
             // user wants completion on the ident itself...
             String src = node.toSource();
             final Token tok = node.jjtGetFirstToken();
+            if (tok.startIndex > request.getCandidate()) {
+                // would result in a negative substring, abort
+                return;
+            }
             src = src.substring(0, request.getCandidate() - tok.startIndex);
             addMethodsAndVariables(results, node.jjtGetFirstToken(), request, Collections.singletonList(node), src);
         }
@@ -947,7 +951,6 @@ public class ChunkerCompleter implements CompletionHandler {
         switch (name) {
             case "join":
             case "naturalJoin":
-            case "leftJoin":
             case "exactJoin":
             case "aj":
                 // TODO: joins will need special handling; IDS-1517-5 example from Charles:
@@ -1012,11 +1015,11 @@ public class ChunkerCompleter implements CompletionHandler {
             return result;
         }
         switch (o.getName()) {
-            // This used to be where we'd intercept certain well-known-service-variables, like "db";
+            // This used to be where we'd intercept certain well-known-service-variables, like "engine";
             // leaving this here in case we have add and such service to the OSS completer.
         }
         // Ok, maybe the user hasn't run the query yet.
-        // See if there's any named assign's that have a value of db.i|t|etc
+        // See if there's any named assign's that have a value of engine.i|t|etc
 
         final List<ChunkerAssign> assignments = findAssignment(doc, request, o.getName());
         for (ChunkerAssign assignment : assignments) {
@@ -1353,12 +1356,12 @@ public class ChunkerCompleter implements CompletionHandler {
         // And, finally, failing that, we'll do some random guessing based on "well-known column names".
 
 
-        // guess table name from the scope; either a reference to a table, or a db.i|t call.
+        // guess table name from the scope; either a reference to a table, or a engine.i|t call.
         // for now, we are not going to do complex scope inspections to guess at not-yet-run update operations.
         if (scope != null && scope.size() > 0) {
             IsScope root = scope.get(0);
             if (root instanceof ChunkerIdent) {
-                if ("db".equals(root.getName())) {
+                if ("engine".equals(root.getName())) {
                     if (scope.size() > 1) {
                         root = scope.get(1);
                     }
@@ -1382,7 +1385,7 @@ public class ChunkerCompleter implements CompletionHandler {
             case "Date":
                 return String.class;
             case "Timestamp":
-                return DBDateTime.class;
+                return DateTime.class;
         }
 
         // failure; allow anything...

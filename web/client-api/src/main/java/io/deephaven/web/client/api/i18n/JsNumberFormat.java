@@ -1,11 +1,15 @@
 package io.deephaven.web.client.api.i18n;
 
 import com.google.gwt.i18n.client.NumberFormat;
+import io.deephaven.web.client.api.BigDecimalWrapper;
+import io.deephaven.web.client.api.BigIntegerWrapper;
 import io.deephaven.web.client.api.LongWrapper;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -46,6 +50,10 @@ public class JsNumberFormat {
         Objects.requireNonNull(number);
         if (number instanceof Double) {// aka typeof number, and non-null
             return wrapped.format((double) (Double) number);
+        } else if (number instanceof BigDecimalWrapper) {
+            return wrapped.format(((BigDecimalWrapper) number).getWrapped());
+        } else if (number instanceof BigIntegerWrapper) {
+            return wrapped.format(((BigIntegerWrapper) number).getWrapped());
         } else if (number instanceof LongWrapper) {
             return wrapped.format((Long) ((LongWrapper) number).getWrapped());
         }

@@ -9,29 +9,31 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Setup JDK 8
-        id: setup-java-8
-        uses: actions/setup-java@v2.2.0
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '8.0.302'
+          distribution: 'temurin'
+          java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
-        uses: actions/setup-java@v2.2.0
+        uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '17.0.0'
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-8.outputs.path }}" >> $GITHUB_ENV
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          echo >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          cat gradle.properties
 
       - name: Publish
         uses: burrunan/gradle-cache-action@v1

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.util.TicketRouterHelper",
- "methods": {
-  "getLogNameFor": "Create a human readable string to identify this ticket.\n\n:param descriptor: (org.apache.arrow.flight.impl.Flight.FlightDescriptor) - the descriptor to parse\n:return: (java.lang.String) a string that is good for log/error messages"
- },
- "path": "io.deephaven.grpc_api.util.TicketRouterHelper",
- "typeName": "class"
-}

@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.vector.DoubleVectorDirect",
+ "methods": {
+  "equals": ":param obj: java.lang.Object\n:return: boolean",
+  "get": ":param i: long\n:return: double",
+  "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: io.deephaven.vector.DoubleVectorDirect",
+  "hashCode": ":return: int",
+  "size": "The size of this data structure.\n\n:return: (long) The size",
+  "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.vector.DoubleVector",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.DoubleVector",
+  "toArray": ":return: double[]",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.vector.DoubleVectorDirect",
+ "typeName": "class"
+}

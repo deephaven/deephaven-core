@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sortcheck.ReplicateSortCheck",
- "methods": {
-  "main": ":param args: java.lang.String[]"
- },
- "path": "io.deephaven.db.v2.sortcheck.ReplicateSortCheck",
- "typeName": "class"
-}

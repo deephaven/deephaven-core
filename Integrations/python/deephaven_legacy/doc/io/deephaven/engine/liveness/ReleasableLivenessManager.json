@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.liveness.ReleasableLivenessManager",
+ "methods": {
+  "release": "Release ownership of this ReleasableLivenessManager, allowing any retained LivenessReferents to\n cleanup if they no longer have outstanding references."
+ },
+ "path": "io.deephaven.engine.liveness.ReleasableLivenessManager",
+ "text": "Interface for LivenessManager instances that support a release() method to initiate retained referent\n release callback invocation. It is the creator's responsibility to ensure that release() is invoked before\n this manager becomes unreachable.",
+ "typeName": "interface"
+}

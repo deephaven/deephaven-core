@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.plot.datasets.data.IndexableData",
+ "methods": {
+  "get": "Gets the value at the given index.\n\n:param index: (int) - index\n:return: (IndexableData.T) value of this dataset at index",
+  "getPlotInfo": ":return: io.deephaven.plot.errors.PlotInfo",
+  "size": "Gets the size of this dataset.\n\n:return: (int) the size of this dataset"
+ },
+ "path": "io.deephaven.plot.datasets.data.IndexableData",
+ "text": "Dataset where values can be retrieved via an integer index.",
+ "typeName": "class"
+}

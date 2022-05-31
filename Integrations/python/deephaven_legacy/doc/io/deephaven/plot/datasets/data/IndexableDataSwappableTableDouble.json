@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plot.datasets.data.IndexableDataSwappableTableDouble",
+ "methods": {
+  "convert": "Converts between the value in the column and the return value of the provider.\n\n:param v: (java.lang.Object) - value in the column\n:return: (java.lang.Double) value in the column converted to return type of the provider"
+ },
+ "path": "io.deephaven.plot.datasets.data.IndexableDataSwappableTableDouble",
+ "text": "IndexableData dataset whose data is a column in a SwappableTable and whose indices are the row\n numbers of the column.\n\n Data values are converted to doubles.",
+ "typeName": "class"
+}

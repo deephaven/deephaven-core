@@ -1,0 +1,22 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Parquet Base: Libraries for working with Parquet files'
+
+dependencies {
+    api project(':ParquetHadoop')
+
+    implementation project(':Util')
+
+    testImplementation 'junit:junit:4.13.2'
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/*ChunkedWriter.java',
+        )
+    }
+}

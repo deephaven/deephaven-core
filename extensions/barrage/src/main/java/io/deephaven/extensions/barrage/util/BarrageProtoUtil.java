@@ -10,10 +10,10 @@ import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.WireFormat;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.db.v2.utils.ExternalizableIndexUtils;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.streams.ByteBufferInputStream;
@@ -44,11 +44,11 @@ public class BarrageProtoUtil {
 
     private static final Logger log = LoggerFactory.getLogger(BarrageProtoUtil.class);
 
-    public static ByteBuffer toByteBuffer(final Index index) {
+    public static ByteBuffer toByteBuffer(final RowSet rowSet) {
         // noinspection UnstableApiUsage
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                 final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-            ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, index);
+            ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, rowSet);
             oos.flush();
             return ByteBuffer.wrap(baos.peekBuffer(), 0, baos.size());
         } catch (final IOException e) {
@@ -56,11 +56,11 @@ public class BarrageProtoUtil {
         }
     }
 
-    public static Index toIndex(final ByteBuffer string) {
+    public static RowSet toRowSet(final ByteBuffer string) {
         // noinspection UnstableApiUsage
         try (final InputStream bais = new ByteBufferInputStream(string);
                 final LittleEndianDataInputStream ois = new LittleEndianDataInputStream(bais)) {
-            return ExternalizableIndexUtils.readExternalCompressedDelta(ois);
+            return ExternalizableRowSetUtils.readExternalCompressedDelta(ois);
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("Unexpected exception during deserialization: ", e);
         }

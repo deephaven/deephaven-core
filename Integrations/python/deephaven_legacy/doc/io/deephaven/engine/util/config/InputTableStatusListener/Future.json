@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.util.config.InputTableStatusListener$Future",
+ "methods": {
+  "onError": "Handle an error that occured during an input table write.\n\n:param t: (java.lang.Throwable) - the error.",
+  "onSuccess": "Handle successful completion of an input table write."
+ },
+ "path": "io.deephaven.engine.util.config.InputTableStatusListener.Future",
+ "typeName": "class"
+}

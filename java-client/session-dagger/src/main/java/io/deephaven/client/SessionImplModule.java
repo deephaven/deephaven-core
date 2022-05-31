@@ -5,7 +5,7 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.client.impl.SessionImpl;
 import io.deephaven.client.impl.SessionImplConfig;
-import io.deephaven.grpc_api.DeephavenChannel;
+import io.deephaven.proto.DeephavenChannel;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 

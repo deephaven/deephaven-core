@@ -1,7 +1,7 @@
 package io.deephaven.client;
 
 import io.deephaven.client.impl.Session;
-import io.deephaven.grpc_api.runner.DeephavenApiServerTestBase;
+import io.deephaven.server.runner.DeephavenApiServerTestBase;
 import io.grpc.ManagedChannel;
 import org.junit.After;
 import org.junit.Before;

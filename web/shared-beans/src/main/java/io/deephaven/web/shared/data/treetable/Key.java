@@ -12,7 +12,7 @@ import java.util.Objects;
  *
  * In order to serialize this, as Object[] is not serializable, the custom field serializer must descend into the array,
  * and check each value. If the value is a serializable type as is, simply write it, otherwise check for special cases
- * that we accept (StringSet, DBDateTime) and use appropriate wrappers.
+ * that we accept (StringSet, DateTime) and use appropriate wrappers.
  */
 public class Key implements Serializable {
     public static Key root() {

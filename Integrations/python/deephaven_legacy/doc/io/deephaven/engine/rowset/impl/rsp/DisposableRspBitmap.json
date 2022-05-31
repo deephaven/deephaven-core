@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.rsp.DisposableRspBitmap",
+ "methods": {},
+ "path": "io.deephaven.engine.rowset.impl.rsp.DisposableRspBitmap",
+ "text": "\"Disposable\" version of RspBitmap, which allows other instances of RspBitmap to steal its containers.",
+ "typeName": "class"
+}

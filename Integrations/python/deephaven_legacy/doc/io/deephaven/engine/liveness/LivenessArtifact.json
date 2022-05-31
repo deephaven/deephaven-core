@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.liveness.LivenessArtifact",
+ "methods": {
+  "manageWithCurrentScope": "Add this artifact to the current manager provided by the LivenessScopeStack."
+ },
+ "path": "io.deephaven.engine.liveness.LivenessArtifact",
+ "text": "A query engine artifact that is also a LivenessNode. These referents are added to the current top of the\n LivenessScopeStack on construction or deserialization.",
+ "typeName": "class"
+}

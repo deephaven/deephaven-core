@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.client.impl.HasTicketId",
+ "methods": {
+  "ticketId": "Get the ticket ID.\n\n:return: (io.deephaven.client.impl.TicketId) the ticket ID"
+ },
+ "path": "io.deephaven.client.impl.HasTicketId",
+ "typeName": "interface"
+}

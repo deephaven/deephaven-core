@@ -32,11 +32,11 @@ public class Position implements Serializable {
         this();
 
         if (source.has("line")) {
-            line = source.getAny("line").asInt();
+            line = source.getAsAny("line").asInt();
         }
 
         if (source.has("character")) {
-            character = source.getAny("character").asInt();
+            character = source.getAsAny("character").asInt();
         }
     }
 

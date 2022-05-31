@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.rowset.RowSetFactory",
+ "methods": {
+  "builderRandom": ":return: (io.deephaven.engine.rowset.RowSetBuilderRandom) A RowSetBuilderRandom suitable for inserting row keys and row key ranges in no particular order",
+  "builderSequential": ":return: (io.deephaven.engine.rowset.RowSetBuilderSequential) A RowSetBuilderRandom optimized for inserting row keys and row key ranges sequentially in order",
+  "empty": "Get an empty WritableRowSet.\n\n:return: (io.deephaven.engine.rowset.WritableRowSet) A new WritableRowSet containing no rows",
+  "flat": "Get a flat WritableRowSet containing the row key range [0, size), or an empty row\n set if size <= 0.\n\n:param size: (long) - The size of the WritableRowSet to create\n:return: (io.deephaven.engine.rowset.WritableRowSet) A flat WritableRowSet containing the row key range [0, size) or an empty\n         row set if the size <= 0",
+  "fromKeys": "**Incompatible overloads text - text from the first overload:**\n\nGet a WritableRowSet containing the specified row keys.\n \n The provided TLongList is sorted and then passed to a RowSetBuilderSequential.\n\n*Overload 1*  \n  :param rowKeys: (long...) - The row keys to include\n  :return: (io.deephaven.engine.rowset.WritableRowSet) A new WritableRowSet containing the specified row keys\n  \n*Overload 2*  \n  :param rowKey: (long) - The row key to include\n  :return: (io.deephaven.engine.rowset.WritableRowSet) A new WritableRowSet containing the specified row key\n  \n*Overload 3*  \n  :param rowKeys: (gnu.trove.list.TLongList) - A TLongList. Note that this list is mutated within the method!\n  :return: (io.deephaven.engine.rowset.RowSet) A new WritableRowSet containing the values from rowKeys",
+  "fromRange": "Create a WritableRowSet containing the continuous range [firstRowKey, lastRowKey].\n\n:param firstRowKey: (long) - The first row key in the continuous range\n:param lastRowKey: (long) - The last row key in the continuous range\n:return: (io.deephaven.engine.rowset.WritableRowSet) A new WritableRowSet containing the specified row key range"
+ },
+ "path": "io.deephaven.engine.rowset.RowSetFactory",
+ "text": "Repository of factory methods for constructing row sets.",
+ "typeName": "class"
+}

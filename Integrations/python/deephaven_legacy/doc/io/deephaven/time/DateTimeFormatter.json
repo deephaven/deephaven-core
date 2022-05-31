@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.time.DateTimeFormatter",
+ "methods": {
+  "format": "*Overload 1*  \n  :param dateTime: io.deephaven.time.DateTime\n  :param tz: io.deephaven.time.TimeZone\n  :return: java.lang.String\n  \n*Overload 2*  \n  :param dateTime: io.deephaven.time.DateTime\n  :return: java.lang.String",
+  "getPattern": ":return: java.lang.String",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.time.DateTimeFormatter",
+ "text": "Formatter for DateTimes.",
+ "typeName": "class"
+}

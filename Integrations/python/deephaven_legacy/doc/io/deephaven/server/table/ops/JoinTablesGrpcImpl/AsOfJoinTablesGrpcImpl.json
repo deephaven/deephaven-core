@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.server.table.ops.JoinTablesGrpcImpl$AsOfJoinTablesGrpcImpl",
+ "methods": {
+  "doJoin": ":param lhs: io.deephaven.engine.table.Table\n:param rhs: io.deephaven.engine.table.Table\n:param columnsToMatch: io.deephaven.engine.table.MatchPair[]\n:param columnsToAdd: io.deephaven.engine.table.MatchPair[]\n:param request: io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest\n:return: io.deephaven.engine.table.Table",
+  "validateRequest": "This method validates preconditions of the request.\n\n:param request: (io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest) - the original request from the user"
+ },
+ "path": "io.deephaven.server.table.ops.JoinTablesGrpcImpl.AsOfJoinTablesGrpcImpl",
+ "typeName": "class"
+}

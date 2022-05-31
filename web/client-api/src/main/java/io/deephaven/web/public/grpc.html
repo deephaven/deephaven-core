@@ -82,7 +82,7 @@
             .setSequence("1")
             .setTicket(timeTableTicket)
             .setExportId(nextTicket())
-            .setViewport(new Uint8Array([32]))// empty index
+            .setViewport(new Uint8Array([32]))// empty row set
             .setColumns(new Uint8Array([1]));// single column
         barrageService.doSubscribeNoClientStream(subscriptionRequest, metadata)
             .on('data', data => {console.log(data.toObject())})

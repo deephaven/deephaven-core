@@ -1,12 +1,12 @@
 package io.deephaven.benchmarking.runner;
 
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.ParquetTools;
-import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.v2.parquet.ParquetTableWriter;
-import io.deephaven.db.v2.utils.TableBuilder;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.parquet.table.ParquetTools;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.parquet.table.ParquetTableWriter;
+import io.deephaven.engine.table.impl.util.TableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
 import org.openjdk.jmh.infra.BenchmarkParams;
 

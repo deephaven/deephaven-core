@@ -1,0 +1,23 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    api project(':server')
+
+    Classpaths.inheritDagger(project)
+    Classpaths.inheritDagger(project, /* test */ true)
+
+    Classpaths.inheritGrpcPlatform(project)
+    implementation 'io.grpc:grpc-netty'
+
+    testImplementation project(':server-test')
+
+    testRuntimeOnly project(':log-to-slf4j')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+test.systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
+
+apply plugin: 'io.deephaven.java-open-nio'

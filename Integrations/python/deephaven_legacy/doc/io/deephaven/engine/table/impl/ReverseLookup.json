@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.ReverseLookup",
+ "methods": {
+  "get": "Gets the row key value where key exists in the table, or the no-entry-value if it is not found in the table.\n\n:param key: (java.lang.Object) - a single object for a single column, or a SmartKey for\n        multiple columns\n:return: (long) the row key where key exists in the table",
+  "getKeyColumns": ":return: (java.lang.String[]) the key columns this reverse lookup is indexed on",
+  "getNoEntryValue": "Returns the value that will be returned from get(java.lang.Object) or if no entry exists for a given key.\n\n:return: long",
+  "getPrev": "Gets the row key value where key previously in the table, or the no-entry-value if it is not found in the table.\n\n:param key: (java.lang.Object) - a single object for a single column, or a SmartKey for\n        multiple columns\n:return: (long) the row key where key previously existed in the table"
+ },
+ "path": "io.deephaven.engine.table.impl.ReverseLookup",
+ "text": "For hierarchical table display, identify the row key that corresponds to a given logical key.",
+ "typeName": "interface"
+}

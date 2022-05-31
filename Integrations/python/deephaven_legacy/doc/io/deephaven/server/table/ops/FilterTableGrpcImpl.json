@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.table.ops.FilterTableGrpcImpl",
+ "methods": {
+  "create": "This actually performs the operation. It will typically be performed after the\n\n:param request: (io.deephaven.proto.backplane.grpc.FilterTableRequest) - the original request from the user\n:param sourceTables: (java.util.List<io.deephaven.server.session.SessionState.ExportObject<io.deephaven.engine.table.Table>>) - the source tables that this operation may or may not need\n:return: (io.deephaven.engine.table.Table) the resulting table"
+ },
+ "path": "io.deephaven.server.table.ops.FilterTableGrpcImpl",
+ "typeName": "class"
+}

@@ -40,7 +40,7 @@ public class JsChartDescriptor {
 
         Map<Object, JsAxisDescriptor> axisMap = new HashMap<>();
         if (source.has("axes")) {
-            JsArray<Object> axes = source.getAny("axes").cast();
+            JsArray<Object> axes = source.getAsAny("axes").cast();
             this.axes = Js.uncheckedCast(axes.map((axisSource, index, all) -> {
                 if (axisSource instanceof JsAxisDescriptor) {
                     return (JsAxisDescriptor) axisSource;
@@ -54,7 +54,7 @@ public class JsChartDescriptor {
         }
 
         if (source.has("series")) {
-            JsArray<Object> series = source.getAny("series").cast();
+            JsArray<Object> series = source.getAsAny("series").cast();
             this.series = Js.uncheckedCast(series.map((seriesSource, index, all) -> {
                 if (seriesSource instanceof JsSeriesDescriptor) {
                     return (JsSeriesDescriptor) seriesSource;

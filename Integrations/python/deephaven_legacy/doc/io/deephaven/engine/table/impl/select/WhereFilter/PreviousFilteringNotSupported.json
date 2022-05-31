@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.WhereFilter$PreviousFilteringNotSupported",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.select.WhereFilter.PreviousFilteringNotSupported",
+ "text": "This exception is thrown when a where() filter is incapable of handling previous values, and thus needs to be\n executed while under the UGP lock.",
+ "typeName": "class"
+}

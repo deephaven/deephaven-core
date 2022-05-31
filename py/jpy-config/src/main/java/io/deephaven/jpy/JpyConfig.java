@@ -139,6 +139,11 @@ final public class JpyConfig {
         this.flags = Objects.requireNonNull(flags);
     }
 
+    public boolean isEmpty() {
+        return programName == null && pythonHome == null && pythonLib == null && jpyLib == null && jdlLib == null
+                && extraPaths.isEmpty() && flags.isEmpty();
+    }
+
     public Optional<Path> getPythonHome() {
         return Optional.ofNullable(pythonHome);
     }

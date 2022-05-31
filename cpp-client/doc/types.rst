@@ -14,5 +14,5 @@ Types used for sorting tables
 Types used for manipulating dates/times
 ---------------------------------------
 
-.. doxygenclass:: deephaven::client::highlevel::DBDateTime
+.. doxygenclass:: deephaven::client::highlevel::DateTime
    :members:

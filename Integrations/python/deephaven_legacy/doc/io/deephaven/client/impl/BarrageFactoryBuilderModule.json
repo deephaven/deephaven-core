@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.client.impl.BarrageFactoryBuilderModule",
+ "methods": {
+  "providesFactoryBuilder": ":return: io.deephaven.client.impl.BarrageSessionFactoryBuilder"
+ },
+ "path": "io.deephaven.client.impl.BarrageFactoryBuilderModule",
+ "typeName": "interface"
+}

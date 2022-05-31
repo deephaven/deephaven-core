@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sort.radix.BooleanLongRadixSortKernel",
- "methods": {
-  "createContext": ":param size: int\n:param order: io.deephaven.db.tables.SortingOrder\n:param preserveValues: boolean\n:return: io.deephaven.db.v2.sort.LongSortKernel<ATTR,KEY_INDICES>"
- },
- "path": "io.deephaven.db.v2.sort.radix.BooleanLongRadixSortKernel",
- "typeName": "class"
-}

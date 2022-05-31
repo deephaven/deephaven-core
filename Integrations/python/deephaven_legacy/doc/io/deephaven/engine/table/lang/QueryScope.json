@@ -1,0 +1,23 @@
+{
+ "className": "io.deephaven.engine.table.lang.QueryScope",
+ "methods": {
+  "addObjectFields": "Adds an object's declared fields to the scope.\n\n:param object: (java.lang.Object) - object whose fields will be added.",
+  "addParam": "Adds a parameter to the default instance QueryScope, or updates the value of an existing parameter.\n\nNote: Java generics information - <T>\n\n:param name: (java.lang.String) - String name of the parameter to add.\n:param value: (T) - value to assign to the parameter.",
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "getParamNames": "Get all known scope variable names.\n\n:return: (java.util.Set<java.lang.String>) A collection of scope variable names.",
+  "getParamValue": "Gets a parameter from the default instance QueryScope.\n\nNote: Java generics information - <T>\n\n:param name: (java.lang.String) - parameter name.\n:return: (T) parameter value.",
+  "getParams": "Get an array of Params by name. See createParam(name) implementations for details.\n\n:param names: (java.util.Collection<java.lang.String>) - parameter names\n:return: (io.deephaven.engine.table.lang.QueryScopeParam[]) A newly-constructed array of newly-constructed Params.",
+  "getQueryName": "Gets the query name.\n\n:return: (java.lang.String) query name.",
+  "getScope": "Retrieve the default QueryScope instance which will be used by static methods.\n\n:return: (io.deephaven.engine.table.lang.QueryScope) QueryScope",
+  "hasParamName": "Check if the scope has the given name.\n\n:param name: (java.lang.String) - param name\n:return: (boolean) True iff the scope has the given param name",
+  "putObjectFields": "Add an object's public members (referenced reflectively, not a shallow copy!) to this scope if supported.\n Note: This is an optional method.\n\n:param object: (java.lang.Object) - object to add public members from.",
+  "putParam": "Add a parameter to the scope.\n\nNote: Java generics information - <T>\n\n:param name: (java.lang.String) - parameter name.\n:param value: (T) - parameter value.",
+  "readParamValue": "Get the value of a given scope parameter by name.\n\n*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :param name: (java.lang.String) - parameter name.\n  :return: (T) parameter value.\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param name: (java.lang.String) - parameter name.\n  :param defaultValue: (T) - default parameter value.\n  :return: (T) parameter value, or the default parameter value, if the value is not present.",
+  "setDefaultScope": "Sets the default scope.\n\n:param scope: (io.deephaven.engine.table.lang.QueryScope) - the script session's query scope",
+  "setQueryName": "Sets the query name.\n\n:param queryName: (java.lang.String) - query name.",
+  "setScope": "Sets the default QueryScope to be used in the current context. By default there is a\n QueryScope.StandaloneImpl created by the static initializer and set as the defaultInstance. The method allows the\n use of a new or separate instance as the default instance for static methods.\n\n:param queryScope: (io.deephaven.engine.table.lang.QueryScope) - QueryScope to set as the new default instance; null clears the scope."
+ },
+ "path": "io.deephaven.engine.table.lang.QueryScope",
+ "text": "Variable scope used to resolve parameter values during query execution.",
+ "typeName": "class"
+}

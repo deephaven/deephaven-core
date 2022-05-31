@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.chunk.util.hashing.CharToLongCastWithOffset",
+ "methods": {
+  "apply": "Apply this function to the input chunk, returning an output chunk.\n\n The result is owned by this ToLongFunctor.\n\n:param input: (io.deephaven.chunk.Chunk<CharToLongCastWithOffset.T>) - the chunk to transform\n:return: (io.deephaven.chunk.LongChunk<CharToLongCastWithOffset.T>) the result LongChunk",
+  "castInto": "Note: Java generics information - <T2 extends io.deephaven.chunk.attributes.Any>\n\n:param input: io.deephaven.chunk.CharChunk<T2>\n:param result: io.deephaven.chunk.WritableLongChunk<T2>\n:param offset: long"
+ },
+ "path": "io.deephaven.chunk.util.hashing.CharToLongCastWithOffset",
+ "text": "Cast the values in the input chunk to an long and add the specified offset.",
+ "typeName": "class"
+}

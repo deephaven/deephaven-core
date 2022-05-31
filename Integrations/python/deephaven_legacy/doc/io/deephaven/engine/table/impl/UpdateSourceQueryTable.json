@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.UpdateSourceQueryTable",
+ "methods": {
+  "addRowKey": ":param rowKey: long",
+  "addRowKeyRange": ":param firstRowKey: long\n:param lastRowKey: long",
+  "destroy": "Attempt to release (destructively when necessary) resources held by this object. This may render the object\n unusable for subsequent operations. Implementations should be sure to call super.destroy().\n \n This is intended to only ever be used as a side effect of decreasing the reference count to 0."
+ },
+ "path": "io.deephaven.engine.table.impl.UpdateSourceQueryTable",
+ "text": "A QueryTable that acts as an update source within the UpdateGraphProcessor, with RowSet\n changes queued externally by a single producer.",
+ "typeName": "class"
+}

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.chunk.util.hashing.ChunkHasher",
+ "methods": {
+  "hashInitial": "**Incompatible overloads text - text from the first overload:**\n\nCalled for the first (or only) hash value, sets the hash codes in destination corresponding to values.\n\n*Overload 1*  \n  :param values: (io.deephaven.chunk.Chunk<io.deephaven.chunk.attributes.Values>) - the values to hash\n  :param destination: (io.deephaven.chunk.WritableIntChunk<io.deephaven.chunk.attributes.HashCodes>) - the chunk to write hash values into\n  \n*Overload 2*  \n  :param value: (java.lang.Object) - the boxed object to hash\n  :return: (int) the hashcode, as if you called the chunked version of this function",
+  "hashUpdate": "**Incompatible overloads text - text from the first overload:**\n\nCalled for subsequent hash values, updates the hash codes in destination corresponding to values.\n\n*Overload 1*  \n  :param values: (io.deephaven.chunk.Chunk<io.deephaven.chunk.attributes.Values>) - the values to hash\n  :param destination: (io.deephaven.chunk.WritableIntChunk<io.deephaven.chunk.attributes.HashCodes>) - the chunk to update hash values into\n  \n*Overload 2*  \n  :param existing: (int) - the existing hashcode\n  :param value: (java.lang.Object) - the boxed object to add to the hash code\n  :return: (int) the hashcode, as if you called the chunked version of this function",
+  "makeHasher": ":param chunkType: io.deephaven.chunk.ChunkType\n:return: io.deephaven.chunk.util.hashing.ChunkHasher",
+  "scrambleHash": ":param x: int\n:return: int"
+ },
+ "path": "io.deephaven.chunk.util.hashing.ChunkHasher",
+ "typeName": "interface"
+}

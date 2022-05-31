@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.singlerange.SingleIntSingleRange",
+ "methods": {
+  "copy": ":return: io.deephaven.engine.rowset.impl.singlerange.SingleRange",
+  "getCardinality": ":return: long",
+  "rangeEnd": ":return: long",
+  "rangeStart": ":return: long"
+ },
+ "path": "io.deephaven.engine.rowset.impl.singlerange.SingleIntSingleRange",
+ "typeName": "class"
+}

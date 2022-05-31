@@ -1,0 +1,30 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.DeleteTableRequest",
+ "methods": {
+  "equals": ":param obj: java.lang.Object\n:return: boolean",
+  "getDefaultInstance": ":return: io.deephaven.proto.backplane.grpc.DeleteTableRequest",
+  "getDefaultInstanceForType": ":return: io.deephaven.proto.backplane.grpc.DeleteTableRequest",
+  "getDescriptor": ":return: com.google.protobuf.Descriptors.Descriptor",
+  "getInputTable": ".io.deephaven.proto.backplane.grpc.Ticket input_table = 1;\n\n:return: (io.deephaven.proto.backplane.grpc.Ticket) The inputTable.",
+  "getInputTableOrBuilder": ".io.deephaven.proto.backplane.grpc.Ticket input_table = 1;\n\n:return: io.deephaven.proto.backplane.grpc.TicketOrBuilder",
+  "getParserForType": ":return: com.google.protobuf.Parser<io.deephaven.proto.backplane.grpc.DeleteTableRequest>",
+  "getSerializedSize": ":return: int",
+  "getTableToRemove": ".io.deephaven.proto.backplane.grpc.Ticket table_to_remove = 2;\n\n:return: (io.deephaven.proto.backplane.grpc.Ticket) The tableToRemove.",
+  "getTableToRemoveOrBuilder": ".io.deephaven.proto.backplane.grpc.Ticket table_to_remove = 2;\n\n:return: io.deephaven.proto.backplane.grpc.TicketOrBuilder",
+  "getUnknownFields": ":return: com.google.protobuf.UnknownFieldSet",
+  "hasInputTable": ".io.deephaven.proto.backplane.grpc.Ticket input_table = 1;\n\n:return: (boolean) Whether the inputTable field is set.",
+  "hasTableToRemove": ".io.deephaven.proto.backplane.grpc.Ticket table_to_remove = 2;\n\n:return: (boolean) Whether the tableToRemove field is set.",
+  "hashCode": ":return: int",
+  "isInitialized": ":return: boolean",
+  "newBuilder": "*Overload 1*  \n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest.Builder\n  \n*Overload 2*  \n  :param prototype: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest.Builder",
+  "newBuilderForType": ":return: io.deephaven.proto.backplane.grpc.DeleteTableRequest.Builder",
+  "parseDelimitedFrom": "*Overload 1*  \n  :param input: java.io.InputStream\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n  \n*Overload 2*  \n  :param input: java.io.InputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest",
+  "parseFrom": "*Overload 1*  \n  :param data: java.nio.ByteBuffer\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n  \n*Overload 2*  \n  :param data: java.nio.ByteBuffer\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n  \n*Overload 3*  \n  :param data: com.google.protobuf.ByteString\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n  \n*Overload 4*  \n  :param data: com.google.protobuf.ByteString\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n  \n*Overload 5*  \n  :param data: byte[]\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n  \n*Overload 6*  \n  :param data: byte[]\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n  \n*Overload 7*  \n  :param input: java.io.InputStream\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n  \n*Overload 8*  \n  :param input: java.io.InputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n  \n*Overload 9*  \n  :param input: com.google.protobuf.CodedInputStream\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest\n  \n*Overload 10*  \n  :param input: com.google.protobuf.CodedInputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.DeleteTableRequest",
+  "parser": ":return: com.google.protobuf.Parser<io.deephaven.proto.backplane.grpc.DeleteTableRequest>",
+  "toBuilder": ":return: io.deephaven.proto.backplane.grpc.DeleteTableRequest.Builder",
+  "writeTo": ":param output: com.google.protobuf.CodedOutputStream"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.DeleteTableRequest",
+ "text": "Protobuf type io.deephaven.proto.backplane.grpc.DeleteTableRequest",
+ "typeName": "class"
+}

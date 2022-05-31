@@ -1,3 +1,7 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
 configurations {
     compile.extendsFrom configurations.dhUtil, commonsLang3
     testCompile.extendsFrom fishBaseTest
@@ -10,4 +14,8 @@ dependencies {
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+
+    Classpaths.inheritJUnitPlatform(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }

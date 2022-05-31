@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.barrage.BarrageMessageProducer$StreamGenerator$Factory",
- "methods": {
-  "getSchemaView": "Create a MessageView of the Schema to send as the initial message to a new subscriber.\n\n:param options: (BarrageMessageProducer.StreamGenerator.Factory.Options) - serialization options for this specific view\n:param table: (io.deephaven.db.tables.TableDefinition) - the description of the table's data layout\n:param attributes: (java.util.Map<java.lang.String,java.lang.Object>) - the table attributes\n:return: (BarrageMessageProducer.StreamGenerator.Factory.MessageView) a MessageView that can be sent to a subscriber",
-  "newGenerator": "Create a StreamGenerator that now owns the BarrageMessage.\n\n:param message: (io.deephaven.db.v2.utils.BarrageMessage) - the message that contains the update that we would like to propagate\n:return: io.deephaven.grpc_api.barrage.BarrageMessageProducer.StreamGenerator<BarrageMessageProducer.StreamGenerator.Factory.Options,BarrageMessageProducer.StreamGenerator.Factory.MessageView>"
- },
- "path": "io.deephaven.grpc_api.barrage.BarrageMessageProducer.StreamGenerator.Factory",
- "typeName": "interface"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.snapshot.SnapshotIncrementalListener",
- "methods": {
-  "copyRowsToResult": ":param rowsToCopy: io.deephaven.db.v2.utils.Index\n:param triggerTable: io.deephaven.db.v2.QueryTable\n:param rightTable: io.deephaven.db.v2.QueryTable\n:param leftColumns: java.util.Map<java.lang.String,? extendsio.deephaven.db.v2.sources.ColumnSource<?>>\n:param resultColumns: java.util.Map<java.lang.String,io.deephaven.db.v2.sources.SparseArrayColumnSource<?>>",
-  "doFirstSnapshot": ":param initial: boolean"
- },
- "path": "io.deephaven.db.v2.snapshot.SnapshotIncrementalListener",
- "typeName": "class"
-}

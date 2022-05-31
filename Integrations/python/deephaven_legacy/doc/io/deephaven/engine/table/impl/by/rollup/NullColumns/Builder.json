@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.rollup.NullColumns$Builder",
+ "methods": {
+  "build": ":return: io.deephaven.engine.table.impl.by.rollup.NullColumns",
+  "putAllResultColumns": ":param resultColumns: java.util.Map<java.lang.String,? extendsjava.lang.Class<?>>\n:return: io.deephaven.engine.table.impl.by.rollup.NullColumns.Builder",
+  "putResultColumns": ":param name: java.lang.String\n:param type: java.lang.Class<?>\n:return: io.deephaven.engine.table.impl.by.rollup.NullColumns.Builder"
+ },
+ "path": "io.deephaven.engine.table.impl.by.rollup.NullColumns.Builder",
+ "typeName": "interface"
+}

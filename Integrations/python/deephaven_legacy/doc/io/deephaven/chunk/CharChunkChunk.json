@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.chunk.CharChunkChunk",
+ "methods": {
+  "chunkWrap": "*Overload 1*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param data: io.deephaven.chunk.CharChunk<ATTR>[]\n  :return: io.deephaven.chunk.CharChunkChunk<ATTR>\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param data: io.deephaven.chunk.CharChunk<ATTR>[]\n  :param offset: int\n  :param capacity: int\n  :return: io.deephaven.chunk.CharChunkChunk<ATTR>",
+  "get": "*Overload 1*  \n  :param index: int\n  :return: io.deephaven.chunk.CharChunk<CharChunkChunk.ATTR>\n  \n*Overload 2*  \n  :param j: int\n  :param i: int\n  :return: char",
+  "getChunk": ":param index: int\n:return: io.deephaven.chunk.CharChunk<CharChunkChunk.ATTR>",
+  "getEmptyChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.CharChunkChunk<ATTR>",
+  "makeArray": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param capacity: int\n:return: io.deephaven.chunk.CharChunk<ATTR>[]",
+  "slice": ":param offset: int\n:param capacity: int\n:return: io.deephaven.chunk.CharChunkChunk<CharChunkChunk.ATTR>"
+ },
+ "path": "io.deephaven.chunk.CharChunkChunk",
+ "typeName": "class"
+}

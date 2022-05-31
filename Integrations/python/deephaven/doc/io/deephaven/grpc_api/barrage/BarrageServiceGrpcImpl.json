@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.barrage.BarrageServiceGrpcImpl",
- "methods": {
-  "doSubscribeCustom": "**Incompatible overloads text - text from the first overload:**\n\nSubscribe with a normal bi-directional stream.\n\n*Overload 1*  \n  :param responseObserver: (io.grpc.stub.StreamObserver<java.io.InputStream>) - the observer to send subscription events to\n  :return: (io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.SubscriptionRequest>) the observer that grpc can delegate updates to\n  \n*Overload 2*  \n  :param request: (io.deephaven.proto.backplane.grpc.SubscriptionRequest) - the initial one-shot subscription request to get this subscription started\n  :param responseObserver: (io.grpc.stub.StreamObserver<java.io.InputStream>) - the observer to send subscription events to",
-  "doUpdateSubscription": "Receive an out-of-band subscription update for an existing subscription that was\n\n:param request: (io.deephaven.proto.backplane.grpc.SubscriptionRequest) - the request to submit as if it was sent on the client-streaming side of the export\n:param responseObserver: (io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.OutOfBandSubscriptionResponse>) - the response observer to notify of any errors or successes"
- },
- "path": "io.deephaven.grpc_api.barrage.BarrageServiceGrpcImpl",
- "typeName": "class"
-}

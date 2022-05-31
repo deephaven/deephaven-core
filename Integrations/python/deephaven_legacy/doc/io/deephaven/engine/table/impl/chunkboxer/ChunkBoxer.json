@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer",
+ "methods": {
+  "getBoxer": ":param type: io.deephaven.chunk.ChunkType\n:param capacity: int\n:return: io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer.BoxerKernel"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer",
+ "text": "Convert an arbitrary chunk to a chunk of boxed objects.",
+ "typeName": "class"
+}

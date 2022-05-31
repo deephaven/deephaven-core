@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.plot.util.tables.TableHandle",
+ "methods": {
+  "addColumn": ":param column: java.lang.String",
+  "getColumns": ":return: java.util.Set<java.lang.String>",
+  "getFinalTableDefinition": "Get the TableDefinition of the table that will be handed off to actual plotting methods. This method is\n important because in some cases (ie when ACls are applied to source tables) computations must be deferred until\n after ACL application so that they are applied correctly. In this case, the table produced by getTable()\n may be the raw source table, not the final table. This method is used to get the final result table definition no\n matter what the preconditions are.\n\n:return: (io.deephaven.engine.table.TableDefinition) The TableDefinition of the plotted table.",
+  "getTable": ":return: io.deephaven.engine.table.Table",
+  "hasColumns": ":param cols: java.lang.String...\n:return: boolean",
+  "setTable": ":param table: io.deephaven.engine.table.Table"
+ },
+ "path": "io.deephaven.plot.util.tables.TableHandle",
+ "text": "A handle describing a table as well as the columns of the table that are needed.",
+ "typeName": "class"
+}

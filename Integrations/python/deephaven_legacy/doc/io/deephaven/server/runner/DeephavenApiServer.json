@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.server.runner.DeephavenApiServer",
+ "methods": {
+  "run": "Starts the various server components, and blocks until the gRPC server has shut down. That shutdown is mediated\n by the ShutdownManager, and will call the gRPC server to shut it down when the process is itself shutting down.\n Only once that is complete will this method return.",
+  "server": ":return: io.deephaven.server.runner.GrpcServer"
+ },
+ "path": "io.deephaven.server.runner.DeephavenApiServer",
+ "text": "Entrypoint for the Deephaven gRPC server, starting the various engine and script components, running any specified\n application, and enabling the gRPC endpoints to be accessed by consumers.",
+ "typeName": "class"
+}

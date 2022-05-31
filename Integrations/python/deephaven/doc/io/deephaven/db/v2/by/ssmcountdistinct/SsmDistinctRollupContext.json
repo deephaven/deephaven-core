@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.v2.by.ssmcountdistinct.SsmDistinctRollupContext",
- "methods": {},
- "path": "io.deephaven.db.v2.by.ssmcountdistinct.SsmDistinctRollupContext",
- "typeName": "class"
-}

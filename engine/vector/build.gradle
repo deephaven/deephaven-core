@@ -1,0 +1,29 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Engine Vectors: Array-like data structures for in-place data access'
+
+dependencies {
+    api project(':Util'),
+            project(':qst')
+
+    testImplementation 'junit:junit:4.13.2'
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/Boolean*Vector*.java',
+                '**/Byte*Vector*.java',
+                '**/Char*Vector*.java',
+                '**/Short*Vector*.java',
+                '**/Int*Vector*.java',
+                '**/Long*Vector*.java',
+                '**/Float*Vector*.java',
+                '**/Double*Vector*.java',
+                '**/Object*Vector*.java'
+        )
+    }
+}

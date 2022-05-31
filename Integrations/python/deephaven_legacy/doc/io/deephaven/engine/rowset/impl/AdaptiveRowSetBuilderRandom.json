@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom",
+ "methods": {
+  "addKey": ":param rowKey: long",
+  "addRange": ":param firstRowKey: long\n:param lastRowKey: long",
+  "build": ":return: io.deephaven.engine.rowset.WritableRowSet"
+ },
+ "path": "io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom",
+ "text": "RowSetBuilderRandom implementation that uses an adaptive pattern based on workload.",
+ "typeName": "class"
+}

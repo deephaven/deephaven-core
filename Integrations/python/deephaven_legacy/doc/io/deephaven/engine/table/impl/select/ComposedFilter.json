@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.ComposedFilter",
+ "methods": {
+  "canMemoize": "Can this filter operation be memoized?\n\n:return: (boolean) if this filter can be memoized",
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "getColumnArrays": "Get the array columns required by this select filter.\n\n:return: (java.util.List<java.lang.String>) the columns used as array input by this select filter.",
+  "getColumns": "Get the columns required by this select filter.\n\n:return: (java.util.List<java.lang.String>) the columns used as input by this select filter.",
+  "getDependencyStream": "Return a stream of dependencies for this object.\n\n:return: java.util.stream.Stream<io.deephaven.engine.updategraph.NotificationQueue.Dependency>",
+  "getFilters": ":return: java.util.List<io.deephaven.engine.table.impl.select.WhereFilter>",
+  "hashCode": ":return: int",
+  "init": "Initialize this select filter given the table definition\n\n:param tableDefinition: (io.deephaven.engine.table.TableDefinition) - the definition of the table that will be filtered",
+  "isRefreshing": "Is this filter refreshing?\n\n:return: (boolean) if this filter is refreshing",
+  "isSimpleFilter": ":return: (boolean) true if this is a filter that does not require any code execution, but rather is handled entirely within\n         the database engine.",
+  "setRecomputeListener": "Set the ShiftObliviousListener that should be notified if results based on this filter must be recomputed.\n\n:param listener: (io.deephaven.engine.table.impl.select.WhereFilter.RecomputeListener) - the listener to notify."
+ },
+ "path": "io.deephaven.engine.table.impl.select.ComposedFilter",
+ "typeName": "class"
+}

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.ColumnComparatorFactory$IComparator",
- "methods": {
-  "compare": ":param pos1: long\n:param pos2: long\n:return: int"
- },
- "path": "io.deephaven.db.v2.ColumnComparatorFactory.IComparator",
- "typeName": "interface"
-}

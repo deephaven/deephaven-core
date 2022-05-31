@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking",
+ "methods": {},
+ "path": "io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking",
+ "text": "Support for release tracking, in order to detect chunk release errors.",
+ "typeName": "class"
+}

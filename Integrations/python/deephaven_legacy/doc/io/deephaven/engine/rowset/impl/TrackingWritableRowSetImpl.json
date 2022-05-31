@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl",
+ "methods": {
+  "close": "Free any resources associated with this object.\n \n Using any RowSequence methods after close() is an error and may produce exceptions or undefined\n results.",
+  "copyPrev": "Get a copy of the value of this TrackingRowSet as of the end of the previous update graph cycle. As in other\n operations that return a WritableRowSet, the result must be closed by the caller when it\n is no longer needed. The result will never be a TrackingRowSet; use WritableRowSet.toTracking()\n on the result as needed.\n\n:return: (io.deephaven.engine.rowset.WritableRowSet) A copy of the previous value",
+  "findPrev": "Returns the position in [0..(size-1)] where the row key is found in the previous value of this. If not\n found, then return (-(position it would be) - 1), as in Array.binarySearch.\n\n:param rowKey: (long) - The row key to search for\n:return: (long) A position from [0..(size-1)] if the row key was found. If the row key was not found, then\n         (-position - 1) as in Array.binarySearch",
+  "firstRowKeyPrev": "Same as firstRowKey(), as of the end of the previous update graph cycle.\n\n:return: (long) The previous first row key",
+  "getPrev": "Same as get(rowPosition), as of the end of the previous update graph cycle.\n\n:param rowPosition: (long) - A row position in this RowSet between 0 and sizePrev() - 1.\n:return: (long) The row key previously at the supplied row position",
+  "indexer": "Get an opaque TrackingRowSet.Indexer object previously associated with this TrackingRowSet, or set and get one created\n with indexerFactory if this is the first invocation.\n\nNote: Java generics information - <INDEXER_TYPE extends io.deephaven.engine.rowset.TrackingRowSet.Indexer>\n\n:param indexerFactory: (java.util.function.Function<io.deephaven.engine.rowset.TrackingRowSet,INDEXER_TYPE>) - The indexer factory to be used if no indexer has been set previously\n:return: (INDEXER_TYPE) An opaque indexer object associated with this TrackingRowSet",
+  "initializePreviousValue": "Initializes our previous value from the current value.\n \n This call is used by operations that manipulate a TrackingWritableRowSet while constructing it, but need to set\n the state at the end of the initial operation to the current state.\n \n Calling this in other circumstances will yield undefined results.",
+  "lastRowKeyPrev": "Same as lastRowKey(), as of the end of the previous update graph cycle.\n\n:return: (long) The previous last row key",
+  "readExternal": ":param in: java.io.ObjectInput",
+  "sizePrev": "Get the size of this TrackingRowSet as of the end of the previous update graph cycle.\n\n:return: (long) The previous size",
+  "toTracking": "Destructively convert this WritableRowSet into a TrackingWritableRowSet.\n \n This is really only suitable when the caller \"owns\" this WritableRowSet. Programming errors may occur if the any\n code holds onto references to this rather than the result, because there may be ambiguity about resource\n ownership.\n \n Implementations are free to transfer ownership of resources from this object to the result. As such, it is an\n error to directly use this object afterwards; callers must instead use the returned result.\n \n It is an error to invoke this on an instance that is already tracking.\n\n:return: (io.deephaven.engine.rowset.TrackingWritableRowSet) A TrackingWritableRowSet constructed from this WritableRowSet, or this if already\n         tracking"
+ },
+ "path": "io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl",
+ "typeName": "class"
+}

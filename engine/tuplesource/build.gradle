@@ -1,0 +1,23 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Engine TupleSource: Library of TupleSource implementations for combining multiple ColumnSources'
+
+dependencies {
+    api project(':engine-tuple'),
+            project(':engine-api')
+
+    implementation project(':engine-base')
+
+    Classpaths.inheritAutoService(project)
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/generated/**',
+        )
+    }
+}

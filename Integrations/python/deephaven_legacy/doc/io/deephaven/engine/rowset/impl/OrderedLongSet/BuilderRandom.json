@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.OrderedLongSet$BuilderRandom",
+ "methods": {
+  "accept": "Provides a range to this consumer. As consecutive calls to accept are made, delivered ranges are assumed to be\n non overlapping and increasing in their first value; in particular, the first of a range has to be strictly\n greater than the last of the previous range.\n\n:param firstKey: (long) - the range first value.\n:param lastKey: (long) - the range last value.",
+  "add": "*Overload 1*  \n  :param ix: io.deephaven.engine.rowset.impl.singlerange.SingleRange\n  \n*Overload 2*  \n  :param ix: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges\n  :param acquire: boolean\n  \n*Overload 3*  \n  :param ix: io.deephaven.engine.rowset.impl.rsp.RspBitmap\n  :param acquire: boolean",
+  "addKey": ":param key: long",
+  "addRange": ":param firstKey: long\n:param lastKey: long",
+  "appendKey": ":param key: long",
+  "appendRange": ":param firstKey: long\n:param lastKey: long"
+ },
+ "path": "io.deephaven.engine.rowset.impl.OrderedLongSet.BuilderRandom",
+ "typeName": "interface"
+}

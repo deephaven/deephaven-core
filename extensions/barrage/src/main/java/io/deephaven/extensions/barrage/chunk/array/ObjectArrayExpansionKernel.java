@@ -4,22 +4,30 @@
 
 package io.deephaven.extensions.barrage.chunk.array;
 
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.ChunkType;
-import io.deephaven.db.v2.sources.chunk.IntChunk;
-import io.deephaven.db.v2.sources.chunk.ObjectChunk;
-import io.deephaven.db.v2.sources.chunk.WritableChunk;
-import io.deephaven.db.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
-import io.deephaven.db.v2.sources.chunk.sized.SizedChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.sized.SizedChunk;
+
+import java.lang.reflect.Array;
 
 public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
-    public final static ObjectArrayExpansionKernel INSTANCE = new ObjectArrayExpansionKernel();
+
+    private final Class<?> componentType;
+
+    public ObjectArrayExpansionKernel(final Class<?> componentType) {
+        this.componentType = componentType;
+    }
 
     @Override
-    public <T, A extends Attributes.Any> WritableChunk<A> expand(final ObjectChunk<T, A> source, final WritableIntChunk<Attributes.ChunkPositions> perElementLengthDest) {
+    public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source, final WritableIntChunk<ChunkPositions> perElementLengthDest) {
         if (source.size() == 0) {
             perElementLengthDest.setSize(0);
             return WritableObjectChunk.makeWritableChunk(0);
@@ -47,27 +55,39 @@ public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
     }
 
     @Override
-    public <T, A extends Attributes.Any> WritableObjectChunk<T, A> contract(final Chunk<A> source, final IntChunk<Attributes.ChunkPositions> perElementLengthDest) {
+    public <T, A extends Any> WritableObjectChunk<T, A> contract(
+            final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest,
+            final WritableChunk<A> outChunk, final int outOffset, final int totalRows) {
         if (perElementLengthDest.size() == 0) {
-            return WritableObjectChunk.makeWritableChunk(0);
+            if (outChunk != null) {
+                return outChunk.asWritableObjectChunk();
+            }
+            return WritableObjectChunk.makeWritableChunk(totalRows);
         }
 
+        final int itemsInBatch = perElementLengthDest.size() - 1;
         final ObjectChunk<T, A> typedSource = source.asObjectChunk();
-        final WritableObjectChunk<Object, A> result = WritableObjectChunk.makeWritableChunk(perElementLengthDest.size() - 1);
+        final WritableObjectChunk<Object, A> result;
+        if (outChunk != null) {
+            result = outChunk.asWritableObjectChunk();
+        } else {
+            final int numRows = Math.max(itemsInBatch, totalRows);
+            result = WritableObjectChunk.makeWritableChunk(numRows);
+            result.setSize(numRows);
+        }
 
         int lenRead = 0;
-        for (int i = 0; i < result.size(); ++i) {
+        for (int i = 0; i < itemsInBatch; ++i) {
             final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (ROW_LEN == 0) {
-                result.set(i, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                result.set(outOffset + i, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
             } else {
-                //noinspection unchecked
-                final T[] row = (T[])new Object[ROW_LEN];
+                final Object[] row = (Object[])Array.newInstance(componentType, ROW_LEN);
                 for (int j = 0; j < ROW_LEN; ++j) {
                     row[j] = typedSource.get(lenRead + j);
                 }
                 lenRead += ROW_LEN;
-                result.set(i, row);
+                result.set(outOffset + i, row);
             }
         }
 

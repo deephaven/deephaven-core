@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.plugin.Registration$Callback",
+ "methods": {
+  "register": "Registers plugin.\n\n:param plugin: (io.deephaven.plugin.Plugin) - the plugin"
+ },
+ "path": "io.deephaven.plugin.Registration.Callback",
+ "typeName": "interface"
+}

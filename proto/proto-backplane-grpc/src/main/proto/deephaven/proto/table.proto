@@ -33,6 +33,11 @@ service TableService {
   rpc FetchTableMap(FetchTableMapRequest) returns (FetchTableMapResponse) {}
 
   /*
+   * Create a table that has preview columns applied to an existing source table.
+   */
+  rpc ApplyPreviewColumns(ApplyPreviewColumnsRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
    * Create an empty table with the given column names and types.
    */
   rpc EmptyTable(EmptyTableRequest) returns (ExportedTableCreationResponse) {}
@@ -162,7 +167,7 @@ service TableService {
   rpc Snapshot(SnapshotTableRequest) returns (ExportedTableCreationResponse) {}
 
   /*
-   * Returns a new table with a flattened index.
+   * Returns a new table with a flattened row set.
    */
   rpc Flatten(FlattenRequest) returns (ExportedTableCreationResponse) {}
 
@@ -172,6 +177,12 @@ service TableService {
    * column to support zooming in.
    */
   rpc RunChartDownsample(RunChartDownsampleRequest) returns (ExportedTableCreationResponse) {}
+
+  /**
+   * Creates a new Table based on the provided configuration. This can be used as a regular table from the other methods
+   * in this interface, or can be interacted with via the InputTableService to modify its contents.
+   */
+  rpc CreateInputTable(CreateInputTableRequest) returns (ExportedTableCreationResponse) {}
 
   /*
    * Batch a series of requests and send them all at once. This enables the user to create intermediate tables without
@@ -221,6 +232,11 @@ message ExportedTableCreationResponse {
 }
 
 message FetchTableRequest {
+  TableReference source_id = 1;
+  Ticket result_id = 2;
+}
+
+message ApplyPreviewColumnsRequest {
   TableReference source_id = 1;
   Ticket result_id = 2;
 }
@@ -393,7 +409,7 @@ message ComboAggregateRequest {
   enum AggType {
     SUM = 0;
     ABS_SUM = 1;
-    ARRAY = 2;
+    GROUP = 2;
     AVG = 3;
     COUNT = 4;
     FIRST = 5;
@@ -569,6 +585,34 @@ message RunChartDownsampleRequest {
   repeated string y_column_names = 6;
 }
 
+message CreateInputTableRequest {
+  message InputTableKind {
+    // Creates an in-memory append-only table - rows cannot be modified or deleted.
+    message InMemoryAppendOnly {
+
+    }
+    // Creates an in-memory table that supports updates and deletes by keys.
+    message InMemoryKeyBacked {
+      repeated string key_columns = 1;
+    }
+    oneof kind {
+      InMemoryAppendOnly in_memory_append_only = 1;
+      InMemoryKeyBacked in_memory_key_backed = 2;
+    }
+  }
+
+  Ticket result_id = 1;
+  oneof definition {
+    // Optional, either this or schema must be specified, not both.
+    TableReference source_table_id = 2;
+    // Schema as described in Arrow Message.fbs::Message. Optional, either this or source_table_id must be specified.
+    bytes schema = 3;
+  }
+
+  // Specifies what type of input table to create.
+  InputTableKind kind = 4;
+}
+
 message BatchTableRequest {
   repeated Operation ops = 1;
 
@@ -603,6 +647,8 @@ message BatchTableRequest {
       AsOfJoinTablesRequest as_of_join = 27;
       FetchTableRequest fetch_table = 28;
       FetchPandasTableRequest fetch_pandas_table = 29;
+      ApplyPreviewColumnsRequest apply_preview_columns = 30;
+      CreateInputTableRequest create_input_table = 31;
     }
   }
 }

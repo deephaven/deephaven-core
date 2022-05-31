@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Procedure$UnaryByte",
+ "methods": {
+  "call": ":param arg: byte"
+ },
+ "path": "io.deephaven.base.Procedure.UnaryByte",
+ "typeName": "interface"
+}

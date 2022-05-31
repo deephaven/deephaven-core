@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation",
+ "methods": {
+  "getColumnLocation": ":param name: (java.lang.CharSequence) - The column name\n:return: (io.deephaven.engine.table.impl.locations.ColumnLocation) The ColumnLocation for the defined column under this table location",
+  "getKey": ":return: (io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey) An ImmutableTableLocationKey instance for this location",
+  "getLastModifiedTimeMillis": ":return: (long) The last modified time for a table location, in milliseconds from the epoch: \nNULL_TIME: Modification time information is unknown or does not exist for this\n         location \n>= 0: The time this table was last modified, in milliseconds from the UTC epoch",
+  "getRowSet": ":return: (io.deephaven.engine.rowset.RowSet) The (possibly-empty) RowSet of a table location, or null if RowSet information is unknown\n         or does not exist for this table location.",
+  "getSize": ":return: (long) The size of a table location: \nNULL_SIZE: Size information is unknown or does not exist for this location \n>= 0: The table location exists and has (possibly empty) data",
+  "getStateLock": ":return: (java.lang.Object) The Object that accessors should synchronize on if they want to invoke multiple getters with consistent\n         results.",
+  "getTableKey": ":return: (io.deephaven.engine.table.impl.locations.ImmutableTableKey) An ImmutableTableKey instance for the enclosing table",
+  "handleUpdate": "**Incompatible overloads text - text from the first overload:**\n\nSee TableLocationState for documentation of values.\n\n*Overload 1*  \n  :param rowSet: (io.deephaven.engine.rowset.RowSet) - The new RowSet. Ownership passes to this location; callers should copy it if\n          necessary.\n  :param lastModifiedTimeMillis: (long) - The new lastModificationTimeMillis\n  \n*Overload 2*  \n  :param source: (io.deephaven.engine.table.impl.locations.TableLocationState) - The source to copy state values from",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation",
+ "text": "Partial TableLocation implementation for use by TableDataService implementations.",
+ "typeName": "class"
+}

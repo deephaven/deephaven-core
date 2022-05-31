@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfilter.FloatRangeComparator",
+ "methods": {
+  "makeFloatFilter": ":param lower: float\n:param upper: float\n:param lowerInclusive: boolean\n:param upperInclusive: boolean\n:return: io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.FloatChunkFilter"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfilter.FloatRangeComparator",
+ "typeName": "class"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Procedure$BinaryInt",
+ "methods": {
+  "call": ":param arg1: int\n:param arg2: Procedure.BinaryInt.A"
+ },
+ "path": "io.deephaven.base.Procedure.BinaryInt",
+ "typeName": "interface"
+}

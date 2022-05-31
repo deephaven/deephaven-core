@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.RowSetCounts",
+ "methods": {
+  "sampleRsp": ":param rb: io.deephaven.engine.rowset.impl.rsp.RspBitmap",
+  "sampleSingleRange": ":param sr: io.deephaven.engine.rowset.impl.singlerange.SingleRange",
+  "sampleSortedRanges": ":param sr: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges"
+ },
+ "path": "io.deephaven.engine.rowset.impl.RowSetCounts",
+ "typeName": "class"
+}

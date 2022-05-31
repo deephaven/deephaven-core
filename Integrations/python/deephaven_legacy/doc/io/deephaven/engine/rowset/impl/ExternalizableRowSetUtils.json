@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils",
+ "methods": {
+  "readExternalCompressedDelta": ":param in: java.io.DataInput\n:return: io.deephaven.engine.rowset.RowSet",
+  "writeExternalCompressedDeltas": "Write a RowSet to out.\n\n:param out: (java.io.DataOutput) - The destination\n:param rowSet: (io.deephaven.engine.rowset.RowSet) - The RowSet"
+ },
+ "path": "io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils",
+ "text": "Utility methods used for writing/reading RowSets.",
+ "typeName": "class"
+}

@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecApproximatePercentile",
+ "methods": {
+  "compression": "T-Digest compression factor. Must be greater than or equal to 1. Defaults to 100. 1000 is extremely large.\n\n:return: (double) The T-Digest compression factor",
+  "description": "Get a simple description for this AggSpec.\n\n:return: (java.lang.String) The description",
+  "of": "*Overload 1*  \n  :param percentile: double\n  :return: io.deephaven.api.agg.spec.AggSpecApproximatePercentile\n  \n*Overload 2*  \n  :param percentile: double\n  :param compression: double\n  :return: io.deephaven.api.agg.spec.AggSpecApproximatePercentile",
+  "percentile": "Percentile. Must be in range [0.0, 1.0].\n\n:return: (double) The percentile",
+  "walk": "Glue method to deliver this AggSpec to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecApproximatePercentile",
+ "text": "Specifies an aggregation that outputs a percentile approximated using a T-Digest with the specified\n compression().\n \n Efficiently supports multiple output percentiles based on a single input column.\n \n May only be used on static or add-only tables.\n \n Only supported for numeric types.",
+ "typeName": "class"
+}

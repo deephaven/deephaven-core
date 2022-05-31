@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.client.impl.ExportId",
+ "methods": {
+  "exportId": "Get the export ID.\n\n:return: (io.deephaven.client.impl.ExportId) the export ID",
+  "pathId": "Get the path ID.\n\n:return: (io.deephaven.client.impl.PathId) the path ID",
+  "ticketId": "Get the ticket ID.\n\n:return: (io.deephaven.client.impl.TicketId) the ticket ID",
+  "toString": ":return: java.lang.String",
+  "type": ":return: java.util.Optional<java.lang.String>"
+ },
+ "path": "io.deephaven.client.impl.ExportId",
+ "text": "An opaque holder for a session export ID.",
+ "typeName": "class"
+}

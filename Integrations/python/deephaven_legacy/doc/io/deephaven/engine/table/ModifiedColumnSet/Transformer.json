@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.ModifiedColumnSet$Transformer",
+ "methods": {
+  "clearAndTransform": "Propagates changes from one ModifiedColumnSet to another ModifiedColumnSet that contextually\n represent different tables. Clears the output set prior to transforming.\n\n:param input: (io.deephaven.engine.table.ModifiedColumnSet) - source table's columns that changed\n:param output: (io.deephaven.engine.table.ModifiedColumnSet) - result table's columns to propagate dirty columns to",
+  "transform": "Propagates changes from input ModifiedColumnSet to output ModifiedColumnSet. Does not\n clear the output before propagating.\n\n:param input: (io.deephaven.engine.table.ModifiedColumnSet) - source table's columns that changed (null implies no modified columns)\n:param output: (io.deephaven.engine.table.ModifiedColumnSet) - result table's columns to propagate dirty columns to",
+  "transformLambda": "Do not invoke directly.\n\n:param input: io.deephaven.engine.table.ModifiedColumnSet\n:param output: io.deephaven.engine.table.ModifiedColumnSet"
+ },
+ "path": "io.deephaven.engine.table.ModifiedColumnSet.Transformer",
+ "text": "A helper utility that simplifies propagating modified columns to a child table.",
+ "typeName": "interface"
+}

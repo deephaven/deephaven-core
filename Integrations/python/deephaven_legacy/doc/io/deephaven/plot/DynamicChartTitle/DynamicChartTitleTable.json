@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.DynamicChartTitle$DynamicChartTitleTable",
+ "methods": {},
+ "path": "io.deephaven.plot.DynamicChartTitle.DynamicChartTitleTable",
+ "text": "An abstract class for dynamic chart title from table and oneClick dataset",
+ "typeName": "class"
+}

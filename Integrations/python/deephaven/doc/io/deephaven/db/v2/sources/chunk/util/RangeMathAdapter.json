@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.chunk.util.RangeMathAdapter",
- "methods": {
-  "get": ":param hasRanges: boolean\n:return: io.deephaven.db.v2.sources.chunk.util.RangeMathAdapter"
- },
- "path": "io.deephaven.db.v2.sources.chunk.util.RangeMathAdapter",
- "typeName": "class"
-}

@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults$ForByte",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults.ForByte",
+ "text": "Default interface for immutable byte ColumnSource implementations.",
+ "typeName": "interface"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.sort.radix.BooleanLongRadixSortKernel",
+ "methods": {
+  "createContext": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any,\nKEY_INDICES extends io.deephaven.chunk.attributes.Indices>\n\n:param size: int\n:param order: io.deephaven.engine.table.impl.SortingOrder\n:param preserveValues: boolean\n:return: io.deephaven.engine.table.impl.sort.LongSortKernel<ATTR,KEY_INDICES>"
+ },
+ "path": "io.deephaven.engine.table.impl.sort.radix.BooleanLongRadixSortKernel",
+ "typeName": "class"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.healthcheck.HealthCheckModule",
+ "methods": {
+  "bindHealthStatusManager": ":return: io.grpc.protobuf.services.HealthStatusManager"
+ },
+ "path": "io.deephaven.server.healthcheck.HealthCheckModule",
+ "typeName": "class"
+}

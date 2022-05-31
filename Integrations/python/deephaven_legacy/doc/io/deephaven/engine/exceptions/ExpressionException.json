@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.exceptions.ExpressionException",
+ "methods": {
+  "getProblemExpression": "Get the expression that has a problem.\n\n:return: (java.lang.String) the problem expression"
+ },
+ "path": "io.deephaven.engine.exceptions.ExpressionException",
+ "text": "An unchecked exception indicating a problem with a parsed expression, for example in\n Table.where(String...) or\n Table.update(String...).",
+ "typeName": "class"
+}

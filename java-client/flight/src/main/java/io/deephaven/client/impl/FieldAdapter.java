@@ -1,108 +1,125 @@
 package io.deephaven.client.impl;
 
-import io.deephaven.qst.array.Array;
-import io.deephaven.qst.array.BooleanArray;
-import io.deephaven.qst.array.ByteArray;
-import io.deephaven.qst.array.CharArray;
-import io.deephaven.qst.array.DoubleArray;
-import io.deephaven.qst.array.FloatArray;
-import io.deephaven.qst.array.GenericArray;
-import io.deephaven.qst.array.IntArray;
-import io.deephaven.qst.array.LongArray;
-import io.deephaven.qst.array.PrimitiveArray;
-import io.deephaven.qst.array.ShortArray;
-import io.deephaven.qst.column.Column;
+import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.ArrayType;
+import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.ByteType;
+import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
+import io.deephaven.qst.type.DoubleType;
+import io.deephaven.qst.type.FloatType;
+import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.GenericType.Visitor;
 import io.deephaven.qst.type.InstantType;
+import io.deephaven.qst.type.IntType;
+import io.deephaven.qst.type.LongType;
+import io.deephaven.qst.type.PrimitiveType;
+import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
-import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.vector.BigIntVector;
-import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.Float4Vector;
-import org.apache.arrow.vector.Float8Vector;
-import org.apache.arrow.vector.IntVector;
-import org.apache.arrow.vector.SmallIntVector;
-import org.apache.arrow.vector.TimeStampNanoVector;
-import org.apache.arrow.vector.TinyIntVector;
-import org.apache.arrow.vector.UInt2Vector;
-import org.apache.arrow.vector.VarCharVector;
+import io.deephaven.qst.type.Type;
+import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 
-import java.time.Instant;
 import java.util.Collections;
 import java.util.Objects;
 
 /**
- * Utilities for creating {@link FieldVector}.
+ * Utilities for creating a {@link Field}.
  */
-public class FieldAdapter implements Array.Visitor, PrimitiveArray.Visitor {
+public class FieldAdapter implements Type.Visitor, PrimitiveType.Visitor {
 
     /**
-     * Convert a {@code column} into a {@link FieldVector}.
+     * Convert a {@code header} into a {@link Field}.
      *
-     * @param column the column
-     * @param allocator the allocator
-     * @return the field vector
+     * @param header the header
+     * @return the field
      */
-    public static FieldVector of(Column<?> column, BufferAllocator allocator) {
-        return of(column.name(), column.array(), allocator);
+    public static Field of(ColumnHeader<?> header) {
+        return header.componentType().walk(new FieldAdapter(header.name())).out();
     }
 
-    /**
-     * Convert a {@code name} and an {@code array} into a {@link FieldVector}.
-     *
-     * @param name the column name
-     * @param array the array
-     * @param allocator the allocator
-     * @return the field vector
-     */
-    public static FieldVector of(String name, Array<?> array, BufferAllocator allocator) {
-        return array.walk(new FieldAdapter(name, allocator)).out();
+    public static Field byteField(String name) {
+        return field(name, MinorType.TINYINT.getType(), "byte");
     }
 
-    private final String name;
-    private final BufferAllocator allocator;
-
-    private FieldVector out;
-
-    private FieldAdapter(String name, BufferAllocator allocator) {
-        this.name = Objects.requireNonNull(name);
-        this.allocator = Objects.requireNonNull(allocator);
+    public static Field booleanField(String name) {
+        // TODO(deephaven-core#43): Do not reinterpret bool as byte
+        return field(name, MinorType.TINYINT.getType(), "boolean");
     }
 
-    FieldVector out() {
-        return Objects.requireNonNull(out);
+    public static Field charField(String name) {
+        return field(name, MinorType.UINT2.getType(), "char");
     }
 
-    private Field field(FieldType type) {
+    public static Field shortField(String name) {
+        return field(name, MinorType.SMALLINT.getType(), "short");
+    }
+
+    public static Field intField(String name) {
+        return field(name, MinorType.INT.getType(), "int");
+    }
+
+    public static Field longField(String name) {
+        return field(name, MinorType.BIGINT.getType(), "long");
+    }
+
+    public static Field floatField(String name) {
+        return field(name, MinorType.FLOAT4.getType(), "float");
+    }
+
+    public static Field doubleField(String name) {
+        return field(name, MinorType.FLOAT8.getType(), "double");
+    }
+
+    public static Field stringField(String name) {
+        return field(name, MinorType.VARCHAR.getType(), "java.lang.String");
+    }
+
+    public static Field instantField(String name) {
+        return field(name, new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC"),
+                "io.deephaven.time.DateTime");
+    }
+
+    private static Field field(String name, ArrowType arrowType, String deephavenType) {
+        return field(name,
+                new FieldType(true, arrowType, null, Collections.singletonMap("deephaven:type", deephavenType)));
+    }
+
+    private static Field field(String name, FieldType type) {
         return new Field(name, type, null);
     }
 
-    private Field field(ArrowType arrowType, String deephavenType) {
-        return field(new FieldType(true, arrowType, null, Collections.singletonMap("deephaven:type", deephavenType)));
+    private final String name;
+
+    private Field out;
+
+    private FieldAdapter(String name) {
+        this.name = Objects.requireNonNull(name);
+    }
+
+    Field out() {
+        return Objects.requireNonNull(out);
     }
 
     @Override
-    public void visit(PrimitiveArray<?> primitive) {
-        primitive.walk((PrimitiveArray.Visitor) this);
+    public void visit(PrimitiveType<?> primitive) {
+        primitive.walk((PrimitiveType.Visitor) this);
     }
 
     @Override
-    public void visit(GenericArray<?> generic) {
-        generic.componentType().walk(new Visitor() {
+    public void visit(GenericType<?> generic) {
+        generic.walk(new Visitor() {
             @Override
             public void visit(StringType stringType) {
-                visitStringArray(generic.cast(stringType));
+                out = stringField(name);
             }
 
             @Override
             public void visit(InstantType instantType) {
-                visitInstantArray(generic.cast(instantType));
+                out = instantField(name);
             }
 
             @Override
@@ -118,81 +135,42 @@ public class FieldAdapter implements Array.Visitor, PrimitiveArray.Visitor {
     }
 
     @Override
-    public void visit(ByteArray byteArray) {
-        Field field = field(MinorType.TINYINT.getType(), "byte");
-        TinyIntVector vector = new TinyIntVector(field, allocator);
-        VectorHelper.fill(vector, byteArray.values(), 0, byteArray.size());
-        out = vector;
+    public void visit(ByteType byteType) {
+        out = byteField(name);
     }
 
     @Override
-    public void visit(BooleanArray booleanArray) {
-        // TODO: ticket number
-        Field field = field(MinorType.TINYINT.getType(), "boolean");
-        TinyIntVector vector = new TinyIntVector(field, allocator);
-        VectorHelper.fill(vector, booleanArray.values(), 0, booleanArray.size());
-        out = vector;
+    public void visit(BooleanType booleanType) {
+        out = booleanField(name);
     }
 
     @Override
-    public void visit(CharArray charArray) {
-        Field field = field(MinorType.UINT2.getType(), "char");
-        UInt2Vector vector = new UInt2Vector(field, allocator);
-        VectorHelper.fill(vector, charArray.values(), 0, charArray.size());
-        out = vector;
+    public void visit(CharType charType) {
+        out = charField(name);
     }
 
     @Override
-    public void visit(ShortArray shortArray) {
-        Field field = field(MinorType.SMALLINT.getType(), "short");
-        SmallIntVector vector = new SmallIntVector(field, allocator);
-        VectorHelper.fill(vector, shortArray.values(), 0, shortArray.size());
-        out = vector;
+    public void visit(ShortType shortType) {
+        out = shortField(name);
     }
 
     @Override
-    public void visit(IntArray intArray) {
-        Field field = field(MinorType.INT.getType(), "int");
-        IntVector vector = new IntVector(field, allocator);
-        VectorHelper.fill(vector, intArray.values(), 0, intArray.size());
-        out = vector;
+    public void visit(IntType intType) {
+        out = intField(name);
     }
 
     @Override
-    public void visit(LongArray longArray) {
-        Field field = field(MinorType.BIGINT.getType(), "long");
-        BigIntVector vector = new BigIntVector(field, allocator);
-        VectorHelper.fill(vector, longArray.values(), 0, longArray.size());
-        out = vector;
+    public void visit(LongType longType) {
+        out = longField(name);
     }
 
     @Override
-    public void visit(FloatArray floatArray) {
-        Field field = field(MinorType.FLOAT4.getType(), "float");
-        Float4Vector vector = new Float4Vector(field, allocator);
-        VectorHelper.fill(vector, floatArray.values(), 0, floatArray.size());
-        out = vector;
+    public void visit(FloatType floatType) {
+        out = floatField(name);
     }
 
     @Override
-    public void visit(DoubleArray doubleArray) {
-        Field field = field(MinorType.FLOAT8.getType(), "double");
-        Float8Vector vector = new Float8Vector(field, allocator);
-        VectorHelper.fill(vector, doubleArray.values(), 0, doubleArray.size());
-        out = vector;
-    }
-
-    void visitStringArray(GenericArray<String> stringArray) {
-        Field field = field(MinorType.VARCHAR.getType(), "java.lang.String");
-        VarCharVector vector = new VarCharVector(field, allocator);
-        VectorHelper.fill(vector, stringArray.values());
-        out = vector;
-    }
-
-    void visitInstantArray(GenericArray<Instant> instantArray) {
-        Field field = field(MinorType.TIMESTAMPNANO.getType(), "io.deephaven.db.tables.utils.DBDateTime");
-        TimeStampNanoVector vector = new TimeStampNanoVector(field, allocator);
-        VectorHelper.fill(vector, instantArray.values());
-        out = vector;
+    public void visit(DoubleType doubleType) {
+        out = doubleField(name);
     }
 }

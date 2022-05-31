@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plot.PlottingScript",
+ "methods": {
+  "getScriptPath": ":return: java.lang.String",
+  "priority": ":return: int"
+ },
+ "path": "io.deephaven.plot.PlottingScript",
+ "typeName": "class"
+}

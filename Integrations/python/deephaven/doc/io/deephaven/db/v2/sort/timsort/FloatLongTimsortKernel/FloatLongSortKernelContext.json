@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sort.timsort.FloatLongTimsortKernel$FloatLongSortKernelContext",
- "methods": {
-  "close": "Release any resources associated with this context. The context should not be used afterwards.",
-  "sort": "**Incompatible overloads text - text from the first overload:**\n\nSort the values in valuesToSort permuting the indexKeys chunk in the same way.\n\n*Overload 1*  \n  :param indexKeys: io.deephaven.db.v2.sources.chunk.WritableLongChunk<FloatLongTimsortKernel.FloatLongSortKernelContext.KEY_INDICES>\n  :param valuesToSort: io.deephaven.db.v2.sources.chunk.WritableChunk<FloatLongTimsortKernel.FloatLongSortKernelContext.ATTR>\n  \n*Overload 2*  \n  :param indexKeys: io.deephaven.db.v2.sources.chunk.WritableLongChunk<FloatLongTimsortKernel.FloatLongSortKernelContext.KEY_INDICES>\n  :param valuesToSort: io.deephaven.db.v2.sources.chunk.WritableChunk<FloatLongTimsortKernel.FloatLongSortKernelContext.ATTR>\n  :param offsetsIn: io.deephaven.db.v2.sources.chunk.IntChunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.ChunkPositions>\n  :param lengthsIn: io.deephaven.db.v2.sources.chunk.IntChunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.ChunkLengths>"
- },
- "path": "io.deephaven.db.v2.sort.timsort.FloatLongTimsortKernel.FloatLongSortKernelContext",
- "typeName": "class"
-}

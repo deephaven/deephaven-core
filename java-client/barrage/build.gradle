@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.register'
 }
 
 configurations {
@@ -12,6 +13,8 @@ description = 'The Deephaven Barrage Client'
 dependencies {
     api project(':java-client-flight')
     api project(':extensions-barrage')
+
+    compileOnly 'javax.inject:javax.inject:1'
 
     Classpaths.inheritImmutables(project)
 

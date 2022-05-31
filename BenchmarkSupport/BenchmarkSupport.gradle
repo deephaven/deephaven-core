@@ -1,7 +1,11 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
 configurations {
     compile.extendsFrom dhBenchmarkSupport
 
-    testCompile.extendsFrom dhDbTest, fishIoTest
+    testCompile.extendsFrom fishIoTest
 
     testRuntime.extendsFrom fishDataGenerator
 }
@@ -23,11 +27,12 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':DB'),
+    compile project(':engine-table'),
+            project(':extensions-parquet-table'),
             'org.openjdk.jmh:jmh-core:1.20'
 
     testCompile TestTools.projectDependency(project, 'Util'),
-                TestTools.projectDependency(project, 'DB')
+            TestTools.projectDependency(project, 'engine-table')
 
     testRuntime project(path: ':configs'), project(path: ':test-configs'), project(':Numerics')
 

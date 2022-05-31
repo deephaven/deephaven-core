@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.uri.FieldUri",
+ "methods": {
+  "fieldName": "The field name.\n\n:return: (java.lang.String) the field name",
+  "isValidScheme": ":param scheme: java.lang.String\n:return: boolean",
+  "isWellFormed": ":param uri: java.net.URI\n:return: boolean",
+  "of": "Parses the URI into a field URI. The format looks like dh:///field/${fieldName}.\n\n*Overload 1*  \n  :param fieldName: java.lang.String\n  :return: io.deephaven.uri.FieldUri\n  \n*Overload 2*  \n  :param uri: (java.net.URI) - the URI\n  :return: (io.deephaven.uri.FieldUri) the field URI",
+  "toString": "The URI string.\n\n:return: (java.lang.String) the URI string",
+  "walk": "Note: Java generics information - <V extends io.deephaven.uri.StructuredUri.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.uri.FieldUri",
+ "text": "A Deephaven field URI.\n\n \n For example, dh:///field/my_table.\n\n \n Note: unlike other URIs, this URI can't be resolved by itself - it must be embedded inside of a RemoteUri,\n whereby the remote URIs target host will be used as the application id.",
+ "typeName": "class"
+}

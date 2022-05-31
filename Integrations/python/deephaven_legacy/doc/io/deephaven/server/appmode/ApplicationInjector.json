@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.appmode.ApplicationInjector",
+ "methods": {},
+ "path": "io.deephaven.server.appmode.ApplicationInjector",
+ "typeName": "class"
+}

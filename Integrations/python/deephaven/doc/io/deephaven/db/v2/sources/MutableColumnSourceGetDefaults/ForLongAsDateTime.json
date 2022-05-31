@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.MutableColumnSourceGetDefaults$ForLongAsDateTime",
- "methods": {
-  "getPrev": ":param index: long\n:return: io.deephaven.db.tables.utils.DBDateTime"
- },
- "path": "io.deephaven.db.v2.sources.MutableColumnSourceGetDefaults.ForLongAsDateTime",
- "text": "Default interface for mutable DBDateTime ColumnSource implementations.",
- "typeName": "interface"
-}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.chunk.Chunk$Visitor",
+ "methods": {
+  "visit": "*Overload 1*  \n  :param chunk: io.deephaven.chunk.ByteChunk<Chunk.Visitor.ATTR>\n  \n*Overload 2*  \n  :param chunk: io.deephaven.chunk.BooleanChunk<Chunk.Visitor.ATTR>\n  \n*Overload 3*  \n  :param chunk: io.deephaven.chunk.CharChunk<Chunk.Visitor.ATTR>\n  \n*Overload 4*  \n  :param chunk: io.deephaven.chunk.ShortChunk<Chunk.Visitor.ATTR>\n  \n*Overload 5*  \n  :param chunk: io.deephaven.chunk.IntChunk<Chunk.Visitor.ATTR>\n  \n*Overload 6*  \n  :param chunk: io.deephaven.chunk.LongChunk<Chunk.Visitor.ATTR>\n  \n*Overload 7*  \n  :param chunk: io.deephaven.chunk.FloatChunk<Chunk.Visitor.ATTR>\n  \n*Overload 8*  \n  :param chunk: io.deephaven.chunk.DoubleChunk<Chunk.Visitor.ATTR>\n  \n*Overload 9*  \n  Note: Java generics information - <T>\n  \n  :param chunk: io.deephaven.chunk.ObjectChunk<T,Chunk.Visitor.ATTR>"
+ },
+ "path": "io.deephaven.chunk.Chunk.Visitor",
+ "typeName": "interface"
+}

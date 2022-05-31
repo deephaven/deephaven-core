@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.metrics.LongCounterLog2HistogramMetric",
- "methods": {
-  "sample": ":param v: long"
- },
- "path": "io.deephaven.db.v2.utils.metrics.LongCounterLog2HistogramMetric",
- "typeName": "class"
-}

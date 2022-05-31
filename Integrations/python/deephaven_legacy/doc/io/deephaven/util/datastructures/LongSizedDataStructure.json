@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.util.datastructures.LongSizedDataStructure",
+ "methods": {
+  "intSize": "**Incompatible overloads text - text from the first overload:**\n\n\n Returns size() cast to an int, if this can be done without losing precision. Otherwise, throws\n SizeException.\n\n*Overload 1*  \n  :return: (int) size(), cast to an int\n  \n*Overload 2*  \n  :param operation: (java.lang.String) - A description of the operation that requires an int size\n  :return: (int) size(), cast to an int\n  \n*Overload 3*  \n  :param operation: (java.lang.String) - A description of the operation that requires an int size\n  :param size: (long) - The size\n  :return: (int) size, cast to an int",
+  "size": "The size of this data structure.\n\n:return: (long) The size"
+ },
+ "path": "io.deephaven.util.datastructures.LongSizedDataStructure",
+ "text": "Common interface for Deephaven data structures with a long (64-bit signed integer) size.",
+ "typeName": "interface"
+}

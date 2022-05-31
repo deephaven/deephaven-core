@@ -1,0 +1,20 @@
+{
+ "className": "io.deephaven.vector.IntVector",
+ "methods": {
+  "equals": "Helper method for implementing Object.equals(Object).\n\n:param aArray: (io.deephaven.vector.IntVector) - The LHS of the equality test (always a IntVector)\n:param b: (java.lang.Object) - The RHS of the equality test\n:return: (boolean) Whether the two inputs are equal",
+  "get": ":param i: long\n:return: int",
+  "getComponentType": ":return: java.lang.Class",
+  "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: io.deephaven.vector.IntVector",
+  "hashCode": "Helper method for implementing Object.hashCode(). Follows the pattern in\n Arrays.hashCode(Object[]).\n\n:param array: (io.deephaven.vector.IntVector) - The IntVector to hash\n:return: (int) The hash code",
+  "intValToString": ":param val: java.lang.Object\n:return: java.lang.String",
+  "primitiveIntValToString": ":param val: int\n:return: java.lang.String",
+  "size": "The size of this data structure.\n\n:return: (long) The size",
+  "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.vector.IntVector",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.IntVector",
+  "toArray": ":return: int[]",
+  "toString": "Helper method for implementing Object.toString().\n\n*Overload 1*  \n  :param prefixLength: int\n  :return: java.lang.String\n  \n*Overload 2*  \n  :param array: (io.deephaven.vector.IntVector) - The IntVector to convert to a String\n  :param prefixLength: (int) - The maximum prefix of the array to convert\n  :return: (java.lang.String) The String representation of array",
+  "type": ":return: io.deephaven.qst.type.PrimitiveVectorType<io.deephaven.vector.IntVector,java.lang.Integer>"
+ },
+ "path": "io.deephaven.vector.IntVector",
+ "typeName": "interface"
+}

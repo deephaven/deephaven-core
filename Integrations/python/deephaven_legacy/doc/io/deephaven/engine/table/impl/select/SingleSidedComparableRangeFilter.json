@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter",
+ "methods": {
+  "copy": "Create a copy of this WhereFilter.\n\n:return: (io.deephaven.engine.table.impl.select.WhereFilter) an independent copy of this WhereFilter.",
+  "init": "Initialize this select filter given the table definition\n\n:param tableDefinition: (io.deephaven.engine.table.TableDefinition) - the definition of the table that will be filtered",
+  "makeComparableChunkFilter": ":param pivot: java.lang.Comparable<?>\n:param inclusive: boolean\n:param isGreaterThan: boolean\n:return: io.deephaven.engine.table.impl.chunkfilter.ChunkFilter",
+  "makeForTest": ":param columnName: java.lang.String\n:param value: java.lang.Comparable<?>\n:param inclusive: boolean\n:param isGreaterThan: boolean\n:return: io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter",
+ "typeName": "class"
+}

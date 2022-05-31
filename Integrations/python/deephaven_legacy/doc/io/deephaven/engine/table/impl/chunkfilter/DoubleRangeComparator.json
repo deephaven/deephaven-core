@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfilter.DoubleRangeComparator",
+ "methods": {
+  "makeDoubleFilter": ":param lower: double\n:param upper: double\n:param lowerInclusive: boolean\n:param upperInclusive: boolean\n:return: io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.DoubleChunkFilter"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfilter.DoubleRangeComparator",
+ "typeName": "class"
+}

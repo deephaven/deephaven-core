@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionInt$Null",
- "methods": {
-  "getInt": "Get a single int from this region.\n\n:param elementIndex: (long) - Element (int) index in the table's address space\n:return: (int) The int value at the specified element (int) index"
- },
- "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionInt.Null",
- "typeName": "class"
-}

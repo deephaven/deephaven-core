@@ -2,8 +2,8 @@ plugins {
   id 'java'
 }
 
-def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '8')
-def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '17')
+def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '11')
+def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
 
 //    Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make field long java.nio.Buffer.address accessible: module java.base does not "opens java.nio" to unnamed module @5a42bbf4
 //     at java.base/java.lang.reflect.AccessibleObject.checkCanSetAccessible(AccessibleObject.java:354)
@@ -22,8 +22,7 @@ if (runtimeVersion > 8) {
     defaultJvmOpts += ['--add-opens', 'java.base/java.nio=ALL-UNNAMED']
   }
 
-  // TODO(deephaven-core#1369): Upgrade runtime images to JDK17
-  // configure DockerJavaApplication, update docker images with runtime version
+  // TODO(deephaven-core#1493): add-opens Docker application based on plugin conventions
 }
 
 if (testRuntimeVersion > 8) {

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.console.ConsoleServiceGrpcBinding",
+ "methods": {
+  "bindService": ":return: io.grpc.ServerServiceDefinition"
+ },
+ "path": "io.deephaven.server.console.ConsoleServiceGrpcBinding",
+ "typeName": "class"
+}

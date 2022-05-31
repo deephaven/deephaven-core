@@ -1,6 +1,6 @@
 package io.deephaven.treetable;
 
-import io.deephaven.db.tables.Table;
+import io.deephaven.engine.table.Table;
 
 import java.io.Serializable;
 import java.util.HashSet;

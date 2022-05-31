@@ -1,0 +1,133 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Engine Benchmark: Benchmarks for Engine modules'
+
+sourceSets {
+    test {
+        java {
+            srcDir 'src/benchmark/java'
+        }
+    }
+}
+
+dependencies {
+    testImplementation project(':engine-tuple'),
+            project(':engine-table'),
+            project(':BenchmarkSupport'),
+            TestTools.projectDependency(project, 'engine-rowset'),
+            TestTools.projectDependency(project, 'engine-table')
+
+    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+
+    testRuntime project(path: ':configs'),
+            project(path: ':test-configs'),
+            'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/Boolean*Benchmark.java',
+                '**/Byte*Benchmark.java',
+                '**/Char*Benchmark.java',
+                '**/Short*Benchmark.java',
+                '**/Int*Benchmark.java',
+                '**/Long*Benchmark.java',
+                '**/Float*Benchmark.java',
+                '**/Double*Benchmark.java',
+                '**/Object*Benchmark.java',
+        )
+    }
+}
+
+task jmhRun(type: JavaExec)  {
+    new File("$rootDir/tmp/workspace").mkdirs()
+    new File("$rootDir/tmp/logs").mkdirs()
+    workingDir "$rootDir/tmp/workspace"
+
+    classpath = sourceSets.test.runtimeClasspath
+
+    main = 'io.deephaven.benchmarking.runner.BenchmarkRunner'
+
+    // arguments to pass to the application
+    jvmArgs '-DConfiguration.rootFile=dh-tests.prop',
+            "-Ddevroot=$rootDir",
+            "-Dworkspace=$rootDir/tmp/workspace",
+            '-Dconfiguration.quiet=true',
+            '-Djava.awt.headless=true',
+            '-DQueryTable.memoizeResults=false',
+            '-DUpdateGraphProcessor.checkTableOperations=false',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9500'
+}
+
+def createJmhTask = {
+    taskName, cliArgs, jvmAddArgs=[], heapSize='8g' -> tasks.create(taskName, JavaExec, { JavaExec task ->
+        new File("$rootDir/tmp/workspace").mkdirs()
+        new File("$rootDir/tmp/logs").mkdirs()
+
+        task.workingDir "$rootDir/tmp/workspace"
+        task.classpath = sourceSets.test.runtimeClasspath
+        task.main = 'io.deephaven.benchmarking.runner.BenchmarkRunner'
+
+        // arguments to pass to the application
+        def jvmArgs = [ '-DConfiguration.rootFile=dh-tests.prop',
+                "-Ddevroot=$rootDir",
+                "-Dworkspace=$rootDir/tmp/workspace",
+                '-Dconfiguration.quiet=true',
+                '-Djava.awt.headless=true',
+                '-DQueryTable.memoizeResults=false',
+                '-DUpdateGraphProcessor.checkTableOperations=false',
+                "-Xmx$heapSize"
+                //'-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9501'
+        ]
+        jvmArgs.addAll(jvmAddArgs)
+        task.jvmArgs jvmArgs
+        task.args cliArgs
+
+        return
+    })
+}
+
+createJmhTask('jmhRunSort', 'SortBenchmark')
+createJmhTask('jmhRunSortMulti', 'SortMultiBenchmark')
+createJmhTask('jmhRunRangeFilter', 'RangeFilterBenchmark')
+createJmhTask('jmhRunNaturalJoin', 'NaturalJoinBenchmark')
+createJmhTask('jmhRunSparseSelect', 'SparseSelectBenchmark')
+createJmhTask('jmhRunRCS', 'RegionedColumnSourceBenchmark')
+createJmhTask('jmhRunBy', 'ByBenchmark')
+createJmhTask('jmhRunRowSetGetFind', 'RowSetGetFindBench', ['-DMetricsManager.enabled=true'])
+
+def createDeephavenTestExecTask = {
+    taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
+        new File("$rootDir/tmp/workspace").mkdirs()
+        new File("$rootDir/tmp/logs").mkdirs()
+
+        task.workingDir "$rootDir"
+        task.classpath = sourceSets.test.runtimeClasspath
+        task.main = mainClass
+
+        task.jvmArgs '-DConfiguration.rootFile=dh-tests.prop',
+                "-Ddevroot=$rootDir",
+                "-Dworkspace=$rootDir/tmp/workspace",
+                "-Dtest.output.dir=$rootDir/tmp/logs",
+                '-Dconfiguration.quiet=true',
+                '-Djava.awt.headless=true'
+
+        return
+    })
+}
+
+createDeephavenTestExecTask('sortKernelBenchmark', 'io.deephaven.benchmark.engine.sort.timsort.SortKernelBenchmark')
+createDeephavenTestExecTask('partitionKernelBenchmark', 'io.deephaven.benchmark.engine.partition.PartitionKernelBenchmark')
+createDeephavenTestExecTask('columnSourceFillBenchmark', 'io.deephaven.benchmark.engine.sources.ColumnSourceFillBenchmark')
+createDeephavenTestExecTask('naturalJoinBenchmark', 'io.deephaven.benchmark.engine.NaturalJoinBenchmark')
+createDeephavenTestExecTask('ajBenchmark', 'io.deephaven.benchmark.engine.AjBenchmark')
+createDeephavenTestExecTask('matchFilterBenchmark', 'io.deephaven.benchmark.engine.MatchFilterBenchmark')
+createDeephavenTestExecTask('rcsBenchmark', 'io.deephaven.benchmark.engine.RegionedColumnSourceBenchmark')
+createDeephavenTestExecTask('byBenchmark', 'io.deephaven.benchmark.engine.GroupByBenchmark')
+createDeephavenTestExecTask('sumByBenchmark', 'io.deephaven.benchmark.engine.SumByBenchmark')
+createDeephavenTestExecTask('percentileByBenchmark', 'io.deephaven.benchmark.engine.PercentileByBenchmark')
+createDeephavenTestExecTask('lastByBenchmark', 'io.deephaven.benchmark.engine.LastByBenchmark')

@@ -10,8 +10,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Ca
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.CancelCommandResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ExecuteCommandRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ExecuteCommandResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
@@ -307,97 +305,6 @@ public class ConsoleServiceClient {
         @JsOverlay
         default boolean isExecuteCommandMetadata_or_callbackFn() {
             return (Object) this instanceof ConsoleServiceClient.ExecuteCommandMetadata_or_callbackFn;
-        }
-    }
-
-    @JsFunction
-    public interface FetchFigureCallbackFn {
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface P0Type {
-            @JsOverlay
-            static ConsoleServiceClient.FetchFigureCallbackFn.P0Type create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            double getCode();
-
-            @JsProperty
-            String getMessage();
-
-            @JsProperty
-            BrowserHeaders getMetadata();
-
-            @JsProperty
-            void setCode(double code);
-
-            @JsProperty
-            void setMessage(String message);
-
-            @JsProperty
-            void setMetadata(BrowserHeaders metadata);
-        }
-
-        void onInvoke(ConsoleServiceClient.FetchFigureCallbackFn.P0Type p0, FetchFigureResponse p1);
-    }
-
-    @JsFunction
-    public interface FetchFigureMetadata_or_callbackFn {
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface P0Type {
-            @JsOverlay
-            static ConsoleServiceClient.FetchFigureMetadata_or_callbackFn.P0Type create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            double getCode();
-
-            @JsProperty
-            String getMessage();
-
-            @JsProperty
-            BrowserHeaders getMetadata();
-
-            @JsProperty
-            void setCode(double code);
-
-            @JsProperty
-            void setMessage(String message);
-
-            @JsProperty
-            void setMetadata(BrowserHeaders metadata);
-        }
-
-        void onInvoke(
-                ConsoleServiceClient.FetchFigureMetadata_or_callbackFn.P0Type p0, FetchFigureResponse p1);
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface FetchFigureMetadata_or_callbackUnionType {
-        @JsOverlay
-        static ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType of(Object o) {
-            return Js.cast(o);
-        }
-
-        @JsOverlay
-        default BrowserHeaders asBrowserHeaders() {
-            return Js.cast(this);
-        }
-
-        @JsOverlay
-        default ConsoleServiceClient.FetchFigureMetadata_or_callbackFn asFetchFigureMetadata_or_callbackFn() {
-            return Js.cast(this);
-        }
-
-        @JsOverlay
-        default boolean isBrowserHeaders() {
-            return (Object) this instanceof BrowserHeaders;
-        }
-
-        @JsOverlay
-        default boolean isFetchFigureMetadata_or_callbackFn() {
-            return (Object) this instanceof ConsoleServiceClient.FetchFigureMetadata_or_callbackFn;
         }
     }
 
@@ -844,58 +751,6 @@ public class ConsoleServiceClient {
     public native UnaryResponse executeCommand(
             ExecuteCommandRequest requestMessage,
             ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback);
-
-    @JsOverlay
-    public final UnaryResponse fetchFigure(
-            FetchFigureRequest requestMessage,
-            BrowserHeaders metadata_or_callback,
-            ConsoleServiceClient.FetchFigureCallbackFn callback) {
-        return fetchFigure(
-                requestMessage,
-                Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback),
-                callback);
-    }
-
-    @JsOverlay
-    public final UnaryResponse fetchFigure(
-            FetchFigureRequest requestMessage, BrowserHeaders metadata_or_callback) {
-        return fetchFigure(
-                requestMessage,
-                Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback));
-    }
-
-    @JsOverlay
-    public final UnaryResponse fetchFigure(
-            FetchFigureRequest requestMessage,
-            ConsoleServiceClient.FetchFigureMetadata_or_callbackFn metadata_or_callback,
-            ConsoleServiceClient.FetchFigureCallbackFn callback) {
-        return fetchFigure(
-                requestMessage,
-                Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback),
-                callback);
-    }
-
-    @JsOverlay
-    public final UnaryResponse fetchFigure(
-            FetchFigureRequest requestMessage,
-            ConsoleServiceClient.FetchFigureMetadata_or_callbackFn metadata_or_callback) {
-        return fetchFigure(
-                requestMessage,
-                Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback));
-    }
-
-    public native UnaryResponse fetchFigure(
-            FetchFigureRequest requestMessage,
-            ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType metadata_or_callback,
-            ConsoleServiceClient.FetchFigureCallbackFn callback);
-
-    public native UnaryResponse fetchFigure(
-            FetchFigureRequest requestMessage,
-            ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse getConsoleTypes(

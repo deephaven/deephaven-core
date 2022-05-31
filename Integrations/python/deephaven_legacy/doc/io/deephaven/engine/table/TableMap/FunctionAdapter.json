@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.TableMap$FunctionAdapter",
+ "methods": {
+  "of": ":param f: java.util.function.Function<io.deephaven.engine.table.Table,io.deephaven.engine.table.Table>\n:return: java.util.function.BiFunction<java.lang.Object,io.deephaven.engine.table.Table,io.deephaven.engine.table.Table>"
+ },
+ "path": "io.deephaven.engine.table.TableMap.FunctionAdapter",
+ "text": "Helper class for adapting a Function to a BiFunction.",
+ "typeName": "class"
+}

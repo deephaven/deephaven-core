@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.typed.TypedAggregationFactory",
+ "methods": {
+  "buildInsert": ":param hasherConfig: io.deephaven.engine.table.impl.by.typed.HasherConfig<?>\n:param builder: com.squareup.javapoet.CodeBlock.Builder",
+  "buildInsertIncremental": ":param hasherConfig: io.deephaven.engine.table.impl.by.typed.HasherConfig<?>\n:param builder: com.squareup.javapoet.CodeBlock.Builder",
+  "createFindPositionForKey": ":param hasherConfig: io.deephaven.engine.table.impl.by.typed.HasherConfig<?>\n:param chunkTypes: io.deephaven.chunk.ChunkType[]\n:return: com.squareup.javapoet.MethodSpec",
+  "probeFound": ":param hasherConfig: io.deephaven.engine.table.impl.by.typed.HasherConfig<?>\n:param alternate: boolean\n:param builder: com.squareup.javapoet.CodeBlock.Builder",
+  "probeMissing": ":param builder: com.squareup.javapoet.CodeBlock.Builder",
+  "removeProbeFound": ":param hasherConfig: io.deephaven.engine.table.impl.by.typed.HasherConfig<?>\n:param alternate: boolean\n:param builder: com.squareup.javapoet.CodeBlock.Builder"
+ },
+ "path": "io.deephaven.engine.table.impl.by.typed.TypedAggregationFactory",
+ "typeName": "class"
+}

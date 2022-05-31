@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.object.TypeLookup",
+ "methods": {
+  "type": ":param object: java.lang.Object\n:return: java.util.Optional<java.lang.String>"
+ },
+ "path": "io.deephaven.server.object.TypeLookup",
+ "typeName": "class"
+}

@@ -54,7 +54,7 @@ def main(args):
         # intended to allow short circuiting of Deephaven python module
         sys.path.insert(0, args.insert_python_head)
 
-    from deephaven import start_jvm
+    from deephaven_legacy import start_jvm
 
     if not jpy.has_jvm():
         # we will try to initialize the jvm

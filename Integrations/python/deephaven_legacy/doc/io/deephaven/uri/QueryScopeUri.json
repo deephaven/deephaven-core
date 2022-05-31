@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.uri.QueryScopeUri",
+ "methods": {
+  "isValidScheme": ":param scheme: java.lang.String\n:return: boolean",
+  "isWellFormed": ":param uri: java.net.URI\n:return: boolean",
+  "of": "Parses the uri into a query scope URI. The format looks like dh:///scope/${variableName}.\n\n*Overload 1*  \n  :param variableName: java.lang.String\n  :return: io.deephaven.uri.QueryScopeUri\n  \n*Overload 2*  \n  :param uri: (java.net.URI) - the URI\n  :return: (io.deephaven.uri.QueryScopeUri) the query scope URI",
+  "toString": "The URI string.\n\n:return: (java.lang.String) the URI string",
+  "variableName": "The variable name.\n\n:return: (java.lang.String) the variable name",
+  "walk": "Note: Java generics information - <V extends io.deephaven.uri.StructuredUri.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.uri.QueryScopeUri",
+ "text": "A Deephaven query scope URI.\n\n \n For example, dh:///scope/my_table.",
+ "typeName": "class"
+}

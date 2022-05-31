@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.by.CountAggregationFactory",
- "methods": {
-  "makeAggregationContext": "Make an AggregationContext for this aggregation.\n\n:param table: (io.deephaven.db.tables.Table) - The source Table to aggregate\n:param groupByColumns: (java.lang.String...) - The key column names\n:return: (io.deephaven.db.v2.by.AggregationContext) A new or safely reusable AggregationContext",
-  "toString": ":return: java.lang.String"
- },
- "path": "io.deephaven.db.v2.by.CountAggregationFactory",
- "typeName": "class"
-}

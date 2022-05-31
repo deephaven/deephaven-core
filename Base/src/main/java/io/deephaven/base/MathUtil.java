@@ -70,4 +70,43 @@ public class MathUtil {
 
         return a;
     }
+
+    private static final int[] tenToThe = new int[] {
+            1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000
+    };
+
+    /**
+     * Compute 10^n as a int for 0 <= n <= 9.
+     *
+     * @param n the exponent
+     * @return 10^n
+     */
+    public static int pow10(int n) {
+        if (n < 0 || n > 9) {
+            throw new IllegalArgumentException("n = " + n);
+        }
+        return tenToThe[n];
+    }
+
+    private static final int[] base10guessFromBase2Digits = new int[] {
+            0, 0, 0, 0, 1, 1, 1, 2, 2, 2,
+            3, 3, 3, 3, 4, 4, 4, 5, 5, 5,
+            6, 6, 6, 6, 7, 7, 7, 8, 8, 8,
+            9, 9, 9
+    };
+
+    /**
+     * Compute the number of base 10 digits in n's representation, for n >= 0.
+     * 
+     * @param n an integer >= 0
+     * @return how many digits in n's base 10 representation.
+     */
+    public static int base10digits(int n) {
+        int baseTwoDigits = 32 - Integer.numberOfLeadingZeros(n);
+        int base10guess = base10guessFromBase2Digits[baseTwoDigits];
+        if (n >= pow10(base10guess)) {
+            return 1 + base10guess;
+        }
+        return base10guess;
+    }
 }

@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
  * @see TableOperations#join(Object, Collection, Collection, int)
  * @see TableOperations#naturalJoin(Object, Collection, Collection)
  * @see TableOperations#exactJoin(Object, Collection, Collection)
- * @see TableOperations#leftJoin(Object, Collection, Collection)
  * @see TableOperations#aj(Object, Collection, Collection, AsOfJoinRule)
  * @see TableOperations#raj(Object, Collection, Collection, ReverseAsOfJoinRule)
  */
@@ -26,13 +25,9 @@ public interface JoinAddition extends Serializable {
     }
 
     static JoinAddition parse(String x) {
-        if (ColumnName.isValidParsedColumnName(x)) {
-            return ColumnName.parse(x);
-        }
         final int ix = x.indexOf('=');
         if (ix < 0) {
-            throw new IllegalArgumentException(String.format(
-                    "Unable to parse addition '%s', expected form '<newColumn>=<existingColumn>'", x));
+            return ColumnName.parse(x);
         }
         ColumnName newColumn = ColumnName.parse(x.substring(0, ix));
         ColumnName existingColumn = ColumnName.parse(x.substring(ix + 1));

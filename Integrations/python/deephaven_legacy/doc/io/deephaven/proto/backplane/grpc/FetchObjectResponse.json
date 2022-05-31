@@ -1,0 +1,32 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.FetchObjectResponse",
+ "methods": {
+  "equals": ":param obj: java.lang.Object\n:return: boolean",
+  "getData": "bytes data = 2;\n\n:return: (com.google.protobuf.ByteString) The data.",
+  "getDefaultInstance": ":return: io.deephaven.proto.backplane.grpc.FetchObjectResponse",
+  "getDefaultInstanceForType": ":return: io.deephaven.proto.backplane.grpc.FetchObjectResponse",
+  "getDescriptor": ":return: com.google.protobuf.Descriptors.Descriptor",
+  "getParserForType": ":return: com.google.protobuf.Parser<io.deephaven.proto.backplane.grpc.FetchObjectResponse>",
+  "getSerializedSize": ":return: int",
+  "getType": "string type = 1;\n\n:return: (java.lang.String) The type.",
+  "getTypeBytes": "string type = 1;\n\n:return: (com.google.protobuf.ByteString) The bytes for type.",
+  "getTypedExportId": "repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;\n\n:param index: int\n:return: io.deephaven.proto.backplane.grpc.TypedTicket",
+  "getTypedExportIdCount": "repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;\n\n:return: int",
+  "getTypedExportIdList": "repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;\n\n:return: java.util.List<io.deephaven.proto.backplane.grpc.TypedTicket>",
+  "getTypedExportIdOrBuilder": "repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;\n\n:param index: int\n:return: io.deephaven.proto.backplane.grpc.TypedTicketOrBuilder",
+  "getTypedExportIdOrBuilderList": "repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;\n\n:return: java.util.List<? extends io.deephaven.proto.backplane.grpc.TypedTicketOrBuilder>",
+  "getUnknownFields": ":return: com.google.protobuf.UnknownFieldSet",
+  "hashCode": ":return: int",
+  "isInitialized": ":return: boolean",
+  "newBuilder": "*Overload 1*  \n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse.Builder\n  \n*Overload 2*  \n  :param prototype: io.deephaven.proto.backplane.grpc.FetchObjectResponse\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse.Builder",
+  "newBuilderForType": ":return: io.deephaven.proto.backplane.grpc.FetchObjectResponse.Builder",
+  "parseDelimitedFrom": "*Overload 1*  \n  :param input: java.io.InputStream\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse\n  \n*Overload 2*  \n  :param input: java.io.InputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse",
+  "parseFrom": "*Overload 1*  \n  :param data: java.nio.ByteBuffer\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse\n  \n*Overload 2*  \n  :param data: java.nio.ByteBuffer\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse\n  \n*Overload 3*  \n  :param data: com.google.protobuf.ByteString\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse\n  \n*Overload 4*  \n  :param data: com.google.protobuf.ByteString\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse\n  \n*Overload 5*  \n  :param data: byte[]\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse\n  \n*Overload 6*  \n  :param data: byte[]\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse\n  \n*Overload 7*  \n  :param input: java.io.InputStream\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse\n  \n*Overload 8*  \n  :param input: java.io.InputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse\n  \n*Overload 9*  \n  :param input: com.google.protobuf.CodedInputStream\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse\n  \n*Overload 10*  \n  :param input: com.google.protobuf.CodedInputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectResponse",
+  "parser": ":return: com.google.protobuf.Parser<io.deephaven.proto.backplane.grpc.FetchObjectResponse>",
+  "toBuilder": ":return: io.deephaven.proto.backplane.grpc.FetchObjectResponse.Builder",
+  "writeTo": ":param output: com.google.protobuf.CodedOutputStream"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.FetchObjectResponse",
+ "text": "Protobuf type io.deephaven.proto.backplane.grpc.FetchObjectResponse",
+ "typeName": "class"
+}

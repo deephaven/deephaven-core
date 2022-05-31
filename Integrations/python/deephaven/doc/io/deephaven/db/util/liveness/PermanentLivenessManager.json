@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.util.liveness.PermanentLivenessManager",
- "methods": {
-  "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added"
- },
- "path": "io.deephaven.db.util.liveness.PermanentLivenessManager",
- "text": "A LivenessManager implementation that will never release its referents.\n \n Instances expect to be used on exactly one thread, and hence do not take any measures to ensure thread safety.",
- "typeName": "class"
-}

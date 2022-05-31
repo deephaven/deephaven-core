@@ -28,7 +28,7 @@ public class ColumnStatistics implements Serializable {
     private double absMin;
     private double absMax;
 
-    // Data from a GenerateDBDateTimeStatsFunction
+    // Data from a GenerateDateTimeStatsFunction
     private long minDateTime;
     private long maxDateTime;
 

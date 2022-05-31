@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.ColumnRegion$Null",
- "methods": {
-  "fillChunkAppend": "Appends the values repeating value length times to destination.\n\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? superColumnRegion.Null.ATTR>\n:param length: int"
- },
- "path": "io.deephaven.db.v2.sources.regioned.ColumnRegion.Null",
- "typeName": "class"
-}

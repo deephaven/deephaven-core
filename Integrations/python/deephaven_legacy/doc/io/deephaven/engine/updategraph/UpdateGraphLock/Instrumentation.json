@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.updategraph.UpdateGraphLock$Instrumentation",
+ "methods": {
+  "recordAction": ":param description: java.lang.String\n:param action: java.lang.Runnable",
+  "recordActionInterruptibly": ":param description: java.lang.String\n:param action: io.deephaven.util.FunctionalInterfaces.ThrowingRunnable<java.lang.InterruptedException>"
+ },
+ "path": "io.deephaven.engine.updategraph.UpdateGraphLock.Instrumentation",
+ "typeName": "interface"
+}

@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.QueryTable$FilteredTable",
+ "methods": {
+  "getTable": "Get the table underlying this listener.\n\n:return: (io.deephaven.engine.table.impl.QueryTable.FilteredTable) the underlying table",
+  "requestRecompute": "Notify the listener that its result must be recomputed.",
+  "requestRecomputeMatched": "Called if something about the filters has changed such that all matched rows of the source table should be\n re-evaluated.",
+  "requestRecomputeUnmatched": "Notify the something about the filters has changed such that all unmatched rows of the source table should be\n re-evaluated.",
+  "setIsRefreshing": "Set the filter and the table refreshing or not.\n\n:param refreshing: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.QueryTable.FilteredTable",
+ "typeName": "class"
+}

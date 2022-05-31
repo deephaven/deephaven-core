@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.parquet.table.region.ParquetColumnRegionLong",
+ "methods": {
+  "getLong": "Get a single long from this region.\n\n:param elementIndex: (long) - Element row key in the table's address space\n:return: (long) The long value at the specified element row key"
+ },
+ "path": "io.deephaven.parquet.table.region.ParquetColumnRegionLong",
+ "text": "ColumnRegionLong implementation for regions that support fetching primitive longs from\n column chunk page stores.",
+ "typeName": "class"
+}

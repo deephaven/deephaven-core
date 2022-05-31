@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.by.NonNullCounter",
- "methods": {
-  "ensureCapacity": ":param tableSize: long"
- },
- "path": "io.deephaven.db.v2.by.NonNullCounter",
- "typeName": "class"
-}

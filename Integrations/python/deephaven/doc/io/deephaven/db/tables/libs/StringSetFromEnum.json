@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.tables.libs.StringSetFromEnum",
- "methods": {
-  "convert": "Return a string representation of the enum bit set given by the originalIndex.\n\n:param originalIndex: int\n:return: io.deephaven.db.tables.libs.StringSet"
- },
- "path": "io.deephaven.db.tables.libs.StringSetFromEnum",
- "text": "This class provides a object that converts from list of String values and their binary masks to a\n StringSetWrapper. (The first string corresponds to the value 1, the second to 2, the third to 4, etc.) Because of the\n use of values of 2, this conversion can handle bit sets. It is however limited to 31 possible enum values.",
- "typeName": "class"
-}

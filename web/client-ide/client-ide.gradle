@@ -1,54 +1,40 @@
-import io.deephaven.tools.License
-
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
 }
 
-evaluationDependsOn ':web-client-ui'
-evaluationDependsOn ':proto:raw-js-openapi'
+evaluationDependsOn Docker.registryProject('nginx-base')
 
 apply from: "$rootDir/gradle/web-client.gradle"
+
+configurations {
+    js
+}
 
 dependencies {
     compile project(':web-client-api')
     compile project(':open-api-lang-parser')
+
+    js project(path: ':proto:raw-js-openapi', configuration: 'js')
 }
 
 GwtTools.gwtCompile project, 'io.deephaven.ide.DeephavenIde', 'Create a jar of javascript for web IDE'
 
-// deephaven/dhide
-Task dhide = project(':web-client-ui').tasks.findByName('ideClientMakeImage')
-
-// deephaven/js-out
-Task jsOut = project(':proto:raw-js-openapi').tasks.findByName('webpackSourcesMakeImage')
-
-Task gwtc = tasks.getByName('gwtCompile')
-
-def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
-
-task prepareDocker(type: Sync) {
-    // Note: GH actions currently prepares docker via gradle, but does its own building via
-    // a native GH action. As such, we need to make sure that the prepare also invokes the
-    // necessarily build pre-reqs. If GH actions eventually calls buildDocker instead, we
-    // can remove these dependencies.
-    inputs.files([dhide, jsOut].each { t -> t.outputs.files })
-
-    into "${buildDir}/docker"
-    from(gwtc.outputs.files) {
-        include("dhapi/**")
+def jsOutput = layout.buildDirectory.dir('js')
+def gwtOutput = tasks.register('gwtOutput', Sync) {
+    includeEmptyDirs = false
+    from(tasks.getByName('gwtCompile').outputs.files) {
+        // only copy the dhapi module, and don't give it a wrapper directory
+        include 'dhapi/**'
+        eachFile { it.path = 'jsapi/' + it.path.substring('dhapi/'.length()) }
     }
-    from (dockerLicenses.outputs) {
-        into 'licenses'
-    }
-    from 'docker/Dockerfile'
-    from 'nginx/default.conf'
-    from 'nginx/nginx.conf'
-    from 'nginx/99-init-notebooks.sh'
+    into jsOutput
 }
 
-Docker.registerDockerImage(project, 'buildDocker') {
-    inputs.files([prepareDocker, dhide, jsOut].each { t -> t.outputs.files })
-    //buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
-    images.add('deephaven/web:local-build')
+artifacts {
+    js(jsOutput) {
+        builtBy gwtOutput
+    }
 }
 
+project.tasks.getByName('quick').dependsOn project.tasks.withType(de.esoco.gwt.gradle.task.GwtCompileTask)

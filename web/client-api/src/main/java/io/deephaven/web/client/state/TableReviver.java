@@ -10,6 +10,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Expo
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.batchtablerequest.Operation;
 import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.BatchBuilder;
 import io.deephaven.web.client.api.batch.BatchBuilder.BatchOp;
 import io.deephaven.web.client.api.batch.RequestBatcher;

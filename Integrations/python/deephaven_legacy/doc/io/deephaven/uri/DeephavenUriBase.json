@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.uri.DeephavenUriBase",
+ "methods": {
+  "toString": "The URI string.\n\n:return: (java.lang.String) the URI string",
+  "toURI": "The URI.\n\n:return: (java.net.URI) the URI."
+ },
+ "path": "io.deephaven.uri.DeephavenUriBase",
+ "typeName": "class"
+}

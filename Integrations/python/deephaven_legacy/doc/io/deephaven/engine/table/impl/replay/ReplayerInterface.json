@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.engine.table.impl.replay.ReplayerInterface",
+ "methods": {
+  "currentTime": "Simulated time.\n\n:return: (io.deephaven.time.DateTime) simulated time.",
+  "getHandle": "Gets a handle to the replayer.\n\n:return: (io.deephaven.engine.table.impl.replay.ReplayerHandle) handle to the replayer.",
+  "isDone": "Has the replayer finished replaying all data.\n\n:return: (boolean) true if the replayer has finished replaying all data; false otherwise.",
+  "replay": "Prepares a historical table for replaying.\n\n:param dataSource: (io.deephaven.engine.table.Table) - historical table to replay\n:param timeColumn: (java.lang.String) - column in the table containing timestamps\n:return: (io.deephaven.engine.table.Table) dynamic, replayed version of the table.",
+  "replayGrouped": "Prepares a grouped historical table for replaying.  This method can be faster than the ungrouped replay, but\n the performance increase comes with a cost.  Within a group, the data ordering is maintained.  Between groups,\n data ordering is not maintained for a time interval.\n\n:param dataSource: (io.deephaven.engine.table.Table) - historical table to replay\n:param timeColumn: (java.lang.String) - column in the table containing timestamps\n:param byColumn: java.lang.String\n:return: (io.deephaven.engine.table.Table) dynamic, replayed version of the table.",
+  "replayGroupedLastBy": "Prepares a grouped historical table for replaying as a last-by table.\n\n:param dataSource: (io.deephaven.engine.table.Table) - historical table to replay\n:param timeColumn: (java.lang.String) - column in the table containing timestamps\n:param groupingColumns: (java.lang.String...) - columns used as the key in computing last-by\n:return: (io.deephaven.engine.table.Table) dynamic, replayed version of the last-by table.",
+  "schedule": "Schedule a task to execute.\n\n:param task: (java.util.TimerTask) - task to execute\n:param delay: (long) - delay in milliseconds before first executing the task\n:param period: (long) - frequency in milliseconds to execute the task.",
+  "setTime": "Sets the current replay time.\n\n:param updatedTime: (long) - new replay time.",
+  "shutdown": "Shuts down the replayer.",
+  "start": "Starts replaying data.",
+  "waitDone": "Wait a specified interval for the replayer to complete.  If the replayer has not completed by the\n end of the interval, the method returns.\n\n:param maxTimeMillis: (long) - maximum number of milliseconds to wait."
+ },
+ "path": "io.deephaven.engine.table.impl.replay.ReplayerInterface",
+ "text": "An interface for replaying historical data as simulated real-time data.",
+ "typeName": "interface"
+}

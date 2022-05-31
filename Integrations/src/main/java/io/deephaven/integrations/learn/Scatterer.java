@@ -44,13 +44,12 @@ public class Scatterer {
      * @return list of query strings to be used in .update() call.
      */
     public String[] generateQueryStrings(String futureOffsetColName) {
-        String[] queryStrings = new String[outputs.length];
+        final String[] queryStrings = new String[outputs.length];
 
         for (int i = 0; i < outputs.length; i++) {
-            // TODO: TICKET #1026: Replace typeString with the following once ticket #1009 is resolved:
-            // final String typeString = outputs[i].getType() == null ? "" : "(" + outputs[i].getType() + ")";
+            final String pyCast = outputs[i].isPythonScatterFunc() ? " (PyObject) " : "";
+            final String typeString = outputs[i].getType() == null ? pyCast : "(" + outputs[i].getType() + ")" + pyCast;
 
-            final String typeString = "";
             queryStrings[i] = String.format("%s = %s (__scatterer.scatter(%d, %s))", outputs[i].getColName(),
                     typeString, i, futureOffsetColName);
         }

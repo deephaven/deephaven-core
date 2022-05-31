@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.ssa.ReplicateSegmentedSortedArray",
- "methods": {
-  "main": ":param args: java.lang.String[]"
- },
- "path": "io.deephaven.db.v2.ssa.ReplicateSegmentedSortedArray",
- "typeName": "class"
-}

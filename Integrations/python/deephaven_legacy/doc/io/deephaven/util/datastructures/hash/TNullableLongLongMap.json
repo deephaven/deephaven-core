@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.util.datastructures.hash.TNullableLongLongMap",
+ "methods": {
+  "capacity": ":return: int"
+ },
+ "path": "io.deephaven.util.datastructures.hash.TNullableLongLongMap",
+ "typeName": "interface"
+}

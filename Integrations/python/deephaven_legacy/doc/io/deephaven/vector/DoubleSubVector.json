@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.vector.DoubleSubVector",
+ "methods": {
+  "get": ":param index: long\n:return: double",
+  "isEmpty": ":return: boolean",
+  "size": "The size of this data structure.\n\n:return: (long) The size",
+  "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.vector.DoubleVector",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.DoubleVector",
+  "toArray": ":return: double[]"
+ },
+ "path": "io.deephaven.vector.DoubleSubVector",
+ "typeName": "class"
+}

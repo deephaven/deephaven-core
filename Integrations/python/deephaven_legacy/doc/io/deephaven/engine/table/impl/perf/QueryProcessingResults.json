@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.perf.QueryProcessingResults",
+ "methods": {
+  "getException": ":return: java.lang.String",
+  "getRecorder": ":return: io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder",
+  "isReplayer": ":return: java.lang.Boolean",
+  "setException": ":param exception: java.lang.String",
+  "setReplayer": ":param replayer: java.lang.Boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.perf.QueryProcessingResults",
+ "typeName": "class"
+}

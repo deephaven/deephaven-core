@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.TableUpdateListener",
+ "methods": {
+  "getNotification": "Creates a notification for the table changes.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates.\n:return: (io.deephaven.engine.updategraph.NotificationQueue.Notification) table change notification",
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates."
+ },
+ "path": "io.deephaven.engine.table.TableUpdateListener",
+ "text": "Shift-aware listener for table changes.",
+ "typeName": "interface"
+}

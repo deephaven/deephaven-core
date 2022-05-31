@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.session.SessionCloseableObserver",
- "methods": {},
- "path": "io.deephaven.grpc_api.session.SessionCloseableObserver",
- "typeName": "class"
-}

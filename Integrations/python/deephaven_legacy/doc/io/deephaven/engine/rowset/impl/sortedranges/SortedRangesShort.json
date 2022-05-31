@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.sortedranges.SortedRangesShort",
+ "methods": {
+  "bytesAllocated": ":return: int",
+  "bytesUsed": ":return: int",
+  "deepCopy": "Get a deep copy of the current object, not shared with anybody.\n\n Note this is not thread safe.\n\n:return: (io.deephaven.engine.rowset.impl.sortedranges.SortedRangesShort) A full, deep copy of this object with a reference count of 1 (not shared).",
+  "isDense": ":return: boolean"
+ },
+ "path": "io.deephaven.engine.rowset.impl.sortedranges.SortedRangesShort",
+ "typeName": "class"
+}

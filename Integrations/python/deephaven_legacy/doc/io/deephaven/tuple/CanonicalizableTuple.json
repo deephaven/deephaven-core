@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.tuple.CanonicalizableTuple",
+ "methods": {
+  "canonicalize": "Canonicalize this tuple.\n\n:param canonicalizer: (java.util.function.UnaryOperator<java.lang.Object>) - The canonicalization operator to use on each object element.\n:return: (CanonicalizableTuple.TUPLE_TYPE) This tuple if already canonical, else a new, canonical tuple of the same type"
+ },
+ "path": "io.deephaven.tuple.CanonicalizableTuple",
+ "text": "Interface for immutable tuple classes that can produce a new instance of themselves with canonicalized object\n elements.",
+ "typeName": "interface"
+}

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.singlerange.ShortStartShortDeltaSingleRange",
+ "methods": {
+  "copy": ":return: io.deephaven.engine.rowset.impl.singlerange.ShortStartShortDeltaSingleRange",
+  "getCardinality": ":return: long",
+  "rangeEnd": ":return: long",
+  "rangeStart": ":return: long"
+ },
+ "path": "io.deephaven.engine.rowset.impl.singlerange.ShortStartShortDeltaSingleRange",
+ "typeName": "class"
+}

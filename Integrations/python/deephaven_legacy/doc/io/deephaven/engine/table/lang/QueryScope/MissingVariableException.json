@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.lang.QueryScope$MissingVariableException",
+ "methods": {},
+ "path": "io.deephaven.engine.table.lang.QueryScope.MissingVariableException",
+ "text": "A type of RuntimeException thrown when a variable referenced within the QueryScope is not defined or,\n more likely, has not been added to the scope.",
+ "typeName": "class"
+}

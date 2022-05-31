@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.engine.util.scripts.MultiScriptPathLoader",
+ "methods": {
+  "close": "Free resources associated with this loader.",
+  "getAvailableScriptDisplayPaths": "Gets the display paths available from this loader when it was in the specified state.\n\n*Overload 1*  \n  :return: (java.util.Set<java.lang.String>) The display paths currently available from this loader.\n  \n*Overload 2*  \n  :param state: (io.deephaven.engine.util.scripts.ScriptPathLoaderState) - The state of the loader to use when retrieving the list.\n  :return: (java.util.Set<java.lang.String>) A list of all display paths available when the loader was in the specified state.",
+  "getLoaders": ":return: java.util.List<MultiScriptPathLoader.LOADER_TYPE>",
+  "getScriptBodyByDisplayPath": "Get the specified script at the specified state.\n\n*Overload 1*  \n  :param displayPath: (java.lang.String) - The display path to load a script for.\n  :return: (java.lang.String) The body of the requested script.\n  \n*Overload 2*  \n  :param displayPath: (java.lang.String) - The display path to the script.\n  :param state: (io.deephaven.engine.util.scripts.ScriptPathLoaderState) - The state of the loader.\n  :return: (java.lang.String) The script at displayPath at the specified state.",
+  "getScriptBodyByRelativePath": "Get the specified script at the specified state.\n\n*Overload 1*  \n  :param relativePath: (java.lang.String) - The relative path to load a script for.\n  :return: (java.lang.String) The body of the requested script.\n  \n*Overload 2*  \n  :param relativePath: (java.lang.String) - The relative path to the script.\n  :param state: (io.deephaven.engine.util.scripts.ScriptPathLoaderState) - The state of the loader.\n  :return: (java.lang.String) The script at relativePath at the specified state.",
+  "getState": "Get the current state of this ScriptPathLoader.\n\n:return: (io.deephaven.engine.util.scripts.ScriptPathLoaderState) A ScriptPathLoaderState or null if this loader is stateless.",
+  "lock": "Acquire a read lock. Use before invoking any of the get* methods, and hold for as long as consistency is required\n for this loader.",
+  "refresh": "Refresh the loader internally. Will respect existing read locks.",
+  "unlock": "Release a previously acquired read lock."
+ },
+ "path": "io.deephaven.engine.util.scripts.MultiScriptPathLoader",
+ "text": "A ScriptPathLoader that will load paths from multiple underlying loaders.",
+ "typeName": "class"
+}

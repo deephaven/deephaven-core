@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.AbstractDeferredGroupingColumnSource",
+ "methods": {
+  "getGroupToRange": "**Incompatible overloads text - text from the first overload:**\n\nCompute grouping information for (at least) all keys present in rowSet.\n\n*Overload 1*  \n  :return: (java.util.Map<AbstractDeferredGroupingColumnSource.T,io.deephaven.engine.rowset.RowSet>) A map from distinct data values to a RowSet that contains those values\n  \n*Overload 2*  \n  :param rowSet: (io.deephaven.engine.rowset.RowSet) - The RowSet to consider\n  :return: (java.util.Map<AbstractDeferredGroupingColumnSource.T,io.deephaven.engine.rowset.RowSet>) A map from distinct data values to a RowSet that contains those values",
+  "getGroupingProvider": ":return: (io.deephaven.engine.table.impl.locations.GroupingProvider<AbstractDeferredGroupingColumnSource.T>) A provider previously set by\n         DeferredGroupingColumnSource.setGroupingProvider(io.deephaven.engine.table.impl.locations.GroupingProvider)",
+  "setGroupingProvider": "Set a grouping provider for use in lazily-constructing groupings.\n\n:param groupingProvider: (io.deephaven.engine.table.impl.locations.GroupingProvider<AbstractDeferredGroupingColumnSource.T>) - The GroupingProvider to use"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.AbstractDeferredGroupingColumnSource",
+ "text": "Adds deferred grouping support to AbstractColumnSource.",
+ "typeName": "class"
+}

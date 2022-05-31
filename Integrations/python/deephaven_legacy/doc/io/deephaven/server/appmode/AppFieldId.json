@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.server.appmode.AppFieldId",
+ "methods": {
+  "applicationId": ":return: java.lang.String",
+  "applicationName": ":return: java.lang.String",
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "fromScopeName": ":param fieldName: java.lang.String\n:return: io.deephaven.server.appmode.AppFieldId",
+  "getTicket": ":return: io.deephaven.proto.backplane.grpc.Ticket",
+  "hashCode": ":return: int",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.server.appmode.AppFieldId",
+ "text": "Our unique identifier for a field. Used to debounce frequent updates and to identify when a field is replaced.",
+ "typeName": "class"
+}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.kafka.publish.JsonKeyOrValueSerializer",
+ "methods": {
+  "handleChunk": "Process the given update RowSequence and returns a list of JSON strings, reach representing one row of data.\n\n:param context: (io.deephaven.kafka.publish.KeyOrValueSerializer.Context) - A KeyOrValueSerializer.Context created by KeyOrValueSerializer.makeContext(int)\n:param toProcess: (io.deephaven.engine.rowset.RowSequence) - An RowSequence indicating which rows were involved\n:param previous: (boolean) - True if this should be performed using the 'previous' data instead of current, as for removals.\n:return: (io.deephaven.chunk.ObjectChunk<java.lang.String,io.deephaven.chunk.attributes.Values>) A List of Strings containing all of the parsed update statements",
+  "makeContext": "Create a context for calling KeyOrValueSerializer.handleChunk(Context, RowSequence, boolean).\n\n:param size: (int) - The maximum number of rows that will be serialized for each chunk\n:return: (io.deephaven.kafka.publish.KeyOrValueSerializer.Context) A Context for the KeyOrValueSerializer"
+ },
+ "path": "io.deephaven.kafka.publish.JsonKeyOrValueSerializer",
+ "typeName": "class"
+}

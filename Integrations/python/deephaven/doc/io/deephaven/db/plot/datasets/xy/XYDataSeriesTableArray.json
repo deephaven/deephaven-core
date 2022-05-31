@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.plot.datasets.xy.XYDataSeriesTableArray",
- "methods": {
-  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.db.plot.AxesImpl) - new axes.\n:return: (io.deephaven.db.plot.datasets.xy.XYDataSeriesTableArray) copy of the series on a different set of axes.",
-  "pointColorByY": "Sets the point color for a data point based upon the y-value.\n\nNote: Java generics information - <T extends io.deephaven.gui.color.Paint>\n\n:param colors: (java.util.function.Function<java.lang.Double,T>) - function from the y-value of data points to Paint\n:return: (io.deephaven.db.plot.datasets.xy.AbstractXYDataSeries) this DataSeries"
- },
- "path": "io.deephaven.db.plot.datasets.xy.XYDataSeriesTableArray",
- "typeName": "class"
-}

@@ -1,0 +1,36 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Kafka: Integrating Engine tables with Kafka'
+
+dependencies {
+    api project(':engine-table')
+
+    api 'org.apache.avro:avro:1.11.0'
+
+    // Using io.confluent dependencies requires code in the toplevel build.gradle to add their maven repository.
+    // Note: the -ccs flavor is provided by confluent as their community edition. It is equivalent to the maven central
+    // version, but has a different version to make it easier to keep confluent dependencies aligned.
+    api 'org.apache.kafka:kafka-clients:7.1.1-ccs'
+    api 'io.confluent:kafka-avro-serializer:7.1.1'
+
+    Classpaths.inheritImmutables(project)
+
+    testImplementation TestTools.projectDependency(project, 'engine-table'),
+            'junit:junit:4.13.2'
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/**FieldCopier.java',
+        )
+    }
+}

@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.table.impl.indexer.RowSetIndexer",
+ "methods": {
+  "copyImmutableGroupings": ":param source: io.deephaven.engine.table.TupleSource\n:param dest: io.deephaven.engine.table.TupleSource",
+  "getGrouping": ":param tupleSource: io.deephaven.engine.table.TupleSource\n:return: java.util.Map<java.lang.Object,io.deephaven.engine.rowset.RowSet>",
+  "getGroupingForKeySet": "Return a grouping that contains row keys that match the values in keys.\n\n:param keys: (java.util.Set<java.lang.Object>) - A set of values that TupleSource should match. For a single ColumnSource, the values\n        within the set are the values that we would like to find. For compound TupleSource instances, the\n        values are SmartKeys.\n:param tupleSource: (io.deephaven.engine.table.TupleSource) - The tuple factory for singular or compound keys\n:return: (java.util.Map<java.lang.Object,io.deephaven.engine.rowset.RowSet>) A map from keys to RowSet, for each of the keys present in the indexed RowSet's view of\n         tupleSource",
+  "getPrevGrouping": ":param tupleSource: io.deephaven.engine.table.TupleSource\n:return: java.util.Map<java.lang.Object,io.deephaven.engine.rowset.RowSet>",
+  "getSubSetForKeySet": "Return a subset that contains row keys that match the values in keys.\n\n:param keys: (java.util.Set<java.lang.Object>) - A set of values that TupleSource should match. For a single ColumnSource, the values\n        within the set are the values that we would like to find. For compound TupleSource instances, the\n        values are SmartKeys.\n:param tupleSource: (io.deephaven.engine.table.TupleSource) - The tuple factory for singular or compound keys\n:return: (io.deephaven.engine.rowset.RowSet) A WritableRowSet with all row keys from the indexed RowSet whose value in tupleSource was\n         present in keys",
+  "hasGrouping": ":param keyColumns: io.deephaven.engine.table.ColumnSource...\n:return: boolean",
+  "of": ":param rowSet: io.deephaven.engine.rowset.TrackingRowSet\n:return: io.deephaven.engine.table.impl.indexer.RowSetIndexer",
+  "rowSetChanged": "Callback for the host TrackingRowSet to report a modification that may invalidate cached indexing\n information."
+ },
+ "path": "io.deephaven.engine.table.impl.indexer.RowSetIndexer",
+ "text": "Indexer that provides \"grouping\" information based on key values extracted from a TupleSource, linked to a\n TrackingRowSet.",
+ "typeName": "class"
+}

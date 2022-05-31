@@ -9,7 +9,7 @@ import org.jpy.PyObject;
 import java.util.function.Function;
 import io.deephaven.util.QueryConstants;
 
-import static io.deephaven.integrations.python.PythonUtilities.pyApplyFunc;
+import static io.deephaven.integrations.python.PythonUtils.pyApplyFunc;
 
 /**
  * A {@link Function} implementation which calls a Python callable.

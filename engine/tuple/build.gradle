@@ -1,0 +1,22 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Engine Tuples: Value sequences for use in aggregations, joins, and indexing'
+
+dependencies {
+    api 'net.sf.trove4j:trove4j:3.0.3',
+            project(':Util'),
+            project(':engine-time')
+
+    testImplementation 'junit:junit:4.13.2'
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/generated/**',
+        )
+    }
+}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.impl.PartitionedTableLocationKey$PartitionsFormatter",
- "methods": {
-  "format": ":param logOutput: io.deephaven.base.log.LogOutput\n:param partitions: java.util.Map<java.lang.String,java.lang.Comparable<?>>"
- },
- "path": "io.deephaven.db.v2.locations.impl.PartitionedTableLocationKey.PartitionsFormatter",
- "text": "Formats a map of partitions as key-value pairs.",
- "typeName": "class"
-}

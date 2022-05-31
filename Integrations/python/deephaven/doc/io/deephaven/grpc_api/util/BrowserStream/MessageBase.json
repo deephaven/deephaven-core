@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.util.BrowserStream$MessageBase",
- "methods": {
-  "setSequenceInfo": ":param sequence: long\n:param isHalfClosed: boolean"
- },
- "path": "io.deephaven.grpc_api.util.BrowserStream.MessageBase",
- "typeName": "class"
-}

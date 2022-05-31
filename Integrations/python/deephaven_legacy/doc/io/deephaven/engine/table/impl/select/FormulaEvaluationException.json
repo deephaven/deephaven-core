@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.FormulaEvaluationException",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.select.FormulaEvaluationException",
+ "text": "Exception while evaluating user formulas.",
+ "typeName": "class"
+}

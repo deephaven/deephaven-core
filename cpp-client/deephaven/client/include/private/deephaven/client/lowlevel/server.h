@@ -180,10 +180,6 @@ public:
       std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
       std::shared_ptr<EtcCallback> etcCallback);
 
-  Ticket leftJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
-      std::shared_ptr<EtcCallback> etcCallback);
-
   Ticket asOfJoinAsync(AsOfJoinTablesRequest::MatchRule matchRule, Ticket leftTableTicket,
       Ticket rightTableTicket, std::vector<std::string> columnsToMatch,
       std::vector<std::string> columnsToAdd, std::shared_ptr<EtcCallback> etcCallback);

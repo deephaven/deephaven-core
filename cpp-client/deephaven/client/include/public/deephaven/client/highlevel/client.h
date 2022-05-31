@@ -6,11 +6,10 @@
 #include <arrow/flight/client.h>
 #include "deephaven/client/highlevel/columns.h"
 #include "deephaven/client/highlevel/expressions.h"
+#include "deephaven/client/highlevel/ticking.h"
 #include "deephaven/client/utility/callbacks.h"
 
-namespace deephaven {
-namespace client {
-namespace highlevel {
+namespace deephaven::client::highlevel {
 namespace impl {
 class AggregateComboImpl;
 class AggregateImpl;
@@ -24,7 +23,7 @@ class TableHandleManager;
 
 namespace internal {
 class TableHandleStreamAdaptor;
-}  // namespace
+}  // namespace internal
 
 /**
  * This class provides an interface to Arrow Flight, which is the main way to push data into and
@@ -186,7 +185,7 @@ public:
   TableHandleManager getManager() const;
 
 private:
-  Client(std::shared_ptr<impl::ClientImpl> impl);
+  explicit Client(std::shared_ptr<impl::ClientImpl> impl);
   std::shared_ptr<impl::ClientImpl> impl_;
 };
 
@@ -197,8 +196,8 @@ public:
   static Aggregate absSum(std::vector<std::string> columnSpecs);
 
   template<typename ...Args>
-  static Aggregate array(Args &&... args);
-  static Aggregate array(std::vector<std::string> columnSpecs);
+  static Aggregate group(Args &&... args);
+  static Aggregate group(std::vector<std::string> columnSpecs);
 
   template<typename ...Args>
   static Aggregate avg(Args &&... args);
@@ -277,8 +276,8 @@ Aggregate aggAbsSum(Args &&... args) {
 }
 
 template<typename ...Args>
-Aggregate aggArray(Args &&... args) {
-  return Aggregate::array(std::forward<Args>(args)...);
+Aggregate aggGroup(Args &&... args) {
+  return Aggregate::group(std::forward<Args>(args)...);
 }
 
 template<typename ...Args>
@@ -962,7 +961,7 @@ public:
    * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
    * renamed by `columnsToAdd`. Example:
    * @code
-   * t1.naturalJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
+   * t1.exactJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
    * @param rightSide The table to join with this table
    * @param columnsToMatch The columns to join on
@@ -983,34 +982,6 @@ public:
    * @return
    */
   TableHandle exactJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
-      std::vector<SelectColumn> columnsToAdd) const;
-
-  /**
-   * Creates a new table by left joining this table with `rightSide`. The tables are joined by
-   * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed by `columnsToAdd`. Example:
-   * @code
-   * t1.naturalJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
-   * @endcode
-   * @param rightSide The table to join with this table
-   * @param columnsToMatch The columns to join on
-   * @param columnsToAdd The columns from the right side to add, and possibly rename.
-   * @return A TableHandle referencing the new table
-   */
-  TableHandle leftJoin(const TableHandle &rightSide, std::vector<std::string> columnsToMatch,
-      std::vector<std::string> columnsToAdd) const;
-  /**
-   * The fluent version of leftJoin(const TableHandle &, std::vector<std::string>, std::vector<std::string>) const.
-   * @code
-   * t1.leftJoin(col1, col2}, {col3, col4.as("NewCol"})
-   * @endcode
-
-   * @param rightSide The table to join with this table
-   * @param columnsToMatch The columns to join on
-   * @param columnsToAdd The columns from the right side to add, and possibly rename.
-   * @return
-   */
-  TableHandle leftJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
       std::vector<SelectColumn> columnsToAdd) const;
 
   /**
@@ -1094,6 +1065,23 @@ public:
    */
   std::shared_ptr<arrow::flight::FlightStreamReader> getFlightStreamReader() const;
 
+  /**
+   * Early unstable interface to subscribe/unsubscribe to ticking tables. This interface supports
+   * append-only tables and will call back with an error if the table changes in a way that is not
+   * append-only.
+   */
+  void subscribe(std::shared_ptr<TickingCallback> callback);
+  /**
+   * Unsubscribe from the table.
+   */
+  void unsubscribe(std::shared_ptr<TickingCallback> callback);
+
+  /**
+   * Get access to the bytes of the Deephaven "Ticket" type (without having to reference the
+   * protobuf data structure, which we would prefer not to have a dependency on here)
+   */
+  const std::string &getTicketAsString() const;
+
 private:
   std::shared_ptr<impl::TableHandleImpl> impl_;
 };
@@ -1174,11 +1162,11 @@ Aggregate Aggregate::absSum(Args &&... args) {
 }
 
 template<typename ...Args>
-Aggregate Aggregate::array(Args &&... args) {
+Aggregate Aggregate::group(Args &&... args) {
   std::vector<std::string> columnSpecs = {
       internal::ConvertToString::toString(std::forward<Args>(args))...
   };
-  return array(std::move(columnSpecs));
+  return group(std::move(columnSpecs));
 }
 
 template<typename ...Args>
@@ -1467,6 +1455,4 @@ TableHandle TableHandle::ungroup(bool nullFill, Args &&... args) const {
   };
   return ungroup(nullFill, std::move(groupByColumns));
 }
-}  // namespace highlevel
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::highlevel

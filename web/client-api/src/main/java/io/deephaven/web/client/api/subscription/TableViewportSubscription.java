@@ -1,5 +1,7 @@
 package io.deephaven.web.client.api.subscription;
 
+import elemental2.core.Int8Array;
+import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
@@ -10,10 +12,26 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_gen
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
+import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
-import io.deephaven.web.client.api.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
+import io.deephaven.web.client.api.Callbacks;
+import io.deephaven.web.client.api.Column;
+import io.deephaven.web.client.api.HasEventHandling;
+import io.deephaven.web.client.api.JsRangeSet;
+import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.TableData;
+import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
+import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.TableSnapshot;
@@ -23,7 +41,10 @@ import jsinterop.base.Js;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
 
+import static io.deephaven.web.client.api.barrage.BarrageUtils.makeUint8ArrayFromBitset;
+import static io.deephaven.web.client.api.barrage.BarrageUtils.serializeRanges;
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 /**
@@ -248,15 +269,41 @@ public class TableViewportSubscription extends HasEventHandling {
         // TODO #1039 slice rows and drop columns
         return copy.then(table -> {
             final ClientTableState state = table.state();
-            String[] columnTypes = Arrays.stream(state.getAllColumns())
-                    .map(Column::getType)
+            String[] columnTypes = Arrays.stream(state.getTableDef().getColumns())
+                    .map(ColumnDefinition::getType)
                     .toArray(String[]::new);
 
             final BitSet columnBitset = table.lastVisibleState().makeBitset(columns);
-            return Callbacks.<TableSnapshot, String>promise(this, c -> {
-                ResponseStreamWrapper<FlightData> stream =
-                        ResponseStreamWrapper.of(table.getConnection().flightServiceClient().doGet(
-                                Js.uncheckedCast(state.getHandle().makeTicket()), table.getConnection().metadata()));
+            return Callbacks.<TableSnapshot, String>promise(this, callback -> {
+                WorkerConnection connection = table.getConnection();
+                BiDiStream<FlightData, FlightData> stream = connection.<FlightData, FlightData>streamFactory().create(
+                        headers -> connection.flightServiceClient().doExchange(headers),
+                        (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
+                        (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers,
+                                c::apply),
+                        new FlightData());
+
+                Builder doGetRequest = new Builder(1024);
+                double columnsOffset = BarrageSubscriptionRequest.createColumnsVector(doGetRequest,
+                        makeUint8ArrayFromBitset(columnBitset));
+                double viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest, serializeRanges(
+                        Collections.singleton(rows.getRange())));
+                double serializationOptionsOffset = BarrageSnapshotOptions
+                        .createBarrageSnapshotOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0);
+                double tableTicketOffset =
+                        BarrageSubscriptionRequest.createTicketVector(doGetRequest, state.getHandle().getTicket());
+                BarrageSnapshotRequest.startBarrageSnapshotRequest(doGetRequest);
+                BarrageSnapshotRequest.addTicket(doGetRequest, tableTicketOffset);
+                BarrageSnapshotRequest.addColumns(doGetRequest, columnsOffset);
+                BarrageSnapshotRequest.addSnapshotOptions(doGetRequest, serializationOptionsOffset);
+                BarrageSnapshotRequest.addViewport(doGetRequest, viewportOffset);
+                doGetRequest.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(doGetRequest));
+
+                FlightData request = new FlightData();
+                request.setAppMetadata(
+                        BarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSnapshotRequest));
+                stream.send(request);
+                stream.end();
                 stream.onData(flightData -> {
 
                     Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
@@ -266,15 +313,27 @@ public class TableViewportSubscription extends HasEventHandling {
                     }
                     assert message.headerType() == MessageHeader.RecordBatch;
                     RecordBatch header = message.header(new RecordBatch());
-                    TableSnapshot snapshot = BarrageUtils.createSnapshot(header,
-                            BarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), null, true,
-                            columnTypes);
+                    Uint8Array appMetadataBytes = flightData.getAppMetadata_asU8();
+                    BarrageUpdateMetadata update = null;
+                    if (appMetadataBytes.length != 0) {
+                        BarrageMessageWrapper barrageMessageWrapper =
+                                BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
+                                        new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
+                                                appMetadataBytes));
 
-                    c.onSuccess(snapshot);
+                        update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
+                                new ByteBuffer(
+                                        new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
+                    }
+                    TableSnapshot snapshot = BarrageUtils.createSnapshot(header,
+                            BarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
+                            true,
+                            columnTypes);
+                    callback.onSuccess(snapshot);
                 });
                 stream.onStatus(status -> {
-                    if (status.isOk()) {
-                        c.onFailure(status.getDetails());
+                    if (!status.isOk()) {
+                        callback.onFailure(status.getDetails());
                     }
                 });
             }).then(defer()).then(snapshot -> {

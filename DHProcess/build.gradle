@@ -1,10 +1,14 @@
 import io.deephaven.tools.Tools
 
+plugins {
+  id 'io.deephaven.project.register'
+}
+
 dependencies {
   annotationProcessor 'org.immutables:value:2.8.1'
   compileOnly 'org.immutables:value-annotations:2.8.1'
 
-  compile ('com.github.oshi:oshi-core:5.3.6') {
+  compile ('com.github.oshi:oshi-core:5.8.3') {
     because 'it is able to greatly simplify collection of system information'
   }
 }

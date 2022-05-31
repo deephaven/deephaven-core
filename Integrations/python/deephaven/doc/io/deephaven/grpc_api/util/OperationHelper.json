@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.util.OperationHelper",
- "methods": {
-  "getSourceIds": ":param op: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation\n:return: java.util.stream.Stream<io.deephaven.proto.backplane.grpc.TableReference>"
- },
- "path": "io.deephaven.grpc_api.util.OperationHelper",
- "typeName": "class"
-}

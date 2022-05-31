@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator$BitSetGenerator",
- "methods": {
-  "addToFlatBuffer": ":param mine: java.util.BitSet\n:param builder: com.google.flatbuffers.FlatBufferBuilder\n:return: int"
- },
- "path": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator.BitSetGenerator",
- "typeName": "class"
-}

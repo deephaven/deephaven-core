@@ -1,7 +1,7 @@
 package io.deephaven.lang.completion
 
 import groovy.text.SimpleTemplateEngine
-import io.deephaven.db.util.VariableProvider
+import io.deephaven.engine.util.VariableProvider
 import io.deephaven.lang.generated.*
 import io.deephaven.lang.parse.CompletionParser
 import io.deephaven.lang.parse.LspTools

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.sort.findruns.ObjectFindRunsKernel",
+ "methods": {
+  "createContext": ":return: io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel",
+  "findRuns": "Find runs of two or more identical values in a sorted chunk.  This is used as part of an overall sort, after the\n timsort (or other sorting) kernel to identify the runs that must be sorted according to secondary keys.\n\n:param sortedValues: (io.deephaven.chunk.ObjectChunk) - a chunk of sorted values\n:param offsetsIn: (io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkPositions>) - the offsets within the chunk to check for runs\n:param lengthsIn: (io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkLengths>) - the lengths parallel to offsetsIn for run checking\n:param offsetsOut: (io.deephaven.chunk.WritableIntChunk<io.deephaven.chunk.attributes.ChunkPositions>) - an output chunk, with offsets of starting locations that a run occurred\n:param lengthsOut: (io.deephaven.chunk.WritableIntChunk<io.deephaven.chunk.attributes.ChunkLengths>) - an output chunk, parallel to offsetsOut, with the lengths of found runs\n\n Note, that lengthsIn must contain values greater than 1, and lengthsOut additionally only contain values greater than one",
+  "findRunsSingles": "Find runs of identical values in a sorted chunk.  If a single value exists, it is included as run of length 1.\n\n:param sortedValues: (io.deephaven.chunk.ObjectChunk) - a chunk of sorted values\n:param offsetsOut: (io.deephaven.chunk.WritableIntChunk<io.deephaven.chunk.attributes.ChunkPositions>) - an output chunk, with offsets of starting locations that a run occurred\n:param lengthsOut: (io.deephaven.chunk.WritableIntChunk<io.deephaven.chunk.attributes.ChunkLengths>) - an output chunk, parallel to offsetsOut, with the lengths of found runs"
+ },
+ "path": "io.deephaven.engine.table.impl.sort.findruns.ObjectFindRunsKernel",
+ "typeName": "class"
+}

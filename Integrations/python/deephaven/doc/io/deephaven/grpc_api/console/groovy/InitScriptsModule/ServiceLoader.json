@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.console.groovy.InitScriptsModule$ServiceLoader",
- "methods": {
-  "providesRunScriptLogic": ":return: io.deephaven.db.util.GroovyDeephavenSession.RunScripts"
- },
- "path": "io.deephaven.grpc_api.console.groovy.InitScriptsModule.ServiceLoader",
- "typeName": "interface"
-}

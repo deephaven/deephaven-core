@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.NotificationStepReceiver",
+ "methods": {
+  "setLastNotificationStep": "Deliver a last notification step to this receiver.\n\n:param lastNotificationStep: (long) - The last notification step to be delivered"
+ },
+ "path": "io.deephaven.engine.table.impl.NotificationStepReceiver",
+ "text": "Used by swap listeners to set the notification step of elements in our DAG.",
+ "typeName": "interface"
+}

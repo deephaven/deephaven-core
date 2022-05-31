@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.TableKeyStateRegistry",
+ "methods": {
+  "computeIfAbsent": "Get (or create if none exists) a value for the supplied TableKey.\n\n:param tableKey: (io.deephaven.engine.table.impl.locations.TableKey) - The table key\n:param valueFactory: java.util.function.Function<io.deephaven.engine.table.impl.locations.TableKey,TableKeyStateRegistry.VALUE_TYPE>\n:return: (TableKeyStateRegistry.VALUE_TYPE) The associated value",
+  "forEach": ":param consumer: java.util.function.Consumer<TableKeyStateRegistry.VALUE_TYPE>"
+ },
+ "path": "io.deephaven.engine.table.impl.TableKeyStateRegistry",
+ "text": "A registry for states keyed by TableKey.",
+ "typeName": "class"
+}

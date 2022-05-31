@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.KeyedTableListener",
+ "methods": {
+  "getIndex": ":param key: io.deephaven.datastructures.util.SmartKey\n:return: long",
+  "getRow": "*Overload 1*  \n  :param keyValues: java.lang.Object...\n  :return: java.lang.Object[]\n  \n*Overload 2*  \n  :param key: io.deephaven.datastructures.util.SmartKey\n  :return: java.lang.Object[]\n  \n*Overload 3*  \n  :param key: io.deephaven.datastructures.util.SmartKey\n  :param columnNames: java.lang.String...\n  :return: java.lang.Object[]",
+  "getRowAtIndex": "*Overload 1*  \n  :param index: long\n  :return: java.lang.Object[]\n  \n*Overload 2*  \n  :param index: long\n  :param columnNames: java.lang.String...\n  :return: java.lang.Object[]",
+  "getTableRow": ":param key: io.deephaven.datastructures.util.SmartKey\n:return: long",
+  "subscribe": "*Overload 1*  \n  :param key: io.deephaven.datastructures.util.SmartKey\n  :param listener: io.deephaven.engine.table.impl.KeyedTableListener.KeyUpdateListener\n  \n*Overload 2*  \n  :param key: io.deephaven.datastructures.util.SmartKey\n  :param listener: io.deephaven.engine.table.impl.KeyedTableListener.KeyUpdateListener\n  :param replayInitialData: boolean",
+  "unsubscribe": ":param key: io.deephaven.datastructures.util.SmartKey\n:param listener: io.deephaven.engine.table.impl.KeyedTableListener.KeyUpdateListener"
+ },
+ "path": "io.deephaven.engine.table.impl.KeyedTableListener",
+ "typeName": "class"
+}

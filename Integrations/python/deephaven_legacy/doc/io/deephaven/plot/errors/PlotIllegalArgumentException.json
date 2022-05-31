@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.errors.PlotIllegalArgumentException",
+ "methods": {},
+ "path": "io.deephaven.plot.errors.PlotIllegalArgumentException",
+ "text": "IllegalArgumentException that contains information about the plot.",
+ "typeName": "class"
+}

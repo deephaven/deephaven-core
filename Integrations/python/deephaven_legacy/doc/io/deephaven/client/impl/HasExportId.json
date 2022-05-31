@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.client.impl.HasExportId",
+ "methods": {
+  "exportId": "Get the export ID.\n\n:return: (io.deephaven.client.impl.ExportId) the export ID"
+ },
+ "path": "io.deephaven.client.impl.HasExportId",
+ "typeName": "interface"
+}

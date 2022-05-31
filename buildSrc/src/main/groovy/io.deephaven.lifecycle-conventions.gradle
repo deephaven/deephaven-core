@@ -1,0 +1,8 @@
+def quickTask = project.tasks.register('quick') {
+    group = 'Deephaven lifecycle'
+    description = 'A lifecycle task meant to be a "quick" subset of the check task.'
+}
+
+project.tasks
+        .getByName(LifecycleBasePlugin.CHECK_TASK_NAME)
+        .dependsOn quickTask

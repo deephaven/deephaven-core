@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.plot.datasets.xy.XYDataSeriesFunction",
+ "methods": {
+  "funcNPoints": "Sets the number of data points in this dataset.\n\n:param npoints: (int) - number of points\n:return: (io.deephaven.plot.datasets.xy.XYDataSeriesFunction) this data series with the specified number of points.",
+  "funcRange": "Sets the data range for this series.\n\n*Overload 1*  \n  :param xmin: (double) - range minimum\n  :param xmax: (double) - range maximum\n  :return: (io.deephaven.plot.datasets.xy.XYDataSeriesFunction) this data series with the new range\n  \n*Overload 2*  \n  :param xmin: (double) - range minimum\n  :param xmax: (double) - range maximum\n  :param npoints: (int) - number of data points\n  :return: (io.deephaven.plot.datasets.xy.XYDataSeriesFunction) this data series with the new range"
+ },
+ "path": "io.deephaven.plot.datasets.xy.XYDataSeriesFunction",
+ "text": "XYDataSeries based on a function.\n\n By default, this calculates at least 200 data points inside the plot's existing range. The number of points can be\n increased for a finer grained plot, or decreased if less resolution is needed. The points are recomputed as the\n Chart's x-range changes.",
+ "typeName": "interface"
+}

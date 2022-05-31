@@ -1,21 +1,12 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.TableHandle.TableHandleException;
-import io.deephaven.grpc_api.util.FlightExportTicketHelper;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.qst.table.NewTable;
-import io.deephaven.qst.table.TicketTable;
 import io.grpc.ManagedChannel;
-import org.apache.arrow.flight.AsyncPutListener;
-import org.apache.arrow.flight.Criteria;
-import org.apache.arrow.flight.FlightClient;
-import org.apache.arrow.flight.FlightClient.ClientStreamListener;
-import org.apache.arrow.flight.FlightDescriptor;
-import org.apache.arrow.flight.FlightGrpcUtilsExtension;
-import org.apache.arrow.flight.FlightInfo;
-import org.apache.arrow.flight.FlightStream;
-import org.apache.arrow.flight.Ticket;
+import org.apache.arrow.flight.*;
 import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.util.Collections;
@@ -51,31 +42,56 @@ public class FlightSession implements AutoCloseable {
     }
 
     /**
+     * Create a schema from the existing handle's response.
+     *
+     * <p>
+     * Equivalent to {@code SchemaHelper.schema(handle.response())}.
+     *
+     * @param handle the handle
+     * @return the schema
+     * @see SchemaHelper#schema(ExportedTableCreationResponse)
+     */
+    public Schema schema(TableHandle handle) {
+        return SchemaHelper.schema(handle.response());
+    }
+
+    /**
      * Perform a GetSchema to get the schema.
      *
-     * @param ticket the ticket
+     * @param pathId the path ID
      * @return the schema
      */
-    public Schema schema(HasTicket ticket) {
-        return client.getSchema(descriptor(ticket)).getSchema();
+    public Schema schema(HasPathId pathId) {
+        return FlightClientHelper.getSchema(client, pathId).getSchema();
     }
 
     /**
      * Perform a DoGet to fetch the data.
      *
-     * @param ticket the ticket
+     * @param ticketId the ticket
      * @return the stream
      */
-    public FlightStream stream(HasTicket ticket) {
-        return client.getStream(ticket(ticket));
+    public FlightStream stream(HasTicketId ticketId) {
+        return FlightClientHelper.get(client, ticketId);
     }
 
     /**
-     * Creates a new server side table, backed by the server semantics of DoPut, and returns an appropriate
-     * {@link TableHandle handle}.
+     * Creates a new server side DoExchange session.
+     *
+     * @param descriptor the FlightDescriptor object to include on the first FlightData message (other fields will
+     *        remain null)
+     * @param options the GRPC otions to apply to this call
+     * @return the bi-directional ReaderWriter object
+     */
+    public FlightClient.ExchangeReaderWriter startExchange(FlightDescriptor descriptor, CallOption... options) {
+        return client.doExchange(descriptor, options);
+    }
+
+    /**
+     * Creates a new server side exported table backed by the server semantics of DoPut with a {@link NewTable} payload.
      *
      * <p>
-     * For more advanced use cases, callers may use {@link #putTicket(NewTable, BufferAllocator)}.
+     * For more advanced use cases, callers may use {@link #putExportManual(NewTable, BufferAllocator)}.
      *
      * @param table the table
      * @param allocator the allocator
@@ -83,115 +99,198 @@ public class FlightSession implements AutoCloseable {
      * @throws TableHandleException if a handle exception occurs
      * @throws InterruptedException if the current thread is interrupted
      */
-    public TableHandle put(NewTable table, BufferAllocator allocator)
+    public TableHandle putExport(NewTable table, BufferAllocator allocator)
             throws TableHandleException, InterruptedException {
-        final io.deephaven.proto.backplane.grpc.Ticket ticket = putTicket(table, allocator);
+        final ExportId exportId = putExportManual(table, allocator);
         try {
             // By re-binding from the ticket via TicketTable, we are bringing the doPut table into the proper management
             // structure offered by session.
-            return session.execute(TicketTable.of(ticket.getTicket().toByteArray()));
+            return session.execute(exportId.ticketId().table());
         } finally {
             // We close our raw ticket, since our reference to it will be properly managed by the session now
-            release(ticket);
+            release(exportId);
         }
     }
 
     /**
-     * Creates a new server side table, backed by the server semantics of DoPut, and returns an appropriate
-     * {@link TableHandle handle}.
+     * Creates a new server side exported table backed by the server semantics of DoPut with a {@link FlightStream}
+     * payload.
      *
      * <p>
-     * For more advanced use cases, callers may use {@link #putTicket(FlightStream)}.
+     * For more advanced use cases, callers may use {@link #putExportManual(FlightStream)}.
      *
      * @param input the input
      * @return the table handle
      * @throws TableHandleException if a handle exception occurs
      * @throws InterruptedException if the current thread is interrupted
      */
-    public TableHandle put(FlightStream input) throws TableHandleException, InterruptedException {
-        final io.deephaven.proto.backplane.grpc.Ticket ticket = putTicket(input);
+    public TableHandle putExport(FlightStream input) throws TableHandleException, InterruptedException {
+        final ExportId export = putExportManual(input);
         try {
             // By re-binding from the ticket via TicketTable, we are bringing the doPut table into the proper management
             // structure offered by session.
-            return session.execute(TicketTable.of(ticket.getTicket().toByteArray()));
+            return session.execute(export.ticketId().table());
         } finally {
             // We close our raw ticket, since our reference to it will be properly managed by the session now
-            release(ticket);
+            release(export);
         }
     }
 
     /**
-     * Creates a new server side table, backed by the server semantics of DoPut, and returns the low-level
-     * {@link io.deephaven.proto.backplane.grpc.Ticket}. Callers are responsible for calling
-     * {@link #release(io.deephaven.proto.backplane.grpc.Ticket)}.
+     * Creates a new server side export table backed by the server semantics for DoPut with a {@link NewTable} payload.
+     * Callers are responsible for calling {@link #release(ExportId)}.
      *
      * <p>
-     * This method may be more efficient, depending on how the ticket is going to be used. If it will simply be bound to
-     * a ticket table, callers should prefer {@link #put(NewTable, BufferAllocator)}.
+     * This method may be more efficient, depending on how the export is going to be used. If it will simply be bound to
+     * another export table, callers should prefer {@link #putExport(NewTable, BufferAllocator)}.
      *
      * @param table the table
      * @param allocator the allocator
      * @return the ticket
      */
-    public io.deephaven.proto.backplane.grpc.Ticket putTicket(NewTable table, BufferAllocator allocator) {
-        final io.deephaven.proto.backplane.grpc.Ticket newTicket = session.newTicket();
-        final VectorSchemaRoot root = VectorSchemaRootAdapter.of(table, allocator);
-        final ClientStreamListener out =
-                client.startPut(descriptor(newTicket), root, new AsyncPutListener());
+    public ExportId putExportManual(NewTable table, BufferAllocator allocator) {
+        final ExportId exportTicket = session.newExportId();
         try {
-            out.putNext();
-            root.clear();
-            out.completed();
-            out.getResult();
-            return newTicket;
+            put(exportTicket, table, allocator);
         } catch (Throwable t) {
-            session.release(newTicket);
+            session.release(exportTicket);
             throw t;
         }
+        return exportTicket;
     }
 
     /**
-     * Creates a new server side table, backed by the server semantics of DoPut, and returns the low-level
-     * {@link io.deephaven.proto.backplane.grpc.Ticket}. Callers are responsible for calling
-     * {@link #release(io.deephaven.proto.backplane.grpc.Ticket)}.
+     * Creates a new server side export table backed by the server semantics for DoPut with a {@link FlightStream}
+     * payload. Callers are responsible for calling {@link #release(ExportId)}.
      *
      * <p>
      * This method may be more efficient, depending on how the ticket is going to be used. If it will simply be bound to
-     * a ticket table, callers should prefer {@link #put(FlightStream)}.
+     * a ticket table, callers should prefer {@link #putExport(FlightStream)}.
      *
      * @param input the input
-     * @return the ticket
+     * @return the export ID
      */
-    public io.deephaven.proto.backplane.grpc.Ticket putTicket(FlightStream input) {
-        final io.deephaven.proto.backplane.grpc.Ticket newTicket = session.newTicket();
-        final ClientStreamListener out =
-                client.startPut(descriptor(newTicket), input.getRoot(), new AsyncPutListener());
+    public ExportId putExportManual(FlightStream input) {
+        final ExportId exportTicket = session.newExportId();
         try {
-            while (input.next()) {
-                out.putNext();
-                input.getRoot().clear();
-            }
-            out.completed();
-            out.getResult();
-            return newTicket;
+            put(exportTicket, input);
         } catch (Throwable t) {
-            session.release(newTicket);
+            session.release(exportTicket);
             throw t;
         }
+        return exportTicket;
     }
 
     /**
-     * Releases the low-level {@code ticket}.
+     * Performs a DoPut against the {@code pathId} with a {@link FlightStream} payload.
+     *
+     * @param pathId the path ID
+     * @param input the input
+     */
+    public void put(HasPathId pathId, FlightStream input) {
+        FlightClientHelper.put(client, pathId, input);
+    }
+
+    /**
+     * Performs a DoPut against the {@code pathId} with a {@link NewTable} payload.
+     *
+     * @param pathId the path ID
+     * @param table the table
+     * @param allocator the allocator
+     */
+    public void put(HasPathId pathId, NewTable table, BufferAllocator allocator) {
+        FlightClientHelper.put(client, pathId, table, allocator);
+    }
+
+    /**
+     * Add {@code source} to the input table {@code destination}.
+     *
+     * @param destination the destination input table
+     * @param source the source
+     * @return the future
+     * @see #putExportManual(FlightStream)
+     * @see Session#addToInputTable(HasTicketId, HasTicketId)
+     */
+    public CompletableFuture<Void> addToInputTable(HasTicketId destination,
+            FlightStream source) {
+        // TODO: would be nice to implicitly addToInputTable for appropriate doPuts - one call instead of two
+        // https://github.com/deephaven/deephaven-core/discussions/1578
+        final ExportId exportId = putExportManual(source);
+        final CompletableFuture<Void> future = session.addToInputTable(destination, exportId);
+        future.whenComplete((result, error) -> release(exportId));
+        return future;
+    }
+
+    /**
+     * Add {@code source} to the input table {@code destination}.
+     *
+     * @param destination the destination input table
+     * @param source the source
+     * @return the future
+     * @see #putExportManual(NewTable, BufferAllocator)
+     * @see Session#addToInputTable(HasTicketId, HasTicketId)
+     */
+    public CompletableFuture<Void> addToInputTable(HasTicketId destination,
+            NewTable source, BufferAllocator allocator) {
+        // TODO: would be nice to implicitly addToInputTable for appropriate doPuts - one call instead of two
+        // https://github.com/deephaven/deephaven-core/discussions/1578
+        final ExportId exportId = putExportManual(source, allocator);
+        final CompletableFuture<Void> future = session.addToInputTable(destination, exportId);
+        future.whenComplete((result, error) -> release(exportId));
+        return future;
+    }
+
+    /**
+     * Delete {@code source} from the input table {@code destination}.
+     *
+     * @param destination the destination input table
+     * @param source the source
+     * @return the future
+     * @see #putExportManual(FlightStream)
+     * @see Session#deleteFromInputTable(HasTicketId, HasTicketId)
+     */
+    public CompletableFuture<Void> deleteFromInputTable(HasTicketId destination,
+            FlightStream source) {
+        // TODO: would be nice to implicitly addToInputTable for appropriate doPuts - one call instead of two
+        // https://github.com/deephaven/deephaven-core/discussions/1578
+        final ExportId exportId = putExportManual(source);
+        final CompletableFuture<Void> future = session.deleteFromInputTable(destination, exportId);
+        future.whenComplete((result, error) -> release(exportId));
+        return future;
+    }
+
+    /**
+     * Delete {@code source} from the input table {@code destination}.
+     *
+     * @param destination the destination input table
+     * @param source the source
+     * @return the future
+     * @see #putExportManual(NewTable, BufferAllocator)
+     * @see Session#deleteFromInputTable(HasTicketId, HasTicketId)
+     */
+    public CompletableFuture<Void> deleteFromInputTable(HasTicketId destination,
+            NewTable source,
+            BufferAllocator allocator) {
+        // TODO: would be nice to implicitly addToInputTable for appropriate doPuts - one call instead of two
+        // https://github.com/deephaven/deephaven-core/discussions/1578
+        final ExportId exportId = putExportManual(source, allocator);
+        final CompletableFuture<Void> future = session.deleteFromInputTable(destination, exportId);
+        future.whenComplete((result, error) -> release(exportId));
+        return future;
+    }
+
+    /**
+     * Releases the {@code exportId}.
      *
      * <p>
-     * Note: this should <b>only</b> be called in combination with tickets returned from
-     * {@link #putTicket(NewTable, BufferAllocator)} or {@link #putTicket(FlightStream)}.
+     * Note: this should <b>only</b> be called in combination with export IDs returned from
+     * {@link #putExportManual(NewTable, BufferAllocator)} or {@link #putExportManual(FlightStream)}.
      *
-     * @param ticket the ticket
+     * @param exportId the export ID
      * @return the future
      */
-    public CompletableFuture<Void> release(io.deephaven.proto.backplane.grpc.Ticket ticket) {
-        return session.release(ticket);
+    public CompletableFuture<Void> release(ExportId exportId) {
+        return session.release(exportId);
     }
 
     /**
@@ -206,28 +305,5 @@ public class FlightSession implements AutoCloseable {
     @Override
     public void close() throws InterruptedException {
         client.close();
-    }
-
-    private static FlightDescriptor descriptor(HasTicket ticket) {
-        return descriptor(ticket.ticket());
-    }
-
-    private static FlightDescriptor descriptor(io.deephaven.proto.backplane.grpc.Ticket ticket) {
-        return descriptor(FlightExportTicketHelper.ticketToDescriptor(ticket, "export"));
-    }
-
-    private static FlightDescriptor descriptor(org.apache.arrow.flight.impl.Flight.FlightDescriptor impl) {
-        switch (impl.getType()) {
-            case PATH:
-                return FlightDescriptor.path(impl.getPathList());
-            case CMD:
-                return FlightDescriptor.command(impl.getCmd().toByteArray());
-            default:
-                throw new IllegalArgumentException("Unexpected type " + impl.getTypeValue());
-        }
-    }
-
-    private static Ticket ticket(HasTicket ticket) {
-        return new Ticket(ticket.ticket().getTicket().toByteArray());
     }
 }

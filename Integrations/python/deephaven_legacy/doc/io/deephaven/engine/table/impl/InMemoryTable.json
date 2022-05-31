@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.InMemoryTable",
+ "methods": {
+  "from": "Defers to ArrayBackedColumnSource.from(io.deephaven.qst.array.Array) to construct the appropriate\n column sources (this involves copying the data).\n\n*Overload 1*  \n  :param table: (io.deephaven.qst.table.NewTable) - the new table qst\n  :return: (io.deephaven.engine.table.impl.InMemoryTable) the in memory table\n  \n*Overload 2*  \n  :param definition: io.deephaven.engine.table.TableDefinition\n  :param rowSet: io.deephaven.engine.rowset.TrackingRowSet\n  :param columns: java.util.Map<java.lang.String,? extendsio.deephaven.engine.table.ColumnSource<?>>\n  :return: io.deephaven.engine.table.impl.InMemoryTable"
+ },
+ "path": "io.deephaven.engine.table.impl.InMemoryTable",
+ "typeName": "class"
+}

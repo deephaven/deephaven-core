@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.local.PrivilegedFileAccessUtil",
- "methods": {
-  "doFilesystemAction": "Wrap a filesystem operation (or series of them) as a privileged action.\n\n:param operation: (java.lang.Runnable) - The operation to wrap"
- },
- "path": "io.deephaven.db.v2.locations.local.PrivilegedFileAccessUtil",
- "typeName": "class"
-}

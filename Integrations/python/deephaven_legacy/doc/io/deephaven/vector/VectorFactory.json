@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.vector.VectorFactory",
+ "methods": {
+  "forElementType": ":param clazz: java.lang.Class<?>\n:return: io.deephaven.vector.VectorFactory",
+  "valueOf": "Returns the enum constant of this type with the specified name.\nThe string must match exactly an identifier used to declare an\nenum constant in this type.  (Extraneous whitespace characters are \nnot permitted.)\n\n:param name: (java.lang.String) - the name of the enum constant to be returned.\n:return: (io.deephaven.vector.VectorFactory) the enum constant with the specified name",
+  "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.vector.VectorFactory[]) an array containing the constants of this enum type, in the order they are declared",
+  "vectorWrap": "*Overload 1*  \n  :param array: java.lang.Object\n  :return: io.deephaven.vector.Vector\n  \n*Overload 2*  \n  :param array: java.lang.Object\n  :param offset: int\n  :param capacity: int\n  :return: io.deephaven.vector.Vector"
+ },
+ "path": "io.deephaven.vector.VectorFactory",
+ "text": "Factory for wrapping native arrays as Vector instances.",
+ "typeName": "enum"
+}

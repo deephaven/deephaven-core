@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionByte$Null",
+ "methods": {
+  "getByte": "Get a single byte from this region.\n\n:param elementIndex: (long) - Element row key in the table's address space\n:return: (byte) The byte value at the specified element row key",
+  "getBytes": "Get a range of bytes from this region. Implementations are not required to verify that the range specified is\n meaningful.\n\n:param firstElementIndex: (long) - First element row keyt in the table's address space\n:param destination: (byte[]) - Array to store results\n:param destinationOffset: (int) - Offset into destination to begin storing at\n:param length: (int) - Number of bytes to get\n:return: (byte[]) destination, to enable method chaining"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionByte.Null",
+ "typeName": "class"
+}

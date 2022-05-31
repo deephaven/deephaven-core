@@ -1,9 +1,9 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.ConsoleSession;
+import io.deephaven.client.impl.FieldInfo;
 import io.deephaven.client.impl.Session;
 import io.deephaven.client.impl.script.Changes;
-import io.deephaven.client.impl.script.VariableDefinition;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Option;
 
@@ -51,17 +51,17 @@ abstract class ConsoleExampleBase extends SingleSessionExampleBase {
         if (changes.isEmpty()) {
             sb.append("No displayable variables updated").append(System.lineSeparator());
         } else {
-            for (VariableDefinition variableDefinition : changes.created()) {
-                sb.append(variableDefinition.type()).append(' ').append(variableDefinition.title()).append(" = <new>")
+            for (FieldInfo fieldInfo : changes.changes().created()) {
+                sb.append(fieldInfo.type().orElse("?")).append(' ').append(fieldInfo.name()).append(" = <new>")
                         .append(System.lineSeparator());
             }
-            for (VariableDefinition variableDefinition : changes.updated()) {
-                sb.append(variableDefinition.type()).append(' ').append(variableDefinition.title())
+            for (FieldInfo fieldInfo : changes.changes().updated()) {
+                sb.append(fieldInfo.type().orElse("?")).append(' ').append(fieldInfo.name())
                         .append(" = <updated>")
                         .append(System.lineSeparator());
             }
-            for (VariableDefinition variableDefinition : changes.removed()) {
-                sb.append(variableDefinition.type()).append(' ').append(variableDefinition.title()).append(" <removed>")
+            for (FieldInfo fieldInfo : changes.changes().removed()) {
+                sb.append(fieldInfo.type().orElse("?")).append(' ').append(fieldInfo.name()).append(" <removed>")
                         .append(System.lineSeparator());
             }
         }

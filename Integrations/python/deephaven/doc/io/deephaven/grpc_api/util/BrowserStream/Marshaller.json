@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.util.BrowserStream$Marshaller",
- "methods": {
-  "onError": ":param err: java.lang.Throwable",
-  "onMessageReceived": ":param message: BrowserStream.Marshaller.T"
- },
- "path": "io.deephaven.grpc_api.util.BrowserStream.Marshaller",
- "typeName": "interface"
-}

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.FloatRangeFilter",
+ "methods": {
+  "copy": "Create a copy of this WhereFilter.\n\n:return: (io.deephaven.engine.table.impl.select.FloatRangeFilter) an independent copy of this WhereFilter.",
+  "init": "Initialize this select filter given the table definition\n\n:param tableDefinition: (io.deephaven.engine.table.TableDefinition) - the definition of the table that will be filtered",
+  "makeRange": ":param columnName: java.lang.String\n:param val: java.lang.String\n:return: io.deephaven.engine.table.impl.select.WhereFilter",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.select.FloatRangeFilter",
+ "typeName": "class"
+}

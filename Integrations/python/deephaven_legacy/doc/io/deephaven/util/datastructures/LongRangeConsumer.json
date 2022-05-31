@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.util.datastructures.LongRangeConsumer",
+ "methods": {
+  "accept": "Provides a range to this consumer. As consecutive calls to accept are made, delivered ranges are assumed to be\n non overlapping and increasing in their first value; in particular, the first of a range has to be strictly\n greater than the last of the previous range.\n\n:param first: (long) - the range first value.\n:param last: (long) - the range last value."
+ },
+ "path": "io.deephaven.util.datastructures.LongRangeConsumer",
+ "typeName": "interface"
+}

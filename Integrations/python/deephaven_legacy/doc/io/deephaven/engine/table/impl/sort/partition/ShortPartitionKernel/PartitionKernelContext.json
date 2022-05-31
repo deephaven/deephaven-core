@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sort.partition.ShortPartitionKernel$PartitionKernelContext",
+ "methods": {
+  "getPartitions": ":param resetBuilders: boolean\n:return: io.deephaven.engine.rowset.RowSet[]",
+  "getPivots": ":return: io.deephaven.tuple.generated.ShortLongTuple[]"
+ },
+ "path": "io.deephaven.engine.table.impl.sort.partition.ShortPartitionKernel.PartitionKernelContext",
+ "typeName": "class"
+}

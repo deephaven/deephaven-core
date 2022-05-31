@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.chunk.ResettableChunkChunk",
+ "methods": {
+  "asResettableBooleanChunkChunk": ":return: io.deephaven.chunk.ResettableBooleanChunkChunk<ResettableChunkChunk.ATTR>",
+  "asResettableByteChunkChunk": ":return: io.deephaven.chunk.ResettableByteChunkChunk<ResettableChunkChunk.ATTR>",
+  "asResettableCharChunkChunk": ":return: io.deephaven.chunk.ResettableCharChunkChunk<ResettableChunkChunk.ATTR>",
+  "asResettableDoubleChunkChunk": ":return: io.deephaven.chunk.ResettableDoubleChunkChunk<ResettableChunkChunk.ATTR>",
+  "asResettableFloatChunkChunk": ":return: io.deephaven.chunk.ResettableFloatChunkChunk<ResettableChunkChunk.ATTR>",
+  "asResettableIntChunkChunk": ":return: io.deephaven.chunk.ResettableIntChunkChunk<ResettableChunkChunk.ATTR>",
+  "asResettableLongChunkChunk": ":return: io.deephaven.chunk.ResettableLongChunkChunk<ResettableChunkChunk.ATTR>",
+  "asResettableObjectChunkChunk": "Note: Java generics information - <T>\n\n:return: io.deephaven.chunk.ResettableObjectChunkChunk<T,ResettableChunkChunk.ATTR>",
+  "asResettableShortChunkChunk": ":return: io.deephaven.chunk.ResettableShortChunkChunk<ResettableChunkChunk.ATTR>",
+  "resetFromArray": "Reset the data and bounds of this chunk to a range or sub-range of the specified array.\n\n:param array: (java.lang.Object) - The array\n:param offset: (int) - The offset into array\n:param capacity: (int) - The capacity this should have after reset",
+  "resetFromChunk": "Reset the data and bounds of this chunk to a range or sub-range of the specified ChunkChunk.\n\n:param other: (io.deephaven.chunk.ChunkChunk<ResettableChunkChunk.ATTR>) - The other ChunkChunk\n:param offset: (int) - The offset into other\n:param capacity: (int) - The capacity this should have after reset"
+ },
+ "path": "io.deephaven.chunk.ResettableChunkChunk",
+ "text": "ChunkChunk that may have its backing storage reset to a slice of that belonging to another ChunkChunk\n or a native array.",
+ "typeName": "interface"
+}

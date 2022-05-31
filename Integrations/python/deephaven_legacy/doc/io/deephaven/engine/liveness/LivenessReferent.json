@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.liveness.LivenessReferent",
+ "methods": {
+  "dropReference": "Drop a previously-retained reference to this referent.",
+  "getReferentDescription": "Get a name that is suitable for uniquely identifying this LivenessReferent in debug and error messages.\n This is usually not the same as Object.toString().\n\n:return: (java.lang.String) A unique name for this referent for debugging and error message purposes",
+  "getWeakReference": "Get a WeakReference to this referent. This may be cached, or newly created.\n\n:return: (java.lang.ref.WeakReference<? extends io.deephaven.engine.liveness.LivenessReferent>) A new or cached reference to this referent",
+  "retainReference": "Record a reference to this LivenessReferent, which must later be dropped.",
+  "tryRetainReference": "If this referent is \"live\", behave as retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+ },
+ "path": "io.deephaven.engine.liveness.LivenessReferent",
+ "text": "Interface for objects that continue to \"live\" while retained by a LivenessManager.",
+ "typeName": "interface"
+}

@@ -54,7 +54,7 @@ class TestJpy(unittest.TestCase):
 
   def test_has_gil(self):
     PyLib = jpy.get_type('org.jpy.PyLib')
-    self.assertTrue(PyLib.hasGil())
+    self.assertFalse(PyLib.hasGil())
 
   def test_reenter_python(self):
     ReenterPython = jpy.get_type('io.deephaven.jpy.integration.ReenterPython')
@@ -111,6 +111,81 @@ class TestJpy(unittest.TestCase):
     self.assertEqual(get_refcount(mv_id), mv_refcount + 1)
     np_array = None
     self.assertEqual(get_refcount(mv_id), mv_refcount)
+
+  def test_pyobject_unwrap(self):
+    class CustomClass:
+      def __init__(self):
+        pass
+
+    obj = CustomClass()
+    obj_id = id(obj)
+    self.assertEqual(get_refcount(obj_id), 1)
+
+    # Note: a temporary PyObject is created, and that holds onto a ref until Java GCs.
+    # While the following counts are racy, it is probably very rare to fail here.
+    echo = jpy.get_type('io.deephaven.jpy.integration.Echo').echo(obj)
+    self.assertTrue(obj is echo)
+    self.assertEqual(get_refcount(obj_id), 3)
+
+    del obj
+    self.assertEqual(get_refcount(obj_id), 2)
+
+    del echo
+    self.assertEqual(get_refcount(obj_id), 1)
+
+  def test_pyobject_unwrap_via_array(self):
+    # Very similar to test_pyobject_unwrap, but we are doing the unwrapping via array
+    class CustomClass:
+      def __init__(self):
+        pass
+
+    obj = CustomClass()
+    obj_id = id(obj)
+    self.assertEqual(get_refcount(obj_id), 1)
+
+    obj_in_array = jpy.array('org.jpy.PyObject', [obj])
+    self.assertEqual(get_refcount(obj_id), 2)
+
+    extracted_obj = obj_in_array[0]
+    self.assertTrue(obj is extracted_obj)
+    self.assertEqual(get_refcount(obj_id), 3)
+
+    del extracted_obj
+    self.assertEqual(get_refcount(obj_id), 2)
+
+    del obj
+    self.assertEqual(get_refcount(obj_id), 1)
+
+    # Note: the ref count will not decrease until Java GCs and PyObject does the decRef.
+    # While this del + check is racy, it is probably very rare to fail here.
+    del obj_in_array
+    self.assertEqual(get_refcount(obj_id), 1)
+
+
+  def test_pyproxy_unwrap(self):
+    class SomeJavaInterfaceImpl:
+      def __init__(self):
+        pass
+
+      def foo(self, bar, baz):
+        return bar + baz
+
+    obj = SomeJavaInterfaceImpl()
+    obj_id = id(obj)
+    self.assertEqual(get_refcount(obj_id), 1)
+
+    # Note: a temporary PyObject is created, and that holds onto a ref until Java GCs.
+    # While the following counts are racy, it is probably very rare to fail here.
+    obj_proxy = jpy.get_type('io.deephaven.jpy.integration.SomeJavaInterface').proxy(obj)
+    self.assertTrue(obj is obj_proxy)
+    self.assertEqual(get_refcount(obj_id), 3)
+
+    del obj
+    self.assertEqual(get_refcount(obj_id), 2)
+
+    del obj_proxy
+    self.assertEqual(get_refcount(obj_id), 1)
+
 
 def get_refcount(obj_id):
   import ctypes

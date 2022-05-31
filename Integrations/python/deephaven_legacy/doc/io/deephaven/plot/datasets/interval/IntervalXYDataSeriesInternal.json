@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.plot.datasets.interval.IntervalXYDataSeriesInternal",
+ "methods": {
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.plot.AxesImpl) - new axes.\n:return: (io.deephaven.plot.datasets.interval.IntervalXYDataSeriesInternal) copy of the series on a different set of axes.",
+  "getEndX": "Gets the right-most point of the bar.\n\n:param item: (int) - index\n:return: (double) right-most point of the bar",
+  "getEndY": "Gets the top-most point of the bar.\n\n:param item: (int) - index\n:return: (double) top-most point of the bar",
+  "getStartX": "Gets the left-most point of the bar.\n\n:param item: (int) - index\n:return: (double) left-most point of the bar",
+  "getStartY": "Gets the bottom-most point of the bar.\n\n:param item: (int) - index\n:return: (double) bottom-most point of the bar"
+ },
+ "path": "io.deephaven.plot.datasets.interval.IntervalXYDataSeriesInternal",
+ "text": "XYDataSeriesInternal suitable for bar charts.",
+ "typeName": "interface"
+}

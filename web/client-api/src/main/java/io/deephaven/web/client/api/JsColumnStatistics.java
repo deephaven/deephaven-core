@@ -53,7 +53,7 @@ public class JsColumnStatistics {
         statisticsMap = new JsMap<>();
         statisticsMap.set(StatType.SIZE.getDisplayName(), (double) statistics.getSize());
         if (statistics.getType() == ColumnStatistics.ColumnType.NUMERIC) {
-            // Mimics io.deephaven.console.db.GenerateNumericalStatsFunction.statsResultToString
+            // Mimics io.deephaven.console.engine.GenerateNumericalStatsFunction.statsResultToString
             if (statistics.getCount() > 0) {
                 statisticsMap.set(StatType.SUM.getDisplayName(), statistics.getSum());
                 statisticsMap.set(StatType.SUM_ABS.getDisplayName(), statistics.getAbsSum());

@@ -10,20 +10,25 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.select.MatchPair;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.NameValidator;
-import io.deephaven.db.util.ColumnFormattingValues;
-import io.deephaven.db.util.config.MutableInputTable;
-import io.deephaven.db.v2.HierarchicalTableInfo;
-import io.deephaven.db.v2.RollupInfo;
-import io.deephaven.db.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
+import io.deephaven.proto.flight.util.MessageHelper;
+import io.deephaven.proto.flight.util.SchemaHelper;
+import io.deephaven.time.DateTime;
+import io.deephaven.api.util.NameValidator;
+import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.config.MutableInputTable;
+import io.deephaven.engine.table.impl.HierarchicalTableInfo;
+import io.deephaven.engine.table.impl.RollupInfo;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.Vector;
 import org.apache.arrow.flatbuf.KeyValue;
-import org.apache.arrow.flatbuf.Message;
-import org.apache.arrow.flatbuf.MetadataVersion;
 import org.apache.arrow.util.Collections2;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
@@ -35,18 +40,24 @@ import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
 public class BarrageUtil {
-    // per flight specification: 0xFFFFFFFF value is the first 4 bytes of a valid IPC message
-    private static final int IPC_CONTINUATION_TOKEN = -1;
 
     public static final long FLATBUFFER_MAGIC = 0x6E687064;
 
@@ -55,7 +66,19 @@ public class BarrageUtil {
     // hour, minute, second are each one byte, nano is 4 bytes
     public static final ArrowType.FixedSizeBinary LOCAL_TIME_TYPE = new ArrowType.FixedSizeBinary(7);
 
+    /**
+     * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
+     * at all. It's very important that we mark these times as UTC.
+     */
+    public static final ArrowType.Timestamp NANO_SINCE_EPOCH_TYPE =
+            new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC");
+
     private static final int ATTR_STRING_LEN_CUTOFF = 1024;
+
+    private static final String ATTR_DH_PREFIX = "deephaven:";
+    private static final String ATTR_ATTR_TAG = "attribute";
+    private static final String ATTR_TYPE_TAG = "type";
+    private static final String ATTR_COMPONENT_TYPE_TAG = "componentType";
 
     /**
      * These are the types that get special encoding but are otherwise not primitives. TODO (core#58): add custom
@@ -65,22 +88,8 @@ public class BarrageUtil {
             BigDecimal.class,
             BigInteger.class,
             String.class,
-            DBDateTime.class,
+            DateTime.class,
             Boolean.class));
-
-    public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset, final byte headerType) {
-        return wrapInMessage(builder, headerOffset, headerType, 0);
-    }
-
-    public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset, final byte headerType,
-            final int bodyLength) {
-        Message.startMessage(builder);
-        Message.addHeaderType(builder, headerType);
-        Message.addHeader(builder, headerOffset);
-        Message.addVersion(builder, MetadataVersion.V5);
-        Message.addBodyLength(builder, bodyLength);
-        return Message.endMessage(builder);
-    }
 
     public static ByteString schemaBytesFromTable(final Table table) {
         return schemaBytesFromTable(table.getDefinition(), table.getAttributes());
@@ -93,30 +102,10 @@ public class BarrageUtil {
 
         final FlatBufferBuilder builder = new FlatBufferBuilder();
         final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table, attributes);
-        builder.finish(wrapInMessage(builder, schemaOffset,
+        builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
                 org.apache.arrow.flatbuf.MessageHeader.Schema));
 
-        final ByteBuffer msg = builder.dataBuffer();
-
-        int padding = msg.remaining() % 8;
-        if (padding != 0) {
-            padding = 8 - padding;
-        }
-
-        // 4 * 2 is for two ints; IPC_CONTINUATION_TOKEN followed by size of schema payload
-        final byte[] byteMsg = new byte[msg.remaining() + 4 * 2 + padding];
-        intToBytes(IPC_CONTINUATION_TOKEN, byteMsg, 0);
-        intToBytes(msg.remaining(), byteMsg, 4);
-        msg.get(byteMsg, 8, msg.remaining());
-
-        return ByteStringAccess.wrap(byteMsg);
-    }
-
-    private static void intToBytes(int value, byte[] bytes, int offset) {
-        bytes[offset + 3] = (byte) (value >>> 24);
-        bytes[offset + 2] = (byte) (value >>> 16);
-        bytes[offset + 1] = (byte) (value >>> 8);
-        bytes[offset] = (byte) (value);
+        return ByteStringAccess.wrap(MessageHelper.toIpcBytes(builder));
     }
 
     public static int makeSchemaPayload(final FlatBufferBuilder builder,
@@ -140,6 +129,7 @@ public class BarrageUtil {
         final Map<String, String> schemaMetadata = new HashMap<>();
 
         // copy primitives as strings
+        Set<String> unsentAttributes = new HashSet<>();
         for (final Map.Entry<String, Object> entry : attributes.entrySet()) {
             final String key = entry.getKey();
             final Object val = entry.getValue();
@@ -147,15 +137,19 @@ public class BarrageUtil {
                     val instanceof Long || val instanceof Float || val instanceof Double ||
                     val instanceof Character || val instanceof Boolean ||
                     (val instanceof String && ((String) val).length() < ATTR_STRING_LEN_CUTOFF)) {
-                putMetadata(schemaMetadata, "attribute." + key, val.toString());
+                putMetadata(schemaMetadata, ATTR_ATTR_TAG + "." + key, val.toString());
+            } else {
+                unsentAttributes.add(key);
             }
         }
 
         // copy rollup details
         if (attributes.containsKey(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE)) {
+            unsentAttributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
             final HierarchicalTableInfo hierarchicalTableInfo =
                     (HierarchicalTableInfo) attributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
-            final String hierarchicalSourceKeyPrefix = "attribute." + Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".";
+            final String hierarchicalSourceKeyPrefix =
+                    ATTR_ATTR_TAG + "." + Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".";
             putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "hierarchicalColumnName",
                     hierarchicalTableInfo.getHierarchicalColumnName());
             if (hierarchicalTableInfo instanceof RollupInfo) {
@@ -166,9 +160,15 @@ public class BarrageUtil {
 
                 // mark columns to indicate their sources
                 for (final MatchPair matchPair : rollupInfo.getMatchPairs()) {
-                    putMetadata(getExtraMetadata.apply(matchPair.left()), "rollup.sourceColumn", matchPair.right());
+                    putMetadata(getExtraMetadata.apply(matchPair.leftColumn()), "rollup.sourceColumn",
+                            matchPair.rightColumn());
                 }
             }
+        }
+
+        // note which attributes have a value we couldn't send
+        for (String unsentAttribute : unsentAttributes) {
+            putMetadata(schemaMetadata, "unsent." + ATTR_ATTR_TAG + "." + unsentAttribute, "");
         }
 
         final Map<String, Field> fields = new LinkedHashMap<>();
@@ -195,7 +195,7 @@ public class BarrageUtil {
     }
 
     private static void putMetadata(final Map<String, String> metadata, final String key, final String value) {
-        metadata.put("deephaven:" + key, value);
+        metadata.put(ATTR_DH_PREFIX + key, value);
     }
 
     private static boolean maybeConvertForTimeUnit(final TimeUnit unit, final ConvertedArrowSchema result,
@@ -219,7 +219,7 @@ public class BarrageUtil {
 
     private static Class<?> getDefaultType(
             final String name, final ArrowType arrowType, final ConvertedArrowSchema result, final int i) {
-        final String exMsg = "Schema did not include `deephaven:type` metadata for field ";
+        final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field ";
         switch (arrowType.getTypeID()) {
             case Int:
                 final ArrowType.Int intType = (ArrowType.Int) arrowType;
@@ -264,7 +264,7 @@ public class BarrageUtil {
                 final TimeUnit timestampUnit = timestampType.getUnit();
                 if (tz == null || "UTC".equals(tz)) {
                     if (maybeConvertForTimeUnit(timestampUnit, result, i)) {
-                        return DBDateTime.class;
+                        return DateTime.class;
                     }
                 }
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
@@ -294,8 +294,9 @@ public class BarrageUtil {
         public final int nCols;
         public TableDefinition tableDef;
         // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
-        // to the expected nanos value for DBDateTime.
+        // to the expected nanos value for DateTime.
         public int[] conversionFactors;
+        public Map<String, String> attributes;
 
         public ConvertedArrowSchema(final int nCols) {
             this.nCols = nCols;
@@ -310,6 +311,10 @@ public class BarrageUtil {
         result.conversionFactors[i] = factor;
     }
 
+    public static ConvertedArrowSchema convertArrowSchema(final ExportedTableCreationResponse response) {
+        return convertArrowSchema(SchemaHelper.flatbufSchema(response));
+    }
+
     public static ConvertedArrowSchema convertArrowSchema(
             final org.apache.arrow.flatbuf.Schema schema) {
         return convertArrowSchema(
@@ -322,6 +327,12 @@ public class BarrageUtil {
                         final KeyValue keyValue = field.customMetadata(j);
                         visitor.accept(keyValue.key(), keyValue.value());
                     }
+                },
+                visitor -> {
+                    for (int j = 0; j < schema.customMetadataLength(); j++) {
+                        final KeyValue keyValue = schema.customMetadata(j);
+                        visitor.accept(keyValue.key(), keyValue.value());
+                    }
                 });
     }
 
@@ -332,14 +343,16 @@ public class BarrageUtil {
                 i -> schema.getFields().get(i).getType(),
                 i -> visitor -> {
                     schema.getFields().get(i).getMetadata().forEach(visitor);
-                });
+                },
+                visitor -> schema.getCustomMetadata().forEach(visitor));
     }
 
     private static ConvertedArrowSchema convertArrowSchema(
             final int numColumns,
             final IntFunction<String> getName,
             final IntFunction<ArrowType> getArrowType,
-            final IntFunction<Consumer<BiConsumer<String, String>>> visitMetadata) {
+            final IntFunction<Consumer<BiConsumer<String, String>>> columnMetadataVisitor,
+            final Consumer<BiConsumer<String, String>> tableMetadataVisitor) {
         final ConvertedArrowSchema result = new ConvertedArrowSchema(numColumns);
         final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
 
@@ -349,14 +362,14 @@ public class BarrageUtil {
             final MutableObject<Class<?>> type = new MutableObject<>();
             final MutableObject<Class<?>> componentType = new MutableObject<>();
 
-            visitMetadata.apply(i).accept((key, value) -> {
-                if (key.equals("deephaven:type")) {
+            columnMetadataVisitor.apply(i).accept((key, value) -> {
+                if (key.equals(ATTR_DH_PREFIX + ATTR_TYPE_TAG)) {
                     try {
                         type.setValue(ClassUtil.lookupClass(value));
                     } catch (final ClassNotFoundException e) {
                         throw new UncheckedDeephavenException("Could not load class from schema", e);
                     }
-                } else if (key.equals("deephaven:componentType")) {
+                } else if (key.equals(ATTR_DH_PREFIX + ATTR_COMPONENT_TYPE_TAG)) {
                     try {
                         componentType.setValue(ClassUtil.lookupClass(value));
                     } catch (final ClassNotFoundException e) {
@@ -373,23 +386,51 @@ public class BarrageUtil {
         }
 
         result.tableDef = new TableDefinition(columns);
+
+        result.attributes = new HashMap<>();
+        tableMetadataVisitor.accept((key, value) -> {
+            final String prefix = ATTR_DH_PREFIX + ATTR_ATTR_TAG + ".";
+            if (!key.startsWith(prefix)) {
+                return;
+            }
+            result.attributes.put(key.substring(prefix.length()), value);
+        });
+
         return result;
+    }
+
+    private static boolean isTypeNativelySupported(final Class<?> typ) {
+        if (typ.isPrimitive() || TypeUtils.isBoxedType(typ) || supportedTypes.contains(typ)
+                || Vector.class.isAssignableFrom(typ)) {
+            return true;
+        }
+        if (typ.isArray()) {
+            return isTypeNativelySupported(typ.getComponentType());
+        }
+        return false;
     }
 
     private static Field arrowFieldFor(final String name, final ColumnDefinition<?> column, final String description,
             final MutableInputTable inputTable, final Map<String, String> extraMetadata) {
-        List<Field> children = Collections.emptyList();
-
         // is hidden?
         final Class<?> type = column.getDataType();
         final Class<?> componentType = column.getComponentType();
         final Map<String, String> metadata = new HashMap<>(extraMetadata);
 
-        if (type.isPrimitive() || supportedTypes.contains(type)) {
-            putMetadata(metadata, "type", type.getCanonicalName());
+        if (isTypeNativelySupported(type)) {
+            putMetadata(metadata, ATTR_TYPE_TAG, type.getCanonicalName());
+
+            if (componentType != null) {
+                if (isTypeNativelySupported(componentType)) {
+                    putMetadata(metadata, ATTR_COMPONENT_TYPE_TAG, componentType.getCanonicalName());
+                } else {
+                    // otherwise, it will be converted to a string
+                    putMetadata(metadata, ATTR_COMPONENT_TYPE_TAG, String.class.getCanonicalName());
+                }
+            }
         } else {
-            // otherwise will be converted to a string
-            putMetadata(metadata, "type", String.class.getCanonicalName());
+            // otherwise, it will be converted to a string
+            putMetadata(metadata, ATTR_TYPE_TAG, String.class.getCanonicalName());
         }
 
         // only one of these will be true, if any are true the column will not be visible
@@ -404,14 +445,25 @@ public class BarrageUtil {
             putMetadata(metadata, "description", description);
         }
         if (inputTable != null) {
-            putMetadata(metadata, "inputtable.isKey", Arrays.asList(inputTable.getKeyNames()).contains(name) + "");
+            putMetadata(metadata, "inputtable.isKey", inputTable.getKeyNames().contains(name) + "");
         }
 
-        final FieldType fieldType = arrowFieldTypeFor(type, componentType, metadata);
+        if (Vector.class.isAssignableFrom(type)) {
+            return arrowFieldForVectorType(name, type, componentType, metadata);
+        }
+
+        return arrowFieldFor(name, type, componentType, metadata);
+    }
+
+    private static Field arrowFieldFor(
+            final String name, final Class<?> type, final Class<?> componentType, final Map<String, String> metadata) {
+        List<Field> children = Collections.emptyList();
+
+        final FieldType fieldType = arrowFieldTypeFor(type, metadata);
         if (fieldType.getType().isComplex()) {
             if (type.isArray()) {
-                children = Collections.singletonList(
-                        new Field("", arrowFieldTypeFor(componentType, null, metadata), Collections.emptyList()));
+                children = Collections.singletonList(arrowFieldFor(
+                        "", componentType, componentType.getComponentType(), Collections.emptyMap()));
             } else {
                 throw new UnsupportedOperationException("Arrow Complex Type Not Supported: " + fieldType.getType());
             }
@@ -420,12 +472,14 @@ public class BarrageUtil {
         return new Field(name, fieldType, children);
     }
 
-    private static FieldType arrowFieldTypeFor(final Class<?> type, final Class<?> componentType,
-            final Map<String, String> metadata) {
-        return new FieldType(true, arrowTypeFor(type, componentType), null, metadata);
+    private static FieldType arrowFieldTypeFor(final Class<?> type, final Map<String, String> metadata) {
+        return new FieldType(true, arrowTypeFor(type), null, metadata);
     }
 
-    private static ArrowType arrowTypeFor(final Class<?> type, final Class<?> componentType) {
+    private static ArrowType arrowTypeFor(Class<?> type) {
+        if (TypeUtils.isBoxedType(type)) {
+            type = TypeUtils.getUnboxedType(type);
+        }
         final ChunkType chunkType = ChunkType.fromElementType(type);
         switch (chunkType) {
             case Boolean:
@@ -458,13 +512,26 @@ public class BarrageUtil {
                         || type == BigInteger.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
-                if (type == DBDateTime.class) {
-                    return Types.MinorType.BIGINT.getType();
+                if (type == DateTime.class) {
+                    return NANO_SINCE_EPOCH_TYPE;
                 }
 
                 // everything gets converted to a string
                 return Types.MinorType.VARCHAR.getType(); // aka Utf8
         }
         throw new IllegalStateException("No ArrowType for type: " + type + " w/chunkType: " + chunkType);
+    }
+
+    private static Field arrowFieldForVectorType(
+            final String name, final Class<?> type, final Class<?> knownComponentType,
+            final Map<String, String> metadata) {
+
+        // Vectors are always lists.
+        final FieldType fieldType = new FieldType(true, Types.MinorType.LIST.getType(), null, metadata);
+        final Class<?> componentType = VectorExpansionKernel.getComponentType(type, knownComponentType);
+        final List<Field> children = Collections.singletonList(arrowFieldFor(
+                "", componentType, componentType.getComponentType(), Collections.emptyMap()));
+
+        return new Field(name, fieldType, children);
     }
 }

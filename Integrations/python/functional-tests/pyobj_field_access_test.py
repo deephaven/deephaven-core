@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
 import unittest
-from deephaven import TableTools
+from deephaven_legacy import TableTools
 import bootstrap
 
 

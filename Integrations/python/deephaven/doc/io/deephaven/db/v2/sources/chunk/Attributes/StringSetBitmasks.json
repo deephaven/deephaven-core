@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.chunk.Attributes$StringSetBitmasks",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.chunk.Attributes.StringSetBitmasks",
- "text": "This chunk contains longs which are encoded StringSets as a bitnask.",
- "typeName": "interface"
-}

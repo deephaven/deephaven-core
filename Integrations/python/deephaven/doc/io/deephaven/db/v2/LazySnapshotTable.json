@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.LazySnapshotTable",
- "methods": {},
- "path": "io.deephaven.db.v2.LazySnapshotTable",
- "text": "This interface represents a table that will not update itself on the refresh cycle, but instead refresh itself when\n the refresh for snapshot is called.",
- "typeName": "interface"
-}

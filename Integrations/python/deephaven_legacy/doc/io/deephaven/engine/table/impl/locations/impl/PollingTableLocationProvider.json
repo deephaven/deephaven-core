@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.impl.PollingTableLocationProvider",
+ "methods": {
+  "getImplementationName": "Get a name for the implementing class. Useful for abstract classes that implement\n LogOutputAppendable or override toString.\n \n The default implementation is correct, but not suitable for high-frequency usage.\n\n:return: (java.lang.String) A name for the implementing class",
+  "refresh": "Initialize or run state information about the list of existing locations."
+ },
+ "path": "io.deephaven.engine.table.impl.locations.impl.PollingTableLocationProvider",
+ "text": "Polling-driven TableLocationProvider implementation that delegates location key\n discovery to a TableLocationKeyFinder and location creation to a\n TableLocationFactory.",
+ "typeName": "class"
+}

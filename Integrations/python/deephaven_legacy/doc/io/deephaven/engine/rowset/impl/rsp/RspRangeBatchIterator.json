@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.rsp.RspRangeBatchIterator",
+ "methods": {
+  "fillRangeChunk": "Fill a writable long chunk with pairs of range boundaries (start, endInclusive) starting from the next iterator\n position forward.\n\n:param chunk: (io.deephaven.chunk.WritableLongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges>) - A writable chunk to fill\n:param chunkOffset: (int) - An offset inside the chunk to the position to start writing\n:return: (int) The count of ranges written (which matches 2 times the number of elements written).",
+  "hasNext": ":return: boolean"
+ },
+ "path": "io.deephaven.engine.rowset.impl.rsp.RspRangeBatchIterator",
+ "typeName": "class"
+}

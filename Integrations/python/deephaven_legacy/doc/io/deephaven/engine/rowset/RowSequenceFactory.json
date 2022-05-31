@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.rowset.RowSequenceFactory",
+ "methods": {
+  "forRange": "Create and return a new RowSequence object from the supplied closed range.\n\n:param firstRowKey: (long) - The first row key (inclusive) in the range\n:param lastRowKey: (long) - The last row key (inclusive) in the range\n:return: (io.deephaven.engine.rowset.RowSequence) A new RowSequence object covering the requested range of row keys",
+  "takeKeyRangesChunkAndMakeRowSequence": "Create and return a new RowSequence object from the provided WritableLongChunk.\n\n:param longChunk: (io.deephaven.chunk.WritableLongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges>) - The input chunk. The returned object will take ownership of this\n        chunk.\n:return: (io.deephaven.engine.rowset.RowSequence) A new RowSequence object, who owns the passed chunk.",
+  "takeRowKeysChunkAndMakeRowSequence": "Create and return a new RowSequence object from the provided WritableLongChunk.\n\n:param longChunk: (io.deephaven.chunk.WritableLongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>) - The input chunk. The returned object will take ownership of this\n        chunk.\n:return: (io.deephaven.engine.rowset.RowSequence) A new RowSequence object, who owns the passed chunk.",
+  "wrapKeyRangesChunkAsRowSequence": "Wrap a LongChunk as an RowSequence.\n\n:param longChunk: (io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges>) - A chunk to wrap as a new RowSequence object.\n:return: (io.deephaven.engine.rowset.RowSequence) A new RowSequence object, who does not own the passed chunk.",
+  "wrapRowKeysChunkAsRowSequence": "Wrap a LongChunk as an RowSequence.\n\n:param longChunk: (io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>) - A chunk to wrap as a new RowSequence object.\n:return: (io.deephaven.engine.rowset.RowSequence) A new RowSequence object, who does not own the passed chunk."
+ },
+ "path": "io.deephaven.engine.rowset.RowSequenceFactory",
+ "text": "Helper methods for constructing RowSequence instances.",
+ "typeName": "class"
+}

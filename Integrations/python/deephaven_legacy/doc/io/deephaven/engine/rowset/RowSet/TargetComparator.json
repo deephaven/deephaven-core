@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.rowset.RowSet$TargetComparator",
+ "methods": {
+  "compareTargetTo": ":param rKey: long\n:param direction: int\n:return: int"
+ },
+ "path": "io.deephaven.engine.rowset.RowSet.TargetComparator",
+ "typeName": "interface"
+}

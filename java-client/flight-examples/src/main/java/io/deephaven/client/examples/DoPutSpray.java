@@ -50,7 +50,7 @@ class DoPutSpray implements Callable<Void> {
             for (ConnectOptions other : connects.subList(1, connects.size())) {
                 final FlightSession destSession = session(bufferAllocator, scheduler, other.open());
                 try (final FlightStream in = sourceSession.stream(sourceHandle)) {
-                    final TableHandle destHandle = destSession.put(in);
+                    final TableHandle destHandle = destSession.putExport(in);
                     destSession.session().publish(variableName, destHandle).get();
                 } finally {
                     close(destSession);

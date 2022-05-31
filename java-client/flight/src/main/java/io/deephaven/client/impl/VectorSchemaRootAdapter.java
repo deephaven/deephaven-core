@@ -27,7 +27,7 @@ public class VectorSchemaRootAdapter {
     public static VectorSchemaRoot of(NewTable table, BufferAllocator allocator) {
         final List<FieldVector> fieldVectors = new ArrayList<>(table.numColumns());
         for (Column<?> column : table) {
-            fieldVectors.add(FieldAdapter.of(column, allocator));
+            fieldVectors.add(FieldVectorAdapter.of(column, allocator));
         }
         final Schema schema = new Schema(fieldVectors.stream().map(ValueVector::getField).collect(Collectors.toList()));
         return new VectorSchemaRoot(schema, fieldVectors, table.size());

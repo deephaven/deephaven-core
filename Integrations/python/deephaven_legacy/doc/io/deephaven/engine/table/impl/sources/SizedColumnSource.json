@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.SizedColumnSource",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.sources.SizedColumnSource",
+ "text": "Interface for ColumnSources that know their size.",
+ "typeName": "interface"
+}

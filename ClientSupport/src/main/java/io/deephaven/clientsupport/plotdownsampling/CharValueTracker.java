@@ -1,11 +1,12 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.v2.sources.CharacterArraySource;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.table.impl.sources.CharacterArraySource;
+import io.deephaven.chunk.Chunk;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
@@ -37,11 +38,11 @@ public final class CharValueTracker extends ValueTracker {
     }
 
     @Override
-    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable Index nulls) {
+    public void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         final char val = valuesChunk.asCharChunk().get(indexInChunk);
         if (val == NULL_CHAR) {
             if (nulls != null) {
-                nulls.insert(rowIndex);
+                nulls.insert(rowKey);
             }
             return;
         }
@@ -52,37 +53,37 @@ public final class CharValueTracker extends ValueTracker {
 
         if (first || val > maxValue(offset)) {
             setMaxValue(offset, val);
-            setMaxIndex(offset, rowIndex);
+            setMaxIndex(offset, rowKey);
             maxValueValid(offset, true);
         }
         if (first || val < minValue(offset)) {
             setMinValue(offset, val);
-            setMinIndex(offset, rowIndex);
+            setMinIndex(offset, rowKey);
             minValueValid(offset, true);
         }
     }
 
     @Override
-    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable Index nulls) {
+    public void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         char val = valuesChunk.asCharChunk().get(indexInChunk);
         if (val == NULL_CHAR) {
             if (nulls != null) {
-                nulls.insert(rowIndex);
+                nulls.insert(rowKey);
             }
             // whether or not we are tracking nulls, if the row was our max/min, mark the value as invalid so we can rescan
-            if (rowIndex == maxIndex(offset)) {
+            if (rowKey == maxIndex(offset)) {
                 maxValueValid(offset, false);// invalid will force a rescan
             }
-            if (rowIndex == minIndex(offset)) {
+            if (rowKey == minIndex(offset)) {
                 minValueValid(offset, false);
             }
         } else {
             if (nulls != null) {
-                nulls.remove(rowIndex);
+                nulls.remove(rowKey);
             }
 
             long maxIndex = maxIndex(offset);
-            if (rowIndex == maxIndex) {
+            if (rowKey == maxIndex) {
                 if (val >= maxValue(offset)) {
                     // This is still the max, but update the value
                     setMaxValue(offset, val);
@@ -96,12 +97,12 @@ public final class CharValueTracker extends ValueTracker {
                 if (val > maxValue(offset) || maxIndex == QueryConstants.NULL_LONG) {
                     // this is the new max
                     setMaxValue(offset, val);
-                    setMaxIndex(offset, rowIndex);
+                    setMaxIndex(offset, rowKey);
                     maxValueValid(offset, true);
                 }
             }
             long minIndex = minIndex(offset);
-            if (rowIndex == minIndex) {
+            if (rowKey == minIndex) {
                 if (val <= minValue(offset)) {
                     setMinValue(offset, val);
                 } else {
@@ -112,7 +113,7 @@ public final class CharValueTracker extends ValueTracker {
                 if (val < minValue(offset) || minIndex == QueryConstants.NULL_LONG) {
                     // this is the new min
                     setMinValue(offset, val);
-                    setMinIndex(offset, rowIndex);
+                    setMinIndex(offset, rowKey);
                     minValueValid(offset, true);
                 }
             }
@@ -121,12 +122,13 @@ public final class CharValueTracker extends ValueTracker {
     }
 
     @Override
-    public void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable Index nulls) {
+    public void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
         char val = valuesChunk.asCharChunk().get(indexInChunk);
         if (val == NULL_CHAR) {
-            // can't check if our min/max is valid, or anything about positions, only can confirm that this index is in nulls
+            // can't check if our min/max is valid, or anything about positions, only can confirm that this rowKey is in
+            // nulls
             if (nulls != null) {
-                Assert.eqTrue(nulls.containsRange(rowIndex, rowIndex), "nulls.containsRange(rowIndex, rowIndex)");
+                Assert.eqTrue(nulls.containsRange(rowKey, rowKey), "nulls.containsRange(rowIndex, rowIndex)");
             }
             return;
         }
@@ -135,12 +137,12 @@ public final class CharValueTracker extends ValueTracker {
         Assert.eqTrue(minValueValid(offset), "minValueValid(offset)");
         Assert.eqTrue(maxValueValid(offset), "maxValueValid(offset)");
 
-        if (maxIndex(offset) == rowIndex) {
+        if (maxIndex(offset) == rowKey) {
             Assert.eq(val, "val", maxValue(offset), "maxValue(offset)");
         } else {
             Assert.leq(val, "val", maxValue(offset), "maxValue(offset)");
         }
-        if (minIndex(offset) == rowIndex) {
+        if (minIndex(offset) == rowKey) {
             Assert.eq(val, "val", minValue(offset), "minValue(offset)");
         } else {
             Assert.geq(val, "val", minValue(offset), "minValue(offset)");

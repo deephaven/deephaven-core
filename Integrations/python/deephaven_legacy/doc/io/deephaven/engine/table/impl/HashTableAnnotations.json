@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.HashTableAnnotations",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.HashTableAnnotations",
+ "text": "Annotations library for the column-oriented hash tables used by join and aggregation operations.",
+ "typeName": "class"
+}

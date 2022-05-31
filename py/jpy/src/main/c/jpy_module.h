@@ -30,6 +30,26 @@ extern "C" {
 
 #include "jpy_compat.h"
 
+#if 1
+#define JPy_DECREF(x) Py_DECREF(x)
+#define JPy_INCREF(x) Py_INCREF(x)
+#define JPy_XDECREF(x) Py_XDECREF(x)
+#else
+#include "jpy_diag.h"
+#define JPy_DECREF(x) do { \
+     JPy_DiagPrint(JPy_DIAG_F_ALL, "JPy_DECREF: %s:%d %p %ld\n", __FILE__, __LINE__, x, ((PyObject *)x)->ob_refcnt);\
+     Py_DECREF(x);\
+} while (0)
+#define JPy_INCREF(x) do { \
+     JPy_DiagPrint(JPy_DIAG_F_ALL, "JPy_INCREF: %s:%d %p %ld\n", __FILE__, __LINE__, x, ((PyObject *)x)->ob_refcnt);\
+     Py_INCREF(x);\
+} while (0)
+#define JPy_XDECREF(x) do { \
+     JPy_DiagPrint(JPy_DIAG_F_ALL, "JPy_XDECREF: %s:%d %p %ld\n", __FILE__, __LINE__,  x, x == NULL ? -1 : ((PyObject *)x)->ob_refcnt);\
+     Py_XDECREF(x);\
+} while (0)
+#endif
+
 #define JPY_JNI_VERSION JNI_VERSION_1_6
 
 extern PyObject* JPy_Module;
@@ -80,6 +100,9 @@ void JPy_ClearGlobalVars(JNIEnv* jenv);
  */
 void JPy_HandleJavaException(JNIEnv* jenv);
 
+#define JPy_DELETE_LOCAL_REF(VALUE) \
+    (*jenv)->DeleteLocalRef(jenv, VALUE); \
+    VALUE = NULL;
 
 #define JPy_ON_JAVA_EXCEPTION_GOTO(LABEL) \
     if ((*jenv)->ExceptionCheck(jenv)) { \
@@ -197,6 +220,8 @@ extern jclass JPy_Character_JClass;
 extern jmethodID JPy_Character_Init_MID;
 extern jmethodID JPy_Character_CharValue_MID;
 
+extern jclass JPy_Number_JClass;
+
 extern jclass JPy_Byte_JClass;
 extern jmethodID JPy_Byte_Init_MID;
 
@@ -230,6 +255,9 @@ extern jmethodID JPy_PyObject_Init_MID;
 
 extern jclass JPy_PyDictWrapper_JClass;
 extern jmethodID JPy_PyDictWrapper_GetPointer_MID;
+
+extern jclass JPy_Supplier_JClass;
+extern jmethodID JPy_Supplier_get_MID;
 
 #ifdef __cplusplus
 } /* extern "C" */

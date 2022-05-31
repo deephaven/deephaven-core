@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.ChunkSource$GetContext",
+ "methods": {},
+ "path": "io.deephaven.engine.table.ChunkSource.GetContext",
+ "text": "Marker interface for Contexts that are used in ChunkSource.getChunk(GetContext, RowSequence).",
+ "typeName": "interface"
+}

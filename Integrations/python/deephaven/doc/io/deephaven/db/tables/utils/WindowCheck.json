@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.tables.utils.WindowCheck",
- "methods": {
-  "addTimeWindow": "Adds a Boolean column that is false when a timestamp column is older than windowNanos.\n \n\n If the timestamp is greater than or equal to the curent time - windowNanos, then the result column is true. If\n the timestamp is null; the InWindow value is null.\n \n\n The resultant table ticks whenever the input table ticks, or modifies a row when it passes out of the window.\n \n\n:param table: (io.deephaven.db.tables.Table) - the input table\n:param timestampColumn: (java.lang.String) - the timestamp column to monitor in table\n:param windowNanos: (long) - how many nanoseconds in the past a timestamp can be before it is out of the window\n:param inWindowColumn: (java.lang.String) - the name of the new Boolean column.\n:return: (io.deephaven.db.tables.Table) a new table that contains an in-window Boolean column"
- },
- "path": "io.deephaven.db.tables.utils.WindowCheck",
- "text": "Adds a Boolean column that is true if a Timestamp is within the specified window.",
- "typeName": "class"
-}

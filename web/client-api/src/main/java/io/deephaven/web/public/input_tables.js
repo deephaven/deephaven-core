@@ -3,9 +3,9 @@
 
 let button, cleanup;
 function initInputTables() {
-  let e = el('inputs');
+  let e = document.getElementById('inputs');
   if (!e) {
-    e = newEl('ul');
+    e = document.createElement('ul');
     e.id = 'inputs';
     document.body.appendChild(e);
   }
@@ -13,14 +13,14 @@ function initInputTables() {
   e.innerHTML = '<li class="disabled">No input table selected</li>';
   button = e.querySelector('button');
   if (!button) {
-    button = newEl('button');
+    button = document.createElement('button');
     button.innerText = 'Add row';
     e.appendChild(button);
   }
 }
 
 function rebuildInputTables(it, table) {
-  const e = el('inputs');
+  const e = document.getElementById('inputs');
   e.innerHTML = '';
   for (const key of it.keys) {
     // add required editor field
@@ -52,7 +52,7 @@ function getInputValues(e) {
 }
 
 function addInputField(key, col, e, required) {
-  const li = newEl('li');
+  const li = document.createElement('li');
   li.classList.add('input');
   li.title = required ? 'Required' : 'Optional';
   li.innerHTML = `<label>${key}: ${required?'<sup>(*)</sup>':''} </label><input type='text' id='col-${key}' placeholder='(${col.type})' />`;

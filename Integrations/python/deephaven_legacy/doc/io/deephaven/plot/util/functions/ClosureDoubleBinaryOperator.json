@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plot.util.functions.ClosureDoubleBinaryOperator",
+ "methods": {
+  "applyAsDouble": ":param left: double\n:param right: double\n:return: double"
+ },
+ "path": "io.deephaven.plot.util.functions.ClosureDoubleBinaryOperator",
+ "text": "A serializable closure which maps pair of doubles to doubles.",
+ "typeName": "class"
+}

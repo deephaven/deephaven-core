@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfilter.ChunkFilter",
+ "methods": {
+  "applyChunkFilter": "Apply a chunk filter to a RowSet and column source, producing a new WritableRowSet that is responsive to the\n filter.\n\n:param selection: (io.deephaven.engine.rowset.RowSet) - the RowSet to filter\n:param columnSource: (io.deephaven.engine.table.ColumnSource<?>) - the column source to filter\n:param usePrev: (boolean) - should we use previous values from the column source?\n:param chunkFilter: (io.deephaven.engine.table.impl.chunkfilter.ChunkFilter) - the chunk filter to apply\n:return: (io.deephaven.engine.rowset.WritableRowSet) A new WritableRowSet representing the filtered values, owned by the caller",
+  "filter": "Filter a chunk of values, setting parallel values in results to \"true\" or \"false\".\n\n The results chunk must have capacity at least as large as values.size(); and the result size will be set to\n values.size() on return.\n\n:param values: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>) - the values to filter\n:param keys: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>\n:param results: (io.deephaven.chunk.WritableLongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>) - a boolean chunk with true values for items that match the filter, and false otherwise"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfilter.ChunkFilter",
+ "typeName": "interface"
+}

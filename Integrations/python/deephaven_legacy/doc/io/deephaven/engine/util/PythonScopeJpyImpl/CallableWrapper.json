@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.util.PythonScopeJpyImpl$CallableWrapper",
+ "methods": {
+  "call": ":param args: java.lang.Object...\n:return: java.lang.Object",
+  "getPyObject": ":return: org.jpy.PyObject"
+ },
+ "path": "io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper",
+ "text": "When given a pyObject that is a callable, we stick it inside the callable wrapper, which implements a call()\n varargs method, so that we can call it using __call__ without all of the JPy nastiness.",
+ "typeName": "class"
+}

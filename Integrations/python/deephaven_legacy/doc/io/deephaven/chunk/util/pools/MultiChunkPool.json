@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.chunk.util.pools.MultiChunkPool",
+ "methods": {
+  "forThisThread": ":return: io.deephaven.chunk.util.pools.MultiChunkPool",
+  "getBooleanChunkPool": ":return: io.deephaven.chunk.util.pools.BooleanChunkPool",
+  "getByteChunkPool": ":return: io.deephaven.chunk.util.pools.ByteChunkPool",
+  "getCharChunkPool": ":return: io.deephaven.chunk.util.pools.CharChunkPool",
+  "getChunkPool": ":param chunkType: io.deephaven.chunk.ChunkType\n:return: io.deephaven.chunk.util.pools.ChunkPool",
+  "getDoubleChunkPool": ":return: io.deephaven.chunk.util.pools.DoubleChunkPool",
+  "getFloatChunkPool": ":return: io.deephaven.chunk.util.pools.FloatChunkPool",
+  "getIntChunkPool": ":return: io.deephaven.chunk.util.pools.IntChunkPool",
+  "getLongChunkPool": ":return: io.deephaven.chunk.util.pools.LongChunkPool",
+  "getObjectChunkPool": ":return: io.deephaven.chunk.util.pools.ObjectChunkPool",
+  "getShortChunkPool": ":return: io.deephaven.chunk.util.pools.ShortChunkPool"
+ },
+ "path": "io.deephaven.chunk.util.pools.MultiChunkPool",
+ "text": "Provides a set of per-type ChunkPools. Normally accessed via a ThreadLocal, to allow some threads to\n share a common pool and others to allocate their own.",
+ "typeName": "class"
+}

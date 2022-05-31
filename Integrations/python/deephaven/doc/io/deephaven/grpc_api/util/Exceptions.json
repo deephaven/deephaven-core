@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.util.Exceptions",
- "methods": {
-  "statusRuntimeException": ":param statusCode: com.google.rpc.Code\n:param details: java.lang.String\n:return: io.grpc.StatusRuntimeException"
- },
- "path": "io.deephaven.grpc_api.util.Exceptions",
- "typeName": "class"
-}

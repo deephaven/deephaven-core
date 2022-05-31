@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.client.impl.ApplicationService$Cancel",
+ "methods": {},
+ "path": "io.deephaven.client.impl.ApplicationService.Cancel",
+ "typeName": "interface"
+}

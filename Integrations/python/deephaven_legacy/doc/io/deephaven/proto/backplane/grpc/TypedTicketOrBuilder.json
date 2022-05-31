@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.TypedTicketOrBuilder",
+ "methods": {
+  "getTicket": ".io.deephaven.proto.backplane.grpc.Ticket ticket = 1;\n\n:return: (io.deephaven.proto.backplane.grpc.Ticket) The ticket.",
+  "getTicketOrBuilder": ".io.deephaven.proto.backplane.grpc.Ticket ticket = 1;\n\n:return: io.deephaven.proto.backplane.grpc.TicketOrBuilder",
+  "getType": "The type. An empty string means that it is not known, not that the server chose to not set it.\n \nstring type = 2;\n\n:return: (java.lang.String) The type.",
+  "getTypeBytes": "The type. An empty string means that it is not known, not that the server chose to not set it.\n \nstring type = 2;\n\n:return: (com.google.protobuf.ByteString) The bytes for type.",
+  "hasTicket": ".io.deephaven.proto.backplane.grpc.Ticket ticket = 1;\n\n:return: (boolean) Whether the ticket field is set."
+ },
+ "path": "io.deephaven.proto.backplane.grpc.TypedTicketOrBuilder",
+ "typeName": "interface"
+}
