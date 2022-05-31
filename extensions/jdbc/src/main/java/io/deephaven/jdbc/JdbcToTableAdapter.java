@@ -37,12 +37,15 @@ import java.util.TimeZone;
  * <p/>
  *
  * To use, first create a result set using your provided JDBC driver of choice:
+ * 
  * <pre>
  * Connection connection = DriverManager.getConnection("jdbc:sqlite:/path/to/db.sqlite");
  * Statement statement = connection.createStatement();
  * ResultSet resultSet = statement.executeQuery("SELECT * FROM Invoice");
  * </pre>
+ * 
  * Then convert the {@code ResultSet} to a {@code Table}:
+ * 
  * <pre>
  * Table resultTable = JdbcToTableAdapter.readJdbc(resultSet);
  * </pre>
