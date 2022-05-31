@@ -23,13 +23,6 @@ public abstract class RightIncrementalAsOfJoinStateManager {
         this.keySourcesForErrorMessages = keySourcesForErrorMessages;
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public void checkExactMatch(boolean exactMatch, long leftKeyIndex, long rightSide) {
-        if (exactMatch && rightSide == NO_RIGHT_ENTRY_VALUE) {
-            throw new RuntimeException("Tables don't have one-to-one mapping - no mappings for key " + extractKeyStringFromSourceTable(leftKeyIndex) + ".");
-        }
-    }
-
     // produce a pretty key for error messages
     protected String extractKeyStringFromSourceTable(long leftKey) {
         if (keySourcesForErrorMessages.length == 1) {
