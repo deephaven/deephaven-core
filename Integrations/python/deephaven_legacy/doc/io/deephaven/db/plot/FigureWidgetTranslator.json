@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.plot.FigureWidgetTranslator",
- "methods": {
-  "translate": ":param descriptor: io.deephaven.db.plot.DisplayableFigureDescriptor\n:return: io.deephaven.web.shared.data.plot.FigureDescriptor"
- },
- "path": "io.deephaven.db.plot.FigureWidgetTranslator",
- "typeName": "class"
-}

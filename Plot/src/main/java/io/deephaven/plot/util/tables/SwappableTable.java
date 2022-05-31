@@ -15,24 +15,24 @@ import java.io.Serializable;
 public abstract class SwappableTable implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    protected final TableMapHandle tableMapHandle;
+    protected final PartitionedTableHandle partitionedTableHandle;
 
     /**
      * Creates a SwappableTable instance with the {@code tableHandle}.
      *
-     * @param tableMapHandle holds the table
+     * @param partitionedTableHandle holds the table
      */
-    public SwappableTable(@NotNull final TableMapHandle tableMapHandle) {
-        this.tableMapHandle = tableMapHandle;
+    public SwappableTable(@NotNull final PartitionedTableHandle partitionedTableHandle) {
+        this.partitionedTableHandle = partitionedTableHandle;
     }
 
     /**
-     * Gets the {@link TableHandle} for this SwappableTable.
+     * Gets the {@link PartitionedTableHandle} for this SwappableTable.
      *
-     * @return this SwappableTable's {@link TableHandle}
+     * @return this SwappableTable's {@link PartitionedTableHandle}
      */
-    public TableMapHandle getTableMapHandle() {
-        return tableMapHandle;
+    public PartitionedTableHandle getPartitionedTableHandle() {
+        return partitionedTableHandle;
     }
 
     /**
@@ -48,6 +48,6 @@ public abstract class SwappableTable implements Serializable {
      * @return table with the columns and types of the final table
      */
     public TableDefinition getTableDefinition() {
-        return getTableMapHandle().getTableDefinition();
+        return getPartitionedTableHandle().getTableDefinition();
     }
 }

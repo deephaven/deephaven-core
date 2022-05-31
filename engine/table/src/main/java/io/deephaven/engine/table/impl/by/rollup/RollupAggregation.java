@@ -13,17 +13,11 @@ public interface RollupAggregation extends Aggregation {
         return NullColumns.from(resultColumns);
     }
 
-    static RollupAggregation partition(boolean includeConstituents) {
-        return Partition.of(includeConstituents);
-    }
-
     <V extends Aggregation.Visitor> V walk(V visitor);
 
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor extends Aggregation.Visitor {
         void visit(NullColumns nullColumns);
-
-        void visit(Partition partition);
     }
 }

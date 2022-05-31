@@ -38,6 +38,8 @@ Developers interested in tinkering with and modifying source code should build f
 
 If you are not sure which of the two is right for you, use the pre-built images.
 
+> :warning: **On M1 Macs, you must [build and launch from source code](https://deephaven.io/core/docs/how-to-guides/launch-build).  A Docker-emulation bug leads to failures when running pre-built images.**
+
 ### Required Dependencies
 
 Running Deephaven requires a few software packages.
@@ -280,10 +282,8 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 ## Resources
 
 * [Help!](https://github.com/deephaven/deephaven-core/discussions/969)
-* [A relaxed chat room about all things Deephaven](https://gitter.im/deephaven/deephaven)
-* [Deephaven Community Slack](https://join.slack.com/t/deephavencommunity/shared_invite/zt-11x3hiufp-DmOMWDAvXv_pNDUlVkagLQ)
+* [Deephaven Community Slack](https://deephaven.io/slack)
 * [Discussions](https://github.com/deephaven/deephaven-core/discussions)
-* [deephaven.io](https://deephaven.io)
 * [Deephaven Community Core docs](https://deephaven.io/core/docs/)
 * [Java API docs](https://deephaven.io/core/javadoc/)
 * [Python API docs](https://deephaven.io/core/pydoc/)

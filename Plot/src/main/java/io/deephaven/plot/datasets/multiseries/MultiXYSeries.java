@@ -9,15 +9,14 @@ import io.deephaven.plot.datasets.DynamicSeriesNamer;
 import io.deephaven.plot.datasets.xy.XYDataSeriesInternal;
 import io.deephaven.plot.datasets.xy.XYDataSeriesTableArray;
 import io.deephaven.plot.util.ArgumentValidations;
-import io.deephaven.plot.util.tables.TableBackedTableMapHandle;
+import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.plot.util.tables.TableHandle;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 
 /**
  * A {@link AbstractMultiSeries} collection that holds and generates {@link XYDataSeriesInternal}.
  */
-public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSeriesInternal> {
+public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYDataSeriesInternal> {
 
     private static final long serialVersionUID = 1274883777622079921L;
 
@@ -30,17 +29,17 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
      * @param axes axes on which this {@link MultiSeries} will be plotted
      * @param id data series id
      * @param name series name
-     * @param tableMapHandle table data
+     * @param partitionedTableHandle table data
      * @param xCol column in {@code t} that holds the x-variable data
      * @param yCol column in {@code t} that holds the y-variable data
      * @param byColumns column(s) in {@code t} that holds the grouping data
      */
     public MultiXYSeries(final AxesImpl axes, final int id, final Comparable name,
-            final TableBackedTableMapHandle tableMapHandle, final String xCol, final String yCol,
-            final String[] byColumns) {
-        super(axes, id, name, tableMapHandle, xCol, yCol, byColumns);
-        ArgumentValidations.assertIsNumericOrTime(tableMapHandle.getTableDefinition(), xCol, getPlotInfo());
-        ArgumentValidations.assertIsNumericOrTime(tableMapHandle.getTableDefinition(), yCol, getPlotInfo());
+                         final TableBackedPartitionedTableHandle partitionedTableHandle, final String xCol, final String yCol,
+                         final String[] byColumns) {
+        super(axes, id, name, partitionedTableHandle, xCol, yCol, byColumns);
+        ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), xCol, getPlotInfo());
+        ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), yCol, getPlotInfo());
         this.xCol = xCol;
         this.yCol = yCol;
     }

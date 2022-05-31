@@ -13,7 +13,7 @@ import io.deephaven.plot.datasets.DynamicSeriesNamer;
 import io.deephaven.plot.errors.PlotExceptionCause;
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.PartitionedTable;
 
 import java.util.Map;
 
@@ -111,9 +111,9 @@ public interface MultiSeriesInternal<T extends DataSeriesInternal>
     void initializeSeries(T series);
 
     /**
-     * @return the underlying {@link TableMap}
+     * @return the underlying {@link PartitionedTable}
      */
-    TableMap getTableMap();
+    PartitionedTable getPartitionedTable();
 
     /**
      * Add the given series to this MultiSeries

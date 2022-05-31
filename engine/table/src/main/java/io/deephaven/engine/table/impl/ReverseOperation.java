@@ -7,13 +7,13 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.ReversedColumnSource;
-import io.deephaven.engine.table.impl.sources.UnionRedirection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,7 +25,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     private ModifiedColumnSet.Transformer mcsTransformer;
 
     // minimum pivot is RowSet container size -- this guarantees that we only generate container shifts
-    private static final long MINIMUM_PIVOT = UnionRedirection.CHUNK_MULTIPLE;
+    private static final long MINIMUM_PIVOT = RspArray.BLOCK_SIZE;
     // since we are using highest one bit, this should be a power of two
     private static final int PIVOT_GROWTH_FACTOR = 4;
 

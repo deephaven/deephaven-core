@@ -119,10 +119,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
             final Entry sourceEntry) {
         dependent.notifyListenersOnError(originalException, sourceEntry);
 
-        // although we have notified the dependent tables, we should notify the client side as well. In pretty
-        // much every case we would expect this notification to happen anyway, but in the case of a GuiTableMap
-        // from partitionBy, the tables will have a hard reference, but would not actually have made it all the way
-        // back to the client. Thus, the need for this additional reporting.
+        // Secondary notification to client error monitoring
         try {
             if (SystemicObjectTracker.isSystemic(dependent)) {
                 AsyncClientErrorNotifier.reportError(originalException);

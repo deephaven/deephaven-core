@@ -8,25 +8,26 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.liveness.LivenessNode;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
-import io.deephaven.engine.table.impl.util.WrappedRowSetWritableRowRedirection;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.SourceColumn;
+import io.deephaven.engine.table.impl.select.SwitchColumn;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.vector.Vector;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.impl.select.SelectColumn;
-import io.deephaven.engine.table.impl.select.SourceColumn;
-import io.deephaven.engine.table.impl.select.SwitchColumn;
-import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
+import io.deephaven.util.process.ProcessEnvironment;
+import io.deephaven.vector.Vector;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -324,12 +325,14 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
      * @param upstream the upstream update
      * @param toClear rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
+     * @param jobScheduler scheduler for parallel sub-tasks
+     * @param liveResultOwner {@link LivenessNode node} to be used to manage/unmanage results that happen to be
+     *        {@link io.deephaven.engine.liveness.LivenessReferent liveness referents}
      * @param onCompletion Called when an inner column is complete. The outer layer should pass the {@code onCompletion}
-     *        on to other layers and if it and all of its dependencies have been satisfied schedule execution of that
-     *        column update.
      */
     public abstract void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper,
-            JobScheduler jobScheduler, SelectLayerCompletionHandler onCompletion);
+            JobScheduler jobScheduler, @Nullable LivenessNode liveResultOwner,
+            SelectLayerCompletionHandler onCompletion);
 
     /**
      * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We do

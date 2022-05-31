@@ -7,7 +7,7 @@
   "addRange": ":param firstRowKey: long\n:param lastRowKey: long",
   "addRanges": ":param it: io.deephaven.util.datastructures.LongRangeIterator",
   "addRowSet": ":param rowSet: io.deephaven.engine.rowset.RowSet",
-  "getTreeIndexImpl": ":return: io.deephaven.engine.rowset.impl.OrderedLongSet"
+  "getOrderedLongSet": ":return: io.deephaven.engine.rowset.impl.OrderedLongSet"
  },
  "path": "io.deephaven.engine.rowset.impl.AdaptiveOrderedLongSetBuilderRandom",
  "typeName": "class"

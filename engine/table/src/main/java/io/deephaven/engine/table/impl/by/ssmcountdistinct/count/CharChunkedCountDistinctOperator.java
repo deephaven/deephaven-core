@@ -14,7 +14,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.CharSsmBackedSource;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.DistinctOperatorFactory;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
@@ -60,7 +59,7 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
         // endregion SsmCreation
         this.resultColumn = new LongArraySource();
 
-        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(DistinctOperatorFactory.NODE_SIZE);
+        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(SsmDistinctContext.NODE_SIZE);
     }
 
     //region Bucketed Updates

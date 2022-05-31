@@ -45,7 +45,7 @@ public interface RowSetLike {
 
                 @Override
                 public void doneAdding() {
-                    idx = new TrackingWritableRowSetImpl(b.getTreeIndexImpl());
+                    idx = new TrackingWritableRowSetImpl(b.getOrderedLongSet());
                     b = null;
                 }
 

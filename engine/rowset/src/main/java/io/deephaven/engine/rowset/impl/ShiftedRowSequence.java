@@ -36,7 +36,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
         this.wrappedOK = null;
     }
 
-    public void reset(RowSequence toWrap, long shiftAmount) {
+    public RowSequence reset(RowSequence toWrap, long shiftAmount) {
         if (toWrap instanceof ShiftedRowSequence) {
             final ShiftedRowSequence orig = ((ShiftedRowSequence) toWrap);
             this.shiftAmount = shiftAmount + orig.shiftAmount;
@@ -46,6 +46,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
             this.wrappedOK = toWrap;
         }
         invalidateRowSequenceAsChunkImpl();
+        return this;
     }
 
     public final void clear() {

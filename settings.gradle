@@ -202,6 +202,9 @@ project(':extensions-barrage').projectDir = file('extensions/barrage')
 include(':extensions-classgraph')
 project(':extensions-classgraph').projectDir = file('extensions/classgraph')
 
+include(':extensions-jdbc')
+project(':extensions-jdbc').projectDir = file('extensions/jdbc')
+
 include(':extensions-suanshu')
 project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 

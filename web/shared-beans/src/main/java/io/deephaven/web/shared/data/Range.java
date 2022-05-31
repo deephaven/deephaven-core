@@ -110,7 +110,7 @@ public class Range implements Serializable, Comparable<Range> {
     }
 
     public long size() {
-        return (int) (last - first + 1);
+        return last - first + 1;
     }
 
     @Override

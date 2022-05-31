@@ -5,6 +5,6 @@
   "streamToAppendOnlyTable": "Convert a Stream Table to an in-memory append only table.\n\n Note, this table will grow without bound as new stream values are encountered.\n\n:param streamTable: (io.deephaven.engine.table.Table) - the input stream table\n:return: (io.deephaven.engine.table.Table) an append-only in-memory table representing all data encountered in the stream"
  },
  "path": "io.deephaven.engine.table.impl.StreamTableTools",
- "text": "Tools for manipulating tables.",
+ "text": "Tools for manipulating stream tables.",
  "typeName": "class"
 }

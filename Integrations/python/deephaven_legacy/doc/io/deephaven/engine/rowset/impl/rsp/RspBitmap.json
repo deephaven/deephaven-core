@@ -37,7 +37,7 @@
   "equals": ":param o: java.lang.Object\n:return: boolean",
   "first": ":return: long",
   "hashCode": ":return: int",
-  "insertTreeIndexUnsafeNoWriteCheck": "*Overload 1*  \n  :param ix: io.deephaven.engine.rowset.impl.singlerange.SingleRange\n  \n*Overload 2*  \n  :param sr: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges\n  \n*Overload 3*  \n  :param rb: io.deephaven.engine.rowset.impl.rsp.RspBitmap",
+  "insertOrderedLongSetUnsafeNoWriteCheck": "*Overload 1*  \n  :param ix: io.deephaven.engine.rowset.impl.singlerange.SingleRange\n  \n*Overload 2*  \n  :param sr: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges\n  \n*Overload 3*  \n  :param rb: io.deephaven.engine.rowset.impl.rsp.RspBitmap",
   "invert": ":param builder: io.deephaven.util.datastructures.LongRangeConsumer\n:param it: io.deephaven.engine.rowset.RowSet.RangeIterator\n:param maxPos: long",
   "ixAppendRange": ":param startKey: long\n:param endKey: long\n:return: io.deephaven.engine.rowset.impl.rsp.RspBitmap",
   "ixCardinality": ":return: long",

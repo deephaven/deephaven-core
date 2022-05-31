@@ -3,8 +3,8 @@
  "methods": {
   "addColumn": "Adds a column to the underlying table structures.\n\n:param column: (java.lang.String) - column",
   "getByColumns": ":return: java.util.List<java.lang.String>",
+  "getPartitionedTableHandle": "Gets the PartitionedTableHandle for this SwappableTable.\n\n:return: (io.deephaven.plot.util.tables.PartitionedTableHandle) this SwappableTable's PartitionedTableHandle",
   "getSeriesName": ":return: java.lang.Comparable",
-  "getTableMapHandle": "Gets the TableHandle for this SwappableTable.\n\n:return: (io.deephaven.plot.util.tables.TableMapHandle) this SwappableTable's TableHandle",
   "isRequireAllFiltersToDisplay": ":return: boolean"
  },
  "path": "io.deephaven.plot.util.tables.SwappableTableOneClickAbstract",

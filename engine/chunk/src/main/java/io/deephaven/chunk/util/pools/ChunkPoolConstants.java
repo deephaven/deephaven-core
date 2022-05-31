@@ -10,7 +10,12 @@ import io.deephaven.util.annotations.VisibleForTesting;
 public final class ChunkPoolConstants {
 
     static final int SMALLEST_POOLED_CHUNK_LOG2_CAPACITY = 5;
-    public static final int LARGEST_POOLED_CHUNK_LOG2_CAPACITY = 16;
+    public static final int SMALLEST_POOLED_CHUNK_CAPACITY = 1 << SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
+
+    @VisibleForTesting
+    static final int LARGEST_POOLED_CHUNK_LOG2_CAPACITY = 16;
+    public static final int LARGEST_POOLED_CHUNK_CAPACITY = 1 << LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
+
     static final int NUM_POOLED_CHUNK_CAPACITIES =
             LARGEST_POOLED_CHUNK_LOG2_CAPACITY - SMALLEST_POOLED_CHUNK_LOG2_CAPACITY + 1;
 

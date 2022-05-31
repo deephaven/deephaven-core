@@ -34,7 +34,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     }
 
     @Override
-    public OrderedLongSet getTreeIndexImpl() {
+    public OrderedLongSet getOrderedLongSet() {
         if (pendingStart != -1) {
             flushPendingRange();
         }
@@ -92,7 +92,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     }
 
     @Override
-    public void appendTreeIndexImpl(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
+    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
         if (ix.ixIsEmpty()) {
             return;
         }

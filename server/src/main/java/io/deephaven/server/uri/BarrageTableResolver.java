@@ -221,8 +221,9 @@ public final class BarrageTableResolver implements UriResolver {
     public Table snapshot(DeephavenTarget target, TableSpec table, BarrageSnapshotOptions options)
             throws TableHandleException, InterruptedException {
         final BarrageSession session = session(target);
-        final BarrageSnapshot snap = session.snapshot(table, options);
-        return snap.entireTable();
+        try (final BarrageSnapshot snap = session.snapshot(table, options)) {
+            return snap.entireTable();
+        }
     }
 
     /**
@@ -270,8 +271,9 @@ public final class BarrageTableResolver implements UriResolver {
             BitSet columns, boolean reverseViewport)
             throws TableHandleException, InterruptedException {
         final BarrageSession session = session(target);
-        final BarrageSnapshot snap = session.snapshot(table, options);
-        return snap.partialTable(viewport, columns, reverseViewport);
+        try (final BarrageSnapshot snap = session.snapshot(table, options)) {
+            return snap.partialTable(viewport, columns, reverseViewport);
+        }
     }
 
 

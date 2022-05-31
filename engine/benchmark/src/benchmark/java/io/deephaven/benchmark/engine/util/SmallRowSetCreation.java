@@ -71,12 +71,12 @@ public class SmallRowSetCreation {
     }
 
     @Benchmark
-    public void createTreeIndexImplViaBuilder(Blackhole bh) {
+    public void createOrderedLongSetViaBuilder(Blackhole bh) {
         OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
         for (long v : values) {
             builder.appendKey(v);
         }
-        bh.consume(builder.getTreeIndexImpl());
+        bh.consume(builder.getOrderedLongSet());
     }
 
     @Benchmark
@@ -85,7 +85,7 @@ public class SmallRowSetCreation {
         for (long v : values) {
             builder.appendKey(v);
         }
-        bh.consume(builder.getTreeIndexImpl());
+        bh.consume(builder.getOrderedLongSet());
     }
 
     @Benchmark

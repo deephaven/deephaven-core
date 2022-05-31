@@ -1364,7 +1364,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             builder.appendRange(start, end);
             return true;
         });
-        return builder.getTreeIndexImpl();
+        return builder.getOrderedLongSet();
     }
 
     public static boolean isDenseShort(final short[] data, final int count) {
@@ -1403,7 +1403,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return !isDense();
     }
 
-    private static OrderedLongSet makeTreeIndexImplFromLongRangesArray(
+    private static OrderedLongSet makeOrderedLongSetFromLongRangesArray(
             final long[] ranges, final int count, final long card, final SortedRanges out) {
         if (count == 0) {
             return OrderedLongSet.EMPTY;
@@ -1731,7 +1731,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (sr == null) {
             return toRsp().ixRetain(tix);
         }
-        return makeTreeIndexImplFromLongRangesArray(sr.data, sr.count, sr.cardinality, this);
+        return makeOrderedLongSetFromLongRangesArray(sr.data, sr.count, sr.cardinality, this);
     }
 
     private static boolean retainLegacy(final MutableObject<SortedRanges> sarOut, final OrderedLongSet tix) {
@@ -1792,7 +1792,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (sr == null) {
             return null;
         }
-        return makeTreeIndexImplFromLongRangesArray(sr.data, sr.count, sr.cardinality, null);
+        return makeOrderedLongSetFromLongRangesArray(sr.data, sr.count, sr.cardinality, null);
     }
 
     public final int count() {
@@ -1829,7 +1829,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (sr == null) {
             return null;
         }
-        return makeTreeIndexImplFromLongRangesArray(sr.data, sr.count, sr.cardinality, null);
+        return makeOrderedLongSetFromLongRangesArray(sr.data, sr.count, sr.cardinality, null);
     }
 
     private SortedRanges minusOnNewLegacy(final RowSet.RangeIterator ritOther) {
@@ -1956,7 +1956,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (sr == null) {
             return null;
         }
-        return makeTreeIndexImplFromLongRangesArray(sr.data, sr.count, sr.cardinality, null);
+        return makeOrderedLongSetFromLongRangesArray(sr.data, sr.count, sr.cardinality, null);
     }
 
     public static SortedRanges unionOnNewLegacy(final SortedRanges sar, final SortedRanges otherSar) {
@@ -2072,12 +2072,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         } else {
             final SortedRangesLong sr = union(this, other);
             if (sr != null) {
-                return makeTreeIndexImplFromLongRangesArray(sr.data, sr.count, sr.cardinality,
+                return makeOrderedLongSetFromLongRangesArray(sr.data, sr.count, sr.cardinality,
                         (!writeCheck || canWrite()) ? this : null);
             }
         }
         final RspBitmap rb = ixToRspOnNew();
-        rb.insertTreeIndexUnsafeNoWriteCheck(other);
+        rb.insertOrderedLongSetUnsafeNoWriteCheck(other);
         rb.finishMutations();
         return rb;
     }
@@ -3063,7 +3063,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     protected abstract SortedRanges checkSizeAndMoveData(
             final int srcPos, final int dstPos, final int len, final long first, boolean writeCheck);
 
-    // Note the returned SortedRangesTreeIndexImpl might have a different offset.
+    // Note the returned SortedRangesOrderedLongSet might have a different offset.
     // packedData >= 0 on entry.
     private SortedRanges open(final int pos, final long packedData, final boolean writeCheck) {
         final long first = (pos == 0) ? unpack(packedData) : first();
@@ -3083,7 +3083,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return ans;
     }
 
-    // Note the returned SortedRangesTreeIndexImpl might have a different offset.
+    // Note the returned SortedRangesOrderedLongSet might have a different offset.
     // packedData < 0 on entry.
     private SortedRanges openNeg(final int pos, final long packedData, final boolean writeCheck) {
         final long offset = unpack(0);
@@ -3102,7 +3102,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return ans;
     }
 
-    // Note the returned SortedRangesTreeIndexImpl might have a different offset.
+    // Note the returned SortedRangesOrderedLongSet might have a different offset.
     // packedData1 > 0 && packedData2 < 0 on entry.
     private SortedRanges open(final int pos, final long packedData1, final long packedData2, final boolean writeCheck) {
         final long first = (pos == 0) ? unpack(packedData1) : first();
@@ -3124,7 +3124,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return ans;
     }
 
-    // Note the returned SortedRangesTreeIndexImpl might have a different offset.
+    // Note the returned SortedRangesOrderedLongSet might have a different offset.
     // packedData1 < 0 && packedData2 > 0 on entry.
     private SortedRanges openNeg(final int pos, final long packedData1, final long packedData2,
             final boolean writeCheck) {
@@ -3146,7 +3146,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return ans;
     }
 
-    // Note the returned SortedRangesTreeIndexImpl might have a different offset.
+    // Note the returned SortedRangesOrderedLongSet might have a different offset.
     // packedData1 >= 0 && packedData2 < 0 on entry.
     private SortedRanges open2(final int pos, final long packedData1, final long packedData2,
             final boolean writeCheck) {
@@ -3169,7 +3169,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return ans;
     }
 
-    // Note the returned SortedRangesTreeIndexImpl might have a different offset.
+    // Note the returned SortedRangesOrderedLongSet might have a different offset.
     // packedData1 < 0 && packedData2 > 0 on entry.
     private SortedRanges open2Neg(final int pos, final long packedData1, final long packedData2,
             final boolean writeCheck) {
@@ -4650,7 +4650,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (sr == null) {
             return null;
         }
-        return makeTreeIndexImplFromLongRangesArray(sr.data, sr.count, sr.cardinality, canWrite() ? this : null);
+        return makeOrderedLongSetFromLongRangesArray(sr.data, sr.count, sr.cardinality, canWrite() ? this : null);
     }
 
     @Override
@@ -4903,7 +4903,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
         RspBitmap rsp = (RspBitmap) other;
         rsp = rsp.applyOffsetOnNew(shiftAmount);
-        rsp.insertTreeIndexUnsafeNoWriteCheck(this);
+        rsp.insertOrderedLongSetUnsafeNoWriteCheck(this);
         rsp.finishMutations();
         return rsp;
     }
@@ -4998,7 +4998,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             final RowSet.RangeIterator rit = keys.ixRangeIterator();
             final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
             if (invertOnNew(rit, builder, maxPosition)) {
-                return builder.getTreeIndexImpl();
+                return builder.getOrderedLongSet();
             }
         }
         throw new IllegalArgumentException("keys argument has elements not in the rowSet");

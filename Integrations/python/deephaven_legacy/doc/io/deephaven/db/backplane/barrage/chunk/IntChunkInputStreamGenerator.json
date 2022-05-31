@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.backplane.barrage.chunk.IntChunkInputStreamGenerator",
- "methods": {
-  "asNativeArray": "Get an array based version of the backing chunk filtered using the provided index.\n\n:param subset: (io.deephaven.db.v2.utils.Index) - if provided, is a position-space filter of source data\n:return: (java.lang.Object) a typed object array ready for the web translation for open api",
-  "getInputStream": "Get an input stream optionally position-space filtered using the provided index.\n\n:param options: (io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator.Options) - the serializable options for this subscription\n:param subset: (io.deephaven.db.v2.utils.Index) - if provided, is a position-space filter of source data\n:return: (io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator.DrainableColumn) a single-use DrainableColumn ready to be drained via grpc"
- },
- "path": "io.deephaven.db.backplane.barrage.chunk.IntChunkInputStreamGenerator",
- "typeName": "class"
-}

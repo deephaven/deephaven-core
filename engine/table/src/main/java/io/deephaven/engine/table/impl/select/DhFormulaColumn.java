@@ -7,6 +7,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.util.PythonScope;
 import io.deephaven.engine.util.PythonScopeJpyImpl;
@@ -821,7 +822,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             return true;
         }
         final Class<?> type = value.getClass();
-        if (type == String.class || type == DateTime.class || type == BigInteger.class || type == BigDecimal.class) {
+        if (type == String.class || type == DateTime.class || type == BigInteger.class || type == BigDecimal.class ||
+                Table.class.isAssignableFrom(type)) {
             return true;
         }
         // if it is a boxed type, then it is immutable; otherwise we don't know what to do with it

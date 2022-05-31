@@ -9,15 +9,14 @@ import io.deephaven.plot.datasets.DynamicSeriesNamer;
 import io.deephaven.plot.datasets.ohlc.OHLCDataSeriesInternal;
 import io.deephaven.plot.datasets.ohlc.OHLCDataSeriesTableArray;
 import io.deephaven.plot.util.ArgumentValidations;
-import io.deephaven.plot.util.tables.TableBackedTableMapHandle;
+import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.plot.util.tables.TableHandle;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 
 /**
  * A {@link AbstractMultiSeries} collection that holds and generates {@link OHLCDataSeriesInternal}.
  */
-public class MultiOHLCSeries extends AbstractTableMapHandleMultiSeries<OHLCDataSeriesInternal> {
+public class MultiOHLCSeries extends AbstractPartitionedTableHandleMultiSeries<OHLCDataSeriesInternal> {
 
     private static final long serialVersionUID = 4796788793334213344L;
     private final String timeCol;
@@ -32,7 +31,7 @@ public class MultiOHLCSeries extends AbstractTableMapHandleMultiSeries<OHLCDataS
      * @param axes axes on which this {@link MultiSeries} will be plotted
      * @param id data series id
      * @param name series name
-     * @param tableMapHandle table data
+     * @param partitionedTableHandle table data
      * @param timeCol column in {@code t} that holds the time data
      * @param openCol column in {@code t} that holds the open data
      * @param highCol column in {@code t} that holds the high data
@@ -41,20 +40,20 @@ public class MultiOHLCSeries extends AbstractTableMapHandleMultiSeries<OHLCDataS
      * @param byColumns column(s) in {@code t} that holds the grouping data
      */
     public MultiOHLCSeries(final AxesImpl axes, final int id, final Comparable name,
-            final TableBackedTableMapHandle tableMapHandle, final String timeCol, final String openCol,
-            final String highCol, final String lowCol, final String closeCol, final String[] byColumns) {
-        super(axes, id, name, tableMapHandle, timeCol, null, byColumns);
+                           final TableBackedPartitionedTableHandle partitionedTableHandle, final String timeCol, final String openCol,
+                           final String highCol, final String lowCol, final String closeCol, final String[] byColumns) {
+        super(axes, id, name, partitionedTableHandle, timeCol, null, byColumns);
         this.timeCol = timeCol;
         this.openCol = openCol;
         this.highCol = highCol;
         this.lowCol = lowCol;
         this.closeCol = closeCol;
 
-        ArgumentValidations.assertIsTime(tableMapHandle.getTableDefinition(), timeCol, getPlotInfo());
-        ArgumentValidations.assertIsNumeric(tableMapHandle.getTableDefinition(), openCol, getPlotInfo());
-        ArgumentValidations.assertIsNumeric(tableMapHandle.getTableDefinition(), highCol, getPlotInfo());
-        ArgumentValidations.assertIsNumeric(tableMapHandle.getTableDefinition(), lowCol, getPlotInfo());
-        ArgumentValidations.assertIsNumeric(tableMapHandle.getTableDefinition(), closeCol, getPlotInfo());
+        ArgumentValidations.assertIsTime(partitionedTableHandle.getTableDefinition(), timeCol, getPlotInfo());
+        ArgumentValidations.assertIsNumeric(partitionedTableHandle.getTableDefinition(), openCol, getPlotInfo());
+        ArgumentValidations.assertIsNumeric(partitionedTableHandle.getTableDefinition(), highCol, getPlotInfo());
+        ArgumentValidations.assertIsNumeric(partitionedTableHandle.getTableDefinition(), lowCol, getPlotInfo());
+        ArgumentValidations.assertIsNumeric(partitionedTableHandle.getTableDefinition(), closeCol, getPlotInfo());
     }
 
     /**

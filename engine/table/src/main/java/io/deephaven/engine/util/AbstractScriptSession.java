@@ -11,9 +11,9 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.lang.QueryScopeParam;
@@ -212,10 +212,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             }
             return Optional.of("Table");
         }
-        if (object instanceof TableMap) {
-            return Optional.empty();
-            // TODO(deephaven-core#1762): Implement Smart-Keys and Table-Maps
-            // return Optional.of("TableMap");
+        if (object instanceof PartitionedTable) {
+            return Optional.of("PartitionedTable");
         }
         return objectTypeLookup.findObjectType(object).map(ObjectType::name);
     }

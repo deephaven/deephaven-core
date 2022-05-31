@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.tables.utils.TableToCsv",
- "methods": {
-  "main": ":param args: java.lang.String[]"
- },
- "path": "io.deephaven.db.tables.utils.TableToCsv",
- "typeName": "class"
-}

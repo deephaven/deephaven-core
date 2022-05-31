@@ -284,23 +284,23 @@ public class FigureImpl implements io.deephaven.plot.Figure {
      */
     private FigureImpl applyFunctionalProperties() {
         final Map<Table, java.util.Set<java.util.function.Function<Table, Table>>> tableFunctionMap = getFigure().getTableFunctionMap();
-        final Map<io.deephaven.engine.table.TableMap, java.util.Set<java.util.function.Function<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap>>> tableMapFunctionMap = getFigure().getTableMapFunctionMap();
+        final Map<io.deephaven.engine.table.PartitionedTable, java.util.Set<java.util.function.Function<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable>>> partitionedTableFunctionMap = getFigure().getPartitionedTableFunctionMap();
         final java.util.List<io.deephaven.plot.util.functions.FigureImplFunction> figureFunctionList = getFigure().getFigureFunctionList();
         final Map<Table, Table> finalTableComputation = new HashMap<>();
-        final Map<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap> finalTableMapComputation = new HashMap<>();
+        final Map<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable> finalPartitionedTableComputation = new HashMap<>();
         final java.util.Set<Table> allTables = new java.util.HashSet<>();
-        final java.util.Set<io.deephaven.engine.table.TableMap> allTableMaps = new java.util.HashSet<>();
+        final java.util.Set<io.deephaven.engine.table.PartitionedTable> allPartitionedTables = new java.util.HashSet<>();
 
         for(final io.deephaven.plot.util.tables.TableHandle h : getFigure().getTableHandles()) {
             allTables.add(h.getTable());
         }
 
-        for(final io.deephaven.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {
-            if(h instanceof io.deephaven.plot.util.tables.TableBackedTableMapHandle) {
-                allTables.add(((io.deephaven.plot.util.tables.TableBackedTableMapHandle) h).getTable());
+        for(final io.deephaven.plot.util.tables.PartitionedTableHandle h : getFigure().getPartitionedTableHandles()) {
+            if(h instanceof io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle) {
+                allTables.add(((io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle) h).getTable());
             }
-            if(h.getTableMap() != null) {
-                allTableMaps.add(h.getTableMap());
+            if(h.getPartitionedTable() != null) {
+                allPartitionedTables.add(h.getPartitionedTable());
             }
         }
 
@@ -327,31 +327,31 @@ public class FigureImpl implements io.deephaven.plot.Figure {
             h.setTable(finalTableComputation.get(h.getTable()));
         }
 
-        for(final io.deephaven.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {
-            if(h instanceof io.deephaven.plot.util.tables.TableBackedTableMapHandle) {
-                ((io.deephaven.plot.util.tables.TableBackedTableMapHandle) h).setTable(finalTableComputation.get(((io.deephaven.plot.util.tables.TableBackedTableMapHandle) h).getTable()));
+        for(final io.deephaven.plot.util.tables.PartitionedTableHandle h : getFigure().getPartitionedTableHandles()) {
+            if(h instanceof io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle) {
+                ((io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle) h).setTable(finalTableComputation.get(((io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle) h).getTable()));
             }
         }
 
-        for(final io.deephaven.engine.table.TableMap initTableMap : allTableMaps) {
-            if(tableMapFunctionMap.get(initTableMap) != null) {
-                finalTableMapComputation.computeIfAbsent(initTableMap, t -> {
-                    final java.util.Set<java.util.function.Function<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap>> functions = tableMapFunctionMap.get(initTableMap);
-                    io.deephaven.engine.table.TableMap resultTableMap = initTableMap;
+        for(final io.deephaven.engine.table.PartitionedTable initPartitionedTable : allPartitionedTables) {
+            if(partitionedTableFunctionMap.get(initPartitionedTable) != null) {
+                finalPartitionedTableComputation.computeIfAbsent(initPartitionedTable, t -> {
+                    final java.util.Set<java.util.function.Function<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable>> functions = partitionedTableFunctionMap.get(initPartitionedTable);
+                    io.deephaven.engine.table.PartitionedTable resultPartitionedTable = initPartitionedTable;
 
-                    for(final java.util.function.Function<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap> f : functions) {
-                        resultTableMap = f.apply(resultTableMap);
+                    for(final java.util.function.Function<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable> f : functions) {
+                        resultPartitionedTable = f.apply(resultPartitionedTable);
                     }
 
-                    return resultTableMap;
+                    return resultPartitionedTable;
                 });
             } else {
-                finalTableMapComputation.put(initTableMap, initTableMap);
+                finalPartitionedTableComputation.put(initPartitionedTable, initPartitionedTable);
             }
         }
 
-        for(final io.deephaven.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {
-            h.setTableMap(finalTableMapComputation.get(h.getTableMap()));
+        for(final io.deephaven.plot.util.tables.PartitionedTableHandle h : getFigure().getPartitionedTableHandles()) {
+            h.setPartitionedTable(finalPartitionedTableComputation.get(h.getPartitionedTable()));
         }
 
         FigureImpl finalFigure = this;
@@ -360,7 +360,7 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
 
         tableFunctionMap.clear();
-        tableMapFunctionMap.clear();
+        partitionedTableFunctionMap.clear();
         figureFunctionList.clear();
 
         return finalFigure;

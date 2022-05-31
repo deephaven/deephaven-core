@@ -45,7 +45,7 @@ public class MultiException extends Exception {
      * @param causes the list of causes
      * @return a MultiException or the single Throwable
      */
-    public static Throwable maybeWrapInMultiException(String description, List<Throwable> causes) {
+    public static Throwable maybeWrapInMultiException(String description, List<? extends Throwable> causes) {
         if (causes.size() == 1) {
             return causes.get(0);
         }

@@ -9,7 +9,7 @@ import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.ChartImpl;
 import io.deephaven.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.plot.util.PlotUtils;
-import io.deephaven.plot.util.tables.TableBackedTableMapHandle;
+import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.gui.color.Color;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
 import io.deephaven.plot.datasets.data.IndexableNumericDataArrayDouble;
@@ -91,12 +91,10 @@ public class TestXYDataSeriesArray extends BaseArrayTestCase {
         x1.addTableHandle(new TableHandle(TableTools.emptyTable(2).updateView("A=i", "B=i"), "A", "B"));
         x1.addTableHandle(new TableHandle(TableTools.emptyTable(2).updateView("C=i"), "C"));
         final SwappableTable swappableTable =
-                new SwappableTable(new TableBackedTableMapHandle(TableTools.emptyTable(2).updateView("A=i", "B=i"),
-                        new ArrayList<>(), new String[0], null)) {
+                new SwappableTable(new TableBackedPartitionedTableHandle(
+                        TableTools.emptyTable(2).updateView("A=i", "B=i"), new ArrayList<>(), new String[0], null)) {
                     @Override
-                    public void addColumn(String column) {
-
-                    }
+                    public void addColumn(String column) {}
                 };
         x1.addSwappableTable(swappableTable);
 

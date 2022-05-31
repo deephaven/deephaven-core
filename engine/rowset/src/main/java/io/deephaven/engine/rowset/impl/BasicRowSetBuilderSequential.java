@@ -12,7 +12,7 @@ public class BasicRowSetBuilderSequential extends OrderedLongSetBuilderSequentia
 
     @Override
     public WritableRowSet build() {
-        return new WritableRowSetImpl(getTreeIndexImpl());
+        return new WritableRowSetImpl(this.getOrderedLongSet());
     }
 
     @Override
@@ -23,7 +23,7 @@ public class BasicRowSetBuilderSequential extends OrderedLongSetBuilderSequentia
     @Override
     public void appendRowSequenceWithOffset(final RowSequence rowSequence, final long shiftAmount) {
         if (rowSequence instanceof WritableRowSetImpl) {
-            appendTreeIndexImpl(shiftAmount, ((WritableRowSetImpl) rowSequence).getInnerSet(), false);
+            appendOrderedLongSet(shiftAmount, ((WritableRowSetImpl) rowSequence).getInnerSet(), false);
             return;
         }
         rowSequence.forAllRowKeyRanges((start, end) -> {

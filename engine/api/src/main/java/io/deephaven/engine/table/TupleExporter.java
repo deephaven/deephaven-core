@@ -61,10 +61,10 @@ public interface TupleExporter<TUPLE_TYPE> {
         return exportElement(tuple, elementIndex);
     }
 
+    // TODO (https://github.com/deephaven/deephaven-core/issues/2415): Delete this and related code generation
     /**
      * <p>
-     * Export this tuple's element list as a key suitable for the {@link TableMap table maps} resulting from
-     * {@link Table#partitionBy}.
+     * Export this tuple's element list as a key suitable for the defunct TableMap structure.
      * <p>
      * For the empty tuple this is a unsupported.
      * <p>

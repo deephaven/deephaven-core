@@ -18,7 +18,13 @@ class TableTestCase(BaseTestCase):
         self.test_table = None
 
     def test_repr(self):
-        self.assertIn(self.test_table.__class__.__name__, repr(self.test_table))
+        regex = r"deephaven\.table\.Table\(io\.deephaven\.engine\.table\.Table\(objectRef=0x.+\{.+\}\)\)"
+        for i in range(0, 8):
+            t = empty_table(10**i).update("a=i")
+            result = repr(t)
+            self.assertRegex(result, regex)
+            self.assertLessEqual(len(result), 120)
+            self.assertIn(t.__class__.__name__, result)
 
     #
     # Table operation category: Select

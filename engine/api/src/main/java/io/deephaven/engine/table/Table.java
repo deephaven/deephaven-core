@@ -152,6 +152,9 @@ public interface Table extends
     // TODO: Might be good to take a pass through these and see what we can condense into
     // TODO: TreeTableInfo and RollupInfo to reduce the attribute noise.
     String ROLLUP_LEAF_ATTRIBUTE = "RollupLeaf";
+    // TODO (https://github.com/deephaven/deephaven-core/issues/64 or
+    // https://github.com/deephaven/deephaven-core/issues/65):
+    // Rename and repurpose this attribute
     String HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE = "HierarchicalChildrenTableMap";
     String HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE = "HierarchicalSourceTable";
     String TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE = "TreeTableFilterReverseLookup";
@@ -291,19 +294,21 @@ public interface Table extends
 
     <TYPE> Iterator<TYPE> columnIterator(@NotNull String columnName);
 
-    ByteColumnIterator byteColumnIterator(@NotNull String columnName);
-
     CharacterColumnIterator characterColumnIterator(@NotNull String columnName);
 
-    DoubleColumnIterator doubleColumnIterator(@NotNull String columnName);
+    ByteColumnIterator byteColumnIterator(@NotNull String columnName);
 
-    FloatColumnIterator floatColumnIterator(@NotNull String columnName);
+    ShortColumnIterator shortColumnIterator(@NotNull String columnName);
 
     IntegerColumnIterator integerColumnIterator(@NotNull String columnName);
 
     LongColumnIterator longColumnIterator(@NotNull String columnName);
 
-    ShortColumnIterator shortColumnIterator(@NotNull String columnName);
+    FloatColumnIterator floatColumnIterator(@NotNull String columnName);
+
+    DoubleColumnIterator doubleColumnIterator(@NotNull String columnName);
+
+    <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Convenience data fetching; highly inefficient
@@ -535,7 +540,7 @@ public interface Table extends
      * If firstPosition is negative, and lastPosition is zero, then the firstRow is counted from the end of the table,
      * and the end of the slice is the size of the table. slice(-N, 0) is equivalent to {@link #tail}(N).
      * <p>
-     * If the firstPosition is nega tive and the lastPosition is negative, they are both counted from the end of the
+     * If the firstPosition is negative and the lastPosition is negative, they are both counted from the end of the
      * table. For example, slice(-2, -1) returns the second to last row of the table.
      *
      * @param firstPositionInclusive the first position to include in the result
@@ -1562,55 +1567,32 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Create a {@link TableMap} from this table, keyed by the specified columns.
-     *
+     * Create a {@link PartitionedTable} from this table, partitioned according to the specified key columns.
      * <p>
-     * The returned TableMap contains each row in this table in exactly one of the tables within the map. If you have
-     * exactly one key column the TableMap is keyed by the value in that column. If you have zero key columns, then the
-     * TableMap is keyed by {@code io.deephaven.datastructures.util.SmartKey.EMPTY} (and will contain this table as the
-     * value). If you have multiple key columns, then the TableMap is keyed by a
-     * {@code io.deephaven.datastructures.util.SmartKey}. The SmartKey will have one value for each of your column
-     * values, in the order specified by keyColumnNames.
-     * </p>
+     * The underlying partitioned table backing the result contains each row in {@code this} table in exactly one of the
+     * result's constituent tables.
      *
-     * <p>
-     * For example if you have a Table keyed by a String column named USym, and a DateTime column named Expiry; a value
-     * could be retrieved from the TableMap with
-     * {@code tableMap.get(new SmartKey("SPY";, DateTimeUtils.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
-     * with an Integer column named Bucket, you simply use the desired value as in {@code tableMap.get(1)}.
-     * </p>
-     *
-     * @param dropKeys if true, drop key columns in the output Tables
-     * @param keyColumnNames the name of the key columns to use.
-     * @return a TableMap keyed by keyColumnNames
+     * @param dropKeys Whether to drop key columns in the output constituent tables
+     * @param keyColumnNames The name of the key columns to partition by
+     * @return A {@link PartitionedTable} keyed by {@code keyColumnNames}
      */
     @ConcurrentMethod
-    TableMap partitionBy(boolean dropKeys, String... keyColumnNames);
+    PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames);
 
     /**
-     * Create a {@link TableMap} from this table, keyed by the specified columns.
-     *
+     * Equivalent to {@code partitionBy(false, keyColumnNames)}
      * <p>
-     * The returned TableMap contains each row in this table in exactly one of the tables within the map. If you have
-     * exactly one key column the TableMap is keyed by the value in that column. If you have zero key columns, then the
-     * TableMap is keyed by {@code io.deephaven.datastructures.util.SmartKey.EMPTY} (and will contain this table as the
-     * value). If you have multiple key columns, then the TableMap is keyed by a
-     * {@code io.deephaven.datastructures.util.SmartKey}. The SmartKey will have one value for each of your column
-     * values, in the order specified by keyColumnNames.
-     * </p>
-     *
+     * Create a {@link PartitionedTable} from this table, partitioned according to the specified key columns. Key
+     * columns are never dropped from the output constituent tables.
      * <p>
-     * For example if you have a Table keyed by a String column named USym, and a DateTime column named Expiry; a value
-     * could be retrieved from the TableMap with
-     * {@code tableMap.get(new SmartKey("SPY";, DateTimeUtils.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
-     * with an Integer column named Bucket, you simply use the desired value as in {@code tableMap.get(1)}.
-     * </p>
+     * The underlying partitioned table backing the result contains each row in {@code this} table in exactly one of the
+     * result's constituent tables.
      *
-     * @param keyColumnNames the name of the key columns to use.
-     * @return a TableMap keyed by keyColumnNames
+     * @param keyColumnNames The name of the key columns to partition by
+     * @return A {@link PartitionedTable} keyed by {@code keyColumnNames}
      */
     @ConcurrentMethod
-    TableMap partitionBy(String... keyColumnNames);
+    PartitionedTable partitionBy(String... keyColumnNames);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Hierarchical table operations (rollup and treeTable).
@@ -1841,6 +1823,7 @@ public interface Table extends
      *
      * @return This table, or a fully-coalesced child
      */
+    @ConcurrentMethod
     Table coalesce();
 
     /**

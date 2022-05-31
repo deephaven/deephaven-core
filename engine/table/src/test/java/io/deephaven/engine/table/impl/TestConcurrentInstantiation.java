@@ -4,21 +4,16 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.table.impl.select.ConditionFilter;
-import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
-import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.util.SortedBy;
@@ -48,7 +43,6 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.util.QueryConstants.NULL_INT;
 
 @Category(OutOfBandTest.class)
 public class TestConcurrentInstantiation extends QueryTableTestBase {
@@ -56,55 +50,61 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     private final ExecutorService dualPool = Executors.newFixedThreadPool(2);
 
     public void testTreeTableFilter() throws ExecutionException, InterruptedException {
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),
-                col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
-                col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
-        final Table treed =
-                UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                        .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+        // TODO (https://github.com/deephaven/deephaven-core/issues/64): Delete this, uncomment and fix the rest
+        try {
+            emptyTable(10).treeTable("ABC", "DEF");
+            fail("Expected exception");
+        } catch (UnsupportedOperationException expected) {
+        }
 
-        final Callable<Table> callable =
-                () -> TreeTableFilter.rawFilterTree(treed, "Sentinel in 4, 6, 9, 11, 12, 13, 14, 15");
-
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        final Table rawSorted = pool.submit(callable).get();
-        TableTools.show(rawSorted);
-
-        assertTrue(Arrays.equals(new int[] {1, 3, 4, 6, 9}, (int[]) rawSorted.getColumn("Sentinel").getDirect()));
-
-        TstUtils.addToTable(source, i(10), c("Sentinel", 11),
-                c("Parent", 2));
-        final Table table2 = pool.submit(callable).get();
-        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-
-        source.notifyListeners(i(10), i(), i());
-
-        final Future<Table> future3 = pool.submit(callable);
-        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-        final Table table3 = future3.get();
-
-        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-        assertEquals(TableTools.diff(table2, table3, 20), "");
-
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        TstUtils.addToTable(source, i(11), c("Sentinel", 12), c("Parent", 10));
-
-        final Table table4 = pool.submit(callable).get();
-        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-        assertEquals(TableTools.diff(table2, table3, 20), "");
-        assertEquals(TableTools.diff(table3, table4, 20), "");
-
-        source.notifyListeners(i(11), i(), i());
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-
-        assertTrue(Arrays.equals(new int[] {1, 2, 3, 4, 6, 9, 10, 11, 12},
-                (int[]) rawSorted.getColumn("Sentinel").getDirect()));
-        assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-        assertEquals(TableTools.diff(table2, table3, 20), "");
-        assertEquals(TableTools.diff(table3, table4, 20), "");
-
+        // final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),
+        // col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+        // col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
+        // final Table treed =
+        // UpdateGraphProcessor.DEFAULT.exclusiveLock()
+        // .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+        //
+        // final Callable<Table> callable =
+        // () -> TreeTableFilter.rawFilterTree(treed, "Sentinel in 4, 6, 9, 11, 12, 13, 14, 15");
+        //
+        // UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        // final Table rawSorted = pool.submit(callable).get();
+        // TableTools.show(rawSorted);
+        //
+        // assertTrue(Arrays.equals(new int[] {1, 3, 4, 6, 9}, (int[]) rawSorted.getColumn("Sentinel").getDirect()));
+        //
+        // TstUtils.addToTable(source, i(10), c("Sentinel", 11),
+        // c("Parent", 2));
+        // final Table table2 = pool.submit(callable).get();
+        // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+        //
+        // source.notifyListeners(i(10), i(), i());
+        //
+        // final Future<Table> future3 = pool.submit(callable);
+        // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+        //
+        // UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        // final Table table3 = future3.get();
+        //
+        // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+        // assertEquals(TableTools.diff(table2, table3, 20), "");
+        //
+        // UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        // TstUtils.addToTable(source, i(11), c("Sentinel", 12), c("Parent", 10));
+        //
+        // final Table table4 = pool.submit(callable).get();
+        // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+        // assertEquals(TableTools.diff(table2, table3, 20), "");
+        // assertEquals(TableTools.diff(table3, table4, 20), "");
+        //
+        // source.notifyListeners(i(11), i(), i());
+        // UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        //
+        // assertTrue(Arrays.equals(new int[] {1, 2, 3, 4, 6, 9, 10, 11, 12},
+        // (int[]) rawSorted.getColumn("Sentinel").getDirect()));
+        // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+        // assertEquals(TableTools.diff(table2, table3, 20), "");
+        // assertEquals(TableTools.diff(table3, table4, 20), "");
     }
 
 
@@ -466,7 +466,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testSortOfPartitionBy() throws ExecutionException, InterruptedException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "a", "a"));
-        final TableMap tm = table.partitionBy("y");
+        final PartitionedTable pt = table.partitionBy("y");
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
@@ -479,8 +479,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
         UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
 
-        final Table tableA = tm.get("a");
-        final Table tableD = tm.get("d");
+        final Table tableA = pt.constituentFor("a");
+        final Table tableD = pt.constituentFor("d");
 
         TableTools.show(tableA);
         TableTools.show(tableD);
@@ -1334,7 +1334,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final QueryTable table2 = makeByConcurrentStep2Table(true, false);
 
 
-        final Callable<TableMap> callable;
+        final Callable<PartitionedTable> callable;
         final Table slowed;
         if (withReset) {
             QueryLibrary.importStatic(TestConcurrentInstantiation.class);
@@ -1356,17 +1356,17 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Future<TableMap> future1 = pool.submit(callable);
-        final TableMap result1;
+        final Future<PartitionedTable> future1 = pool.submit(callable);
+        final PartitionedTable result1;
         if (withReset) {
             SleepUtil.sleep(25);
         }
         result1 = future1.get();
 
         System.out.println("Result 1");
-        final Table result1a = result1.get("a");
-        final Table result1b = result1.get("b");
-        final Table result1c = result1.get("c");
+        final Table result1a = result1.constituentFor("a");
+        final Table result1b = result1.constituentFor("b");
+        final Table result1c = result1.constituentFor("c");
         TableTools.show(result1a);
         TableTools.show(result1b);
         TableTools.show(result1c);
@@ -1380,13 +1380,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         doByConcurrentAdditions(table, false);
         doByConcurrentModifications(table, false);
 
-        final TableMap result2 = pool.submit(callable).get();
+        final PartitionedTable result2 = pool.submit(callable).get();
 
         System.out.println("Result 2");
-        final Table result2a = result2.get("a");
-        final Table result2b = result2.get("b");
-        final Table result2c = result2.get("c");
-        final Table result2d_1 = result2.get("d");
+        final Table result2a = result2.constituentFor("a");
+        final Table result2b = result2.constituentFor("b");
+        final Table result2c = result2.constituentFor("c");
+        final Table result2d_1 = result2.constituentFor("d");
         assertNull(result2d_1);
 
         TableTools.show(result2a);
@@ -1397,19 +1397,19 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         table.notifyListeners(i(5, 9), i(), i(8));
 
-        final Future<TableMap> future3 = pool.submit(callable);
+        final Future<PartitionedTable> future3 = pool.submit(callable);
         if (withReset) {
             while (((QueryTable) slowed).getLastNotificationStep() != LogicalClock.DEFAULT.currentStep()) {
                 UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             }
         }
-        final TableMap result3 = future3.get();
+        final PartitionedTable result3 = future3.get();
 
         System.out.println("Result 3");
-        final Table result3a = result3.get("a");
-        final Table result3b = result3.get("b");
-        final Table result3c = result3.get("c");
-        final Table result3d = result3.get("d");
+        final Table result3a = result3.constituentFor("a");
+        final Table result3b = result3.constituentFor("b");
+        final Table result3c = result3.constituentFor("c");
+        final Table result3d = result3.constituentFor("d");
 
         System.out.println("Expected 2");
         TableTools.show(expected2);
