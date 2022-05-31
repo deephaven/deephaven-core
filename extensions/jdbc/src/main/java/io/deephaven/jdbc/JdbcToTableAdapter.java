@@ -31,6 +31,35 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
+/**
+ * The JdbcToTableAdapter class provides a simple interface to convert a Java Database Connectivity (JDBC)
+ * {@link ResultSet} to a Deephaven {@link Table}.
+ * <p/>
+ *
+ * To use, first create a result set using your provided JDBC driver of choice:
+ * <pre>
+ * Connection connection = DriverManager.getConnection("jdbc:sqlite:/path/to/db.sqlite");
+ * Statement statement = connection.createStatement();
+ * ResultSet resultSet = statement.executeQuery("SELECT * FROM Invoice");
+ * </pre>
+ * Then convert the {@code ResultSet} to a {@code Table}:
+ * <pre>
+ * Table resultTable = JdbcToTableAdapter.readJdbc(resultSet);
+ * </pre>
+ * <p/>
+ *
+ * There are several options than can be set to change the behavior of the ingestion. Provide the customized options
+ * object to {@link JdbcToTableAdapter#readJdbc(ResultSet, ReadJdbcOptions, String...)} like this:
+ *
+ * <pre>
+ * JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
+ * Table resultTable = JdbcToTableAdapter.readJdbc(resultSet, options);
+ * </pre>
+ *
+ * There are many supported mappings from JDBC type to Deephaven type. The default can be overridden by specifying the
+ * desired result type in the options. For example, convert BigDecimal to double on 'MyCol' via
+ * {@code options.columnTargetType("MyCol", double.class)}.
+ */
 public class JdbcToTableAdapter {
 
     /**
@@ -177,7 +206,7 @@ public class JdbcToTableAdapter {
             }
         }
 
-        // Note: jdbc result set cardinality is limited to Integer.MAX_VALUE
+        // Note: JDBC result set cardinality is limited to Integer.MAX_VALUE
         final int numRows = options.maxRows < 0 ? getExpectedSize(rs) : Math.min(options.maxRows, getExpectedSize(rs));
         final int numColumns = origColumnNames.length;
         final String[] columnNames = fixColumnNames(options, origColumnNames);
