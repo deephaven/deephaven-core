@@ -307,11 +307,11 @@ public class TableDefinition implements LogOutputAppendable {
             @NotNull final TableDefinition other,
             @NotNull final String lhsName,
             @NotNull final String rhsName) {
-        if (this == other) {
+        if (equals(other)) {
             return this;
         }
         final TableDefinition result = checkCompatibilityInternal(other, false);
-        if (result == null || other.checkCompatibilityInternal(this, false) == null) {
+        if (result == null || other.checkCompatibilityInternal(result, false) == null) {
             final List<String> differences = describeCompatibilityDifferences(other, lhsName, rhsName);
             throw new IncompatibleTableDefinitionException("Table definition incompatibilities: \n\t"
                     + String.join("\n\t", differences));
@@ -357,7 +357,7 @@ public class TableDefinition implements LogOutputAppendable {
     public TableDefinition checkCompatibility(
             @NotNull final TableDefinition other,
             final boolean ignorePartitioningColumns) {
-        if (this == other) {
+        if (equals(other)) {
             return this;
         }
         final TableDefinition minimized = checkCompatibilityInternal(other, ignorePartitioningColumns);
