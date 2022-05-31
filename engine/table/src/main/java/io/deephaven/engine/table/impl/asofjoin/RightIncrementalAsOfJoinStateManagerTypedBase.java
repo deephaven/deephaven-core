@@ -427,15 +427,16 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         }
     }
 
-    private int accumulateIndices(RowSet restampAdditions, ColumnSource<?>[] rightSources, LongArraySource slots,
+    private int accumulateIndices(RowSet rowSet, ColumnSource<?>[] sources, LongArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, boolean usePrev) {
         resetCookie();
 
-        if (restampAdditions.isNonempty()) {
-            try (final ProbeContext pc = makeProbeContext(rightSources, restampAdditions.size())) {
-                probeTable(pc, restampAdditions, usePrev, rightSources,
-                        new RightProbeHandler(slots, sequentialBuilders));
-            }
+        if (rowSet.isEmpty()) {
+            return 0;
+        }
+
+        try (final ProbeContext pc = makeProbeContext(sources, rowSet.size())) {
+            probeTable(pc, rowSet, usePrev, sources, new RightProbeHandler(slots, sequentialBuilders));
         }
 
         return nextCookie;
