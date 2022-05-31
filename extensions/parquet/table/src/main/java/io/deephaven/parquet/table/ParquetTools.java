@@ -511,7 +511,7 @@ public class ParquetTools {
                         + " has null partition value at partition key " + partitionKey);
             }
             allColumns.add(ColumnDefinition.fromGenericType(partitionKey,
-                    getUnboxedTypeIfBoxed(partitionValue.getClass()), ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+                    getUnboxedTypeIfBoxed(partitionValue.getClass()), null, ColumnDefinition.ColumnType.Partitioning));
         }
         allColumns.addAll(schemaInfo.getFirst());
         return readPartitionedTable(recordingLocationKeyFinder, schemaInfo.getSecond(),

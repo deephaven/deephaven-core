@@ -64,7 +64,7 @@ public class StringUtils implements Serializable {
         for (int ci = 0; ci < resultColumns.length; ++ci) {
             final ColumnDefinition<?> column = resultColumns[ci];
             if (column.getDataType() == String.class
-                    && column.getColumnType() != ColumnDefinition.COLUMNTYPE_PARTITIONING) {
+                    && column.getColumnType() != ColumnDefinition.ColumnType.Partitioning) {
                 resultColumns[ci] = column.withDataType(CompressedString.class);
             }
         }

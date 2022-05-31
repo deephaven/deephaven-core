@@ -347,9 +347,9 @@ public class TestParquetTools {
 
         final List<ColumnDefinition<?>> allColumns = new ArrayList<>();
         allColumns.add(
-                ColumnDefinition.fromGenericType("Date", String.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+                ColumnDefinition.fromGenericType("Date", String.class, null, ColumnDefinition.ColumnType.Partitioning));
         allColumns.add(
-                ColumnDefinition.fromGenericType("Num", int.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+                ColumnDefinition.fromGenericType("Num", int.class, null, ColumnDefinition.ColumnType.Partitioning));
         allColumns.addAll(table1.getDefinition().getColumnList());
         final TableDefinition partitionedDefinition = new TableDefinition(allColumns);
 

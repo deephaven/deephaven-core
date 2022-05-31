@@ -619,8 +619,8 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
                 iter.remove();
                 continue;
             }
-            if (current.getColumnType() != ColumnDefinition.COLUMNTYPE_NORMAL &&
-                    (current.getColumnType() != ColumnDefinition.COLUMNTYPE_GROUPING || groupingColumnsAsNormal)) {
+            if (current.getColumnType() != ColumnDefinition.ColumnType.Normal &&
+                    (current.getColumnType() != ColumnDefinition.ColumnType.Grouping || groupingColumnsAsNormal)) {
                 iter.set(current.withNormal());
             }
         }

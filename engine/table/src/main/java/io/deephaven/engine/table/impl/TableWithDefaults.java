@@ -64,7 +64,7 @@ public interface TableWithDefaults extends Table {
         for (ColumnDefinition<?> cDef : getDefinition().getColumns()) {
             columnNames.add(cDef.getName());
             columnDataTypes.add(cDef.getDataType().getName());
-            columnTypes.add(ColumnDefinition.COLUMN_TYPE_FORMATTER.format(cDef.getColumnType()));
+            columnTypes.add(cDef.getColumnType().name());
             columnPartitioning.add(cDef.isPartitioning());
             columnGrouping.add(cDef.isGrouping());
 

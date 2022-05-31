@@ -236,8 +236,8 @@ public class TestFormulaColumn {
             result = Arrays.asList("varargTest1", "varargTest2", "varargTest3");
             checkPrimitive(row, expression, result);
 
-            expression = "io.deephaven.engine.table.ColumnDefinition.COLUMNTYPE_NORMAL";
-            result = ColumnDefinition.COLUMNTYPE_NORMAL;
+            expression = "io.deephaven.engine.table.ColumnDefinition.ColumnType.Normal";
+            result = ColumnDefinition.ColumnType.Normal;
             checkPrimitive(row, expression, result);
 
             expression = "CountDownLatch.class"; // (testing a package import)

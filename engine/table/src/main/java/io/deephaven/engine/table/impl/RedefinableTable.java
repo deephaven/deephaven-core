@@ -132,7 +132,7 @@ public abstract class RedefinableTable extends UncoalescedTable {
                 resultColumnsExternal[ci] = cDef;
                 viewColumns[ci] = new SourceColumn(cDef.getName());
             } else {
-                resultColumnsExternal[ci] = cDef.rename(newName);
+                resultColumnsExternal[ci] = cDef.withName(newName);
                 viewColumns[ci] = new SourceColumn(cDef.getName(), newName);
             }
         }

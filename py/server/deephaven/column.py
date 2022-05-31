@@ -19,14 +19,12 @@ _JColumnDefinition = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
 
 
 class ColumnType(Enum):
-    NORMAL = _JColumnDefinition.COLUMNTYPE_NORMAL
+    NORMAL = _JColumnDefinition.ColumnType.Normal
     """ A regular column. """
-    GROUPING = _JColumnDefinition.COLUMNTYPE_GROUPING
+    GROUPING = _JColumnDefinition.ColumnType.Grouping
     """ A grouping column. """
-    PARTITIONING = _JColumnDefinition.COLUMNTYPE_PARTITIONING
+    PARTITIONING = _JColumnDefinition.ColumnType.Partitioning
     """ A partitioning column. """
-    VIRTUAL = _JColumnDefinition.COLUMNTYPE_VIRTUAL
-    """ A virtual column. """
 
     def __repr__(self):
         return self.name
