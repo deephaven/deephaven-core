@@ -96,7 +96,7 @@ from pydeephaven import Session
 
 session = Session()
 
-# create a table with no columns and 3 rows
+# Create a table with no columns and 3 rows
 table = session.empty_table(3)
 # Create derived table having a new column MyColumn populated with the row index "i"
 table = table.update(["MyColumn = i"])
