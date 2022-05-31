@@ -1,4 +1,4 @@
-#Parquet compression support
+# Parquet compression support
 
 This project abstracts over parquet's expected compression formats in a way to make it easy for the Deephaven
 parquet reader/writer code to be able to use them. 
