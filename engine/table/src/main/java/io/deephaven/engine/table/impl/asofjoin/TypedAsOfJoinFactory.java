@@ -88,7 +88,7 @@ public class TypedAsOfJoinFactory {
         if (!alternate) {
             builder.addStatement("final long cookie = getCookieMain(tableLocation)");
             builder.addStatement("assert hashSlots != null");
-            builder.addStatement("hashSlots.set(cookie, (long)tableLocation)");
+            builder.addStatement("hashSlots.set(cookie, (long)tableLocation | mainInsertMask)");
 
             builder.beginControlFlow("if (sequentialBuilders != null)");
             builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
@@ -97,21 +97,20 @@ public class TypedAsOfJoinFactory {
             builder.endControlFlow();
         } else {
             builder.addStatement("final long cookie = getCookieAlternate(alternateTableLocation)");
-            builder.addStatement("assert hashSlots != null");
-            builder.addStatement("hashSlots.set(cookie, (long)alternateTableLocation)");
+            builder.addStatement("hashSlots.set(cookie, (long)alternateTableLocation | alternateInsertMask)");
 
             builder.beginControlFlow("if (sequentialBuilders != null)");
             builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
             builder.nextControlFlow("else");
-            builder.addStatement("addAlternateLeftIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState)");
+            builder.addStatement(
+                    "addAlternateLeftIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState)");
             builder.endControlFlow();
         }
     }
 
     public static void rightIncrementalBuildLeftInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         builder.addStatement("final long cookie = makeCookieMain(tableLocation)");
-        builder.addStatement("assert hashSlots != null");
-        builder.addStatement("hashSlots.set(cookie, (long)tableLocation)");
+        builder.addStatement("hashSlots.set(cookie, (long)tableLocation | mainInsertMask)");
 
         builder.beginControlFlow("if (sequentialBuilders != null)");
         builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
@@ -125,8 +124,7 @@ public class TypedAsOfJoinFactory {
             CodeBlock.Builder builder) {
         if (!alternate) {
             builder.addStatement("final long cookie = getCookieMain(tableLocation)");
-            builder.addStatement("assert hashSlots != null");
-            builder.addStatement("hashSlots.set(cookie, (long)tableLocation)");
+            builder.addStatement("hashSlots.set(cookie, (long)tableLocation | mainInsertMask)");
 
             builder.beginControlFlow("if (sequentialBuilders != null)");
             builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
@@ -135,21 +133,20 @@ public class TypedAsOfJoinFactory {
             builder.endControlFlow();
         } else {
             builder.addStatement("final long cookie = getCookieAlternate(alternateTableLocation)");
-            builder.addStatement("assert hashSlots != null");
-            builder.addStatement("hashSlots.set(cookie, (long)alternateTableLocation)");
+            builder.addStatement("hashSlots.set(cookie, (long)alternateTableLocation | alternateInsertMask)");
 
             builder.beginControlFlow("if (sequentialBuilders != null)");
             builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
             builder.nextControlFlow("else");
-            builder.addStatement("addAlternateRightIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState)");
+            builder.addStatement(
+                    "addAlternateRightIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState)");
             builder.endControlFlow();
         }
     }
 
     public static void rightIncrementalRightInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         builder.addStatement("final long cookie = makeCookieMain(tableLocation)");
-        builder.addStatement("assert hashSlots != null");
-        builder.addStatement("hashSlots.set(cookie, (long)tableLocation)");
+        builder.addStatement("hashSlots.set(cookie, (long)tableLocation | mainInsertMask)");
 
         builder.beginControlFlow("if (sequentialBuilders != null)");
         builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
@@ -164,8 +161,7 @@ public class TypedAsOfJoinFactory {
         if (!alternate) {
             builder.beginControlFlow("if (sequentialBuilders != null)");
             builder.addStatement("final long cookie = getCookieMain(tableLocation)");
-            builder.addStatement("assert hashSlots != null");
-            builder.addStatement("hashSlots.set(cookie, (long)tableLocation)");
+            builder.addStatement("hashSlots.set(cookie, (long)tableLocation | mainInsertMask)");
             builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
             builder.nextControlFlow("else");
             builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), rowState)");
@@ -173,11 +169,11 @@ public class TypedAsOfJoinFactory {
         } else {
             builder.beginControlFlow("if (sequentialBuilders != null)");
             builder.addStatement("final long cookie = getCookieAlternate(alternateTableLocation)");
-            builder.addStatement("assert hashSlots != null");
-            builder.addStatement("hashSlots.set(cookie, (long)alternateTableLocation)");
+            builder.addStatement("hashSlots.set(cookie, (long)alternateTableLocation | alternateInsertMask)");
             builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition))");
             builder.nextControlFlow("else");
-            builder.addStatement("addAlternateRightIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState)");
+            builder.addStatement(
+                    "addAlternateRightIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState)");
             builder.endControlFlow();
 
         }

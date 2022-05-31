@@ -952,7 +952,7 @@ public class AsOfJoinHelper {
                 SegmentedSortedArray.makeFactory(stampChunkType, reverse, control.rightSsaNodeSize());
         final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
 
-        final int tableSize = 2; // control.initialBuildSize();
+        final int tableSize = control.initialBuildSize();
 
         final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager = USE_TYPED_STATE_MANAGER
                 ? TypedHasherFactory.make(RightIncrementalAsOfJoinStateManagerTypedBase.class,
