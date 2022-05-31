@@ -186,11 +186,15 @@ class TableTestCase(BaseTestCase):
     # Table operation category: Sort
     #
     def test_sort(self):
-        sorted_table = self.test_table.sort(order_by=["a", "b"], order=[SortDirection.DESCENDING])
+        sorted_table = self.test_table.sort(order_by=["a", "b"],
+                                            order=[SortDirection.DESCENDING, SortDirection.ASCENDING])
+        self.assertEqual(sorted_table.size, self.test_table.size)
+        with self.assertRaises(DHError) as cm:
+            sorted_table = self.test_table.sort(order_by=["a", "b"], order=[SortDirection.DESCENDING])
         self.assertEqual(sorted_table.size, self.test_table.size)
         sorted_table = self.test_table.sort(order_by="a", order=SortDirection.DESCENDING)
         self.assertEqual(sorted_table.size, self.test_table.size)
-        sorted_table = self.test_table.sort(order_by=[], order=SortDirection.DESCENDING)
+        sorted_table = self.test_table.sort(order_by=[], order=[])
         self.assertEqual(sorted_table, self.test_table)
 
     def test_restrict_sort_to(self):

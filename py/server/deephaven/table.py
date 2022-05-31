@@ -48,11 +48,8 @@ class AsOfMatchRule(Enum):
 
 
 def _sort_column(col, dir_):
-    return (
-        _JSortColumn.desc(_JColumnName.of(col))
-        if dir_ == SortDirection.DESCENDING
-        else _JSortColumn.asc(_JColumnName.of(col))
-    )
+    return (_JSortColumn.desc(_JColumnName.of(col)) if dir_ == SortDirection.DESCENDING else _JSortColumn.asc(
+        _JColumnName.of(col)))
 
 
 def _td_to_columns(table_definition):
@@ -630,8 +627,8 @@ class Table(JObjectWrapper):
 
         Args:
             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
-            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for each sort
-                column, default is None. In the absence of explicit sort directions, data will be sorted in the ascending order.
+            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
+                each sort column, default is None, meaning ascending order for all the sort columns.
 
         Returns:
             a new table
@@ -642,11 +639,13 @@ class Table(JObjectWrapper):
 
         try:
             order_by = to_sequence(order_by)
+            if not order:
+                order = (SortDirection.ASCENDING,) * len(order_by)
             order = to_sequence(order)
-            order = order + (SortDirection.ASCENDING, ) * (len(order_by) - len(order))
-            sort_columns = [
-                _sort_column(col, dir_) for col, dir_ in zip(order_by, order)
-            ]
+            if len(order_by) != len(order):
+                raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
+
+            sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
             j_sc_list = j_array_list(sort_columns)
             return Table(j_table=self.j_table.sort(j_sc_list))
         except Exception as e:
@@ -1279,7 +1278,6 @@ class Table(JObjectWrapper):
         """ Creates a PartitionedTable from this table, partitioned according to the specified key columns.
 
         Args:
-            table (Table): the source table
             by (Union[str, Sequence[str]]): the column(s) by which to group data
             drop_keys (bool): whether to drop key columns in the constituent tables, default is False
 
@@ -1297,9 +1295,9 @@ class Table(JObjectWrapper):
 
 
 class PartitionedTable(JObjectWrapper):
-    """A partitioned table is a table with one column containing like-defined constituent tables,
-    optionally with key columns defined to allow binary operation based transformation or joins with other like-keyed
-    partitioned tables."""
+    """A partitioned table is a table with one column containing like-defined constituent tables, optionally with
+    key columns defined to allow binary operation based transformation or joins with other like-keyed partitioned
+    tables. """
 
     j_object_type = _JPartitionedTable
 
@@ -1366,15 +1364,36 @@ class PartitionedTable(JObjectWrapper):
         return self._constituent_changes_permitted
 
     def merge(self) -> Table:
-        """Makes a new Table that contains all the rows from all the constituent tables."""
+        """Makes a new Table that contains all the rows from all the constituent tables.
+
+        Returns:
+            a Table
+
+        Raises:
+            DHError
+        """
         try:
             return Table(j_table=self.j_partitioned_table.merge())
         except Exception as e:
             raise DHError(e, "failed to merge all the constituent tables.")
 
-    def filter(self, filters: Union[Filter, Sequence[Filter]]) -> PartitionedTable:
-        """Makes a new PartitionedTable from the result of applying filters to the underlying partitioned table."""
+    def filter(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> PartitionedTable:
+        """Makes a new PartitionedTable from the result of applying filters to the underlying partitioned table.
+
+        Args:
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition  expression(s) or
+                Filter object(s)
+
+        Returns:
+             a PartitionedTable
+
+        Raises:
+            DHError
+        """
         filters = to_sequence(filters)
+        if isinstance(filters[0], str):
+            filters = Filter.from_(filters)
+            filters = to_sequence(filters)
         try:
             return PartitionedTable(j_partitioned_table=self.j_partitioned_table.filter(j_array_list(filters)))
         except Exception as e:
@@ -1387,8 +1406,7 @@ class PartitionedTable(JObjectWrapper):
          Args:
              order_by (Union[str, Sequence[str]]): the column(s) to be sorted on, can't include the constituent column
              order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
-                each sort column, default is None. In the absence of explicit sort directions, data will be sorted in
-                the ascending order.
+                each sort column, default is None, meaning ascending order for all the sort columns.
 
          Returns:
              a new PartitionedTable
@@ -1399,18 +1417,20 @@ class PartitionedTable(JObjectWrapper):
 
         try:
             order_by = to_sequence(order_by)
+            if not order:
+                order = (SortDirection.ASCENDING,) * len(order_by)
             order = to_sequence(order)
-            order = order + (SortDirection.ASCENDING,) * (len(order_by) - len(order))
-            sort_columns = [
-                _sort_column(col, dir_) for col, dir_ in zip(order_by, order)
-            ]
+            if len(order_by) != len(order):
+                raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
+
+            sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
             j_sc_list = j_array_list(sort_columns)
             return PartitionedTable(j_partitioned_table=self.j_partitioned_table.sort(j_sc_list))
         except Exception as e:
             raise DHError(e, "failed to sort the partitioned table.") from e
 
     def constituent_by_keys(self, key_values: Sequence[Any]) -> Optional[Table]:
-        """Finds a single constituent table by its corresponding key column values.
+        """Gets a single constituent table by its corresponding key column values.
 
         Args:
             key_values (Sequence[Any]): the values of the key columns
@@ -1418,7 +1438,11 @@ class PartitionedTable(JObjectWrapper):
         Returns:
             a Table or None
         """
-        return Table(j_table=self.j_partitioned_table.constituentFor(*key_values))
+        j_table = self.j_partitioned_table.constituentFor(*key_values)
+        if j_table:
+            return Table(j_table=j_table)
+        else:
+            return None
 
     @property
     def constituent_tables(self) -> List[Table]:

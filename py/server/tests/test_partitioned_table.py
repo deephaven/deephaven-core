@@ -46,6 +46,10 @@ class PartitionedTableTestCase(BaseTestCase):
         pt = self.partitioned_table.filter(filters)
         self.assertIsNotNone(pt)
 
+        filters = ["c < 0", "e > 0"]
+        pt = self.partitioned_table.filter(filters)
+        self.assertIsNotNone(pt)
+
         with self.assertRaises(DHError) as cm:
             conditions = ["a > 100", "b < 1000"]
             filters = Filter.from_(conditions)
