@@ -1,0 +1,27 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'JDBC: Support to read and write tables from/to JDBC'
+
+dependencies {
+    api project(':engine-api')
+
+    implementation project(':engine-table'),
+            project(':engine-base')
+
+    implementation 'com.google.guava:guava:19.0'
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+
+    testImplementation TestTools.projectDependency(project, 'engine-table'),
+            TestTools.projectDependency(project, 'Util'),
+            'com.h2database:h2:2.1.212'
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
