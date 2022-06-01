@@ -85,7 +85,7 @@ table = session.time_table(period=1000000000).update(formulas=["Col1 = i % 2"])
 session.bind_table(name="my_table", table=table)
 ```
 
-This is the general flow of how the Python client interacts with Deephaven. You create a table (new or existing), execute some operations on it, and then bind it to Deephaven. Binding the table gives it a named reference on the Deephaven server.
+This is the general flow of how the Python client interacts with Deephaven. You create a table (new or existing), execute some operations on it, and then bind it to Deephaven. Binding the table gives it a named reference on the Deephaven server, so that it can be used from the Web API or other Sessions.
 
 ## Execute a query on a table
 
