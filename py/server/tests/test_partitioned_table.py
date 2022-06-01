@@ -68,9 +68,9 @@ class PartitionedTableTestCase(BaseTestCase):
             new_pt = self.partitioned_table.sort(order_by=self.partitioned_table.constituent_column)
         self.assertIn("Unsupported sort on constituent column", str(cm.exception))
 
-    def test_constituent_by_keys(self):
+    def test_get_constituent(self):
         keys = [917, 167]
-        self.assertIsNotNone(self.partitioned_table.constituent_by_keys(keys))
+        self.assertIsNotNone(self.partitioned_table.get_constituent(keys))
 
     def test_constituents(self):
         constituent_tables = self.partitioned_table.constituent_tables
