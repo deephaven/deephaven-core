@@ -1429,7 +1429,7 @@ class PartitionedTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to sort the partitioned table.") from e
 
-    def constituent_by_keys(self, key_values: Sequence[Any]) -> Optional[Table]:
+    def get_constituent(self, key_values: Sequence[Any]) -> Optional[Table]:
         """Gets a single constituent table by its corresponding key column values.
 
         Args:
