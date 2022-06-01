@@ -1330,7 +1330,8 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def unique_keys(self) -> bool:
-        """Whether the keys in the underlying table are unique."""
+        """Whether the keys in the underlying table are unique. If keys are unique, one can expect that
+        select_distinct(key_column_names) and view(key_column_names) operations produce equivalent tables."""
         if self._unique_keys is None:
             self._unique_keys = self.j_partitioned_table.uniqueKeys()
         return self._unique_keys
