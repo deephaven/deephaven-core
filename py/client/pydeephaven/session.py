@@ -139,9 +139,7 @@ class Session:
             return self._last_ticket
 
     def subscribe_fields(self):
-        """
-        Allows tables created/removed on the server to be automatically seen on the client
-        """
+        """ Allows tables created/removed on the server to be automatically seen on the client """
 
         with self._r_lock:
             if self._field_update_thread is None:
@@ -150,9 +148,7 @@ class Session:
                 self._field_update_thread.start()
 
     def _update_fields(self):
-        """
-        Constant loop that checks for any server-side table changes and adds them to the local list
-        """
+        """ Constant loop that checks for any server-side table changes and adds them to the local list """
 
         while True:
             fields_change = next(self._list_fields)

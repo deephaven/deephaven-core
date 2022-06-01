@@ -11,7 +11,7 @@ from pydeephaven import Session
 from tests.testbase import BaseTestCase
 
 
-class SyncTestCase(BaseTestCase):
+class MultiSessionTestCase(BaseTestCase):
     def test_persistent_tables(self):
         with Session() as session1:
             session1 = Session()
