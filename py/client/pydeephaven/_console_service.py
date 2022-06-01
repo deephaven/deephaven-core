@@ -3,7 +3,7 @@
 #
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import console_pb2_grpc, console_pb2, application_pb2_grpc, application_pb2
+from pydeephaven.proto import console_pb2_grpc, console_pb2
 from pydeephaven.table import Table
 
 
