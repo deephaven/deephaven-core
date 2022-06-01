@@ -25,7 +25,7 @@ def import_taxi_records(dh_session: Session) -> Table:
                         "store_and_fwd_flag", "PULocationID", "DOLocationID"]
     pa_table = pa_table.drop(unwanted_columns)
 
-    # this is necessary because otherwise the data is too big to be sent
+    # this is necessary because otherwise, the data is too big to be sent as a gRPC message
     new_len = pa_table.num_rows // 2
     pa_table = pa_table.slice(length=new_len)
 
