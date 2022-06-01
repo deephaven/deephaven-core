@@ -5,7 +5,7 @@ import unittest
 
 from deephaven.filters import Filter
 
-from deephaven import read_csv, DHError
+from deephaven import read_csv, DHError, new_table
 from tests.testbase import BaseTestCase
 
 
@@ -71,6 +71,22 @@ class PartitionedTableTestCase(BaseTestCase):
     def test_get_constituent(self):
         keys = [917, 167]
         self.assertIsNotNone(self.partitioned_table.get_constituent(keys))
+
+        from deephaven.column import string_col, int_col, double_col
+
+        houses = new_table([
+            string_col("HomeType", ["Colonial", "Contemporary", "Contemporary", "Condo", "Colonial", "Apartment"]),
+            int_col("HouseNumber", [1, 3, 4, 15, 4, 9]),
+            string_col("StreetName", ["Test Drive", "Test Drive", "Test Drive", "Deephaven Road", "Community Circle",
+                                      "Community Circle"]),
+            int_col("SquareFeet", [2251, 1914, 4266, 1280, 3433, 981]),
+            int_col("Price", [450000, 400000, 1250000, 300000, 600000, 275000]),
+            double_col("LotSizeAcres", [0.41, 0.26, 1.88, 0.11, 0.95, 0.10])
+        ])
+
+        houses_by_type = houses.partition_by("HomeType")
+        colonial_homes = houses_by_type.get_constituent("Colonial")
+        self.assertIsNotNone(colonial_homes)
 
     def test_constituents(self):
         constituent_tables = self.partitioned_table.constituent_tables
