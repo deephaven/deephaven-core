@@ -131,7 +131,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         final String tableName;
 
         FailureListener(String tableName) {
-            super("Failure ShiftObliviousListener");
+            super("Failure Listener");
             this.tableName = tableName;
         }
 

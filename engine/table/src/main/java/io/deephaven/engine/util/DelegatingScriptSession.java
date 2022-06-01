@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * The delegating script session delegates all calls to another script session. When evaluating a script it massages the
@@ -130,6 +131,16 @@ public class DelegatingScriptSession implements ScriptSession {
     @Override
     public boolean tryManage(@NotNull LivenessReferent referent) {
         return delegate.tryManage(referent);
+    }
+
+    @Override
+    public boolean tryUnmanage(@NotNull LivenessReferent referent) {
+        return delegate.tryUnmanage(referent);
+    }
+
+    @Override
+    public boolean tryUnmanage(@NotNull Stream<? extends LivenessReferent> referents) {
+        return delegate.tryUnmanage(referents);
     }
 
     @Override

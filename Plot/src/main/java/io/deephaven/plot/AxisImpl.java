@@ -12,8 +12,8 @@ import io.deephaven.plot.errors.PlotExceptionCause;
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.plot.filters.SelectableDataSet;
+import io.deephaven.plot.util.tables.PartitionedTableHandle;
 import io.deephaven.plot.util.tables.SwappableTable;
-import io.deephaven.plot.util.tables.TableMapHandle;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.time.calendar.BusinessCalendar;
@@ -58,7 +58,7 @@ public class AxisImpl implements Axis, PlotExceptionCause {
 
     private boolean isTimeAxis = false;
     private final Set<SwappableTable> swappableTables = new CopyOnWriteArraySet<>();
-    private final Set<TableMapHandle> tableMapHandles = new CopyOnWriteArraySet<>();
+    private final Set<PartitionedTableHandle> partitionedTableHandles = new CopyOnWriteArraySet<>();
     public final Set<OneClickChartModifier> oneClickChartModifiers = new CopyOnWriteArraySet<>();
 
 
@@ -97,7 +97,7 @@ public class AxisImpl implements Axis, PlotExceptionCause {
         this.invert = axis.invert;
         this.isTimeAxis = axis.isTimeAxis;
         this.swappableTables.addAll(axis.swappableTables);
-        this.tableMapHandles.addAll(axis.tableMapHandles);
+        this.partitionedTableHandles.addAll(axis.partitionedTableHandles);
         this.oneClickChartModifiers.addAll(axis.oneClickChartModifiers);
     }
 
@@ -336,21 +336,21 @@ public class AxisImpl implements Axis, PlotExceptionCause {
         isTimeAxis = timeAxis;
     }
 
-    public void addTableMapHandle(TableMapHandle map) {
-        tableMapHandles.add(map);
+    public void addPartitionedTableHandle(PartitionedTableHandle map) {
+        partitionedTableHandles.add(map);
     }
 
     public Set<SwappableTable> getSwappableTables() {
         return swappableTables;
     }
 
-    public Set<TableMapHandle> getTableMapHandles() {
-        return tableMapHandles;
+    public Set<PartitionedTableHandle> getPartitionedTableHandles() {
+        return partitionedTableHandles;
     }
 
     public void addSwappableTable(SwappableTable st) {
         swappableTables.add(st);
-        addTableMapHandle(st.getTableMapHandle());
+        addPartitionedTableHandle(st.getPartitionedTableHandle());
     }
 
     public void addOneClickChartModifier(OneClickChartModifier oneClickChartModifier) {

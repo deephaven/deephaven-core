@@ -3,7 +3,7 @@
 #
 ######################################################################################################################
 #               This code is auto generated. DO NOT EDIT FILE!
-# Run generatePythonFigureWrapper or "./gradlew :Generators:generatePythonFigureWrapper2" to generate
+# Run generatePythonFigureWrapper2 or "./gradlew :Generators:generatePythonFigureWrapper2" to generate
 ######################################################################################################################
 """ This module implements the Figure class for creating plots, charts, line, axis, color, etc. """
 

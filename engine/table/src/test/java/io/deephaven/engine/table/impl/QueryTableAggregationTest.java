@@ -263,7 +263,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testIncrementalByDownstreamFromMerge() {
-        final long mergeChunkMultiple = UnionRedirection.CHUNK_MULTIPLE;
+        final long mergeChunkMultiple = UnionRedirection.ALLOCATION_UNIT_ROW_KEYS;
 
         final String nowName = "__now_" + Thread.currentThread().hashCode() + "__";
         QueryScope.addParam(nowName, DateTime.now());
@@ -2965,7 +2965,7 @@ public class QueryTableAggregationTest {
             this.originalValue = e();
 
             ((QueryTable) originalValue)
-                    .listenForUpdates(new InstrumentedTableUpdateListener("Failure ShiftObliviousListener") {
+                    .listenForUpdates(new InstrumentedTableUpdateListener("Failure Listener") {
                         @Override
                         public void onUpdate(final TableUpdate update) {}
 
@@ -3378,8 +3378,8 @@ public class QueryTableAggregationTest {
                 stringCol("Key", keyValues), intCol("IntCol", sentinels));
 
         final Table flat = table.flatten();
-        final TableMap map = flat.partitionBy("Key");
-        final Table subTable = map.get("Key");
+        final PartitionedTable partitionedTable = flat.partitionBy("Key");
+        final Table subTable = partitionedTable.constituentFor("Key");
         assertTableEquals(subTable, table);
 
         final FuzzerPrintListener printListener = new FuzzerPrintListener("original", table, 0);

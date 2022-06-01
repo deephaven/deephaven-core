@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -14,6 +15,7 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.WrappedRowSetWritableRowRedirection;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.BitSet;
 import java.util.HashMap;
@@ -72,7 +74,7 @@ final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
 
     @Override
     public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
-            SelectLayerCompletionHandler onCompletion) {
+            @Nullable LivenessNode liveResultOwner, SelectLayerCompletionHandler onCompletion) {
         // this must be the fake update used to initialize the result table
         Assert.eqTrue(upstream.added().isFlat(), "upstream.added.isFlat()");
         Assert.eq(upstream.added().size(), "upstream.added.size()", parentRowSet.size(), "parentRowSet.size()");
@@ -84,7 +86,7 @@ final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
         final TableUpdate innerUpdate = new TableUpdateImpl(
                 parentRowSet.copy(), RowSetFactory.empty(), RowSetFactory.empty(),
                 RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
-        inner.applyUpdate(innerUpdate, toClear, helper, jobScheduler,
+        inner.applyUpdate(innerUpdate, toClear, helper, jobScheduler, liveResultOwner,
                 new SelectLayerCompletionHandler(baseLayerBitSet, onCompletion) {
                     @Override
                     public void onAllRequiredColumnsCompleted() {

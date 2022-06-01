@@ -7,11 +7,11 @@ package io.deephaven.plot;
 import io.deephaven.api.Selectable;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.plot.errors.*;
 import io.deephaven.plot.util.functions.FigureImplFunction;
 import io.deephaven.plot.util.tables.*;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableMap;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 
@@ -39,9 +39,8 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
     private long updateInterval = Configuration.getInstance().getLongWithDefault("plot.update.interval", 1000L);
 
     private transient Map<Table, Set<Function<Table, Table>>> tableFunctionMap;
-    private transient Map<TableMap, Set<Function<TableMap, TableMap>>> tableMapFunctionMap;
+    private transient Map<PartitionedTable, Set<Function<PartitionedTable, PartitionedTable>>> partitionedTableFunctionMap;
     private transient List<FigureImplFunction> figureFunctionList;
-
 
     /**
      * Creates a new Figure instance with a 1x1 grid. If newChart() with no arguments is called on this new Figure, the
@@ -86,7 +85,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
         this.titleColor = figure.titleColor;
         this.plotInfo = new PlotInfo(this, null, (String) null);
         this.tableFunctionMap = figure.tableFunctionMap;
-        this.tableMapFunctionMap = figure.tableMapFunctionMap;
+        this.partitionedTableFunctionMap = figure.partitionedTableFunctionMap;
         this.figureFunctionList = figure.figureFunctionList;
 
         for (final ChartImpl chart : figure.charts.getCharts()) {
@@ -204,20 +203,21 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
     }
 
     /**
-     * Gets the table maps associated with this figure.
+     * Gets the partitioned tables associated with this figure.
      *
      * @return table handles associated with this figure.
      */
-    public Set<TableMapHandle> getTableMapHandles() {
-        final Set<TableMapHandle> result = new HashSet<>();
+    public Set<PartitionedTableHandle> getPartitionedTableHandles() {
+        final Set<PartitionedTableHandle> result = new HashSet<>();
 
         for (ChartImpl chart : getCharts().getCharts()) {
             for (AxesImpl axes : chart.getAxes()) {
-                result.addAll(axes.getTableMapHandles());
+                result.addAll(axes.getPartitionedTableHandles());
             }
 
             if (chart.getChartTitle() instanceof DynamicChartTitle.ChartTitleSwappableTable) {
-                result.add(((DynamicChartTitle.ChartTitleSwappableTable) chart.getChartTitle()).getTableMapHandle());
+                result.add(((DynamicChartTitle.ChartTitleSwappableTable) chart.getChartTitle())
+                        .getPartitionedTableHandle());
             }
         }
 
@@ -254,25 +254,26 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
         return tableFunctionMap;
     }
 
-    public void registerTableMapFunction(final TableMapHandle tableMapHandle,
+    public void registerPartitionedTableFunction(
+            final PartitionedTableHandle partitionedTableHandle,
             final Function<Table, Table> tableTransform) {
-        if (tableMapFunctionMap == null) {
-            tableMapFunctionMap = new HashMap<>();
+        if (partitionedTableFunctionMap == null) {
+            partitionedTableFunctionMap = new HashMap<>();
         }
 
-        final TableMap tMap = tableMapHandle.getTableMap();
-        tableMapHandle.applyFunction(tableTransform); // allows the signature of the TableMapHandle to be changed if
-                                                      // necessary
-        tableMapFunctionMap.putIfAbsent(tMap, new LinkedHashSet<>());
-        tableMapFunctionMap.get(tMap).add(tm -> tm.transformTables(tableTransform));
+        final PartitionedTable partitionedTable = partitionedTableHandle.getPartitionedTable();
+        partitionedTableHandle.applyFunction(tableTransform); // allows the signature of the PartitionedTableHandle to
+                                                              // be changed if necessary
+        partitionedTableFunctionMap.computeIfAbsent(partitionedTable, pt -> new LinkedHashSet<>())
+                .add(pt -> pt.transform(tableTransform::apply));
     }
 
-    public Map<TableMap, Set<Function<TableMap, TableMap>>> getTableMapFunctionMap() {
-        if (tableMapFunctionMap == null) {
-            tableMapFunctionMap = new HashMap<>();
+    public Map<PartitionedTable, Set<Function<PartitionedTable, PartitionedTable>>> getPartitionedTableFunctionMap() {
+        if (partitionedTableFunctionMap == null) {
+            partitionedTableFunctionMap = new HashMap<>();
         }
 
-        return tableMapFunctionMap;
+        return partitionedTableFunctionMap;
     }
 
     public void registerFigureFunction(final FigureImplFunction function) {
@@ -474,32 +475,34 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
         return sessionId;
     }
 
-    public void consolidateTableMaps() {
+    public void consolidatePartitionedTables() {
         final long updateInterval = getUpdateInterval();
-        final Map<Table, Set<TableMapHandle>> thMap = new IdentityHashMap<>();
+        final Map<Table, Set<PartitionedTableHandle>> thMap = new IdentityHashMap<>();
 
-        for (final TableMapHandle h : getTableMapHandles()) {
-            if (h instanceof TableBackedTableMapHandle) {
-                thMap.computeIfAbsent(((TableBackedTableMapHandle) h).getTable(), t -> new HashSet<>()).add(h);
+        for (final PartitionedTableHandle h : getPartitionedTableHandles()) {
+            if (h instanceof TableBackedPartitionedTableHandle) {
+                thMap.computeIfAbsent(((TableBackedPartitionedTableHandle) h).getTable(), t -> new HashSet<>()).add(h);
             }
         }
 
-        for (final Map.Entry<Table, Set<TableMapHandle>> entry : thMap.entrySet()) {
+        for (final Map.Entry<Table, Set<PartitionedTableHandle>> entry : thMap.entrySet()) {
             final Table table = entry.getKey();
-            final Set<TableMapHandle> hs = entry.getValue();
+            final Set<PartitionedTableHandle> hs = entry.getValue();
 
-            final Map<Set<String>, TableMap> byColMap = new HashMap<>();
-            for (final TableMapHandle h : hs) {
+            final Map<Set<String>, PartitionedTable> byColMap = new HashMap<>();
+            for (final PartitionedTableHandle h : hs) {
                 final Set<String> keyColumns = h.getKeyColumns();
                 final String[] keyColumnsArray = keyColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
-                final TableMap map = byColMap.computeIfAbsent(keyColumns,
+                final PartitionedTable partitionedTable = byColMap.computeIfAbsent(keyColumns,
                         x -> {
-                            final TableMap handleMap = h.getTableMap();
-                            return handleMap == null ? table.partitionBy(keyColumnsArray) : handleMap;
+                            final PartitionedTable handlePartitionedTable = h.getPartitionedTable();
+                            return handlePartitionedTable == null
+                                    ? table.partitionBy(keyColumnsArray)
+                                    : handlePartitionedTable;
                         });
 
-                h.setTableMap(map);
+                h.setPartitionedTable(partitionedTable);
                 h.setKeyColumnsOrdered(keyColumnsArray);
             }
         }

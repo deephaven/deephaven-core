@@ -4642,7 +4642,7 @@ class FigureWrapper(object):
     @_convertArguments
     def seriesNamingFunction(self, namingFunction):
         """
-        Defines the procedure to name a generated series. The input of the naming function is the table map key
+        Defines the procedure to name a generated series. The input of the naming function is the partitioned table key
          corresponding to the new series.
         
         *Overload 1*  

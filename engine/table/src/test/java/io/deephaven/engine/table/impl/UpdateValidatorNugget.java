@@ -35,7 +35,7 @@ public class UpdateValidatorNugget implements EvalNuggetInterface {
 
     // We should listen for failures on the table, and if we get any, the test case is no good.
     private final TableUpdateListener failureListener =
-            new InstrumentedTableUpdateListener("Failure ShiftObliviousListener") {
+            new InstrumentedTableUpdateListener("Failure Listener") {
                 @Override
                 public void onUpdate(TableUpdate update) {}
 

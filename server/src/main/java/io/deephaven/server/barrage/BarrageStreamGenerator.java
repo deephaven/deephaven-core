@@ -485,7 +485,7 @@ public class BarrageStreamGenerator implements
                 addRowOffsets = generator.rowsIncluded.original.invert(addRowKeys);
             } else {
                 addRowKeys = generator.rowsAdded.original.copy();
-                addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
+                addRowOffsets = RowSetFactory.flat(addRowKeys.size());
             }
 
             numAddRows = addRowOffsets.size();
@@ -742,15 +742,18 @@ public class BarrageStreamGenerator implements
         final int maxMessageSize =
                 view.clientMaxMessageSize() > 0 ? view.clientMaxMessageSize() : DEFAULT_MESSAGE_SIZE_LIMIT;
 
+        // TODO: remove this when JS API can accept multiple batches
+        boolean sendAllowed = numRows <= batchSize;
+
         while (offset < numRows) {
             try {
-                final InputStream is = getInputStream(
-                        view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
+                final InputStream is =
+                        getInputStream(view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
                 int bytesToWrite = is.available();
 
                 // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
                 // row then we must send and let it potentially fail)
-                if (bytesToWrite < maxMessageSize || batchSize == 1) {
+                if (sendAllowed && (bytesToWrite < maxMessageSize || batchSize == 1)) {
                     // let's write the data
                     visitor.accept(is);
 
@@ -760,7 +763,9 @@ public class BarrageStreamGenerator implements
                 } else {
                     // can't write this, so close the input stream and retry
                     is.close();
+                    sendAllowed = true;
                 }
+
                 // recompute the batch limit for the next message
                 int bytesPerRow = bytesToWrite / actualBatchSize.intValue();
                 if (bytesPerRow > 0) {

@@ -15,7 +15,7 @@
   "isEmpty": "True if the size of this RowSequence is zero.\n\n:return: (boolean) True if there are no elements in this RowSequence.",
   "lastRowKey": "Get the last row key in this RowSequence.\n\n:return: (long) The last row key, or RowSequence.NULL_ROW_KEY if there is none.",
   "rangesCountUpperBound": ":return: long",
-  "reset": ":param toWrap: io.deephaven.engine.rowset.RowSequence\n:param shiftAmount: long",
+  "reset": ":param toWrap: io.deephaven.engine.rowset.RowSequence\n:param shiftAmount: long\n:return: io.deephaven.engine.rowset.RowSequence",
   "size": "Get the number of row keys in this RowSequence.\n\n:return: (long) The size, in [0, Long.MAX_VALUE]",
   "wrap": ":param toWrap: io.deephaven.engine.rowset.RowSequence\n:param shiftAmount: long\n:return: io.deephaven.engine.rowset.RowSequence"
  },

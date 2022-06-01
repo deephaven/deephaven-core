@@ -2,12 +2,8 @@
  "className": "io.deephaven.kafka.KafkaTools$TableType",
  "methods": {
   "append": ":return: io.deephaven.kafka.KafkaTools.TableType.Append",
-  "appendMap": ":return: io.deephaven.kafka.KafkaTools.TableType.Append",
-  "isMap": ":return: boolean",
   "ring": ":param capacity: int\n:return: io.deephaven.kafka.KafkaTools.TableType.Ring",
-  "ringMap": ":param capacity: int\n:return: io.deephaven.kafka.KafkaTools.TableType.Ring",
   "stream": ":return: io.deephaven.kafka.KafkaTools.TableType.Stream",
-  "streamMap": ":return: io.deephaven.kafka.KafkaTools.TableType.Stream",
   "walk": "Note: Java generics information - <T,\nV extends io.deephaven.kafka.KafkaTools.TableType.Visitor<T>>\n\n:param visitor: V\n:return: T"
  },
  "path": "io.deephaven.kafka.KafkaTools.TableType",

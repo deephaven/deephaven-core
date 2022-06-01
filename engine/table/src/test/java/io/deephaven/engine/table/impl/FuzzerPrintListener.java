@@ -16,7 +16,7 @@ public class FuzzerPrintListener extends InstrumentedTableUpdateListener {
     }
 
     FuzzerPrintListener(final String description, final Table table, final int rowCount) {
-        super("Fuzzer Failure ShiftObliviousListener");
+        super("Fuzzer Failure Listener");
         this.description = description;
         this.table = table;
         this.rowCount = rowCount;

@@ -1,31 +1,43 @@
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.api.agg.Partition;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.ResettableWritableObjectChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.AdaptiveOrderedLongSetBuilderRandom;
-import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.OrderedLongSet;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.table.impl.SmartKeySource;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.engine.rowset.impl.AdaptiveOrderedLongSetBuilderRandom;
+import io.deephaven.engine.rowset.impl.OrderedLongSet;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableListener;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.ConstituentDependency;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
+import io.deephaven.engine.table.iterators.ColumnIterator;
+import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,29 +46,43 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /**
- * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#partitionBy}.
+ * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#partitionBy} and
+ * {@link Partition}.
  */
 public final class PartitionByChunkedOperator implements IterativeChunkedAggregationOperator {
 
+    // region nonexistent table sentinels
+
+    /**
+     * Sentinel value for the row set belonging to a table that was never created because either the result table was no
+     * longer live or the aggregation update listener was no longer live. Should be used for assignment and reference
+     * equality tests, only.
+     */
     private static final WritableRowSet NONEXISTENT_TABLE_ROW_SET = RowSetFactory.empty();
+    /**
+     * Sentinel value for the shift builder belonging to a table that was never created because either the result table
+     * was no longer live or the aggregation update listener was no longer live. Should be used for assignment and
+     * reference equality tests, only.
+     */
     private static final RowSetShiftData.SmartCoalescingBuilder NONEXISTENT_TABLE_SHIFT_BUILDER =
-            new RowSetShiftData.SmartCoalescingBuilder(NONEXISTENT_TABLE_ROW_SET.copy());
+            new RowSetShiftData.SmartCoalescingBuilder(NONEXISTENT_TABLE_ROW_SET);
+    /**
+     * Sentinel value for a table that was never created because either the result table was no longer live or the
+     * aggregation update listener was no longer live. Should be used for assignment and reference equality tests, only.
+     */
     private static final QueryTable NONEXISTENT_TABLE =
             new QueryTable(NONEXISTENT_TABLE_ROW_SET.toTracking(), Collections.emptyMap());
 
-    private static final int WRITE_THROUGH_CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
+    // endregion nonexistent table sentinels
 
     public interface AttributeCopier {
         void copyAttributes(@NotNull QueryTable parentTable, @NotNull QueryTable subTable);
     }
 
     private final QueryTable parentTable;
+    private final String resultName;
     private final AttributeCopier attributeCopier;
-    private final List<Object> keysToPrepopulate;
-    private final String[] keyColumnNames;
 
-    private final LocalTableMap tableMap; // Consider making this optional, in which case we should expose the tables
-                                          // column.
     private final String callSite;
 
     private final ObjectArraySource<QueryTable> tables;
@@ -67,12 +93,16 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     private final ModifiedColumnSet resultModifiedColumnSet;
     private final ModifiedColumnSet.Transformer upstreamToResultTransformer;
 
-    private volatile ColumnSource<?> tableMapKeysSource;
+    private volatile Table resultTable;
     private volatile LivenessReferent aggregationUpdateListener;
 
     /**
      * <p>
-     * RowSet to keep track of destinations with shifts.
+     * RowSet to keep track of destinations whose constituent tables have been updated in any way (due to adds, removes,
+     * modifies, or shifts). Due to the chunk-oriented nature of operator data handling, this may also include added and
+     * removed destinations. This is recorded separately from the {@code stateModified} chunks used to produce
+     * downstream modifies, because updates to constituents are <em>not</em> modifies to their rows in the aggregation
+     * output table, but rather table updates to be propagated.
      * <p>
      * This exists in each cycle between {@link IterativeChunkedAggregationOperator#resetForStep(TableUpdate)} and
      * {@link IterativeChunkedAggregationOperator#propagateUpdates(TableUpdate, RowSet)}
@@ -82,7 +112,10 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
      * <p>
      * We should consider whether to instead use a random builder, but the current approach seemed reasonable for now.
      */
-    private WritableRowSet stepShiftedDestinations;
+    private WritableRowSet stepUpdatedDestinations;
+    /**
+     * Whether any of our value columns were modified on this step, necessitating modification propagation.
+     */
     private boolean stepValuesModified;
 
     /**
@@ -93,21 +126,17 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
      * @param parentTable The parent table for all sub-tables, with any key-column dropping or similar already applied
      * @param attributeCopier A procedure that copies attributes or similar from its first argument (the parent table)
      *        to its second (the sub-table)
-     * @param keysToPrepopulate A list of keys to be pre-populated safely before the operation completes.
      * @param keyColumnNames The key columns
      */
     PartitionByChunkedOperator(@NotNull final QueryTable unadjustedParentTable,
             @NotNull final QueryTable parentTable,
+            @NotNull final String resultName,
             @NotNull final AttributeCopier attributeCopier,
-            @NotNull final List<Object> keysToPrepopulate,
             @NotNull final String... keyColumnNames) {
         this.parentTable = parentTable;
+        this.resultName = resultName;
         this.attributeCopier = attributeCopier;
-        this.keysToPrepopulate = keysToPrepopulate;
-        this.keyColumnNames = keyColumnNames;
 
-        tableMap = new LocalTableMap(this::populate, parentTable.getDefinition());
-        tableMap.setRefreshing(parentTable.isRefreshing());
         callSite = QueryPerformanceRecorder.getCallerLine();
 
         tables = new ObjectArraySource<>(QueryTable.class);
@@ -144,25 +173,31 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
     }
 
-    LocalTableMap getTableMap() {
-        return tableMap;
-    }
-
     @Override
     public void addChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> values,
             @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
             @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
+        final AdaptiveOrderedLongSetBuilderRandom chunkDestinationsBuilder =
+                stepUpdatedDestinations == null ? null : new AdaptiveOrderedLongSetBuilderRandom();
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            final int runLength = length.get(ii);
+        final int numDestinations = startPositions.size();
+        for (int di = 0; di < numDestinations; ++di) {
+            final int startPosition = startPositions.get(di);
+            final int runLength = length.get(di);
             final long destination = destinations.get(startPosition);
-
-            stateModified.set(ii,
-                    accumulateToIndex(addedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination));
+            accumulateToRowSet(addedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination);
+            if (chunkDestinationsBuilder != null) {
+                chunkDestinationsBuilder.addKey(destination);
+            }
+        }
+        if (chunkDestinationsBuilder != null) {
+            try (final RowSet chunkUpdatedDestinations =
+                    new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
+                stepUpdatedDestinations.insert(chunkUpdatedDestinations);
+            }
         }
     }
 
@@ -172,15 +207,21 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
+        Assert.neqNull(stepUpdatedDestinations, "stepUpdatedDestinations");
+        final AdaptiveOrderedLongSetBuilderRandom chunkDestinationsBuilder = new AdaptiveOrderedLongSetBuilderRandom();
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            final int runLength = length.get(ii);
+        final int numDestinations = startPositions.size();
+        for (int di = 0; di < numDestinations; ++di) {
+            final int startPosition = startPositions.get(di);
+            final int runLength = length.get(di);
             final long destination = destinations.get(startPosition);
-
-            stateModified.set(ii,
-                    accumulateToIndex(removedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination));
+            accumulateToRowSet(removedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination);
+            chunkDestinationsBuilder.addKey(destination);
+        }
+        try (final RowSet chunkUpdatedDestinations =
+                new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
+            stepUpdatedDestinations.insert(chunkUpdatedDestinations);
         }
     }
 
@@ -203,19 +244,21 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
-        final AdaptiveOrderedLongSetBuilderRandom chunkDestinationBuilder = new AdaptiveOrderedLongSetBuilderRandom();
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            final int runLength = length.get(ii);
+        Assert.neqNull(stepUpdatedDestinations, "stepUpdatedDestinations");
+        final AdaptiveOrderedLongSetBuilderRandom chunkDestinationsBuilder = new AdaptiveOrderedLongSetBuilderRandom();
+        final int numDestinations = startPositions.size();
+        for (int di = 0; di < numDestinations; ++di) {
+            final int startPosition = startPositions.get(di);
+            final int runLength = length.get(di);
             final long destination = destinations.get(startPosition);
 
             if (appendShifts(preShiftRowKeys, postShiftRowKeys, startPosition, runLength, destination)) {
-                chunkDestinationBuilder.addKey(destination);
+                chunkDestinationsBuilder.addKey(destination);
             }
         }
-        try (final RowSet chunkDestinationsShifted =
-                new WritableRowSetImpl(chunkDestinationBuilder.getTreeIndexImpl())) {
-            stepShiftedDestinations.insert(chunkDestinationsShifted);
+        try (final RowSet chunkUpdatedDestinations =
+                new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
+            stepUpdatedDestinations.insert(chunkUpdatedDestinations);
         }
     }
 
@@ -227,15 +270,21 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         if (!stepValuesModified) {
             return;
         }
+        Assert.neqNull(stepUpdatedDestinations, "stepUpdatedDestinations");
+        final AdaptiveOrderedLongSetBuilderRandom chunkDestinationsBuilder = new AdaptiveOrderedLongSetBuilderRandom();
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            final int runLength = length.get(ii);
+        final int numDestinations = startPositions.size();
+        for (int di = 0; di < numDestinations; ++di) {
+            final int startPosition = startPositions.get(di);
+            final int runLength = length.get(di);
             final long destination = destinations.get(startPosition);
-
-            stateModified.set(ii,
-                    accumulateToIndex(modifiedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination));
+            accumulateToRowSet(modifiedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination);
+            chunkDestinationsBuilder.addKey(destination);
+        }
+        try (final RowSet chunkUpdatedDestinations =
+                new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
+            stepUpdatedDestinations.insert(chunkUpdatedDestinations);
         }
     }
 
@@ -246,12 +295,20 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         Assert.eqNull(values, "values");
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
-        return accumulateToIndex(addedRowSets, inputRowKeysAsOrdered, 0, chunkSize, destination);
+        accumulateToRowSet(addedRowSets, inputRowKeysAsOrdered, 0, chunkSize, destination);
+        if (stepUpdatedDestinations != null) {
+            stepUpdatedDestinations.insert(destination);
+        }
+        return false;
     }
 
     @Override
     public boolean addRowSet(SingletonContext context, RowSet rowSet, long destination) {
-        return accumulateToIndex(addedRowSets, rowSet, destination);
+        accumulateToRowSet(addedRowSets, rowSet, destination);
+        if (stepUpdatedDestinations != null) {
+            stepUpdatedDestinations.insert(destination);
+        }
+        return false;
     }
 
     @Override
@@ -259,9 +316,12 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             final Chunk<? extends Values> values,
             @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
         Assert.eqNull(values, "values");
+        Assert.neqNull(stepUpdatedDestinations, "stepUpdatedDestinations");
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
-        return accumulateToIndex(removedRowSets, inputRowKeysAsOrdered, 0, chunkSize, destination);
+        accumulateToRowSet(removedRowSets, inputRowKeysAsOrdered, 0, chunkSize, destination);
+        stepUpdatedDestinations.insert(destination);
+        return false;
     }
 
     @Override
@@ -281,8 +341,9 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             final long destination) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
+        Assert.neqNull(stepUpdatedDestinations, "stepUpdatedDestinations");
         if (appendShifts(preShiftRowKeys, postShiftRowKeys, 0, preShiftRowKeys.size(), destination)) {
-            stepShiftedDestinations.insert(destination);
+            stepUpdatedDestinations.insert(destination);
         }
         return false;
     }
@@ -295,39 +356,39 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> rowKeysAsOrdered = (LongChunk<OrderedRowKeys>) rowKeys;
-        return accumulateToIndex(modifiedRowSets, rowKeysAsOrdered, 0, rowKeys.size(), destination);
+        accumulateToRowSet(modifiedRowSets, rowKeysAsOrdered, 0, rowKeys.size(), destination);
+        stepUpdatedDestinations.insert(destination);
+        return false;
     }
 
-    private static boolean accumulateToIndex(@NotNull final ObjectArraySource<WritableRowSet> indexColumn,
-            @NotNull final LongChunk<OrderedRowKeys> rowKeysToAdd, final int start, final int length,
-            final long destination) {
-        final WritableRowSet rowSet = indexColumn.getUnsafe(destination);
+    private static void accumulateToRowSet(@NotNull final ObjectArraySource<WritableRowSet> rowSetColumn,
+            @NotNull final LongChunk<OrderedRowKeys> rowKeysToAdd,
+            final int start, final int length, final long destination) {
+        final WritableRowSet rowSet = rowSetColumn.getUnsafe(destination);
         if (rowSet == NONEXISTENT_TABLE_ROW_SET) {
-            return false;
+            return;
         }
         if (rowSet == null) {
-            indexColumn.set(destination,
+            rowSetColumn.set(destination,
                     new WritableRowSetImpl(OrderedLongSet.fromChunk(rowKeysToAdd, start, length, false)));
-        } else {
-            rowSet.insert(rowKeysToAdd, start, length);
+            return;
         }
-        return true;
+        rowSet.insert(rowKeysToAdd, start, length);
     }
 
-    private static boolean accumulateToIndex(@NotNull final ObjectArraySource<WritableRowSet> indexColumn,
+    private static void accumulateToRowSet(@NotNull final ObjectArraySource<WritableRowSet> rowSetColumn,
             @NotNull final RowSet rowSetToAdd, final long destination) {
-        final WritableRowSet rowSet = indexColumn.getUnsafe(destination);
+        final WritableRowSet rowSet = rowSetColumn.getUnsafe(destination);
         if (rowSet == NONEXISTENT_TABLE_ROW_SET) {
-            return false;
+            return;
         }
         if (rowSet == null) {
             final WritableRowSet currentRowSet = RowSetFactory.empty();
             currentRowSet.insert(rowSetToAdd);
-            indexColumn.set(destination, currentRowSet);
-        } else {
-            rowSet.insert(rowSetToAdd);
+            rowSetColumn.set(destination, currentRowSet);
+            return;
         }
-        return true;
+        rowSet.insert(rowSetToAdd);
     }
 
     private boolean appendShifts(@NotNull final LongChunk<? extends RowKeys> preShiftRowKeys,
@@ -384,7 +445,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        return Collections.emptyMap();
+        return Collections.singletonMap(resultName, tables);
     }
 
     @Override
@@ -392,25 +453,13 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void propagateInitialState(@NotNull final QueryTable resultTable) {
-        tableMapKeysSource = keyColumnNames.length == 1
-                ? resultTable.getColumnSource(keyColumnNames[0])
-                : new SmartKeySource(
-                        Arrays.stream(keyColumnNames).map(resultTable::getColumnSource).toArray(ColumnSource[]::new));
-
         final RowSet initialDestinations = resultTable.getRowSet();
         if (initialDestinations.isNonempty()) {
-            // At this point, we cannot have had any tables pre-populated because the table map has not been exposed
-            // externally.
-            // The table map is still managed by its creating scope, and so does not need extra steps to ensure
-            // liveness.
-            // There's also no aggregation update listener to retain yet.
+            // This is before resultTable and aggregationUpdateListener are set (if they will be). We're still in our
+            // initialization scope, and don't need to do anything special to ensure liveness.
             final boolean setCallSite = QueryPerformanceRecorder.setCallsite(callSite);
-            try (final ChunkSource.GetContext tableMapKeysGetContext =
-                    tableMapKeysSource.makeGetContext(WRITE_THROUGH_CHUNK_SIZE);
-                    final ChunkBoxer.BoxerKernel tableMapKeysBoxer =
-                            ChunkBoxer.getBoxer(tableMapKeysSource.getChunkType(), WRITE_THROUGH_CHUNK_SIZE);
-                    final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
-                            ResettableWritableObjectChunk.makeResettableChunk();
+            try (final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
+                    ResettableWritableObjectChunk.makeResettableChunk();
                     final ResettableWritableObjectChunk<WritableRowSet, Values> addedRowSetsResettableChunk =
                             ResettableWritableObjectChunk.makeResettableChunk();
                     final RowSequence.Iterator initialDestinationsIterator =
@@ -433,33 +482,13 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                     final RowSequence initialDestinationsSlice =
                             initialDestinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
 
-                    final ObjectChunk<?, ? extends Values> tableMapKeyChunk = tableMapKeysBoxer
-                            .box(tableMapKeysSource.getChunk(tableMapKeysGetContext, initialDestinationsSlice));
-
-                    final MutableInt tableMapKeyOffset = new MutableInt();
                     initialDestinationsSlice.forAllRowKeys((final long destinationToInitialize) -> {
-                        final Object tableMapKey = tableMapKeyChunk.get(tableMapKeyOffset.intValue());
-                        tableMapKeyOffset.increment();
-
                         final int backingChunkOffset =
                                 Math.toIntExact(destinationToInitialize - firstBackingChunkDestination);
-                        final QueryTable unexpectedExistingTable = tablesBackingChunk.get(backingChunkOffset);
-                        if (unexpectedExistingTable != null) {
-                            throw new IllegalStateException("Found unexpected existing table " + unexpectedExistingTable
-                                    + " in initial slot " + destinationToInitialize + " for key " + tableMapKey);
-                        }
-
                         final WritableRowSet initialRowSet =
-                                extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset).toTracking();
-                        initialRowSet.compact();
+                                extractAndClearRowSet(addedRowSetsBackingChunk, backingChunkOffset);
                         final QueryTable newTable = makeSubTable(initialRowSet);
                         tablesBackingChunk.set(backingChunkOffset, newTable);
-                        final Table unexpectedPrepopulatedTable = tableMap.put(tableMapKey, newTable);
-                        if (unexpectedPrepopulatedTable != null) {
-                            throw new IllegalStateException("Found unexpected prepopulated table "
-                                    + unexpectedPrepopulatedTable + " after setting initial slot "
-                                    + destinationToInitialize + " for key " + tableMapKey);
-                        }
                     });
                 }
             } finally {
@@ -468,25 +497,40 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                 }
             }
         }
-
-        keysToPrepopulate.forEach(this::populateInternal);
     }
 
     @Override
-    public UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull final QueryTable resultTable,
+    public UnaryOperator<ModifiedColumnSet> initializeRefreshing(
+            @NotNull final QueryTable resultTable,
             @NotNull final LivenessReferent aggregationUpdateListener) {
+        this.resultTable = resultTable;
         this.aggregationUpdateListener = aggregationUpdateListener;
-        if (aggregationUpdateListener instanceof NotificationQueue.Dependency) {
-            tableMap.setDependency((NotificationQueue.Dependency) aggregationUpdateListener);
-        }
-        tableMap.addParentReference(aggregationUpdateListener);
-        tableMap.values().forEach(st -> ((DynamicNode) st).addParentReference(aggregationUpdateListener));
-        return IterativeChunkedAggregationOperator.super.initializeRefreshing(resultTable, aggregationUpdateListener);
+
+        // This is safe to do here since Partition is the only operation that creates a column of
+        // NotificationQueue.Dependency (i.e. Table), and since we only allow one Partition operator per aggregation.
+        // Otherwise, it would be better to do this in the helper.
+        ConstituentDependency.install(resultTable, (NotificationQueue.Dependency) aggregationUpdateListener);
+
+        // Link constituents
+        new ObjectColumnIterator<Table>(tables, resultTable.getRowSet()).forEachRemaining(this::linkTableReferences);
+
+        // This operator never reports modifications
+        return ignored -> ModifiedColumnSet.EMPTY;
+    }
+
+    private void linkTableReferences(@NotNull final Table subTable) {
+        // The sub-table will not continue to update unless the aggregation update listener remains reachable and live.
+        subTable.addParentReference(aggregationUpdateListener);
+        // We don't need to add a reference from the result to the sub-table, because the sub-table is reachable from
+        // the constituent column for the (GC) life of the result, and because the ConstituentDependency will enforce
+        // the necessary dependency from result to sub-table.
+        // We do need to ensure that the sub-table remains live for the lifetime of the result.
+        resultTable.manage(subTable);
     }
 
     @Override
     public void resetForStep(@NotNull final TableUpdate upstream) {
-        stepShiftedDestinations = RowSetFactory.empty();
+        stepUpdatedDestinations = RowSetFactory.empty();
         final boolean upstreamModified = upstream.modified().isNonempty() && upstream.modifiedColumnSet().nonempty();
         if (upstreamModified) {
             // We re-use this for all sub-tables that have modifies.
@@ -498,11 +542,13 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public void propagateUpdates(@NotNull final TableUpdate downstream,
-            @NotNull final RowSet newDestinations) {
-        if (downstream.added().isEmpty() && downstream.removed().isEmpty() && downstream.modified().isEmpty()
-                && stepShiftedDestinations.isEmpty()) {
-            stepShiftedDestinations = null;
+    public void propagateUpdates(@NotNull final TableUpdate downstream, @NotNull final RowSet newDestinations) {
+        stepUpdatedDestinations.remove(downstream.added());
+        stepUpdatedDestinations.remove(downstream.removed());
+        if (downstream.added().isEmpty() && downstream.removed().isEmpty() && stepUpdatedDestinations.isEmpty()) {
+            try (final SafeCloseable ignored = stepUpdatedDestinations) {
+                stepUpdatedDestinations = null;
+            }
             return;
         }
         if (downstream.added().isNonempty()) {
@@ -512,9 +558,10 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             }
         }
         propagateUpdatesToRemovedDestinations(downstream.removed());
-        try (final RowSequence modifiedOrShiftedDestinations = downstream.modified().union(stepShiftedDestinations)) {
-            stepShiftedDestinations = null;
-            propagateUpdatesToModifiedDestinations(modifiedOrShiftedDestinations);
+
+        try (final RowSequence ignored = stepUpdatedDestinations) {
+            propagateUpdatesToModifiedDestinations(stepUpdatedDestinations);
+            stepUpdatedDestinations = null;
         }
     }
 
@@ -554,8 +601,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                         return;
                     }
                     if (resurrectedTable == null) {
-                        throw new IllegalStateException("Missing resurrected table in slot " + resurrectedDestination
-                                + " for table map key " + tableMapKeysSource.get(resurrectedDestination));
+                        throw new IllegalStateException("Missing resurrected table in slot " + resurrectedDestination);
                     }
 
                     // This table existed already, and has been "resurrected" after becoming empty previously. We must
@@ -563,7 +609,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
                     final TableUpdateImpl downstream = new TableUpdateImpl();
 
-                    downstream.added = nullToEmpty(extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset));
+                    downstream.added = nullToEmpty(extractAndClearRowSet(addedRowSetsBackingChunk, backingChunkOffset));
                     downstream.removed = RowSetFactory.empty();
                     downstream.modified = RowSetFactory.empty();
                     downstream.shifted = RowSetShiftData.EMPTY;
@@ -583,16 +629,12 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         if (newDestinations.isEmpty()) {
             return;
         }
-        final boolean retainedTableMap = tableMap.tryRetainReference();
+        final boolean retainedResultTable = resultTable.tryRetainReference();
         final boolean retainedAggregationUpdateListener = aggregationUpdateListener.tryRetainReference();
-        final boolean allowCreation = retainedTableMap && retainedAggregationUpdateListener;
+        final boolean allowCreation = retainedResultTable && retainedAggregationUpdateListener;
         final boolean setCallSite = QueryPerformanceRecorder.setCallsite(callSite);
-        try (final ChunkSource.GetContext tableMapKeysGetContext =
-                tableMapKeysSource.makeGetContext(WRITE_THROUGH_CHUNK_SIZE);
-                final ChunkBoxer.BoxerKernel tableMapKeysBoxer =
-                        ChunkBoxer.getBoxer(tableMapKeysSource.getChunkType(), WRITE_THROUGH_CHUNK_SIZE);
-                final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
-                        ResettableWritableObjectChunk.makeResettableChunk();
+        try (final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
+                ResettableWritableObjectChunk.makeResettableChunk();
                 final ResettableWritableObjectChunk<WritableRowSet, Values> addedRowSetsResettableChunk =
                         ResettableWritableObjectChunk.makeResettableChunk();
                 final ResettableWritableObjectChunk<WritableRowSet, Values> removedRowSetsResettableChunk =
@@ -636,58 +678,15 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                 final RowSequence newDestinationsSlice =
                         newDestinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
 
-                final ObjectChunk<?, ? extends Values> tableMapKeyChunk = tableMapKeysBoxer
-                        .box(tableMapKeysSource.getChunk(tableMapKeysGetContext, newDestinationsSlice));
-
-                final MutableInt tableMapKeyOffset = new MutableInt();
                 newDestinationsSlice.forAllRowKeys((final long newDestination) -> {
-                    final Object tableMapKey = tableMapKeyChunk.get(tableMapKeyOffset.intValue());
-                    tableMapKeyOffset.increment();
-
                     final int backingChunkOffset = Math.toIntExact(newDestination - firstBackingChunkDestination);
-                    final QueryTable unexpectedExistingTable = tablesBackingChunk.get(backingChunkOffset);
-                    if (unexpectedExistingTable != null) {
-                        throw new IllegalStateException("Found unexpected existing table " + unexpectedExistingTable
-                                + " in new slot " + newDestination + " for key " + tableMapKey);
-                    }
-
-                    final QueryTable prepopulatedTable;
-
                     if (allowCreation) {
-                        final MutableBoolean newTableAllocated = new MutableBoolean();
-                        final QueryTable newOrPrepopulatedTable =
-                                (QueryTable) tableMap.computeIfAbsent(tableMapKey, (unused) -> {
-                                    final WritableRowSet newRowSet = extractAndClearIndex(
-                                            addedRowSetsBackingChunk, backingChunkOffset).toTracking();
-                                    newRowSet.compact();
-                                    final QueryTable newTable = makeSubTable(newRowSet);
-                                    tablesBackingChunk.set(backingChunkOffset, newTable);
-                                    newTableAllocated.setTrue();
-                                    return newTable;
-                                });
-                        prepopulatedTable = newTableAllocated.booleanValue() ? null : newOrPrepopulatedTable;
+                        final WritableRowSet newRowSet =
+                                extractAndClearRowSet(addedRowSetsBackingChunk, backingChunkOffset);
+                        final QueryTable newTable = makeSubTable(newRowSet);
+                        linkTableReferences(newTable);
+                        tablesBackingChunk.set(backingChunkOffset, newTable);
                     } else {
-                        prepopulatedTable = (QueryTable) tableMap.get(tableMapKey);
-                    }
-                    if (prepopulatedTable != null) {
-                        tablesBackingChunk.set(backingChunkOffset, prepopulatedTable);
-
-                        // "New" table already existed due to TableMap.populateKeys.
-                        // We can ignore allowCreation; the table exists already, and must already retain appropriate
-                        // referents.
-                        // Additionally, we must notify of added rows.
-                        final TableUpdateImpl downstream = new TableUpdateImpl();
-
-                        downstream.added =
-                                nullToEmpty(extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset));
-                        downstream.removed = RowSetFactory.empty();
-                        downstream.modified = RowSetFactory.empty();
-                        downstream.shifted = RowSetShiftData.EMPTY;
-                        downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-
-                        prepopulatedTable.getRowSet().writableCast().insert(downstream.added());
-                        prepopulatedTable.notifyListeners(downstream);
-                    } else if (!allowCreation) {
                         // We will never try to create this table again, or accumulate further state for it.
                         tablesBackingChunk.set(backingChunkOffset, NONEXISTENT_TABLE);
                         addedRowSetsBackingChunk.set(backingChunkOffset, NONEXISTENT_TABLE_ROW_SET);
@@ -704,49 +703,18 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             if (retainedAggregationUpdateListener) {
                 aggregationUpdateListener.dropReference();
             }
-            if (retainedTableMap) {
-                tableMap.dropReference();
+            if (retainedResultTable) {
+                resultTable.dropReference();
             }
         }
     }
 
-    /**
-     * Add an empty sub-table for the specified key if it's not currently found in the table map.
-     *
-     * @param key The key for the new sub-table
-     */
-    private void populate(final Object key) {
-        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
-        populateInternal(key);
-    }
-
-    private void populateInternal(final Object key) {
-        // We don't bother with complicated retention or non-existent result handling, here.
-        // If the user is calling TableMap.populateKeys (the only way to get here) they'd better be sure of liveness
-        // already, and they won't thank us for adding non-existent table tombstones rather than blowing up.
-        final boolean setCallSite = QueryPerformanceRecorder.setCallsite(callSite);
-        try {
-            tableMap.computeIfAbsent(key, (unused) -> makeSubTable(null));
-        } finally {
-            if (setCallSite) {
-                QueryPerformanceRecorder.clearCallsite();
-            }
-        }
-    }
-
-    private QueryTable makeSubTable(@Nullable final RowSet initialRowSetToInsert) {
-        // We don't start from initialRowSetToInsert because it is expected to be a WritableRowSetImpl.
+    private QueryTable makeSubTable(@NotNull final WritableRowSet initialRowSetToInsert) {
+        initialRowSetToInsert.compact();
         final QueryTable subTable =
-                parentTable.getSubTable(RowSetFactory.empty().toTracking(), resultModifiedColumnSet);
+                parentTable.getSubTable(initialRowSetToInsert.toTracking(), resultModifiedColumnSet);
         subTable.setRefreshing(parentTable.isRefreshing());
-        if (aggregationUpdateListener != null) {
-            subTable.addParentReference(aggregationUpdateListener);
-        }
         attributeCopier.copyAttributes(parentTable, subTable);
-        if (initialRowSetToInsert != null) {
-            subTable.getRowSet().writableCast().insert(initialRowSetToInsert);
-            ((TrackingWritableRowSet) subTable.getRowSet()).initializePreviousValue();
-        }
         return subTable;
     }
 
@@ -784,22 +752,21 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                         return;
                     }
                     if (removedTable == null) {
-                        throw new IllegalStateException("Missing removed table in slot " + removedDestination
-                                + " for table map key " + tableMapKeysSource.get(removedDestination));
+                        throw new IllegalStateException("Missing removed table in slot " + removedDestination);
                     }
 
                     final TableUpdateImpl downstream = new TableUpdateImpl();
 
                     downstream.added = RowSetFactory.empty();
                     downstream.removed =
-                            nullToEmpty(extractAndClearIndex(removedRowSetsBackingChunk, backingChunkOffset));
+                            nullToEmpty(extractAndClearRowSet(removedRowSetsBackingChunk, backingChunkOffset));
                     downstream.modified = RowSetFactory.empty();
                     downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
                     removedTable.getRowSet().writableCast().remove(downstream.removed());
                     removedTable.getRowSet().writableCast().compact();
-                    Assert.assertion(removedTable.getRowSet().isEmpty(), "removedTable.build().isEmpty()");
+                    Assert.assertion(removedTable.getRowSet().isEmpty(), "removedTable.getRowSet().isEmpty()");
                     removedTable.notifyListeners(downstream);
                 });
             }
@@ -860,17 +827,16 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                         return;
                     }
                     if (modifiedTable == null) {
-                        throw new IllegalStateException("Missing modified table in slot " + modifiedDestination
-                                + " for table map key " + tableMapKeysSource.get(modifiedDestination));
+                        throw new IllegalStateException("Missing modified table in slot " + modifiedDestination);
                     }
 
                     final TableUpdateImpl downstream = new TableUpdateImpl();
 
-                    downstream.added = nullToEmpty(extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset));
+                    downstream.added = nullToEmpty(extractAndClearRowSet(addedRowSetsBackingChunk, backingChunkOffset));
                     downstream.removed =
-                            nullToEmpty(extractAndClearIndex(removedRowSetsBackingChunk, backingChunkOffset));
+                            nullToEmpty(extractAndClearRowSet(removedRowSetsBackingChunk, backingChunkOffset));
                     downstream.modified = stepValuesModified
-                            ? nullToEmpty(extractAndClearIndex(modifiedRowSetsBackingChunk, backingChunkOffset))
+                            ? nullToEmpty(extractAndClearRowSet(modifiedRowSetsBackingChunk, backingChunkOffset))
                             : RowSetFactory.empty();
                     downstream.shifted =
                             extractAndClearShiftDataBuilder(shiftDataBuildersBackingChunk, backingChunkOffset);
@@ -895,7 +861,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
     }
 
-    private static WritableRowSet extractAndClearIndex(
+    private static WritableRowSet extractAndClearRowSet(
             @NotNull final WritableObjectChunk<WritableRowSet, Values> rowSetChunk,
             final int offset) {
         final WritableRowSet rowSet = rowSetChunk.get(offset);
@@ -925,7 +891,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void propagateFailure(@NotNull final Throwable originalException, @NotNull TableListener.Entry sourceEntry) {
-        tableMap.values().forEach(st -> ((BaseTable) st).notifyListenersOnError(originalException, sourceEntry));
+        new ObjectColumnIterator<QueryTable>(tables, resultTable.getRowSet(), ColumnIterator.DEFAULT_CHUNK_SIZE)
+                .forEachRemaining(st -> st.notifyListenersOnError(originalException, sourceEntry));
     }
 
     @Override

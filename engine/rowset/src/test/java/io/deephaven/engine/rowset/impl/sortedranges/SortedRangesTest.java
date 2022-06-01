@@ -1651,7 +1651,7 @@ public class SortedRangesTest {
         final boolean r = sar.invertOnNew(ixrit, b, maxPosition);
         final String m = "maxPosition==" + maxPosition;
         assertTrue(m, r);
-        final RowSet rix = new TrackingWritableRowSetImpl(b.getTreeIndexImpl());
+        final RowSet rix = new TrackingWritableRowSetImpl(b.getOrderedLongSet());
         final RowSet.Iterator rit = rix.iterator();
         while (ixit.hasNext()) {
             final long ixv = ixit.nextLong();

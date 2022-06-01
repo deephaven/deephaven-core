@@ -14,17 +14,18 @@ import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -79,7 +80,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.MatchPair.matchString;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
+import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 
 /**
  * Primary coalesced table implementation.
@@ -273,7 +274,7 @@ public class QueryTable extends BaseTable {
     /**
      * Create a new query table with the {@link ColumnDefinition ColumnDefinitions} of {@code template}, but in the
      * order of {@code this}. The tables must be mutually compatible, as defined via
-     * {@link TableDefinition#checkCompatibility(TableDefinition)}.
+     * {@link TableDefinition#checkMutualCompatibility(TableDefinition)}.
      *
      * @param template the new definition template to use
      * @return the new query table
@@ -449,104 +450,95 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public LocalTableMap partitionBy(final boolean dropKeys, final String... keyColumnNames) {
+    public PartitionedTable partitionBy(final boolean dropKeys, final String... keyColumnNames) {
         if (isStream()) {
             throw streamUnsupported("partitionBy");
         }
         final SelectColumn[] groupByColumns =
                 Arrays.stream(keyColumnNames).map(SourceColumn::new).toArray(SelectColumn[]::new);
-
-        return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, groupByColumns),
-                () -> QueryPerformanceRecorder.withNugget(
-                        "partitionBy(" + dropKeys + ", " + Arrays.toString(keyColumnNames) + ')',
-                        sizeForInstrumentation(),
-                        () -> PartitionByAggregationFactory.partitionBy(this, dropKeys,
-                                (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.PartitionBy),
-                                Collections.emptyList(), groupByColumns)));
+        return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, groupByColumns), () -> {
+            final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), Arrays.asList(groupByColumns));
+            final Set<String> keyColumnNamesSet =
+                    Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
+            final TableDefinition constituentDefinition;
+            if (dropKeys) {
+                constituentDefinition = TableDefinition.of(definition.getColumnStream()
+                        .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
+            } else {
+                constituentDefinition = definition;
+            }
+            return new PartitionedTableImpl(partitioned, keyColumnNamesSet, true, CONSTITUENT.name(),
+                    constituentDefinition, isRefreshing(), false);
+        });
     }
 
     @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Selectable... groupByColumns) {
-        if (isStream() && includeConstituents) {
-            throw streamUnsupported("rollup with included constituents");
-        }
-        final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
-        final MemoizedOperationKey rollupKey =
-                MemoizedOperationKey.rollup(aggregations, gbsColumns, includeConstituents);
-        return memoizeResult(rollupKey, () -> {
-            final QueryTable baseLevel = aggNoMemo(
-                    AggregationProcessor.forRollupBase(aggregations, includeConstituents), gbsColumns);
-
-            final Deque<SelectColumn> gbsColumnsToReaggregate = new ArrayDeque<>(Arrays.asList(gbsColumns));
-            final Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.length);
-            QueryTable lastLevel = baseLevel;
-            while (!gbsColumnsToReaggregate.isEmpty()) {
-                nullColumnNames.addFirst(gbsColumnsToReaggregate.removeLast().getName());
-                final TableDefinition lastLevelDefinition = lastLevel.getDefinition();
-                final Map<String, Class<?>> nullColumns = nullColumnNames.stream().collect(Collectors.toMap(
-                        Function.identity(), ncn -> lastLevelDefinition.getColumn(ncn).getDataType(),
-                        Assert::neverInvoked, LinkedHashMap::new));
-                lastLevel = lastLevel.aggNoMemo(AggregationProcessor.forRollupReaggregated(aggregations, nullColumns),
-                        gbsColumnsToReaggregate.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
-            }
-
-            final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
-                    .map(ColumnDefinition::getName)
-                    .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
-            final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop);
-            final Object reverseLookup =
-                    Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE), "REVERSE_LOOKUP_ATTRIBUTE");
-            finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
-
-            final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, gbsColumns,
-                    includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
-            result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
-            copyAttributes(result, CopyAttributeOperation.Rollup);
-            maybeUpdateSortableColumns(result);
-
-            return result;
-        });
+        throw new UnsupportedOperationException("rollup is not yet implemented in community");
+        // TODO https://github.com/deephaven/deephaven-core/issues/65): Implement rollups based on PartitionedTable
+        /*
+         * if (isStream() && includeConstituents) { throw streamUnsupported("rollup with included constituents"); }
+         * final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns); final MemoizedOperationKey rollupKey =
+         * MemoizedOperationKey.rollup(aggregations, gbsColumns, includeConstituents); return memoizeResult(rollupKey,
+         * () -> { final QueryTable baseLevel = aggNoMemo( AggregationProcessor.forRollupBase(aggregations,
+         * includeConstituents), gbsColumns);
+         * 
+         * final Deque<SelectColumn> gbsColumnsToReaggregate = new ArrayDeque<>(Arrays.asList(gbsColumns)); final
+         * Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.length); QueryTable lastLevel = baseLevel;
+         * while (!gbsColumnsToReaggregate.isEmpty()) {
+         * nullColumnNames.addFirst(gbsColumnsToReaggregate.removeLast().getName()); final TableDefinition
+         * lastLevelDefinition = lastLevel.getDefinition(); final Map<String, Class<?>> nullColumns =
+         * nullColumnNames.stream().collect(Collectors.toMap( Function.identity(), ncn ->
+         * lastLevelDefinition.getColumn(ncn).getDataType(), Assert::neverInvoked, LinkedHashMap::new)); lastLevel =
+         * lastLevel.aggNoMemo(AggregationProcessor.forRollupReaggregated(aggregations, nullColumns),
+         * gbsColumnsToReaggregate.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY)); }
+         * 
+         * final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
+         * .map(ColumnDefinition::getName) .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
+         * final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop); final Object
+         * reverseLookup = Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE),
+         * "REVERSE_LOOKUP_ATTRIBUTE"); finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
+         * 
+         * final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, gbsColumns,
+         * includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
+         * result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this); copyAttributes(result,
+         * CopyAttributeOperation.Rollup); maybeUpdateSortableColumns(result);
+         * 
+         * return result; });
+         */
     }
 
     @Override
     public Table treeTable(String idColumn, String parentColumn) {
-        if (isStream()) {
-            throw streamUnsupported("treeTable");
-        }
-        return memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> {
-            final LocalTableMap partitionByResult = PartitionByAggregationFactory.partitionBy(this, false,
-                    (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.PartitionBy),
-                    Collections.singletonList(null), parentColumn);
-            final QueryTable rootTable = (QueryTable) partitionByResult.get(null);
-            final Table result = HierarchicalTable.createFrom((QueryTable) rootTable.copy(),
-                    new TreeTableInfo(idColumn, parentColumn));
-
-            // If the parent table has an RLL attached to it, we can re-use it.
-            final ReverseLookup reverseLookup;
-            if (hasAttribute(PREPARED_RLL_ATTRIBUTE)) {
-                reverseLookup = (ReverseLookup) getAttribute(PREPARED_RLL_ATTRIBUTE);
-                final String[] listenerCols = reverseLookup.getKeyColumns();
-
-                if (listenerCols.length != 1 || !listenerCols[0].equals(idColumn)) {
-                    final String listenerColError =
-                            StringUtils.joinStrings(Arrays.stream(listenerCols).map(col -> "'" + col + "'"), ", ");
-                    throw new IllegalStateException(
-                            "Table was prepared for Tree table with a different Id column. Expected `" + idColumn
-                                    + "`, Actual " + listenerColError);
-                }
-            } else {
-                reverseLookup = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(QueryTable.this, idColumn);
-            }
-
-            result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, partitionByResult);
-            result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
-            result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
-            copyAttributes(result, CopyAttributeOperation.Treetable);
-            maybeUpdateSortableColumns(result);
-
-            return result;
-        });
+        throw new UnsupportedOperationException("treeTable is not yet implemented in community");
+        // TODO https://github.com/deephaven/deephaven-core/issues/64): Implement treeTable based on PartitionedTable
+        /*
+         * if (isStream()) { throw streamUnsupported("treeTable"); } return
+         * memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> { // TODO
+         * (https://github.com/deephaven/deephaven-core/issues/64): // Need key initialization and preserve-empty
+         * support to be able to get the root reliably for // initially-empty parents. final PartitionedTable
+         * partitionedTable = partitionBy(false, parentColumn); final QueryTable rootTable = (QueryTable)
+         * partitionedTable.table().where(new MatchFilter(parentColumn, (Object) null)); final Table result =
+         * HierarchicalTable.createFrom((QueryTable) rootTable.copy(), new TreeTableInfo(idColumn, parentColumn));
+         * 
+         * // If the parent table has an RLL attached to it, we can re-use it. final ReverseLookup reverseLookup; if
+         * (hasAttribute(PREPARED_RLL_ATTRIBUTE)) { reverseLookup = (ReverseLookup)
+         * getAttribute(PREPARED_RLL_ATTRIBUTE); final String[] listenerCols = reverseLookup.getKeyColumns();
+         * 
+         * if (listenerCols.length != 1 || !listenerCols[0].equals(idColumn)) { final String listenerColError =
+         * StringUtils.joinStrings(Arrays.stream(listenerCols).map(col -> "'" + col + "'"), ", "); throw new
+         * IllegalStateException( "Table was prepared for Tree table with a different Id column. Expected `" + idColumn
+         * + "`, Actual " + listenerColError); } } else { reverseLookup =
+         * ReverseLookupListener.makeReverseLookupListenerWithSnapshot(QueryTable.this, idColumn); }
+         * 
+         * result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, partitionedTable);
+         * result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
+         * result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup); copyAttributes(result,
+         * CopyAttributeOperation.Treetable); maybeUpdateSortableColumns(result);
+         * 
+         * return result; });
+         */
     }
 
     @Override
@@ -1273,60 +1265,65 @@ public class QueryTable extends BaseTable {
                         jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
                     }
 
-                    try (final RowSet emptyRowSet = RowSetFactory.empty();
-                            final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                                    new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
+                    final QueryTable resultTable;
+                    final LivenessScope liveResultCapture = isRefreshing() ? new LivenessScope() : null;
+                    try (final SafeCloseable ignored = liveResultCapture != null ? liveResultCapture::release : null) {
+                        try (final RowSet emptyRowSet = RowSetFactory.empty();
+                                final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                                        new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
 
-                        try {
-                            analyzer.applyUpdate(fakeUpdate, emptyRowSet, updateHelper, jobScheduler,
-                                    analyzer.futureCompletionHandler(waitForResult));
-                        } catch (Exception e) {
-                            waitForResult.completeExceptionally(e);
-                        }
-
-                        try {
-                            waitForResult.get();
-                        } catch (InterruptedException e) {
-                            throw new CancellationException("interrupted while computing select or update");
-                        } catch (ExecutionException e) {
-                            if (e.getCause() instanceof RuntimeException) {
-                                throw (RuntimeException) e.getCause();
-                            } else {
-                                throw new UncheckedDeephavenException("Failure computing select or update",
-                                        e.getCause());
+                            try {
+                                analyzer.applyUpdate(fakeUpdate, emptyRowSet, updateHelper, jobScheduler,
+                                        liveResultCapture, analyzer.futureCompletionHandler(waitForResult));
+                            } catch (Exception e) {
+                                waitForResult.completeExceptionally(e);
                             }
-                        } finally {
-                            final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
-                            if (baseEntry != null) {
-                                final QueryPerformanceNugget outerNugget =
-                                        QueryPerformanceRecorder.getInstance().getOuterNugget();
-                                if (outerNugget != null) {
-                                    outerNugget.addBaseEntry(baseEntry);
+
+                            try {
+                                waitForResult.get();
+                            } catch (InterruptedException e) {
+                                throw new CancellationException("interrupted while computing select or update");
+                            } catch (ExecutionException e) {
+                                if (e.getCause() instanceof RuntimeException) {
+                                    throw (RuntimeException) e.getCause();
+                                } else {
+                                    throw new UncheckedDeephavenException("Failure computing select or update",
+                                            e.getCause());
+                                }
+                            } finally {
+                                final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
+                                if (baseEntry != null) {
+                                    final QueryPerformanceNugget outerNugget =
+                                            QueryPerformanceRecorder.getInstance().getOuterNugget();
+                                    if (outerNugget != null) {
+                                        outerNugget.addBaseEntry(baseEntry);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    final TrackingRowSet resultRowSet =
-                            analyzer.flattenedResult() ? RowSetFactory.flat(rowSet.size()).toTracking() : rowSet;
-                    final QueryTable resultTable = new QueryTable(resultRowSet, analyzer.getPublishedColumnSources());
-                    if (isRefreshing()) {
-                        analyzer.startTrackingPrev();
-                        final Map<String, String[]> effects = analyzer.calcEffects();
-                        final SelectOrUpdateListener soul =
-                                new SelectOrUpdateListener(updateDescription, this, resultTable,
-                                        effects, analyzer);
-                        listenForUpdates(soul);
-                    } else {
-                        if (resultTable.getRowSet().isFlat()) {
-                            resultTable.setFlat();
-                        }
-                        if (resultTable.getRowSet() == rowSet) {
-                            propagateGrouping(selectColumns, resultTable);
-                        }
-                        for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
-                            if (columnSource instanceof PossiblyImmutableColumnSource) {
-                                ((PossiblyImmutableColumnSource) columnSource).setImmutable();
+                        final TrackingRowSet resultRowSet =
+                                analyzer.flattenedResult() ? RowSetFactory.flat(rowSet.size()).toTracking() : rowSet;
+                        resultTable = new QueryTable(resultRowSet, analyzer.getPublishedColumnSources());
+                        if (liveResultCapture != null) {
+                            analyzer.startTrackingPrev();
+                            final Map<String, String[]> effects = analyzer.calcEffects();
+                            final SelectOrUpdateListener soul = new SelectOrUpdateListener(updateDescription, this,
+                                    resultTable, effects, analyzer);
+                            liveResultCapture.transferTo(soul);
+                            listenForUpdates(soul);
+                            ConstituentDependency.install(resultTable, soul);
+                        } else {
+                            if (resultTable.getRowSet().isFlat()) {
+                                resultTable.setFlat();
+                            }
+                            if (resultTable.getRowSet() == rowSet) {
+                                propagateGrouping(selectColumns, resultTable);
+                            }
+                            for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
+                                if (columnSource instanceof PossiblyImmutableColumnSource) {
+                                    ((PossiblyImmutableColumnSource) columnSource).setImmutable();
+                                }
                             }
                         }
                     }

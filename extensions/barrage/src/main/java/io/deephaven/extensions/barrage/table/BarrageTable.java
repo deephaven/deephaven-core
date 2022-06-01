@@ -61,7 +61,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
     private static final Logger log = LoggerFactory.getLogger(BarrageTable.class);
 
-    private static final int BATCH_SIZE = 1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
+    private static final int BATCH_SIZE = ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
 
     private final UpdateSourceRegistrar registrar;
     private final NotificationQueue notificationQueue;

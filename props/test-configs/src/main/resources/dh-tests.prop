@@ -20,7 +20,6 @@ NIO.driver.initialThreadCount=20
 NIO.driver.maxThreadCount=400
 NIO.driver.useFast=true
 
-#TreeIndex.useRspBitmapTreeIndexImpl=true
 TableUpdateValidator.aggressiveUpdateValidation=true
 
 RefCounted.debug=true
@@ -84,8 +83,7 @@ RspSequentialBuilder.check=true
 MetricsManager.toStdout=true
 MetricsManager.logPeriodSeconds=30
 
-# TreeIndexImplSequentialBuilder
-TreeIndexImplSequentialBuilder.check=true
+OrderedLongSetSequentialBuilder.check=true
 
 # SortedRanges
 SortedRanges.debug=false

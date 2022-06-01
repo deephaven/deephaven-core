@@ -50,7 +50,7 @@ public class XYDataSeriesSwappableTableArray extends XYDataSeriesArray implement
         this.y = series.y;
     }
 
-    private <S, T> Function<Table, Table> constructTableMapFromFunction(final Function<S, T> function,
+    private <S, T> Function<Table, Table> constructPartitionedTableFromFunction(final Function<S, T> function,
             final Class resultClass, final String onColumn, final String columnName) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";

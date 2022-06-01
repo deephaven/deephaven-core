@@ -23,7 +23,7 @@ public class FigureWidget extends FigureImpl implements LiveWidget, LiveWidgetVi
     @SuppressWarnings("WeakerAccess") // this is used in the python integration
     public FigureWidget(final FigureImpl figure) {
         super(figure);
-        figure.getFigure().consolidateTableMaps();
+        figure.getFigure().consolidatePartitionedTables();
     }
 
     @ScriptApi

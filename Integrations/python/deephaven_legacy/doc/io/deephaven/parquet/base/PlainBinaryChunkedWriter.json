@@ -12,6 +12,6 @@
   "writeBytes": ":param v: org.apache.parquet.io.api.Binary"
  },
  "path": "io.deephaven.parquet.base.PlainBinaryChunkedWriter",
- "text": "Plain encoding except for booleans",
+ "text": "Plain encoding except for binary values",
  "typeName": "class"
 }

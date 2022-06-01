@@ -9,16 +9,15 @@ import io.deephaven.plot.datasets.DynamicSeriesNamer;
 import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesInternal;
 import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesTableArray;
 import io.deephaven.plot.util.ArgumentValidations;
-import io.deephaven.plot.util.tables.TableBackedTableMapHandle;
+import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.plot.util.tables.TableHandle;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 
 
 /**
  * A {@link AbstractMultiSeries} collection that holds and generates {@link XYErrorBarDataSeriesInternal}.
  */
-public class MultiXYErrorBarSeries extends AbstractTableMapHandleMultiSeries<XYErrorBarDataSeriesInternal> {
+public class MultiXYErrorBarSeries extends AbstractPartitionedTableHandleMultiSeries<XYErrorBarDataSeriesInternal> {
 
     private static final long serialVersionUID = 1274883777622079921L;
 
@@ -37,27 +36,27 @@ public class MultiXYErrorBarSeries extends AbstractTableMapHandleMultiSeries<XYE
      * @param axes axes on which this multiseries will be plotted
      * @param id data series id
      * @param name series name
-     * @param tableMapHandle table data
+     * @param partitionedTableHandle table data
      * @param x column in {@code t} that holds the x-variable data
      * @param yLow column in {@code t} that holds the y-variable data
      * @param byColumns column(s) in {@code t} that holds the grouping data
      */
     public MultiXYErrorBarSeries(final AxesImpl axes, final int id, final Comparable name,
-            final TableBackedTableMapHandle tableMapHandle, final String x, final String xLow, final String xHigh,
-            final String y, final String yLow, final String yHigh, final String[] byColumns, final boolean drawXError,
-            final boolean drawYError) {
-        super(axes, id, name, tableMapHandle, x, y, byColumns);
-        ArgumentValidations.assertIsNumericOrTime(tableMapHandle.getTableDefinition(), x, getPlotInfo());
-        ArgumentValidations.assertIsNumericOrTime(tableMapHandle.getTableDefinition(), y, getPlotInfo());
+                                 final TableBackedPartitionedTableHandle partitionedTableHandle, final String x, final String xLow, final String xHigh,
+                                 final String y, final String yLow, final String yHigh, final String[] byColumns, final boolean drawXError,
+                                 final boolean drawYError) {
+        super(axes, id, name, partitionedTableHandle, x, y, byColumns);
+        ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), x, getPlotInfo());
+        ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), y, getPlotInfo());
 
         if (drawXError) {
-            ArgumentValidations.assertIsNumericOrTime(tableMapHandle.getTableDefinition(), xLow, getPlotInfo());
-            ArgumentValidations.assertIsNumericOrTime(tableMapHandle.getTableDefinition(), xHigh, getPlotInfo());
+            ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), xLow, getPlotInfo());
+            ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), xHigh, getPlotInfo());
         }
 
         if (drawYError) {
-            ArgumentValidations.assertIsNumericOrTime(tableMapHandle.getTableDefinition(), yLow, getPlotInfo());
-            ArgumentValidations.assertIsNumericOrTime(tableMapHandle.getTableDefinition(), yHigh, getPlotInfo());
+            ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), yLow, getPlotInfo());
+            ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), yHigh, getPlotInfo());
         }
 
         this.x = x;

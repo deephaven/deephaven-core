@@ -2,6 +2,7 @@
  "className": "io.deephaven.engine.table.impl.MergedListener",
  "methods": {
   "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "notifyOnUpstreamError": ":param upstreamError: java.lang.Throwable\n:param errorSourceEntry: io.deephaven.engine.table.TableListener.Entry",
   "satisfied": "Is this ancestor satisfied? Note that this method must be safe to call on any thread.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) Whether the dependency is satisfied on step (and will not fire subsequent notifications)"
  },
  "path": "io.deephaven.engine.table.impl.MergedListener",

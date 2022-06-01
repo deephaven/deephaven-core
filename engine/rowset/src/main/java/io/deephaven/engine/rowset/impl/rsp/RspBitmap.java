@@ -1435,7 +1435,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         try (final RowSet.RangeIterator rit = keys.ixRangeIterator()) {
             final BuilderSequential builder = new OrderedLongSetBuilderSequential();
             invert(builder, rit, maximumPosition);
-            return builder.getTreeIndexImpl();
+            return builder.getOrderedLongSet();
         }
     }
 
@@ -1535,25 +1535,25 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     public RspBitmap ixInsertNoWriteCheck(final OrderedLongSet other) {
         if (other instanceof SingleRange) {
-            insertTreeIndexUnsafeNoWriteCheck((SingleRange) other);
+            insertOrderedLongSetUnsafeNoWriteCheck((SingleRange) other);
         } else if (other instanceof SortedRanges) {
-            insertTreeIndexUnsafeNoWriteCheck((SortedRanges) other);
+            insertOrderedLongSetUnsafeNoWriteCheck((SortedRanges) other);
         } else {
-            insertTreeIndexUnsafeNoWriteCheck((RspBitmap) other);
+            insertOrderedLongSetUnsafeNoWriteCheck((RspBitmap) other);
         }
         finishMutations();
         return this;
     }
 
-    public void insertTreeIndexUnsafeNoWriteCheck(final SingleRange ix) {
+    public void insertOrderedLongSetUnsafeNoWriteCheck(final SingleRange ix) {
         addRangeUnsafeNoWriteCheck(0, ix.ixFirstKey(), ix.ixLastKey());
     }
 
-    public void insertTreeIndexUnsafeNoWriteCheck(final SortedRanges sr) {
+    public void insertOrderedLongSetUnsafeNoWriteCheck(final SortedRanges sr) {
         addRangesUnsafeNoWriteCheck(sr.getRangeIterator());
     }
 
-    public void insertTreeIndexUnsafeNoWriteCheck(final RspBitmap rb) {
+    public void insertOrderedLongSetUnsafeNoWriteCheck(final RspBitmap rb) {
         orEqualsUnsafeNoWriteCheck(rb);
     }
 
@@ -1864,7 +1864,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             RspBitmap rspOther = (RspBitmap) other;
             rspOther = rspOther.applyOffsetOnNew(shiftAmount);
             final RspBitmap ans = getWriteRef();
-            ans.insertTreeIndexUnsafeNoWriteCheck(rspOther);
+            ans.insertOrderedLongSetUnsafeNoWriteCheck(rspOther);
             ans.finishMutations();
             return ans;
         }
@@ -2152,7 +2152,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         }
 
         @Override
-        public RspBitmap getTreeIndexImpl() {
+        public RspBitmap getOrderedLongSet() {
             final RspBitmap ans = rb;
             rb = null;
             ans.tryCompactUnsafe(4);
@@ -2183,12 +2183,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
         @Override
         public void add(final SortedRanges ix, final boolean acquire) {
-            rb.insertTreeIndexUnsafeNoWriteCheck(ix);
+            rb.insertOrderedLongSetUnsafeNoWriteCheck(ix);
         }
 
         @Override
         public void add(final RspBitmap ix, final boolean acquire) {
-            rb.insertTreeIndexUnsafeNoWriteCheck(ix);
+            rb.insertOrderedLongSetUnsafeNoWriteCheck(ix);
         }
     }
 }

@@ -244,27 +244,12 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                             resultTable.sealTable(() -> {
                                 // signal that we are closing the connection
                                 observer.onCompleted();
-
-                                completed = true;
-                                if (completedCondition != null) {
-                                    UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
-                                } else {
-                                    synchronized (BarrageSubscriptionImpl.this) {
-                                        BarrageSubscriptionImpl.this.notifyAll();
-                                    }
-                                }
+                                signalCompletion();
                             }, () -> {
                                 exceptionWhileCompleting = new Exception();
                             });
                         } else {
-                            completed = true;
-                            if (completedCondition != null) {
-                                UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
-                            } else {
-                                synchronized (BarrageSubscriptionImpl.this) {
-                                    BarrageSubscriptionImpl.this.notifyAll();
-                                }
-                            }
+                            signalCompletion();
                         }
 
                         // no longer need to listen for completion
@@ -292,6 +277,17 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             return resultTable;
         } else {
             throw new UncheckedDeephavenException("Error while handling subscription:", exceptionWhileCompleting);
+        }
+    }
+
+    private void signalCompletion() {
+        completed = true;
+        if (completedCondition != null) {
+            UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+        } else {
+            synchronized (BarrageSubscriptionImpl.this) {
+                BarrageSubscriptionImpl.this.notifyAll();
+            }
         }
     }
 
@@ -345,11 +341,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (!connected) {
             return;
         }
-        try {
-            observer.onCompleted();
-        } catch (Exception ex) {
-            // ignore exceptions here
-        }
+        GrpcUtil.safelyExecute(observer::onCompleted);
         cleanup();
     }
 

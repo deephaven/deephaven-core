@@ -6,6 +6,7 @@
   "containsAll": "Check whether or not all columns are currently marked as dirty.\n\n:param columnSet: (io.deephaven.engine.table.ModifiedColumnSet) - the columns to check\n:return: (boolean) true iff all columns match dirtiness",
   "containsAny": "Check whether or not any columns are currently marked as dirty.\n\n:param columnSet: (io.deephaven.engine.table.ModifiedColumnSet) - the columns to check\n:return: (boolean) true iff any column is dirty",
   "copy": "Create an exact copy of this ModifiedColumnSet.\n\n:return: (io.deephaven.engine.table.ModifiedColumnSet) a copy with identical state including dirty bits",
+  "dirtyColumnNames": ":return: (java.lang.String[]) the names of the dirty columns in this set",
   "empty": ":return: (boolean) whether or not this set is empty",
   "equals": ":param other: java.lang.Object\n:return: boolean",
   "extractAsBitSet": ":return: java.util.BitSet",

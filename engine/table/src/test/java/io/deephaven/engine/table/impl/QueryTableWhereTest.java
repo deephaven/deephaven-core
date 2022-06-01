@@ -592,7 +592,7 @@ public class QueryTableWhereTest {
     public void testWhereWithExcessiveShifting() {
         // Select a prime that guarantees shifts from the merge operations.
         final int PRIME = 61409;
-        assertTrue(2 * PRIME > UnionRedirection.CHUNK_MULTIPLE);
+        assertTrue(2 * PRIME > UnionRedirection.ALLOCATION_UNIT_ROW_KEYS);
 
         final ColumnInfo[] filteredInfo;
 

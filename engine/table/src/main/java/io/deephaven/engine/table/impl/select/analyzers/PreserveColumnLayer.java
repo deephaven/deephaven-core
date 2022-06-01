@@ -1,11 +1,13 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -28,10 +30,10 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
 
     @Override
     public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
-            SelectLayerCompletionHandler onCompletion) {
+            @Nullable LivenessNode liveResultOwner, SelectLayerCompletionHandler onCompletion) {
         // Nothing to do at this level, but need to recurse because my inner layers might need to be called (e.g.
         // because they are SelectColumnLayers)
-        inner.applyUpdate(upstream, toClear, helper, jobScheduler,
+        inner.applyUpdate(upstream, toClear, helper, jobScheduler, liveResultOwner,
                 new SelectLayerCompletionHandler(dependencyBitSet, onCompletion) {
                     @Override
                     public void onAllRequiredColumnsCompleted() {

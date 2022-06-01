@@ -111,7 +111,8 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                     adjustedColumnDefinitions.add(fullDefinition); // No adjustments to apply in this case
                 } else {
                     final List<String> differences = new ArrayList<>();
-                    fullDefinition.describeDifferences(differences, leafDefinition, "full schema", "file schema", "");
+                    fullDefinition.describeDifferences(differences, leafDefinition, "full schema", "file schema",
+                            "", false);
                     throw new TableDataException(String.format("Schema mismatch between %s and %s for column %s: %s",
                             metadataFile, commonMetadataFile, fullDefinition.getName(), differences));
                 }

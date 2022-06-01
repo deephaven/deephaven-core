@@ -4,9 +4,11 @@
 
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.*;
+import io.deephaven.client.impl.BarrageSession;
+import io.deephaven.client.impl.BarrageSubscription;
+import io.deephaven.client.impl.TableHandle;
+import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
@@ -18,8 +20,6 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import picocli.CommandLine;
 
 import java.util.concurrent.CountDownLatch;
-
-import static java.lang.Thread.sleep;
 
 abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 

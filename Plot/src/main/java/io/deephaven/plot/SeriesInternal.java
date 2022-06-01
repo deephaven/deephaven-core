@@ -4,9 +4,9 @@
 
 package io.deephaven.plot;
 
+import io.deephaven.plot.util.tables.PartitionedTableHandle;
 import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.plot.util.tables.TableHandle;
-import io.deephaven.plot.util.tables.TableMapHandle;
 
 import java.util.Set;
 
@@ -64,18 +64,18 @@ public interface SeriesInternal extends Series {
     Set<TableHandle> getTableHandles();
 
     /**
-     * Gets all of the table maps driving this series.
+     * Gets all of the partitioned tables driving this series.
      *
-     * @return all of the table maps driving this series.
+     * @return all of the partitioned tables driving this series.
      */
-    Set<TableMapHandle> getTableMapHandles();
+    Set<PartitionedTableHandle> getPartitionedTableHandles();
 
     /**
-     * Add a table map that drives this series.
+     * Add a partitioned table that drives this series.
      *
-     * @param map table map.
+     * @param map partitioned table.
      */
-    void addTableMapHandle(TableMapHandle map);
+    void addPartitionedTableHandle(PartitionedTableHandle map);
 
     /**
      * Adds a swappable table that drives this series.

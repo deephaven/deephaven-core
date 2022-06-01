@@ -25,8 +25,8 @@ services:
     expose:
       - '8080'
 # For remote debugging (change if using different port)
-    ports:
-      - '5005:5005'
+#    ports:
+#      - '5005:5005'
 # For jprofiler (change if using different port)
 #    ports:
 #      - '8849:8849'

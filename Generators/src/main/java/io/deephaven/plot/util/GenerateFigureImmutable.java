@@ -557,15 +557,15 @@ public class GenerateFigureImmutable {
                                 "    private FigureImpl applyFunctionalProperties() {\n" +
                                 "        final Map<Table, java.util.Set<java.util.function.Function<Table, Table>>> tableFunctionMap = getFigure().getTableFunctionMap();\n"
                                 +
-                                "        final Map<io.deephaven.engine.table.TableMap, java.util.Set<java.util.function.Function<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap>>> tableMapFunctionMap = getFigure().getTableMapFunctionMap();\n"
+                                "        final Map<io.deephaven.engine.table.PartitionedTable, java.util.Set<java.util.function.Function<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable>>> partitionedTableFunctionMap = getFigure().getPartitionedTableFunctionMap();\n"
                                 +
                                 "        final java.util.List<io.deephaven.plot.util.functions.FigureImplFunction> figureFunctionList = getFigure().getFigureFunctionList();\n"
                                 +
                                 "        final Map<Table, Table> finalTableComputation = new HashMap<>();\n" +
-                                "        final Map<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap> finalTableMapComputation = new HashMap<>();\n"
+                                "        final Map<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable> finalPartitionedTableComputation = new HashMap<>();\n"
                                 +
                                 "        final java.util.Set<Table> allTables = new java.util.HashSet<>();\n" +
-                                "        final java.util.Set<io.deephaven.engine.table.TableMap> allTableMaps = new java.util.HashSet<>();\n"
+                                "        final java.util.Set<io.deephaven.engine.table.PartitionedTable> allPartitionedTables = new java.util.HashSet<>();\n"
                                 +
                                 "\n" +
                                 "        for(final io.deephaven.plot.util.tables.TableHandle h : getFigure().getTableHandles()) {\n"
@@ -573,15 +573,15 @@ public class GenerateFigureImmutable {
                                 "            allTables.add(h.getTable());\n" +
                                 "        }\n" +
                                 "\n" +
-                                "        for(final io.deephaven.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {\n"
+                                "        for(final io.deephaven.plot.util.tables.PartitionedTableHandle h : getFigure().getPartitionedTableHandles()) {\n"
                                 +
-                                "            if(h instanceof io.deephaven.plot.util.tables.TableBackedTableMapHandle) {\n"
+                                "            if(h instanceof io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle) {\n"
                                 +
-                                "                allTables.add(((io.deephaven.plot.util.tables.TableBackedTableMapHandle) h).getTable());\n"
+                                "                allTables.add(((io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle) h).getTable());\n"
                                 +
                                 "            }\n" +
-                                "            if(h.getTableMap() != null) {\n" +
-                                "                allTableMaps.add(h.getTableMap());\n" +
+                                "            if(h.getPartitionedTable() != null) {\n" +
+                                "                allPartitionedTables.add(h.getPartitionedTable());\n" +
                                 "            }\n" +
                                 "        }\n" +
                                 "\n" +
@@ -611,39 +611,42 @@ public class GenerateFigureImmutable {
                                 "            h.setTable(finalTableComputation.get(h.getTable()));\n" +
                                 "        }\n" +
                                 "\n" +
-                                "        for(final io.deephaven.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {\n"
+                                "        for(final io.deephaven.plot.util.tables.PartitionedTableHandle h : getFigure().getPartitionedTableHandles()) {\n"
                                 +
-                                "            if(h instanceof io.deephaven.plot.util.tables.TableBackedTableMapHandle) {\n"
+                                "            if(h instanceof io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle) {\n"
                                 +
-                                "                ((io.deephaven.plot.util.tables.TableBackedTableMapHandle) h).setTable(finalTableComputation.get(((io.deephaven.plot.util.tables.TableBackedTableMapHandle) h).getTable()));\n"
+                                "                ((io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle) h).setTable(finalTableComputation.get(((io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle) h).getTable()));\n"
                                 +
                                 "            }\n" +
                                 "        }\n" +
                                 "\n" +
-                                "        for(final io.deephaven.engine.table.TableMap initTableMap : allTableMaps) {\n"
+                                "        for(final io.deephaven.engine.table.PartitionedTable initPartitionedTable : allPartitionedTables) {\n"
                                 +
-                                "            if(tableMapFunctionMap.get(initTableMap) != null) {\n" +
-                                "                finalTableMapComputation.computeIfAbsent(initTableMap, t -> {\n" +
-                                "                    final java.util.Set<java.util.function.Function<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap>> functions = tableMapFunctionMap.get(initTableMap);\n"
+                                "            if(partitionedTableFunctionMap.get(initPartitionedTable) != null) {\n" +
+                                "                finalPartitionedTableComputation.computeIfAbsent(initPartitionedTable, t -> {\n"
                                 +
-                                "                    io.deephaven.engine.table.TableMap resultTableMap = initTableMap;\n"
+                                "                    final java.util.Set<java.util.function.Function<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable>> functions = partitionedTableFunctionMap.get(initPartitionedTable);\n"
+                                +
+                                "                    io.deephaven.engine.table.PartitionedTable resultPartitionedTable = initPartitionedTable;\n"
                                 +
                                 "\n" +
-                                "                    for(final java.util.function.Function<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap> f : functions) {\n"
+                                "                    for(final java.util.function.Function<io.deephaven.engine.table.PartitionedTable, io.deephaven.engine.table.PartitionedTable> f : functions) {\n"
                                 +
-                                "                        resultTableMap = f.apply(resultTableMap);\n" +
+                                "                        resultPartitionedTable = f.apply(resultPartitionedTable);\n" +
                                 "                    }\n" +
                                 "\n" +
-                                "                    return resultTableMap;\n" +
+                                "                    return resultPartitionedTable;\n" +
                                 "                });\n" +
                                 "            } else {\n" +
-                                "                finalTableMapComputation.put(initTableMap, initTableMap);\n" +
+                                "                finalPartitionedTableComputation.put(initPartitionedTable, initPartitionedTable);\n"
+                                +
                                 "            }\n" +
                                 "        }\n" +
                                 "\n" +
-                                "        for(final io.deephaven.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {\n"
+                                "        for(final io.deephaven.plot.util.tables.PartitionedTableHandle h : getFigure().getPartitionedTableHandles()) {\n"
                                 +
-                                "            h.setTableMap(finalTableMapComputation.get(h.getTableMap()));\n" +
+                                "            h.setPartitionedTable(finalPartitionedTableComputation.get(h.getPartitionedTable()));\n"
+                                +
                                 "        }\n" +
                                 "\n" +
                                 "        FigureImpl finalFigure = this;\n" +
@@ -653,7 +656,7 @@ public class GenerateFigureImmutable {
                                 "        }\n" +
                                 "\n" +
                                 "        tableFunctionMap.clear();\n" +
-                                "        tableMapFunctionMap.clear();\n" +
+                                "        partitionedTableFunctionMap.clear();\n" +
                                 "        figureFunctionList.clear();\n" +
                                 "\n" +
                                 "        return finalFigure;\n" +

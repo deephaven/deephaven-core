@@ -558,7 +558,7 @@ public class GenerateMultiSeries {
                 throws ClassNotFoundException {
             final StringBuilder code = new StringBuilder();
             code.append(isSwappable ? "new SelectableDataSetSwappableTable(getSwappableTable()), "
-                    : "getTableMapHandle().getTable(), ");
+                    : "getPartitionedTableHandle().getTable(), ");
 
             if (function.getMethodName().equals("pointColorByY")) {
                 final Class c = Class.forName("io.deephaven.plot.datasets.multiseries." + returnClass);
