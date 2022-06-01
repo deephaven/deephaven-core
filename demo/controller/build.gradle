@@ -66,21 +66,13 @@ dependencies {
 test {
     useJUnit()
     // uncomment below to leave test machine alive to play with
-    // systemProperty("noClean", "true") // WIP: must comment whole line to merge
+    // systemProperty("noClean", "true") // must comment whole line to merge
 }
 
 String launchScript = 'launchScript'
 tasks.register(launchScript).configure{
     Task t ->
-        final String startScript = """#!/bin/bash
-test -f /certs/deephaven-svc-act.json && gcloud auth activate-service-account --key-file=/certs/deephaven-svc-act.json
-gcloud config set core/disable_usage_reporting true
-gcloud config set component_manager/disable_update_check true
-gcloud config set project deephaven-oss
-export JAVA_OPTIONS="-Dquarkus.log.level=DEBUG -Dquarkus.http.host=0.0.0.0 -Dquarkus.http.port=7117 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
-cd /deployments
-./run-java.sh --debug
-"""
+        final String startScript = file('src/main/scripts/launchScript.sh').text
         File protoOut = new File(buildDir, launchScript)
         t.outputs.dir(protoOut)
         t.inputs.property("startScript", startScript)
@@ -116,7 +108,11 @@ quarkusBuild {
     }
     finalizedBy {
         // check for error state,
-        if (state.failure) {
+    }
+}
+gradle.buildFinished {
+    if (quarkusBuild.state.failure) {
+        if (state.failure || project.state.failure) {
             logger.quiet("This task can fail if you have not recently authorized docker with gcloud")
             logger.quiet("To do so:\n" +
                     "ZONE=us-central1\n" +

@@ -315,7 +315,7 @@ class Docker {
                     dependsOn(cfg.containerDependencies.dependsOn)
                 }
                 if (cfg.envVars) {
-                    cfg.envVars.forEach createContainer.&withEnvVar
+                    createContainer.envVars.putAll cfg.envVars
                 }
 
                 targetImageId makeImage.get().getImageId()
