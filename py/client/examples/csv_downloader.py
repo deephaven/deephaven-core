@@ -5,12 +5,8 @@ import os.path
 
 from requests import get
 
-
-def download_csv(url: str, file_name=None) -> str:
-    """ download a CSV located at the supplied URL and return the file name. """
-    if not file_name:
-        file_name = "sample.csv"
-
+def download_file(url: str, file_name: str) -> str:
+    """ download a data file located at the supplied URL and return the file name. """
     if os.path.exists(file_name):
         return file_name
 
