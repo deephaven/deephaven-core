@@ -11,6 +11,7 @@ from bitstring import BitArray
 
 from pydeephaven._arrow_flight_service import ArrowFlightService
 from pydeephaven._console_service import ConsoleService
+from pydeephaven._app_service import AppService
 from pydeephaven._session_service import SessionService
 from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp, FetchTableOp
 from pydeephaven._table_service import TableService
@@ -65,6 +66,7 @@ class Session:
         self._grpc_barrage_stub = None
         self._console_service = None
         self._flight_service = None
+        self._app_service = None
         self._tables = {}
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
@@ -114,6 +116,13 @@ class Session:
             self._flight_service = ArrowFlightService(self)
 
         return self._flight_service
+    
+    @property
+    def app_service(self):
+        if not self._app_service:
+            self._app_service = AppService(self)
+        
+        return self._app_service
 
     def make_ticket(self, ticket_no=None):
         if not ticket_no:
@@ -158,7 +167,7 @@ class Session:
             if self._never_timeout:
                 self._keep_alive()
             
-            self._list_fields = self.console_service.list_fields()
+            self._list_fields = self.app_service.list_fields()
             self._parse_fields_change(next(self._list_fields))
 
     def _keep_alive(self):
