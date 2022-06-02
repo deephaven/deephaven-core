@@ -34,7 +34,6 @@ public class ShiftObliviousSwapListener extends SwapListenerBase<ShiftObliviousL
     public void destroy() {
         super.destroy();
         sourceTable.removeUpdateListener(this);
-        sourceTable.removeDirectUpdateListener(this);
     }
 
     @Override

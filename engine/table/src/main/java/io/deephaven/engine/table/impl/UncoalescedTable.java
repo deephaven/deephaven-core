@@ -36,7 +36,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     private volatile Table coalesced;
 
     public UncoalescedTable(@NotNull final TableDefinition definition, @NotNull final String description) {
-        super(definition, description);
+        super(definition, description, null);
     }
 
     // region coalesce support

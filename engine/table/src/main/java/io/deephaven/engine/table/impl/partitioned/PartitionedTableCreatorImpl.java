@@ -42,7 +42,7 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
     @Override
     public PartitionedTable of(
             @NotNull final Table table,
-            @NotNull final Set<String> keyColumnNames,
+            @NotNull final Collection<String> keyColumnNames,
             final boolean uniqueKeys,
             @NotNull final String constituentColumnName,
             @NotNull final TableDefinition constituentDefinition,

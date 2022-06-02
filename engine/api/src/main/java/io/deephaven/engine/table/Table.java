@@ -54,6 +54,14 @@ public interface Table extends
     String getDescription();
 
     /**
+     * Get the number of columns defined for this table. Equivalent to {@code getDefinition().getColumns().length}.
+     *
+     * @return The number of columns defined for this table
+     */
+    @ConcurrentMethod
+    int numColumns();
+
+    /**
      * Determines whether this Table contains a column for each string in the specified array of {@code columnNames}.
      *
      * @param columnNames The array of column names to be checked for inclusion in this table. Must not be {@code null}.
@@ -198,11 +206,11 @@ public interface Table extends
     /**
      * Set the value of an attribute.
      *
-     * @param key the name of the attribute
-     * @param object the value
+     * @param key The name of the attribute; must not be {@code null}
+     * @param object The value to be assigned; must not be {@code null}
      */
     @ConcurrentMethod
-    void setAttribute(@NotNull String key, @Nullable Object object);
+    void setAttribute(@NotNull String key, @NotNull Object object);
 
     /**
      * Get the value of the specified attribute.
@@ -235,16 +243,16 @@ public interface Table extends
     /**
      * Get all attributes from this Table.
      *
-     * @return A map containing all attributes from this Table
+     * @return An unmodifiable map containing all attributes from this Table
      */
     @ConcurrentMethod
     Map<String, Object> getAttributes();
 
     /**
-     * Get all attributes from this Table except the items that appear in excluded.
+     * Get all attributes from this Table except the items that appear in {@code excluded}.
      *
      * @param excluded A set of attributes to exclude from the result
-     * @return This Table's attributes, except the ones present in excluded
+     * @return An unmodifiable map containing Table's attributes, except the ones present in {@code excluded}
      */
     @ConcurrentMethod
     Map<String, Object> getAttributes(Collection<String> excluded);
@@ -1827,9 +1835,13 @@ public interface Table extends
     Table coalesce();
 
     /**
-     * Get a {@link Table} that contains a sub-set of the rows from {@code this}.
+     * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
+     * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
      *
-     * @param rowSet The {@link TrackingRowSet row set} for the result.
+     * The result will not update on its own. The caller must also establish an appropriate listener to update
+     * {@code rowSet} and propagate {@link TableUpdate updates}.
+     *
+     * @param rowSet The {@link TrackingRowSet row set} for the result
      * @return A new sub-table
      */
     Table getSubTable(TrackingRowSet rowSet);

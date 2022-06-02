@@ -16,6 +16,8 @@ import io.deephaven.engine.util.WorkerPythonEnvironment;
 import io.deephaven.jpy.PythonTest;
 
 import java.util.Collections;
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -43,8 +45,7 @@ public class PythonMatchFilterTest extends PythonTest {
         WhereFilter filter = WhereFilterFactory.getExpression("ival in iii");
         assertEquals(MatchFilter.class, filter.getClass());
 
-        TableDefinition tableDef =
-                new TableDefinition(Collections.singletonList(int.class), Collections.singletonList("ival"));
+        TableDefinition tableDef = TableDefinition.from(List.of("ival"), List.of(int.class));
         filter.init(tableDef);
         Object[] values = ((MatchFilter) filter).getValues();
         // System.out.println(Arrays.toString(values));
@@ -62,8 +63,7 @@ public class PythonMatchFilterTest extends PythonTest {
         WhereFilter filter = WhereFilterFactory.getExpression("sval in ss");
         assertEquals(MatchFilter.class, filter.getClass());
 
-        TableDefinition tableDef =
-                new TableDefinition(Collections.singletonList(String.class), Collections.singletonList("sval"));
+        TableDefinition tableDef = TableDefinition.from(List.of("sval"), List.of(String.class));
         filter.init(tableDef);
         Object[] values = ((MatchFilter) filter).getValues();
         // System.out.println(Arrays.toString(values));

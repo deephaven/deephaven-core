@@ -135,7 +135,7 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
                                 return false;
                             }
 
-                            if (currentColumn.getType() != baseTable.getColumn(colName).getType()) {
+                            if (currentColumn.getType() != baseTable.getDefinition().getColumn(colName).getDataType()) {
                                 return false;
                             }
                         }

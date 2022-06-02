@@ -20,10 +20,8 @@ import io.deephaven.engine.table.impl.util.ShiftData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 /**
@@ -51,11 +49,10 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
     }
 
     public static Map<String, ColumnSource<?>> createColumnSourceMap(TableDefinition definition) {
-        // noinspection unchecked
-        return Arrays.stream(definition.getColumns()).collect(Collectors.toMap(
+        return definition.getColumnStream().collect(Collectors.toMap(
                 ColumnDefinition::getName,
                 c -> getInstance(c.getDataType(), c.getComponentType()),
-                (BinaryOperator<ColumnSource<?>>) Assert::neverInvoked,
+                Assert::neverInvoked,
                 LinkedHashMap::new));
     }
 

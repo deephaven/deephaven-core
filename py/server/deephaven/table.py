@@ -54,7 +54,7 @@ def _sort_column(col, dir_):
 
 def _td_to_columns(table_definition):
     cols = []
-    j_cols = table_definition.getColumnList().toArray()
+    j_cols = table_definition.getColumnsArray()
     for j_col in j_cols:
         cols.append(
             Column(

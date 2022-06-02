@@ -13,6 +13,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -31,7 +32,7 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
         this.allowNulls = allowNulls;
 
         final String[] columnNames = definition.getColumnNamesArray();
-        final ColumnDefinition<?>[] columns = definition.getColumns();
+        final List<ColumnDefinition<?>> columns = definition.getColumns();
 
         final TObjectIntMap<String> deephavenColumnNameToIndex = new TObjectIntHashMap<>(columnNames.length, 0.5f, -1);
         for (int ii = 0; ii < columnNames.length; ++ii) {
@@ -50,7 +51,7 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
             }
 
             chunkOffsets[col] = deephavenColumnIndex;
-            final ColumnDefinition colDef = columns[deephavenColumnIndex];
+            final ColumnDefinition<?> colDef = columns.get(deephavenColumnIndex);
             fieldCopiers[col++] = fieldCopierFactory.make(fieldToColumn.getKey(),
                     chunkTypeForIndex.apply(deephavenColumnIndex), colDef.getDataType(), colDef.getComponentType());
         }

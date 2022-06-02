@@ -268,7 +268,7 @@ public class BenchmarkTools {
         final List<ColumnDefinition<?>> columns = new ArrayList<>(COMMON_RESULT_COLUMNS);
         columns.addAll(columnsToAdd);
 
-        return new TableDefinition(columns);
+        return TableDefinition.of(columns);
     }
 
     public static String getStrippedBenchmarkName(BenchmarkParams params) {

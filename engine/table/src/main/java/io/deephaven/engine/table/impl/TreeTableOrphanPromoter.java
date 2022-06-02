@@ -277,7 +277,7 @@ public class TreeTableOrphanPromoter implements Function<Table, QueryTable> {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
                                 final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                                downstream.modifiedColumnSet = result.modifiedColumnSet;
+                                downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
 
                                 final boolean modifiedInputColumns =
                                         upstream.modifiedColumnSet().containsAny(inputColumns);
@@ -285,7 +285,7 @@ public class TreeTableOrphanPromoter implements Function<Table, QueryTable> {
                                         && upstream.shifted().empty()
                                         && !modifiedInputColumns) {
                                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
-                                            downstream.modifiedColumnSet());
+                                            downstream.modifiedColumnSet);
                                     result.notifyListeners(downstream);
                                     return;
                                 }

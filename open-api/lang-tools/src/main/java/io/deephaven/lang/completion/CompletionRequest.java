@@ -127,7 +127,6 @@ public class CompletionRequest {
     }
 
     private TableDefinition convertNewTableInvocation(final ChunkerInvoke invoke) {
-        final TableDefinition def = new TableDefinition();
         final List<ColumnDefinition<?>> columns = new ArrayList<>();
         for (Node argument : invoke.getArguments()) {
             if (argument instanceof ChunkerInvoke) {
@@ -203,8 +202,7 @@ public class CompletionRequest {
                         .endl();
             }
         }
-        def.setColumns(columns.toArray(new ColumnDefinition[0]));
-        return def;
+        return TableDefinition.of(columns);
     }
 
     private String toStringLiteral(final Node node) {

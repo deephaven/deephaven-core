@@ -215,7 +215,7 @@ public class ColumnHandlerFactory implements Serializable {
         ArgumentValidations.assertNotNull(columnName, "columnName", plotInfo);
         ArgumentValidations.assertColumnsInTable(tableHandle.getTable(), plotInfo, columnName);
 
-        final Class type = tableHandle.getTable().getColumn(columnName).getType();
+        final Class type = tableHandle.getTable().getDefinition().getColumn(columnName).getDataType();
 
         if (type.equals(short.class)) {
             return new ColumnHandlerHandle(tableHandle, columnName, type, plotInfo) {
@@ -432,7 +432,7 @@ public class ColumnHandlerFactory implements Serializable {
         ArgumentValidations.assertNotNull(table, "table", plotInfo);
         ArgumentValidations.assertNotNull(columnName, "columnName", plotInfo);
 
-        final Class type = table.getColumn(columnName).getType();
+        final Class type = table.getDefinition().getColumn(columnName).getDataType();
 
         if (type.equals(short.class)) {
             return new ColumnHandlerTable(table, columnName, type, plotInfo) {
@@ -651,7 +651,7 @@ public class ColumnHandlerFactory implements Serializable {
         ArgumentValidations.assertNotNull(tableHandle, "tableHandle", plotInfo);
         ArgumentValidations.assertNotNull(columnName, "columnName", plotInfo);
 
-        final Class type = tableHandle.getTable().getColumn(columnName).getType();
+        final Class type = tableHandle.getTable().getDefinition().getColumn(columnName).getDataType();
 
         if (Comparable.class.isAssignableFrom(type)) {
             return new ColumnHandlerHandle(tableHandle, columnName, type, plotInfo) {
@@ -689,7 +689,7 @@ public class ColumnHandlerFactory implements Serializable {
         ArgumentValidations.assertNotNull(table, "table", plotInfo);
         ArgumentValidations.assertNotNull(columnName, "columnName", plotInfo);
 
-        final Class type = table.getColumn(columnName).getType();
+        final Class type = table.getDefinition().getColumn(columnName).getDataType();
 
         if (Comparable.class.isAssignableFrom(type)) {
             return new ColumnHandlerTable(table, columnName, type, plotInfo) {
@@ -725,7 +725,7 @@ public class ColumnHandlerFactory implements Serializable {
         ArgumentValidations.assertNotNull(tableHandle, "tableHandle", plotInfo);
         ArgumentValidations.assertNotNull(columnName, "columnName", plotInfo);
 
-        final Class type = tableHandle.getTable().getColumn(columnName).getType();
+        final Class type = tableHandle.getTable().getDefinition().getColumn(columnName).getDataType();
         return new ColumnHandlerHandle(tableHandle, columnName, type, plotInfo) {
             @Override
             public TypeClassification typeClassification() {
@@ -754,7 +754,7 @@ public class ColumnHandlerFactory implements Serializable {
         ArgumentValidations.assertNotNull(table, "table", plotInfo);
         ArgumentValidations.assertNotNull(columnName, "columnName", plotInfo);
 
-        final Class type = table.getColumn(columnName).getType();
+        final Class type = table.getDefinition().getColumn(columnName).getDataType();
         return new ColumnHandlerTable(table, columnName, type, plotInfo) {
             @Override
             public TypeClassification typeClassification() {

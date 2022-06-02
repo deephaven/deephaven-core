@@ -16,21 +16,18 @@ from deephaven.dtypes import DType
 _JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
 _JColumn = jpy.get_type("io.deephaven.qst.column.Column")
 _JColumnDefinition = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
-
+_JColumnDefinitionType = jpy.get_type("io.deephaven.engine.table.ColumnDefinition$ColumnType")
 
 class ColumnType(Enum):
-    NORMAL = _JColumnDefinition.COLUMNTYPE_NORMAL
+    NORMAL = _JColumnDefinitionType.Normal
     """ A regular column. """
-    GROUPING = _JColumnDefinition.COLUMNTYPE_GROUPING
+    GROUPING = _JColumnDefinitionType.Grouping
     """ A grouping column. """
-    PARTITIONING = _JColumnDefinition.COLUMNTYPE_PARTITIONING
+    PARTITIONING = _JColumnDefinitionType.Partitioning
     """ A partitioning column. """
-    VIRTUAL = _JColumnDefinition.COLUMNTYPE_VIRTUAL
-    """ A virtual column. """
 
     def __repr__(self):
         return self.name
-
 
 @dataclass
 class Column:
@@ -46,7 +43,10 @@ class Column:
 
     @property
     def j_column_definition(self):
-        return _JColumnDefinition.fromGenericType(self.name, self.data_type.qst_type.clazz(), self.component_type)
+        j_data_type = self.data_type.qst_type.clazz()
+        j_component_type = self.component_type.qst_type.clazz() if self.component_type else None
+        j_column_type = self.column_type.value
+        return _JColumnDefinition.fromGenericType(self.name, j_data_type, j_component_type, j_column_type)
 
 
 @dataclass
