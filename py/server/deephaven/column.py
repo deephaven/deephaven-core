@@ -19,11 +19,11 @@ _JColumnDefinition = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
 _JColumnDefinitionType = jpy.get_type("io.deephaven.engine.table.ColumnDefinition$ColumnType")
 
 class ColumnType(Enum):
-    NORMAL = _JColumnDefinitionType.Normal.name()
+    NORMAL = _JColumnDefinitionType.Normal
     """ A regular column. """
-    GROUPING = _JColumnDefinitionType.Grouping.name()
+    GROUPING = _JColumnDefinitionType.Grouping
     """ A grouping column. """
-    PARTITIONING = _JColumnDefinitionType.Partitioning.name()
+    PARTITIONING = _JColumnDefinitionType.Partitioning
     """ A partitioning column. """
 
     def __repr__(self):
@@ -43,7 +43,10 @@ class Column:
 
     @property
     def j_column_definition(self):
-        return _JColumnDefinition.fromGenericType(self.name, self.data_type.qst_type.clazz(), self.component_type)
+        j_data_type = self.data_type.qst_type.clazz()
+        j_component_type = self.component_type.qst_type.clazz() if self.component_type else None
+        j_column_type = self.column_type.value
+        return _JColumnDefinition.fromGenericType(self.name, j_data_type, j_component_type, j_column_type)
 
 
 @dataclass

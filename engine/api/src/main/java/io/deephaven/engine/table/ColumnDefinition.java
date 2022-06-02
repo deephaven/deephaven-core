@@ -42,12 +42,23 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     public static final ColumnDefinition<?>[] ZERO_LENGTH_COLUMN_DEFINITION_ARRAY = new ColumnDefinition[0];
 
     public enum ColumnType {
-        Normal, Grouping, Partitioning
-    }
+        /**
+         * A normal column, with no special considerations.
+         */
+        Normal,
 
-    public static final ColumnType COLUMNTYPE_NORMAL = ColumnType.Normal;
-    public static final ColumnType COLUMNTYPE_GROUPING = ColumnType.Grouping;
-    public static final ColumnType COLUMNTYPE_PARTITIONING = ColumnType.Partitioning;
+        /**
+         * A column that has "grouping" metadata associated with it, possibly allowing for indexed filters, joins, and
+         * aggregations.
+         */
+        Grouping,
+
+        /**
+         * A column that helps define underlying partitions in the storage of the data, which consequently may also be
+         * used for very efficient filtering.
+         */
+        Partitioning
+    }
 
     public static ColumnDefinition<Boolean> ofBoolean(@NotNull final String name) {
         return new ColumnDefinition<>(name, Boolean.class);
