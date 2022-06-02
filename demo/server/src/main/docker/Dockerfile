@@ -5,7 +5,7 @@ FROM deephaven/server$SERVER_TYPE:local-build
 #COPY libs/ /app/libs
 
 HEALTHCHECK --interval=3s --retries=10 --timeout=11s CMD /bin/grpc_health_probe \
-    -addr=localhost:8888 \
+    -addr=localhost:8080 \
     -connect-timeout=10s \
     -tls \
     -tls-ca-cert=/etc/ssl/internal/ca.crt \

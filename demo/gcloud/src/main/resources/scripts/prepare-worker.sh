@@ -10,7 +10,7 @@ services:
   server:
     image: ${REPO:-ghcr.io/deephaven}/server:${VERSION:-latest}
     expose:
-      - '8888'
+      - '8080'
     volumes:
       - ./data/examples:/data/examples
       - ./data/large:/data/large
@@ -214,7 +214,7 @@ static_resources:
                     socket_address:
                       address: server
                       # address: 127.0.0.1
-                      port_value: 8888
+                      port_value: 8080
       #      health_checks:
       #        timeout: 1s
       #        interval: 10s

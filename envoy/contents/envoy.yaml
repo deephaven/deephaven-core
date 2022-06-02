@@ -84,7 +84,7 @@ static_resources:
                   address:
                     socket_address:
                       address: grpc-proxy # assuming the name of the grpc-api server container
-                      port_value: 8008
+                      port_value: 8080
     - name: server
       connect_timeout: 10s
       type: LOGICAL_DNS
@@ -102,7 +102,7 @@ static_resources:
                   address:
                     socket_address:
                       address: server # here we assume the name of the server
-                      port_value: 8888
+                      port_value: 8080
     - name: web
       connect_timeout: 10s
       type: LOGICAL_DNS
