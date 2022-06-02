@@ -1,8 +1,8 @@
 {
  "className": "io.deephaven.treetable.TreeTableClientTableManager$Client",
  "methods": {
-  "addDisconnectHandler": ":param handler: java.util.function.Consumer<TreeTableClientTableManager.Client.CLIENT_TYPE>",
-  "removeDisconnectHandler": ":param handler: java.util.function.Consumer<TreeTableClientTableManager.Client.CLIENT_TYPE>"
+  "addDisconnectHandler": ":param handler: java.util.function.Consumer<io.deephaven.treetable.TreeTableClientTableManager.Client>",
+  "removeDisconnectHandler": ":param handler: java.util.function.Consumer<io.deephaven.treetable.TreeTableClientTableManager.Client>"
  },
  "path": "io.deephaven.treetable.TreeTableClientTableManager.Client",
  "typeName": "interface"
