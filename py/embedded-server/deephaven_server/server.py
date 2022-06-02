@@ -24,9 +24,11 @@ class Server:
         Creates a Deephaven embedded server. Only one instance can be created at this time.
         """
         # TODO deephaven-core#2453 consider providing @dataclass for arguments
+
+        # If the server was already created, emit an error to warn away from trying again
         if Server.instance is not None:
-            import deephaven.DHError
-            raise deephaven.DHError('Cannot create more than one instance of the server')
+            from deephaven import DHError
+            raise DHError('Cannot create more than one instance of the server')
         # given the jvm args, ensure that the jvm has started
         start_jvm(jvm_args=jvm_args)
 
