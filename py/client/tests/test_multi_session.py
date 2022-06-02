@@ -23,6 +23,7 @@ class MultiSessionTestCase(BaseTestCase):
         with Session(sync_tables=SYNC_ONCE) as session2:
             self.assertIn('t', session2.tables)
 
+    @unittest.skip("needs global scoped updates or separate applications")
     def test_shared_tables(self):
         session1 = Session(sync_tables=SYNC_REPEATED)
         session1.run_script('t = None')
@@ -35,7 +36,7 @@ class MultiSessionTestCase(BaseTestCase):
         def wait_for_table():
             while 't' not in session1.tables:
                 pass
-        
+
         try:
             wait_for_table()
         except timeout_decorator.TimeoutError:

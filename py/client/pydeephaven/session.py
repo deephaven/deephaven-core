@@ -168,7 +168,7 @@ class Session:
                 return
 
             self._list_fields = self.app_service.list_fields()
-            self._parse_fields_change(next(self._list_fields))
+            self._parse_fields_change(next(self._list_fields), True)
             if repeating:
                 self._field_update_thread = threading.Thread(target=self._update_fields)
                 self._field_update_thread.daemon = True
@@ -181,10 +181,13 @@ class Session:
     def _update_fields(self):
         """ Constant loop that checks for any server-side table changes and adds them to the local list """
 
-        while True:
-            fields_change = next(self._list_fields)
-            with self._r_lock:
-                self._parse_fields_change(fields_change)
+        try:
+            while True:
+                fields_change = next(self._list_fields)
+                with self._r_lock:
+                    self._parse_fields_change(fields_change, False)
+        except Exception as e:
+            print("Stopped with exception ", e)
 
     def _connect(self):
         with self._r_lock:
@@ -246,23 +249,26 @@ class Session:
     def release(self, ticket):
         self.session_service.release(ticket)
 
-    def _parse_fields_change(self, fields_change):
+    def _parse_fields_change(self, fields_change, allow_scope_changes):
         if fields_change.created:
             for t in fields_change.created:
-                t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
-                self._tables[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
+                if allow_scope_changes or t.application_id != 'scope':
+                    t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
+                    self._tables[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
         if fields_change.updated:
             for t in fields_change.updated:
-                t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
-                self._tables[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
+                if allow_scope_changes or t.application_id != 'scope':
+                    t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
+                    self._tables[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
         if fields_change.removed:
             for t in fields_change.removed:
-                self._tables.pop(t.field_name, None)
+                if allow_scope_changes or t.application_id != 'scope':
+                    self._tables.pop(t.field_name, None)
 
     def _parse_script_response(self, response):
-        self._parse_fields_change(response.changes)
+        self._parse_fields_change(response.changes, True)
 
     # convenience/factory methods
     def run_script(self, script: str) -> None:
