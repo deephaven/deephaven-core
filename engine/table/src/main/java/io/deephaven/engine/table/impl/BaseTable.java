@@ -99,6 +99,7 @@ public abstract class BaseTable extends LivenessArtifact
      */
     protected final String description;
 
+    private Map<String, Object> initialAttributes;
     // Attribute support, set via ensureField with ATTRIBUTES_UPDATER if not initialized
     volatile Map<String, Object> attributes;
 
@@ -126,7 +127,7 @@ public abstract class BaseTable extends LivenessArtifact
             @Nullable final Map<String, Object> attributes) {
         this.definition = definition;
         this.description = description;
-        this.attributes = Objects.requireNonNullElse(attributes, EMPTY_ATTRIBUTES);
+        this.attributes = this.initialAttributes = Objects.requireNonNullElse(attributes, EMPTY_ATTRIBUTES);
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
         initializeSystemicAttribute();
     }
@@ -203,8 +204,22 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     private Map<String, Object> ensureAttributes() {
-        // noinspection unchecked
-        return ensureField(ATTRIBUTES_UPDATER, EMPTY_ATTRIBUTES, ConcurrentHashMap::new);
+        // If we see an "old" value, in the worst case we'll just try (and fail) to replace attributes.
+        final Map<String, Object> localInitial = initialAttributes;
+        if (localInitial == null) {
+            // We've replaced the initial attributes already, no fanciness required.
+            return attributes;
+        }
+        try {
+            if (localInitial == EMPTY_ATTRIBUTES) {
+                // noinspection unchecked
+                return ensureField(ATTRIBUTES_UPDATER, EMPTY_ATTRIBUTES, ConcurrentHashMap::new);
+            }
+            // noinspection unchecked
+            return ensureField(ATTRIBUTES_UPDATER, localInitial, () -> new ConcurrentHashMap(localInitial));
+        } finally {
+            initialAttributes = null; // Avoid referencing initially-shared attributes for longer than necessary.
+        }
     }
 
     @Override
