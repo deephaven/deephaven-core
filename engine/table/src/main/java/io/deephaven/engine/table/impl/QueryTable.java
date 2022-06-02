@@ -489,7 +489,7 @@ public class QueryTable extends BaseTable {
          * MemoizedOperationKey.rollup(aggregations, gbsColumns, includeConstituents); return memoizeResult(rollupKey,
          * () -> { final QueryTable baseLevel = aggNoMemo( AggregationProcessor.forRollupBase(aggregations,
          * includeConstituents), gbsColumns);
-         * 
+         *
          * final Deque<SelectColumn> gbsColumnsToReaggregate = new ArrayDeque<>(Arrays.asList(gbsColumns)); final
          * Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.length); QueryTable lastLevel = baseLevel;
          * while (!gbsColumnsToReaggregate.isEmpty()) {
@@ -499,18 +499,18 @@ public class QueryTable extends BaseTable {
          * lastLevelDefinition.getColumn(ncn).getDataType(), Assert::neverInvoked, LinkedHashMap::new)); lastLevel =
          * lastLevel.aggNoMemo(AggregationProcessor.forRollupReaggregated(aggregations, nullColumns),
          * gbsColumnsToReaggregate.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY)); }
-         * 
+         *
          * final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
          * .map(ColumnDefinition::getName) .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
          * final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop); final Object
          * reverseLookup = Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE),
          * "REVERSE_LOOKUP_ATTRIBUTE"); finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
-         * 
+         *
          * final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, gbsColumns,
          * includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
          * result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this); copyAttributes(result,
          * CopyAttributeOperation.Rollup); maybeUpdateSortableColumns(result);
-         * 
+         *
          * return result; });
          */
     }
@@ -527,22 +527,22 @@ public class QueryTable extends BaseTable {
          * partitionedTable = partitionBy(false, parentColumn); final QueryTable rootTable = (QueryTable)
          * partitionedTable.table().where(new MatchFilter(parentColumn, (Object) null)); final Table result =
          * HierarchicalTable.createFrom((QueryTable) rootTable.copy(), new TreeTableInfo(idColumn, parentColumn));
-         * 
+         *
          * // If the parent table has an RLL attached to it, we can re-use it. final ReverseLookup reverseLookup; if
          * (hasAttribute(PREPARED_RLL_ATTRIBUTE)) { reverseLookup = (ReverseLookup)
          * getAttribute(PREPARED_RLL_ATTRIBUTE); final String[] listenerCols = reverseLookup.getKeyColumns();
-         * 
+         *
          * if (listenerCols.length != 1 || !listenerCols[0].equals(idColumn)) { final String listenerColError =
          * StringUtils.joinStrings(Arrays.stream(listenerCols).map(col -> "'" + col + "'"), ", "); throw new
          * IllegalStateException( "Table was prepared for Tree table with a different Id column. Expected `" + idColumn
          * + "`, Actual " + listenerColError); } } else { reverseLookup =
          * ReverseLookupListener.makeReverseLookupListenerWithSnapshot(QueryTable.this, idColumn); }
-         * 
+         *
          * result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, partitionedTable);
          * result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
          * result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup); copyAttributes(result,
          * CopyAttributeOperation.Treetable); maybeUpdateSortableColumns(result);
-         * 
+         *
          * return result; });
          */
     }
@@ -1356,8 +1356,10 @@ public class QueryTable extends BaseTable {
                 sourceColumn = (SourceColumn) selectColumn;
             }
             if (sourceColumn != null && !usedOutputColumns.contains(sourceColumn.getSourceName())) {
-                final ColumnSource<?> originalColumnSource = getColumnSource(sourceColumn.getSourceName());
-                final ColumnSource<?> selectedColumnSource = resultTable.getColumnSource(sourceColumn.getName());
+                final ColumnSource<?> originalColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
+                        getColumnSource(sourceColumn.getSourceName()));
+                final ColumnSource<?> selectedColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
+                        resultTable.getColumnSource(sourceColumn.getName()));
                 if (originalColumnSource != selectedColumnSource) {
                     if (originalColumnSource instanceof DeferredGroupingColumnSource) {
                         final DeferredGroupingColumnSource<?> deferredGroupingSelectedSource =
