@@ -20,12 +20,12 @@ class MultiSessionTestCase(BaseTestCase):
             t = session1.empty_table(10)
             session1.bind_table('t', t)
 
-        with Session(sync_tables=SYNC_ONCE) as session2:
+        with Session(sync_fields=SYNC_ONCE) as session2:
             self.assertIn('t', session2.tables)
 
     @unittest.skip("needs global scoped updates or separate applications")
     def test_shared_tables(self):
-        session1 = Session(sync_tables=SYNC_REPEATED)
+        session1 = Session(sync_fields=SYNC_REPEATED)
         session1.run_script('t = None')
 
         session2 = Session()

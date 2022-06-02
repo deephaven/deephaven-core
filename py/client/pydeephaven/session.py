@@ -37,7 +37,7 @@ class Session:
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
 
-    def __init__(self, host: str = None, port: int = None, never_timeout: bool = True, session_type: str = 'python', sync_tables: int = NO_SYNC):
+    def __init__(self, host: str = None, port: int = None, never_timeout: bool = True, session_type: str = 'python', sync_fields: int = NO_SYNC):
         """ Initialize a Session object that connects to the Deephaven server
 
         Args:
@@ -45,12 +45,12 @@ class Session:
             port (int): the port number that Deephaven server is listening on, default is 10000
             never_timeout (bool, optional): never allow the session to timeout, default is True
             session_type (str, optional): the Deephaven session type. Defaults to 'python'
-            sync_tables (int, optional): equivalent to calling `Session.sync_tables()` (see below), default is NO_SYNC
+            sync_fields (int, optional): equivalent to calling `Session.sync_fields()` (see below), default is NO_SYNC
         
         Sync Options:
             session.NO_SYNC: does not check for existing tables on the server
-            session.SYNC_ONCE: equivalent to `Session.sync_tables(repeating=False)`
-            session.SYNC_REPEATED: equivalent to `Session.sync_tables(repeating=True)`
+            session.SYNC_ONCE: equivalent to `Session.sync_fields(repeating=False)`
+            session.SYNC_REPEATED: equivalent to `Session.sync_fields(repeating=True)`
 
         Raises:
             DHError
@@ -67,8 +67,8 @@ class Session:
         if not port:
             self.port = int(os.environ.get("DH_PORT", 10000))
 
-        if sync_tables not in (NO_SYNC, SYNC_ONCE, SYNC_REPEATED):
-            raise DHError("invalid sync_tables setting")
+        if sync_fields not in (NO_SYNC, SYNC_ONCE, SYNC_REPEATED):
+            raise DHError("invalid sync_fields setting")
 
         self.is_connected = False
         self.session_token = None
@@ -79,11 +79,11 @@ class Session:
         self._console_service = None
         self._flight_service = None
         self._app_service = None
-        self._tables = {}
+        self._fields = {}
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
         self._session_type = session_type
-        self._sync_tables = sync_tables
+        self._sync_fields = sync_fields
         self._list_fields = None
         self._field_update_thread = None
 
@@ -100,7 +100,7 @@ class Session:
     @property
     def tables(self):
         with self._r_lock:
-            return [t for t in self._tables if self._tables[t][0] == 'Table']
+            return [t for t in self._fields if self._fields[t][0] == 'Table']
 
     @property
     def grpc_metadata(self):
@@ -152,8 +152,8 @@ class Session:
 
             return self._last_ticket
 
-    def sync_tables(self, repeating: bool):
-        """ Check for tables that have been added/deleted by other sessions and add them to the local list
+    def sync_fields(self, repeating: bool):
+        """ Check for fields that have been added/deleted by other sessions and add them to the local list
 
         This will start a new background thread when `repeating=True`.
         
@@ -179,7 +179,7 @@ class Session:
                 self._list_fields = None
     
     def _update_fields(self):
-        """ Constant loop that checks for any server-side table changes and adds them to the local list """
+        """ Constant loop that checks for any server-side field changes and adds them to the local list """
 
         try:
             while True:
@@ -197,10 +197,10 @@ class Session:
             if self._never_timeout:
                 self._keep_alive()
 
-            if self._sync_tables == SYNC_ONCE:
-                self.sync_tables(repeating=False)
-            elif self._sync_tables == SYNC_REPEATED:
-                self.sync_tables(repeating=True)
+            if self._sync_fields == SYNC_ONCE:
+                self.sync_fields(repeating=False)
+            elif self._sync_fields == SYNC_REPEATED:
+                self.sync_fields(repeating=True)
 
     def _keep_alive(self):
         if self._keep_alive_timer:
@@ -254,18 +254,18 @@ class Session:
             for t in fields_change.created:
                 if allow_scope_changes or t.application_id != 'scope':
                     t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
-                    self._tables[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
+                    self._fields[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
         if fields_change.updated:
             for t in fields_change.updated:
                 if allow_scope_changes or t.application_id != 'scope':
                     t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
-                    self._tables[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
+                    self._fields[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
         if fields_change.removed:
             for t in fields_change.removed:
                 if allow_scope_changes or t.application_id != 'scope':
-                    self._tables.pop(t.field_name, None)
+                    self._fields.pop(t.field_name, None)
 
     def _parse_script_response(self, response):
         self._parse_fields_change(response.changes, True)
@@ -300,7 +300,7 @@ class Session:
             if name not in self.tables:
                 raise DHError(f"no table by the name {name}")
             table_op = FetchTableOp()
-            return self.table_service.grpc_table_op(self._tables[name][1], table_op)
+            return self.table_service.grpc_table_op(self._fields[name][1], table_op)
 
     def bind_table(self, name: str, table: Table) -> None:
         """ Bind a table to the given name on the server so that it can be referenced by that name.
