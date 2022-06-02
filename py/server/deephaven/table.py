@@ -1303,7 +1303,7 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def j_object(self) -> jpy.JType:
-        self.j_partitioned_table
+        return self.j_partitioned_table
 
     def __init__(self, j_partitioned_table):
         self.j_partitioned_table = j_partitioned_table
@@ -1430,11 +1430,11 @@ class PartitionedTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to sort the partitioned table.") from e
 
-    def get_constituent(self, key_values: [Any, Sequence[Any]]) -> Optional[Table]:
+    def get_constituent(self, key_values: Union[Any, Sequence[Any]]) -> Optional[Table]:
         """Gets a single constituent table by its corresponding key column values.
 
         Args:
-            key_values (Any, Sequence[Any]): the value(s) of the key column(s)
+            key_values (Union[Any, Sequence[Any]]): the value(s) of the key column(s)
 
         Returns:
             a Table or None
