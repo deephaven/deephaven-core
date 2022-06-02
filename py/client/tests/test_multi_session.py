@@ -22,12 +22,12 @@ class MultiSessionTestCase(BaseTestCase):
         sleep(1)
 
         with Session() as session2:
+            session2.sync_tables()
             self.assertIn('t', session2.tables)
 
     def test_shared_tables(self):
-        session1 = Session()
+        session1 = Session(sync_server_tables=True)
         session1.run_script('t = None')
-        session1.subscribe_fields()
 
         session2 = Session()
         t = session2.empty_table(10)
