@@ -182,7 +182,7 @@ public class TableDefinition implements LogOutputAppendable {
     /**
      * @return An array of the column definitions for this table definition
      */
-    public ColumnDefinition<?>[] getColumnsArray() { // TODO-RWC: Find out if we really need this.
+    public ColumnDefinition<?>[] getColumnsArray() {
         return columns.toArray(ColumnDefinition.ZERO_LENGTH_COLUMN_DEFINITION_ARRAY);
     }
 

@@ -16,19 +16,18 @@ from deephaven.dtypes import DType
 _JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
 _JColumn = jpy.get_type("io.deephaven.qst.column.Column")
 _JColumnDefinition = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
-
+_JColumnDefinitionType = jpy.get_type("io.deephaven.engine.table.ColumnDefinition$ColumnType")
 
 class ColumnType(Enum):
-    NORMAL = _JColumnDefinition.ColumnType.Normal
+    NORMAL = _JColumnDefinitionType.Normal.name()
     """ A regular column. """
-    GROUPING = _JColumnDefinition.ColumnType.Grouping
+    GROUPING = _JColumnDefinitionType.Grouping.name()
     """ A grouping column. """
-    PARTITIONING = _JColumnDefinition.ColumnType.Partitioning
+    PARTITIONING = _JColumnDefinitionType.Partitioning.name()
     """ A partitioning column. """
 
     def __repr__(self):
         return self.name
-
 
 @dataclass
 class Column:

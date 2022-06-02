@@ -61,7 +61,7 @@ class TestConsumeKafka(unittest.TestCase):
             key = ck.IGNORE,
             value = ck.simple('Price', dh.double))
 
-        cols = t.getDefinition().getColumns()
+        cols = t.getDefinition().getColumnsArray()
         self.assertEquals(4, len(cols))
         self._assertCommonCols(cols)
         self.assertEquals("Price", cols[3].getName())
@@ -93,7 +93,7 @@ class TestConsumeKafka(unittest.TestCase):
             table_type = 'append'
         )
 
-        cols = t.getDefinition().getColumns()
+        cols = t.getDefinition().getColumnsArray()
         self.assertEquals(8, len(cols))
         self._assertCommonCols(cols)
 
@@ -152,7 +152,7 @@ class TestConsumeKafka(unittest.TestCase):
                 table_type='append'
             )
 
-            cols = t.getDefinition().getColumns()
+            cols = t.getDefinition().getColumnsArray()
             self.assertEquals(7, len(cols))
             self._assertCommonCols(cols)
 
@@ -177,7 +177,7 @@ class TestConsumeKafka(unittest.TestCase):
                 table_type='append'
             )
 
-            cols = t.getDefinition().getColumns()
+            cols = t.getDefinition().getColumnsArray()
             self.assertEquals(5, len(cols))
             self._assertCommonCols(cols)
 
@@ -197,7 +197,7 @@ class TestConsumeKafka(unittest.TestCase):
                 table_type='append'
             )
 
-            cols = t.getDefinition().getColumns()
+            cols = t.getDefinition().getColumnsArray()
             self.assertEquals(7, len(cols))
             self._assertCommonCols(cols)
 
