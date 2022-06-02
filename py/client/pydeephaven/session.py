@@ -99,7 +99,8 @@ class Session:
 
     @property
     def tables(self):
-        return [t for t in self._tables if self._tables[t][0] == 'Table']
+        with self._r_lock:
+            return [t for t in self._tables if self._tables[t][0] == 'Table']
 
     @property
     def grpc_metadata(self):

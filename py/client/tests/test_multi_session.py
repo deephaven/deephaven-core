@@ -10,7 +10,7 @@ from pydeephaven import DHError
 from pydeephaven import Session
 from pydeephaven.session import SYNC_ONCE, SYNC_REPEATED
 from tests.testbase import BaseTestCase
-
+import timeout_decorator
 
 class MultiSessionTestCase(BaseTestCase):
     def test_persistent_tables(self):
@@ -31,6 +31,12 @@ class MultiSessionTestCase(BaseTestCase):
         t = session2.empty_table(10)
         session2.bind_table('t', t)
 
-        sleep(1)
-
-        self.assertIn('t', session1.tables)
+        @timeout_decorator.timeout(seconds=1)
+        def wait_for_table():
+            while 't' not in session1.tables:
+                pass
+        
+        try:
+            wait_for_table()
+        except timeout_decorator.TimeoutError:
+            self.fail('table did not get synced to session1')
