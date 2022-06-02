@@ -3,6 +3,7 @@
    :name: mastertoc
    :hidden:
 
+   examples.rst
    modules.rst
    py-modindex.rst
    genindex.rst

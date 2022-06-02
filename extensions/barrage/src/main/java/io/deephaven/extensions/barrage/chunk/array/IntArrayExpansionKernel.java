@@ -19,7 +19,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.chunk.sized.SizedIntChunk;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 public class IntArrayExpansionKernel implements ArrayExpansionKernel {
     private final static int[] ZERO_LEN_ARRAY = new int[0];
@@ -33,24 +33,29 @@ public class IntArrayExpansionKernel implements ArrayExpansionKernel {
         }
 
         final ObjectChunk<int[], A> typedSource = source.asObjectChunk();
-        final SizedIntChunk<A> resultWrapper = new SizedIntChunk<>();
+
+        long totalSize = 0;
+        for (int i = 0; i < typedSource.size(); ++i) {
+            final int[] row = typedSource.get(i);
+            totalSize += row == null ? 0 : row.length;
+        }
+        final WritableIntChunk<A> result = WritableIntChunk.makeWritableChunk(
+                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
 
         int lenWritten = 0;
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final int[] row = typedSource.get(i);
-            final int len = row == null ? 0 : row.length;
             perElementLengthDest.set(i, lenWritten);
-            final WritableIntChunk<A> result = resultWrapper.ensureCapacityPreserve(lenWritten + len);
-            for (int j = 0; j < len; ++j) {
-                result.set(lenWritten + j, row[j]);
+            if (row == null) {
+                continue;
             }
-            lenWritten += len;
-            result.setSize(lenWritten);
+            result.copyFromArray(row, 0, lenWritten, row.length);
+            lenWritten += row.length;
         }
         perElementLengthDest.set(typedSource.size(), lenWritten);
 
-        return resultWrapper.get();
+        return result;
     }
 
     @Override
@@ -77,15 +82,13 @@ public class IntArrayExpansionKernel implements ArrayExpansionKernel {
 
         int lenRead = 0;
         for (int i = 0; i < itemsInBatch; ++i) {
-            final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
-            if (ROW_LEN == 0) {
+            final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
+            if (rowLen == 0) {
                 result.set(outOffset + i, ZERO_LEN_ARRAY);
             } else {
-                final int[] row = new int[ROW_LEN];
-                for (int j = 0; j < ROW_LEN; ++j) {
-                    row[j] = typedSource.get(lenRead + j);
-                }
-                lenRead += ROW_LEN;
+                final int[] row = new int[rowLen];
+                typedSource.copyToArray(lenRead, row,0, rowLen);
+                lenRead += rowLen;
                 result.set(outOffset + i, row);
             }
         }

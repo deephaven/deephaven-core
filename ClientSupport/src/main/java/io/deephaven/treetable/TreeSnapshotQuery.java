@@ -19,10 +19,9 @@ import java.util.function.Function;
  * A query that fetches a flat viewport-ready snapshot of a tree table, taking into account the set of expanded rows at
  * each level.
  */
-public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>>
-        implements Function<Table, TreeSnapshotResult> {
+public class TreeSnapshotQuery implements Function<Table, TreeSnapshotResult> {
 
-    private final CLIENT_TYPE client;
+    private final TreeTableClientTableManager.Client client;
 
     private final long firstViewportRow;
     private final long lastViewportRow;
@@ -56,7 +55,7 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
     public TreeSnapshotQuery(int baseId, Map<Object, TableDetails> tablesByKey,
             long firstRow, long lastRow, BitSet columns,
             @NotNull WhereFilter[] filters, @NotNull List<SortDirective> sorts,
-            CLIENT_TYPE client, EnumSet<Operation> includedOps) {
+            TreeTableClientTableManager.Client client, EnumSet<Operation> includedOps) {
         this.client = client;
         Assert.leq(firstRow, "firstRow", lastRow, "lastRow");
         Assert.leq(lastRow - firstRow, "lastRow - firstRow", Integer.MAX_VALUE, "Integer.MAX_VALUE");
@@ -80,10 +79,10 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
 
         final HierarchicalTableInfo sourceInfoAttr = ((HierarchicalTable) arg).getInfo();
         if (sourceInfoAttr instanceof TreeTableInfo) {
-            return new TreeTableSnapshotImpl<>(baseTableId, (HierarchicalTable) arg, tablesByKey,
+            return new TreeTableSnapshotImpl(baseTableId, (HierarchicalTable) arg, tablesByKey,
                     firstViewportRow, lastViewportRow, columns, filters, directives, client, includedOps).getSnapshot();
         } else if (sourceInfoAttr instanceof RollupInfo) {
-            return new RollupSnapshotImpl<>(baseTableId, (HierarchicalTable) arg, tablesByKey,
+            return new RollupSnapshotImpl(baseTableId, (HierarchicalTable) arg, tablesByKey,
                     firstViewportRow, lastViewportRow, columns, filters, directives, client, includedOps).getSnapshot();
         }
 

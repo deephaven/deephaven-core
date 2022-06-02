@@ -26,10 +26,10 @@ public enum TreeTableClientTableManager {
     DEFAULT;
 
     // TODO (deephaven/deephaven-core/issues/37): Refine this type into something useful, or refactor entirely.
-    public interface Client<CLIENT_TYPE extends Client<CLIENT_TYPE>> {
-        void addDisconnectHandler(@NotNull Consumer<CLIENT_TYPE> handler);
+    public interface Client {
+        void addDisconnectHandler(@NotNull Consumer<Client> handler);
 
-        void removeDisconnectHandler(@NotNull Consumer<CLIENT_TYPE> handler);
+        void removeDisconnectHandler(@NotNull Consumer<Client> handler);
     }
 
     private static final class ClientStateKey extends KeyedObjectKey.Exact<Client, ClientState> {
