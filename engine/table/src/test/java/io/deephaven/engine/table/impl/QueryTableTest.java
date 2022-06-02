@@ -3252,7 +3252,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         TestDateTimeGroupingSource(ColumnSource<Long> realSource) {
             super(realSource);
-            //noinspection unchecked,rawtypes
+            // noinspection unchecked,rawtypes
             ((DeferredGroupingColumnSource) realSource).setGroupingProvider(groupingProvider);
         }
 
@@ -3281,7 +3281,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable t1 = new QueryTable(rowSet, columns);
         final Table t2 = t1.select("T");
 
-        //noinspection rawtypes
+        // noinspection rawtypes
         final DeferredGroupingColumnSource result =
                 (DeferredGroupingColumnSource) t2.getColumnSource("T").reinterpret(long.class);
         assertSame(cs.groupingProvider, result.getGroupingProvider());
