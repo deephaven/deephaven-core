@@ -20,6 +20,9 @@ from pydeephaven.proto import ticket_pb2
 from pydeephaven.query import Query
 from pydeephaven.table import Table
 
+NO_SYNC         = 0
+SYNC_ONCE       = 1
+SYNC_REPEATED   = 2
 
 class Session:
     """ A Session object represents a connection to the Deephaven data server. It contains a number of convenience
@@ -34,7 +37,7 @@ class Session:
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
 
-    def __init__(self, host: str = None, port: int = None, never_timeout: bool = True, session_type: str = 'python', sync_server_tables: bool = False):
+    def __init__(self, host: str = None, port: int = None, never_timeout: bool = True, session_type: str = 'python', sync_tables: int = NO_SYNC):
         """ Initialize a Session object that connects to the Deephaven server
 
         Args:
@@ -42,7 +45,12 @@ class Session:
             port (int): the port number that Deephaven server is listening on, default is 10000
             never_timeout (bool, optional): never allow the session to timeout, default is True
             session_type (str, optional): the Deephaven session type. Defaults to 'python'
-            sync_server_tables (bool, optional): allow tables created elsewhere on the server to appear locally
+            sync_tables (int, optional): equivalent to calling `Session.sync_tables()` (see below), default is NO_SYNC
+        
+        Sync Options:
+            session.NO_SYNC: does not check for existing tables on the server
+            session.SYNC_ONCE: equivalent to `Session.sync_tables(repeating=False)`
+            session.SYNC_REPEATED: equivalent to `Session.sync_tables(repeating=True)`
 
         Raises:
             DHError
@@ -59,6 +67,9 @@ class Session:
         if not port:
             self.port = int(os.environ.get("DH_PORT", 10000))
 
+        if sync_tables not in (NO_SYNC, SYNC_ONCE, SYNC_REPEATED):
+            raise DHError("invalid sync_tables setting")
+
         self.is_connected = False
         self.session_token = None
         self.grpc_channel = None
@@ -72,7 +83,7 @@ class Session:
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
         self._session_type = session_type
-        self._sync_server_tables = sync_server_tables
+        self._sync_tables = sync_tables
         self._list_fields = None
         self._field_update_thread = None
 
@@ -140,24 +151,31 @@ class Session:
 
             return self._last_ticket
 
-    def _subscribe_fields(self):
-        """ Allows tables created/removed on the server to be automatically seen on the client """
+    def sync_tables(self, repeating: bool):
+        """ Check for tables that have been added/deleted by other sessions and add them to the local list
 
+        This will start a new background thread when `repeating=True`.
+        
+        Args:
+            repeating (bool): Continue to check in the background for new/updated tables
+        
+        Raises:
+            DHError
+        """
         with self._r_lock:
-            if self._field_update_thread is None:
-                self._list_fields = self.app_service.list_fields()
+            if self._list_fields is not None:
+                return
+
+            self._list_fields = self.app_service.list_fields()
+            self._parse_fields_change(next(self._list_fields))
+            if repeating:
                 self._field_update_thread = threading.Thread(target=self._update_fields)
                 self._field_update_thread.daemon = True
                 self._field_update_thread.start()
-    
-    def sync_tables(self):
-        """ Check for tables that have been added/deleted by other sessions and add them to the local list """
-        if self._field_update_thread is None:
-            with self._r_lock:
-                list_fields = self.app_service.list_fields()
-                self._parse_fields_change(next(list_fields))
-                if not list_fields.cancel():
+            else:
+                if not self._list_fields.cancel():
                     raise DHError("could not cancel ListFields subscription")
+                self._list_fields = None
     
     def _update_fields(self):
         """ Constant loop that checks for any server-side table changes and adds them to the local list """
@@ -175,8 +193,10 @@ class Session:
             if self._never_timeout:
                 self._keep_alive()
 
-            if self._sync_server_tables:
-                self._subscribe_fields()
+            if self._sync_tables == SYNC_ONCE:
+                self.sync_tables(repeating=False)
+            elif self._sync_tables == SYNC_REPEATED:
+                self.sync_tables(repeating=True)
 
     def _keep_alive(self):
         if self._keep_alive_timer:
