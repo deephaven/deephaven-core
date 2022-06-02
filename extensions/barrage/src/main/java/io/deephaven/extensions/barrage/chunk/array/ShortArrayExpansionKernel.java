@@ -19,7 +19,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.chunk.sized.SizedShortChunk;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 public class ShortArrayExpansionKernel implements ArrayExpansionKernel {
     private final static short[] ZERO_LEN_ARRAY = new short[0];
@@ -33,24 +33,29 @@ public class ShortArrayExpansionKernel implements ArrayExpansionKernel {
         }
 
         final ObjectChunk<short[], A> typedSource = source.asObjectChunk();
-        final SizedShortChunk<A> resultWrapper = new SizedShortChunk<>();
+
+        long totalSize = 0;
+        for (int i = 0; i < typedSource.size(); ++i) {
+            final short[] row = typedSource.get(i);
+            totalSize += row == null ? 0 : row.length;
+        }
+        final WritableShortChunk<A> result = WritableShortChunk.makeWritableChunk(
+                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
 
         int lenWritten = 0;
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final short[] row = typedSource.get(i);
-            final int len = row == null ? 0 : row.length;
             perElementLengthDest.set(i, lenWritten);
-            final WritableShortChunk<A> result = resultWrapper.ensureCapacityPreserve(lenWritten + len);
-            for (int j = 0; j < len; ++j) {
-                result.set(lenWritten + j, row[j]);
+            if (row == null) {
+                continue;
             }
-            lenWritten += len;
-            result.setSize(lenWritten);
+            result.copyFromArray(row, 0, lenWritten, row.length);
+            lenWritten += row.length;
         }
         perElementLengthDest.set(typedSource.size(), lenWritten);
 
-        return resultWrapper.get();
+        return result;
     }
 
     @Override
@@ -77,15 +82,13 @@ public class ShortArrayExpansionKernel implements ArrayExpansionKernel {
 
         int lenRead = 0;
         for (int i = 0; i < itemsInBatch; ++i) {
-            final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
-            if (ROW_LEN == 0) {
+            final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
+            if (rowLen == 0) {
                 result.set(outOffset + i, ZERO_LEN_ARRAY);
             } else {
-                final short[] row = new short[ROW_LEN];
-                for (int j = 0; j < ROW_LEN; ++j) {
-                    row[j] = typedSource.get(lenRead + j);
-                }
-                lenRead += ROW_LEN;
+                final short[] row = new short[rowLen];
+                typedSource.copyToArray(lenRead, row,0, rowLen);
+                lenRead += rowLen;
                 result.set(outOffset + i, row);
             }
         }
