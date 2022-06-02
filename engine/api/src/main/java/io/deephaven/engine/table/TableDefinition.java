@@ -125,13 +125,8 @@ public class TableDefinition implements LogOutputAppendable {
         }
         final Set<String> columnNames = new HashSet<>(columns.size());
         final List<String> duplicateNames = columns.stream().map(ColumnDefinition::getName)
-                .filter((final String columnName) -> {
-                    if (columnNames.contains(columnName)) {
-                        return true;
-                    }
-                    columnNames.add(columnName);
-                    return false;
-                }).collect(Collectors.toList());
+                .filter((final String columnName) -> !columnNames.add(columnName))
+                .collect(Collectors.toList());
         if (!duplicateNames.isEmpty()) {
             throw new IllegalArgumentException("Supplied ColumnDefinitions include duplicate names " + duplicateNames);
         }
@@ -325,7 +320,7 @@ public class TableDefinition implements LogOutputAppendable {
             return this;
         }
         final TableDefinition result = checkCompatibilityInternal(other, false);
-        if (result == null || other.checkCompatibilityInternal(result, false) == null) {
+        if (result == null || other.checkCompatibilityInternal(this, false) == null) {
             final List<String> differences = describeCompatibilityDifferences(other, lhsName, rhsName);
             throw new IncompatibleTableDefinitionException("Table definition incompatibilities: \n\t"
                     + String.join("\n\t", differences));
