@@ -136,7 +136,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             final Map<String, String> attributes,
             final boolean isViewPort) {
         super(RowSetFactory.empty().toTracking(), columns);
-        attributes.forEach(this::setAttribute);
+        attributes.entrySet().stream()
+                .filter(e -> !e.getKey().equals(Table.SYSTEMIC_TABLE_ATTRIBUTE))
+                .forEach(e -> setAttribute(e.getKey(), e.getValue()));
 
         this.registrar = registrar;
         this.notificationQueue = notificationQueue;
