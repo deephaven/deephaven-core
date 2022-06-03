@@ -17,9 +17,9 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertTrue;
 
-public class BroltiParquetTableReadWriteTest {
+public class BrotliParquetTableReadWriteTest {
 
-    private static final String ROOT_FILENAME = BroltiParquetTableReadWriteTest.class.getName() + "_root";
+    private static final String ROOT_FILENAME = BrotliParquetTableReadWriteTest.class.getName() + "_root";
 
     private static File rootFile;
 

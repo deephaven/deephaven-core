@@ -22,6 +22,11 @@ repositories have an implementation, though one that is limited to only native i
 * com.hadoop.compression.lzo.LzoCodec - There are GPL implementations of the LZO codec available, either bytecode or 
 native, but this license isn't compatible with many other projects, so we disregard it.
 
+We ignore the provided codec for snappy, `org.apache.hadoop.io.compress.SnappyCodec`, since it requires native code and
+doesn't provide all supported platforms. Instead, the configuration is modified to replace this ServiceLoader-provided
+implementation with the pure-java implementation `io.airlift.compress.snappy.SnappyCodec`. This can be disabled through
+deephaven configuration settings.
+
 Note that `org.apache.parquet.hadoop.metadata.ColumnChunkMetaData` instances created by Deephaven table writing code
 do still require `CompressionCodecName` instances, which means that we must still have a way to translate our own codecs
 into this enum's values, and only officially supported compression codecs can ever be used to write.
