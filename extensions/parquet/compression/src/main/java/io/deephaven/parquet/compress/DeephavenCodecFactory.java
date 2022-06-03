@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,8 +26,14 @@ import java.util.stream.Stream;
  */
 public class DeephavenCodecFactory {
 
+    // Default codecs to list in the configuration rather than rely on the classloader
+    private static final Set<String> DEFAULT_CODECS = Set.of(
+            // Use the aircompressor codec for snappy by default - this is implemented in Java, rather than using
+            // the native xerial implementation.
+            "io.airlift.compress.snappy.SnappyCodec"
+    );
     private static final List<Class<?>> CODECS = io.deephaven.configuration.Configuration.getInstance()
-            .getStringSetFromPropertyWithDefault("DeephavenCodecFactory.codecs", Collections.emptySet()).stream()
+            .getStringSetFromPropertyWithDefault("DeephavenCodecFactory.codecs", DEFAULT_CODECS).stream()
             .map((String className) -> {
                 try {
                     return Class.forName(className);
