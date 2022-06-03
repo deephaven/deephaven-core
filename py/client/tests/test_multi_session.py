@@ -1,12 +1,7 @@
 
 
 import unittest
-from time import sleep
 
-import pyarrow as pa
-from pyarrow import csv
-
-from pydeephaven import DHError
 from pydeephaven import Session
 from pydeephaven.session import SYNC_ONCE, SYNC_REPEATED
 from tests.testbase import BaseTestCase
