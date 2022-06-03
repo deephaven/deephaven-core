@@ -5,7 +5,6 @@ import org.apache.parquet.format.ColumnChunk;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.format.Util;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
-import org.apache.parquet.hadoop.CodecFactory;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
@@ -26,17 +25,15 @@ public class RowGroupReaderImpl implements RowGroupReader {
     private static final int BUFFER_SIZE = 65536;
     private final RowGroup rowGroup;
     private final SeekableChannelsProvider channelsProvider;
-    private final ThreadLocal<CodecFactory> codecFactory;
     private final MessageType type;
     private final Map<String, List<Type>> schemaMap = new HashMap<>();
-    private Map<String, ColumnChunk> chunkMap = new HashMap<>();
+    private final Map<String, ColumnChunk> chunkMap = new HashMap<>();
 
     private final Path rootPath;
 
     RowGroupReaderImpl(RowGroup rowGroup, SeekableChannelsProvider channelsProvider, Path rootPath,
-            ThreadLocal<CodecFactory> codecFactory, MessageType type, MessageType schema) {
+            MessageType type, MessageType schema) {
         this.channelsProvider = channelsProvider;
-        this.codecFactory = codecFactory;
         this.rowGroup = rowGroup;
         this.rootPath = rootPath;
         this.type = type;
@@ -75,7 +72,7 @@ public class RowGroupReaderImpl implements RowGroupReader {
                 throw new UncheckedIOException(e);
             }
         }
-        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootPath, codecFactory,
+        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootPath,
                 type, offsetIndex, fieldTypes);
     }
 

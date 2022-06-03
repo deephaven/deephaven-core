@@ -2,8 +2,17 @@ plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
 }
+import io.deephaven.tools.docker.Architecture
 
 description 'Parquet Table: Integrating Engine tables with Parquet'
+
+configurations {
+    brotliTestImplementation.extendsFrom(testImplementation)
+}
+
+sourceSets {
+    brotliTest {}
+}
 
 dependencies {
     api project(':engine-api'),
@@ -29,6 +38,16 @@ dependencies {
             project(path: ':configs'),
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+
+    brotliTestImplementation('com.github.rdblue:brotli-codec:0.1.1')
+}
+
+// if architecture is x86, run the brotli test
+if (Architecture.fromHost() == Architecture.AMD64) {
+    check.dependsOn(tasks.register('brotliTest', Test) {
+        classpath = sourceSets.brotliTest.runtimeClasspath
+        testClassesDirs = sourceSets.brotliTest.output.classesDirs
+    })
 }
 
 spotless {
