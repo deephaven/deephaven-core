@@ -18,6 +18,9 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
+import io.deephaven.engine.table.impl.sources.LongAsDateTimeColumnSource;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.vector.*;
@@ -40,6 +43,8 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.groovy.util.Maps;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 
@@ -3228,5 +3233,57 @@ public class QueryTableTest extends QueryTableTestBase {
             });
         }
         assertEquals(0, getUpdateErrors().size());
+    }
+
+    private static class TestDateTimeGroupingSource extends LongAsDateTimeColumnSource
+            implements DeferredGroupingColumnSource<DateTime> {
+
+        final GroupingProvider<Object> groupingProvider = new GroupingProvider<>() {
+            @Override
+            public Map<Object, RowSet> getGroupToRange() {
+                return null;
+            }
+
+            @Override
+            public Pair<Map<Object, RowSet>, Boolean> getGroupToRange(RowSet hint) {
+                return null;
+            }
+        };
+
+        TestDateTimeGroupingSource(ColumnSource<Long> realSource) {
+            super(realSource);
+            // noinspection unchecked,rawtypes
+            ((DeferredGroupingColumnSource) realSource).setGroupingProvider(groupingProvider);
+        }
+
+        @Override
+        public GroupingProvider<DateTime> getGroupingProvider() {
+            return null;
+        }
+
+        @Override
+        public void setGroupingProvider(@Nullable GroupingProvider<DateTime> groupingProvider) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public void testDeferredGroupingPropagationDateTimeCol() {
+        // This is a regression test on a class cast exception in QueryTable#propagateGrouping.
+        // RegionedColumnSourceDateTime is a grouping source, but is not an InMemoryColumnSource. The select column
+        // destination is not a grouping source as it is reinterpreted.
+
+        TrackingRowSet rowSet = RowSetFactory.flat(4).toTracking();
+
+        // This dance with a custom column is because an InMemoryColumnSource will be reused at the select layer
+        // which skips propagation of grouping, and avoids the class cast exception.
+        final TestDateTimeGroupingSource cs = new TestDateTimeGroupingSource(colSource(0L, 1, 2, 3));
+        final Map<String, ? extends ColumnSource<?>> columns = Maps.of("T", cs);
+        final QueryTable t1 = new QueryTable(rowSet, columns);
+        final Table t2 = t1.select("T");
+
+        // noinspection rawtypes
+        final DeferredGroupingColumnSource result =
+                (DeferredGroupingColumnSource) t2.getColumnSource("T").reinterpret(long.class);
+        assertSame(cs.groupingProvider, result.getGroupingProvider());
     }
 }
