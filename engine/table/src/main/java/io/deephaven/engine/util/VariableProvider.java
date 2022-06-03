@@ -10,7 +10,7 @@ import java.util.Set;
 public interface VariableProvider {
     Set<String> getVariableNames();
 
-    Class getVariableType(String var);
+    Class<?> getVariableType(String var);
 
     <T> T getVariable(String var, T defaultValue);
 

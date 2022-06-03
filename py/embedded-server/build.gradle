@@ -1,0 +1,22 @@
+plugins {
+    id 'io.deephaven.python-wheel'
+}
+
+configurations {
+    classpath
+}
+wheel {
+    contents {
+        include 'deephaven_server/', 'setup.py', 'README.md'
+        from(configurations.classpath) {
+            include '*'
+            into('deephaven_server/jars')
+        }
+    }
+}
+
+dependencies {
+    classpath project(path: ':py-embedded-server-java-runtime', targetConfiguration: 'fullClasspath')
+    pythonWheel project(path: ':deephaven-jpy', targetConfiguration: 'pythonWheel')
+    pythonWheel project(':py-server')
+}

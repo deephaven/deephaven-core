@@ -106,6 +106,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 responseObserver.onNext(GetConsoleTypesResponse.newBuilder()
                         .addConsoleTypes(scriptSessionProvider.get().scriptType().toLowerCase())
                         .build());
+            } else {
+                responseObserver.onNext(GetConsoleTypesResponse.getDefaultInstance());
             }
             responseObserver.onCompleted();
         });
