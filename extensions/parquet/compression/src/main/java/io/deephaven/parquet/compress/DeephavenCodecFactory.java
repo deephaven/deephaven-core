@@ -30,8 +30,7 @@ public class DeephavenCodecFactory {
     private static final Set<String> DEFAULT_CODECS = Set.of(
             // Use the aircompressor codec for snappy by default - this is implemented in Java, rather than using
             // the native xerial implementation.
-            "io.airlift.compress.snappy.SnappyCodec"
-    );
+            "io.airlift.compress.snappy.SnappyCodec");
     private static final List<Class<?>> CODECS = io.deephaven.configuration.Configuration.getInstance()
             .getStringSetFromPropertyWithDefault("DeephavenCodecFactory.codecs", DEFAULT_CODECS).stream()
             .map((String className) -> {
