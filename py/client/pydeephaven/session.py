@@ -79,13 +79,13 @@ class Session:
         self._console_service = None
         self._flight_service = None
         self._app_service = None
-        self._fields = {}
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
         self._session_type = session_type
         self._sync_fields = sync_fields
         self._list_fields = None
         self._field_update_thread = None
+        self._fields = {}
 
         self._connect()
 
@@ -100,7 +100,7 @@ class Session:
     @property
     def tables(self):
         with self._r_lock:
-            return [t for t in self._fields if self._fields[t][0] == 'Table']
+            return [nm for sc, nm in self._fields if sc == 'scope' and self._fields[(sc, nm)][0] == 'Table']
 
     @property
     def grpc_metadata(self):
@@ -181,13 +181,10 @@ class Session:
     def _update_fields(self):
         """ Constant loop that checks for any server-side field changes and adds them to the local list """
 
-        try:
-            while True:
-                fields_change = next(self._list_fields)
-                with self._r_lock:
-                    self._parse_fields_change(fields_change, False)
-        except Exception as e:
-            print("Stopped with exception ", e)
+        while True:
+            fields_change = next(self._list_fields)
+            with self._r_lock:
+                self._parse_fields_change(fields_change, False)
 
     def _connect(self):
         with self._r_lock:
@@ -254,18 +251,18 @@ class Session:
             for t in fields_change.created:
                 if allow_scope_changes or t.application_id != 'scope':
                     t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
-                    self._fields[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
+                    self._fields[(t.application_id, t.field_name)] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
         if fields_change.updated:
             for t in fields_change.updated:
                 if allow_scope_changes or t.application_id != 'scope':
                     t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
-                    self._fields[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
+                    self._fields[(t.application_id, t.field_name)] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
         if fields_change.removed:
             for t in fields_change.removed:
                 if allow_scope_changes or t.application_id != 'scope':
-                    self._fields.pop(t.field_name, None)
+                    self._fields.pop((t.application_id, t.field_name), None)
 
     def _parse_script_response(self, response):
         self._parse_fields_change(response.changes, True)
@@ -285,7 +282,7 @@ class Session:
             self._parse_script_response(response)
 
     def open_table(self, name: str) -> Table:
-        """ Open a table with the given name on the server.
+        """ Open a table in the global scope with the given name on the server.
 
         Args:
             name (str): the name of the table
@@ -300,7 +297,7 @@ class Session:
             if name not in self.tables:
                 raise DHError(f"no table by the name {name}")
             table_op = FetchTableOp()
-            return self.table_service.grpc_table_op(self._fields[name][1], table_op)
+            return self.table_service.grpc_table_op(self._fields[('scope', name)][1], table_op)
 
     def bind_table(self, name: str, table: Table) -> None:
         """ Bind a table to the given name on the server so that it can be referenced by that name.
