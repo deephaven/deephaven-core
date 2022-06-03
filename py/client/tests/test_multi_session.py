@@ -1,7 +1,5 @@
 
 
-import unittest
-
 from pydeephaven import Session
 from pydeephaven.session import SYNC_ONCE, SYNC_REPEATED
 from tests.testbase import BaseTestCase
@@ -18,7 +16,6 @@ class MultiSessionTestCase(BaseTestCase):
         with Session(sync_fields=SYNC_ONCE) as session2:
             self.assertIn('t', session2.tables)
 
-    @unittest.skip("needs global scoped updates or separate applications")
     def test_shared_tables(self):
         session1 = Session(sync_fields=SYNC_REPEATED)
         session1.run_script('t = None')

@@ -9,6 +9,8 @@ from typing import List
 import pyarrow
 from bitstring import BitArray
 
+from grpc import FutureCancelledError
+
 from pydeephaven._arrow_flight_service import ArrowFlightService
 from pydeephaven._console_service import ConsoleService
 from pydeephaven._app_service import AppService
@@ -33,7 +35,7 @@ class Session:
     are guaranteed to be closed upon exit.
 
     Attributes:
-        tables (list[str]): names of the tables available in the server after running scripts
+        tables (list[str]): names of the global tables available in the server after running scripts
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
 
@@ -180,11 +182,21 @@ class Session:
     
     def _update_fields(self):
         """ Constant loop that checks for any server-side field changes and adds them to the local list """
-
-        while True:
-            fields_change = next(self._list_fields)
-            with self._r_lock:
-                self._parse_fields_change(fields_change, False)
+        try:
+            while True:
+                fields_change = self._list_fields.result()
+                with self._r_lock:
+                    self._parse_fields_change(fields_change, False)
+        except FutureCancelledError:
+            pass
+    
+    def _cancel_update_fields(self):
+        with self._r_lock:
+            if self._field_update_thread is not None:
+                self._list_fields.cancel()
+                self._field_update_thread.join()
+                self._list_fields = None
+                self._field_update_thread = None
 
     def _connect(self):
         with self._r_lock:
@@ -237,6 +249,7 @@ class Session:
         """
         with self._r_lock:
             if self.is_connected:
+                self._cancel_update_fields()
                 self.session_service.close()
                 self.grpc_channel.close()
                 self.is_connected = False
@@ -249,20 +262,17 @@ class Session:
     def _parse_fields_change(self, fields_change, allow_scope_changes):
         if fields_change.created:
             for t in fields_change.created:
-                if allow_scope_changes or t.application_id != 'scope':
-                    t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
-                    self._fields[(t.application_id, t.field_name)] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
+                t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
+                self._fields[(t.application_id, t.field_name)] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
         if fields_change.updated:
             for t in fields_change.updated:
-                if allow_scope_changes or t.application_id != 'scope':
-                    t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
-                    self._fields[(t.application_id, t.field_name)] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
+                t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
+                self._fields[(t.application_id, t.field_name)] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
         if fields_change.removed:
             for t in fields_change.removed:
-                if allow_scope_changes or t.application_id != 'scope':
-                    self._fields.pop((t.application_id, t.field_name), None)
+                self._fields.pop((t.application_id, t.field_name), None)
 
     def _parse_script_response(self, response):
         self._parse_fields_change(response.changes, True)
@@ -277,9 +287,20 @@ class Session:
         Raises:
             DHError
         """
+
         with self._r_lock:
+            if self._sync_fields == SYNC_REPEATED:
+                self._cancel_update_fields()
+            
             response = self.console_service.run_script(script)
-            self._parse_script_response(response)
+
+            if self._sync_fields == SYNC_REPEATED:
+                # We can ignore the script response because
+                # all the new tables are added by this call anyways
+                self._fields = {}
+                self.sync_fields(repeating=True)
+            else:
+                self._parse_script_response(response)
 
     def open_table(self, name: str) -> Table:
         """ Open a table in the global scope with the given name on the server.
