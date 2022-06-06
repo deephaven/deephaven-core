@@ -295,9 +295,8 @@ class Session:
             response = self.console_service.run_script(script)
 
             if self._sync_fields == SYNC_REPEATED:
-                # We can ignore the script response because
-                # all the new tables are added by this call anyways
                 self._fields = {}
+                self._parse_script_response(response)
                 self.sync_fields(repeating=True)
             else:
                 self._parse_script_response(response)
