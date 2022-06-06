@@ -455,7 +455,7 @@ int JType_CreateJavaNumberFromPythonInt(JNIEnv* jenv, JPy_JType* type, PyObject*
     j = JPy_AS_JLONG(pyArg);
     i = (int) j;
     s = (short) j;
-    b = (char) j;
+    b = (signed char) j;
 
     if (i != j) {
         value.j = j;
