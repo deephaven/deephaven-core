@@ -60,20 +60,4 @@ public interface TupleExporter<TUPLE_TYPE> {
     default Object exportElementReinterpreted(TUPLE_TYPE tuple, int elementIndex) {
         return exportElement(tuple, elementIndex);
     }
-
-    // TODO (https://github.com/deephaven/deephaven-core/issues/2415): Delete this and related code generation
-    /**
-     * <p>
-     * Export this tuple's element list as a key suitable for the defunct TableMap structure.
-     * <p>
-     * For the empty tuple this is a unsupported.
-     * <p>
-     * For singles, this is the (boxed) sole element itself.
-     * <p>
-     * For doubles and longer, this is a newly-allocated "{@link SmartKey}".
-     *
-     * @param tuple The tuple to export all elements from
-     * @return The new smart key
-     */
-    Object exportToExternalKey(TUPLE_TYPE tuple);
 }

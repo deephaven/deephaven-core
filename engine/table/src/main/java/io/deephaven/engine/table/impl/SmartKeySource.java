@@ -103,11 +103,6 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey>
     }
 
     @Override
-    public final SmartKey exportToExternalKey(@NotNull final SmartKey smartKey) {
-        return smartKey;
-    }
-
-    @Override
     public final Chunk<Values> getChunk(@NotNull final ChunkSource.GetContext context,
             @NotNull final RowSequence rowSequence) {
         return getChunk(context, rowSequence, false);
