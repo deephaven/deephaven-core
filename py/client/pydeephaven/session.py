@@ -170,7 +170,7 @@ class Session:
                 return
 
             self._list_fields = self.app_service.list_fields()
-            self._parse_fields_change(next(self._list_fields), True)
+            self._parse_fields_change(next(self._list_fields))
             if repeating:
                 self._field_update_thread = threading.Thread(target=self._update_fields)
                 self._field_update_thread.daemon = True
@@ -186,7 +186,7 @@ class Session:
             while True:
                 fields_change = self._list_fields.result()
                 with self._r_lock:
-                    self._parse_fields_change(fields_change, False)
+                    self._parse_fields_change(fields_change)
         except FutureCancelledError:
             pass
     
@@ -259,7 +259,7 @@ class Session:
     def release(self, ticket):
         self.session_service.release(ticket)
 
-    def _parse_fields_change(self, fields_change, allow_scope_changes):
+    def _parse_fields_change(self, fields_change):
         if fields_change.created:
             for t in fields_change.created:
                 t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
@@ -275,7 +275,7 @@ class Session:
                 self._fields.pop((t.application_id, t.field_name), None)
 
     def _parse_script_response(self, response):
-        self._parse_fields_change(response.changes, True)
+        self._parse_fields_change(response.changes)
 
     # convenience/factory methods
     def run_script(self, script: str) -> None:
