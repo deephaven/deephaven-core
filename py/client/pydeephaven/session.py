@@ -9,7 +9,7 @@ from typing import List
 import pyarrow
 from bitstring import BitArray
 
-from grpc import FutureCancelledError
+import grpc
 
 from pydeephaven._arrow_flight_service import ArrowFlightService
 from pydeephaven._console_service import ConsoleService
@@ -184,11 +184,14 @@ class Session:
         """ Constant loop that checks for any server-side field changes and adds them to the local list """
         try:
             while True:
-                fields_change = self._list_fields.result()
+                fields_change = next(self._list_fields)
                 with self._r_lock:
                     self._parse_fields_change(fields_change)
-        except FutureCancelledError:
-            pass
+        except Exception as e:
+            if isinstance(e, grpc.Future):
+                pass
+            else:
+                raise e
     
     def _cancel_update_fields(self):
         with self._r_lock:
