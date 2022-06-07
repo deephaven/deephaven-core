@@ -37,7 +37,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
      * @param sanityCheckJoins As in {@link PartitionedTable#proxy(boolean, boolean)}
      * @return A {@link PartitionedTable.Proxy proxy} to {@code target}
      */
-    static PartitionedTableProxyImpl of(
+    static PartitionedTable.Proxy of(
             @NotNull final PartitionedTable target,
             final boolean requireMatchingKeys,
             final boolean sanityCheckJoins) {
@@ -118,7 +118,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         return sanityCheckJoins;
     }
 
-    private PartitionedTableProxyImpl basicTransform(@NotNull final UnaryOperator<Table> transformer) {
+    private PartitionedTable.Proxy basicTransform(@NotNull final UnaryOperator<Table> transformer) {
         return new PartitionedTableProxyImpl(
                 target.transform(transformer),
                 requireMatchingKeys,
