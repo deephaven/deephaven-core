@@ -623,7 +623,10 @@ public class FigureWidgetTranslator {
     private <T> StringMapWithDefault stringMapWithDefault(PlotUtils.HashMapWithDefault<? extends Comparable<?>, T> map,
             Function<T, String> mappingFunc) {
         StringMapWithDefault.Builder result = StringMapWithDefault.newBuilder();
-        result.setDefaultString(mappingFunc.apply(map.getDefault()));
+        String defaultString = mappingFunc.apply(map.getDefault());
+        if (defaultString != null) {
+            result.setDefaultString(defaultString);
+        }
         LinkedHashMap<? extends Comparable<?>, T> ordered = new LinkedHashMap<>(map);
         result.addAllKeys(ordered.keySet().stream().map(Comparable::toString).collect(Collectors.toList()));
         result.addAllValues(ordered.values().stream().map(mappingFunc).collect(Collectors.toList()));
@@ -638,7 +641,10 @@ public class FigureWidgetTranslator {
     private <T> DoubleMapWithDefault doubleMapWithDefault(PlotUtils.HashMapWithDefault<? extends Comparable<?>, T> map,
             Function<T, Double> mappingFunc) {
         DoubleMapWithDefault.Builder result = DoubleMapWithDefault.newBuilder();
-        result.setDefaultDouble(mappingFunc.apply(map.getDefault()));
+        Double defaultDouble = mappingFunc.apply(map.getDefault());
+        if (defaultDouble != null) {
+            result.setDefaultDouble(defaultDouble);
+        }
         LinkedHashMap<? extends Comparable<?>, T> ordered = new LinkedHashMap<>(map);
         result.addAllKeys(ordered.keySet().stream().map(Comparable::toString).collect(Collectors.toList()));
         result.addAllValues(ordered.values().stream().map(mappingFunc).collect(Collectors.toList()));
@@ -648,6 +654,10 @@ public class FigureWidgetTranslator {
     private BoolMapWithDefault boolMapWithDefault(PlotUtils.HashMapWithDefault<? extends Comparable<?>, Boolean> map) {
         BoolMapWithDefault.Builder result = BoolMapWithDefault.newBuilder();
         LinkedHashMap<? extends Comparable<?>, Boolean> ordered = new LinkedHashMap<>(map);
+        Boolean defaultBoolean = map.getDefault();
+        if (defaultBoolean != null) {
+            result.setDefaultBool(defaultBoolean);
+        }
         result.addAllKeys(ordered.keySet().stream().map(Comparable::toString).collect(Collectors.toList()));
         result.addAllValues(new ArrayList<>(ordered.values()));
         return result.build();

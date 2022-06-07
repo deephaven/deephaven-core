@@ -324,17 +324,17 @@ message FigureDescriptor {
 
     }
     message StringMapWithDefault {
-        string default_string = 1;
+        optional string default_string = 1;
         repeated string keys = 2;
         repeated string values = 3;
     }
     message DoubleMapWithDefault {
-        double default_double = 1;
+        optional double default_double = 1;
         repeated string keys = 2;
         repeated double values = 3;
     }
     message BoolMapWithDefault {
-        bool default_bool = 1;
+        optional bool default_bool = 1;
         repeated string keys = 2;
         repeated bool values = 3;
     }

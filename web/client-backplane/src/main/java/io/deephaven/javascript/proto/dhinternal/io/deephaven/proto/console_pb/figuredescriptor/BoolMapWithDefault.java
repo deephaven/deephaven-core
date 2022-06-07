@@ -104,6 +104,8 @@ public class BoolMapWithDefault {
 
     public native boolean addValues(boolean value);
 
+    public native void clearDefaultBool();
+
     public native void clearKeysList();
 
     public native void clearValuesList();
@@ -113,6 +115,8 @@ public class BoolMapWithDefault {
     public native JsArray<String> getKeysList();
 
     public native JsArray<Boolean> getValuesList();
+
+    public native boolean hasDefaultBool();
 
     public native Uint8Array serializeBinary();
 
