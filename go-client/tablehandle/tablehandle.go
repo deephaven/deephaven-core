@@ -27,6 +27,9 @@ func NewTableHandle(session *session.Session, ticket *ticketpb2.Ticket, schemaHe
 	}
 }
 
+// Downloads the current state of the table on the server and returns it as a Record.
+//
+// If a Record is returned successfully, it must be freed later with `record.Release()`
 func (th *TableHandle) Snapshot(ctx context.Context) (array.Record, error) {
 	return th.Session.SnapshotRecord(ctx, th.Ticket)
 }
