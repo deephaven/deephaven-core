@@ -34,8 +34,6 @@ func exampleRecord() array.Record {
 }
 
 func TestEmptyTable(t *testing.T) {
-	return
-
 	var expectedRows int64 = 5
 	var expectedCols int64 = 0
 
@@ -86,7 +84,13 @@ func TestTableUpload(t *testing.T) {
 	}
 	defer rec.Release()
 
+	t.Logf("%T %T\n", r, rec)
+
 	if r.NumRows() != rec.NumRows() || r.NumCols() != rec.NumCols() {
-		t.Errorf("uploaded and snapshotted table differed")
+		t.Log("Expected:")
+		t.Log(r)
+		t.Log("Actual:")
+		t.Log(rec)
+		t.Errorf("uploaded and snapshotted table differed (%d x %d vs %d x %d)", r.NumRows(), r.NumCols(), rec.NumRows(), rec.NumCols())
 	}
 }

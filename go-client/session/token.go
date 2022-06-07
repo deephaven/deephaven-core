@@ -60,8 +60,6 @@ func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceCl
 
 	timeoutMillis := handshakeResp.TokenExpirationDelayMillis / 2
 
-	fmt.Println("Timeout millis:", timeoutMillis)
-
 	ref := refresher{
 		ctx:         ctx,
 		sessionStub: sessionStub,

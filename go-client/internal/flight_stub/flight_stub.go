@@ -56,6 +56,7 @@ func (fs *FlightStub) SnapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 	}
 
 	rec1, err := reader.Read()
+	rec1.Retain()
 	if err != nil {
 		return nil, err
 	}
