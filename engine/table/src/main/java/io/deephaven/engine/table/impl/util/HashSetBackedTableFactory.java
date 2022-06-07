@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.Function;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
@@ -24,33 +23,35 @@ import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TLongLongHashMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
+import io.deephaven.tuple.ArrayTuple;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * An abstract table that represents a hashset of smart keys. Since we are representing a set, there we are not defining
- * an order to our output. Whatever order the table happens to end up in, is fine.
+ * An abstract table that represents a hash set of array-backed tuples. Since we are representing a set, there we are
+ * not defining an order to our output. Whatever order the table happens to end up in, is fine.
  *
- * The table will run by regenerating the full hashset (using the setGenerator Function passed in); and then comparing
+ * The table will run by regenerating the full hash set (using the setGenerator Function passed in); and then comparing
  * that to the existing hash set.
  */
 public class HashSetBackedTableFactory {
-    private final Function.Nullary<HashSet<SmartKey>> setGenerator;
+
+    private final Function.Nullary<HashSet<ArrayTuple>> setGenerator;
     private final int refreshIntervalMs;
     private long nextRefresh;
     private final Map<String, ColumnSource<?>> columns;
-    private final TObjectLongMap<SmartKey> valueToIndexMap = new TObjectLongHashMap<>();
-    private final TLongObjectMap<SmartKey> indexToValueMap = new TLongObjectHashMap<>();
+    private final TObjectLongMap<ArrayTuple> valueToIndexMap = new TObjectLongHashMap<>();
+    private final TLongObjectMap<ArrayTuple> indexToValueMap = new TLongObjectHashMap<>();
 
-    private final TLongObjectMap<SmartKey> indexToPreviousMap = new TLongObjectHashMap<>();
+    private final TLongObjectMap<ArrayTuple> indexToPreviousMap = new TLongObjectHashMap<>();
     private final TLongLongMap indexToPreviousClock = new TLongLongHashMap();
     private long lastIndex = 0;
     private final TLongArrayList freeSet = new TLongArrayList();
     private TrackingWritableRowSet rowSet;
 
-    private HashSetBackedTableFactory(Function.Nullary<HashSet<SmartKey>> setGenerator, int refreshIntervalMs,
+    private HashSetBackedTableFactory(Function.Nullary<HashSet<ArrayTuple>> setGenerator, int refreshIntervalMs,
             String... colNames) {
         this.setGenerator = setGenerator;
         this.refreshIntervalMs = refreshIntervalMs;
@@ -59,19 +60,19 @@ public class HashSetBackedTableFactory {
         columns = new LinkedHashMap<>();
 
         for (int ii = 0; ii < colNames.length; ++ii) {
-            columns.put(colNames[ii], new SmartKeyWrapperColumnSource(ii));
+            columns.put(colNames[ii], new ArrayTupleWrapperColumnSource(ii));
         }
     }
 
     /**
      * Create a ticking table based on a setGenerator.
      *
-     * @param setGenerator a function that returns a HashSet of SmartKeys, each SmartKey is a row in the output.
+     * @param setGenerator a function that returns a HashSet of ArrayTuples, each ArrayTuple is a row in the output.
      * @param refreshIntervalMs how often to run the table, if less than or equal to 0 the table does not tick.
-     * @param colNames the column names for the output table, must match the number of elements in each SmartKey.
+     * @param colNames the column names for the output table, must match the number of elements in each ArrayTuple.
      * @return a table representing the Set returned by the setGenerator
      */
-    public static Table create(Function.Nullary<HashSet<SmartKey>> setGenerator, int refreshIntervalMs,
+    public static Table create(Function.Nullary<HashSet<ArrayTuple>> setGenerator, int refreshIntervalMs,
             String... colNames) {
         HashSetBackedTableFactory factory = new HashSetBackedTableFactory(setGenerator, refreshIntervalMs, colNames);
 
@@ -94,18 +95,18 @@ public class HashSetBackedTableFactory {
     }
 
     private void updateValueSet(RowSetBuilderRandom addedBuilder, RowSetBuilderRandom removedBuilder) {
-        HashSet<SmartKey> valueSet = setGenerator.call();
+        HashSet<ArrayTuple> valueSet = setGenerator.call();
 
         synchronized (this) {
-            for (TObjectLongIterator<SmartKey> it = valueToIndexMap.iterator(); it.hasNext();) {
+            for (TObjectLongIterator<ArrayTuple> it = valueToIndexMap.iterator(); it.hasNext();) {
                 it.advance();
-                SmartKey key = it.key();
+                ArrayTuple key = it.key();
                 if (!valueSet.contains(key)) {
                     removeValue(it, removedBuilder);
                 }
             }
 
-            for (SmartKey value : valueSet) {
+            for (ArrayTuple value : valueSet) {
                 if (!valueToIndexMap.containsKey(value)) {
                     addValue(value, addedBuilder);
                 }
@@ -113,7 +114,7 @@ public class HashSetBackedTableFactory {
         }
     }
 
-    private void removeValue(TObjectLongIterator<SmartKey> vtiIt, RowSetBuilderRandom removedBuilder) {
+    private void removeValue(TObjectLongIterator<ArrayTuple> vtiIt, RowSetBuilderRandom removedBuilder) {
         long index = vtiIt.value();
 
         // record the old value for get prev
@@ -127,7 +128,7 @@ public class HashSetBackedTableFactory {
         freeSet.add(index);
     }
 
-    private void addValue(SmartKey value, RowSetBuilderRandom addedBuilder) {
+    private void addValue(ArrayTuple value, RowSetBuilderRandom addedBuilder) {
         long newIndex;
         if (freeSet.isEmpty()) {
             newIndex = lastIndex++;
@@ -188,12 +189,12 @@ public class HashSetBackedTableFactory {
         }
     }
 
-    private class SmartKeyWrapperColumnSource extends AbstractColumnSource<String>
+    private class ArrayTupleWrapperColumnSource extends AbstractColumnSource<String>
             implements MutableColumnSourceGetDefaults.ForObject<String> {
 
         private final int columnIndex;
 
-        public SmartKeyWrapperColumnSource(int columnIndex) {
+        public ArrayTupleWrapperColumnSource(int columnIndex) {
             super(String.class, null);
             this.columnIndex = columnIndex;
         }
@@ -201,10 +202,10 @@ public class HashSetBackedTableFactory {
         @Override
         public String get(long rowKey) {
             synchronized (HashSetBackedTableFactory.this) {
-                SmartKey row = indexToValueMap.get(rowKey);
+                ArrayTuple row = indexToValueMap.get(rowKey);
                 if (row == null)
                     return null;
-                return (String) row.values_[columnIndex];
+                return row.getElement(columnIndex);
             }
         }
 
@@ -212,10 +213,10 @@ public class HashSetBackedTableFactory {
         public String getPrev(long rowKey) {
             synchronized (HashSetBackedTableFactory.this) {
                 if (indexToPreviousClock.get(rowKey) == LogicalClock.DEFAULT.currentStep()) {
-                    SmartKey row = indexToPreviousMap.get(rowKey);
+                    ArrayTuple row = indexToPreviousMap.get(rowKey);
                     if (row == null)
                         return null;
-                    return (String) row.values_[columnIndex];
+                    return row.getElement(columnIndex);
                 } else {
                     return get(rowKey);
                 }
