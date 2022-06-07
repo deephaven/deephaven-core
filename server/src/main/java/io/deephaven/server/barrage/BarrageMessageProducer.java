@@ -376,7 +376,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private List<Subscription> pendingSubscriptions = new ArrayList<>();
     private final ArrayList<Subscription> activeSubscriptions = new ArrayList<>();
 
-    private final Runnable onGetSnapshot;
+    private Runnable onGetSnapshot;
+    private boolean onGetSnapshotIsPreSnap;
 
     private final boolean parentIsRefreshing;
 
@@ -440,6 +441,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     @VisibleForTesting
     public TableDefinition getTableDefinition() {
         return parent.getDefinition();
+    }
+
+    @VisibleForTesting
+    public void setOnGetSnapshot(Runnable onGetSnapshot, boolean isPreSnap) {
+        this.onGetSnapshot = onGetSnapshot;
+        onGetSnapshotIsPreSnap = isPreSnap;
     }
 
     /////////////////////////////////////
@@ -2212,7 +2219,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             final BitSet columnsToSnapshot,
             final RowSet positionsToSnapshot,
             final RowSet reversePositionsToSnapshot) {
-        if (onGetSnapshot != null) {
+        if (onGetSnapshot != null && onGetSnapshotIsPreSnap) {
             onGetSnapshot.run();
         }
 
@@ -2220,9 +2227,15 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         // TODO: Let notification-indifferent use cases skip notification test
         final SnapshotControl snapshotControl =
                 new SnapshotControl(snapshotSubscriptions);
-        return ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
+        final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
                 this, parent, columnsToSnapshot, positionsToSnapshot, reversePositionsToSnapshot,
                 snapshotControl);
+
+        if (onGetSnapshot != null && !onGetSnapshotIsPreSnap) {
+            onGetSnapshot.run();
+        }
+
+        return msg;
     }
 
     @Override
