@@ -65,11 +65,11 @@ message StartConsoleResponse {
 message LogSubscriptionRequest {
     // presently you get _all_ logs, not just your console
 //    Ticket console_id = 1;
-    int64 last_seen_log_timestamp = 1;
+    int64 last_seen_log_timestamp = 1 [jstype=JS_STRING];
     repeated string levels = 2;
 }
 message LogSubscriptionData {
-    int64 micros = 1;
+    int64 micros = 1 [jstype=JS_STRING];
     string log_level = 2;
     string message = 3;
     reserved 4;//if we can scope logs to a script session
@@ -210,7 +210,7 @@ message FigureDescriptor {
     string title_font = 2;
     string title_color = 3;
 
-    int64 update_interval = 7;
+    int64 update_interval = 7 [jstype=JS_STRING];
 
     int32 cols = 8;
     int32 rows = 9;
