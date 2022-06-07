@@ -80,9 +80,13 @@ func (session *Session) NewTicketNum() int32 {
 }
 
 func (session *Session) NewTicket() ticketpb2.Ticket {
-	num := session.NewTicketNum()
+	id := session.NewTicketNum()
 
-	bytes := []byte{'e', byte(num), byte(num >> 8), byte(num >> 16), byte(num >> 24)}
+	return session.MakeTicket(id)
+}
+
+func (session *Session) MakeTicket(id int32) ticketpb2.Ticket {
+	bytes := []byte{'e', byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
 
 	return ticketpb2.Ticket{Ticket: bytes}
 }
@@ -101,36 +105,6 @@ func (session *Session) EmptyTable(ctx context.Context, numRows int64) (*tablepb
 
 	return resp, nil
 }
-
-/*``
-func (session *Session) ImportTable(ctx context.Context, table array.Table) error {
-	ctx = session.withToken(ctx)
-
-	doPut, err := session.flightStub.DoPut(ctx)
-	if err != nil {
-		return err
-	}
-
-	writer := flight.NewRecordWriter(doPut)
-	defer writer.Close()
-
-	tr := array.NewTableReader(table, 0)
-	defer tr.Release()
-
-	for tr.Next() {
-		rec := tr.Record()
-
-		fmt.Println("About to write ", rec)
-
-		err = writer.Write(rec)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-*/
 
 func (session *Session) Close() {
 	session.token.Close()

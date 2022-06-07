@@ -15,5 +15,7 @@ type ConnStub interface {
 
 	NewTicket() ticketpb2.Ticket
 
+	MakeTicket(id int32) ticketpb2.Ticket
+
 	WithToken(ctx context.Context) context.Context
 }

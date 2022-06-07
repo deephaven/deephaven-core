@@ -5,9 +5,11 @@ import (
 	"errors"
 	"io"
 	"net"
+	"strconv"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/flight"
+	"github.com/apache/arrow/go/arrow/ipc"
 	"github.com/deephaven/deephaven-core/go-client/internal/conn_stub"
 
 	"google.golang.org/grpc"
@@ -65,5 +67,39 @@ func (fs *FlightStub) SnapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 	}
 
 	return rec1, nil
+}
 
+func (fs *FlightStub) ImportTable(ctx context.Context, rec array.Record) (*ticketpb2.Ticket, error) {
+	ctx = fs.conn.WithToken(ctx)
+
+	doPut, err := fs.stub.DoPut(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ticketNum := fs.conn.NewTicketNum()
+
+	descr := &flight.FlightDescriptor{Type: flight.FlightDescriptor_PATH, Path: []string{"export", strconv.Itoa(int(ticketNum))}}
+
+	writer := flight.NewRecordWriter(doPut, ipc.WithSchema(rec.Schema()))
+
+	writer.SetFlightDescriptor(descr)
+	err = writer.Write(rec)
+	if err != nil {
+		return nil, err
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = doPut.Recv()
+	if err != nil {
+		return nil, err
+	}
+
+	ticket := fs.conn.MakeTicket(ticketNum)
+
+	return &ticket, nil
 }

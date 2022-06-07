@@ -8,6 +8,8 @@ import (
 )
 
 func main() {
+	return
+
 	ctx := context.Background()
 
 	s, err := client.NewClient(ctx, "localhost", "10000")
