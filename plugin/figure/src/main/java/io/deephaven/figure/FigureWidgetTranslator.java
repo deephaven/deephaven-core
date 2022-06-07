@@ -4,6 +4,7 @@
 package io.deephaven.figure;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.gui.shape.JShapes;
 import io.deephaven.gui.shape.NamedShape;
@@ -63,6 +64,7 @@ import java.awt.*;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -111,25 +113,21 @@ public class FigureWidgetTranslator {
             // relying on FetchObjectResponse.export_id for communicating exported tables to the client
         }
 
-        // TODO (deephaven-core#62) implement once tablemaps are ready
-        // i = 0;
-        // for (Map.Entry<PartitionedTable, List<PartitionedTableHandle>> entry :
-        // figure.getPartitionedTableHandles().stream().collect(Collectors.groupingBy(PartitionedTableHandle::getPartitionedTable)).entrySet())
-        // {
-        // Set<String> relevantColumns =
-        // entry.getValue().stream().map(PartitionedTableHandle::getColumns).flatMap(Set::stream).collect(Collectors.toSet());
-        // PartitionedTable partitionedTable =
-        // new PartitionedTableSupplier(entry.getKey(), Collections.singletonList(t -> t.view(relevantColumns)));
-        //
-        // for (PartitionedTableHandle handle : entry.getValue()) {
-        // partitionedTablePositionMap.put(handle, i);
-        // }
-        // i++;
-        //
-        // SessionState.ExportObject<PartitionedTable> tableExportObject =
-        // sessionState.newServerSideExport(partitionedTable);
-        // clientFigure.addPartitionedTable(...)
-        // }
+        i = 0;
+        for (Map.Entry<PartitionedTable, List<PartitionedTableHandle>> entry :
+                figure.getPartitionedTableHandles().stream().collect(Collectors.groupingBy(PartitionedTableHandle::getPartitionedTable)).entrySet()) {
+//            Set<String> relevantColumns =
+//                    entry.getValue().stream().map(PartitionedTableHandle::getColumns).flatMap(Set::stream).collect(Collectors.toSet());
+//         PartitionedTable partitionedTable = new PartitionedTableSupplier(entry.getKey(), Collections.singletonList(t -> t.view(relevantColumns)));
+            PartitionedTable partitionedTable = entry.getKey();//TODO issue for PartitionedTableSupplier
+
+            for (PartitionedTableHandle handle : entry.getValue()) {
+                partitionedTablePositionMap.put(handle, i);
+            }
+            i++;
+
+            exporter.reference(partitionedTable, false, true).orElseThrow();
+         }
 
         assignOptionalField(figure.getTitle(), clientFigure::setTitle, clientFigure::clearTitle);
         assignOptionalField(toCssColorString(figure.getTitleColor()), clientFigure::setTitleColor,

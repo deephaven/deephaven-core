@@ -43,6 +43,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
@@ -84,6 +85,7 @@ import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
 import io.deephaven.web.shared.data.*;
+import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsMethod;
@@ -179,6 +181,7 @@ public class WorkerConnection {
     private BrowserFlightServiceClient browserFlightServiceClient;
     private InputTableServiceClient inputTableServiceClient;
     private ObjectServiceClient objectServiceClient;
+    private PartitionedTableServiceClient partitionedTableServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -222,6 +225,7 @@ public class WorkerConnection {
         inputTableServiceClient =
                 new InputTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         objectServiceClient = new ObjectServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        partitionedTableServiceClient = new PartitionedTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -804,26 +808,21 @@ public class WorkerConnection {
             throw new IllegalArgumentException("Can't load as a figure: " + varDef.getType());
         }
         return whenServerReady("get a figure")
-                .then(server -> new JsFigure(this, c -> {
-                    FetchObjectRequest request = new FetchObjectRequest();
-                    TypedTicket typedTicket = new TypedTicket();
-                    typedTicket.setTicket(TableTicket.createTicket(varDef));
-                    typedTicket.setType(varDef.getType());
-                    request.setSourceId(typedTicket);
-                    objectServiceClient().fetchObject(request, metadata(), c::apply);
-                }).refetch());
+                .then(server -> new JsFigure(this, c -> fetchObject(varDef, (fail, success, ignore) -> c.apply(fail, success))).refetch());
+    }
+
+    private void fetchObject(JsVariableDefinition varDef, JsWidget.WidgetFetchCallback c) {
+        FetchObjectRequest request = new FetchObjectRequest();
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setTicket(TableTicket.createTicket(varDef));
+        typedTicket.setType(varDef.getType());
+        request.setSourceId(typedTicket);
+        objectServiceClient().fetchObject(request, metadata(), (fail, success) -> c.handleResponse(fail, success, typedTicket.getTicket()));
     }
 
     public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
         return whenServerReady("get a widget")
-                .then(server -> Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
-                    FetchObjectRequest request = new FetchObjectRequest();
-                    TypedTicket typedTicket = new TypedTicket();
-                    typedTicket.setTicket(TableTicket.createTicket(varDef));
-                    typedTicket.setType(varDef.getType());
-                    request.setSourceId(typedTicket);
-                    objectServiceClient().fetchObject(request, metadata(), c::apply);
-                })).then(response -> Promise.resolve(new JsWidget(this, response)));
+                .then(response -> new JsWidget(this, c -> fetchObject(varDef, c)).refetch());
     }
 
     public void registerFigure(JsFigure figure) {
@@ -861,6 +860,10 @@ public class WorkerConnection {
 
     public ObjectServiceClient objectServiceClient() {
         return objectServiceClient;
+    }
+
+    public PartitionedTableServiceClient partitionedTableServiceClient() {
+        return partitionedTableServiceClient;
     }
 
     public BrowserHeaders metadata() {

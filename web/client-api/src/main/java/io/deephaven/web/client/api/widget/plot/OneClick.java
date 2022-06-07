@@ -8,6 +8,7 @@ import elemental2.core.JsMap;
 import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.OneClickDescriptor;
+import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -25,7 +26,7 @@ public class OneClick {
 
     private final JsMap<String, Any> values = new JsMap<>();
 
-    private TableMap tableMap;
+    private JsPartitionedTable tableMap;
 
     private Object[] currentKeys;
     private RemoverFn keyAddedListener;
@@ -37,12 +38,12 @@ public class OneClick {
         this.jsSeries = jsSeries;
     }
 
-    public void setTableMap(TableMap tableMap) {
+    public void setTableMap(JsPartitionedTable tableMap) {
         if (keyAddedListener != null) {
             keyAddedListener.remove();
         }
         this.tableMap = tableMap;
-        keyAddedListener = tableMap.addEventListener(TableMap.EVENT_KEYADDED, e -> {
+        keyAddedListener = tableMap.addEventListener(JsPartitionedTable.EVENT_KEYADDED, e -> {
             if (currentKeys != null) {
                 // Fetch the table will only do something if the keys have actually changed
                 fetchTable();
