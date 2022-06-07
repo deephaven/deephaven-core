@@ -2,7 +2,6 @@ package io.deephaven.engine.table;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.TableOperations;
-import io.deephaven.api.agg.Partition;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.liveness.LivenessNode;
@@ -33,7 +32,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     /**
      * Interface for proxies created by {@link #proxy()}.
      */
-    interface Proxy extends TableOperations<Proxy, TableOperations> {
+    interface Proxy extends TableOperations<Proxy, TableOperations<?, ?>> {
 
         /**
          * Get the PartitionedTable instance underlying this proxy.
@@ -226,7 +225,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * <p>
      * The {@code keyColumnValues} can be thought of as a tuple constraining the values for the corresponding key
      * columns for the result row. If there are no matching rows, the result is {@code null}. If there are multiple
-     * matching rows, an {@link UnsupportedClassVersionError} is thrown.
+     * matching rows, an {@link UnsupportedOperationException} is thrown.
      * <p>
      * The result will be {@link io.deephaven.engine.liveness.LivenessManager#manage(LivenessReferent) managed} by the
      * enclosing {@link io.deephaven.engine.liveness.LivenessScopeStack#peek() liveness scope}.
