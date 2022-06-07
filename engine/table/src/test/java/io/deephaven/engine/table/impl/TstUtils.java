@@ -9,7 +9,6 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.liveness.LivenessStateException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -21,6 +20,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableDiff;
@@ -1827,41 +1827,41 @@ public class TstUtils {
         }
     }
 
-    static class UniqueSmartKeyGenerator extends AbstractUniqueGenerator<SmartKey> {
+    static class UniqueTupleGenerator extends AbstractUniqueGenerator<ArrayTuple> {
         private final AbstractGenerator[] generators;
 
-        UniqueSmartKeyGenerator(AbstractGenerator... generators) {
+        UniqueTupleGenerator(AbstractGenerator... generators) {
             this.generators = generators;
         }
 
         @Override
-        public SmartKey nextValue(TreeMap<Long, SmartKey> values, long key, Random random) {
+        public ArrayTuple nextValue(TreeMap<Long, ArrayTuple> values, long key, Random random) {
             // noinspection unchecked
-            return new SmartKey(Arrays.stream(generators).map(g -> g.nextValue(null, key, random)).toArray());
+            return new ArrayTuple(Arrays.stream(generators).map(g -> g.nextValue(null, key, random)).toArray());
         }
 
         @Override
-        public Class<SmartKey> getType() {
-            return SmartKey.class;
+        public Class<ArrayTuple> getType() {
+            return ArrayTuple.class;
         }
     }
 
-    static class SmartKeyGenerator extends AbstractGenerator<SmartKey> {
+    static class TupleGenerator extends AbstractGenerator<ArrayTuple> {
         private final AbstractGenerator[] generators;
 
-        SmartKeyGenerator(AbstractGenerator... generators) {
+        TupleGenerator(AbstractGenerator... generators) {
             this.generators = generators;
         }
 
         @Override
-        public SmartKey nextValue(TreeMap<Long, SmartKey> values, long key, Random random) {
+        public ArrayTuple nextValue(TreeMap<Long, ArrayTuple> values, long key, Random random) {
             // noinspection unchecked
-            return new SmartKey(Arrays.stream(generators).map(g -> g.nextValue(null, key, random)).toArray());
+            return new ArrayTuple(Arrays.stream(generators).map(g -> g.nextValue(null, key, random)).toArray());
         }
 
         @Override
-        public Class<SmartKey> getType() {
-            return SmartKey.class;
+        public Class<ArrayTuple> getType() {
+            return ArrayTuple.class;
         }
     }
 
@@ -1870,23 +1870,23 @@ public class TstUtils {
             this(uniqueStringGenerator, existingFraction, new StringGenerator());
         }
 
-        FromUniqueStringGenerator(UniqueStringGenerator uniqueStringGenerator, double existingFraction,
+        FromUniqueStringGenerator(UniqueStringGenerator uniqueGenerator, double existingFraction,
                 AbstractGenerator<String> defaultGenerator) {
-            super(String.class, uniqueStringGenerator, defaultGenerator, String[]::new, existingFraction);
+            super(String.class, uniqueGenerator, defaultGenerator, String[]::new, existingFraction);
         }
     }
 
-    static class FromUniqueSmartKeyGenerator extends AbstractFromUniqueGenerator<SmartKey> {
-        FromUniqueSmartKeyGenerator(UniqueSmartKeyGenerator uniqueSmartKeyGenerator, SmartKeyGenerator defaultGenerator,
+    static class FromUniqueTupleGenerator extends AbstractFromUniqueGenerator<ArrayTuple> {
+        FromUniqueTupleGenerator(UniqueTupleGenerator uniqueGenerator, TupleGenerator defaultGenerator,
                 double existingFraction) {
-            super(SmartKey.class, uniqueSmartKeyGenerator, defaultGenerator, SmartKey[]::new, existingFraction);
+            super(ArrayTuple.class, uniqueGenerator, defaultGenerator, ArrayTuple[]::new, existingFraction);
         }
     }
 
     static class FromUniqueIntGenerator extends AbstractFromUniqueGenerator<Integer> {
-        FromUniqueIntGenerator(UniqueIntGenerator uniqueSmartKeyGenerator, IntGenerator defaultGenerator,
+        FromUniqueIntGenerator(UniqueIntGenerator uniqueGenerator, IntGenerator defaultGenerator,
                 double existingFraction) {
-            super(Integer.class, uniqueSmartKeyGenerator, defaultGenerator, Integer[]::new, existingFraction);
+            super(Integer.class, uniqueGenerator, defaultGenerator, Integer[]::new, existingFraction);
         }
     }
 
@@ -1978,10 +1978,10 @@ public class TstUtils {
         int lastSize = 0;
         T[] lastValues;
 
-        AbstractFromUniqueGenerator(Class<T> type, AbstractUniqueGenerator<T> uniqueStringGenerator,
+        AbstractFromUniqueGenerator(Class<T> type, AbstractUniqueGenerator<T> uniqueGenerator,
                 AbstractGenerator<T> defaultGenerator, IntFunction<T[]> arrayFactory, double existingFraction) {
             this.type = type;
-            this.uniqueGenerator = uniqueStringGenerator;
+            this.uniqueGenerator = uniqueGenerator;
             this.defaultGenerator = defaultGenerator;
             this.arrayFactory = arrayFactory;
             this.existingFraction = existingFraction;
