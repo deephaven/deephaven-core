@@ -84,8 +84,6 @@ func TestTableUpload(t *testing.T) {
 	}
 	defer rec.Release()
 
-	t.Logf("%T %T\n", r, rec)
-
 	if r.NumRows() != rec.NumRows() || r.NumCols() != rec.NumCols() {
 		t.Log("Expected:")
 		t.Log(r)

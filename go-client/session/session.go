@@ -3,12 +3,12 @@ package session
 import (
 	"context"
 
-	"github.com/deephaven/deephaven-core/go-client/internal/flight_stub"
-	sessionpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/session"
-	tablepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/table"
-	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
-
 	"github.com/deephaven/deephaven-core/go-client/internal/console_stub"
+	"github.com/deephaven/deephaven-core/go-client/internal/flight_stub"
+	"github.com/deephaven/deephaven-core/go-client/internal/table_stub"
+
+	sessionpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/session"
+	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -21,10 +21,10 @@ type Session struct {
 	token tokenManager
 
 	sessionStub sessionpb2.SessionServiceClient
-	tableStub   tablepb2.TableServiceClient
 
 	console_stub.ConsoleStub
 	flight_stub.FlightStub
+	table_stub.TableStub
 
 	nextTicket int32
 }
@@ -49,7 +49,12 @@ func NewSession(ctx context.Context, host string, port string) (Session, error) 
 		return Session{}, err
 	}
 
-	session.tableStub = tablepb2.NewTableServiceClient(grpcChannel)
+	session.TableStub, err = table_stub.NewTableStub(&session)
+	if err != nil {
+		// TODO: Close channel
+		return Session{}, err
+	}
+
 	session.ConsoleStub, err = console_stub.NewConsoleStub(ctx, &session, "python") // TODO: session type
 	if err != nil {
 		// TODO: Close channel
@@ -89,21 +94,6 @@ func (session *Session) MakeTicket(id int32) ticketpb2.Ticket {
 	bytes := []byte{'e', byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
 
 	return ticketpb2.Ticket{Ticket: bytes}
-}
-
-// Create a new table on the server with no columns and the specified number of rows
-func (session *Session) EmptyTable(ctx context.Context, numRows int64) (*tablepb2.ExportedTableCreationResponse, error) {
-	ctx = session.WithToken(ctx)
-
-	ticket := session.NewTicket()
-
-	req := tablepb2.EmptyTableRequest{ResultId: &ticket, Size: numRows}
-	resp, err := session.tableStub.EmptyTable(ctx, &req)
-	if err != nil {
-		return &tablepb2.ExportedTableCreationResponse{}, err
-	}
-
-	return resp, nil
 }
 
 func (session *Session) Close() {
