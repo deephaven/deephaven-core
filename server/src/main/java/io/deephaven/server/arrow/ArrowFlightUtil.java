@@ -79,6 +79,7 @@ public class ArrowFlightUtil {
 
         private BarrageTable resultTable;
         private SessionState.ExportBuilder<Table> resultExportBuilder;
+        private Flight.FlightDescriptor flightDescriptor;
 
         private ChunkType[] columnChunkTypes;
         private int[] columnConversionFactors;
@@ -109,14 +110,18 @@ public class ArrowFlightUtil {
             GrpcUtil.rpcWrapper(log, observer, () -> {
                 final BarrageProtoUtil.MessageInfo mi = BarrageProtoUtil.parseProtoMessage(request);
                 if (mi.descriptor != null) {
-                    if (resultExportBuilder != null) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Only one descriptor definition allowed");
+                    if (flightDescriptor != null) {
+                        if (!flightDescriptor.equals(mi.descriptor)) {
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "additional flight descriptor sent does not match original descriptor");
+                        }
+                    } else {
+                        flightDescriptor = mi.descriptor;
+                        resultExportBuilder = ticketRouter
+                                .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
+                                .onError(observer);
+                        manage(resultExportBuilder.getExport());
                     }
-                    resultExportBuilder = ticketRouter
-                            .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
-                            .onError(observer);
-                    manage(resultExportBuilder.getExport());
                 }
 
                 if (mi.app_metadata != null
