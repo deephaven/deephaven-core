@@ -20,7 +20,7 @@ public class ArrayTuple
 
     private static final long serialVersionUID = 1L;
 
-    private Object elements[];
+    private Object[] elements;
 
     private transient int cachedHashCode;
 
@@ -39,7 +39,7 @@ public class ArrayTuple
      */
     public ArrayTuple() {}
 
-    private void initialize(@NotNull final Object elements[]) {
+    private void initialize(@NotNull final Object[] elements) {
         this.elements = elements;
         cachedHashCode = Arrays.hashCode(elements);
     }
@@ -56,7 +56,7 @@ public class ArrayTuple
      * @return A new array of the elements of this tuple
      */
     public final Object[] getElements() {
-        final Object exportedElements[] = new Object[elements.length];
+        final Object[] exportedElements = new Object[elements.length];
         System.arraycopy(elements, 0, exportedElements, 0, elements.length);
         return exportedElements;
     }
@@ -110,7 +110,7 @@ public class ArrayTuple
     @Override
     public void readExternal(@NotNull final ObjectInput in) throws IOException, ClassNotFoundException {
         final int inLength = in.readInt();
-        final Object inElements[] = new Object[inLength];
+        final Object[] inElements = new Object[inLength];
         for (int ei = 0; ei < inLength; ++ei) {
             inElements[ei] = in.readObject();
         }
@@ -131,7 +131,7 @@ public class ArrayTuple
     public void readExternalStreaming(@NotNull final ObjectInput in,
             @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
         final int inLength = in.readInt();
-        final Object inElements[] = new Object[inLength];
+        final Object[] inElements = new Object[inLength];
         for (int ei = 0; ei < inLength; ++ei) {
             inElements[ei] = StreamingExternalizable.readObjectElement(in, cachedReaders, ei);
         }
@@ -146,7 +146,7 @@ public class ArrayTuple
     @Override
     public ArrayTuple canonicalize(@NotNull final UnaryOperator<Object> canonicalizer) {
         final int thisLength = elements.length;
-        Object canonicalElements[] = null;
+        Object[] canonicalElements = null;
         for (int ei = 0; ei < thisLength; ++ei) {
             final Object element = elements[ei];
             final Object canonicalElement = canonicalizer.apply(element);
