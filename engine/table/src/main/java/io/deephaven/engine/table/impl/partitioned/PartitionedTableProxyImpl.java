@@ -125,7 +125,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                 sanityCheckJoins);
     }
 
-    private PartitionedTableProxyImpl complexTransform(
+    private PartitionedTable.Proxy complexTransform(
             @NotNull final TableOperations<?, ?> other,
             @NotNull final BinaryOperator<Table> transformer,
             @Nullable final Collection<? extends JoinMatch> joinMatches) {
@@ -360,578 +360,578 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     // region TableOperations Implementation
 
     @Override
-    public PartitionedTableProxyImpl head(long size) {
+    public PartitionedTable.Proxy head(long size) {
         return basicTransform(ct -> ct.head(size));
     }
 
     @Override
-    public PartitionedTableProxyImpl tail(long size) {
+    public PartitionedTable.Proxy tail(long size) {
         return basicTransform(ct -> ct.tail(size));
     }
 
     @Override
-    public PartitionedTableProxyImpl reverse() {
+    public PartitionedTable.Proxy reverse() {
         return basicTransform(Table::reverse);
     }
 
     @Override
-    public PartitionedTableProxyImpl snapshot(TableOperations<?, ?> baseTable, String... stampColumns) {
+    public PartitionedTable.Proxy snapshot(TableOperations<?, ?> baseTable, String... stampColumns) {
         return complexTransform(baseTable, (ct, ot) -> ct.snapshot(ot, stampColumns), null);
     }
 
     @Override
-    public PartitionedTableProxyImpl snapshot(TableOperations<?, ?> baseTable, boolean doInitialSnapshot,
+    public PartitionedTable.Proxy snapshot(TableOperations<?, ?> baseTable, boolean doInitialSnapshot,
             String... stampColumns) {
         return complexTransform(baseTable, (ct, ot) -> ct.snapshot(ot, doInitialSnapshot, stampColumns), null);
     }
 
     @Override
-    public PartitionedTableProxyImpl snapshot(TableOperations<?, ?> baseTable, boolean doInitialSnapshot,
+    public PartitionedTable.Proxy snapshot(TableOperations<?, ?> baseTable, boolean doInitialSnapshot,
             Collection<ColumnName> stampColumns) {
         return complexTransform(baseTable, (ct, ot) -> ct.snapshot(ot, doInitialSnapshot, stampColumns), null);
     }
 
     @Override
-    public PartitionedTableProxyImpl sort(String... columnsToSortBy) {
+    public PartitionedTable.Proxy sort(String... columnsToSortBy) {
         return basicTransform(ct -> ct.sort(columnsToSortBy));
     }
 
     @Override
-    public PartitionedTableProxyImpl sortDescending(String... columnsToSortBy) {
+    public PartitionedTable.Proxy sortDescending(String... columnsToSortBy) {
         return basicTransform(ct -> ct.sortDescending(columnsToSortBy));
     }
 
     @Override
-    public PartitionedTableProxyImpl sort(Collection<SortColumn> columnsToSortBy) {
+    public PartitionedTable.Proxy sort(Collection<SortColumn> columnsToSortBy) {
         return basicTransform(ct -> ct.sort(columnsToSortBy));
     }
 
     @Override
-    public PartitionedTableProxyImpl where(String... filters) {
+    public PartitionedTable.Proxy where(String... filters) {
         return basicTransform(ct -> ct.where(filters));
     }
 
     @Override
-    public PartitionedTableProxyImpl where(Collection<? extends Filter> filters) {
+    public PartitionedTable.Proxy where(Collection<? extends Filter> filters) {
         return basicTransform(ct -> ct.where(filters));
     }
 
     @Override
-    public PartitionedTableProxyImpl whereIn(TableOperations<?, ?> rightTable, String... columnsToMatch) {
+    public PartitionedTable.Proxy whereIn(TableOperations<?, ?> rightTable, String... columnsToMatch) {
         return complexTransform(rightTable, (ct, ot) -> ct.whereIn(ot, columnsToMatch), JoinMatch.from(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl whereIn(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch) {
+    public PartitionedTable.Proxy whereIn(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch) {
         return complexTransform(rightTable, (ct, ot) -> ct.whereIn(ot, columnsToMatch), columnsToMatch);
     }
 
     @Override
-    public PartitionedTableProxyImpl whereNotIn(TableOperations<?, ?> rightTable, String... columnsToMatch) {
+    public PartitionedTable.Proxy whereNotIn(TableOperations<?, ?> rightTable, String... columnsToMatch) {
         return complexTransform(rightTable, (ct, ot) -> ct.whereNotIn(ot, columnsToMatch),
                 JoinMatch.from(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl whereNotIn(TableOperations<?, ?> rightTable,
+    public PartitionedTable.Proxy whereNotIn(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> columnsToMatch) {
         return complexTransform(rightTable, (ct, ot) -> ct.whereNotIn(ot, columnsToMatch), columnsToMatch);
     }
 
     @Override
-    public PartitionedTableProxyImpl view(String... columns) {
+    public PartitionedTable.Proxy view(String... columns) {
         return basicTransform(ct -> ct.view(columns));
     }
 
     @Override
-    public PartitionedTableProxyImpl view(Collection<? extends Selectable> columns) {
+    public PartitionedTable.Proxy view(Collection<? extends Selectable> columns) {
         return basicTransform(ct -> ct.view(columns));
     }
 
     @Override
-    public PartitionedTableProxyImpl updateView(String... columns) {
+    public PartitionedTable.Proxy updateView(String... columns) {
         return basicTransform(ct -> ct.updateView(columns));
     }
 
     @Override
-    public PartitionedTableProxyImpl updateView(Collection<? extends Selectable> columns) {
+    public PartitionedTable.Proxy updateView(Collection<? extends Selectable> columns) {
         return basicTransform(ct -> ct.updateView(columns));
     }
 
     @Override
-    public PartitionedTableProxyImpl update(String... columns) {
+    public PartitionedTable.Proxy update(String... columns) {
         return basicTransform(ct -> ct.update(columns));
     }
 
     @Override
-    public PartitionedTableProxyImpl update(Collection<? extends Selectable> columns) {
+    public PartitionedTable.Proxy update(Collection<? extends Selectable> columns) {
         return basicTransform(ct -> ct.update(columns));
     }
 
     @Override
-    public PartitionedTableProxyImpl select(String... columns) {
+    public PartitionedTable.Proxy select(String... columns) {
         return basicTransform(ct -> ct.select(columns));
     }
 
     @Override
-    public PartitionedTableProxyImpl select(Collection<? extends Selectable> columns) {
+    public PartitionedTable.Proxy select(Collection<? extends Selectable> columns) {
         return basicTransform(ct -> ct.select(columns));
     }
 
     @Override
-    public PartitionedTableProxyImpl naturalJoin(TableOperations<?, ?> rightTable, String columnsToMatch) {
+    public PartitionedTable.Proxy naturalJoin(TableOperations<?, ?> rightTable, String columnsToMatch) {
         return complexTransform(rightTable, (ct, ot) -> ct.naturalJoin(ot, columnsToMatch),
                 splitToJoinMatches(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl naturalJoin(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
+    public PartitionedTable.Proxy naturalJoin(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.naturalJoin(ot, columnsToMatch, columnsToAdd),
                 splitToJoinMatches(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl naturalJoin(TableOperations<?, ?> rightTable,
+    public PartitionedTable.Proxy naturalJoin(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.naturalJoin(ot, columnsToMatch, columnsToAdd),
                 columnsToMatch);
     }
 
     @Override
-    public PartitionedTableProxyImpl exactJoin(TableOperations<?, ?> rightTable, String columnsToMatch) {
+    public PartitionedTable.Proxy exactJoin(TableOperations<?, ?> rightTable, String columnsToMatch) {
         return complexTransform(rightTable, (ct, ot) -> ct.exactJoin(ot, columnsToMatch),
                 splitToJoinMatches(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl exactJoin(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
+    public PartitionedTable.Proxy exactJoin(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.exactJoin(ot, columnsToMatch, columnsToAdd),
                 splitToJoinMatches(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl exactJoin(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public PartitionedTable.Proxy exactJoin(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.exactJoin(ot, columnsToMatch, columnsToAdd), columnsToMatch);
     }
 
     @Override
-    public PartitionedTableProxyImpl join(TableOperations<?, ?> rightTable, String columnsToMatch) {
+    public PartitionedTable.Proxy join(TableOperations<?, ?> rightTable, String columnsToMatch) {
         return complexTransform(rightTable, (ct, ot) -> ct.join(ot, columnsToMatch),
                 splitToJoinMatches(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl join(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
+    public PartitionedTable.Proxy join(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.join(ot, columnsToMatch, columnsToAdd),
                 splitToJoinMatches(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl join(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public PartitionedTable.Proxy join(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.join(ot, columnsToMatch, columnsToAdd), columnsToMatch);
     }
 
     @Override
-    public PartitionedTableProxyImpl join(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public PartitionedTable.Proxy join(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd, int reserveBits) {
         return complexTransform(rightTable, (ct, ot) -> ct.join(ot, columnsToMatch, columnsToAdd, reserveBits),
                 columnsToMatch);
     }
 
     @Override
-    public PartitionedTableProxyImpl aj(TableOperations<?, ?> rightTable, String columnsToMatch) {
+    public PartitionedTable.Proxy aj(TableOperations<?, ?> rightTable, String columnsToMatch) {
         return complexTransform(rightTable, (ct, ot) -> ct.aj(ot, columnsToMatch), splitToExactMatches(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl aj(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
+    public PartitionedTable.Proxy aj(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.aj(ot, columnsToMatch, columnsToAdd),
                 splitToExactMatches(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl aj(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public PartitionedTable.Proxy aj(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.aj(ot, columnsToMatch, columnsToAdd), columnsToMatch);
     }
 
     @Override
-    public PartitionedTableProxyImpl aj(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public PartitionedTable.Proxy aj(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
         return complexTransform(rightTable, (ct, ot) -> ct.aj(ot, columnsToMatch, columnsToAdd, asOfJoinRule),
                 columnsToMatch);
     }
 
     @Override
-    public PartitionedTableProxyImpl raj(TableOperations<?, ?> rightTable, String columnsToMatch) {
+    public PartitionedTable.Proxy raj(TableOperations<?, ?> rightTable, String columnsToMatch) {
         return complexTransform(rightTable, (ct, ot) -> ct.raj(ot, columnsToMatch),
                 splitToExactMatches(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl raj(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
+    public PartitionedTable.Proxy raj(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.raj(ot, columnsToMatch, columnsToAdd),
                 splitToExactMatches(columnsToMatch));
     }
 
     @Override
-    public PartitionedTableProxyImpl raj(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public PartitionedTable.Proxy raj(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.raj(ot, columnsToMatch, columnsToAdd), columnsToMatch);
     }
 
     @Override
-    public PartitionedTableProxyImpl raj(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public PartitionedTable.Proxy raj(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
         return complexTransform(rightTable, (ct, ot) -> ct.raj(ot, columnsToMatch, columnsToAdd, reverseAsOfJoinRule),
                 columnsToMatch);
     }
 
     @Override
-    public PartitionedTableProxyImpl groupBy() {
+    public PartitionedTable.Proxy groupBy() {
         return basicTransform(Table::groupBy);
     }
 
     @Override
-    public PartitionedTableProxyImpl groupBy(String... groupByColumns) {
+    public PartitionedTable.Proxy groupBy(String... groupByColumns) {
         return basicTransform(ct -> ct.groupBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl groupBy(Collection<? extends Selectable> groupByColumns) {
+    public PartitionedTable.Proxy groupBy(Collection<? extends Selectable> groupByColumns) {
         return basicTransform(ct -> ct.groupBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl aggAllBy(AggSpec spec) {
+    public PartitionedTable.Proxy aggAllBy(AggSpec spec) {
         return basicTransform(ct -> ct.aggAllBy(spec));
     }
 
     @Override
-    public PartitionedTableProxyImpl aggAllBy(AggSpec spec, String... groupByColumns) {
+    public PartitionedTable.Proxy aggAllBy(AggSpec spec, String... groupByColumns) {
         return basicTransform(ct -> ct.aggAllBy(spec, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public PartitionedTable.Proxy aggAllBy(AggSpec spec, Selectable... groupByColumns) {
         return basicTransform(ct -> ct.aggAllBy(spec, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl aggAllBy(AggSpec spec, Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy aggAllBy(AggSpec spec, Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.aggAllBy(spec, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl aggBy(Aggregation aggregation) {
+    public PartitionedTable.Proxy aggBy(Aggregation aggregation) {
         return basicTransform(ct -> ct.aggBy(aggregation));
     }
 
     @Override
-    public PartitionedTableProxyImpl aggBy(Aggregation aggregation, String... groupByColumns) {
+    public PartitionedTable.Proxy aggBy(Aggregation aggregation, String... groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregation, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
+    public PartitionedTable.Proxy aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregation, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl aggBy(Collection<? extends Aggregation> aggregations) {
+    public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations) {
         return basicTransform(ct -> ct.aggBy(aggregations));
     }
 
     @Override
-    public PartitionedTableProxyImpl aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
+    public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregations, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl aggBy(Collection<? extends Aggregation> aggregations,
+    public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends Selectable> groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregations, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl selectDistinct() {
+    public PartitionedTable.Proxy selectDistinct() {
         return basicTransform(Table::selectDistinct);
     }
 
     @Override
-    public PartitionedTableProxyImpl selectDistinct(String... groupByColumns) {
+    public PartitionedTable.Proxy selectDistinct(String... groupByColumns) {
         return basicTransform(ct -> ct.selectDistinct(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl selectDistinct(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy selectDistinct(Selectable... groupByColumns) {
         return basicTransform(ct -> ct.selectDistinct(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl selectDistinct(Collection<? extends Selectable> groupByColumns) {
+    public PartitionedTable.Proxy selectDistinct(Collection<? extends Selectable> groupByColumns) {
         return basicTransform(ct -> ct.selectDistinct(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl countBy(String countColumnName) {
+    public PartitionedTable.Proxy countBy(String countColumnName) {
         return basicTransform(ct -> ct.countBy(countColumnName));
     }
 
     @Override
-    public PartitionedTableProxyImpl countBy(String countColumnName, String... groupByColumns) {
+    public PartitionedTable.Proxy countBy(String countColumnName, String... groupByColumns) {
         return basicTransform(ct -> ct.countBy(countColumnName, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl countBy(String countColumnName, Selectable... groupByColumns) {
+    public PartitionedTable.Proxy countBy(String countColumnName, Selectable... groupByColumns) {
         return basicTransform(ct -> ct.countBy(countColumnName, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl countBy(String countColumnName, Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy countBy(String countColumnName, Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.countBy(countColumnName, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl firstBy() {
+    public PartitionedTable.Proxy firstBy() {
         return basicTransform(Table::firstBy);
     }
 
     @Override
-    public PartitionedTableProxyImpl firstBy(String... groupByColumns) {
+    public PartitionedTable.Proxy firstBy(String... groupByColumns) {
         return basicTransform(ct -> ct.firstBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl firstBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy firstBy(Selectable... groupByColumns) {
         return basicTransform(ct -> ct.firstBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl firstBy(Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy firstBy(Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.firstBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl lastBy() {
+    public PartitionedTable.Proxy lastBy() {
         return basicTransform(Table::lastBy);
     }
 
     @Override
-    public PartitionedTableProxyImpl lastBy(String... groupByColumns) {
+    public PartitionedTable.Proxy lastBy(String... groupByColumns) {
         return basicTransform(ct -> ct.lastBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl lastBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy lastBy(Selectable... groupByColumns) {
         return basicTransform(ct -> ct.lastBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl lastBy(Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy lastBy(Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.lastBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl minBy() {
+    public PartitionedTable.Proxy minBy() {
         return basicTransform(Table::minBy);
     }
 
     @Override
-    public PartitionedTableProxyImpl minBy(String... groupByColumns) {
+    public PartitionedTable.Proxy minBy(String... groupByColumns) {
         return basicTransform(ct -> ct.minBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl minBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy minBy(Selectable... groupByColumns) {
         return basicTransform(ct -> ct.minBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl minBy(Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy minBy(Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.minBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl maxBy() {
+    public PartitionedTable.Proxy maxBy() {
         return basicTransform(Table::maxBy);
     }
 
     @Override
-    public PartitionedTableProxyImpl maxBy(String... groupByColumns) {
+    public PartitionedTable.Proxy maxBy(String... groupByColumns) {
         return basicTransform(ct -> ct.maxBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl maxBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy maxBy(Selectable... groupByColumns) {
         return basicTransform(ct -> ct.maxBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl maxBy(Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy maxBy(Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.maxBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl sumBy() {
+    public PartitionedTable.Proxy sumBy() {
         return basicTransform(Table::sumBy);
     }
 
     @Override
-    public PartitionedTableProxyImpl sumBy(String... groupByColumns) {
+    public PartitionedTable.Proxy sumBy(String... groupByColumns) {
         return basicTransform(ct -> ct.sumBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl sumBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy sumBy(Selectable... groupByColumns) {
         return basicTransform(ct -> ct.sumBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl sumBy(Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy sumBy(Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.sumBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl avgBy() {
+    public PartitionedTable.Proxy avgBy() {
         return basicTransform(Table::avgBy);
     }
 
     @Override
-    public PartitionedTableProxyImpl avgBy(String... groupByColumns) {
+    public PartitionedTable.Proxy avgBy(String... groupByColumns) {
         return basicTransform(ct -> ct.avgBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl avgBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy avgBy(Selectable... groupByColumns) {
         return basicTransform(ct -> ct.avgBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl avgBy(Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy avgBy(Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.avgBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl medianBy() {
+    public PartitionedTable.Proxy medianBy() {
         return basicTransform(Table::medianBy);
     }
 
     @Override
-    public PartitionedTableProxyImpl medianBy(String... groupByColumns) {
+    public PartitionedTable.Proxy medianBy(String... groupByColumns) {
         return basicTransform(ct -> ct.medianBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl medianBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy medianBy(Selectable... groupByColumns) {
         return basicTransform(ct -> ct.medianBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl medianBy(Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy medianBy(Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.medianBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl stdBy() {
+    public PartitionedTable.Proxy stdBy() {
         return basicTransform(Table::stdBy);
     }
 
     @Override
-    public PartitionedTableProxyImpl stdBy(String... groupByColumns) {
+    public PartitionedTable.Proxy stdBy(String... groupByColumns) {
         return basicTransform(ct -> ct.stdBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl stdBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy stdBy(Selectable... groupByColumns) {
         return basicTransform(ct -> ct.stdBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl stdBy(Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy stdBy(Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.stdBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl varBy() {
+    public PartitionedTable.Proxy varBy() {
         return basicTransform(Table::varBy);
     }
 
     @Override
-    public PartitionedTableProxyImpl varBy(String... groupByColumns) {
+    public PartitionedTable.Proxy varBy(String... groupByColumns) {
         return basicTransform(ct -> ct.varBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl varBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy varBy(Selectable... groupByColumns) {
         return basicTransform(ct -> ct.varBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl varBy(Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy varBy(Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.varBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl absSumBy() {
+    public PartitionedTable.Proxy absSumBy() {
         return basicTransform(Table::absSumBy);
     }
 
     @Override
-    public PartitionedTableProxyImpl absSumBy(String... groupByColumns) {
+    public PartitionedTable.Proxy absSumBy(String... groupByColumns) {
         return basicTransform(ct -> ct.absSumBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl absSumBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy absSumBy(Selectable... groupByColumns) {
         return basicTransform(ct -> ct.absSumBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl absSumBy(Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy absSumBy(Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.absSumBy(groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl wsumBy(String weightColumn) {
+    public PartitionedTable.Proxy wsumBy(String weightColumn) {
         return basicTransform(ct -> ct.wsumBy(weightColumn));
     }
 
     @Override
-    public PartitionedTableProxyImpl wsumBy(String weightColumn, String... groupByColumns) {
+    public PartitionedTable.Proxy wsumBy(String weightColumn, String... groupByColumns) {
         return basicTransform(ct -> ct.wsumBy(weightColumn, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl wsumBy(String weightColumn, Selectable... groupByColumns) {
+    public PartitionedTable.Proxy wsumBy(String weightColumn, Selectable... groupByColumns) {
         return basicTransform(ct -> ct.wsumBy(weightColumn, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl wsumBy(String weightColumn, Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy wsumBy(String weightColumn, Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.wsumBy(weightColumn, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl wavgBy(String weightColumn) {
+    public PartitionedTable.Proxy wavgBy(String weightColumn) {
         return basicTransform(ct -> ct.wavgBy(weightColumn));
     }
 
     @Override
-    public PartitionedTableProxyImpl wavgBy(String weightColumn, String... groupByColumns) {
+    public PartitionedTable.Proxy wavgBy(String weightColumn, String... groupByColumns) {
         return basicTransform(ct -> ct.wavgBy(weightColumn, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl wavgBy(String weightColumn, Selectable... groupByColumns) {
+    public PartitionedTable.Proxy wavgBy(String weightColumn, Selectable... groupByColumns) {
         return basicTransform(ct -> ct.wavgBy(weightColumn, groupByColumns));
     }
 
     @Override
-    public PartitionedTableProxyImpl wavgBy(String weightColumn, Collection<String> groupByColumns) {
+    public PartitionedTable.Proxy wavgBy(String weightColumn, Collection<String> groupByColumns) {
         return basicTransform(ct -> ct.wavgBy(weightColumn, groupByColumns));
     }
 
