@@ -76,11 +76,11 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
     private final Map<Object, Object> __lazyResultCache;
 
 
-    public FormulaSample(final TrackingRowSet rowSet,
+    public FormulaSample(final TrackingRowSet __rowSet,
             final boolean __lazy,
             final java.util.Map<String, ? extends io.deephaven.engine.table.ColumnSource> __columnsToData,
             final io.deephaven.engine.table.lang.QueryScopeParam... __params) {
-        super(rowSet);
+        super(__rowSet);
         II = __columnsToData.get("II");
         I = __columnsToData.get("I");
         II_ = new io.deephaven.engine.table.impl.vector.LongVectorColumnWrapper(__columnsToData.get("II"), __rowSet);

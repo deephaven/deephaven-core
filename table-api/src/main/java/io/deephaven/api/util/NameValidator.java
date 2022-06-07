@@ -340,7 +340,6 @@ public class NameValidator {
      * @param customReplace a function that is applied to the name before processing legality
      * @param takenNames the list of names that are already taken
      * @return whether the name is valid for a new table
-     * 
      */
     public static boolean isLegalTableName(String name, Function<String, String> customReplace,
             Set<String> takenNames) {

@@ -291,12 +291,12 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private CodeGenerator generateConstructor() {
         final CodeGenerator g = CodeGenerator.create(
-                "public $CLASSNAME$(final TrackingRowSet rowSet,", CodeGenerator.indent(
+                "public $CLASSNAME$(final TrackingRowSet __rowSet,", CodeGenerator.indent(
                         "final boolean __lazy,",
                         "final java.util.Map<String, ? extends [[COLUMN_SOURCE_CLASSNAME]]> __columnsToData,",
                         "final [[PARAM_CLASSNAME]]... __params)"),
                 CodeGenerator.block(
-                        "super(rowSet);",
+                        "super(__rowSet);",
                         CodeGenerator.repeated("initColumn",
                                 "[[COLUMN_NAME]] = __columnsToData.get(\"[[COLUMN_NAME]]\");"),
                         CodeGenerator.repeated("initNormalColumnArray",
