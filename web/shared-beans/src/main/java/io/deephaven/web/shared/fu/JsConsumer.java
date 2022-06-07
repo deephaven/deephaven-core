@@ -4,6 +4,7 @@
 package io.deephaven.web.shared.fu;
 
 import jsinterop.annotations.JsFunction;
+import jsinterop.annotations.JsOverlay;
 
 /**
  * A js-friendly Consumer FunctionalInterface
@@ -11,6 +12,16 @@ import jsinterop.annotations.JsFunction;
 @JsFunction
 @FunctionalInterface
 public interface JsConsumer<T> {
+    @JsOverlay
+    JsConsumer<?> DO_NOTHING = ignore -> {
+    };
+
+    @JsOverlay
+    static <T> JsConsumer<T> doNothing() {
+        // noinspection unchecked
+        return (JsConsumer<T>) DO_NOTHING;
+    }
+
 
     @SuppressWarnings("unusable-by-js")
     void apply(T value);

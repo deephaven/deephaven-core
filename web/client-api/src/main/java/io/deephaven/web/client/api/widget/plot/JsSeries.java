@@ -6,6 +6,7 @@ package io.deephaven.web.client.api.widget.plot;
 import elemental2.core.JsObject;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SeriesDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
+import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
 import jsinterop.annotations.JsIgnore;
@@ -62,7 +63,7 @@ public class JsSeries {
      * are loaded.
      */
     @JsIgnore
-    public void initSources(Map<Integer, JsTable> tables, Map<Integer, TableMap> tableMaps) {
+    public void initSources(Map<Integer, JsTable> tables, Map<Integer, JsPartitionedTable> tableMaps) {
         Arrays.stream(sources).forEach(s -> s.initColumnType(tables));
         if (oneClick != null) {
             oneClick.setTableMap(tableMaps.get(sources[0].getDescriptor().getTableMapId()));

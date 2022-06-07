@@ -226,6 +226,9 @@ project(':plugin-dagger').projectDir = file('plugin/dagger')
 include(':plugin-figure')
 project(':plugin-figure').projectDir = file('plugin/figure')
 
+include(':plugin-partitionedtable')
+project(':plugin-partitionedtable').projectDir = file('plugin/partitionedtable')
+
 include(':envoy')
 
 include(':grpc-proxy')

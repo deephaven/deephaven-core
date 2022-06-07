@@ -5,14 +5,19 @@ package io.deephaven.web.client.api.barrage;
 
 import elemental2.core.*;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Buffer;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Field;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.KeyValue;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.*;
 import jsinterop.base.Js;
@@ -25,8 +30,11 @@ import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.DoubleFunction;
 import java.util.stream.IntStream;
 
 /**
@@ -51,6 +59,67 @@ public class BarrageUtils {
         double offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, MAGIC, BarrageMessageType.None, 0);
         builder.finish(offset);
         return builder.asUint8Array();
+    }
+
+    public static ColumnDefinition[] readColumnDefinitions(Schema schema) {
+        ColumnDefinition[] cols = new ColumnDefinition[(int) schema.fieldsLength()];
+        for (int i = 0; i < schema.fieldsLength(); i++) {
+            cols[i] = new ColumnDefinition();
+            Field f = schema.fields(i);
+            Map<String, String> fieldMetadata =
+                    keyValuePairs("deephaven:", f.customMetadataLength(), f::customMetadata);
+            cols[i].setName(f.name().asString());
+            cols[i].setColumnIndex(i);
+            cols[i].setType(fieldMetadata.get("type"));
+            cols[i].setStyleColumn("true".equals(fieldMetadata.get("isStyle")));
+            cols[i].setFormatColumn("true".equals(fieldMetadata.get("isDateFormat"))
+                    || "true".equals(fieldMetadata.get("isNumberFormat")));
+            cols[i].setForRow("true".equals(fieldMetadata.get("isRowStyle")));
+
+            String formatColumnName = fieldMetadata.get("dateFormatColumn");
+            if (formatColumnName == null) {
+                formatColumnName = fieldMetadata.get("numberFormatColumn");
+            }
+            cols[i].setFormatColumnName(formatColumnName);
+
+            cols[i].setStyleColumnName(fieldMetadata.get("styleColumn"));
+
+            if (fieldMetadata.containsKey("inputtable.isKey")) {
+                cols[i].setInputTableKeyColumn(Boolean.parseBoolean(fieldMetadata.get("inputtable.isKey")));
+            }
+
+            cols[i].setDescription(fieldMetadata.get("description"));
+        }
+        return cols;
+    }
+
+    public static Schema readSchemaMessage(Uint8Array flightSchemaMessage) {
+        // we conform to flight's schema representation of:
+        // - IPC_CONTINUATION_TOKEN (4-byte int of -1)
+        // - message size (4-byte int)
+        // - a Message wrapping the schema
+        io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer bb =
+                new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(flightSchemaMessage);
+        bb.setPosition(bb.position() + 8);
+        Message headerMessage = Message.getRootAsMessage(bb);
+
+        assert headerMessage.headerType() == MessageHeader.Schema;
+        return headerMessage.header(new Schema());
+    }
+
+    public static Map<String, String> keyValuePairs(String filterPrefix, double count,
+            DoubleFunction<KeyValue> accessor) {
+        Map<String, String> map = new HashMap<>();
+        for (int i = 0; i < count; i++) {
+            KeyValue pair = accessor.apply(i);
+            String key = pair.key().asString();
+            if (key.startsWith(filterPrefix)) {
+                key = key.substring(filterPrefix.length());
+                String oldValue = map.put(key, pair.value().asString());
+                assert oldValue == null : key + " had " + oldValue + ", replaced with " + pair.value();
+            }
+        }
+        return map;
     }
 
     /**

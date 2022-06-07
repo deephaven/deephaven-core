@@ -929,6 +929,11 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
+    public Promise<TableMap> byExternal(Object keys, @JsOptional Boolean dropKeys) {
+        return partitionBy(keys, dropKeys);
+    }
+
+    @JsMethod
     public Promise<TableMap> partitionBy(Object keys, @JsOptional Boolean dropKeys) {
         final String[] actualKeys;
         if (keys instanceof String) {
