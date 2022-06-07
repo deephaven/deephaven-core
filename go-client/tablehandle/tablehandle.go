@@ -1,6 +1,9 @@
 package tablehandle
 
 import (
+	"context"
+
+	"github.com/apache/arrow/go/arrow/array"
 	"github.com/deephaven/deephaven-core/go-client/session"
 
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
@@ -22,4 +25,8 @@ func NewTableHandle(session *session.Session, ticket *ticketpb2.Ticket, schemaHe
 		Size:         size,
 		IsStatic:     isStatic,
 	}
+}
+
+func (th *TableHandle) Snapshot(ctx context.Context) (array.Record, error) {
+	return th.Session.SnapshotRecord(ctx, th.Ticket)
 }

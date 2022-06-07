@@ -1,4 +1,4 @@
-package console
+package console_stub
 
 import (
 	"context"
@@ -17,7 +17,7 @@ type ConsoleStub struct {
 	consoleId *ticketpb2.Ticket
 }
 
-func NewConsole(ctx context.Context, conn conn_stub.ConnStub, sessionType string) (ConsoleStub, error) {
+func NewConsoleStub(ctx context.Context, conn conn_stub.ConnStub, sessionType string) (ConsoleStub, error) {
 	ctx = conn.WithToken(ctx)
 
 	stub := consolepb2.NewConsoleServiceClient(conn.GrpcChannel())

@@ -2,15 +2,13 @@ package session
 
 import (
 	"context"
-	"net"
 
+	"github.com/deephaven/deephaven-core/go-client/internal/flight_stub"
 	sessionpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/session"
 	tablepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/table"
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 
-	"github.com/deephaven/deephaven-core/go-client/internal/console"
-
-	"github.com/apache/arrow/go/arrow/flight"
+	"github.com/deephaven/deephaven-core/go-client/internal/console_stub"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -22,11 +20,11 @@ type Session struct {
 
 	token tokenManager
 
-	flightStub  flight.Client
 	sessionStub sessionpb2.SessionServiceClient
 	tableStub   tablepb2.TableServiceClient
 
-	Console console.ConsoleStub
+	console_stub.ConsoleStub
+	flight_stub.FlightStub
 
 	nextTicket int32
 }
@@ -52,19 +50,15 @@ func NewSession(ctx context.Context, host string, port string) (Session, error) 
 	}
 
 	session.tableStub = tablepb2.NewTableServiceClient(grpcChannel)
-	session.Console, err = console.NewConsole(ctx, &session, "python") // TODO: session type
+	session.ConsoleStub, err = console_stub.NewConsoleStub(ctx, &session, "python") // TODO: session type
 	if err != nil {
 		// TODO: Close channel
 		return Session{}, err
 	}
 
-	session.flightStub, err = flight.NewClientWithMiddleware(
-		net.JoinHostPort(host, port),
-		nil,
-		nil,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	session.FlightStub, err = flight_stub.NewFlightStub(&session, host, port)
 	if err != nil {
+		// TODO: Close channel
 		return Session{}, err
 	}
 

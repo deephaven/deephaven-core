@@ -43,7 +43,7 @@ func (client *Client) EmptyTable(ctx context.Context, numRows int64) (tablehandl
 }
 
 func (client *Client) BindToVariable(ctx context.Context, name string, table tablehandle.TableHandle) error {
-	return client.session.Console.BindToVariable(ctx, name, table.Ticket)
+	return client.session.BindToVariable(ctx, name, table.Ticket)
 }
 
 func (client *Client) Close() {
