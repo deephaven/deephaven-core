@@ -80,6 +80,13 @@ func TestTableUpload(t *testing.T) {
 		t.Errorf("ImportTable err %s", err.Error())
 	}
 
-	// TODO:
-	_ = tbl
+	rec, err := tbl.Snapshot(ctx)
+	if err != nil {
+		t.Errorf("Snapshot err %s", err.Error())
+	}
+	defer rec.Release()
+
+	if r.NumRows() != rec.NumRows() || r.NumCols() != rec.NumCols() {
+		t.Errorf("uploaded and snapshotted table differed")
+	}
 }

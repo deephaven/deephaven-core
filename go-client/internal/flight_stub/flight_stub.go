@@ -47,6 +47,7 @@ func (fs *FlightStub) SnapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 	if err != nil {
 		return nil, err
 	}
+	defer req.CloseSend()
 
 	reader, err := flight.NewRecordReader(req)
 	defer reader.Release()
@@ -76,6 +77,7 @@ func (fs *FlightStub) ImportTable(ctx context.Context, rec array.Record) (*ticke
 	if err != nil {
 		return nil, err
 	}
+	defer doPut.CloseSend()
 
 	ticketNum := fs.conn.NewTicketNum()
 
