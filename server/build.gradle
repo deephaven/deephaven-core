@@ -28,6 +28,8 @@ dependencies {
         because 'jetty/netty implementations will access the configuration in their main()s'
     }
 
+    api project(':ssl-config')
+
     Classpaths.inheritFlatbuffer(project, 'implementation')
 
     Classpaths.inheritDagger(project)
@@ -35,6 +37,8 @@ dependencies {
 
     Classpaths.inheritAutoService(project)
     Classpaths.inheritAutoService(project, /* test */ true)
+
+    Classpaths.inheritImmutables(project)
 
     implementation project(':Plot')
 
