@@ -90,45 +90,10 @@ tasks.withType(JavaCompile).configureEach {
   }
 }
 
+// Opting to leave dummy excludes in place.
+// A useful structuring that will get make it easier to re-introduce later if necessary.
 def tier4CompilationExcludes = [
-  // All ChunkedSumOperators
-  'io.deephaven.engine.table.impl.by.BigDecimalChunkedSumOperator':['addChunk'],
-  'io.deephaven.engine.table.impl.by.BigIntegerChunkedSumOperator':['addChunk'],
-  'io.deephaven.engine.table.impl.by.BooleanChunkedSumOperator':['addChunk'],
-  'io.deephaven.engine.table.impl.by.ByteChunkedSumOperator':['addChunk'],
-  'io.deephaven.engine.table.impl.by.CharChunkedSumOperator':['addChunk'],
-  'io.deephaven.engine.table.impl.by.DoubleChunkedSumOperator':['addChunk'],
-  'io.deephaven.engine.table.impl.by.FloatChunkedSumOperator':['addChunk'],
-  'io.deephaven.engine.table.impl.by.IntChunkedSumOperator':['addChunk'],
-  'io.deephaven.engine.table.impl.by.LongChunkedSumOperator':['addChunk'],
-  'io.deephaven.engine.table.impl.by.ShortChunkedSumOperator':['addChunk'],
-
-  // All PercentileTypeMedianHelpers
-  'io.deephaven.engine.table.impl.by.ssmpercentile.BooleanPercentileTypeMedianHelper':['setResult'],
-  'io.deephaven.engine.table.impl.by.ssmpercentile.BytePercentileTypeMedianHelper':['setResult'],
-  'io.deephaven.engine.table.impl.by.ssmpercentile.CharPercentileTypeMedianHelper':['setResult'],
-  'io.deephaven.engine.table.impl.by.ssmpercentile.DoublePercentileTypeMedianHelper':['setResult'],
-  'io.deephaven.engine.table.impl.by.ssmpercentile.FloatPercentileTypeMedianHelper':['setResult'],
-  'io.deephaven.engine.table.impl.by.ssmpercentile.IntPercentileTypeMedianHelper':['setResult'],
-  'io.deephaven.engine.table.impl.by.ssmpercentile.LongPercentileTypeMedianHelper':['setResult'],
-  'io.deephaven.engine.table.impl.by.ssmpercentile.ShortPercentileTypeMedianHelper':['setResult'],
-
-  'io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator':['addChunk'],
-
-  // All types emitted by ReplicateHashTable
-  'io.deephaven.engine.table.impl.IncrementalChunkedNaturalJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
-  'io.deephaven.engine.table.impl.RightIncrementalChunkedNaturalJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
-  'io.deephaven.engine.table.impl.StaticChunkedAsOfJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
-  'io.deephaven.engine.table.impl.StaticChunkedNaturalJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
-  'io.deephaven.engine.table.impl.RightIncrementalChunkedAsOfJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
-  'io.deephaven.engine.table.impl.SymbolTableCombiner':['addToIndex', 'buildTable', 'decorationProbe'],
-  'io.deephaven.engine.table.impl.LeftOnlyIncrementalChunkedCrossJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
-  'io.deephaven.engine.table.impl.RightIncrementalChunkedCrossJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
-  'io.deephaven.engine.table.impl.StaticChunkedCrossJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
-  'io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
-  'io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
-
-  'io.deephaven.engine.table.impl.by.AddOnlyFirstOrLastChunkedOperator':['addChunk', 'updateRedirections']
+  'io.deephaven.ClassToExclude':['methodToExclude'],
 ]
 def createCompilerDirectives = tasks.register('createCompilerDirectives') {
   def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')
@@ -156,6 +121,7 @@ def c2ExcludesJvmArgs = { String c2ExcludesFile ->
   return [
           '-XX:+UnlockDiagnosticVMOptions',
           "-XX:CompilerDirectivesFile=${c2ExcludesFile}",
+          '-XX:DisableIntrinsic=_currentThread'
   ]
 }
 
