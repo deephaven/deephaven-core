@@ -864,7 +864,7 @@ public class FigureDescriptor {
         String getTitleFont();
 
         @JsProperty
-        double getUpdateInterval();
+        String getUpdateInterval();
 
         @JsOverlay
         default void setChartsList(
@@ -901,7 +901,7 @@ public class FigureDescriptor {
         void setTitleFont(String titleFont);
 
         @JsProperty
-        void setUpdateInterval(double updateInterval);
+        void setUpdateInterval(String updateInterval);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1751,7 +1751,7 @@ public class FigureDescriptor {
         String getTitleFont();
 
         @JsProperty
-        double getUpdateInterval();
+        String getUpdateInterval();
 
         @JsOverlay
         default void setChartsList(
@@ -1789,7 +1789,7 @@ public class FigureDescriptor {
         void setTitleFont(String titleFont);
 
         @JsProperty
-        void setUpdateInterval(double updateInterval);
+        void setUpdateInterval(String updateInterval);
     }
 
     public static SeriesPlotStyleMap SeriesPlotStyle;
@@ -1835,7 +1835,7 @@ public class FigureDescriptor {
 
     public native String getTitleFont();
 
-    public native double getUpdateInterval();
+    public native String getUpdateInterval();
 
     public native boolean hasTitle();
 
@@ -1865,7 +1865,7 @@ public class FigureDescriptor {
 
     public native void setTitleFont(String value);
 
-    public native void setUpdateInterval(double value);
+    public native void setUpdateInterval(String value);
 
     public native FigureDescriptor.ToObjectReturnType0 toObject();
 
