@@ -89,7 +89,7 @@ public class NameValidator {
     }
 
     private static final Set<String> QUERY_LANG_RESERVED_VARIABLE_NAMES =
-            Stream.of("in", "not", "i", "ii", "k").collect(
+            Stream.of("in", "not", "i", "ii", "k", "__rowSet").collect(
                     Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
 
     public static String validateTableName(String name) {
@@ -340,7 +340,7 @@ public class NameValidator {
      * @param customReplace a function that is applied to the name before processing legality
      * @param takenNames the list of names that are already taken
      * @return whether the name is valid for a new table
-     * 
+     *
      */
     public static boolean isLegalTableName(String name, Function<String, String> customReplace,
             Set<String> takenNames) {
