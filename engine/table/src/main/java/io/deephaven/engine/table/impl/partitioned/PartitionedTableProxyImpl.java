@@ -422,7 +422,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy whereIn(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch) {
+    public PartitionedTable.Proxy whereIn(TableOperations<?, ?> rightTable,
+            Collection<? extends JoinMatch> columnsToMatch) {
         return complexTransform(rightTable, (ct, ot) -> ct.whereIn(ot, columnsToMatch), columnsToMatch);
     }
 
@@ -485,7 +486,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy naturalJoin(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
+    public PartitionedTable.Proxy naturalJoin(TableOperations<?, ?> rightTable, String columnsToMatch,
+            String columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.naturalJoin(ot, columnsToMatch, columnsToAdd),
                 splitToJoinMatches(columnsToMatch));
     }
@@ -504,13 +506,15 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy exactJoin(TableOperations<?, ?> rightTable, String columnsToMatch, String columnsToAdd) {
+    public PartitionedTable.Proxy exactJoin(TableOperations<?, ?> rightTable, String columnsToMatch,
+            String columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.exactJoin(ot, columnsToMatch, columnsToAdd),
                 splitToJoinMatches(columnsToMatch));
     }
 
     @Override
-    public PartitionedTable.Proxy exactJoin(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public PartitionedTable.Proxy exactJoin(TableOperations<?, ?> rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.exactJoin(ot, columnsToMatch, columnsToAdd), columnsToMatch);
     }
