@@ -327,12 +327,12 @@ start_times = [
 deephaven_table_left = empty_table(size = 365).update(formulas=[
     "A = plus_period(start_times[0], period(i))",
     "B = random.choice(ch)",
-    "C = (int)(byte)random.randint(1, 100)"
+    "C = (int)random.randint(1, 100)"
 ])
 deephaven_table_right = empty_table(size = 365).update(formulas=[
     "A = plus_period(start_times[1], period(i))",
     "B = random.choice(ch)",
-    "C = (int)(byte)random.randint(1, 100)"
+    "C = (int)random.randint(1, 100)"
 ])
 
 joined_data_aj = deephaven_table_left.aj(table=deephaven_table_right, on=["A"], joins=["B_y = B", "C_y = C"])

@@ -60,7 +60,7 @@ result = empty_table(10).update(formulas = [
         "B = A * A",
         "C = A / 2",
         "D = A % 3",
-        "E = (int)(byte) C",
+        "E = (int) C",
         "F = A_[i-2]",
         "G = obj.a",
         "H = obj.compute(A)",
