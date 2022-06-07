@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -63,7 +64,7 @@ public interface TableWithDefaults extends Table {
         for (ColumnDefinition<?> cDef : getDefinition().getColumns()) {
             columnNames.add(cDef.getName());
             columnDataTypes.add(cDef.getDataType().getName());
-            columnTypes.add(ColumnDefinition.COLUMN_TYPE_FORMATTER.format(cDef.getColumnType()));
+            columnTypes.add(cDef.getColumnType().name());
             columnPartitioning.add(cDef.isPartitioning());
             columnGrouping.add(cDef.isGrouping());
 
@@ -78,6 +79,13 @@ public interface TableWithDefaults extends Table {
         };
 
         return new InMemoryTable(resultColumnNames, resultValues);
+    }
+
+    @Override
+    @ConcurrentMethod
+    @FinalDefault
+    default int numColumns() {
+        return getDefinition().numColumns();
     }
 
     @Override
@@ -140,8 +148,8 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
-    default DataColumn getColumn(int columnIndex) {
-        return getColumn(this.getDefinition().getColumns()[columnIndex].getName());
+    default DataColumn getColumn(final int columnIndex) {
+        return getColumn(this.getDefinition().getColumns().get(columnIndex).getName());
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -365,7 +373,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table moveColumnsDown(String... columnsToMove) {
-        return moveColumns(getDefinition().getColumns().length - columnsToMove.length, true, columnsToMove);
+        return moveColumns(numColumns() - columnsToMove.length, true, columnsToMove);
     }
 
     @Override

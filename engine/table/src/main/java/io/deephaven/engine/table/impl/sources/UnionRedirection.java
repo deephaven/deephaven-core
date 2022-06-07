@@ -9,7 +9,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Serializable;
 import java.util.Arrays;
 
 /**
@@ -17,7 +16,7 @@ import java.util.Arrays;
  * keys from an outer (merged) RowSet to the enclosing constituent Table.
  */
 @VisibleForTesting
-public class UnionRedirection implements Serializable {
+public class UnionRedirection {
 
     /**
      * Message for users when they try to insert into a full row redirection.

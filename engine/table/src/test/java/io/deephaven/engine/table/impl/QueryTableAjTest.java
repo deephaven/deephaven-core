@@ -763,7 +763,22 @@ public class QueryTableAjTest {
 
                                                 @Override
                                                 double getMaximumLoadFactor() {
-                                                    return 20.0;
+                                                    if (AsOfJoinHelper.USE_TYPED_STATE_MANAGER) {
+                                                        // allow this test to function for OA
+                                                        return 0.75;
+                                                    } else {
+                                                        return 20.0;
+                                                    }
+                                                }
+
+                                                @Override
+                                                int initialBuildSize() {
+                                                    if (AsOfJoinHelper.USE_TYPED_STATE_MANAGER) {
+                                                        // allow this test to function for OA
+                                                        return 1 << 3;
+                                                    } else {
+                                                        return super.initialBuildSize();
+                                                    }
                                                 }
 
                                                 @Override

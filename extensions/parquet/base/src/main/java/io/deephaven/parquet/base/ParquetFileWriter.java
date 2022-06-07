@@ -2,13 +2,13 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import org.apache.hadoop.conf.Configuration;
+import io.deephaven.parquet.compress.Compressor;
+import io.deephaven.parquet.compress.DeephavenCodecFactory;
 import org.apache.parquet.Version;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesUtils;
 
 import org.apache.parquet.format.Util;
-import org.apache.parquet.hadoop.CodecFactory;
 import org.apache.parquet.hadoop.metadata.*;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.internal.hadoop.metadata.IndexReference;
@@ -34,7 +34,7 @@ public class ParquetFileWriter {
     private final int pageSize;
     private final ByteBufferAllocator allocator;
     private final SeekableChannelsProvider channelsProvider;
-    private final CodecFactory.BytesInputCompressor compressor;
+    private final Compressor compressor;
     private final Map<String, String> extraMetaData;
     private final List<BlockMetaData> blocks = new ArrayList<>();
     private final List<List<OffsetIndex>> offsetIndexes = new ArrayList<>();
@@ -45,7 +45,7 @@ public class ParquetFileWriter {
             final int pageSize,
             final ByteBufferAllocator allocator,
             final MessageType type,
-            final CompressionCodecName codecName,
+            final String codecName,
             final Map<String, String> extraMetaData) throws IOException {
         this.pageSize = pageSize;
         this.allocator = allocator;
@@ -53,8 +53,7 @@ public class ParquetFileWriter {
         writeChannel = channelsProvider.getWriteChannel(filePath, false); // TODO add support for appending
         this.type = type;
         this.channelsProvider = channelsProvider;
-        CodecFactory codecFactory = new CodecFactory(new Configuration(), pageSize);
-        this.compressor = codecFactory.getCompressor(codecName);
+        this.compressor = DeephavenCodecFactory.getInstance().getByName(codecName);
     }
 
     @SuppressWarnings("unused")

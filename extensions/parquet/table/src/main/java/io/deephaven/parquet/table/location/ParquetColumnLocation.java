@@ -154,7 +154,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                             .resolve(groupingColumnInfo.groupingTablePath()).toString();
             try {
                 parquetFileReader =
-                        new ParquetFileReader(groupingFileName, tl().getChannelProvider(), -1);
+                        new ParquetFileReader(groupingFileName, tl().getChannelProvider());
             } catch (Exception e) {
                 log.warn().append("Failed to read expected grouping file ").append(groupingFileName)
                         .append(" for table location ").append(tl()).append(", column ")

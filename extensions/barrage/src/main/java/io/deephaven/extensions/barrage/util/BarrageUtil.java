@@ -385,7 +385,7 @@ public class BarrageUtil {
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
 
-        result.tableDef = new TableDefinition(columns);
+        result.tableDef = TableDefinition.of(columns);
 
         result.attributes = new HashMap<>();
         tableMetadataVisitor.accept((key, value) -> {

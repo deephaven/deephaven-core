@@ -26,7 +26,7 @@ public class PlainFixedLenChunkedWriter extends AbstractBulkValuesWriter<ByteBuf
     public PlainFixedLenChunkedWriter(int pageSize, int fixedLength, ByteBufferAllocator allocator) {
         innerBuffer = allocator.allocate(pageSize);
         this.allocator = allocator;
-        this.initialPosition = innerBuffer.position();
+        initialPosition = innerBuffer.position();
         originalLimit = innerBuffer.limit();
         this.fixedLength = fixedLength;
     }

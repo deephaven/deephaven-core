@@ -104,6 +104,8 @@ public class StringMapWithDefault {
 
     public native String addValues(String value);
 
+    public native void clearDefaultString();
+
     public native void clearKeysList();
 
     public native void clearValuesList();
@@ -113,6 +115,8 @@ public class StringMapWithDefault {
     public native JsArray<String> getKeysList();
 
     public native JsArray<String> getValuesList();
+
+    public native boolean hasDefaultString();
 
     public native Uint8Array serializeBinary();
 

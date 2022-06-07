@@ -9,8 +9,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.vector.DoubleVector;
-import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.util.TableTools;
@@ -94,10 +92,10 @@ public class TestAggregatedSelect extends TestCase {
 
         String[] colNames = {"USym", "Bid", "BidSize"};
         for (String colName : colNames) {
-            DataColumn dcFresh = table.getColumn(colName);
-            DataColumn dcSelected = selectedTable.getColumn(colName);
-            TestCase.assertEquals(dcFresh.getType(), dcSelected.getType());
-            TestCase.assertEquals(dcFresh.getComponentType(), dcSelected.getComponentType());
+            ColumnDefinition<?> cdFresh = table.getDefinition().getColumn(colName);
+            ColumnDefinition<?> cdSelected = selectedTable.getDefinition().getColumn(colName);
+            TestCase.assertEquals(cdFresh.getDataType(), cdSelected.getDataType());
+            TestCase.assertEquals(cdFresh.getComponentType(), cdSelected.getComponentType());
         }
     }
 
@@ -120,10 +118,10 @@ public class TestAggregatedSelect extends TestCase {
 
         String[] colNames = {"Bid", "USym"};
         for (String colName : colNames) {
-            DataColumn dcFresh = t1.getColumn(colName);
-            DataColumn dcSelected = t2.getColumn(colName);
-            TestCase.assertEquals(dcFresh.getType(), dcSelected.getType());
-            TestCase.assertEquals(dcFresh.getComponentType(), dcSelected.getComponentType());
+            ColumnDefinition<?> cdFresh = t1.getDefinition().getColumn(colName);
+            ColumnDefinition<?> cdSelected = t2.getDefinition().getColumn(colName);
+            TestCase.assertEquals(cdFresh.getDataType(), cdSelected.getDataType());
+            TestCase.assertEquals(cdFresh.getComponentType(), cdSelected.getComponentType());
         }
 
         t2 = t2.ungroup();
@@ -135,10 +133,10 @@ public class TestAggregatedSelect extends TestCase {
         Table s1s = s1.select();
         colNames[0] = "BidSize";
         for (String colName : colNames) {
-            DataColumn dcFresh = s1.getColumn(colName);
-            DataColumn dcSelected = s1s.getColumn(colName);
-            TestCase.assertEquals(dcFresh.getType(), dcSelected.getType());
-            TestCase.assertEquals(dcFresh.getComponentType(), dcSelected.getComponentType());
+            ColumnDefinition<?> cdFresh = s1.getDefinition().getColumn(colName);
+            ColumnDefinition<?> cdSelected = s1s.getDefinition().getColumn(colName);
+            TestCase.assertEquals(cdFresh.getDataType(), cdSelected.getDataType());
+            TestCase.assertEquals(cdFresh.getComponentType(), cdSelected.getComponentType());
         }
 
         TableTools.show(s1);

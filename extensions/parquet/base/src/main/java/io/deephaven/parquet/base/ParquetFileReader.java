@@ -1,11 +1,10 @@
 package io.deephaven.parquet.base;
 
+import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.format.*;
 import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
-import org.apache.parquet.hadoop.CodecFactory;
 import org.apache.parquet.schema.*;
 
 import java.io.ByteArrayInputStream;
@@ -18,8 +17,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static io.deephaven.parquet.base.util.Helpers.readFully;
-
 /**
  * Top level accessor for a parquet file
  */
@@ -29,17 +26,16 @@ public class ParquetFileReader {
     static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
     public final FileMetaData fileMetaData;
     private final SeekableChannelsProvider channelsProvider;
-    private final ThreadLocal<CodecFactory> codecFactory;
     private final Path rootPath;
     private final MessageType type;
 
-    public ParquetFileReader(final String filePath,
-            final SeekableChannelsProvider channelsProvider,
-            final int pageSizeHint) throws IOException {
+    public ParquetFileReader(final String filePath, final SeekableChannelsProvider channelsProvider)
+            throws IOException {
         this.channelsProvider = channelsProvider;
-        this.codecFactory = ThreadLocal.withInitial(() -> new CodecFactory(new Configuration(), pageSizeHint));
-        // Root path should be this file if a single file, else the parent directory for a metadata file
-        rootPath = filePath.endsWith(".parquet") ? Paths.get(filePath) : Paths.get(filePath).getParent();
+        // Root path should be this file if a single file, else the parent directory for a metadata
+        // file
+        rootPath =
+                filePath.endsWith(".parquet") ? Paths.get(filePath) : Paths.get(filePath).getParent();
 
         final byte[] footer;
         try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
@@ -54,7 +50,7 @@ public class ParquetFileReader {
 
             final int footerLength = readIntLittleEndian(readChannel);
             final byte[] magic = new byte[MAGIC.length];
-            readFully(readChannel, magic);
+            Helpers.readBytes(readChannel, magic);
             if (!Arrays.equals(MAGIC, magic)) {
                 throw new RuntimeException(
                         filePath + " is not a Parquet file. expected magic number at tail "
@@ -67,7 +63,7 @@ public class ParquetFileReader {
             }
             readChannel.position(footerIndex);
             footer = new byte[footerLength];
-            readFully(readChannel, footer);
+            Helpers.readBytes(readChannel, footer);
         }
         fileMetaData = Util.readFileMetaData(new ByteArrayInputStream(footer));
         type = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
@@ -177,7 +173,6 @@ public class ParquetFileReader {
                 fileMetaData.getRow_groups().get(groupNumber),
                 channelsProvider,
                 rootPath,
-                codecFactory,
                 type,
                 getSchema());
     }

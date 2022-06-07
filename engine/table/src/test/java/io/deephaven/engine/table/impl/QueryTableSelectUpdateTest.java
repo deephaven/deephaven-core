@@ -847,13 +847,13 @@ public class QueryTableSelectUpdateTest {
         String a = new String(new char[32000]).replace("\0", "A");
         String b = new String(new char[32000]).replace("\0", "B");
         Table x = TableTools.emptyTable(1).update("C=`" + a + "` + `" + b + "`");
-        TestCase.assertEquals(1, x.getColumns().length);
+        TestCase.assertEquals(1, x.numColumns());
 
         a = new String(new char[40000]).replace("\0", "A");
         b = new String(new char[40000]).replace("\0", "B");
         x = TableTools.emptyTable(1)
                 .update("C=String.join(\"" + a + "\", Integer.toString(new Random().nextInt()), \"" + b + "\")");
-        TestCase.assertEquals(1, x.getColumns().length);
+        TestCase.assertEquals(1, x.numColumns());
     }
 
     @Test
@@ -1008,5 +1008,13 @@ public class QueryTableSelectUpdateTest {
         final Table input = emptyTable(100000).updateView("A=ii", "B=ii % 1000", "C=ii % 2 == 0");
         final Table evens = input.where("C");
         assertTableEquals(evens, evens.flatten().select());
+    }
+
+    @Test
+    public void testStaticSelectFlattenDateTimeCol() {
+        final Table input = emptyTable(10).view("A=ii", "B = DateTime.now()").where("A % 2 == 0");
+        final Table output = input.select("B");
+        Assert.assertEquals(5, output.size());
+        Assert.assertTrue(output.isFlat());
     }
 }

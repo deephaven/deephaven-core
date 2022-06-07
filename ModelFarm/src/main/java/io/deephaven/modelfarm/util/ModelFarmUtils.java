@@ -31,7 +31,7 @@ public class ModelFarmUtils {
             final String cn = colNames[i];
             final Class ct = colTypes[i];
             Require.eqTrue(t.hasColumns(cn), "Table is missing column.  tableName=" + tableName + " columnName=" + cn);
-            final Class cta = t.getColumn(cn).getType();
+            final Class cta = t.getDefinition().getColumn(cn).getDataType();
             Require.eqTrue(cta.equals(ct), "Table column is of the wrong type.  tableName=" + tableName + " columnName="
                     + cn + " typeRequired=" + ct + " typeActual=" + cta);
         }

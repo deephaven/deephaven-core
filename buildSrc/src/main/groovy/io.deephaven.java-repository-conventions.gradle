@@ -1,15 +1,10 @@
 repositories {
     mavenCentral()
+
     maven {
         url 'https://jitpack.io'
         content {
             includeGroup 'com.github.rdblue'
-        }
-    }
-    maven {
-        url 'https://maven.twttr.com'
-        content {
-            includeGroup 'com.hadoop.gplcompression'
         }
     }
     maven {

@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -45,7 +46,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
     public ColumnSourceManager createColumnSourceManager(
             final boolean isRefreshing,
             @NotNull final ColumnToCodecMappings codecMappings,
-            @NotNull final ColumnDefinition<?>... columnDefinitions) {
+            @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
         return new RegionedColumnSourceManager(isRefreshing, this, codecMappings, columnDefinitions);
     }
 

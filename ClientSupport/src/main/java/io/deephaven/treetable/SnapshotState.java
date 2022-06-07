@@ -123,7 +123,7 @@ class SnapshotState {
         }
 
         makeCopiers();
-        dataMatrix = new Object[definition.getColumns().length];
+        dataMatrix = new Object[definition.numColumns()];
     }
 
     void beginSnapshot(Map<Object, TableDetails> tablesByKey, BitSet requestedColumns, long firstViewportRow,
@@ -269,7 +269,7 @@ class SnapshotState {
         actualViewportSize = requestedViewportSize;
         data.clear();
 
-        rootData.getTable().getDefinition().getColumnList()
+        rootData.getTable().getDefinition().getColumns()
                 .forEach(col -> data.add(makeData(col, requestedViewportSize)));
 
         tableKeyColumn = new Object[requestedViewportSize];
@@ -280,7 +280,7 @@ class SnapshotState {
             // TODO: column types are the same. I will do this in a second pass, after this one works.
             final Table originalTable = baseTable.getSourceTable();
             constituentData.clear();
-            originalTable.getDefinition().getColumnList()
+            originalTable.getDefinition().getColumns()
                     .forEach(col -> constituentData.put(col.getName(), makeData(col, requestedViewportSize)));
         }
 
@@ -343,7 +343,7 @@ class SnapshotState {
             matchPairs.stream()
                     .filter(p -> originalTable.hasColumns(p.rightColumn))
                     .forEach(col -> constituentCopiers.computeIfAbsent(col.rightColumn,
-                            (name) -> makeCopier(originalTable.getColumn(name).getType())));
+                            (name) -> makeCopier(originalTable.getDefinition().getColumn(name).getDataType())));
         }
     }
 

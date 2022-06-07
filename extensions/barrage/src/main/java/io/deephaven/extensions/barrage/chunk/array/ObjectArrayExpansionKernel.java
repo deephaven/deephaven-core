@@ -8,13 +8,12 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.chunk.sized.SizedChunk;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 import java.lang.reflect.Array;
 
@@ -34,24 +33,29 @@ public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
         }
 
         final ObjectChunk<T[], A> typedSource = source.asObjectChunk();
-        final SizedChunk<A> resultWrapper = new SizedChunk<>(ChunkType.Object);
+
+        long totalSize = 0;
+        for (int i = 0; i < typedSource.size(); ++i) {
+            final T[] row = typedSource.get(i);
+            totalSize += row == null ? 0 : row.length;
+        }
+        final WritableObjectChunk<T, A> result = WritableObjectChunk.makeWritableChunk(
+                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
 
         int lenWritten = 0;
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final T[] row = typedSource.get(i);
-            final int len = row == null ? 0 : row.length;
             perElementLengthDest.set(i, lenWritten);
-            final WritableObjectChunk<T, A> result = resultWrapper.ensureCapacityPreserve(lenWritten + len).asWritableObjectChunk();
-            for (int j = 0; j < len; ++j) {
-                result.set(lenWritten + j, row[j]);
+            if (row == null) {
+                continue;
             }
-            lenWritten += len;
-            result.setSize(lenWritten);
+            result.copyFromArray(row, 0, lenWritten, row.length);
+            lenWritten += row.length;
         }
         perElementLengthDest.set(typedSource.size(), lenWritten);
 
-        return resultWrapper.get();
+        return result;
     }
 
     @Override
@@ -78,15 +82,13 @@ public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
 
         int lenRead = 0;
         for (int i = 0; i < itemsInBatch; ++i) {
-            final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
-            if (ROW_LEN == 0) {
+            final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
+            if (rowLen == 0) {
                 result.set(outOffset + i, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
             } else {
-                final Object[] row = (Object[])Array.newInstance(componentType, ROW_LEN);
-                for (int j = 0; j < ROW_LEN; ++j) {
-                    row[j] = typedSource.get(lenRead + j);
-                }
-                lenRead += ROW_LEN;
+                final Object[] row = (Object[])Array.newInstance(componentType, rowLen);
+                typedSource.copyToArray(lenRead, row, 0, rowLen );
+                lenRead += rowLen;
                 result.set(outOffset + i, row);
             }
         }

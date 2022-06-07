@@ -112,7 +112,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private void completionRoutine(TableUpdate upstream, SelectAndViewAnalyzer.JobScheduler jobScheduler,
             WritableRowSet toClear, SelectAndViewAnalyzer.UpdateHelper updateHelper) {
         final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
-                upstream.modified().copy(), upstream.shifted(), dependent.modifiedColumnSet);
+                upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
         transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
         dependent.notifyListeners(downstream);
         upstream.release();

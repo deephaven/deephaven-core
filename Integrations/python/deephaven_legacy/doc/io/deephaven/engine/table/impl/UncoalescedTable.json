@@ -29,7 +29,7 @@
   "getColumns": ":return: io.deephaven.engine.table.DataColumn[]",
   "getRecord": ":param rowNo: long\n:param columnNames: java.lang.String...\n:return: java.lang.Object[]",
   "getRowSet": ":return: (io.deephaven.engine.rowset.TrackingRowSet) The TrackingRowSet that exposes the row keys present in this Table",
-  "getSubTable": "Get a Table that contains a sub-set of the rows from this.\n\n:param rowSet: (io.deephaven.engine.rowset.TrackingRowSet) - The row set for the result.\n:return: (io.deephaven.engine.table.Table) A new sub-table",
+  "getSubTable": "Get a Table that contains a sub-set of the rows from this. The result will share the same\n column sources and definition as this table.\n\n The result will not update on its own. The caller must also establish an appropriate listener to update\n rowSet and propagate updates.\n\n:param rowSet: (io.deephaven.engine.rowset.TrackingRowSet) - The row set for the result\n:return: (io.deephaven.engine.table.Table) A new sub-table",
   "groupBy": ":param groupByColumns: java.util.Collection<? extendsio.deephaven.api.Selectable>\n:return: io.deephaven.engine.table.Table",
   "head": ":param size: long\n:return: io.deephaven.engine.table.Table",
   "headBy": ":param nRows: long\n:param groupByColumnNames: java.lang.String...\n:return: io.deephaven.engine.table.Table",

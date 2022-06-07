@@ -9,6 +9,7 @@ import com.google.common.collect.HashBiMap;
 import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -25,7 +26,6 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
-import io.deephaven.engine.table.impl.util.RowSetShiftDataExpander;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.hash.KeyedObjectHashSet;
@@ -45,9 +45,11 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,18 +57,37 @@ import java.util.stream.Stream;
  * Base abstract class all standard table implementations.
  */
 public abstract class BaseTable extends LivenessArtifact
-        implements TableWithDefaults, Serializable, NotificationStepReceiver, NotificationStepSource {
+        implements TableWithDefaults, NotificationStepReceiver, NotificationStepSource {
 
     private static final long serialVersionUID = 1L;
 
     private static final boolean VALIDATE_UPDATE_INDICES =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateIndices", false);
-    private static final boolean VALIDATE_UPDATE_OVERLAPS =
+    public static final boolean VALIDATE_UPDATE_OVERLAPS =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateOverlaps", true);
     public static final boolean PRINT_SERIALIZED_UPDATE_OVERLAPS =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.printSerializedUpdateOverlaps", false);
 
     private static final Logger log = LoggerFactory.getLogger(BaseTable.class);
+
+    private static final AtomicReferenceFieldUpdater<BaseTable, Map> ATTRIBUTES_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Map.class, "attributes");
+    private static final Map<String, Object> EMPTY_ATTRIBUTES = Collections.emptyMap();
+
+    private static final AtomicReferenceFieldUpdater<BaseTable, Condition> CONDITION_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Condition.class, "updateGraphProcessorCondition");
+
+    private static final AtomicReferenceFieldUpdater<BaseTable, Collection> PARENTS_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Collection.class, "parents");
+    private static final Collection<Object> EMPTY_PARENTS = Collections.emptyList();
+
+    private static final AtomicReferenceFieldUpdater<BaseTable, SimpleReferenceManager> CHILD_LISTENER_REFERENCES_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(
+                    BaseTable.class, SimpleReferenceManager.class, "childListenerReferences");
+    private static final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> EMPTY_CHILD_LISTENER_REFERENCES =
+            new SimpleReferenceManager<>((final TableUpdateListener listener) -> {
+                throw new UnsupportedOperationException("EMPTY_CHILDREN does not support adds");
+            }, Collections.emptyList());
 
     /**
      * This table's definition.
@@ -78,47 +99,72 @@ public abstract class BaseTable extends LivenessArtifact
      */
     protected final String description;
 
-    // Attribute support
-    protected final ConcurrentHashMap<String, Object> attributes = new ConcurrentHashMap<>();
+    private Map<String, Object> initialAttributes;
+    // Attribute support, set via ensureField with ATTRIBUTES_UPDATER if not initialized
+    volatile Map<String, Object> attributes;
 
     // Fields for DynamicNode implementation and update propagation support
-    private transient boolean refreshing;
-    private transient Condition updateGraphProcessorCondition;
-    private transient Collection<Object> parents;
-    private transient SimpleReferenceManager<ShiftObliviousListener, WeakSimpleReference<ShiftObliviousListener>> childListenerReferences;
-    private transient SimpleReferenceManager<ShiftObliviousListener, WeakSimpleReference<ShiftObliviousListener>> directChildListenerReferences;
-    private transient SimpleReferenceManager<TableUpdateListener, WeakSimpleReference<TableUpdateListener>> childShiftAwareListenerReferences;
-    private transient volatile long lastNotificationStep;
-    private transient volatile long lastSatisfiedStep;
-    private transient boolean isFailed;
+    private volatile boolean refreshing;
+    @SuppressWarnings({"FieldMayBeFinal", "unused"}) // Set via ensureField with CONDITION_UPDATER
+    private volatile Condition updateGraphProcessorCondition;
+    @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with PARENTS_UPDATER
+    private volatile Collection<Object> parents = EMPTY_PARENTS;
+    @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with CHILD_LISTENER_REFERENCES_UPDATER
+    private volatile SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences =
+            EMPTY_CHILD_LISTENER_REFERENCES;
+    private volatile long lastNotificationStep;
+    private volatile long lastSatisfiedStep;
+    private volatile boolean isFailed;
 
-    public BaseTable(@NotNull final TableDefinition definition, @NotNull final String description) {
+    /**
+     * @param definition The definition for this table
+     * @param description A description of this table
+     * @param attributes The attributes map to use, or else {@code null} to allocate a new one
+     */
+    public BaseTable(
+            @NotNull final TableDefinition definition,
+            @NotNull final String description,
+            @Nullable final Map<String, Object> attributes) {
         this.definition = definition;
         this.description = description;
-        initializeTransientFields();
+        this.attributes = this.initialAttributes = Objects.requireNonNullElse(attributes, EMPTY_ATTRIBUTES);
+        lastNotificationStep = LogicalClock.DEFAULT.currentStep();
         initializeSystemicAttribute();
+    }
+
+    /**
+     * Ensure a field is initialized exactly once, and get the current value after possibly initializing it.
+     *
+     * @param updater An {@link AtomicReferenceFieldUpdater} associated with the field
+     * @param defaultValue The reference value that signifies that the field has not been initialized
+     * @param valueFactory A factory for new values; may be called concurrently by multiple threads as they race to
+     *        initialize the field
+     * @return The initialized value of the field
+     */
+    <FIELD_TYPE, INSTANCE_TYPE extends BaseTable> FIELD_TYPE ensureField(
+            @NotNull final AtomicReferenceFieldUpdater<INSTANCE_TYPE, FIELD_TYPE> updater,
+            @Nullable final FIELD_TYPE defaultValue,
+            @NotNull final Supplier<FIELD_TYPE> valueFactory) {
+        // noinspection unchecked
+        final INSTANCE_TYPE instance = (INSTANCE_TYPE) this;
+        final FIELD_TYPE currentValue = updater.get(instance);
+        if (currentValue != defaultValue) {
+            // The field has previously been initialized, return the current value we already retrieved
+            return currentValue;
+        }
+        final FIELD_TYPE candidateValue = valueFactory.get();
+        if (updater.compareAndSet(instance, defaultValue, candidateValue)) {
+            // This thread won the initialization race, return the candidate value we set
+            return candidateValue;
+        }
+        // This thread lost the initialization race, re-read and return the current value
+        return updater.get(instance);
     }
 
     private void initializeSystemicAttribute() {
         if (SystemicObjectTracker.isSystemicThread()) {
             markSystemic();
         }
-    }
-
-    private void initializeTransientFields() {
-        refreshing = false;
-        isFailed = false;
-        updateGraphProcessorCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
-        parents = new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance());
-        childListenerReferences = new SimpleReferenceManager<>(WeakSimpleReference::new, true);
-        directChildListenerReferences = new SimpleReferenceManager<>(WeakSimpleReference::new, true);
-        childShiftAwareListenerReferences = new SimpleReferenceManager<>(WeakSimpleReference::new, true);
-        lastNotificationStep = LogicalClock.DEFAULT.currentStep();
-    }
-
-    private void readObject(ObjectInputStream objectInputStream) throws IOException, ClassNotFoundException {
-        objectInputStream.defaultReadObject();
-        initializeTransientFields();
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -150,11 +196,30 @@ public abstract class BaseTable extends LivenessArtifact
     // ------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public void setAttribute(@NotNull final String key, final Object object) {
+    public void setAttribute(@NotNull final String key, @NotNull final Object object) {
         if (object instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(object)) {
             manage((LivenessReferent) object);
         }
-        attributes.put(key, object);
+        ensureAttributes().put(key, object);
+    }
+
+    private Map<String, Object> ensureAttributes() {
+        // If we see an "old" value, in the worst case we'll just try (and fail) to replace attributes.
+        final Map<String, Object> localInitial = initialAttributes;
+        if (localInitial == null) {
+            // We've replaced the initial attributes already, no fanciness required.
+            return attributes;
+        }
+        try {
+            if (localInitial == EMPTY_ATTRIBUTES) {
+                // noinspection unchecked
+                return ensureField(ATTRIBUTES_UPDATER, EMPTY_ATTRIBUTES, ConcurrentHashMap::new);
+            }
+            // noinspection unchecked
+            return ensureField(ATTRIBUTES_UPDATER, localInitial, () -> new ConcurrentHashMap(localInitial));
+        } finally {
+            initialAttributes = null; // Avoid referencing initially-shared attributes for longer than necessary.
+        }
     }
 
     @Override
@@ -180,9 +245,11 @@ public abstract class BaseTable extends LivenessArtifact
             return Collections.unmodifiableMap(attributes);
         }
 
-        return Collections
-                .unmodifiableMap(attributes.entrySet().stream().filter(ent -> !excludedAttrs.contains(ent.getKey()))
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+        return attributes.entrySet().stream()
+                .filter(ent -> !excludedAttrs.contains(ent.getKey()))
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue),
+                        Collections::unmodifiableMap));
     }
 
     public enum CopyAttributeOperation {
@@ -488,7 +555,6 @@ public abstract class BaseTable extends LivenessArtifact
         return StreamTableTools.isStream(this);
     }
 
-
     @Override
     public Table dropStream() {
         if (!isStream()) {
@@ -507,11 +573,17 @@ public abstract class BaseTable extends LivenessArtifact
     public final void addParentReference(@NotNull final Object parent) {
         if (DynamicNode.notDynamicOrIsRefreshing(parent)) {
             setRefreshing(true);
-            parents.add(parent);
+            ensureParents().add(parent);
             if (parent instanceof LivenessReferent) {
                 manage((LivenessReferent) parent);
             }
         }
+    }
+
+    private Collection<Object> ensureParents() {
+        // noinspection unchecked
+        return ensureField(PARENTS_UPDATER, EMPTY_PARENTS,
+                () -> new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance()));
     }
 
     @Override
@@ -520,19 +592,20 @@ public abstract class BaseTable extends LivenessArtifact
             return true;
         }
 
-        // noinspection SynchronizeOnNonFinalField
-        synchronized (parents) {
-            // If we have no parents whatsoever then we are a source, and have no dependency chain other than the UGP
-            // itself
-            if (parents.isEmpty()) {
-                if (UpdateGraphProcessor.DEFAULT.satisfied(step)) {
-                    UpdateGraphProcessor.DEFAULT.logDependencies().append("Root node satisfied ").append(this).endl();
-                    return true;
-                }
-                return false;
+        final Collection<Object> localParents = parents;
+        // If we have no parents whatsoever then we are a source, and have no dependency chain other than the UGP
+        // itself
+        if (localParents.isEmpty()) {
+            if (UpdateGraphProcessor.DEFAULT.satisfied(step)) {
+                UpdateGraphProcessor.DEFAULT.logDependencies().append("Root node satisfied ").append(this).endl();
+                return true;
             }
+            return false;
+        }
 
-            for (Object parent : parents) {
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (localParents) {
+            for (Object parent : localParents) {
                 if (parent instanceof NotificationQueue.Dependency) {
                     if (!((NotificationQueue.Dependency) parent).satisfied(step)) {
                         UpdateGraphProcessor.DEFAULT.logDependencies()
@@ -556,29 +629,40 @@ public abstract class BaseTable extends LivenessArtifact
 
     @Override
     public void awaitUpdate() throws InterruptedException {
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(updateGraphProcessorCondition::await);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ensureCondition()::await);
     }
 
     @Override
     public boolean awaitUpdate(long timeout) throws InterruptedException {
         final MutableBoolean result = new MutableBoolean(false);
         UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .doLocked(() -> result.setValue(updateGraphProcessorCondition.await(timeout, TimeUnit.MILLISECONDS)));
+                .doLocked(() -> result.setValue(ensureCondition().await(timeout, TimeUnit.MILLISECONDS)));
 
         return result.booleanValue();
     }
 
+    private Condition ensureCondition() {
+        return ensureField(CONDITION_UPDATER, null, () -> UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition());
+    }
+
+    private void maybeSignal() {
+        final Condition localCondition = updateGraphProcessorCondition;
+        if (localCondition != null) {
+            UpdateGraphProcessor.DEFAULT.requestSignal(localCondition);
+        }
+    }
+
     @Override
     public void listenForUpdates(final ShiftObliviousListener listener, final boolean replayInitialImage) {
-        if (isFailed) {
-            throw new IllegalStateException("Can not listen to failed table " + description);
-        }
-        if (isRefreshing()) {
-            childListenerReferences.add(listener);
-        }
-        if (replayInitialImage && getRowSet().isNonempty()) {
-            listener.setInitialImage(getRowSet());
-            listener.onUpdate(getRowSet(), RowSetFactory.empty(), RowSetFactory.empty());
+        listenForUpdates(new LegacyListenerAdapter(listener, getRowSet()));
+        if (replayInitialImage) {
+            if (isRefreshing()) {
+                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+            }
+            if (getRowSet().isNonempty()) {
+                listener.setInitialImage(getRowSet());
+                listener.onUpdate(getRowSet(), RowSetFactory.empty(), RowSetFactory.empty());
+            }
         }
     }
 
@@ -588,22 +672,30 @@ public abstract class BaseTable extends LivenessArtifact
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
         if (isRefreshing()) {
-            childShiftAwareListenerReferences.add(listener);
+            ensureChildListenerReferences().add(listener);
         }
+    }
+
+    private SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> ensureChildListenerReferences() {
+        // noinspection unchecked
+        return ensureField(CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES,
+                () -> new SimpleReferenceManager<>((
+                        final TableUpdateListener tableUpdateListener) -> tableUpdateListener instanceof LegacyListenerAdapter
+                                ? (LegacyListenerAdapter) tableUpdateListener
+                                : new WeakSimpleReference<>(tableUpdateListener),
+                        true));
     }
 
     @Override
     public void removeUpdateListener(final ShiftObliviousListener listenerToRemove) {
-        childListenerReferences.remove(listenerToRemove);
+        childListenerReferences
+                .removeIf((final TableUpdateListener listener) -> listener instanceof LegacyListenerAdapter
+                        && ((LegacyListenerAdapter) listener).matches(listenerToRemove));
     }
 
     @Override
     public void removeUpdateListener(final TableUpdateListener listenerToRemove) {
-        childShiftAwareListenerReferences.remove(listenerToRemove);
-    }
-
-    public void removeDirectUpdateListener(final ShiftObliviousListener listenerToRemove) {
-        directChildListenerReferences.remove(listenerToRemove);
+        childListenerReferences.remove(listenerToRemove);
     }
 
     @Override
@@ -622,26 +714,27 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     public boolean hasListeners() {
-        return !childListenerReferences.isEmpty() || !directChildListenerReferences.isEmpty()
-                || !childShiftAwareListenerReferences.isEmpty();
+        return !childListenerReferences.isEmpty();
     }
 
     /**
-     * Initiate update delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
-     * notifications for all other listeners.
+     * Initiate update delivery to this table's listeners by enqueueing update notifications.
      *
      * @param added Row keys added to the table
      * @param removed Row keys removed from the table
-     * @param modified Row keys modified in the table.
+     * @param modified Row keys modified in the table
      */
     public final void notifyListeners(RowSet added, RowSet removed, RowSet modified) {
-        notifyListeners(new TableUpdateImpl(added, removed, modified, RowSetShiftData.EMPTY,
+        notifyListeners(new TableUpdateImpl(
+                added,
+                removed,
+                modified,
+                RowSetShiftData.EMPTY,
                 modified.isEmpty() ? ModifiedColumnSet.EMPTY : ModifiedColumnSet.ALL));
     }
 
     /**
-     * Initiate update delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
-     * notifications for all other listeners.
+     * Initiate update delivery to this table's listeners by enqueueing update notifications.
      *
      * @param update The set of table changes to propagate. The caller gives this update object away; the invocation of
      *        {@code notifyListeners} takes ownership, and will call {@code release} on it once it is not used anymore;
@@ -654,7 +747,7 @@ public abstract class BaseTable extends LivenessArtifact
             return;
         }
 
-        UpdateGraphProcessor.DEFAULT.requestSignal(updateGraphProcessorCondition);
+        maybeSignal();
 
         final boolean hasNoListeners = !hasListeners();
         if (hasNoListeners) {
@@ -693,50 +786,16 @@ public abstract class BaseTable extends LivenessArtifact
             validateUpdateOverlaps(update);
         }
 
-        // Expand if we are testing or have children listening using old ShiftObliviousListener API.
-        final boolean childNeedsExpansion =
-                !directChildListenerReferences.isEmpty() || !childListenerReferences.isEmpty();
-        final RowSetShiftDataExpander shiftExpander = childNeedsExpansion
-                ? new RowSetShiftDataExpander(update, getRowSet())
-                : RowSetShiftDataExpander.EMPTY;
-
-        if (childNeedsExpansion && VALIDATE_UPDATE_OVERLAPS) {
-            // Check that expansion is valid w.r.t. historical expectations.
-            shiftExpander.validate(update, getRowSet());
-        }
-
         // tables may only be updated once per cycle
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
 
         lastNotificationStep = currentStep;
 
-        // notify direct children
-        directChildListenerReferences.forEach((listenerRef, listener) -> listener.onUpdate(shiftExpander.getAdded(),
-                shiftExpander.getRemoved(), shiftExpander.getModified()));
-
-        // notify non-direct children
+        // notify children
         final NotificationQueue notificationQueue = getNotificationQueue();
-        childListenerReferences.forEach((listenerRef, listener) -> {
-            final NotificationQueue.Notification notification =
-                    listener.getNotification(shiftExpander.getAdded(), shiftExpander.getRemoved(),
-                            shiftExpander.getModified());
-            notificationQueue.addNotification(notification);
-        });
-        childShiftAwareListenerReferences.forEach((listenerRef, listener) -> {
-            final NotificationQueue.Notification notification = listener.getNotification(update);
-            notificationQueue.addNotification(notification);
-        });
-
-        // eventually clean up shiftExpander's data.
-        if (childNeedsExpansion) {
-            notificationQueue.addNotification(new TerminalNotification() {
-                @Override
-                public void run() {
-                    shiftExpander.close();
-                }
-            });
-        }
+        childListenerReferences.forEach(
+                (listenerRef, listener) -> notificationQueue.addNotification(listener.getNotification(update)));
 
         update.release();
     }
@@ -763,9 +822,8 @@ public abstract class BaseTable extends LivenessArtifact
         String serializedIndices = null;
         if (PRINT_SERIALIZED_UPDATE_OVERLAPS) {
             // The indices are really rather complicated, if we fail this check let's generate a serialized
-            // representation
-            // of them that can later be loaded into a debugger. If this fails, we'll ignore it and continue with our
-            // regularly scheduled exception.
+            // representation of them that can later be loaded into a debugger. If this fails, we'll ignore it and
+            // continue with our regularly scheduled exception.
             try {
                 final StringBuilder outputBuffer = new StringBuilder();
                 final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -831,15 +889,7 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     /**
-     * Initiate failure delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
-     * notifications for all other listeners.
-     *
-     * @param e error
-     * @param sourceEntry performance tracking
-     */
-    /**
-     * Initiate failure delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
-     * notifications for all other listeners.
+     * Initiate failure delivery to this table's listeners by enqueueing error notifications.
      *
      * @param e error
      * @param sourceEntry performance tracking
@@ -847,30 +897,21 @@ public abstract class BaseTable extends LivenessArtifact
     public final void notifyListenersOnError(final Throwable e,
             @Nullable final TableListener.Entry sourceEntry) {
         isFailed = true;
-        UpdateGraphProcessor.DEFAULT.requestSignal(updateGraphProcessorCondition);
-
-        // Notify Legacy Listeners
-        directChildListenerReferences.forEach((listenerRef, listener) -> {
-            // Missing async error handler invocation, and sourceEntry assignment in some cases.
-            listener.onFailure(e, sourceEntry);
-        });
-
+        maybeSignal();
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
 
-        childListenerReferences.forEach((listenerRef, listener) -> UpdateGraphProcessor.DEFAULT
-                .addNotification(listener.getErrorNotification(e, sourceEntry)));
-
-        // Notify ShiftAwareListeners
-        childShiftAwareListenerReferences.forEach((listenerRef, listener) -> UpdateGraphProcessor.DEFAULT
+        final NotificationQueue notificationQueue = getNotificationQueue();
+        childListenerReferences.forEach((listenerRef, listener) -> notificationQueue
                 .addNotification(listener.getErrorNotification(e, sourceEntry)));
     }
 
     /**
      * Get the notification queue to insert notifications into as they are generated by listeners during
-     * {@link #notifyListeners(RowSet, RowSet, RowSet)}. This method may be overridden to provide a different
-     * notification queue than the {@link UpdateGraphProcessor#DEFAULT} instance for more complex behavior.
+     * {@link #notifyListeners} and {@link #notifyListenersOnError(Throwable, TableListener.Entry)}. This method may be
+     * overridden to provide a different notification queue than the {@link UpdateGraphProcessor#DEFAULT} instance for
+     * more complex behavior.
      *
-     * @return The {@link NotificationQueue} to add to.
+     * @return The {@link NotificationQueue} to add to
      */
     protected NotificationQueue getNotificationQueue() {
         return UpdateGraphProcessor.DEFAULT;
@@ -893,7 +934,9 @@ public abstract class BaseTable extends LivenessArtifact
 
     @Override
     public void markSystemic() {
-        setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE);
+        if (!isSystemicObject()) {
+            setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE);
+        }
     }
 
     /**
@@ -965,7 +1008,8 @@ public abstract class BaseTable extends LivenessArtifact
             if (parent instanceof QueryTable && dependent instanceof QueryTable) {
                 final QueryTable pqt = (QueryTable) parent;
                 final QueryTable dqt = (QueryTable) dependent;
-                canReuseModifiedColumnSet = !pqt.modifiedColumnSet.requiresTransformer(dqt.modifiedColumnSet);
+                canReuseModifiedColumnSet =
+                        !pqt.getModifiedColumnSetForUpdates().requiresTransformer(dqt.getModifiedColumnSetForUpdates());
             } else {
                 // We cannot reuse the modifiedColumnSet since there are no assumptions that can be made w.r.t. parent's
                 // and dependent's column source mappings.
@@ -1048,7 +1092,10 @@ public abstract class BaseTable extends LivenessArtifact
 
     @Override
     public Table clearSortingRestrictions() {
-        attributes.remove(SORTABLE_COLUMNS_ATTRIBUTE);
+        final Map<String, Object> localAttributes = attributes;
+        if (localAttributes != EMPTY_ATTRIBUTES) {
+            localAttributes.remove(SORTABLE_COLUMNS_ATTRIBUTE);
+        }
         return this;
     }
 
@@ -1174,7 +1221,7 @@ public abstract class BaseTable extends LivenessArtifact
             sortableColSet = Arrays.asList(sortable.split(","));
         }
 
-        // TODO: This is hacky. DbSortedFilteredTableModel will update the table with __ABS__ prefixed columns
+        // TODO: This is hacky. SortTableGrpcImpl will update the table with __ABS__ prefixed columns
         // TODO: when the user requests to sort absolute.
         final Set<String> unsortable = Arrays.stream(columns)
                 .map(cn -> cn.startsWith("__ABS__") ? cn.replace("__ABS__", "") : cn).collect(Collectors.toSet());
@@ -1436,7 +1483,6 @@ public abstract class BaseTable extends LivenessArtifact
         // NB: We should not assert things about empty listener lists, here, given that listener cleanup might never
         // happen or happen out of order if the listeners were GC'd and not explicitly left unmanaged.
         childListenerReferences.clear();
-        directChildListenerReferences.clear();
         parents.clear();
     }
 

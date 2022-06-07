@@ -34,5 +34,6 @@ class SelectableDatasetTestCase(BaseTestCase):
         sds = one_click_partitioned_table(pt, require_all_filters=True)
         self.assertIsNotNone(sds)
 
+
 if __name__ == '__main__':
     unittest.main()

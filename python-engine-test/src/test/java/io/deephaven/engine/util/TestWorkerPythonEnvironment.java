@@ -85,8 +85,7 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
 
 
     public void testScript() throws IOException, InterruptedException, TimeoutException {
-        final StreamLoggerImpl log = new StreamLoggerImpl();
-        JpyInit.init(log);
+        JpyInit.init();
         final PythonEvaluator evaluator = PythonEvaluatorJpy.withGlobalCopy();
         final String filename = "/tmp/_not_existent_file.py";
 

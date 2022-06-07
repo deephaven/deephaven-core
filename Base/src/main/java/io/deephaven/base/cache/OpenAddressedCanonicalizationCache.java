@@ -76,7 +76,7 @@ public class OpenAddressedCanonicalizationCache {
         }
     }
 
-    private static Adapter<?, ?> DEFAULT_ADAPTER = new DefaultAdapter();
+    private static final Adapter<?, ?> DEFAULT_ADAPTER = new DefaultAdapter();
 
     private static class ItemReference<T> extends WeakReference<T> {
 
@@ -97,7 +97,7 @@ public class OpenAddressedCanonicalizationCache {
 
     private final float loadFactor;
 
-    private ItemReference<?> storage[];
+    private ItemReference<?>[] storage;
     private int occupancyThreshold;
     private int occupiedSlots;
     private int emptySlots;
@@ -228,7 +228,7 @@ public class OpenAddressedCanonicalizationCache {
     }
 
     private void rehash(final int newCapacity) {
-        final ItemReference<?> oldStorage[] = storage;
+        final ItemReference<?>[] oldStorage = storage;
 
         initialize(newCapacity);
 

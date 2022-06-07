@@ -1,6 +1,7 @@
 package io.deephaven.server.netty;
 
 import dagger.Component;
+import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
 import io.deephaven.server.runner.DeephavenApiServerComponent;
@@ -11,6 +12,7 @@ import javax.inject.Singleton;
 @Singleton
 @Component(modules = {
         DeephavenApiServerModule.class,
+        PythonGlobalScopeCopyModule.class,
         HealthCheckModule.class,
         PythonPluginsRegistration.Module.class,
         NettyServerModule.class

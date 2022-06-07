@@ -18,6 +18,9 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
+import io.deephaven.engine.table.impl.sources.LongAsDateTimeColumnSource;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.vector.*;
@@ -40,6 +43,8 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.groovy.util.Maps;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 
@@ -492,27 +497,31 @@ public class QueryTableTest extends QueryTableTestBase {
 
         Table table = newTable(3, Arrays.asList("String", "Int"),
                 Arrays.asList(TableTools.objColSource("c", "e", "g"), TableTools.colSource(2, 4, 6)));
-        assertEquals(2, table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumns().length);
-        assertEquals(table.getColumns()[0].getName(),
-                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumns()[0].getName());
-        assertEquals(table.getColumns()[1].getName(),
-                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumns()[1].getName());
+        assertEquals(2, table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).numColumns());
+        assertEquals(table.getDefinition().getColumns().get(0).getName(),
+                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().get(0).getName());
+        assertEquals(table.getDefinition().getColumns().get(1).getName(),
+                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().get(1).getName());
 
-        assertEquals(2, table.view("String", "Int").getColumns().length);
-        assertEquals(table.getColumns()[0].getName(), table.view("String", "Int").getColumns()[0].getName());
-        assertEquals(table.getColumns()[1].getName(), table.view("String", "Int").getColumns()[1].getName());
+        assertEquals(2, table.view("String", "Int").numColumns());
+        assertEquals(table.getDefinition().getColumns().get(0).getName(),
+                table.view("String", "Int").getDefinition().getColumns().get(0).getName());
+        assertEquals(table.getDefinition().getColumns().get(1).getName(),
+                table.view("String", "Int").getDefinition().getColumns().get(1).getName());
 
-        assertEquals(2, table.view("Int", "String").getColumns().length);
-        assertEquals(table.getColumns()[0].getName(), table.view("Int", "String").getColumns()[1].getName());
-        assertEquals(table.getColumns()[1].getName(), table.view("Int", "String").getColumns()[0].getName());
+        assertEquals(2, table.view("Int", "String").numColumns());
+        assertEquals(table.getDefinition().getColumns().get(0).getName(),
+                table.view("Int", "String").getDefinition().getColumns().get(1).getName());
+        assertEquals(table.getDefinition().getColumns().get(1).getName(),
+                table.view("Int", "String").getDefinition().getColumns().get(0).getName());
 
-        assertEquals(2, table.view("Int1=Int", "String1=String").getColumns().length);
-        assertSame(table.getColumns()[0].getClass(),
-                table.view("Int1=Int", "String1=String").getColumns()[1].getClass());
-        assertSame(table.getColumns()[1].getClass(),
-                table.view("Int1=Int", "String1=String").getColumns()[0].getClass());
-        assertEquals("Int1", table.view("Int1=Int", "String1=String").getColumns()[0].getName());
-        assertEquals("String1", table.view("Int1=Int", "String1=String").getColumns()[1].getName());
+        assertEquals(2, table.view("Int1=Int", "String1=String").numColumns());
+        assertSame(table.getDefinition().getColumns().get(0).getDataType(),
+                table.view("Int1=Int", "String1=String").getDefinition().getColumns().get(1).getDataType());
+        assertSame(table.getDefinition().getColumns().get(1).getDataType(),
+                table.view("Int1=Int", "String1=String").getDefinition().getColumns().get(0).getDataType());
+        assertEquals("Int1", table.view("Int1=Int", "String1=String").getDefinition().getColumns().get(0).getName());
+        assertEquals("String1", table.view("Int1=Int", "String1=String").getDefinition().getColumns().get(1).getName());
 
         table = TableTools.emptyTable(3);
         table = table.view("x = i*2", "y = \"\" + x");
@@ -600,7 +609,7 @@ public class QueryTableTest extends QueryTableTestBase {
         } catch (RuntimeException ignored) {
         }
 
-        assertEquals(1, table.dropColumns("String").dropColumns("Int").getColumns().length);
+        assertEquals(1, table.dropColumns("String").dropColumns("Int").numColumns());
         columnSourcesAfterDrop = table.dropColumns("String").dropColumns("Int").getColumnSources();
         columnsAfterDrop = columnSourcesAfterDrop.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         columnSources = table.getColumnSources();
@@ -652,11 +661,11 @@ public class QueryTableTest extends QueryTableTestBase {
         assertSame(table.getColumnSource("Double"),
                 table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Double"));
 
-        assertEquals(3, table.renameColumns("NewInt=Int").getColumns().length);
+        assertEquals(3, table.renameColumns("NewInt=Int").numColumns());
         assertEquals(table.getColumnSources().toArray()[0],
                 table.renameColumns("NewInt=Int").getColumnSources().toArray()[0]);
-        assertArrayEquals((int[]) table.getColumns()[1].getDirect(),
-                (int[]) table.renameColumns("NewInt=Int").getColumns()[1].getDirect());
+        assertArrayEquals((int[]) table.getColumn(1).getDirect(),
+                (int[]) table.renameColumns("NewInt=Int").getColumn(1).getDirect());
         assertEquals(table.getColumnSources().toArray()[2],
                 table.renameColumns("NewInt=Int").getColumnSources().toArray()[2]);
         assertEquals(table.getColumnSource("String"), table.renameColumns("NewInt=Int").getColumnSource("String"));
@@ -669,11 +678,11 @@ public class QueryTableTest extends QueryTableTestBase {
         } catch (RuntimeException ignored) {
         }
 
-        assertEquals(3, table.renameColumns("NewInt=Int", "NewString=String").getColumns().length);
-        assertArrayEquals((String[]) table.getColumns()[0].getDirect(),
-                (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumns()[0].getDirect());
-        assertArrayEquals((int[]) table.getColumns()[1].getDirect(),
-                (int[]) table.renameColumns("NewInt=Int").getColumns()[1].getDirect());
+        assertEquals(3, table.renameColumns("NewInt=Int", "NewString=String").numColumns());
+        assertArrayEquals((String[]) table.getColumn(0).getDirect(),
+                (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumn(0).getDirect());
+        assertArrayEquals((int[]) table.getColumn(1).getDirect(),
+                (int[]) table.renameColumns("NewInt=Int").getColumn(1).getDirect());
         assertEquals(table.getColumnSources().toArray()[2],
                 table.renameColumns("NewInt=Int", "NewString=String").getColumnSources().toArray()[2]);
         assertArrayEquals((String[]) table.getColumn("String").getDirect(),
@@ -693,11 +702,11 @@ public class QueryTableTest extends QueryTableTestBase {
         } catch (RuntimeException ignored) {
         }
 
-        assertEquals(3, table.renameColumns("NewInt=Int").renameColumns("NewString=String").getColumns().length);
-        assertArrayEquals((String[]) table.getColumns()[0].getDirect(),
-                (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumns()[0].getDirect());
-        assertArrayEquals((int[]) table.getColumns()[1].getDirect(),
-                (int[]) table.renameColumns("NewInt=Int").getColumns()[1].getDirect());
+        assertEquals(3, table.renameColumns("NewInt=Int").renameColumns("NewString=String").numColumns());
+        assertArrayEquals((String[]) table.getColumn(0).getDirect(),
+                (String[]) table.renameColumns("NewInt=Int", "NewString=String").getColumn(0).getDirect());
+        assertArrayEquals((int[]) table.getColumn(1).getDirect(),
+                (int[]) table.renameColumns("NewInt=Int").getColumn(1).getDirect());
         assertEquals(table.getColumnSources().toArray()[2],
                 table.renameColumns("NewInt=Int").renameColumns("NewString=String").getColumnSources().toArray()[2]);
         assertArrayEquals((String[]) table.getColumn("String").getDirect(),
@@ -2491,7 +2500,7 @@ public class QueryTableTest extends QueryTableTestBase {
             assertEquals(Arrays.asList(1, 1, 1, 2, 2), Arrays.asList(t1.getColumn("X").get(0, 5)));
             assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList(t1.getColumn("Y").get(0, 5)));
 
-            final ErrorListener errorListener = new ErrorListener(table);
+            final ErrorListener errorListener = new ErrorListener(t1);
             t1.listenForUpdates(errorListener);
 
             // This is too big, we should fail
@@ -2504,7 +2513,7 @@ public class QueryTableTest extends QueryTableTestBase {
             TableTools.showWithRowSet(t1);
 
             if (errorListener.originalException() == null) {
-                fail("errorListener.originalException 1= null");
+                fail("errorListener.originalException == null");
             }
             if (!(errorListener.originalException() instanceof IllegalStateException)) {
                 fail("!(errorListener.originalException instanceof IllegalStateException)");
@@ -3224,5 +3233,57 @@ public class QueryTableTest extends QueryTableTestBase {
             });
         }
         assertEquals(0, getUpdateErrors().size());
+    }
+
+    private static class TestDateTimeGroupingSource extends LongAsDateTimeColumnSource
+            implements DeferredGroupingColumnSource<DateTime> {
+
+        final GroupingProvider<Object> groupingProvider = new GroupingProvider<>() {
+            @Override
+            public Map<Object, RowSet> getGroupToRange() {
+                return null;
+            }
+
+            @Override
+            public Pair<Map<Object, RowSet>, Boolean> getGroupToRange(RowSet hint) {
+                return null;
+            }
+        };
+
+        TestDateTimeGroupingSource(ColumnSource<Long> realSource) {
+            super(realSource);
+            // noinspection unchecked,rawtypes
+            ((DeferredGroupingColumnSource) realSource).setGroupingProvider(groupingProvider);
+        }
+
+        @Override
+        public GroupingProvider<DateTime> getGroupingProvider() {
+            return null;
+        }
+
+        @Override
+        public void setGroupingProvider(@Nullable GroupingProvider<DateTime> groupingProvider) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public void testDeferredGroupingPropagationDateTimeCol() {
+        // This is a regression test on a class cast exception in QueryTable#propagateGrouping.
+        // RegionedColumnSourceDateTime is a grouping source, but is not an InMemoryColumnSource. The select column
+        // destination is not a grouping source as it is reinterpreted.
+
+        TrackingRowSet rowSet = RowSetFactory.flat(4).toTracking();
+
+        // This dance with a custom column is because an InMemoryColumnSource will be reused at the select layer
+        // which skips propagation of grouping, and avoids the class cast exception.
+        final TestDateTimeGroupingSource cs = new TestDateTimeGroupingSource(colSource(0L, 1, 2, 3));
+        final Map<String, ? extends ColumnSource<?>> columns = Maps.of("T", cs);
+        final QueryTable t1 = new QueryTable(rowSet, columns);
+        final Table t2 = t1.select("T");
+
+        // noinspection rawtypes
+        final DeferredGroupingColumnSource result =
+                (DeferredGroupingColumnSource) t2.getColumnSource("T").reinterpret(long.class);
+        assertSame(cs.groupingProvider, result.getGroupingProvider());
     }
 }

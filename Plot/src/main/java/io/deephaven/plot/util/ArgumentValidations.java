@@ -13,6 +13,7 @@ import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.qst.column.Column;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.ClassUtils;
@@ -108,13 +109,13 @@ public class ArgumentValidations {
     public static void assertInstance(final Table t, final String column, final Class c, final String message,
             final PlotInfo plotInfo) {
         assertNotNull(t, "t", plotInfo);
-        final DataColumn col = t.getColumn(column);
+        final ColumnDefinition colDef = t.getDefinition().getColumn(column);
 
-        if (col == null) {
+        if (colDef == null) {
             throw new PlotRuntimeException("Column not present in table: column=" + column, plotInfo);
         }
 
-        assertInstance(c, ClassUtils.primitiveToWrapper(col.getType()), message, plotInfo);
+        assertInstance(c, ClassUtils.primitiveToWrapper(colDef.getDataType()), message, plotInfo);
     }
 
     /**
@@ -156,13 +157,13 @@ public class ArgumentValidations {
     public static void assertInstance(final SelectableDataSet sds, final String column, final Class c,
             final String message, final PlotInfo plotInfo) {
         assertNotNull(sds, "sds", plotInfo);
-        final ColumnDefinition col = sds.getTableDefinition().getColumn(column);
+        final ColumnDefinition colDef = sds.getTableDefinition().getColumn(column);
 
-        if (col == null) {
+        if (colDef == null) {
             throw new PlotRuntimeException("Column not present in table: column=" + column, plotInfo);
         }
 
-        assertInstance(c, ClassUtils.primitiveToWrapper(col.getDataType()), message, plotInfo);
+        assertInstance(c, ClassUtils.primitiveToWrapper(colDef.getDataType()), message, plotInfo);
     }
 
 
@@ -215,14 +216,15 @@ public class ArgumentValidations {
     public static void assertIsNumericOrTimeOrCharOrComparableInstance(final Table t, final String column,
             final String message, final PlotInfo plotInfo) {
         assertNotNull(t, "t", plotInfo);
-        final DataColumn col = t.getColumn(column);
+        final ColumnDefinition<?> colDef = t.getDefinition().getColumn(column);
 
-        if (col == null) {
+        if (colDef == null) {
             throw new PlotRuntimeException("Column not present in table: column=" + column, plotInfo);
         }
 
-        if (!isNumericOrTime(col.getType(), plotInfo) && !Comparable.class.isAssignableFrom(col.getType())
-                && !TypeUtils.isCharacter(col.getType())) {
+        if (!isNumericOrTime(colDef.getDataType(), plotInfo)
+                && !Comparable.class.isAssignableFrom(colDef.getDataType())
+                && !TypeUtils.isCharacter(colDef.getDataType())) {
             throw new PlotRuntimeException(message, plotInfo);
         }
     }
@@ -241,14 +243,14 @@ public class ArgumentValidations {
     public static void assertIsNumericOrTimeOrCharOrComparableInstance(final TableDefinition t, final String column,
             final String message, final PlotInfo plotInfo) {
         assertNotNull(t, "t", plotInfo);
-        final ColumnDefinition col = t.getColumn(column);
+        final ColumnDefinition colDef = t.getColumn(column);
 
-        if (col == null) {
+        if (colDef == null) {
             throw new PlotRuntimeException("Column not present in table: column=" + column, plotInfo);
         }
 
-        if (!isNumericOrTime(col.getDataType(), plotInfo) && !Comparable.class.isAssignableFrom(col.getDataType())
-                && !TypeUtils.isCharacter(col.getDataType())) {
+        if (!isNumericOrTime(colDef.getDataType(), plotInfo) && !Comparable.class.isAssignableFrom(colDef.getDataType())
+                && !TypeUtils.isCharacter(colDef.getDataType())) {
             throw new PlotRuntimeException(message, plotInfo);
         }
     }
@@ -297,13 +299,13 @@ public class ArgumentValidations {
      */
     public static Class getColumnType(final Table t, final String column, final PlotInfo plotInfo) {
         assertNotNull(t, "t", plotInfo);
-        final DataColumn col = t.getColumn(column);
+        final ColumnDefinition<?> colDef = t.getDefinition().getColumn(column);
 
-        if (col == null) {
+        if (colDef == null) {
             throw new PlotRuntimeException("Column not present in table: column=" + column, plotInfo);
         }
 
-        return col.getType();
+        return colDef.getDataType();
     }
 
     /**

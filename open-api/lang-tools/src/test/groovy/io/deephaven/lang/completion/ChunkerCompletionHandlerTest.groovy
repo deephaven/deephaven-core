@@ -53,7 +53,7 @@ class ChunkerCompletionHandlerTest extends Specification implements ChunkerCompl
             _ * getVariableType(_) >> null
             _ * getVariable(_, _) >> null
             _ * getVariableNames() >> []
-            _ * getTableDefinition('emptyTable') >> new TableDefinition(new ColumnDefinition[0])
+            _ * getTableDefinition('emptyTable') >> TableDefinition.of()
             0 * _
         }
 

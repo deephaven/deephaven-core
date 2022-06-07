@@ -6,11 +6,13 @@ import contextlib
 import unittest
 
 import jpy
+from deephaven import DHError
 
 from deephaven._ugp import ugp_exclusive_lock
 from deephaven.table import Table
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
+
 
 def table_equals(table_a: Table, table_b: Table) -> bool:
     try:
@@ -43,10 +45,10 @@ class BaseTestCase(unittest.TestCase):
             timeout (int): the number of seconds to wait
         """
         with ugp_exclusive_lock():
-            timeout *= 10**9
+            timeout *= 10 ** 9
             while table.size < row_count and timeout > 0:
                 s_time = time.time_ns()
-                table.j_table.awaitUpdate(timeout // 10**6)
+                table.j_table.awaitUpdate(timeout // 10 ** 6)
                 timeout -= time.time_ns() - s_time
 
             self.assertGreaterEqual(table.size, row_count)

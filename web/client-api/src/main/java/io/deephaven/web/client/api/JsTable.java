@@ -635,9 +635,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                     final RemoverFn remover = addEventListener(
                             INTERNAL_EVENT_STATECHANGED,
                             e -> {
-                                if (wrapped.isClosed()) {
-                                    return;
-                                }
                                 // eat superfluous changes (wait until event loop settles before firing requests).
                                 // IDS-2684 If you disable downsampling, you can lock up the entire websocket with some
                                 // rapid
@@ -650,6 +647,9 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                                 if (downsample[0]) {
                                     downsample[0] = false;
                                     LazyPromise.runLater(() -> {
+                                        if (wrapped.isClosed()) {
+                                            return;
+                                        }
                                         downsample[0] = true;
                                         // IDS-2684 - comment out the four lines above to reproduce
                                         // when ever the main table changes its state, reload the totals table from the

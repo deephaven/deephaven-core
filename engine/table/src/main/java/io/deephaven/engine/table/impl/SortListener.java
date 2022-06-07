@@ -340,8 +340,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             if (downstream.modified().isEmpty()) {
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             } else {
-                downstream.modifiedColumnSet = result.modifiedColumnSet;
-                mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
+                downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
             }
 
             // Update the final result RowSet.

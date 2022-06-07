@@ -104,6 +104,8 @@ public class DoubleMapWithDefault {
 
     public native double addValues(double value);
 
+    public native void clearDefaultDouble();
+
     public native void clearKeysList();
 
     public native void clearValuesList();
@@ -113,6 +115,8 @@ public class DoubleMapWithDefault {
     public native JsArray<String> getKeysList();
 
     public native JsArray<Double> getValuesList();
+
+    public native boolean hasDefaultDouble();
 
     public native Uint8Array serializeBinary();
 

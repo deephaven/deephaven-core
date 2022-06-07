@@ -136,7 +136,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             final Map<String, String> attributes,
             final boolean isViewPort) {
         super(RowSetFactory.empty().toTracking(), columns);
-        attributes.forEach(this::setAttribute);
+        attributes.entrySet().stream()
+                .filter(e -> !e.getKey().equals(Table.SYSTEMIC_TABLE_ATTRIBUTE))
+                .forEach(e -> setAttribute(e.getKey(), e.getValue()));
 
         this.registrar = registrar;
         this.notificationQueue = notificationQueue;
@@ -251,6 +253,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         if (DEBUG_ENABLED) {
             saveForDebugging(update);
 
+            final ModifiedColumnSet modifiedColumnSet = getModifiedColumnSetForUpdates();
             modifiedColumnSet.clear();
             final WritableRowSet mods = RowSetFactory.empty();
             for (int ci = 0; ci < update.modColumnData.length; ++ci) {
@@ -374,6 +377,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 }
             }
 
+            final ModifiedColumnSet modifiedColumnSet = getModifiedColumnSetForUpdates();
             modifiedColumnSet.clear();
             for (int ii = 0; ii < update.modColumnData.length; ++ii) {
                 final BarrageMessage.ModColumnData column = update.modColumnData[ii];
@@ -644,8 +648,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             final TableDefinition tableDefinition,
             final Map<String, String> attributes,
             final boolean isViewPort) {
-        final ColumnDefinition<?>[] columns = tableDefinition.getColumns();
-        final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.length];
+        final List<ColumnDefinition<?>> columns = tableDefinition.getColumns();
+        final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.size()];
         final WritableRowRedirection rowRedirection =
                 new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
         final LinkedHashMap<String, ColumnSource<?>> finalColumns =
@@ -667,17 +671,19 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
      * @apiNote emptyRowRedirection must be initialized and empty.
      */
     @NotNull
-    protected static LinkedHashMap<String, ColumnSource<?>> makeColumns(final ColumnDefinition<?>[] columns,
+    protected static LinkedHashMap<String, ColumnSource<?>> makeColumns(
+            final List<ColumnDefinition<?>> columns,
             final WritableColumnSource<?>[] writableSources,
             final WritableRowRedirection emptyRowRedirection) {
-        final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>();
-        for (int ii = 0; ii < columns.length; ii++) {
-            writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[ii].getDataType(),
-                    columns[ii].getComponentType());
-            finalColumns.put(columns[ii].getName(),
+        final int numColumns = columns.size();
+        final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>(numColumns);
+        for (int ii = 0; ii < numColumns; ii++) {
+            final ColumnDefinition<?> column = columns.get(ii);
+            writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(
+                    0, column.getDataType(), column.getComponentType());
+            finalColumns.put(column.getName(),
                     new WritableRedirectedColumnSource<>(emptyRowRedirection, writableSources[ii], 0));
         }
-
         return finalColumns;
     }
 

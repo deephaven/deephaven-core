@@ -59,9 +59,8 @@ public class TestSelectables extends BaseArrayTestCase {
     private void testTableEquals(final Table t1, final Table t2) {
         assertNotNull(t1);
         assertNotNull(t2);
-        final List<String> columnNames = new ArrayList<>();
-        Arrays.stream(t1.getColumns()).forEach(col -> columnNames.add(col.getName()));
-        assertEquals(columnNames.size(), t2.getColumns().length);
+        final List<String> columnNames = t1.getDefinition().getColumnNames();
+        assertEquals(columnNames.size(), t2.numColumns());
         t2.hasColumns(columnNames);
     }
 }

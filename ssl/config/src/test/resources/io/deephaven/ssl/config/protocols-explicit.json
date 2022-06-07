@@ -1,0 +1,8 @@
+{
+  "protocols": {
+    "type": "explicit",
+    "values": [
+      "TLSv1.3"
+    ]
+  }
+}

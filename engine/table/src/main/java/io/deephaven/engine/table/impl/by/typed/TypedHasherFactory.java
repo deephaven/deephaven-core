@@ -9,12 +9,14 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.CharChunkHasher;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.asofjoin.TypedAsOfJoinFactory;
 import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
@@ -24,6 +26,7 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import javax.lang.model.element.Modifier;
@@ -255,6 +258,68 @@ public class TypedHasherFactory {
                     TypedNaturalJoinFactory::incrementalShiftLeftMissing,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
                     probeContextParam));
+        } else if (baseClass.equals(StaticAsOfJoinStateManagerTypedBase.class)) {
+            builder.classPrefix("StaticAsOfJoinHasher").packageGroup("asofjoin").packageMiddle("staticopen")
+                    .openAddressedAlternate(false)
+                    .stateType(Object.class).mainStateName("rightRowSetSource")
+                    .emptyStateName("EMPTY_RIGHT_STATE")
+                    .includeOriginalSources(true)
+                    .supportRehash(true)
+                    .moveMainFull(TypedAsOfJoinFactory::staticMoveMainFull)
+                    .alwaysMoveMain(true)
+                    .rehashFullSetup(TypedAsOfJoinFactory::staticRehashSetup);
+
+            final TypeName longArraySource = TypeName.get(LongArraySource.class);
+            final ParameterSpec hashSlots = ParameterSpec.builder(longArraySource, "hashSlots").build();
+            final ParameterSpec hashSlotOffset = ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build();
+            final ParameterSpec foundBuilder = ParameterSpec.builder(RowSetBuilderRandom.class, "foundBuilder").build();
+
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
+                    true, true, TypedAsOfJoinFactory::staticBuildLeftFound,
+                    TypedAsOfJoinFactory::staticBuildLeftInsert));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", null,
+                    true, TypedAsOfJoinFactory::staticProbeDecorateLeftFound,
+                    null, hashSlots, hashSlotOffset, foundBuilder));
+
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
+                    true, true, TypedAsOfJoinFactory::staticBuildRightFound,
+                    TypedAsOfJoinFactory::staticBuildRightInsert));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", null,
+                    true, TypedAsOfJoinFactory::staticProbeDecorateRightFound, null));
+
+        } else if (baseClass.equals(RightIncrementalAsOfJoinStateManagerTypedBase.class)) {
+            final TypeName longArraySource = TypeName.get(LongArraySource.class);
+            final ParameterSpec hashSlots = ParameterSpec.builder(longArraySource, "hashSlots").build();
+            final ParameterSpec sequentialBuilders =
+                    ParameterSpec.builder(ObjectArraySource.class, "sequentialBuilders").build();
+
+            builder.classPrefix("RightIncrementalAsOfJoinHasher").packageGroup("asofjoin")
+                    .packageMiddle("rightincopen")
+                    .openAddressedAlternate(true)
+                    .stateType(byte.class).mainStateName("stateSource")
+                    .overflowOrAlternateStateName("alternateStateSource")
+                    .emptyStateName("ENTRY_EMPTY_STATE")
+                    .includeOriginalSources(true)
+                    .supportRehash(true)
+                    .addExtraPartialRehashParameter(hashSlots)
+                    .moveMainFull(TypedAsOfJoinFactory::rightIncrementalMoveMainFull)
+                    .moveMainAlternate(TypedAsOfJoinFactory::rightIncrementalMoveMainAlternate)
+                    .alwaysMoveMain(true)
+                    .rehashFullSetup(TypedAsOfJoinFactory::rightIncrementalRehashSetup);
+
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rowState",
+                    true, true, TypedAsOfJoinFactory::rightIncrementalBuildLeftFound,
+                    TypedAsOfJoinFactory::rightIncrementalBuildLeftInsert, hashSlots, sequentialBuilders));
+
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rowState", true,
+                    true, TypedAsOfJoinFactory::rightIncrementalRightFound,
+                    TypedAsOfJoinFactory::rightIncrementalRightInsert, hashSlots, sequentialBuilders));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("probeRightSide", "rowState",
+                    true, TypedAsOfJoinFactory::rightIncrementalProbeDecorateRightFound, null, hashSlots,
+                    sequentialBuilders));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
@@ -342,6 +407,26 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher =
                         (T) io.deephaven.engine.table.impl.naturaljoin.typed.incopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
+                    .equals(StaticAsOfJoinStateManagerTypedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.asofjoin.typed.staticopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
+                    .equals(RightIncrementalAsOfJoinStateManagerTypedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.asofjoin.typed.rightincopen.gen.TypedHashDispatcher
                                 .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
                                         targetLoadFactor);
                 if (pregeneratedHasher != null) {

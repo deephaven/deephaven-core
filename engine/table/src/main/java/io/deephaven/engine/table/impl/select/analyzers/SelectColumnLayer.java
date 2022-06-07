@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -33,7 +34,7 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.LARGEST_POOLED_CH
 
 final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     /**
-     * The same reference as super.columnSource, but as a WritableColumnSource
+     * The same reference as super.columnSource, but as a WritableColumnSource and maybe reinterpretted
      */
     private final WritableColumnSource writableSource;
     /**
@@ -64,7 +65,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             boolean flattenedResult, boolean alreadyFlattenedSources) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.parentRowSet = parentRowSet;
-        this.writableSource = ws;
+        this.writableSource = (WritableColumnSource) ReinterpretUtils.maybeConvertToPrimitive(ws);
         this.isRedirected = isRedirected;
 
         dependencyBitSet = new BitSet();
@@ -99,7 +100,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private ChunkSource<Values> getChunkSource() {
         if (chunkSource == null) {
-            chunkSource = selectColumn.getDataView();
+            chunkSource = ReinterpretUtils.maybeConvertToPrimitive(selectColumn.getDataView());
             if (selectColumnHoldsVector) {
                 chunkSource = new VectorChunkAdapter<>(chunkSource);
             }

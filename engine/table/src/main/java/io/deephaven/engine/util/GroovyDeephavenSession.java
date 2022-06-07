@@ -520,6 +520,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import io.deephaven.api.filter.*;\n" +
                 "import io.deephaven.engine.table.DataColumn;\n" +
                 "import io.deephaven.engine.table.Table;\n" +
+                "import io.deephaven.engine.table.TableFactory;\n" +
+                "import io.deephaven.engine.table.PartitionedTable;\n" +
+                "import io.deephaven.engine.table.PartitionedTableFactory;\n" +
                 "import java.lang.reflect.Array;\n" +
                 "import io.deephaven.util.type.TypeUtils;\n" +
                 "import io.deephaven.util.type.ArrayTypeUtils;\n" +
@@ -663,6 +666,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         public GroovySnapshot(Map<String, Object> existingScope) {
             this.scope = Objects.requireNonNull(existingScope);
+        }
+
+        @Override
+        public void close() {
+            // no-op
         }
     }
 

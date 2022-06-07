@@ -216,7 +216,7 @@ public class ParquetTools {
             @NotNull final File destFile,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions) {
-        if (definition.getColumns().length == 0) {
+        if (definition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
         final File firstCreated = prepareDestinationFileLocation(destFile);
@@ -302,7 +302,7 @@ public class ParquetTools {
             @NotNull final File[] destinations,
             @NotNull final String[] groupingColumns) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
-        if (tableDefinition.getColumns().length == 0) {
+        if (tableDefinition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
         final File[] absoluteDestinations =
@@ -387,7 +387,7 @@ public class ParquetTools {
                         tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                         instructions);
                 return readSingleFileTable(tableLocationKey, schemaInfo.getSecond(),
-                        new TableDefinition(schemaInfo.getFirst()));
+                        TableDefinition.of(schemaInfo.getFirst()));
             }
             if (sourceFileName.equals(ParquetMetadataFileLayout.METADATA_FILE_NAME)) {
                 return readPartitionedTableWithMetadata(source.getParentFile(), instructions);
@@ -511,11 +511,11 @@ public class ParquetTools {
                         + " has null partition value at partition key " + partitionKey);
             }
             allColumns.add(ColumnDefinition.fromGenericType(partitionKey,
-                    getUnboxedTypeIfBoxed(partitionValue.getClass()), ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+                    getUnboxedTypeIfBoxed(partitionValue.getClass()), null, ColumnDefinition.ColumnType.Partitioning));
         }
         allColumns.addAll(schemaInfo.getFirst());
         return readPartitionedTable(recordingLocationKeyFinder, schemaInfo.getSecond(),
-                new TableDefinition(allColumns));
+                TableDefinition.of(allColumns));
     }
 
     /**
@@ -608,8 +608,7 @@ public class ParquetTools {
             return new ParquetFileReader(
                     parquetFile.getAbsolutePath(),
                     new CachedChannelProvider(
-                            new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()), 1 << 7),
-                    0);
+                            new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()), 1 << 7));
         } catch (IOException e) {
             throw new TableDataException("Failed to create Parquet file reader: " + parquetFile, e);
         }
@@ -624,7 +623,7 @@ public class ParquetTools {
                 tableLocationKey.getFileReader().getSchema(),
                 tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                 readInstructionsIn);
-        final TableDefinition def = new TableDefinition(schemaInfo.getFirst());
+        final TableDefinition def = TableDefinition.of(schemaInfo.getFirst());
         if (instructionsOut != null) {
             instructionsOut.setValue(schemaInfo.getSecond());
         }

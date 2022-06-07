@@ -173,7 +173,7 @@ public class QueryOperationPerformanceLogLogger
         flush(setter);
     }
 
-    private static final TableDefinition TABLE_DEFINITION = TableDefinition.tableDefinition(columnDbTypes, columnNames);
+    private static final TableDefinition TABLE_DEFINITION = TableDefinition.from(columnNames, columnDbTypes);
 
     public static TableDefinition getTableDefinition() {
         return TABLE_DEFINITION;

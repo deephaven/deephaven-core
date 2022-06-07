@@ -545,7 +545,7 @@ def tableToDataFrame(table, convertNulls=NULL_CONVERSION.ERROR, categoricals=Non
     convertNulls = NULL_CONVERSION.validateValue(convertNulls)
 
     # get the column objects
-    columnDefs = table.getDefinition().getColumns()
+    columnDefs = table.getDefinition().getColumnsArray()
     # extract the names
     columnNames = [col.getName() for col in columnDefs]
     # NB: map will provide a generator in Python 3, which will fail here...
@@ -570,7 +570,7 @@ def tableToDataFrame(table, convertNulls=NULL_CONVERSION.ERROR, categoricals=Non
 
         if series is None:
             logging.warning("Conversion failed for column {} of "
-                            "type {}".format(columnName, table.getColumn(columnName).getType().getName()))
+                            "type {}".format(columnName, table.getDefinition().getColumn(columnName).getDataType().getName()))
         else:
             useColumnNames.append(columnName)
             data[columnName] = series

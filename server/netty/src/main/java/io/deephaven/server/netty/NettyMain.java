@@ -28,6 +28,7 @@ public class NettyMain extends Main {
                 .withErr(PrintStreamGlobals.getErr())
                 .build()
                 .getServer()
-                .run();
+                .run()
+                .join();
     }
 }

@@ -427,7 +427,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             return makeIntFieldProcessor(fieldName, src);
         }
         if (type == long.class) {
-            return getLongProcessor(field, fieldName, source.getColumn(columnName).getType(), src);
+            return getLongProcessor(field, fieldName, source.getDefinition().getColumn(columnName).getDataType(), src);
         }
         if (type == float.class) {
             return makeFloatFieldProcessor(fieldName, src);

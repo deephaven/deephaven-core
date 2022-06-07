@@ -9,6 +9,7 @@ import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.ReleasableLivenessManager;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -71,6 +72,28 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
 
     interface Listener {
         void onScopeChanges(ScriptSession scriptSession, Changes changes);
+    }
+
+    /**
+     * Tracks changes in the script session bindings until the SnapshotScope is closed.
+     *
+     * @return a new SnapshotScope, so that the caller can control when to stop tracking changes to bindings.
+     */
+    default SnapshotScope snapshot() {
+        return snapshot(null);
+    }
+
+    /**
+     * Tracks changes in the script session bindings until the SnapshotScope is closed.
+     *
+     * This API should be considered unstable, see deephaven-core#2453.
+     *
+     * @param previousIfPresent if non-null, will be closed atomically with the new scope being opened.
+     * @return a new SnapshotScope, so that the caller can control when to stop tracking changes to bindings.
+     */
+    SnapshotScope snapshot(@Nullable SnapshotScope previousIfPresent);
+
+    interface SnapshotScope extends SafeCloseable {
     }
 
     /**
