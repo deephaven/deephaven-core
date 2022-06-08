@@ -1,12 +1,10 @@
 package io.deephaven.engine.table;
 
-import io.deephaven.datastructures.util.SmartKey;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Interface for classes that know how to export the elements of a given tuple type. Currently supports element-wise
- * export to a {@link WritableColumnSource} without unnecessary boxing, or full export to a "{@link SmartKey}" with the
- * necessary boxing.
+ * Interface for classes that know how to export the elements of a given tuple type. Currently, supports element-wise
+ * export to a {@link WritableColumnSource} without unnecessary boxing.
  */
 public interface TupleExporter<TUPLE_TYPE> {
 
