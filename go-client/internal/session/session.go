@@ -3,8 +3,6 @@ package session
 import (
 	"context"
 
-	"github.com/apache/arrow/go/arrow/array"
-	sessionpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/session"
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 
 	"google.golang.org/grpc"
@@ -15,13 +13,10 @@ import (
 type Session struct {
 	grpcChannel *grpc.ClientConn
 
-	token tokenManager
-
-	sessionStub sessionpb2.SessionServiceClient
-
-	consoleStub ConsoleStub
-	flightStub  FlightStub
-	tableStub   TableStub
+	SessionStub
+	ConsoleStub
+	FlightStub
+	TableStub
 
 	nextTicket int32
 }
@@ -39,48 +34,31 @@ func NewSession(ctx context.Context, host string, port string) (Session, error) 
 
 	session := Session{grpcChannel: grpcChannel}
 
-	session.sessionStub = sessionpb2.NewSessionServiceClient(grpcChannel)
-	session.token, err = NewTokenManager(ctx, session.sessionStub)
+	session.SessionStub, err = NewSessionStub(ctx, &session)
 	if err != nil {
 		session.Close()
 		return Session{}, err
 	}
 
-	session.tableStub, err = NewTableStub(&session)
+	session.TableStub, err = NewTableStub(&session)
 	if err != nil {
 		session.Close()
 		return Session{}, err
 	}
 
-	session.consoleStub, err = NewConsoleStub(ctx, &session, "python") // TODO: session type
+	session.ConsoleStub, err = NewConsoleStub(ctx, &session, "python") // TODO: session type
 	if err != nil {
 		session.Close()
 		return Session{}, err
 	}
 
-	session.flightStub, err = NewFlightStub(&session, host, port)
+	session.FlightStub, err = NewFlightStub(&session, host, port)
 	if err != nil {
 		session.Close()
 		return Session{}, err
 	}
 
 	return session, nil
-}
-
-func (session *Session) EmptyTable(ctx context.Context, numRows int64) (TableHandle, error) {
-	return session.tableStub.EmptyTable(ctx, numRows)
-}
-
-func (session *Session) ImportTable(ctx context.Context, rec array.Record) (TableHandle, error) {
-	return session.flightStub.ImportTable(ctx, rec)
-}
-
-func (session *Session) BindToVariable(ctx context.Context, name string, table TableHandle) error {
-	return session.consoleStub.BindToVariable(ctx, name, table.Ticket)
-}
-
-func (session *Session) snapshot(ctx context.Context, table *TableHandle) (array.Record, error) {
-	return session.flightStub.SnapshotRecord(ctx, table.Ticket)
 }
 
 func (session *Session) GrpcChannel() *grpc.ClientConn {
@@ -110,12 +88,12 @@ func (session *Session) MakeTicket(id int32) ticketpb2.Ticket {
 }
 
 func (session *Session) Close() {
-	session.token.Close()
+	session.SessionStub.Close()
 	if session.grpcChannel != nil {
 		session.grpcChannel.Close()
 	}
 }
 
 func (session *Session) WithToken(ctx context.Context) context.Context {
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("deephaven_session_id", string(session.token.Token())))
+	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("deephaven_session_id", string(session.Token())))
 }

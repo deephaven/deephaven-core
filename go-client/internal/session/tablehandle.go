@@ -31,15 +31,15 @@ func NewTableHandle(session *Session, ticket *ticketpb2.Ticket, schema *arrow.Sc
 //
 // If a Record is returned successfully, it must be freed later with `record.Release()`
 func (th *TableHandle) Snapshot(ctx context.Context) (array.Record, error) {
-	return th.Session.snapshot(ctx, th)
+	return th.Session.SnapshotRecord(ctx, th.Ticket)
 }
 
 // Returns a new table without the given columns.
 func (th *TableHandle) DropColumns(ctx context.Context, cols []string) (TableHandle, error) {
-	return th.Session.tableStub.DropColumns(ctx, th, cols)
+	return th.Session.DropColumns(ctx, th, cols)
 }
 
 // Returns a new table with additional columns calculated according to the formulas
 func (th *TableHandle) Update(ctx context.Context, formulas []string) (TableHandle, error) {
-	return th.Session.tableStub.Update(ctx, th, formulas)
+	return th.Session.Update(ctx, th, formulas)
 }

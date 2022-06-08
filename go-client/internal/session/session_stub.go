@@ -105,7 +105,11 @@ func (ref *refresher) refresh() error {
 	return nil
 }
 
-type tokenManager struct {
+type SessionStub struct {
+	session *Session
+
+	stub sessionpb2.SessionServiceClient
+
 	tokenMutex *sync.Mutex
 	token      *tokenResp
 
@@ -114,18 +118,20 @@ type tokenManager struct {
 
 // Performs the first handshake to get a session token.
 //
-func NewTokenManager(ctx context.Context, sessionStub sessionpb2.SessionServiceClient) (tokenManager, error) {
+func NewSessionStub(ctx context.Context, session *Session) (SessionStub, error) {
+	stub := sessionpb2.NewSessionServiceClient(session.GrpcChannel())
+
 	cancelCh := make(chan struct{})
 
 	tokenMutex := &sync.Mutex{}
 	tokenResp := &tokenResp{}
 
-	err := startRefresher(ctx, sessionStub, tokenMutex, tokenResp, cancelCh)
+	err := startRefresher(ctx, stub, tokenMutex, tokenResp, cancelCh)
 	if err != nil {
-		return tokenManager{}, err
+		return SessionStub{}, err
 	}
 
-	hs := tokenManager{
+	hs := SessionStub{
 		tokenMutex: tokenMutex,
 		token:      tokenResp,
 
@@ -135,7 +141,7 @@ func NewTokenManager(ctx context.Context, sessionStub sessionpb2.SessionServiceC
 	return hs, nil
 }
 
-func (hs *tokenManager) Token() []byte {
+func (hs *SessionStub) Token() []byte {
 	hs.tokenMutex.Lock()
 	if hs.token.Error != nil {
 		panic("TODO: Error in refreshing token")
@@ -147,7 +153,7 @@ func (hs *tokenManager) Token() []byte {
 	return token
 }
 
-func (hs *tokenManager) Close() {
+func (hs *SessionStub) Close() {
 	if hs.cancelCh != nil {
 		close(hs.cancelCh)
 	}
