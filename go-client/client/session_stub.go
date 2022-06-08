@@ -1,4 +1,4 @@
-package session
+package client
 
 import (
 	"context"
@@ -16,7 +16,7 @@ type tokenResp struct {
 	Error error
 }
 
-// Stores the current session token and sends periodic keepalive messages
+// Stores the current client token and sends periodic keepalive messages
 type refresher struct {
 	ctx         context.Context
 	sessionStub sessionpb2.SessionServiceClient
@@ -105,8 +105,8 @@ func (ref *refresher) refresh() error {
 	return nil
 }
 
-type SessionStub struct {
-	session *Session
+type sessionStub struct {
+	client *Client
 
 	stub sessionpb2.SessionServiceClient
 
@@ -116,10 +116,10 @@ type SessionStub struct {
 	cancelCh chan struct{}
 }
 
-// Performs the first handshake to get a session token.
+// Performs the first handshake to get a client token.
 //
-func NewSessionStub(ctx context.Context, session *Session) (SessionStub, error) {
-	stub := sessionpb2.NewSessionServiceClient(session.GrpcChannel())
+func NewSessionStub(ctx context.Context, client *Client) (sessionStub, error) {
+	stub := sessionpb2.NewSessionServiceClient(client.GrpcChannel())
 
 	cancelCh := make(chan struct{})
 
@@ -128,10 +128,10 @@ func NewSessionStub(ctx context.Context, session *Session) (SessionStub, error) 
 
 	err := startRefresher(ctx, stub, tokenMutex, tokenResp, cancelCh)
 	if err != nil {
-		return SessionStub{}, err
+		return sessionStub{}, err
 	}
 
-	hs := SessionStub{
+	hs := sessionStub{
 		tokenMutex: tokenMutex,
 		token:      tokenResp,
 
@@ -141,7 +141,7 @@ func NewSessionStub(ctx context.Context, session *Session) (SessionStub, error) 
 	return hs, nil
 }
 
-func (hs *SessionStub) Token() []byte {
+func (hs *sessionStub) Token() []byte {
 	hs.tokenMutex.Lock()
 	if hs.token.Error != nil {
 		panic("TODO: Error in refreshing token")
@@ -153,7 +153,7 @@ func (hs *SessionStub) Token() []byte {
 	return token
 }
 
-func (hs *SessionStub) Close() {
+func (hs *sessionStub) Close() {
 	if hs.cancelCh != nil {
 		close(hs.cancelCh)
 		hs.cancelCh = nil

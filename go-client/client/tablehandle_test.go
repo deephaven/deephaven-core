@@ -1,4 +1,4 @@
-package session_test
+package client_test
 
 import (
 	"context"
@@ -6,11 +6,10 @@ import (
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/deephaven/deephaven-core/go-client/client"
-	"github.com/deephaven/deephaven-core/go-client/internal/session"
 	"github.com/deephaven/deephaven-core/go-client/internal/test_setup"
 )
 
-type unaryTableOp func(context.Context, *session.TableHandle) (session.TableHandle, error)
+type unaryTableOp func(context.Context, *client.TableHandle) (client.TableHandle, error)
 
 func applyTableOp(t *testing.T, op unaryTableOp) *array.Record {
 	ctx := context.Background()
@@ -46,7 +45,7 @@ func applyTableOp(t *testing.T, op unaryTableOp) *array.Record {
 }
 
 func TestDropColumns(t *testing.T) {
-	result := applyTableOp(t, func(ctx context.Context, before *session.TableHandle) (session.TableHandle, error) {
+	result := applyTableOp(t, func(ctx context.Context, before *client.TableHandle) (client.TableHandle, error) {
 		return before.DropColumns(ctx, []string{"Ticker", "Vol"})
 	})
 
@@ -67,7 +66,7 @@ func TestDropColumns(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	result := applyTableOp(t, func(ctx context.Context, before *session.TableHandle) (session.TableHandle, error) {
+	result := applyTableOp(t, func(ctx context.Context, before *client.TableHandle) (client.TableHandle, error) {
 		return before.Update(ctx, []string{"Foo = Close * 17.0", "Bar = Vol + 1"})
 	})
 

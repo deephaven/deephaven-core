@@ -1,4 +1,4 @@
-package session
+package client
 
 import (
 	"context"
@@ -10,22 +10,25 @@ import (
 	tablepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/table"
 )
 
-type TableStub struct {
-	session *Session
+type tableStub struct {
+	client *Client
 
 	stub tablepb2.TableServiceClient
 }
 
-func NewTableStub(session *Session) (TableStub, error) {
-	stub := tablepb2.NewTableServiceClient(session.GrpcChannel())
+func NewTableStub(client *Client) (tableStub, error) {
+	stub := tablepb2.NewTableServiceClient(client.GrpcChannel())
 
-	return TableStub{session: session, stub: stub}, nil
+	return tableStub{client: client, stub: stub}, nil
 }
 
-func (ts *TableStub) EmptyTable(ctx context.Context, numRows int64) (TableHandle, error) {
-	ctx = ts.session.WithToken(ctx)
+// Creates a new empty table in the global scope.
+//
+// The table will have zero columns and the specified number of rows.
+func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (TableHandle, error) {
+	ctx = ts.client.WithToken(ctx)
 
-	result := ts.session.NewTicket()
+	result := ts.client.NewTicket()
 
 	req := tablepb2.EmptyTableRequest{ResultId: &result, Size: numRows}
 	resp, err := ts.stub.EmptyTable(ctx, &req)
@@ -33,13 +36,13 @@ func (ts *TableStub) EmptyTable(ctx context.Context, numRows int64) (TableHandle
 		return TableHandle{}, err
 	}
 
-	return parseCreationResponse(ts.session, resp)
+	return parseCreationResponse(ts.client, resp)
 }
 
-func (ts *TableStub) DropColumns(ctx context.Context, table *TableHandle, cols []string) (TableHandle, error) {
-	ctx = ts.session.WithToken(ctx)
+func (ts *tableStub) DropColumns(ctx context.Context, table *TableHandle, cols []string) (TableHandle, error) {
+	ctx = ts.client.WithToken(ctx)
 
-	result := ts.session.NewTicket()
+	result := ts.client.NewTicket()
 
 	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}
 
@@ -49,13 +52,13 @@ func (ts *TableStub) DropColumns(ctx context.Context, table *TableHandle, cols [
 		return TableHandle{}, err
 	}
 
-	return parseCreationResponse(ts.session, resp)
+	return parseCreationResponse(ts.client, resp)
 }
 
-func (ts *TableStub) Update(ctx context.Context, table *TableHandle, formulas []string) (TableHandle, error) {
-	ctx = ts.session.WithToken(ctx)
+func (ts *tableStub) Update(ctx context.Context, table *TableHandle, formulas []string) (TableHandle, error) {
+	ctx = ts.client.WithToken(ctx)
 
-	result := ts.session.NewTicket()
+	result := ts.client.NewTicket()
 
 	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}
 
@@ -65,10 +68,10 @@ func (ts *TableStub) Update(ctx context.Context, table *TableHandle, formulas []
 		return TableHandle{}, err
 	}
 
-	return parseCreationResponse(ts.session, resp)
+	return parseCreationResponse(ts.client, resp)
 }
 
-func parseCreationResponse(session *Session, resp *tablepb2.ExportedTableCreationResponse) (TableHandle, error) {
+func parseCreationResponse(client *Client, resp *tablepb2.ExportedTableCreationResponse) (TableHandle, error) {
 	if !resp.Success {
 		return TableHandle{}, errors.New("server error: `" + resp.GetErrorInfo() + "`")
 	}
@@ -84,5 +87,5 @@ func parseCreationResponse(session *Session, resp *tablepb2.ExportedTableCreatio
 		return TableHandle{}, err
 	}
 
-	return newTableHandle(session, respTicket, schema, resp.Size, resp.IsStatic), nil
+	return newTableHandle(client, respTicket, schema, resp.Size, resp.IsStatic), nil
 }

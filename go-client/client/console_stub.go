@@ -1,4 +1,4 @@
-package session
+package client
 
 import (
 	"context"
@@ -7,34 +7,35 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
-type ConsoleStub struct {
-	session *Session
+type consoleStub struct {
+	client *Client
 
 	stub consolepb2.ConsoleServiceClient
 
 	consoleId *ticketpb2.Ticket
 }
 
-func NewConsoleStub(ctx context.Context, session *Session, sessionType string) (ConsoleStub, error) {
-	ctx = session.WithToken(ctx)
+func NewConsoleStub(ctx context.Context, client *Client, sessionType string) (consoleStub, error) {
+	ctx = client.WithToken(ctx)
 
-	stub := consolepb2.NewConsoleServiceClient(session.GrpcChannel())
+	stub := consolepb2.NewConsoleServiceClient(client.GrpcChannel())
 
-	reqTicket := session.NewTicket()
+	reqTicket := client.NewTicket()
 
 	req := consolepb2.StartConsoleRequest{ResultId: &reqTicket, SessionType: sessionType}
 	resp, err := stub.StartConsole(ctx, &req)
 	if err != nil {
-		return ConsoleStub{}, err
+		return consoleStub{}, err
 	}
 
 	consoleId := resp.ResultId
 
-	return ConsoleStub{session: session, stub: stub, consoleId: consoleId}, nil
+	return consoleStub{client: client, stub: stub, consoleId: consoleId}, nil
 }
 
-func (console *ConsoleStub) BindToVariable(ctx context.Context, name string, table *TableHandle) error {
-	ctx = console.session.WithToken(ctx)
+// Binds a table reference to a given name so that it can be referenced by other clients or the web UI.
+func (console *consoleStub) BindToVariable(ctx context.Context, name string, table *TableHandle) error {
+	ctx = console.client.WithToken(ctx)
 
 	req := consolepb2.BindTableToVariableRequest{ConsoleId: console.consoleId, VariableName: name, TableId: table.ticket}
 	_, err := console.stub.BindTableToVariable(ctx, &req)

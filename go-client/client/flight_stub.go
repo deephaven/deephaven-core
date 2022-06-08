@@ -1,4 +1,4 @@
-package session
+package client
 
 import (
 	"context"
@@ -17,13 +17,13 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
-type FlightStub struct {
-	session *Session
+type flightStub struct {
+	client *Client
 
 	stub flight.FlightServiceClient
 }
 
-func NewFlightStub(session *Session, host string, port string) (FlightStub, error) {
+func NewFlightStub(client *Client, host string, port string) (flightStub, error) {
 	stub, err := flight.NewClientWithMiddleware(
 		net.JoinHostPort(host, port),
 		nil,
@@ -31,14 +31,14 @@ func NewFlightStub(session *Session, host string, port string) (FlightStub, erro
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		return FlightStub{}, err
+		return flightStub{}, err
 	}
 
-	return FlightStub{session: session, stub: stub}, nil
+	return flightStub{client: client, stub: stub}, nil
 }
 
-func (fs *FlightStub) SnapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (array.Record, error) {
-	ctx = fs.session.WithToken(ctx)
+func (fs *flightStub) SnapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (array.Record, error) {
+	ctx = fs.client.WithToken(ctx)
 
 	fticket := &flight.Ticket{Ticket: ticket.GetTicket()}
 
@@ -70,8 +70,11 @@ func (fs *FlightStub) SnapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 	return rec1, nil
 }
 
-func (fs *FlightStub) ImportTable(ctx context.Context, rec array.Record) (TableHandle, error) {
-	ctx = fs.session.WithToken(ctx)
+// Uploads a table to the deephaven server.
+//
+// The table can then be manipulated and referenced using the returned TableHandle.
+func (fs *flightStub) ImportTable(ctx context.Context, rec array.Record) (TableHandle, error) {
+	ctx = fs.client.WithToken(ctx)
 
 	doPut, err := fs.stub.DoPut(ctx)
 	if err != nil {
@@ -79,7 +82,7 @@ func (fs *FlightStub) ImportTable(ctx context.Context, rec array.Record) (TableH
 	}
 	defer doPut.CloseSend()
 
-	ticketNum := fs.session.NewTicketNum()
+	ticketNum := fs.client.NewTicketNum()
 
 	descr := &flight.FlightDescriptor{Type: flight.FlightDescriptor_PATH, Path: []string{"export", strconv.Itoa(int(ticketNum))}}
 
@@ -101,9 +104,9 @@ func (fs *FlightStub) ImportTable(ctx context.Context, rec array.Record) (TableH
 		return TableHandle{}, err
 	}
 
-	ticket := fs.session.MakeTicket(ticketNum)
+	ticket := fs.client.MakeTicket(ticketNum)
 
 	schema := rec.Schema()
 
-	return newTableHandle(fs.session, &ticket, schema, rec.NumRows(), true), nil
+	return newTableHandle(fs.client, &ticket, schema, rec.NumRows(), true), nil
 }

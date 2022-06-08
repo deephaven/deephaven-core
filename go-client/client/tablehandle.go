@@ -1,4 +1,4 @@
-package session
+package client
 
 import (
 	"context"
@@ -10,16 +10,16 @@ import (
 )
 
 type TableHandle struct {
-	session  *Session
+	client   *Client
 	ticket   *ticketpb2.Ticket
 	schema   *arrow.Schema
 	size     int64
 	isStatic bool
 }
 
-func newTableHandle(session *Session, ticket *ticketpb2.Ticket, schema *arrow.Schema, size int64, isStatic bool) TableHandle {
+func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Schema, size int64, isStatic bool) TableHandle {
 	return TableHandle{
-		session:  session,
+		client:   client,
 		ticket:   ticket,
 		schema:   schema,
 		size:     size,
@@ -31,17 +31,17 @@ func newTableHandle(session *Session, ticket *ticketpb2.Ticket, schema *arrow.Sc
 //
 // If a Record is returned successfully, it must be freed later with `record.Release()`
 func (th *TableHandle) Snapshot(ctx context.Context) (array.Record, error) {
-	return th.session.SnapshotRecord(ctx, th.ticket)
+	return th.client.SnapshotRecord(ctx, th.ticket)
 }
 
 // Returns a new table without the given columns.
 func (th *TableHandle) DropColumns(ctx context.Context, cols []string) (TableHandle, error) {
-	return th.session.DropColumns(ctx, th, cols)
+	return th.client.DropColumns(ctx, th, cols)
 }
 
 // Returns a new table with additional columns calculated according to the formulas.
 func (th *TableHandle) Update(ctx context.Context, formulas []string) (TableHandle, error) {
-	return th.session.Update(ctx, th, formulas)
+	return th.client.Update(ctx, th, formulas)
 }
 
 /* ... more table methods would go here ... */
