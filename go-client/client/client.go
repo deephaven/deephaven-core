@@ -46,5 +46,6 @@ func (client *Client) BindToVariable(ctx context.Context, name string, table ses
 func (client *Client) Close() {
 	if client.session != nil {
 		client.session.Close()
+		client.session = nil
 	}
 }

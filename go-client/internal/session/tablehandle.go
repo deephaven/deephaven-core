@@ -33,3 +33,13 @@ func NewTableHandle(session *Session, ticket *ticketpb2.Ticket, schema *arrow.Sc
 func (th *TableHandle) Snapshot(ctx context.Context) (array.Record, error) {
 	return th.Session.snapshot(ctx, th)
 }
+
+// Returns a new table without the given columns.
+func (th *TableHandle) DropColumns(ctx context.Context, cols []string) (TableHandle, error) {
+	return th.Session.tableStub.DropColumns(ctx, th, cols)
+}
+
+// Returns a new table with additional columns calculated according to the formulas
+func (th *TableHandle) Update(ctx context.Context, formulas []string) (TableHandle, error) {
+	return th.Session.tableStub.Update(ctx, th, formulas)
+}

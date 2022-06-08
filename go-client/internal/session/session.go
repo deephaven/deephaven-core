@@ -2,13 +2,9 @@ package session
 
 import (
 	"context"
-	"errors"
 
 	"github.com/apache/arrow/go/arrow/array"
-	"github.com/apache/arrow/go/arrow/flight"
-	"github.com/apache/arrow/go/arrow/memory"
 	sessionpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/session"
-	"github.com/deephaven/deephaven-core/go-client/internal/proto/table"
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 
 	"google.golang.org/grpc"
@@ -72,11 +68,7 @@ func NewSession(ctx context.Context, host string, port string) (Session, error) 
 }
 
 func (session *Session) EmptyTable(ctx context.Context, numRows int64) (TableHandle, error) {
-	resp, err := session.tableStub.EmptyTable(ctx, numRows)
-	if err != nil {
-		return TableHandle{}, err
-	}
-	return session.parseCreationResponse(resp)
+	return session.tableStub.EmptyTable(ctx, numRows)
 }
 
 func (session *Session) ImportTable(ctx context.Context, rec array.Record) (TableHandle, error) {
@@ -89,25 +81,6 @@ func (session *Session) BindToVariable(ctx context.Context, name string, table T
 
 func (session *Session) snapshot(ctx context.Context, table *TableHandle) (array.Record, error) {
 	return session.flightStub.SnapshotRecord(ctx, table.Ticket)
-}
-
-func (session *Session) parseCreationResponse(resp *table.ExportedTableCreationResponse) (TableHandle, error) {
-	if !resp.Success {
-		return TableHandle{}, errors.New("server error: `" + resp.GetErrorInfo() + "`")
-	}
-
-	respTicket := resp.ResultId.GetTicket()
-	if respTicket == nil {
-		return TableHandle{}, errors.New("server response did not have ticket")
-	}
-
-	alloc := memory.NewGoAllocator()
-	schema, err := flight.DeserializeSchema(resp.SchemaHeader, alloc)
-	if err != nil {
-		return TableHandle{}, err
-	}
-
-	return NewTableHandle(session, respTicket, schema, resp.Size, resp.IsStatic), nil
 }
 
 func (session *Session) GrpcChannel() *grpc.ClientConn {
