@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.*;
 import java.util.Arrays;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -59,6 +60,15 @@ public class ArrayTuple
         final Object[] exportedElements = new Object[elements.length];
         System.arraycopy(elements, 0, exportedElements, 0, elements.length);
         return exportedElements;
+    }
+
+    /**
+     * Get the elements of this tuple as a {@link Stream}.
+     *
+     * @return A new {@link Stream} of the elements of this tuple
+     */
+    public Stream<Object> elementStream() {
+        return Arrays.stream(elements);
     }
 
     @Override
