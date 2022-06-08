@@ -816,7 +816,7 @@ public class GenerateMultiSeries {
                     .append(indent(2)).append("} else {");
             code.append("\n").append(indent(3))
                     .append(mapName)
-                    .append(".put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), ");
+                    .append(".put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.tuple.ArrayTuple(multiSeriesKey)), ");
             if (oneArgument) {
                 code.append("\n").append(indent(4)).append(args).append(");\n").append(indent(2)).append("}\n");
             } else {

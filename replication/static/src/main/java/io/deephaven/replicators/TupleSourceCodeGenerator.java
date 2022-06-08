@@ -30,7 +30,6 @@ public class TupleSourceCodeGenerator {
 
     private static final String[] DEFAULT_IMPORTS = new String[] {
             "org.jetbrains.annotations.NotNull",
-            "io.deephaven.datastructures.util.SmartKey",
             "io.deephaven.engine.table.TupleSource",
             "io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource",
             "io.deephaven.engine.table.ColumnSource",
