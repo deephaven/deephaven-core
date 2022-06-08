@@ -30,6 +30,8 @@ DEFAULT_JVM_ARGS = [
     # Disable JIT in certain cases
     '-XX:+UnlockDiagnosticVMOptions',
     '-XX:CompilerDirectivesFile=' + os.path.join(os.path.dirname(__file__), 'jars', 'dh-compiler-directives.txt'),
+    # (deephaven-core#2500): Remove DisableIntrinsic for currentThread
+    '-XX:DisableIntrinsic=_currentThread',
 ]
 
 # Provide a util func to start the JVM, will use its own defaults if none are offered

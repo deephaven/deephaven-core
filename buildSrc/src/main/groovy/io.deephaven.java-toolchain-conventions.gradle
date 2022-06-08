@@ -109,6 +109,7 @@ def compilerArgs = { String compilerDirectivesFile ->
   return [
           '-XX:+UnlockDiagnosticVMOptions',
           "-XX:CompilerDirectivesFile=${compilerDirectivesFile}",
+          // (deephaven-core#2500): Remove DisableIntrinsic for currentThread
           '-XX:DisableIntrinsic=_currentThread',
           // '-XX:+CompilerDirectivesPrint',
           // '-XX:+LogCompilation',
