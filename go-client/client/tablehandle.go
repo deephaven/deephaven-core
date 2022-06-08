@@ -44,4 +44,9 @@ func (th *TableHandle) Update(ctx context.Context, formulas []string) (TableHand
 	return th.client.Update(ctx, th, formulas)
 }
 
+func (th *TableHandle) Query() *QueryBuilder {
+	qb := newQueryBuilder(th)
+	return &qb
+}
+
 /* ... more table methods would go here ... */

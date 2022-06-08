@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"io"
 
 	"github.com/apache/arrow/go/arrow/flight"
 	"github.com/apache/arrow/go/arrow/memory"
@@ -20,6 +21,42 @@ func NewTableStub(client *Client) (tableStub, error) {
 	stub := tablepb2.NewTableServiceClient(client.GrpcChannel())
 
 	return tableStub{client: client, stub: stub}, nil
+}
+
+func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableRequest_Operation) ([]TableHandle, error) {
+	ctx = ts.client.WithToken(ctx)
+
+	req := tablepb2.BatchTableRequest{Ops: ops}
+	resp, err := ts.stub.Batch(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.CloseSend()
+
+	exportedTables := []TableHandle{}
+
+	for {
+		created, err := resp.Recv()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+
+		if !created.Success {
+			return nil, errors.New(created.GetErrorInfo())
+		}
+
+		if _, ok := created.ResultId.Ref.(*tablepb2.TableReference_Ticket); ok {
+			newTable, err := parseCreationResponse(ts.client, created)
+			if err != nil {
+				return nil, err
+			}
+			exportedTables = append(exportedTables, newTable)
+		}
+	}
+
+	return exportedTables, nil
 }
 
 // Creates a new empty table in the global scope.
