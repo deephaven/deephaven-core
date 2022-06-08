@@ -38,7 +38,7 @@ demo_table = TableTools.emptyTable(table_size) \
     .view("K = vectorized_func(I, J)")
         '''
         self.session.run_script(server_script)
-        for t_name in self.session.tables:
-            pa_table = self.session.open_table(t_name).snapshot()
-            df = pa_table.to_pandas()
-            self.assertEquals(1000, len(df.index))
+        self.assertIn('demo_table', self.session.tables)
+        pa_table = self.session.open_table('demo_table').snapshot()
+        df = pa_table.to_pandas()
+        self.assertEquals(1000, len(df.index))
