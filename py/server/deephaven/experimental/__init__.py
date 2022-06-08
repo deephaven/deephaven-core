@@ -1,7 +1,7 @@
 #
 #  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-""" This module is a place for Deephaven experimental features. """
+""" This package is a place for Deephaven experimental features. """
 
 import jpy
 from deephaven import DHError
