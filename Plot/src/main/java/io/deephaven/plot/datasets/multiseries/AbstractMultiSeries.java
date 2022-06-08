@@ -5,7 +5,6 @@
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plot.*;
@@ -22,10 +21,13 @@ import io.deephaven.engine.table.impl.*;
 import groovy.lang.Closure;
 
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.tuple.ArrayTuple;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.util.TableTools.emptyTable;
 
@@ -51,8 +53,9 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
     private final transient java.util.function.Function<Object, String> DEFAULT_NAMING_FUNCTION = key -> {
         final String keyString;
-        if (key instanceof SmartKey) {
-            keyString = Arrays.toString(((SmartKey) key).values_);
+        if (key instanceof ArrayTuple) {
+            keyString = ((ArrayTuple) key).elementStream().map(String::valueOf)
+                    .collect(Collectors.joining(", ", "[", "]"));
         } else {
             keyString = Objects.toString(key);
         }
@@ -174,8 +177,8 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
             final Class resultClass) {
         final String functionInput;
         if (byColumns.length > 1) {
-            QueryLibrary.importClass(SmartKey.class);
-            functionInput = "new SmartKey(" + String.join(",", byColumns) + ")";
+            QueryLibrary.importClass(ArrayTuple.class);
+            functionInput = "new ArrayTuple(" + String.join(",", byColumns) + ")";
         } else {
             functionInput = byColumns[0];
         }
