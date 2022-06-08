@@ -217,6 +217,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         return hasInputTable;
     }
 
+    @JsMethod
     public boolean isStreamTable() {
         return isStreamTable;
     }
@@ -498,11 +499,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         }
         if (firstRow < 0) {
             throw new IllegalArgumentException(firstRow + " < " + 0);
-        }
-        final ActiveTableBinding sub = state().getActiveBinding(this);
-        if (isStreamTable() && sub != null && sub.getSubscription() != null) {
-            // do not change subscriptions on stream tables to eliminate flickering
-            return;
         }
         currentViewportData = null;
         // we must wait for the latest stack entry that can add columns (so we get an appropriate BitSet)
@@ -1237,11 +1233,13 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             if (isStreamTable) {
                 // stream tables remove all rows from the previous step, if there are no adds this step then defer
                 // removal until new data arrives -- this makes stream tables GUI friendly
-                if (updates.getAdded().isEmpty()) {
+                if (updates.getAdded().isEmpty() && !updates.getRemoved().isEmpty()) {
+                    assert deferredDeltaRemoves == null : "Stream table received two consecutive remove rowsets";
                     deferredDeltaRemoves = updates.getRemoved();
                     return;
                 }
                 if (updates.getRemoved().isEmpty() && deferredDeltaRemoves != null) {
+                    assert updates.getRemoved().isEmpty() : "Stream table received two consecutive remove rowsets";
                     updates.setRemoved(deferredDeltaRemoves);
                     deferredDeltaRemoves = null;
                 }
@@ -1385,8 +1383,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             if (state == currentState) {
                 lastVisibleState = state;
                 hasInputTable = s.getTableDef().getAttributes().isInputTable();
-                final String streamTableAttr = state().getTableDef().getAttributes().getValue("StreamTable");
-                isStreamTable = streamTableAttr != null && streamTableAttr.equals("true");
+                isStreamTable = s.getTableDef().getAttributes().isStreamTable();
 
                 // defer the size change so that is there is a viewport sub also waiting for onRunning, it gets it first
                 LazyPromise.runLater(() -> {
@@ -1537,20 +1534,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     public void setSize(double s) {
-        // reduce flicker on stream tables
-        boolean suppressSizeChange = isStreamTable && s == 0 && this.size != ClientTableState.SIZE_UNINITIALIZED;
-        if (suppressSizeChange) {
-            return;
-        }
-        if (isStreamTable) {
-            // also, prevent the table from having trailing rows that require a vp change to view
-            final ActiveTableBinding atb = state().getActiveBinding(this);
-            final Viewport vp = atb == null ? null : atb.getSubscription();
-            if (vp != null) {
-                s = Math.min(s, vp.getRows().size());
-            }
-        }
-
         boolean changed = this.size != s;
         if (changed) {
             JsLog.debug("Table ", this, " size changed from ", this.size, " to ", s);
