@@ -18,12 +18,12 @@ import (
 )
 
 type FlightStub struct {
-	conn ConnStub
+	session *Session
 
 	stub flight.FlightServiceClient
 }
 
-func NewFlightStub(conn ConnStub, host string, port string) (FlightStub, error) {
+func NewFlightStub(session *Session, host string, port string) (FlightStub, error) {
 	stub, err := flight.NewClientWithMiddleware(
 		net.JoinHostPort(host, port),
 		nil,
@@ -34,11 +34,11 @@ func NewFlightStub(conn ConnStub, host string, port string) (FlightStub, error) 
 		return FlightStub{}, err
 	}
 
-	return FlightStub{conn: conn, stub: stub}, nil
+	return FlightStub{session: session, stub: stub}, nil
 }
 
 func (fs *FlightStub) SnapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (array.Record, error) {
-	ctx = fs.conn.WithToken(ctx)
+	ctx = fs.session.WithToken(ctx)
 
 	fticket := &flight.Ticket{Ticket: ticket.GetTicket()}
 
@@ -70,16 +70,16 @@ func (fs *FlightStub) SnapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 	return rec1, nil
 }
 
-func (fs *FlightStub) ImportTable(ctx context.Context, rec array.Record) (*ticketpb2.Ticket, error) {
-	ctx = fs.conn.WithToken(ctx)
+func (fs *FlightStub) ImportTable(ctx context.Context, rec array.Record) (TableHandle, error) {
+	ctx = fs.session.WithToken(ctx)
 
 	doPut, err := fs.stub.DoPut(ctx)
 	if err != nil {
-		return nil, err
+		return TableHandle{}, err
 	}
 	defer doPut.CloseSend()
 
-	ticketNum := fs.conn.NewTicketNum()
+	ticketNum := fs.session.NewTicketNum()
 
 	descr := &flight.FlightDescriptor{Type: flight.FlightDescriptor_PATH, Path: []string{"export", strconv.Itoa(int(ticketNum))}}
 
@@ -88,20 +88,22 @@ func (fs *FlightStub) ImportTable(ctx context.Context, rec array.Record) (*ticke
 	writer.SetFlightDescriptor(descr)
 	err = writer.Write(rec)
 	if err != nil {
-		return nil, err
+		return TableHandle{}, err
 	}
 
 	err = writer.Close()
 	if err != nil {
-		return nil, err
+		return TableHandle{}, err
 	}
 
 	_, err = doPut.Recv()
 	if err != nil {
-		return nil, err
+		return TableHandle{}, err
 	}
 
-	ticket := fs.conn.MakeTicket(ticketNum)
+	ticket := fs.session.MakeTicket(ticketNum)
 
-	return &ticket, nil
+	schema := rec.Schema()
+
+	return NewTableHandle(fs.session, &ticket, schema, rec.NumRows(), true), nil
 }

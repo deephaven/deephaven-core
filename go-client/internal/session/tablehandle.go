@@ -31,5 +31,5 @@ func NewTableHandle(session *Session, ticket *ticketpb2.Ticket, schema *arrow.Sc
 //
 // If a Record is returned successfully, it must be freed later with `record.Release()`
 func (th *TableHandle) Snapshot(ctx context.Context) (array.Record, error) {
-	return th.Session.SnapshotRecord(ctx, th.Ticket)
+	return th.Session.snapshot(ctx, th)
 }

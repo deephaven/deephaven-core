@@ -2,8 +2,13 @@ package session
 
 import (
 	"context"
+	"errors"
 
+	"github.com/apache/arrow/go/arrow/array"
+	"github.com/apache/arrow/go/arrow/flight"
+	"github.com/apache/arrow/go/arrow/memory"
 	sessionpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/session"
+	"github.com/deephaven/deephaven-core/go-client/internal/proto/table"
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 
 	"google.golang.org/grpc"
@@ -18,9 +23,9 @@ type Session struct {
 
 	sessionStub sessionpb2.SessionServiceClient
 
-	ConsoleStub
-	FlightStub
-	TableStub
+	consoleStub ConsoleStub
+	flightStub  FlightStub
+	tableStub   TableStub
 
 	nextTicket int32
 }
@@ -41,29 +46,68 @@ func NewSession(ctx context.Context, host string, port string) (Session, error) 
 	session.sessionStub = sessionpb2.NewSessionServiceClient(grpcChannel)
 	session.token, err = NewTokenManager(ctx, session.sessionStub)
 	if err != nil {
-		// TODO: Close channel
+		session.Close()
 		return Session{}, err
 	}
 
-	session.TableStub, err = NewTableStub(&session)
+	session.tableStub, err = NewTableStub(&session)
 	if err != nil {
-		// TODO: Close channel
+		session.Close()
 		return Session{}, err
 	}
 
-	session.ConsoleStub, err = NewConsoleStub(ctx, &session, "python") // TODO: session type
+	session.consoleStub, err = NewConsoleStub(ctx, &session, "python") // TODO: session type
 	if err != nil {
-		// TODO: Close channel
+		session.Close()
 		return Session{}, err
 	}
 
-	session.FlightStub, err = NewFlightStub(&session, host, port)
+	session.flightStub, err = NewFlightStub(&session, host, port)
 	if err != nil {
-		// TODO: Close channel
+		session.Close()
 		return Session{}, err
 	}
 
 	return session, nil
+}
+
+func (session *Session) EmptyTable(ctx context.Context, numRows int64) (TableHandle, error) {
+	resp, err := session.tableStub.EmptyTable(ctx, numRows)
+	if err != nil {
+		return TableHandle{}, err
+	}
+	return session.parseCreationResponse(resp)
+}
+
+func (session *Session) ImportTable(ctx context.Context, rec array.Record) (TableHandle, error) {
+	return session.flightStub.ImportTable(ctx, rec)
+}
+
+func (session *Session) BindToVariable(ctx context.Context, name string, table TableHandle) error {
+	return session.consoleStub.BindToVariable(ctx, name, table.Ticket)
+}
+
+func (session *Session) snapshot(ctx context.Context, table *TableHandle) (array.Record, error) {
+	return session.flightStub.SnapshotRecord(ctx, table.Ticket)
+}
+
+func (session *Session) parseCreationResponse(resp *table.ExportedTableCreationResponse) (TableHandle, error) {
+	if !resp.Success {
+		return TableHandle{}, errors.New("server error: `" + resp.GetErrorInfo() + "`")
+	}
+
+	respTicket := resp.ResultId.GetTicket()
+	if respTicket == nil {
+		return TableHandle{}, errors.New("server response did not have ticket")
+	}
+
+	alloc := memory.NewGoAllocator()
+	schema, err := flight.DeserializeSchema(resp.SchemaHeader, alloc)
+	if err != nil {
+		return TableHandle{}, err
+	}
+
+	return NewTableHandle(session, respTicket, schema, resp.Size, resp.IsStatic), nil
 }
 
 func (session *Session) GrpcChannel() *grpc.ClientConn {
@@ -94,7 +138,9 @@ func (session *Session) MakeTicket(id int32) ticketpb2.Ticket {
 
 func (session *Session) Close() {
 	session.token.Close()
-	// TODO:
+	if session.grpcChannel != nil {
+		session.grpcChannel.Close()
+	}
 }
 
 func (session *Session) WithToken(ctx context.Context) context.Context {

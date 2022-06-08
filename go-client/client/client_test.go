@@ -41,7 +41,7 @@ func TestEmptyTable(t *testing.T) {
 
 	c, err := client.NewClient(ctx, "localhost", "10000")
 	if err != nil {
-		t.Errorf("NewClient err %s", err.Error())
+		t.Fatalf("NewClient err %s", err.Error())
 	}
 	defer c.Close()
 
@@ -69,7 +69,7 @@ func TestTableUpload(t *testing.T) {
 	ctx := context.Background()
 	s, err := client.NewClient(ctx, "localhost", "10000")
 	if err != nil {
-		t.Errorf("NewClient err %s", err.Error())
+		t.Fatalf("NewClient err %s", err.Error())
 	}
 	defer s.Close()
 

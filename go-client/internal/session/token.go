@@ -148,5 +148,7 @@ func (hs *tokenManager) Token() []byte {
 }
 
 func (hs *tokenManager) Close() {
-	close(hs.cancelCh)
+	if hs.cancelCh != nil {
+		close(hs.cancelCh)
+	}
 }

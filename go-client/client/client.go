@@ -2,11 +2,8 @@ package client
 
 import (
 	"context"
-	"errors"
 
 	"github.com/apache/arrow/go/arrow/array"
-	"github.com/apache/arrow/go/arrow/flight"
-	"github.com/apache/arrow/go/arrow/memory"
 	"github.com/deephaven/deephaven-core/go-client/internal/session"
 )
 
@@ -30,49 +27,24 @@ func NewClient(ctx context.Context, host string, port string) (Client, error) {
 //
 // The table will have zero columns and the specified number of rows.
 func (client *Client) EmptyTable(ctx context.Context, numRows int64) (session.TableHandle, error) {
-	resp, err := client.session.EmptyTable(ctx, numRows)
-	if err != nil {
-		return session.TableHandle{}, err
-	}
-
-	if !resp.Success {
-		return session.TableHandle{}, errors.New("server error: `" + resp.GetErrorInfo() + "`")
-	}
-
-	respTicket := resp.ResultId.GetTicket()
-	if respTicket == nil {
-		return session.TableHandle{}, errors.New("server response did not have ticket")
-	}
-
-	alloc := memory.NewGoAllocator()
-	schema, err := flight.DeserializeSchema(resp.SchemaHeader, alloc)
-	if err != nil {
-		return session.TableHandle{}, err
-	}
-
-	return session.NewTableHandle(client.session, respTicket, schema, resp.Size, resp.IsStatic), nil
+	return client.session.EmptyTable(ctx, numRows)
 }
 
 // Uploads a table to the deephaven server.
 //
 // The table can then be manipulated and referenced using the returned TableHandle.
 func (client *Client) ImportTable(ctx context.Context, rec array.Record) (session.TableHandle, error) {
-	ticket, err := client.session.ImportTable(ctx, rec)
-	if err != nil {
-		return session.TableHandle{}, err
-	}
-
-	schema := rec.Schema()
-
-	return session.NewTableHandle(client.session, ticket, schema, rec.NumRows(), true), nil
+	return client.session.ImportTable(ctx, rec)
 }
 
 // Binds a table reference to a given name so that it can be referenced by other clients or the web UI.
 func (client *Client) BindToVariable(ctx context.Context, name string, table session.TableHandle) error {
-	return client.session.BindToVariable(ctx, name, table.Ticket)
+	return client.session.BindToVariable(ctx, name, table)
 }
 
 // Closes the connection to the server. Once closed, a client cannot perform any operations.
 func (client *Client) Close() {
-	client.session.Close()
+	if client.session != nil {
+		client.session.Close()
+	}
 }
