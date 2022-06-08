@@ -2,7 +2,7 @@
  "className": "io.deephaven.proto.backplane.script.grpc.FigureDescriptor$BoolMapWithDefault",
  "methods": {
   "equals": ":param obj: java.lang.Object\n:return: boolean",
-  "getDefaultBool": "bool default_bool = 1;\n\n:return: (boolean) The defaultBool.",
+  "getDefaultBool": "optional bool default_bool = 1;\n\n:return: (boolean) The defaultBool.",
   "getDefaultInstance": ":return: io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BoolMapWithDefault",
   "getDefaultInstanceForType": ":return: io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BoolMapWithDefault",
   "getDescriptor": ":return: com.google.protobuf.Descriptors.Descriptor",
@@ -16,6 +16,7 @@
   "getValues": "repeated bool values = 3;\n\n:param index: (int) - The index of the element to return.\n:return: (boolean) The values at the given index.",
   "getValuesCount": "repeated bool values = 3;\n\n:return: (int) The count of values.",
   "getValuesList": "repeated bool values = 3;\n\n:return: (java.util.List<java.lang.Boolean>) A list containing the values.",
+  "hasDefaultBool": "optional bool default_bool = 1;\n\n:return: (boolean) Whether the defaultBool field is set.",
   "hashCode": ":return: int",
   "isInitialized": ":return: boolean",
   "newBuilder": "*Overload 1*  \n  :return: io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BoolMapWithDefault.Builder\n  \n*Overload 2*  \n  :param prototype: io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BoolMapWithDefault\n  :return: io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BoolMapWithDefault.Builder",

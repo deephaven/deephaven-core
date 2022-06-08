@@ -125,7 +125,7 @@ class TableShowTools {
         } else if (columnSource.getType() == java.util.Date.class) {
             len = Math.max(len, 33);
         } else {
-            //noinspection unchecked
+            // noinspection unchecked
             final Annotation annotation = columnSource.getType().getAnnotation(TableToolsShowControl.class);
             if (annotation != null) {
                 len = Math.max(len, ((TableToolsShowControl) annotation).getWidth());

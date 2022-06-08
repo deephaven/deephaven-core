@@ -581,32 +581,6 @@ def floatCol(name, *data):
 
 
 @_passThrough
-def getKey(groupByColumnSources, row):
-    """
-    Returns a SmartKey for the specified row from a set of ColumnSources.
-    
-    :param groupByColumnSources: (io.deephaven.engine.table.ColumnSource<?>[]) - a set of ColumnSources from which to retrieve the data
-    :param row: (long) - the row number for which to retrieve data
-    :return: (java.lang.Object) a Deephaven SmartKey object
-    """
-    
-    return _java_type_.getKey(groupByColumnSources, row)
-
-
-@_passThrough
-def getPrevKey(groupByColumnSources, row):
-    """
-    Returns a SmartKey for the row previous to the specified row from a set of ColumnSources.
-    
-    :param groupByColumnSources: (io.deephaven.engine.table.ColumnSource<?>[]) - a set of ColumnSources from which to retrieve the data
-    :param row: (long) - the row number for which to retrieve the previous row's data
-    :return: (java.lang.Object) a Deephaven SmartKey object
-    """
-    
-    return _java_type_.getPrevKey(groupByColumnSources, row)
-
-
-@_passThrough
 def html(source):
     """
     Returns a printout of a table formatted as HTML. Limit use to small tables to avoid running out of memory.

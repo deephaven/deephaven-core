@@ -10,6 +10,7 @@
   "isRefreshing": "Is the node updating?\n\n:return: (boolean) true if the node is updating; false otherwise.",
   "makeReverseLookupListenerWithLock": ":param source: io.deephaven.engine.table.Table\n:param columns: java.lang.String...\n:return: io.deephaven.engine.table.impl.ReverseLookupListener",
   "makeReverseLookupListenerWithSnapshot": ":param source: io.deephaven.engine.table.impl.BaseTable\n:param columns: java.lang.String...\n:return: io.deephaven.engine.table.impl.ReverseLookupListener",
+  "makeSmartKey": "Make a SmartKey appropriate for values.\n\n:param values: (java.lang.Object...) - The values to include\n:return: (io.deephaven.datastructures.util.SmartKey) A canonicalized CanonicalizedSmartKey if all values are canonicalizable, else a new SmartKey",
   "prepareForTree": "Prepare the parameter table for use with tree table\n\n:param preTree: (io.deephaven.engine.table.impl.BaseTable) - The tree to prepare\n:param idColumn: (java.lang.String) - The column that will be used as the id for Table.treeTable(String, String)",
   "satisfied": "Is this ancestor satisfied? Note that this method must be safe to call on any thread.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) Whether the dependency is satisfied on step (and will not fire subsequent notifications)",
   "setRefreshing": "Change the node's run mode.\n\n:param refreshing: (boolean) - true to cause the node to update; false otherwise.\n:return: (boolean) new refreshing state",

@@ -40,7 +40,8 @@ public class KeyedTableListener {
 
     // TODO: create an even more generic internals to handle multiple matches
     // TODO: Refactor with some sort of internal assistant object (unique versus generic)
-    // TODO: private HashMap<ArrayTuple, TrackingWritableRowSet> keyToIndexObjectHashMap; // for storing multiple matches
+    // TODO: private HashMap<ArrayTuple, TrackingWritableRowSet> keyToIndexObjectHashMap; // for storing multiple
+    // matches
 
     public KeyedTableListener(QueryTable table, String... keyColumnNames) {
         this.table = table;
