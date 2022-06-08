@@ -1,23 +1,21 @@
-package console_stub
+package session
 
 import (
 	"context"
-
-	"github.com/deephaven/deephaven-core/go-client/internal/conn_stub"
 
 	consolepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/console"
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
 type ConsoleStub struct {
-	conn conn_stub.ConnStub
+	conn ConnStub
 
 	stub consolepb2.ConsoleServiceClient
 
 	consoleId *ticketpb2.Ticket
 }
 
-func NewConsoleStub(ctx context.Context, conn conn_stub.ConnStub, sessionType string) (ConsoleStub, error) {
+func NewConsoleStub(ctx context.Context, conn ConnStub, sessionType string) (ConsoleStub, error) {
 	ctx = conn.WithToken(ctx)
 
 	stub := consolepb2.NewConsoleServiceClient(conn.GrpcChannel())

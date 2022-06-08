@@ -1,4 +1,4 @@
-package flight_stub
+package session
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/flight"
 	"github.com/apache/arrow/go/arrow/ipc"
-	"github.com/deephaven/deephaven-core/go-client/internal/conn_stub"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -19,12 +18,12 @@ import (
 )
 
 type FlightStub struct {
-	conn conn_stub.ConnStub
+	conn ConnStub
 
 	stub flight.FlightServiceClient
 }
 
-func NewFlightStub(conn conn_stub.ConnStub, host string, port string) (FlightStub, error) {
+func NewFlightStub(conn ConnStub, host string, port string) (FlightStub, error) {
 	stub, err := flight.NewClientWithMiddleware(
 		net.JoinHostPort(host, port),
 		nil,

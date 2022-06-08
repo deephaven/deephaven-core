@@ -3,10 +3,6 @@ package session
 import (
 	"context"
 
-	"github.com/deephaven/deephaven-core/go-client/internal/console_stub"
-	"github.com/deephaven/deephaven-core/go-client/internal/flight_stub"
-	"github.com/deephaven/deephaven-core/go-client/internal/table_stub"
-
 	sessionpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/session"
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 
@@ -22,9 +18,9 @@ type Session struct {
 
 	sessionStub sessionpb2.SessionServiceClient
 
-	console_stub.ConsoleStub
-	flight_stub.FlightStub
-	table_stub.TableStub
+	ConsoleStub
+	FlightStub
+	TableStub
 
 	nextTicket int32
 }
@@ -49,19 +45,19 @@ func NewSession(ctx context.Context, host string, port string) (Session, error) 
 		return Session{}, err
 	}
 
-	session.TableStub, err = table_stub.NewTableStub(&session)
+	session.TableStub, err = NewTableStub(&session)
 	if err != nil {
 		// TODO: Close channel
 		return Session{}, err
 	}
 
-	session.ConsoleStub, err = console_stub.NewConsoleStub(ctx, &session, "python") // TODO: session type
+	session.ConsoleStub, err = NewConsoleStub(ctx, &session, "python") // TODO: session type
 	if err != nil {
 		// TODO: Close channel
 		return Session{}, err
 	}
 
-	session.FlightStub, err = flight_stub.NewFlightStub(&session, host, port)
+	session.FlightStub, err = NewFlightStub(&session, host, port)
 	if err != nil {
 		// TODO: Close channel
 		return Session{}, err

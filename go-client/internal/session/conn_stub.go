@@ -1,4 +1,4 @@
-package conn_stub
+package session
 
 import (
 	"context"

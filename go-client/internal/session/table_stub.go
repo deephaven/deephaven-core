@@ -1,20 +1,18 @@
-package table_stub
+package session
 
 import (
 	"context"
-
-	"github.com/deephaven/deephaven-core/go-client/internal/conn_stub"
 
 	tablepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/table"
 )
 
 type TableStub struct {
-	conn conn_stub.ConnStub
+	conn ConnStub
 
 	stub tablepb2.TableServiceClient
 }
 
-func NewTableStub(conn conn_stub.ConnStub) (TableStub, error) {
+func NewTableStub(conn ConnStub) (TableStub, error) {
 	stub := tablepb2.NewTableServiceClient(conn.GrpcChannel())
 
 	return TableStub{conn: conn, stub: stub}, nil
