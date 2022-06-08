@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"errors"
 
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 
@@ -9,6 +10,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
+
+var ErrClosedClient = errors.New("client is closed")
 
 type Session struct {
 	grpcChannel *grpc.ClientConn
@@ -91,6 +94,7 @@ func (session *Session) Close() {
 	session.SessionStub.Close()
 	if session.grpcChannel != nil {
 		session.grpcChannel.Close()
+		session.grpcChannel = nil
 	}
 }
 

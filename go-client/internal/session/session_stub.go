@@ -156,5 +156,6 @@ func (hs *SessionStub) Token() []byte {
 func (hs *SessionStub) Close() {
 	if hs.cancelCh != nil {
 		close(hs.cancelCh)
+		hs.cancelCh = nil
 	}
 }

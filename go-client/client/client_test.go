@@ -17,6 +17,25 @@ func TestConnectError(t *testing.T) {
 	}
 }
 
+func TestClosedClient(t *testing.T) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, "localhost", "10000")
+	if err != nil {
+		t.Fatalf("NewClient err %s", err.Error())
+	}
+
+	c.Close()
+
+	_, err = c.EmptyTable(ctx, 17)
+	if err == nil {
+		t.Error("client did not close")
+	}
+
+	// Multiple times should be OK
+	c.Close()
+}
+
 func TestEmptyTable(t *testing.T) {
 	var expectedRows int64 = 5
 	var expectedCols int64 = 0

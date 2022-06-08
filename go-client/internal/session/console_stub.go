@@ -8,19 +8,19 @@ import (
 )
 
 type ConsoleStub struct {
-	conn ConnStub
+	session *Session
 
 	stub consolepb2.ConsoleServiceClient
 
 	consoleId *ticketpb2.Ticket
 }
 
-func NewConsoleStub(ctx context.Context, conn ConnStub, sessionType string) (ConsoleStub, error) {
-	ctx = conn.WithToken(ctx)
+func NewConsoleStub(ctx context.Context, session *Session, sessionType string) (ConsoleStub, error) {
+	ctx = session.WithToken(ctx)
 
-	stub := consolepb2.NewConsoleServiceClient(conn.GrpcChannel())
+	stub := consolepb2.NewConsoleServiceClient(session.GrpcChannel())
 
-	reqTicket := conn.NewTicket()
+	reqTicket := session.NewTicket()
 
 	req := consolepb2.StartConsoleRequest{ResultId: &reqTicket, SessionType: sessionType}
 	resp, err := stub.StartConsole(ctx, &req)
@@ -30,11 +30,11 @@ func NewConsoleStub(ctx context.Context, conn ConnStub, sessionType string) (Con
 
 	consoleId := resp.ResultId
 
-	return ConsoleStub{conn: conn, stub: stub, consoleId: consoleId}, nil
+	return ConsoleStub{session: session, stub: stub, consoleId: consoleId}, nil
 }
 
 func (console *ConsoleStub) BindToVariable(ctx context.Context, name string, tableTicket *ticketpb2.Ticket) error {
-	ctx = console.conn.WithToken(ctx)
+	ctx = console.session.WithToken(ctx)
 
 	req := consolepb2.BindTableToVariableRequest{ConsoleId: console.consoleId, VariableName: name, TableId: tableTicket}
 	_, err := console.stub.BindTableToVariable(ctx, &req)
