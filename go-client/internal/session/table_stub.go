@@ -41,7 +41,7 @@ func (ts *TableStub) DropColumns(ctx context.Context, table *TableHandle, cols [
 
 	result := ts.session.NewTicket()
 
-	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.Ticket}}
+	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}
 
 	req := tablepb2.DropColumnsRequest{ResultId: &result, SourceId: &source, ColumnNames: cols}
 	resp, err := ts.stub.DropColumns(ctx, &req)
@@ -57,7 +57,7 @@ func (ts *TableStub) Update(ctx context.Context, table *TableHandle, formulas []
 
 	result := ts.session.NewTicket()
 
-	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.Ticket}}
+	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}
 
 	req := tablepb2.SelectOrUpdateRequest{ResultId: &result, SourceId: &source, ColumnSpecs: formulas}
 	resp, err := ts.stub.Update(ctx, &req)
@@ -84,5 +84,5 @@ func parseCreationResponse(session *Session, resp *tablepb2.ExportedTableCreatio
 		return TableHandle{}, err
 	}
 
-	return NewTableHandle(session, respTicket, schema, resp.Size, resp.IsStatic), nil
+	return newTableHandle(session, respTicket, schema, resp.Size, resp.IsStatic), nil
 }

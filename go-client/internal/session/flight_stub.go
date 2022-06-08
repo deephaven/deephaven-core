@@ -105,5 +105,5 @@ func (fs *FlightStub) ImportTable(ctx context.Context, rec array.Record) (TableH
 
 	schema := rec.Schema()
 
-	return NewTableHandle(fs.session, &ticket, schema, rec.NumRows(), true), nil
+	return newTableHandle(fs.session, &ticket, schema, rec.NumRows(), true), nil
 }

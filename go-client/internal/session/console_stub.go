@@ -33,10 +33,10 @@ func NewConsoleStub(ctx context.Context, session *Session, sessionType string) (
 	return ConsoleStub{session: session, stub: stub, consoleId: consoleId}, nil
 }
 
-func (console *ConsoleStub) BindToVariable(ctx context.Context, name string, tableTicket *ticketpb2.Ticket) error {
+func (console *ConsoleStub) BindToVariable(ctx context.Context, name string, table *TableHandle) error {
 	ctx = console.session.WithToken(ctx)
 
-	req := consolepb2.BindTableToVariableRequest{ConsoleId: console.consoleId, VariableName: name, TableId: tableTicket}
+	req := consolepb2.BindTableToVariableRequest{ConsoleId: console.consoleId, VariableName: name, TableId: table.ticket}
 	_, err := console.stub.BindTableToVariable(ctx, &req)
 	if err != nil {
 		return err

@@ -44,8 +44,8 @@ func (client *Client) ImportTable(ctx context.Context, rec array.Record) (sessio
 }
 
 // Binds a table reference to a given name so that it can be referenced by other clients or the web UI.
-func (client *Client) BindToVariable(ctx context.Context, name string, table session.TableHandle) error {
-	return client.session.BindToVariable(ctx, name, table.Ticket)
+func (client *Client) BindToVariable(ctx context.Context, name string, table *session.TableHandle) error {
+	return client.session.BindToVariable(ctx, name, table)
 }
 
 /* other basic API calls like opening tables will also go here... */

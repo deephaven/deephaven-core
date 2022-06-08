@@ -10,20 +10,20 @@ import (
 )
 
 type TableHandle struct {
-	Session  *Session
-	Ticket   *ticketpb2.Ticket
-	Schema   *arrow.Schema
-	Size     int64
-	IsStatic bool
+	session  *Session
+	ticket   *ticketpb2.Ticket
+	schema   *arrow.Schema
+	size     int64
+	isStatic bool
 }
 
-func NewTableHandle(session *Session, ticket *ticketpb2.Ticket, schema *arrow.Schema, size int64, isStatic bool) TableHandle {
+func newTableHandle(session *Session, ticket *ticketpb2.Ticket, schema *arrow.Schema, size int64, isStatic bool) TableHandle {
 	return TableHandle{
-		Session:  session,
-		Ticket:   ticket,
-		Schema:   schema,
-		Size:     size,
-		IsStatic: isStatic,
+		session:  session,
+		ticket:   ticket,
+		schema:   schema,
+		size:     size,
+		isStatic: isStatic,
 	}
 }
 
@@ -31,15 +31,17 @@ func NewTableHandle(session *Session, ticket *ticketpb2.Ticket, schema *arrow.Sc
 //
 // If a Record is returned successfully, it must be freed later with `record.Release()`
 func (th *TableHandle) Snapshot(ctx context.Context) (array.Record, error) {
-	return th.Session.SnapshotRecord(ctx, th.Ticket)
+	return th.session.SnapshotRecord(ctx, th.ticket)
 }
 
 // Returns a new table without the given columns.
 func (th *TableHandle) DropColumns(ctx context.Context, cols []string) (TableHandle, error) {
-	return th.Session.DropColumns(ctx, th, cols)
+	return th.session.DropColumns(ctx, th, cols)
 }
 
-// Returns a new table with additional columns calculated according to the formulas
+// Returns a new table with additional columns calculated according to the formulas.
 func (th *TableHandle) Update(ctx context.Context, formulas []string) (TableHandle, error) {
-	return th.Session.Update(ctx, th, formulas)
+	return th.session.Update(ctx, th, formulas)
 }
+
+/* ... more table methods would go here ... */
