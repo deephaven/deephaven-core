@@ -2223,8 +2223,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             onGetSnapshot.run();
         }
 
-        // TODO: Use *this* as snapshot tick source for fail fast.
-        // TODO: Let notification-indifferent use cases skip notification test
         final SnapshotControl snapshotControl =
                 new SnapshotControl(snapshotSubscriptions);
         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
