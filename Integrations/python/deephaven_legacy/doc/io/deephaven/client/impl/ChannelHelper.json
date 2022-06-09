@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.client.impl.ChannelHelper",
- "methods": {
-  "channel": "Creates a ManagedChannel according to the clientConfig.\n\n \n If the target is secure, the channel will be configured with SSL. By default, the SSL configuration inherits\n configuration logic from TrustJdk and GrpcSslContexts.configure(SslContextBuilder). As mentioned\n there: \"precisely what is set is permitted to change, so if an application requires particular settings it should\n override the options set\".\n\n:param clientConfig: (io.deephaven.client.impl.ClientConfig) - the Deephaven client configuration\n:return: (io.grpc.ManagedChannel) the channel"
- },
- "path": "io.deephaven.client.impl.ChannelHelper",
- "typeName": "class"
-}
