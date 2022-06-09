@@ -225,7 +225,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * <p>
      * The {@code keyColumnValues} can be thought of as a tuple constraining the values for the corresponding key
      * columns for the result row. If there are no matching rows, the result is {@code null}. If there are multiple
-     * matching rows, an {@link UnsupportedClassVersionError} is thrown.
+     * matching rows, an {@link UnsupportedOperationException} is thrown.
      * <p>
      * The result will be {@link io.deephaven.engine.liveness.LivenessManager#manage(LivenessReferent) managed} by the
      * enclosing {@link io.deephaven.engine.liveness.LivenessScopeStack#peek() liveness scope}.
