@@ -8,8 +8,8 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
-func assertEqual(lhs int, rhs int, msg string) {
-	if lhs != rhs {
+func assert(cond bool, msg string) {
+	if !cond {
 		panic(msg)
 	}
 }
@@ -65,7 +65,12 @@ func getGrpcOps(client *Client, nodes []QueryNode) ([]*tablepb2.BatchTableReques
 			return nil, errors.New("cannot execute query with empty builder")
 		}
 
-		source := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}
+		var source *tablepb2.TableReference
+		if node.builder.table != nil {
+			source = &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}
+		} else {
+			source = nil
+		}
 
 		for opIdx, op := range node.builder.ops[:node.index+1] {
 			// If the op is already in the list, we don't need to do it again.
@@ -113,8 +118,39 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]TableH
 	return exportedTables, nil
 }
 
-func newQueryBuilder(table *TableHandle) QueryBuilder {
-	return QueryBuilder{uniqueId: table.client.NewTicketNum(), table: table}
+func newQueryBuilder(client *Client, table *TableHandle) QueryBuilder {
+	return QueryBuilder{uniqueId: client.NewTicketNum(), table: table}
+}
+
+type EmptyTableOp struct {
+	numRows int64
+}
+
+func (op EmptyTableOp) childQueries() []QueryNode {
+	return nil
+}
+
+func (op EmptyTableOp) makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.TableReference, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
+	assert(len(children) == 0, "wrong number of children for EmptyTable")
+	assert(sourceId == nil, "non-nil sourceId for EmptyTable")
+	req := &tablepb2.EmptyTableRequest{ResultId: resultId, Size: op.numRows}
+	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_EmptyTable{EmptyTable: req}}
+}
+
+type TimeTableOp struct {
+	period    int64
+	startTime int64
+}
+
+func (op TimeTableOp) childQueries() []QueryNode {
+	return nil
+}
+
+func (op TimeTableOp) makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.TableReference, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
+	assert(len(children) == 0, "wrong number of children for TimeTable")
+	assert(sourceId == nil, "non-nil sourceId for TimeTable")
+	req := &tablepb2.TimeTableRequest{ResultId: resultId, PeriodNanos: op.period, StartTimeNanos: op.startTime}
+	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_TimeTable{TimeTable: req}}
 }
 
 type DropColumnsOp struct {
@@ -126,7 +162,8 @@ func (op DropColumnsOp) childQueries() []QueryNode {
 }
 
 func (op DropColumnsOp) makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.TableReference, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
-	assertEqual(len(children), 0, "wrong number of children for DropColumns")
+	assert(len(children) == 0, "wrong number of children for DropColumns")
+	assert(sourceId != nil, "nil sourceId for DropColumns")
 	req := &tablepb2.DropColumnsRequest{ResultId: resultId, SourceId: sourceId, ColumnNames: op.cols}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_DropColumns{DropColumns: req}}
 }
@@ -145,7 +182,8 @@ func (op UpdateOp) childQueries() []QueryNode {
 }
 
 func (op UpdateOp) makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.TableReference, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
-	assertEqual(len(children), 0, "wrong number of children for Update")
+	assert(len(children) == 0, "wrong number of children for Update")
+	assert(sourceId != nil, "nil sourceId for Update")
 	req := &tablepb2.SelectOrUpdateRequest{ResultId: resultId, SourceId: sourceId, ColumnSpecs: op.formulas}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Update{Update: req}}
 }

@@ -49,7 +49,7 @@ func (th *TableHandle) Update(ctx context.Context, formulas []string) (TableHand
 }
 
 func (th *TableHandle) Query() QueryNode {
-	qb := newQueryBuilder(th)
+	qb := newQueryBuilder(th.client, th)
 	return qb.curRootNode()
 }
 

@@ -60,6 +60,13 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 	return exportedTables, nil
 }
 
+// Like `EmptyTable`, except it can be used as part of a query.
+func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
+	qb := newQueryBuilder(ts.client, nil)
+	qb.ops = append(qb.ops, EmptyTableOp{numRows: numRows})
+	return qb.curRootNode()
+}
+
 // Creates a new empty table in the global scope.
 //
 // The table will have zero columns and the specified number of rows.
@@ -75,6 +82,21 @@ func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (TableHandle
 	}
 
 	return parseCreationResponse(ts.client, resp)
+}
+
+// Like `TimeTable`, except it can be used as part of a query
+func (ts *tableStub) TimeTableQuery(period int64, startTime *int64) QueryNode {
+	var realStartTime int64
+	if startTime == nil {
+		// TODO: Same question as for TimeTable
+		realStartTime = time.Now().UnixNano()
+	} else {
+		realStartTime = *startTime
+	}
+
+	qb := newQueryBuilder(ts.client, nil)
+	qb.ops = append(qb.ops, TimeTableOp{period: period, startTime: realStartTime})
+	return qb.curRootNode()
 }
 
 // Creates a ticking time table in the global scope.
