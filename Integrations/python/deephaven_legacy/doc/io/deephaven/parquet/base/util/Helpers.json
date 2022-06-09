@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.parquet.base.util.Helpers",
- "methods": {
-  "ensureCapacity": ":param nullOffset: java.nio.IntBuffer\n:return: java.nio.IntBuffer",
-  "readBytes": "*Overload 1*  \n  :param f: java.nio.channels.ReadableByteChannel\n  :param buffer: byte[]\n  \n*Overload 2*  \n  :param f: java.nio.channels.ReadableByteChannel\n  :param expected: int\n  :return: org.apache.parquet.bytes.BytesInput"
- },
- "path": "io.deephaven.parquet.base.util.Helpers",
- "typeName": "class"
-}
