@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl.tuplesource;
 
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
@@ -78,11 +77,6 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     @Override
     public Object exportElement(ArrayTuple tuple, int elementIndex) {
         return tuple.getElement(elementIndex);
-    }
-
-    @Override
-    public final SmartKey exportToExternalKey(@NotNull final ArrayTuple tuple) {
-        return new SmartKey(tuple.getElements());
     }
 
     @Override

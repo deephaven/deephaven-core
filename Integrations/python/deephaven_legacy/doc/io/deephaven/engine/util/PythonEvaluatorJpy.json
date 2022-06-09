@@ -7,7 +7,8 @@
   "getScope": ":return: io.deephaven.engine.util.PythonScopeJpyImpl",
   "runScript": "Runs a Python script.\n\n:param scriptFile: (java.lang.String) - the file to execute",
   "set": "Sets the variable within our session.\n\n:param name: (java.lang.String) - the name of the variable to set.\n:param value: (java.lang.Object) - the value of the variable.",
-  "withGlobalCopy": ":return: io.deephaven.engine.util.PythonEvaluatorJpy"
+  "withGlobalCopy": ":return: io.deephaven.engine.util.PythonEvaluatorJpy",
+  "withGlobals": ":return: io.deephaven.engine.util.PythonEvaluatorJpy"
  },
  "path": "io.deephaven.engine.util.PythonEvaluatorJpy",
  "text": "The sole implementation of the PythonEvaluator, using Jpy to create a cpython interpreter instance inside of\n our JVM.\n\n Each evaluator has their own copy of the globals.",

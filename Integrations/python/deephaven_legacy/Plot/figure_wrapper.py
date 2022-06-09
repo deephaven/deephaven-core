@@ -4642,15 +4642,15 @@ class FigureWrapper(object):
     @_convertArguments
     def seriesNamingFunction(self, namingFunction):
         """
-        Defines the procedure to name a generated series. The input of the naming function is the partitioned table key
-         corresponding to the new series.
+        Defines the procedure to name a generated series. The input of the naming function is an array of the column
+         values corresponding to the new series.
         
         *Overload 1*  
           :param namingFunction: (groovy.lang.Closure<java.lang.String>) - series naming closure
           :return: io.deephaven.plot.Figure
           
         *Overload 2*  
-          :param namingFunction: (java.util.function.Function<java.lang.Object,java.lang.String>) - series naming function
+          :param namingFunction: (java.util.function.Function<java.lang.Object[],java.lang.String>) - series naming function
           :return: io.deephaven.plot.Figure
         """
         

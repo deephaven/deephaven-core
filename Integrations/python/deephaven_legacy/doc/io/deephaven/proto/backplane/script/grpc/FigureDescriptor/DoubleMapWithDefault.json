@@ -2,7 +2,7 @@
  "className": "io.deephaven.proto.backplane.script.grpc.FigureDescriptor$DoubleMapWithDefault",
  "methods": {
   "equals": ":param obj: java.lang.Object\n:return: boolean",
-  "getDefaultDouble": "double default_double = 1;\n\n:return: (double) The defaultDouble.",
+  "getDefaultDouble": "optional double default_double = 1;\n\n:return: (double) The defaultDouble.",
   "getDefaultInstance": ":return: io.deephaven.proto.backplane.script.grpc.FigureDescriptor.DoubleMapWithDefault",
   "getDefaultInstanceForType": ":return: io.deephaven.proto.backplane.script.grpc.FigureDescriptor.DoubleMapWithDefault",
   "getDescriptor": ":return: com.google.protobuf.Descriptors.Descriptor",
@@ -16,6 +16,7 @@
   "getValues": "repeated double values = 3;\n\n:param index: (int) - The index of the element to return.\n:return: (double) The values at the given index.",
   "getValuesCount": "repeated double values = 3;\n\n:return: (int) The count of values.",
   "getValuesList": "repeated double values = 3;\n\n:return: (java.util.List<java.lang.Double>) A list containing the values.",
+  "hasDefaultDouble": "optional double default_double = 1;\n\n:return: (boolean) Whether the defaultDouble field is set.",
   "hashCode": ":return: int",
   "isInitialized": ":return: boolean",
   "newBuilder": "*Overload 1*  \n  :return: io.deephaven.proto.backplane.script.grpc.FigureDescriptor.DoubleMapWithDefault.Builder\n  \n*Overload 2*  \n  :param prototype: io.deephaven.proto.backplane.script.grpc.FigureDescriptor.DoubleMapWithDefault\n  :return: io.deephaven.proto.backplane.script.grpc.FigureDescriptor.DoubleMapWithDefault.Builder",

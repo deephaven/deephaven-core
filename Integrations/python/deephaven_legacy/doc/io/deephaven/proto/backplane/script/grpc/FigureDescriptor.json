@@ -25,7 +25,7 @@
   "getTitleFont": "string title_font = 2;\n\n:return: (java.lang.String) The titleFont.",
   "getTitleFontBytes": "string title_font = 2;\n\n:return: (com.google.protobuf.ByteString) The bytes for titleFont.",
   "getUnknownFields": ":return: com.google.protobuf.UnknownFieldSet",
-  "getUpdateInterval": "int64 update_interval = 7;\n\n:return: (long) The updateInterval.",
+  "getUpdateInterval": "int64 update_interval = 7 [jstype = JS_STRING];\n\n:return: (long) The updateInterval.",
   "hasTitle": "optional string title = 1;\n\n:return: (boolean) Whether the title field is set.",
   "hashCode": ":return: int",
   "isInitialized": ":return: boolean",

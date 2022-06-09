@@ -3,6 +3,7 @@
  "methods": {
   "canonicalize": "Canonicalize this tuple.\n\n:param canonicalizer: (java.util.function.UnaryOperator<java.lang.Object>) - The canonicalization operator to use on each object element.\n:return: (io.deephaven.tuple.ArrayTuple) This tuple if already canonical, else a new, canonical tuple of the same type",
   "compareTo": ":param other: io.deephaven.tuple.ArrayTuple\n:return: int",
+  "elementStream": "Get the elements of this tuple as a Stream.\n\n:return: (java.util.stream.Stream<java.lang.Object>) A new Stream of the elements of this tuple",
   "equals": ":param other: java.lang.Object\n:return: boolean",
   "getElement": "Note: Java generics information - <T>\n\n:param elementIndex: int\n:return: T",
   "getElements": "Return a new array of the elements of this tuple, safe for any use.\n\n:return: (java.lang.Object[]) A new array of the elements of this tuple",

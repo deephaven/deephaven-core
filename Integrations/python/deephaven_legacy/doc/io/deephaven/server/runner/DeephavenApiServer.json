@@ -1,7 +1,8 @@
 {
  "className": "io.deephaven.server.runner.DeephavenApiServer",
  "methods": {
-  "run": "Starts the various server components, and blocks until the gRPC server has shut down. That shutdown is mediated\n by the ShutdownManager, and will call the gRPC server to shut it down when the process is itself shutting down.\n Only once that is complete will this method return.",
+  "join": "Blocks until the server exits.",
+  "run": "Starts the various server components, and blocks until the gRPC server has shut down. That shutdown is mediated\n by the ShutdownManager, and will call the gRPC server to shut it down when the process is itself shutting down.\n Only once that is complete will this method return.\n\n:return: io.deephaven.server.runner.DeephavenApiServer",
   "server": ":return: io.deephaven.server.runner.GrpcServer"
  },
  "path": "io.deephaven.server.runner.DeephavenApiServer",

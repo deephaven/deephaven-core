@@ -76,7 +76,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
         public void validate(String msg) {
             for (final TObjectLongIterator<Object> it = listener.iterator(); it.hasNext();) {
                 it.advance();
-                final Object checkKey = TableTools.getKey(columnSources, it.value());
+                final Object checkKey = ReverseLookupListener.getKey(columnSources, it.value());
                 assertEquals(it.key(), checkKey);
             }
 
@@ -85,7 +85,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
 
             for (final RowSet.Iterator it = source.getRowSet().iterator(); it.hasNext();) {
                 final long row = it.nextLong();
-                final Object expectedKey = TableTools.getKey(columnSources, row);
+                final Object expectedKey = ReverseLookupListener.getKey(columnSources, row);
                 final long checkRow = listener.get(expectedKey);
                 if (row != checkRow) {
                     TestCase.fail("invalid row for " + expectedKey + " expected=" + row + ", actual=" + checkRow);
@@ -95,7 +95,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
 
             for (final RowSet.Iterator it = source.getRowSet().copyPrev().iterator(); it.hasNext();) {
                 final long row = it.nextLong();
-                final Object expectedKey = TableTools.getPrevKey(columnSources, row);
+                final Object expectedKey = ReverseLookupListener.getPrevKey(columnSources, row);
                 final long checkRow = listener.getPrev(expectedKey);
                 assertEquals(row, checkRow);
                 prevMap.put(expectedKey, row);
@@ -105,7 +105,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
             final RowSet removedRows = source.getRowSet().copyPrev().minus(source.getRowSet());
             for (final RowSet.Iterator it = removedRows.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
-                final Object expectedKey = TableTools.getPrevKey(columnSources, row);
+                final Object expectedKey = ReverseLookupListener.getPrevKey(columnSources, row);
                 final long checkRow = listener.get(expectedKey);
 
                 final Long currentRow = currentMap.get(expectedKey);
@@ -118,7 +118,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
             final RowSet addedRows = source.getRowSet().minus(source.getRowSet().copyPrev());
             for (final RowSet.Iterator it = addedRows.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
-                final Object expectedKey = TableTools.getKey(columnSources, row);
+                final Object expectedKey = ReverseLookupListener.getKey(columnSources, row);
                 final long checkRow = listener.getPrev(expectedKey);
 
                 final Long prevRow = prevMap.get(expectedKey);

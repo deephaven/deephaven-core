@@ -7,7 +7,6 @@ package io.deephaven.plot.datasets.multiseries;
 import io.deephaven.plot.Series;
 import io.deephaven.plot.datasets.DataSeries;
 import groovy.lang.Closure;
-import io.deephaven.engine.table.Table;
 
 import java.util.function.Function;
 
@@ -19,16 +18,16 @@ public interface MultiSeries extends Series {
     // add functions to modify multiseries here (e.g. color)
 
     /**
-     * Defines the procedure to name a generated series. The input of the naming function is the partitioned table key
-     * corresponding to the new series.
+     * Defines the procedure to name a generated series. The input of the naming function is an array of the column
+     * values corresponding to the new series.
      *
      * @param namingFunction series naming function
      */
-    MultiSeries seriesNamingFunction(final Function<Object, String> namingFunction);
+    MultiSeries seriesNamingFunction(final Function<Object[], String> namingFunction);
 
     /**
-     * Defines the procedure to name a generated series. The input of the naming function is the partitioned table key
-     * corresponding to the new series.
+     * Defines the procedure to name a generated series. The input of the naming function is an array of the column
+     * values corresponding to the new series.
      *
      * @param namingFunction series naming closure
      */
