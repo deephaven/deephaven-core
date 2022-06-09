@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Factory",
- "methods": {
-  "create": ":return: Factory.T"
- },
- "path": "io.deephaven.base.Factory",
- "typeName": "interface"
-}

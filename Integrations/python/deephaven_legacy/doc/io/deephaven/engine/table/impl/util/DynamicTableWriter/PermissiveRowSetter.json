@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.util.DynamicTableWriter$PermissiveRowSetter",
- "methods": {
-  "setPermissive": ":param value: DynamicTableWriter.PermissiveRowSetter.T"
- },
- "path": "io.deephaven.engine.table.impl.util.DynamicTableWriter.PermissiveRowSetter",
- "typeName": "interface"
-}

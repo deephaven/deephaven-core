@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.io.streams.ByteBufferSink",
- "methods": {
-  "acceptBuffer": "Dispose of the contents of the buffer b, probably by writing them to a channel, and return a new buffer in which\n writing can continue. The returned buffer must have at least need bytes of space remaining. The return value may\n be the same buffer, as long as it's remaining() value has been increased to be >= need.\n\n:param b: (java.nio.ByteBuffer) - the buffer whose contents need to be disposed of.\n:param need: int\n:return: (java.nio.ByteBuffer) the buffer in which further output should be written.",
-  "close": "Dispose of the contents of the final buffer in an output sequence, probably by writing them to a channel. Note\n that the argument buffer may be empty. Then do whatever it takes to release the resources of the sink, probably\n by closing a channel.\n\n:param b: java.nio.ByteBuffer"
- },
- "path": "io.deephaven.io.streams.ByteBufferSink",
- "typeName": "interface"
-}

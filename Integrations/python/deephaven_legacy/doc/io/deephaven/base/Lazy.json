@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Lazy",
- "methods": {
-  "get": ":return: Lazy.T"
- },
- "path": "io.deephaven.base.Lazy",
- "typeName": "class"
-}

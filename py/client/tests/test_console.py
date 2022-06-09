@@ -23,7 +23,7 @@ class ConsoleTestCase(BaseTestCase):
         server_script = '''
 import time
 import math
-from deephaven_legacy import TableTools
+from deephaven import empty_table
 from numba import vectorize, int32, float64
 
 ##########################
@@ -33,8 +33,8 @@ def vectorized_func(x, y):
 
 table_size = 1000
 start_time = time.time()
-demo_table = TableTools.emptyTable(table_size) \
-    .view("I=(int)i", "J=(int)(i * 2)") \
+demo_table = empty_table(table_size) \
+    .view(["I=(int)i", "J=(int)(i * 2)"]) \
     .view("K = vectorized_func(I, J)")
         '''
         self.session.run_script(server_script)

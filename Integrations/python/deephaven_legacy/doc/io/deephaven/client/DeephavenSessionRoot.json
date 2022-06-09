@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.client.DeephavenSessionRoot",
- "methods": {
-  "factoryBuilder": ":return: io.deephaven.client.SessionSubcomponent.Builder"
- },
- "path": "io.deephaven.client.DeephavenSessionRoot",
- "typeName": "interface"
-}

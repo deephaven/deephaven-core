@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Predicate$Ternary",
- "methods": {
-  "call": ":param arg: Predicate.Ternary.A1\n:param arg2: Predicate.Ternary.A2\n:param arg3: Predicate.Ternary.A3\n:return: boolean"
- },
- "path": "io.deephaven.base.Predicate.Ternary",
- "typeName": "interface"
-}

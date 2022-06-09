@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache$FifoIntegerImpl",
- "methods": {
-  "computeIfAbsent": ":param key: BoundedIntrusiveMappingCache.FifoIntegerImpl.KEY_TYPE\n:param mapper: java.util.function.ToIntFunction<BoundedIntrusiveMappingCache.FifoIntegerImpl.KEY_TYPE>\n:return: int"
- },
- "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.FifoIntegerImpl",
- "text": "Mapping cache for Object->int mappings, with FIFO eviction.",
- "typeName": "class"
-}

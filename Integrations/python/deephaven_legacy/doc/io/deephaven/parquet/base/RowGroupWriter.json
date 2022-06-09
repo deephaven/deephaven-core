@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.parquet.base.RowGroupWriter",
- "methods": {
-  "addColumn": ":param columnName: java.lang.String\n:return: io.deephaven.parquet.base.ColumnWriter",
-  "getBlock": ":return: org.apache.parquet.hadoop.metadata.BlockMetaData"
- },
- "path": "io.deephaven.parquet.base.RowGroupWriter",
- "typeName": "interface"
-}

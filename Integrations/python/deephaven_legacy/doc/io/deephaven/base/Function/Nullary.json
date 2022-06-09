@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Function$Nullary",
- "methods": {
-  "call": ":return: Function.Nullary.R"
- },
- "path": "io.deephaven.base.Function.Nullary",
- "typeName": "interface"
-}

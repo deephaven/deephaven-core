@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.lang.completion.results.CompletionBuilder",
- "methods": {
-  "getCompleter": ":return: io.deephaven.lang.completion.ChunkerCompleter"
- },
- "path": "io.deephaven.lang.completion.results.CompletionBuilder",
- "text": "Some basic tools for computing completion results.",
- "typeName": "class"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.updategraph.UpdateCommitterEx",
- "methods": {
-  "maybeActivate": ":param secondary: UpdateCommitterEx.U"
- },
- "path": "io.deephaven.engine.updategraph.UpdateCommitterEx",
- "text": "Tool for allowing cleanup at update cycle end as a TerminalNotification. The general pattern is to specify\n target as something that contains the state to be cleaned up, and invoke an instance method on\n target from committer. By maintaining only weak reachability to target, we avoid prolonging\n its lifetime in order to perform cleanup tasks that would be obviated by its collection.\n \n This variant additionally allows a secondary weakly-reachable input to be specified on a per-cycle basis,\n allowing the UpdateCommitterEx to be stored and re-used across cycles when this pattern is necessary.",
- "typeName": "class"
-}

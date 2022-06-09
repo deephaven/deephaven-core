@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.lang.completion.results.CompleteColumnName",
- "methods": {
-  "doCompletion": ":param results: java.util.Collection<io.deephaven.proto.backplane.script.grpc.CompletionItem.Builder>\n:param request: io.deephaven.lang.completion.CompletionRequest\n:param colName: java.lang.String"
- },
- "path": "io.deephaven.lang.completion.results.CompleteColumnName",
- "text": "A class specifically for completing column names; to be called after the completer has discovered the name of the\n column to match.",
- "typeName": "class"
-}

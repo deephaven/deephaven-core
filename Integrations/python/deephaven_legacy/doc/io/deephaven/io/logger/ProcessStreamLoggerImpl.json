@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.io.logger.ProcessStreamLoggerImpl",
- "methods": {
-  "makeLogger": "*Overload 1*  \n  :param timeSource: io.deephaven.io.logger.LoggerTimeSource\n  :param tz: java.util.TimeZone\n  :return: io.deephaven.io.logger.Logger\n  \n*Overload 2*  \n  :param outputStream: java.io.OutputStream\n  :param loggingLevel: io.deephaven.io.log.LogLevel\n  :param bufferSize: int\n  :param bufferCount: int\n  :param entryCount: int\n  :param timeSource: io.deephaven.io.logger.LoggerTimeSource\n  :param tz: java.util.TimeZone\n  :return: io.deephaven.io.logger.Logger"
- },
- "path": "io.deephaven.io.logger.ProcessStreamLoggerImpl",
- "text": "Preserve some of the simplicity of StreamLoggerImpl while also retaining the formatting functionality of LoggerImpl.",
- "typeName": "class"
-}

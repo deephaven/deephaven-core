@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.rowset.impl.rsp.container.MutableInteger",
- "methods": {
-  "getIfNotNullAndNonNegative": ":param mi: io.deephaven.engine.rowset.impl.rsp.container.MutableInteger\n:param defaultValue: int\n:return: int",
-  "setIfNotNull": ":param mi: io.deephaven.engine.rowset.impl.rsp.container.MutableInteger\n:param v: int"
- },
- "path": "io.deephaven.engine.rowset.impl.rsp.container.MutableInteger",
- "typeName": "class"
-}

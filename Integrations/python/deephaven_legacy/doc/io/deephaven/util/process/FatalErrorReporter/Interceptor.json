@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.process.FatalErrorReporter$Interceptor",
- "methods": {
-  "intercept": "Report a fatal error.\n\n:param message: (java.lang.String) - the message\n:param throwable: (java.lang.Throwable) - the throwable\n:param isFromUncaught: (boolean) - true iff called from\n        Thread.UncaughtExceptionHandler.uncaughtException(Thread, Throwable)."
- },
- "path": "io.deephaven.util.process.FatalErrorReporter.Interceptor",
- "typeName": "interface"
-}

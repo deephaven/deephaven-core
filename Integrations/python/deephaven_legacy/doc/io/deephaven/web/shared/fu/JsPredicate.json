@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.web.shared.fu.JsPredicate",
- "methods": {
-  "test": ":param input: JsPredicate.I\n:return: boolean"
- },
- "path": "io.deephaven.web.shared.fu.JsPredicate",
- "text": "A js-friendly Predicate FunctionalInterface",
- "typeName": "interface"
-}

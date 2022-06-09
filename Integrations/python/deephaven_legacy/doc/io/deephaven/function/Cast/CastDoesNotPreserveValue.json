@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.function.Cast$CastDoesNotPreserveValue",
- "methods": {},
- "path": "io.deephaven.function.Cast.CastDoesNotPreserveValue",
- "text": "Cast can not preserve the value.",
- "typeName": "class"
-}

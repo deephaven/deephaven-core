@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.extensions.barrage.chunk.DoubleChunkInputStreamGenerator",
- "methods": {
-  "convertBoxed": ":param inChunk: io.deephaven.chunk.ObjectChunk<java.lang.Double,io.deephaven.chunk.attributes.Values>\n:return: io.deephaven.extensions.barrage.chunk.DoubleChunkInputStreamGenerator",
-  "getInputStream": "Get an input stream optionally position-space filtered using the provided RowSet.\n\n:param options: (io.deephaven.extensions.barrage.util.StreamReaderOptions) - the serializable options for this subscription\n:param subset: (io.deephaven.engine.rowset.RowSet) - if provided, is a position-space filter of source data\n:return: (io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator.DrainableColumn) a single-use DrainableColumn ready to be drained via grpc"
- },
- "path": "io.deephaven.extensions.barrage.chunk.DoubleChunkInputStreamGenerator",
- "typeName": "class"
-}

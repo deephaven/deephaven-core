@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.pool.PoolEx",
- "methods": {
-  "tryTake": "Take an item if immediately available, else return null.\n\n:return: (PoolEx.T) a pool item or null"
- },
- "path": "io.deephaven.util.pool.PoolEx",
- "typeName": "interface"
-}

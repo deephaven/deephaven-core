@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.server.barrage.BarrageStreamGenerator$ChunkListInputStreamGenerator",
- "methods": {},
- "path": "io.deephaven.server.barrage.BarrageStreamGenerator.ChunkListInputStreamGenerator",
- "typeName": "class"
-}

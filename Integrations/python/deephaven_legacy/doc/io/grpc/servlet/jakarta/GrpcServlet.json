@@ -1,7 +1,0 @@
-{
- "className": "io.grpc.servlet.jakarta.GrpcServlet",
- "methods": {},
- "path": "io.grpc.servlet.jakarta.GrpcServlet",
- "text": "A simple servlet backed by a gRPC server. Must set asyncSupported to true. The \n /contextRoot/urlPattern must match the gRPC services' path, which is \"/full-service-name/short-method-name\".\n\n \n The API is experimental. The authors would like to know more about the real usecases. Users are welcome to provide\n feedback by commenting on the tracking issue.",
- "typeName": "class"
-}

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.kafka.KafkaTools$TableType$Visitor",
- "methods": {
-  "visit": "*Overload 1*  \n  :param stream: io.deephaven.kafka.KafkaTools.TableType.Stream\n  :return: KafkaTools.TableType.Visitor.T\n  \n*Overload 2*  \n  :param append: io.deephaven.kafka.KafkaTools.TableType.Append\n  :return: KafkaTools.TableType.Visitor.T\n  \n*Overload 3*  \n  :param ring: io.deephaven.kafka.KafkaTools.TableType.Ring\n  :return: KafkaTools.TableType.Visitor.T"
- },
- "path": "io.deephaven.kafka.KafkaTools.TableType.Visitor",
- "typeName": "interface"
-}

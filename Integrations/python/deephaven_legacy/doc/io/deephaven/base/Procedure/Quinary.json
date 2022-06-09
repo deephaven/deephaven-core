@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Procedure$Quinary",
- "methods": {
-  "call": ":param arg1: Procedure.Quinary.A1\n:param arg2: Procedure.Quinary.A2\n:param arg3: Procedure.Quinary.A3\n:param arg4: Procedure.Quinary.A4\n:param arg5: Procedure.Quinary.A5"
- },
- "path": "io.deephaven.base.Procedure.Quinary",
- "typeName": "interface"
-}

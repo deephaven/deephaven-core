@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.server.jetty.HomeFilter",
- "methods": {
-  "doFilter": ":param request: jakarta.servlet.ServletRequest\n:param response: jakarta.servlet.ServletResponse\n:param chain: jakarta.servlet.FilterChain"
- },
- "path": "io.deephaven.server.jetty.HomeFilter",
- "typeName": "class"
-}

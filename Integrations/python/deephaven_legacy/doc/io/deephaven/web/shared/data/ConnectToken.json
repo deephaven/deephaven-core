@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.web.shared.data.ConnectToken",
- "methods": {
-  "getBytes": ":return: byte[]",
-  "setBytes": ":param bob: byte[]\n:return: io.deephaven.web.shared.data.ConnectToken"
- },
- "path": "io.deephaven.web.shared.data.ConnectToken",
- "typeName": "class"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.lang.completion.results.CompleteTableNamespace",
- "methods": {
-  "doCompletion": ":param replaced: io.deephaven.lang.generated.Node\n:param results: java.util.Set<io.deephaven.proto.backplane.script.grpc.CompletionItem.Builder>\n:param request: io.deephaven.lang.completion.CompletionRequest"
- },
- "path": "io.deephaven.lang.completion.results.CompleteTableNamespace",
- "text": "A class specifically for completing table namespaces; to be called after the completer has discovered the name of the\n namespace.",
- "typeName": "class"
-}

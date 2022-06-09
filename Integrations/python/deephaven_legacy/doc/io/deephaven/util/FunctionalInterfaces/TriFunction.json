@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.FunctionalInterfaces$TriFunction",
- "methods": {
-  "apply": "Applies this function to the given arguments.\n\n:param t: (FunctionalInterfaces.TriFunction.T) - the first function argument\n:param u: (FunctionalInterfaces.TriFunction.U) - the second function argument\n:param v: (FunctionalInterfaces.TriFunction.V) - the third argument\n:return: (FunctionalInterfaces.TriFunction.R) the function result"
- },
- "path": "io.deephaven.util.FunctionalInterfaces.TriFunction",
- "text": "Represents a function that accepts three arguments and produces a result.",
- "typeName": "interface"
-}

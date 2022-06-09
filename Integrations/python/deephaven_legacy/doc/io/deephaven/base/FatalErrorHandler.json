@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.base.FatalErrorHandler",
- "methods": {
-  "signalFatalError": ":param message: java.lang.String\n:param x: java.lang.Throwable"
- },
- "path": "io.deephaven.base.FatalErrorHandler",
- "text": "A generic interface for signaling a fatal error fatal errors.",
- "typeName": "interface"
-}

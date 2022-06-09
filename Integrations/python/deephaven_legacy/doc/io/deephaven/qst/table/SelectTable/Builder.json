@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.qst.table.SelectTable$Builder",
- "methods": {},
- "path": "io.deephaven.qst.table.SelectTable.Builder",
- "typeName": "interface"
-}

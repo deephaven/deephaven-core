@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.web.shared.fu.JsConsumer",
- "methods": {
-  "apply": ":param value: JsConsumer.T"
- },
- "path": "io.deephaven.web.shared.fu.JsConsumer",
- "text": "A js-friendly Consumer FunctionalInterface",
- "typeName": "interface"
-}

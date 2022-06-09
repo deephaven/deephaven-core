@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter",
- "methods": {
-  "hasNext": ":return: boolean",
-  "next": ":return: FlatBufferIteratorAdapter.T"
- },
- "path": "io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter",
- "typeName": "class"
-}

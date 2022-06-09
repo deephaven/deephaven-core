@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.base.clock.Clock",
- "methods": {
-  "currentTimeMicros": ":return: long",
-  "currentTimeMillis": ":return: long"
- },
- "path": "io.deephaven.base.clock.Clock",
- "typeName": "interface"
-}

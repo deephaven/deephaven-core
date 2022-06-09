@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.naturaljoin.DuplicateRightRowDecorationException",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.naturaljoin.DuplicateRightRowDecorationException",
- "text": "This signals that our helper should look for a duplicate right hand side row, and then throw an error.",
- "typeName": "class"
-}

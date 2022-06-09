@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.stats.StatsCPUCollector",
- "methods": {
-  "update": "update all statistics in the driver's timer task"
- },
- "path": "io.deephaven.stats.StatsCPUCollector",
- "text": "Collects statistic related to CPU and memory usage of the entire system, the process, and each thread in the process.",
- "typeName": "class"
-}

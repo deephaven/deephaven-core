@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.web.shared.util.ParseUtils",
- "methods": {
-  "parseBoolean": "This method exists because Java's Boolean.parseBoolean is too permissive (that method maps \"true\" to true, any\n other string to false).\n\n:param text: java.lang.String\n:return: (boolean) \n* \"true\" -> true\n* \"false\" -> false\n* any other string -> exception\n* null -> exception"
- },
- "path": "io.deephaven.web.shared.util.ParseUtils",
- "typeName": "class"
-}

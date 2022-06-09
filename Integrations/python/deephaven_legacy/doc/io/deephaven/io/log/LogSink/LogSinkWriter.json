@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.io.log.LogSink$LogSinkWriter",
- "methods": {
-  "addLogSink": ":param sink: LogSink.LogSinkWriter.S"
- },
- "path": "io.deephaven.io.log.LogSink.LogSinkWriter",
- "typeName": "interface"
-}

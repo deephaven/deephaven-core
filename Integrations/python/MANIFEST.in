@@ -1,5 +1,0 @@
-# Include the license file
-include LICENSE.md
-
-# Include the readme file
-include README.rst

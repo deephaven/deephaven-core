@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.array.FastArray$WriteExternalFunction",
- "methods": {
-  "writeExternal": ":param out: java.io.ObjectOutput\n:param item: FastArray.WriteExternalFunction.C"
- },
- "path": "io.deephaven.base.array.FastArray.WriteExternalFunction",
- "typeName": "interface"
-}

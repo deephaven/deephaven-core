@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.configuration.ConfigurationException",
- "methods": {},
- "path": "io.deephaven.configuration.ConfigurationException",
- "text": "Standardized runtime exception type for Configuration and related utilities.",
- "typeName": "class"
-}
