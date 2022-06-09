@@ -17,14 +17,8 @@ dependencies {
     implementation 'org.eclipse.jetty:jetty-webapp'
     implementation 'org.eclipse.jetty.http2:http2-server'
     implementation 'org.eclipse.jetty:jetty-alpn-server'
-
-    // Todo: is this still true w/ Java 11+, jetty 11.0.x?
-    // https://github.com/grpc/grpc-java/blob/master/SECURITY.md#tls-with-jetty-alpn
-    // Should this be left up to server-jetty-app?
+    // TODO(deephaven-core#2506): Support for alternative ALPN implementations
     runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server'
-    // This works, but then the below needs to be invoked early on
-    // Security.insertProviderAt(Conscrypt.newProvider(), 1);
-    // implementation 'org.eclipse.jetty:jetty-alpn-conscrypt-server'
 
 //    implementation 'io.grpc:grpc-servlet-jakarta'
     implementation project(':grpc-java:grpc-servlet-jakarta')

@@ -23,7 +23,6 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.time.Duration;
 
 public class EmbeddedServer {
     @Singleton
@@ -54,34 +53,15 @@ public class EmbeddedServer {
     @Inject
     Provider<ScriptSession> scriptSession;
 
-    public EmbeddedServer(int port, PyObject dict) throws IOException {
+    public EmbeddedServer(String host, Integer port, PyObject dict) throws IOException {
         final Configuration config = Main.init(new String[0], EmbeddedServer.class);
-
-        // Defaults defined in JettyConfig
-        int httpSessionExpireMs = config.getIntegerWithDefault("http.session.durationMs", -1);
-        String httpHost = config.getStringWithDefault("http.host", null);
-        String httpWebsockets = config.getStringWithDefault("http.websockets", null);
-        int schedulerPoolSize = config.getIntegerWithDefault("scheduler.poolSize", -1);
-        int maxInboundMessageSize = config.getIntegerWithDefault("grpc.maxInboundMessageSize", -1);
-
-        Builder builder = JettyConfig.builder().port(port);
-        if (httpSessionExpireMs > -1) {
-            builder.tokenExpire(Duration.ofMillis(httpSessionExpireMs));
+        final Builder builder = JettyConfig.buildFromConfig(config);
+        if (host != null) {
+            builder.host(host);
         }
-        if (httpHost != null) {
-            builder.host(httpHost);
+        if (port != null) {
+            builder.port(port);
         }
-        if (schedulerPoolSize > -1) {
-            builder.schedulerPoolSize(schedulerPoolSize);
-        }
-        if (maxInboundMessageSize > -1) {
-            builder.maxInboundMessageSize(maxInboundMessageSize);
-        }
-        if (httpWebsockets != null) {
-            builder.websockets(Boolean.parseBoolean(httpWebsockets));
-        }
-        Main.parseSSLConfig(config).ifPresent(builder::ssl);
-
         DaggerEmbeddedServer_PythonServerComponent
                 .builder()
                 .withJettyConfig(builder.build())

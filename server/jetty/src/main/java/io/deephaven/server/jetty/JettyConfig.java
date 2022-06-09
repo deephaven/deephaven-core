@@ -1,20 +1,25 @@
 package io.deephaven.server.jetty;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.server.config.ServerConfig;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Style;
 
 /**
  * The jetty server configuration.
  */
 @Immutable
 @BuildableStyle
+// Need to let EmbeddedServer overwrite builder from python
+@Style(strictBuilder = false)
 public abstract class JettyConfig implements ServerConfig {
 
     public static final int DEFAULT_SSL_PORT = 443;
     public static final int DEFAULT_PLAINTEXT_PORT = 10000;
     public static final boolean DEFAULT_WITH_WEBSOCKETS = true;
+    public static final String HTTP_WEBSOCKETS = "http.websockets";
 
     public static Builder builder() {
         return ImmutableJettyConfig.builder();
@@ -29,6 +34,25 @@ public abstract class JettyConfig implements ServerConfig {
      */
     public static JettyConfig defaultConfig() {
         return builder().build();
+    }
+
+    /**
+     * Parses the configuration values into the appropriate builder methods via
+     * {@link ServerConfig#buildFromConfig(ServerConfig.Builder, Configuration)}.
+     *
+     * <p>
+     * Additionally, parses the property {@value HTTP_WEBSOCKETS} into {@link Builder#websockets(boolean)}.
+     *
+     * @param config the config
+     * @return the builder
+     */
+    public static Builder buildFromConfig(Configuration config) {
+        final Builder builder = ServerConfig.buildFromConfig(builder(), config);
+        String httpWebsockets = config.getStringWithDefault(HTTP_WEBSOCKETS, null);
+        if (httpWebsockets != null) {
+            builder.websockets(Boolean.parseBoolean(httpWebsockets));
+        }
+        return builder;
     }
 
     /**

@@ -1,6 +1,7 @@
 package io.deephaven.server.netty;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.server.config.ServerConfig;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -28,6 +29,17 @@ public abstract class NettyConfig implements ServerConfig {
      */
     public static NettyConfig defaultConfig() {
         return builder().build();
+    }
+
+    /**
+     * Parses the configuration values into the appropriate builder methods via
+     * {@link ServerConfig#buildFromConfig(ServerConfig.Builder, Configuration)}.
+     *
+     * @param config the config
+     * @return the builder
+     */
+    public static Builder buildFromConfig(Configuration config) {
+        return ServerConfig.buildFromConfig(builder(), config);
     }
 
     /**

@@ -27,7 +27,7 @@ def extraJvmArgs = [
         '-XX:+UseG1GC',
         '-XX:MaxGCPauseMillis=100',
         '-XX:+UseStringDeduplication',
-        '-XshowSettings:vm'
+        '-XshowSettings:vm',
 ]
 
 if (hasProperty('groovy')) {

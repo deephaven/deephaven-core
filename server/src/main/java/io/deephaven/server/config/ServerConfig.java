@@ -1,5 +1,7 @@
 package io.deephaven.server.config;
 
+import io.deephaven.configuration.Configuration;
+import io.deephaven.server.runner.Main;
 import io.deephaven.ssl.config.SSLConfig;
 import org.immutables.value.Value.Default;
 
@@ -11,21 +13,90 @@ import java.util.Optional;
  */
 public interface ServerConfig {
 
-    String DEFAULT_HOST = "0.0.0.0";
-
     int DEFAULT_TOKEN_EXPIRE_MIN = 5;
 
     int DEFAULT_SCHEDULER_POOL_SIZE = 4;
 
     int DEFAULT_MAX_INBOUND_MESSAGE_SIZE_MiB = 100;
 
+    String HTTP_SESSION_DURATION_MS = "http.session.durationMs";
+
+    String HTTP_HOST = "http.host";
+
+    String HTTP_PORT = "http.port";
+
+    String SCHEDULER_POOL_SIZE = "scheduler.poolSize";
+
+    String GRPC_MAX_INBOUND_MESSAGE_SIZE = "grpc.maxInboundMessageSize";
+
     /**
-     * The host. Defaults to {@value DEFAULT_HOST}.
+     * Parses the configuration values into the appropriate builder methods.
+     *
+     * <table>
+     * <tr>
+     * <th>Property</th>
+     * <th>Method</th>
+     * </tr>
+     * <tr>
+     * <td>{@value HTTP_SESSION_DURATION_MS}</td>
+     * <td>{@link Builder#tokenExpire(Duration)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@value HTTP_HOST}</td>
+     * <td>{@link Builder#host(String)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@value HTTP_PORT}</td>
+     * <td>{@link Builder#port(int)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@value SCHEDULER_POOL_SIZE}</td>
+     * <td>{@link Builder#schedulerPoolSize(int)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@value GRPC_MAX_INBOUND_MESSAGE_SIZE}</td>
+     * <td>{@link Builder#maxInboundMessageSize(int)}</td>
+     * </tr>
+     * </table>
+     *
+     * Also parses {@link Main#parseSSLConfig(Configuration)} into {@link Builder#ssl(SSLConfig)}.
+     *
+     * @param builder the builder
+     * @param config the configuration
+     * @return the builder
+     * @param <B> the builder type
+     * @see Main#parseSSLConfig(Configuration) for {@link Builder#ssl(SSLConfig)}
      */
-    @Default
-    default String host() {
-        return DEFAULT_HOST;
+    static <B extends Builder<?, B>> B buildFromConfig(B builder, Configuration config) {
+        int httpSessionExpireMs = config.getIntegerWithDefault(HTTP_SESSION_DURATION_MS, -1);
+        String httpHost = config.getStringWithDefault(HTTP_HOST, null);
+        int httpPort = config.getIntegerWithDefault(HTTP_PORT, -1);
+        int schedulerPoolSize = config.getIntegerWithDefault(SCHEDULER_POOL_SIZE, -1);
+        int maxInboundMessageSize = config.getIntegerWithDefault(GRPC_MAX_INBOUND_MESSAGE_SIZE, -1);
+        if (httpSessionExpireMs > -1) {
+            builder.tokenExpire(Duration.ofMillis(httpSessionExpireMs));
+        }
+        if (httpHost != null) {
+            builder.host(httpHost);
+        }
+        if (httpPort != -1) {
+            builder.port(httpPort);
+        }
+        if (schedulerPoolSize != -1) {
+            builder.schedulerPoolSize(schedulerPoolSize);
+        }
+        if (maxInboundMessageSize != -1) {
+            builder.maxInboundMessageSize(maxInboundMessageSize);
+        }
+        Main.parseSSLConfig(config).ifPresent(builder::ssl);
+        return builder;
     }
+
+    /**
+     * The network interface this server binds to as an IP address or a hostname. If not set, then bind to all
+     * interfaces.
+     */
+    Optional<String> host();
 
     /**
      * The port.

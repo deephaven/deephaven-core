@@ -156,7 +156,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
             h2c.setRateControlFactory(new RateControl.Factory() {});
             serverConnector = new ServerConnector(server, http11, h2c);
         }
-        serverConnector.setHost(config.host());
+        config.host().ifPresent(serverConnector::setHost);
         serverConnector.setPort(config.port());
         return serverConnector;
     }

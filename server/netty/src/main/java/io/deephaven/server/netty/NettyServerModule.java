@@ -37,8 +37,13 @@ public interface NettyServerModule {
             NettyConfig serverConfig,
             Set<BindableService> services,
             Set<ServerInterceptor> interceptors) {
-        final NettyServerBuilder serverBuilder =
-                NettyServerBuilder.forAddress(new InetSocketAddress(serverConfig.host(), serverConfig.port()));
+        final NettyServerBuilder serverBuilder;
+        if (serverConfig.host().isPresent()) {
+            serverBuilder = NettyServerBuilder
+                    .forAddress(new InetSocketAddress(serverConfig.host().get(), serverConfig.port()));
+        } else {
+            serverBuilder = NettyServerBuilder.forPort(serverConfig.port());
+        }
         services.forEach(serverBuilder::addService);
         interceptors.forEach(serverBuilder::intercept);
         serverBuilder.maxInboundMessageSize(serverConfig.maxInboundMessageSize());
