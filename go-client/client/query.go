@@ -8,79 +8,149 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
-type tableOp interface {
-	makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.TableReference) tablepb2.BatchTableRequest_Operation
-}
-
-type QueryBuilder struct {
-	table *TableHandle
-	ops   []tableOp
-}
-
-func (qb *QueryBuilder) getGrpcOps() ([]*tablepb2.BatchTableRequest_Operation, error) {
-	if len(qb.ops) == 0 {
-		return nil, errors.New("cannot execute empty query")
+func assertEqual(lhs int, rhs int, msg string) {
+	if lhs != rhs {
+		panic(msg)
 	}
+}
 
-	source := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: qb.table.ticket}}
+type tableOp interface {
+	childQueries() []QueryNode
+
+	makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.TableReference, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation
+}
+
+// A pointer into a Query DAG
+type QueryNode struct {
+	// -1 refers to the QueryBuilder's base table
+	index   int
+	builder *QueryBuilder
+}
+
+// This is (some subset of) the Query DAG.
+type QueryBuilder struct {
+	uniqueId int32
+	table    *TableHandle
+	ops      []tableOp
+}
+
+func (qb *QueryBuilder) curRootNode() QueryNode {
+	return QueryNode{index: len(qb.ops) - 1, builder: qb}
+}
+
+// Every op can be uniquely identified by its QueryBuilder ID and its index within that QueryBuilder.
+type opKey struct {
+	index     int
+	builderId int32
+}
+
+func getGrpcOps(client *Client, nodes []QueryNode) ([]*tablepb2.BatchTableRequest_Operation, error) {
+	// This map keeps track of operators that are already in the list, to avoid duplication.
+	// The value is the index into the full operation list of the op's result.
+	finishedOps := make(map[opKey]int32)
+
+	needsExport := func(opIdx int, builderId int32) bool {
+		for _, node := range nodes {
+			if node.index == opIdx && node.builder.uniqueId == builderId {
+				return true
+			}
+		}
+		return false
+	}
 
 	grpcOps := []*tablepb2.BatchTableRequest_Operation{}
 
-	for _, op := range qb.ops[:len(qb.ops)-1] {
-		grpcOp := op.makeBatchOp(nil, source)
-		grpcOps = append(grpcOps, &grpcOp)
-		source = &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: int32(len(grpcOps) - 1)}}
+	for _, node := range nodes {
+		if len(node.builder.ops) == 0 {
+			return nil, errors.New("cannot execute query with empty builder")
+		}
+
+		source := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}
+
+		for opIdx, op := range node.builder.ops[:node.index+1] {
+			// If the op is already in the list, we don't need to do it again.
+			key := opKey{index: opIdx, builderId: node.builder.uniqueId}
+			if prevIdx, skip := finishedOps[key]; skip {
+				// So just use the output of the existing occurence.
+				source = &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: prevIdx}}
+				continue
+			}
+
+			var childQueries []*tablepb2.TableReference = nil
+			if len(op.childQueries()) != 0 {
+				// childQueries = something
+				panic("TODO: Child queries!!!")
+			}
+
+			var resultId *ticketpb2.Ticket = nil
+			if needsExport(opIdx, node.builder.uniqueId) {
+				t := client.NewTicket()
+				resultId = &t
+			}
+
+			grpcOp := op.makeBatchOp(resultId, source, childQueries)
+			grpcOps = append(grpcOps, &grpcOp)
+
+			source = &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: int32(len(grpcOps) - 1)}}
+			finishedOps[key] = int32(len(grpcOps)) - 1
+		}
 	}
 
-	result := qb.table.client.NewTicket()
-
-	grpcOp := qb.ops[len(qb.ops)-1].makeBatchOp(&result, source)
-	grpcOps = append(grpcOps, &grpcOp)
 	return grpcOps, nil
 }
 
-func (qb *QueryBuilder) Execute(ctx context.Context) (TableHandle, error) {
-	ops, err := qb.getGrpcOps()
+func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]TableHandle, error) {
+	ops, err := getGrpcOps(client, nodes)
 	if err != nil {
-		return TableHandle{}, err
+		return nil, err
 	}
 
-	exportedTables, err := qb.table.client.batch(ctx, ops)
+	exportedTables, err := client.batch(ctx, ops)
 	if err != nil {
-		return TableHandle{}, err
+		return nil, err
 	}
 
-	return exportedTables[len(exportedTables)-1], nil
+	return exportedTables, nil
 }
 
 func newQueryBuilder(table *TableHandle) QueryBuilder {
-	return QueryBuilder{table: table}
+	return QueryBuilder{uniqueId: table.client.NewTicketNum(), table: table}
 }
 
 type DropColumnsOp struct {
 	cols []string
 }
 
-func (op DropColumnsOp) makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
+func (op DropColumnsOp) childQueries() []QueryNode {
+	return nil
+}
+
+func (op DropColumnsOp) makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.TableReference, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
+	assertEqual(len(children), 0, "wrong number of children for DropColumns")
 	req := &tablepb2.DropColumnsRequest{ResultId: resultId, SourceId: sourceId, ColumnNames: op.cols}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_DropColumns{DropColumns: req}}
 }
 
-func (qb *QueryBuilder) DropColumns(cols []string) *QueryBuilder {
-	qb.ops = append(qb.ops, DropColumnsOp{cols: cols})
-	return qb
+func (qb QueryNode) DropColumns(cols []string) QueryNode {
+	qb.builder.ops = append(qb.builder.ops, DropColumnsOp{cols: cols})
+	return qb.builder.curRootNode()
 }
 
 type UpdateOp struct {
 	formulas []string
 }
 
-func (op UpdateOp) makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
+func (op UpdateOp) childQueries() []QueryNode {
+	return nil
+}
+
+func (op UpdateOp) makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.TableReference, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
+	assertEqual(len(children), 0, "wrong number of children for Update")
 	req := &tablepb2.SelectOrUpdateRequest{ResultId: resultId, SourceId: sourceId, ColumnSpecs: op.formulas}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Update{Update: req}}
 }
 
-func (qb *QueryBuilder) Update(formulas []string) *QueryBuilder {
-	qb.ops = append(qb.ops, UpdateOp{formulas: formulas})
-	return qb
+func (qb QueryNode) Update(formulas []string) QueryNode {
+	qb.builder.ops = append(qb.builder.ops, UpdateOp{formulas: formulas})
+	return qb.builder.curRootNode()
 }

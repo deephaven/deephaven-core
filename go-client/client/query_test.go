@@ -26,28 +26,40 @@ func TestUpdateDropQuery(t *testing.T) {
 		return
 	}
 
-	after, err := before.Query().
-		Update([]string{"Foo = Close * 17.0", "Bar = Vol + 1"}).
-		DropColumns([]string{"Bar", "Ticker"}).
-		Execute(ctx)
+	updateQuery := before.Query().Update([]string{"Foo = Close * 17.0", "Bar = Vol + 1"})
+	dropQuery := updateQuery.DropColumns([]string{"Bar", "Ticker"})
 
+	tables, err := c.ExecQuery(ctx, []client.QueryNode{updateQuery, dropQuery})
 	if err != nil {
-		t.Errorf("DropColumns %s", err.Error())
+		t.Errorf("ExecQuery %s", err.Error())
+		return
+	}
+	if len(tables) != 2 {
+		t.Errorf("wrong number of result tables")
 		return
 	}
 
-	result, err := after.Snapshot(ctx)
+	updTbl, err := tables[0].Snapshot(ctx)
+	if err != nil {
+		t.Errorf("Snapshot %s", err.Error())
+		return
+	}
+	drpTbl, err := tables[1].Snapshot(ctx)
 	if err != nil {
 		t.Errorf("Snapshot %s", err.Error())
 		return
 	}
 
-	if result.NumCols() != 3 {
-		t.Errorf("wrong number of columns %d", result.NumCols())
+	if updTbl.NumCols() != 5 {
+		t.Errorf("wrong number of columns %d", updTbl.NumCols())
+	}
+
+	if drpTbl.NumCols() != 3 {
+		t.Errorf("wrong number of columns %d", drpTbl.NumCols())
 		return
 	}
 
-	col0, col1, col2 := result.ColumnName(0), result.ColumnName(1), result.ColumnName(2)
+	col0, col1, col2 := drpTbl.ColumnName(0), drpTbl.ColumnName(1), drpTbl.ColumnName(2)
 	if col0 != "Close" || col1 != "Vol" || col2 != "Foo" {
 		t.Errorf("wrong columns %s %s %s", col0, col1, col2)
 		return

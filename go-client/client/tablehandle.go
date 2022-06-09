@@ -48,9 +48,9 @@ func (th *TableHandle) Update(ctx context.Context, formulas []string) (TableHand
 	return th.client.Update(ctx, th, formulas)
 }
 
-func (th *TableHandle) Query() *QueryBuilder {
+func (th *TableHandle) Query() QueryNode {
 	qb := newQueryBuilder(th)
-	return &qb
+	return qb.curRootNode()
 }
 
 /* ... more table methods would go here ... */

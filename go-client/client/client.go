@@ -29,36 +29,36 @@ type Client struct {
 // The client should be closed using `Close()` after it is done being used.
 //
 // Note that the provided context is saved and used to send keepalive messages.
-func NewClient(ctx context.Context, host string, port string) (Client, error) {
+func NewClient(ctx context.Context, host string, port string) (*Client, error) {
 	grpcChannel, err := grpc.Dial(host+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return Client{}, err
+		return nil, err
 	}
 
-	client := Client{grpcChannel: grpcChannel}
+	client := &Client{grpcChannel: grpcChannel}
 
-	client.sessionStub, err = NewSessionStub(ctx, &client)
+	client.sessionStub, err = NewSessionStub(ctx, client)
 	if err != nil {
 		client.Close()
-		return Client{}, err
+		return nil, err
 	}
 
-	client.tableStub, err = NewTableStub(&client)
+	client.tableStub, err = NewTableStub(client)
 	if err != nil {
 		client.Close()
-		return Client{}, err
+		return nil, err
 	}
 
-	client.consoleStub, err = NewConsoleStub(ctx, &client, "python") // TODO: client type
+	client.consoleStub, err = NewConsoleStub(ctx, client, "python") // TODO: client type
 	if err != nil {
 		client.Close()
-		return Client{}, err
+		return nil, err
 	}
 
-	client.flightStub, err = NewFlightStub(&client, host, port)
+	client.flightStub, err = NewFlightStub(client, host, port)
 	if err != nil {
 		client.Close()
-		return Client{}, err
+		return nil, err
 	}
 
 	return client, nil
@@ -88,6 +88,10 @@ func (client *Client) MakeTicket(id int32) ticketpb2.Ticket {
 	bytes := []byte{'e', byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
 
 	return ticketpb2.Ticket{Ticket: bytes}
+}
+
+func (client *Client) ExecQuery(ctx context.Context, nodes []QueryNode) ([]TableHandle, error) {
+	return execQuery(client, ctx, nodes)
 }
 
 func (client *Client) Close() {

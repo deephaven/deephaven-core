@@ -90,7 +90,7 @@ func (ref *refresher) refresh() error {
 		ref.tokenMutex.Lock()
 		ref.token.Error = err
 		ref.tokenMutex.Unlock()
-		fmt.Println("Failed to refresh token:", err)
+		fmt.Println("failed to refresh token: ", err)
 		return err
 	} else {
 		ref.tokenMutex.Lock()
@@ -99,8 +99,6 @@ func (ref *refresher) refresh() error {
 	}
 
 	ref.timeoutMillis = handshakeResp.TokenExpirationDelayMillis / 2
-
-	fmt.Println("New timeout millis:", ref.timeoutMillis)
 
 	return nil
 }
