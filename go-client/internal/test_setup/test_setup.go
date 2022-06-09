@@ -1,6 +1,8 @@
 package test_setup
 
 import (
+	"testing"
+
 	"github.com/apache/arrow/go/arrow"
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/memory"
@@ -26,4 +28,10 @@ func ExampleRecord() array.Record {
 	b.Field(2).(*array.Int32Builder).AppendValues([]int32{87000, 6060842, 138000, 138000000, 19000, 48300, 1500}, nil)
 
 	return b.NewRecord()
+}
+
+func CheckError(t *testing.T, msg string, err error) {
+	if err != nil {
+		t.Fatalf("%s error %s", msg, err.Error())
+	}
 }
