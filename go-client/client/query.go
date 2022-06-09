@@ -127,25 +127,6 @@ func getGrpcOps(client *Client, nodes []QueryNode) ([]*tablepb2.BatchTableReques
 	return builder.grpcOps, builder.nodeOrder, nil
 }
 
-// Just used to sort the batch nodes back in correct order
-type nodeOutput struct {
-	nodeOrder []int
-	tables    []TableHandle
-}
-
-func (no *nodeOutput) Len() int {
-	return len(no.nodeOrder)
-}
-
-func (no *nodeOutput) Swap(i, j int) {
-	no.nodeOrder[i], no.nodeOrder[j] = no.nodeOrder[j], no.nodeOrder[i]
-	no.tables[i], no.tables[j] = no.tables[j], no.tables[i]
-}
-
-func (no *nodeOutput) Less(i, j int) bool {
-	return no.nodeOrder[i] < no.nodeOrder[j]
-}
-
 // TODO: Duplicate entries in `nodes`
 
 func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]TableHandle, error) {
