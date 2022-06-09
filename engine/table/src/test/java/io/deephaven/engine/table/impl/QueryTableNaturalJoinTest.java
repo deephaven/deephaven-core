@@ -21,7 +21,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -1237,7 +1236,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             for (int ii = 0; ii < columns.length; ++ii) {
                 keyValues[ii] = columnSources[ii].get(value);
             }
-            sb.append(value).append("=").append(new ArrayTuple(keyValues)).append("\n");
+            sb.append(value).append("=").append(Arrays.toString(keyValues)).append("\n");
         }
 
         final RowSet prevRowSet = rowSet.copyPrev();
@@ -1249,7 +1248,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             for (int ii = 0; ii < columns.length; ++ii) {
                 keyValues[ii] = columnSources[ii].getPrev(value);
             }
-            sb.append(value).append("=").append(new ArrayTuple(keyValues)).append("\n");
+            sb.append(value).append("=").append(Arrays.toString(keyValues)).append("\n");
         }
 
         System.out.println(sb);
