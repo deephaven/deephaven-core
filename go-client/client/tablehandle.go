@@ -27,6 +27,10 @@ func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Sche
 	}
 }
 
+func (th *TableHandle) IsStatic() bool {
+	return th.isStatic
+}
+
 // Downloads the current state of the table on the server and returns it as a Record.
 //
 // If a Record is returned successfully, it must be freed later with `record.Release()`

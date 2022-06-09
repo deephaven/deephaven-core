@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"time"
 
 	"github.com/apache/arrow/go/arrow/flight"
 	"github.com/apache/arrow/go/arrow/memory"
@@ -69,6 +70,31 @@ func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (TableHandle
 
 	req := tablepb2.EmptyTableRequest{ResultId: &result, Size: numRows}
 	resp, err := ts.stub.EmptyTable(ctx, &req)
+	if err != nil {
+		return TableHandle{}, err
+	}
+
+	return parseCreationResponse(ts.client, resp)
+}
+
+// Creates a ticking time table in the global scope.
+// The period is in nanoseconds and represents the interval between adding new rows to the table.
+// The startTime is in nanoseconds since epoch and defaults to the current time when it is nil.
+func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int64) (TableHandle, error) {
+	ctx = ts.client.WithToken(ctx)
+
+	result := ts.client.NewTicket()
+
+	var realStartTime int64
+	if startTime == nil {
+		// TODO: Is this affected by timezones? Does it need to be the monotonic reading?
+		realStartTime = time.Now().UnixNano()
+	} else {
+		realStartTime = *startTime
+	}
+
+	req := tablepb2.TimeTableRequest{ResultId: &result, PeriodNanos: period, StartTimeNanos: realStartTime}
+	resp, err := ts.stub.TimeTable(ctx, &req)
 	if err != nil {
 		return TableHandle{}, err
 	}

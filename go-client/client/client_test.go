@@ -65,6 +65,26 @@ func TestEmptyTable(t *testing.T) {
 	}
 }
 
+func TestTimeTable(t *testing.T) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, "localhost", "10000")
+	if err != nil {
+		t.Fatalf("NewClient err %s", err.Error())
+	}
+	defer c.Close()
+
+	tbl, err := c.TimeTable(ctx, 10000000, nil)
+	if err != nil {
+		t.Errorf("EmptyTable err %s", err.Error())
+	}
+
+	if tbl.IsStatic() {
+		t.Error("time table should not be static")
+		return
+	}
+}
+
 func TestTableUpload(t *testing.T) {
 	r := test_setup.ExampleRecord()
 	defer r.Release()
