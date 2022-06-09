@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.io.InputStreamFactory",
- "methods": {
-  "createInputStream": ":return: java.io.InputStream",
-  "getDescription": ":return: java.lang.String"
- },
- "path": "io.deephaven.io.InputStreamFactory",
- "typeName": "interface"
-}

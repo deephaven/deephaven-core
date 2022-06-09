@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.properties.PropertyVisitorPrintStream",
- "methods": {
-  "visit": "**Incompatible overloads text - text from the first overload:**\n\nPerforms this operation on the given key and String value.\n\n*Overload 1*  \n  :param key: (java.lang.String) - the key\n  :param value: (java.lang.String) - the value\n  \n*Overload 2*  \n  :param key: (java.lang.String) - the key\n  :param value: (int) - the value\n  \n*Overload 3*  \n  :param key: (java.lang.String) - the key\n  :param value: (long) - the value\n  \n*Overload 4*  \n  :param key: (java.lang.String) - the key\n  :param value: (boolean) - the value"
- },
- "path": "io.deephaven.properties.PropertyVisitorPrintStream",
- "typeName": "class"
-}

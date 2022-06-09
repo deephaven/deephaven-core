@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.treetable.AbstractTreeSnapshotImpl",
- "methods": {
-  "getSnapshot": "Get a flat snapshot of the table and set of expanded rows.\n\n:return: (io.deephaven.treetable.TreeSnapshotResult) A flattened viewport and an updated set of expanded rows."
- },
- "path": "io.deephaven.treetable.AbstractTreeSnapshotImpl",
- "text": "The basic implementation used to produce a viewport-ready snapshot of a tree table, taking into account the set of\n expanded rows at each level.",
- "typeName": "class"
-}

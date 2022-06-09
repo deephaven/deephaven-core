@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.Mailer",
- "methods": {
-  "sendEmail": "*Overload 1*  \n  :param sender: java.lang.String\n  :param recipients: java.lang.String[]\n  :param subject: java.lang.String\n  :param msg: java.lang.String\n  \n*Overload 2*  \n  :param sender: java.lang.String\n  :param recipient: java.lang.String\n  :param subject: java.lang.String\n  :param msg: java.lang.String\n  \n*Overload 3*  \n  :param sender: java.lang.String\n  :param recipient: java.lang.String\n  :param subject: java.lang.String\n  :param msg: java.lang.String\n  :param extraHeaderEntries: java.util.List<java.util.Map.Entry<java.lang.String,java.lang.String>>",
-  "sendHTMLEmail": ":param sender: java.lang.String\n:param recipient: java.lang.String\n:param subject: java.lang.String\n:param msg: java.lang.String"
- },
- "path": "io.deephaven.util.Mailer",
- "typeName": "interface"
-}

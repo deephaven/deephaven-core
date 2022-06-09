@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.appmode.ApplicationConfig$Visitor",
- "methods": {
-  "visit": "*Overload 1*  \n  :param script: io.deephaven.appmode.ScriptApplication\n  \n*Overload 2*  \n  :param clazz: io.deephaven.appmode.StaticClassApplication<?>\n  \n*Overload 3*  \n  :param qst: io.deephaven.appmode.QSTApplication\n  \n*Overload 4*  \n  :param advanced: io.deephaven.appmode.DynamicApplication<?>"
- },
- "path": "io.deephaven.appmode.ApplicationConfig.Visitor",
- "typeName": "interface"
-}

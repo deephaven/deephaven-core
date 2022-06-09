@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.lang.completion.results.CompleteColumnExpression",
- "methods": {
-  "doCompletion": "*Overload 1*  \n  :param results: java.util.Collection<io.deephaven.proto.backplane.script.grpc.CompletionItem.Builder>\n  :param request: io.deephaven.lang.completion.CompletionRequest\n  :param method: java.lang.reflect.Method\n  \n*Overload 2*  \n  :param results: java.util.Collection<io.deephaven.proto.backplane.script.grpc.CompletionItem.Builder>\n  :param request: io.deephaven.lang.completion.CompletionRequest\n  :param colName: java.lang.String"
- },
- "path": "io.deephaven.lang.completion.results.CompleteColumnExpression",
- "text": "A class specifically for completing column expression; to be called after the completer has discovered the a column\n expression with an = and the cursor is at or after =.",
- "typeName": "class"
-}

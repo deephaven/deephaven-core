@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.jpy.PyObjectIdentity",
- "methods": {
-  "create": ":param createModule: org.jpy.CreateModule\n:return: io.deephaven.jpy.PyObjectIdentity",
-  "identity": ":param x: int\n:return: org.jpy.PyObject"
- },
- "path": "io.deephaven.jpy.PyObjectIdentity",
- "typeName": "interface"
-}

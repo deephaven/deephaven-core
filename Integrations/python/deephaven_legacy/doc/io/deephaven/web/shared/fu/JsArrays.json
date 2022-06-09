@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.web.shared.fu.JsArrays",
- "methods": {
-  "setArray": ":param args: java.lang.Object\n:param setter: io.deephaven.web.shared.fu.JsConsumer<java.lang.String[]>",
-  "toStringArray": ":param jsArray: elemental2.core.JsArray<elemental2.core.JsString>\n:return: java.lang.String[]"
- },
- "path": "io.deephaven.web.shared.fu.JsArrays",
- "typeName": "class"
-}

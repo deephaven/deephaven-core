@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.process.DefaultProcessEnvironment",
- "methods": {
-  "onShutdown": "Hook for shutting down an installation-specific environment for a given process. This is intended for controlled\n invocation, rather than as part of a shutdown hook - onStartup() should setup any mandatory shutdown\n hooks, and code in said shutdown hooks should be idempotent w.r.t. onShutdown().",
-  "onStartup": "Hook for setting up an installation-specific environment for a given process."
- },
- "path": "io.deephaven.util.process.DefaultProcessEnvironment",
- "typeName": "class"
-}

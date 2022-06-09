@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.server.barrage.BarrageClientModule",
- "methods": {
-  "providesAllocator": ":return: org.apache.arrow.memory.BufferAllocator",
-  "providesScheduler": ":return: java.util.concurrent.ScheduledExecutorService"
- },
- "path": "io.deephaven.server.barrage.BarrageClientModule",
- "typeName": "interface"
-}

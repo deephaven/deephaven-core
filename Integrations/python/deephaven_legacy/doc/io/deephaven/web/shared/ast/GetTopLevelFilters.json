@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.web.shared.ast.GetTopLevelFilters",
- "methods": {
-  "get": ":param descriptor: io.deephaven.web.shared.data.FilterDescriptor\n:return: java.util.List<io.deephaven.web.shared.data.FilterDescriptor>"
- },
- "path": "io.deephaven.web.shared.ast.GetTopLevelFilters",
- "text": "Recursively removes top-level AND operations, if any, resulting in an array of filters to run, potentially only\n containing a single filter if the top-level filter is not an AND.\n\n This can be run before the FilterPrinter to provide multiple strings to execute individually. It should be run after\n other optimizations which might merge operations, and should be run before nested Match operations are rewritten to\n invocations.",
- "typeName": "class"
-}

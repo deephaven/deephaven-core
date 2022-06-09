@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.stats.StatsIntradayLogger",
- "methods": {
-  "log": "*Overload 1*  \n  :param intervalName: java.lang.String\n  :param now: long\n  :param appNow: long\n  :param typeTag: char\n  :param compactName: java.lang.String\n  :param n: long\n  :param sum: long\n  :param last: long\n  :param min: long\n  :param max: long\n  :param avg: long\n  :param sum2: long\n  :param stdev: long\n  \n*Overload 2*  \n  :param intervalName: java.lang.String\n  :param now: long\n  :param appNow: long\n  :param typeTag: char\n  :param compactName: java.lang.String\n  :param n: long\n  :param sum: long\n  :param last: long\n  :param min: long\n  :param max: long\n  :param avg: long\n  :param sum2: long\n  :param stdev: long\n  :param h: long[]"
- },
- "path": "io.deephaven.stats.StatsIntradayLogger",
- "typeName": "interface"
-}

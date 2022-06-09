@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.appmode.ApplicationState$Listener",
- "methods": {
-  "onNewField": ":param app: io.deephaven.appmode.ApplicationState\n:param field: io.deephaven.appmode.Field<?>",
-  "onRemoveField": ":param app: io.deephaven.appmode.ApplicationState\n:param field: io.deephaven.appmode.Field<?>"
- },
- "path": "io.deephaven.appmode.ApplicationState.Listener",
- "typeName": "interface"
-}

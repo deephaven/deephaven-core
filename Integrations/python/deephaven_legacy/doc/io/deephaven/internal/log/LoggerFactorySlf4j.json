@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.internal.log.LoggerFactorySlf4j",
- "methods": {
-  "create": ":param name: java.lang.String\n:return: io.deephaven.io.logger.Logger"
- },
- "path": "io.deephaven.internal.log.LoggerFactorySlf4j",
- "typeName": "class"
-}

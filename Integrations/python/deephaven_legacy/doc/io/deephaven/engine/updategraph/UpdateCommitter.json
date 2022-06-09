@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.updategraph.UpdateCommitter",
- "methods": {},
- "path": "io.deephaven.engine.updategraph.UpdateCommitter",
- "text": "Tool for allowing cleanup at update cycle end as a TerminalNotification. The general pattern is to specify\n target as something that contains the state to be cleaned up, and invoke an instance method on\n target from committer. By maintaining only weak reachability to target, we avoid prolonging\n its lifetime in order to perform cleanup tasks that would be obviated by its collection.",
- "typeName": "class"
-}

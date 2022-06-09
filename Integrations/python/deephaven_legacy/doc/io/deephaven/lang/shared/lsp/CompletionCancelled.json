@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.lang.shared.lsp.CompletionCancelled",
- "methods": {},
- "path": "io.deephaven.lang.shared.lsp.CompletionCancelled",
- "text": "Thrown from the document parser if the user has updated the document while an ongoing completion request was blocking\n on stale input.\n\n This is used to fast-path quitting a completion request because the document was invalidated.",
- "typeName": "class"
-}

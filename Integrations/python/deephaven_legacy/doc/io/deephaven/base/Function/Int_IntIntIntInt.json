@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Function$Int_IntIntIntInt",
- "methods": {
-  "call": ":param arg: int\n:param arg2: int\n:param arg3: int\n:param arg4: int\n:return: int"
- },
- "path": "io.deephaven.base.Function.Int_IntIntIntInt",
- "typeName": "interface"
-}

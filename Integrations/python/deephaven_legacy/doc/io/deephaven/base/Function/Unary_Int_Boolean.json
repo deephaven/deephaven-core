@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Function$Unary_Int_Boolean",
- "methods": {
-  "call": ":param arg: int\n:param arg2: boolean\n:return: Function.Unary_Int_Boolean.R"
- },
- "path": "io.deephaven.base.Function.Unary_Int_Boolean",
- "typeName": "interface"
-}

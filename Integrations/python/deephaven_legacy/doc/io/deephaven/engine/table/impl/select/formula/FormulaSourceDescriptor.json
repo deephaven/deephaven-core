@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor",
- "typeName": "class"
-}

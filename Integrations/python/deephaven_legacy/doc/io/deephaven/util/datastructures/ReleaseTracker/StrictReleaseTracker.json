@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.ReleaseTracker$StrictReleaseTracker",
- "methods": {
-  "reportAcquire": ":param resource: ReleaseTracker.StrictReleaseTracker.RESOURCE_TYPE",
-  "reportRelease": ":param resource: ReleaseTracker.StrictReleaseTracker.RESOURCE_TYPE"
- },
- "path": "io.deephaven.util.datastructures.ReleaseTracker.StrictReleaseTracker",
- "typeName": "class"
-}

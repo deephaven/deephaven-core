@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.web.shared.ide.lsp.CompletionContext",
- "methods": {},
- "path": "io.deephaven.web.shared.ide.lsp.CompletionContext",
- "typeName": "class"
-}

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.FatalErrorHandlerFactory",
- "methods": {
-  "get": ":return: io.deephaven.base.FatalErrorHandler"
- },
- "path": "io.deephaven.base.FatalErrorHandlerFactory",
- "typeName": "interface"
-}

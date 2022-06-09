@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.base.reference.CleanupReference",
- "methods": {
-  "cleanup": "Allow for a reference queue consumer to invoke a custom cleanup method, for post-GC resource reclamation."
- },
- "path": "io.deephaven.base.reference.CleanupReference",
- "text": "SimpleReference with an additional cleanup callback.",
- "typeName": "interface"
-}

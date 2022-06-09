@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.jpy.JpyConfigFromSubprocess",
- "methods": {
-  "fromSubprocess": "**Incompatible overloads text - text from the first overload:**\n\nCreate the configuration based off of a python subprocess that introspects itself. The process will be executed\n based off of pythonName, which may be a path, or will otherwise be sourced from the environment PATH.\n\n*Overload 1*  \n  :param timeout: (java.time.Duration) - the timeout\n  :return: (io.deephaven.jpy.JpyConfigSource) the jpy configuration, based on a python execution in the current environment\n  \n*Overload 2*  \n  :param pythonName: (java.lang.String) - the python command\n  :param timeout: (java.time.Duration) - the timeout\n  :return: (io.deephaven.jpy.JpyConfigSource) the jpy configuration, based on a python execution in the current environment",
-  "getPythonName": "Find the \"best\" python name. If the system property \"deephaven.python.name\" is set, return it. Otherwise,\n if the environment variable \"VIRTUAL_ENV\" is set, return \"${VIRTUAL_ENV}/bin/python\". Otherwise, return\n \"python3\".\n\n:return: (java.lang.String) the python name"
- },
- "path": "io.deephaven.jpy.JpyConfigFromSubprocess",
- "typeName": "class"
-}

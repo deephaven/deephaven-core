@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.rowset.impl.rsp.container.ShortRangeConsumer",
- "methods": {
-  "accept": "Provides a value to this consumer. A false return value indicates that the application providing values to this\n consumer should not invoke it again.\n\n:param unsignedStart: (short) - the unsigned short value for the start of this range.\n:param unsignedEndInclusive: (short) - the unsigned short value for the end of this range, inclusive.\n:return: (boolean) false if don't want any more values after this one, true otherwise."
- },
- "path": "io.deephaven.engine.rowset.impl.rsp.container.ShortRangeConsumer",
- "text": "A ShortRangeConsumer receives the ranges contained in a data structure. Each range is visited once, in increasing\n unsigned order, with non-overlapped boundaries. In particular, the start position of a range needs to be strictly\n greater than the end position of the previous range, both as unsigned values.\n \n Usage:\n\n \n \n bitmap.forEach(new ShortConsumer() {\n   public boolean accept(short value) {\n     // do something here\n   }\n });",
- "typeName": "interface"
-}

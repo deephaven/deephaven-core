@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.sources.UnionRedirection",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.sources.UnionRedirection",
- "text": "This class manages the row key space allocated to constituent Tables for a UnionColumnSource, so that we can map row\n keys from an outer (merged) RowSet to the enclosing constituent Table.",
- "typeName": "class"
-}

@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.server.jetty.JettyServerModule",
- "methods": {},
- "path": "io.deephaven.server.jetty.JettyServerModule",
- "typeName": "class"
-}

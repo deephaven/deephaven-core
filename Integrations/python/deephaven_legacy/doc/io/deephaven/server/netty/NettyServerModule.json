@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.server.netty.NettyServerModule",
- "methods": {},
- "path": "io.deephaven.server.netty.NettyServerModule",
- "typeName": "class"
-}

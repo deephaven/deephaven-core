@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.io.NioUtil",
- "methods": {
-  "reduceSelectorGarbage": "Use reflection to change the collection implementations so iteration operations used in the selector\n implementation will not produce garbage.\n\n \n This is only applied when the system property java.specification.version is equal to \"1.8\".\n\n \n We can do this because, by looking at the source code, we can tell that there are no simultaneous iterations so\n reusing one iterator is OK. Because of concurrent modification issues and thread safety issues, this is generally\n likely to be the case anyway. The implementation of selector is not likely to change between minor JDK revisions.\n A major JDK release might produce a rewrite, but in that case we can check the JDK version and apply the\n appropriate set of patches.\n\n:param selector: java.nio.channels.Selector\n:return: java.nio.channels.Selector"
- },
- "path": "io.deephaven.io.NioUtil",
- "text": "General utilities for NIO",
- "typeName": "class"
-}

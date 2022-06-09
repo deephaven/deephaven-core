@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Function$Senary",
- "methods": {
-  "call": ":param arg: Function.Senary.A1\n:param arg2: Function.Senary.A2\n:param arg3: Function.Senary.A3\n:param arg4: Function.Senary.A4\n:param arg5: Function.Senary.A5\n:param arg6: Function.Senary.A6\n:return: Function.Senary.R"
- },
- "path": "io.deephaven.base.Function.Senary",
- "typeName": "interface"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.rowset.impl.rsp.container.BatchIterator",
- "methods": {
-  "hasNext": "Returns true is there are more values to get.\n\n:return: (boolean) whether the iterator is exhaused or not.",
-  "nextBatch": "Writes the next batch of integers onto the buffer, and returns how many were written. Aims to fill the buffer.\n\n:param buffer: (int[]) - - the target to write onto\n:return: (int) how many values were written during the call."
- },
- "path": "io.deephaven.engine.rowset.impl.rsp.container.BatchIterator",
- "typeName": "interface"
-}

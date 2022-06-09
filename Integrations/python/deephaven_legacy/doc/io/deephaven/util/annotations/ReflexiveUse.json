@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.annotations.ReflexiveUse",
- "methods": {},
- "path": "io.deephaven.util.annotations.ReflexiveUse",
- "text": "Tagging attribute to indicate a method or class is used reflexively and should not be deleted.",
- "typeName": "class"
-}

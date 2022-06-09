@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.replay.ReplayerHandle",
- "methods": {
-  "getReplayer": "Gets the replayer.\n\n:return: (io.deephaven.engine.table.impl.replay.Replayer) replayer"
- },
- "path": "io.deephaven.engine.table.impl.replay.ReplayerHandle",
- "text": "A handle to a replayer.",
- "typeName": "interface"
-}

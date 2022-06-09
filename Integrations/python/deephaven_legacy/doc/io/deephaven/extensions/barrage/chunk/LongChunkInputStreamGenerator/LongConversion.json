@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.extensions.barrage.chunk.LongChunkInputStreamGenerator$LongConversion",
- "methods": {
-  "apply": ":param in: long\n:return: long"
- },
- "path": "io.deephaven.extensions.barrage.chunk.LongChunkInputStreamGenerator.LongConversion",
- "typeName": "interface"
-}

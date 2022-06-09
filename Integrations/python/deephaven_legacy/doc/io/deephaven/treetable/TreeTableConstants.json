@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.treetable.TreeTableConstants",
- "methods": {
-  "isTreeTable": ":param t: io.deephaven.engine.table.Table\n:return: boolean"
- },
- "path": "io.deephaven.treetable.TreeTableConstants",
- "typeName": "class"
-}

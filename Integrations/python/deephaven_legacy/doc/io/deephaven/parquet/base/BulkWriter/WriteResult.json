@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.parquet.base.BulkWriter$WriteResult",
- "methods": {},
- "path": "io.deephaven.parquet.base.BulkWriter.WriteResult",
- "typeName": "class"
-}

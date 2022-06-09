@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.extensions.barrage.chunk.DoubleChunkInputStreamGenerator$DoubleConversion",
- "methods": {
-  "apply": ":param in: double\n:return: double"
- },
- "path": "io.deephaven.extensions.barrage.chunk.DoubleChunkInputStreamGenerator.DoubleConversion",
- "typeName": "interface"
-}

@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.web.shared.ide.lsp.DidChangeTextDocumentParams",
- "methods": {},
- "path": "io.deephaven.web.shared.ide.lsp.DidChangeTextDocumentParams",
- "typeName": "class"
-}

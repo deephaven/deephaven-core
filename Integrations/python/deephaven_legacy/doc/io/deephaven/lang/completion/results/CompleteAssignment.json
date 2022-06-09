@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.lang.completion.results.CompleteAssignment",
- "methods": {
-  "doCompletion": ":param results: java.util.Collection<io.deephaven.proto.backplane.script.grpc.CompletionItem.Builder>\n:param request: io.deephaven.lang.completion.CompletionRequest\n:param varName: java.lang.String\n:param methodMatched: boolean"
- },
- "path": "io.deephaven.lang.completion.results.CompleteAssignment",
- "text": "A class specifically for completing assignment statements; to be called after the completer has discovered the cursor\n near an assignment token.",
- "typeName": "class"
-}

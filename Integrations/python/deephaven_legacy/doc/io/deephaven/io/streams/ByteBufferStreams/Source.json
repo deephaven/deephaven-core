@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.io.streams.ByteBufferStreams$Source",
- "methods": {
-  "nextBuffer": ":param lastBuffer: java.nio.ByteBuffer\n:return: java.nio.ByteBuffer"
- },
- "path": "io.deephaven.io.streams.ByteBufferStreams.Source",
- "typeName": "interface"
-}

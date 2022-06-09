@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.web.shared.ide.lsp.VersionedTextDocumentIdentifier",
- "methods": {},
- "path": "io.deephaven.web.shared.ide.lsp.VersionedTextDocumentIdentifier",
- "typeName": "class"
-}

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.type.EnumValue",
- "methods": {
-  "caseInsensitiveValueOf": "Retrieves the enum constant whose name matches a given value according to case-insensitive comparison.\n\nNote: Java generics information - <T extends java.lang.Enum<?>>\n\n:param enumClass: (java.lang.Class<T>) - the enum type we are querying\n:param value: (java.lang.String) - the constant value we are looking up\n:return: (T) the enum constant"
- },
- "path": "io.deephaven.util.type.EnumValue",
- "typeName": "class"
-}
