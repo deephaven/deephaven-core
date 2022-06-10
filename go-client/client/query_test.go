@@ -21,6 +21,7 @@ func TestDagQuery(t *testing.T) {
 	// Close (float32), Vol (int32), Ticker (string)
 	exTable, err := c.ImportTable(ctx, rec)
 	test_setup.CheckError(t, "ImportTable", err)
+	defer exTable.Release(ctx)
 
 	// Close (float32), Vol (int32), TickerLen (int)
 	exLenQuery := exTable.Query().
@@ -44,6 +45,9 @@ func TestDagQuery(t *testing.T) {
 	if len(tables) != 4 {
 		t.Errorf("wrong number of tables")
 		return
+	}
+	for i := 0; i < len(tables); i += 1 {
+		defer tables[i].Release(ctx)
 	}
 
 	finalTable, err := tables[0].Snapshot(ctx)
@@ -84,15 +88,18 @@ func TestMergeQuery(t *testing.T) {
 
 	left, err := c.EmptyTable(ctx, 10)
 	test_setup.CheckError(t, "EmptyTable", err)
+	defer left.Release(ctx)
 
 	right, err := c.EmptyTable(ctx, 5)
 	test_setup.CheckError(t, "EmptyTable", err)
+	defer right.Release(ctx)
 
 	tables, err := c.ExecQuery(ctx, left.Query().Merge("", right.Query()))
 	test_setup.CheckError(t, "ExecQuery", err)
 	if len(tables) != 1 {
 		t.Errorf("wrong number of tables")
 	}
+	defer tables[0].Release(ctx)
 
 	tbl, err := tables[0].Snapshot(ctx)
 	test_setup.CheckError(t, "Snapshot", err)
@@ -121,6 +128,8 @@ func TestSeparateQueries(t *testing.T) {
 		t.Errorf("wrong number of tables")
 		return
 	}
+	defer tables[0].Release(ctx)
+	defer tables[1].Release(ctx)
 
 	leftTbl, err := tables[0].Snapshot(ctx)
 	if err != nil {
@@ -166,6 +175,8 @@ func TestEmptyTableQuery(t *testing.T) {
 		t.Errorf("wrong number of tables")
 		return
 	}
+	defer tables[0].Release(ctx)
+	defer tables[1].Release(ctx)
 
 	baseTbl, err := tables[0].Snapshot(ctx)
 	if err != nil {
@@ -207,6 +218,7 @@ func TestUpdateDropQuery(t *testing.T) {
 		t.Errorf("ImportTable %s", err.Error())
 		return
 	}
+	defer before.Release(ctx)
 
 	updateQuery := before.Query().Update("Foo = Close * 17.0", "Bar = Vol + 1")
 	dropQuery := updateQuery.DropColumns("Bar", "Ticker")
@@ -220,6 +232,8 @@ func TestUpdateDropQuery(t *testing.T) {
 		t.Errorf("wrong number of result tables")
 		return
 	}
+	defer tables[0].Release(ctx)
+	defer tables[1].Release(ctx)
 
 	updTbl, err := tables[0].Snapshot(ctx)
 	if err != nil {

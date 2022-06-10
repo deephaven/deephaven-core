@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"log"
 
 	"github.com/apache/arrow/go/arrow"
 	"github.com/apache/arrow/go/arrow/array"
@@ -9,6 +10,9 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
+// A reference to a table stored on the deephaven server.
+//
+// It should be eventually released using Release once it is no longer needed.
 type TableHandle struct {
 	client   *Client
 	ticket   *ticketpb2.Ticket
@@ -53,4 +57,15 @@ func (th *TableHandle) Query() QueryNode {
 	return qb.curRootNode()
 }
 
-/* ... more table methods would go here ... */
+func (th *TableHandle) Release(ctx context.Context) {
+	if th.client != nil {
+		err := th.client.release(ctx, th.ticket)
+		if err != nil {
+			log.Println("unable to release table:", err.Error())
+		}
+
+		th.client = nil
+		th.ticket = nil
+		th.schema = nil
+	}
+}

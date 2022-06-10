@@ -24,6 +24,14 @@ type Client struct {
 	nextTicket int32
 }
 
+type SyncOption int
+
+const (
+	NoSync        SyncOption = iota
+	SyncOnce      SyncOption = iota
+	SyncRepeating SyncOption = iota
+)
+
 // Starts a connection to the deephaven server.
 //
 // The client should be closed using `Close()` after it is done being used.

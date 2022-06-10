@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sessionpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/session"
+	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 
 	"google.golang.org/grpc/metadata"
 )
@@ -105,8 +106,7 @@ func (ref *refresher) refresh() error {
 
 type sessionStub struct {
 	client *Client
-
-	stub sessionpb2.SessionServiceClient
+	stub   sessionpb2.SessionServiceClient
 
 	tokenMutex *sync.Mutex
 	token      *tokenResp
@@ -130,6 +130,9 @@ func NewSessionStub(ctx context.Context, client *Client) (sessionStub, error) {
 	}
 
 	hs := sessionStub{
+		client: client,
+		stub:   stub,
+
 		tokenMutex: tokenMutex,
 		token:      tokenResp,
 
@@ -149,6 +152,17 @@ func (hs *sessionStub) Token() []byte {
 	hs.tokenMutex.Unlock()
 
 	return token
+}
+
+func (hs *sessionStub) release(ctx context.Context, ticket *ticketpb2.Ticket) error {
+	ctx = hs.client.WithToken(ctx)
+
+	req := sessionpb2.ReleaseRequest{Id: ticket}
+	_, err := hs.stub.Release(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (hs *sessionStub) Close() {

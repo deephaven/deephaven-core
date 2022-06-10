@@ -28,12 +28,14 @@ func applyTableOp(t *testing.T, op unaryTableOp) *array.Record {
 		t.Errorf("ImportTable %s", err.Error())
 		return nil
 	}
+	defer before.Release(ctx)
 
 	after, err := op(ctx, &before)
 	if err != nil {
 		t.Errorf("DropColumns %s", err.Error())
 		return nil
 	}
+	defer after.Release(ctx)
 
 	result, err := after.Snapshot(ctx)
 	if err != nil {

@@ -22,6 +22,7 @@ func main() {
 		fmt.Println("EmptyTable err:", err)
 		return
 	}
+	defer tbl.Release(ctx)
 
 	err = s.BindToVariable(ctx, "gotest", &tbl)
 	if err != nil {
