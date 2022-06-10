@@ -597,7 +597,120 @@ func (qb QueryNode) Count(col string) QueryNode {
 	return qb.addOp(dedicatedAggOp{countColumn: col, kind: tablepb2.ComboAggregateRequest_COUNT})
 }
 
-// TODO: AggBy
+type aggPart struct {
+	matchPairs []string
+	columnName string
+	percentile float64
+	avgMedian  bool
+	kind       tablepb2.ComboAggregateRequest_AggType
+}
+
+// AggBuilder is the main way to construct aggregations with multiple parts in them.
+type AggBuilder struct {
+	aggs []aggPart
+}
+
+func NewAggBuilder() *AggBuilder {
+	return &AggBuilder{}
+}
+
+func (b *AggBuilder) addAgg(part aggPart) {
+	b.aggs = append(b.aggs, part)
+}
+
+func (b *AggBuilder) Count(col string) *AggBuilder {
+	b.addAgg(aggPart{columnName: col, kind: tablepb2.ComboAggregateRequest_COUNT})
+	return b
+}
+
+func (b *AggBuilder) AbsSum(cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_ABS_SUM})
+	return b
+}
+
+func (b *AggBuilder) Group(cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_GROUP})
+	return b
+}
+
+func (b *AggBuilder) Avg(cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_AVG})
+	return b
+}
+
+func (b *AggBuilder) First(cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_FIRST})
+	return b
+}
+
+func (b *AggBuilder) Last(cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_LAST})
+	return b
+}
+
+func (b *AggBuilder) Min(cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_MIN})
+	return b
+}
+
+func (b *AggBuilder) Max(cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_MAX})
+	return b
+}
+
+func (b *AggBuilder) Median(cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_MEDIAN})
+	return b
+}
+
+func (b *AggBuilder) Percentile(percentile float64, cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, percentile: percentile, kind: tablepb2.ComboAggregateRequest_PERCENTILE})
+	return b
+}
+
+func (b *AggBuilder) StdDev(cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_STD})
+	return b
+}
+
+func (b *AggBuilder) Variance(cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_VAR})
+	return b
+}
+
+func (b *AggBuilder) WeightedAvg(weightCol string, cols []string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, columnName: weightCol, kind: tablepb2.ComboAggregateRequest_WEIGHTED_AVG})
+	return b
+}
+
+type aggByOp struct {
+	colNames []string
+	aggs     []aggPart
+}
+
+func (op aggByOp) childQueries() []QueryNode {
+	return nil
+}
+
+func (op aggByOp) makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.TableReference, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
+	assert(len(children) == 0, "wrong number of children for AggBy")
+	assert(sourceId != nil, "nil sourceId for dedicated AggBy")
+
+	var aggs []*tablepb2.ComboAggregateRequest_Aggregate
+	for _, agg := range op.aggs {
+		reqAgg := tablepb2.ComboAggregateRequest_Aggregate{Type: agg.kind, ColumnName: agg.columnName, MatchPairs: agg.matchPairs, Percentile: agg.percentile, AvgMedian: agg.avgMedian}
+		aggs = append(aggs, &reqAgg)
+	}
+
+	req := &tablepb2.ComboAggregateRequest{ResultId: resultId, SourceId: sourceId, Aggregates: aggs, GroupByColumns: op.colNames}
+	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_ComboAggregate{ComboAggregate: req}}
+}
+
+func (qb QueryNode) AggBy(agg *AggBuilder, by []string) QueryNode {
+	aggs := make([]aggPart, len(agg.aggs))
+	copy(aggs, agg.aggs)
+	return qb.addOp(aggByOp{colNames: by, aggs: aggs})
+}
 
 const (
 	joinOpCross   = iota
