@@ -43,10 +43,12 @@ const (
 
 // Starts a connection to the deephaven server.
 //
+// scriptLanguage can be either "python" or "groovy", and must match the language used on the server. Python is the default.
+//
 // The client should be closed using `Close()` after it is done being used.
 //
 // Note that the provided context is saved and used to send keepalive messages.
-func NewClient(ctx context.Context, host string, port string) (*Client, error) {
+func NewClient(ctx context.Context, host string, port string, scriptLanguage string) (*Client, error) {
 	grpcChannel, err := grpc.Dial(host+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -66,7 +68,7 @@ func NewClient(ctx context.Context, host string, port string) (*Client, error) {
 		return nil, err
 	}
 
-	client.consoleStub, err = NewConsoleStub(ctx, client, "python") // TODO: client type
+	client.consoleStub, err = NewConsoleStub(ctx, client, scriptLanguage)
 	if err != nil {
 		client.Close()
 		return nil, err

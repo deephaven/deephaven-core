@@ -10,7 +10,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	s, err := client.NewClient(ctx, "localhost", "10000")
+	s, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {
 		fmt.Println("Client err:", err)
 		return

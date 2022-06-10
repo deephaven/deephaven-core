@@ -14,7 +14,7 @@ type unaryTableOp func(context.Context, *client.TableHandle) (*client.TableHandl
 func applyTableOp(t *testing.T, op unaryTableOp) *array.Record {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000")
+	c, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}

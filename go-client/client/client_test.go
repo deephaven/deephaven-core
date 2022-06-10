@@ -11,7 +11,7 @@ import (
 func TestConnectError(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := client.NewClient(ctx, "localhost", "1234")
+	_, err := client.NewClient(ctx, "localhost", "1234", "python")
 	if err == nil {
 		t.Fatalf("client did not fail to connect")
 	}
@@ -20,7 +20,7 @@ func TestConnectError(t *testing.T) {
 func TestClosedClient(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000")
+	c, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -42,7 +42,7 @@ func TestEmptyTable(t *testing.T) {
 
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000")
+	c, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -68,7 +68,7 @@ func TestEmptyTable(t *testing.T) {
 func TestTimeTable(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000")
+	c, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -90,7 +90,7 @@ func TestTableUpload(t *testing.T) {
 	defer r.Release()
 
 	ctx := context.Background()
-	s, err := client.NewClient(ctx, "localhost", "10000")
+	s, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
