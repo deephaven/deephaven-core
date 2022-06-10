@@ -63,7 +63,7 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 // Like `EmptyTable`, except it can be used as part of a query.
 func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
 	qb := newQueryBuilder(ts.client, nil)
-	qb.ops = append(qb.ops, EmptyTableOp{numRows: numRows})
+	qb.ops = append(qb.ops, emptyTableOp{numRows: numRows})
 	return qb.curRootNode()
 }
 
@@ -95,7 +95,7 @@ func (ts *tableStub) TimeTableQuery(period int64, startTime *int64) QueryNode {
 	}
 
 	qb := newQueryBuilder(ts.client, nil)
-	qb.ops = append(qb.ops, TimeTableOp{period: period, startTime: realStartTime})
+	qb.ops = append(qb.ops, timeTableOp{period: period, startTime: realStartTime})
 	return qb.curRootNode()
 }
 
