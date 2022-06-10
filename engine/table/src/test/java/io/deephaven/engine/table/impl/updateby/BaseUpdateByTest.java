@@ -33,18 +33,20 @@ public class BaseUpdateByTest {
         }
     }
 
-    static CreateResult createTestTable(int tableSize, boolean includeSym, boolean includeGroups, boolean isRefreshing, int seed) {
-        return createTestTable(tableSize, includeSym, includeGroups, isRefreshing, seed, CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new Generator[0]);
+    static CreateResult createTestTable(int tableSize, boolean includeSym, boolean includeGroups, boolean isRefreshing,
+            int seed) {
+        return createTestTable(tableSize, includeSym, includeGroups, isRefreshing, seed,
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new Generator[0]);
     }
 
     @SuppressWarnings({"rawtypes"})
     static CreateResult createTestTable(int tableSize,
-                                        boolean includeSym,
-                                        boolean includeGroups,
-                                        boolean isRefreshing,
-                                        int seed,
-                                        String[] extraNames,
-                                        Generator[] extraGenerators) {
+            boolean includeSym,
+            boolean includeGroups,
+            boolean isRefreshing,
+            int seed,
+            String[] extraNames,
+            Generator[] extraGenerators) {
         if (includeGroups && !includeSym) {
             throw new IllegalArgumentException();
         }
@@ -61,7 +63,8 @@ public class BaseUpdateByTest {
             generators.addAll(Arrays.asList(extraGenerators));
         }
 
-        colsList.addAll(Arrays.asList("byteCol", "shortCol", "intCol", "longCol", "floatCol", "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
+        colsList.addAll(Arrays.asList("byteCol", "shortCol", "intCol", "longCol", "floatCol", "doubleCol", "boolCol",
+                "bigIntCol", "bigDecimalCol"));
         generators.addAll(Arrays.asList(new ByteGenerator((byte) -127, (byte) 127, .1),
                 new ShortGenerator((short) -6000, (short) 65535, .1),
                 new IntGenerator(10, 100, .1),
@@ -78,10 +81,10 @@ public class BaseUpdateByTest {
         final QueryTable t = getTable(tableSize, random, columnInfos);
 
 
-//        if (!isRefreshing && includeGroups) {
-//            final ColumnSource<?> groupingSource = t.getColumnSource("Sym");
-//            groupingSource.setGroupingProvider(StaticGroupingProvider.buildFrom(groupingSource, t.getRowSet()));
-//        }
+        // if (!isRefreshing && includeGroups) {
+        // final ColumnSource<?> groupingSource = t.getColumnSource("Sym");
+        // groupingSource.setGroupingProvider(StaticGroupingProvider.buildFrom(groupingSource, t.getRowSet()));
+        // }
 
         t.setRefreshing(isRefreshing);
 

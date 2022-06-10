@@ -12,9 +12,12 @@ import java.math.MathContext;
  * An interface to control the behavior of an {@link Table#updateBy}
  */
 public interface UpdateByControl {
-    int DEFAULT_CHUNK_CAPACITY = Configuration.getInstance().getIntegerWithDefault("UpdateByControl.chunkCapacity", 4096);
-    boolean DEFAULT_USE_REDIRECTION = Configuration.getInstance().getBooleanWithDefault("UpdateByControl.useRedirectionOutput", false);
-    double DEFAULT_MAXIMUM_STATIC_SPARSE_MEMORY_OVERHEAD = Configuration.getInstance().getDoubleWithDefault("UpdateByControl.maximumStaticMemoryOverhead", 1.1);
+    int DEFAULT_CHUNK_CAPACITY =
+            Configuration.getInstance().getIntegerWithDefault("UpdateByControl.chunkCapacity", 4096);
+    boolean DEFAULT_USE_REDIRECTION =
+            Configuration.getInstance().getBooleanWithDefault("UpdateByControl.useRedirectionOutput", false);
+    double DEFAULT_MAXIMUM_STATIC_SPARSE_MEMORY_OVERHEAD =
+            Configuration.getInstance().getDoubleWithDefault("UpdateByControl.maximumStaticMemoryOverhead", 1.1);
 
     UpdateByControl DEFAULT = new UpdateByControl() {};
 
@@ -38,6 +41,7 @@ public interface UpdateByControl {
 
     /**
      * The maximum fractional memory overhead allowable for sparse redirections.
+     * 
      * @return the maximum fractional memory overhead.
      */
     default double getMaxStaticSparseMemoryOverhead() {
@@ -56,6 +60,7 @@ public interface UpdateByControl {
 
     /**
      * Get the maximum load factor for the hash table.
+     * 
      * @return the maximum load factor
      */
     default double getMaximumLoadFactor() {
@@ -64,6 +69,7 @@ public interface UpdateByControl {
 
     /**
      * Get the target load factor for the hash table.
+     * 
      * @return the target load factor
      */
     default double getTargetLoadFactor() {

@@ -30,15 +30,16 @@ public class SparseConstants {
 
     /**
      * When using sparse data structures, a single entry within a block can result in the data size increasing by a
-     * factor of BLOCK_SIZE.  On the other hand, we would strongly prefer the sparse results because they are generally
+     * factor of BLOCK_SIZE. On the other hand, we would strongly prefer the sparse results because they are generally
      * much faster than the alternatives.
      * <p>
-     * To balance those concerns, we can determine if a given rowSet exceeds some overhead threshold and act accordingly.
+     * To balance those concerns, we can determine if a given rowSet exceeds some overhead threshold and act
+     * accordingly.
      *
-     * @param rowSet           the Index that we should calculate the overhead for
-     * @param maximumOverhead the maximum overhead as a fraction (e.g. 1.1 is 10% overhead).  Values less than zero
-     *                        disable overhead checking, and result in always using the sparse structure.  A value of
-     *                        zero results in never using the sparse structure.
+     * @param rowSet the Index that we should calculate the overhead for
+     * @param maximumOverhead the maximum overhead as a fraction (e.g. 1.1 is 10% overhead). Values less than zero
+     *        disable overhead checking, and result in always using the sparse structure. A value of zero results in
+     *        never using the sparse structure.
      */
     public static boolean sparseStructureExceedsOverhead(final RowSet rowSet, final double maximumOverhead) {
         if (maximumOverhead < 0) {
@@ -48,8 +49,8 @@ public class SparseConstants {
             return true;
         }
 
-        final long requiredBlocks = (rowSet.size() + BLOCK_SIZE - 1 ) / BLOCK_SIZE;
-        final long acceptableBlocks = (long)(maximumOverhead * (double)requiredBlocks);
+        final long requiredBlocks = (rowSet.size() + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        final long acceptableBlocks = (long) (maximumOverhead * (double) requiredBlocks);
         final MutableLong lastBlock = new MutableLong(-1L);
         final MutableLong usedBlocks = new MutableLong(0);
         return !rowSet.forEachRowKeyRange((s, e) -> {

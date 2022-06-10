@@ -25,26 +25,26 @@ class ZeroKeyUpdateBy extends UpdateBy {
     /**
      * Perform an updateBy without any key columns.
      *
-     * @param description      the operation description
-     * @param source           the source table
-     * @param ops              the operations to perform
-     * @param resultSources    the result sources
+     * @param description the operation description
+     * @param source the source table
+     * @param ops the operations to perform
+     * @param resultSources the result sources
      * @param redirectionRowSet the {@link io.deephaven.engine.table.impl.util.RowRedirection}, if one is used.
-     * @param control          the control object.
+     * @param control the control object.
      * @return the result table
      */
     @SuppressWarnings("rawtypes")
     public static Table compute(@NotNull final String description,
-                                @NotNull final QueryTable source,
-                                @NotNull final UpdateByOperator[] ops,
-                                @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-                                @Nullable final WritableRowRedirection redirectionRowSet,
-                                @NotNull final UpdateByControl control) {
+            @NotNull final QueryTable source,
+            @NotNull final UpdateByOperator[] ops,
+            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
+            @Nullable final WritableRowRedirection redirectionRowSet,
+            @NotNull final UpdateByControl control) {
         final QueryTable result = new QueryTable(source.getRowSet(), resultSources);
         final ZeroKeyUpdateBy updateBy = new ZeroKeyUpdateBy(ops, source, redirectionRowSet, control);
         updateBy.doInitialAdditions();
 
-        if(source.isRefreshing()) {
+        if (source.isRefreshing()) {
             if (redirectionRowSet != null) {
                 redirectionRowSet.startTrackingPrevValues();
             }
@@ -58,9 +58,9 @@ class ZeroKeyUpdateBy extends UpdateBy {
     }
 
     protected ZeroKeyUpdateBy(@NotNull final UpdateByOperator[] operators,
-                              @NotNull final QueryTable source,
-                              @Nullable final WritableRowRedirection redirectionRowSet,
-                              @NotNull final UpdateByControl control) {
+            @NotNull final QueryTable source,
+            @Nullable final WritableRowRedirection redirectionRowSet,
+            @NotNull final UpdateByControl control) {
         super(operators, source, redirectionRowSet, control);
     }
 
@@ -74,9 +74,9 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 RowSetFactory.empty(),
                 RowSetShiftData.EMPTY,
                 ModifiedColumnSet.ALL);
-        try(final UpdateContext ctx = new UpdateContext(fakeUpdate, null, true)) {
+        try (final UpdateContext ctx = new UpdateContext(fakeUpdate, null, true)) {
             ctx.setAllAffected();
-            if(redirectionRowSet != null && source.isRefreshing()) {
+            if (redirectionRowSet != null && source.isRefreshing()) {
                 processUpdateForRedirection(fakeUpdate);
             }
             ctx.doUpdate(source.getRowSet(), source.getRowSet(), UpdateType.Add);
@@ -118,7 +118,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
         /** A sharedContext to be used with previous values */
         SharedContext prevSharedContext;
 
-        /** An array of {@link  ChunkSource.FillContext}s for previous values */
+        /** An array of {@link ChunkSource.FillContext}s for previous values */
         ChunkSource.FillContext[] prevFillContexts;
 
         /** An array of chunks for previous values */
@@ -131,63 +131,71 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
         @SuppressWarnings("resource")
         UpdateContext(@NotNull final TableUpdate upstream,
-                      @Nullable final ModifiedColumnSet[] inputModifiedColumnSets,
-                      final boolean isInitializeStep) {
+                @Nullable final ModifiedColumnSet[] inputModifiedColumnSets,
+                final boolean isInitializeStep) {
             final int updateSize = UpdateSizeCalculator.chunkSize(upstream, control.getChunkCapacity());
 
             this.chunkSize = UpdateSizeCalculator.chunkSize(updateSize, upstream.shifted(), control.getChunkCapacity());
             this.opAffected = new boolean[operators.length];
-            //noinspection unchecked
+            // noinspection unchecked
             this.fillContexts = new SizedSafeCloseable[operators.length];
             this.opContext = new UpdateByOperator.UpdateContext[operators.length];
             this.keyChunk = new SizedLongChunk<>();
             this.inputChunkPopulated = new boolean[operators.length];
 
-            if(upstream.shifted().nonempty()) {
+            if (upstream.shifted().nonempty()) {
                 this.prevKeyChunk = WritableLongChunk.makeWritableChunk(chunkSize);
             }
 
             final boolean hasModifies = upstream.modified().isNonempty();
-            if(hasModifies) {
-                //noinspection unchecked
+            if (hasModifies) {
+                // noinspection unchecked
                 this.prevWorkingChunks = new WritableChunk[operators.length];
                 this.prevSharedContext = SharedContext.makeSharedContext();
                 this.prevFillContexts = new ChunkSource.FillContext[operators.length];
             }
 
-            final boolean upstreamAppendOnly = isInitializeStep || UpdateByOperator.isAppendOnly(upstream, source.getRowSet().lastRowKeyPrev());
+            final boolean upstreamAppendOnly =
+                    isInitializeStep || UpdateByOperator.isAppendOnly(upstream, source.getRowSet().lastRowKeyPrev());
             smallestModifiedKey = upstreamAppendOnly ? Long.MAX_VALUE
-                                                     : UpdateByOperator.determineSmallestVisitedKey(upstream, source.getRowSet());
+                    : UpdateByOperator.determineSmallestVisitedKey(upstream, source.getRowSet());
 
-            //noinspection unchecked
+            // noinspection unchecked
             this.postWorkingChunks = new SizedSafeCloseable[operators.length];
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 opAffected[opIdx] = upstream.added().isNonempty() ||
                         upstream.removed().isNonempty() ||
                         upstream.shifted().nonempty() ||
-                        (upstream.modifiedColumnSet().nonempty() && (inputModifiedColumnSets == null || upstream.modifiedColumnSet().containsAny(inputModifiedColumnSets[opIdx])));
-                if(!opAffected[opIdx]) {
+                        (upstream.modifiedColumnSet().nonempty() && (inputModifiedColumnSets == null
+                                || upstream.modifiedColumnSet().containsAny(inputModifiedColumnSets[opIdx])));
+                if (!opAffected[opIdx]) {
                     continue;
                 }
 
                 opContext[opIdx] = operators[opIdx].makeUpdateContext(chunkSize);
 
                 final int slotPosition = inputSourceSlots[opIdx];
-                if(fillContexts[slotPosition] == null) {
-                    fillContexts[slotPosition] = new SizedSafeCloseable<>(sz -> inputSources[slotPosition].makeFillContext(sz, getSharedContext()));
+                if (fillContexts[slotPosition] == null) {
+                    fillContexts[slotPosition] = new SizedSafeCloseable<>(
+                            sz -> inputSources[slotPosition].makeFillContext(sz, getSharedContext()));
                     fillContexts[slotPosition].ensureCapacity(chunkSize);
-                    postWorkingChunks[slotPosition] = new SizedSafeCloseable<>(sz -> inputSources[slotPosition].getChunkType().makeWritableChunk(sz));
+                    postWorkingChunks[slotPosition] = new SizedSafeCloseable<>(
+                            sz -> inputSources[slotPosition].getChunkType().makeWritableChunk(sz));
                     postWorkingChunks[slotPosition].ensureCapacity(chunkSize);
 
-                    // Note that these don't participate in setChunkSize() because nothing will use them.  If that changes
+                    // Note that these don't participate in setChunkSize() because nothing will use them. If that
+                    // changes
                     // then these must also become SizedSafeCloseables.
-                    if(hasModifies) {
-                        prevFillContexts[slotPosition] = inputSources[opIdx].makeFillContext(chunkSize, prevSharedContext);
-                        prevWorkingChunks[slotPosition] = inputSources[opIdx].getChunkType().makeWritableChunk(chunkSize);
+                    if (hasModifies) {
+                        prevFillContexts[slotPosition] =
+                                inputSources[opIdx].makeFillContext(chunkSize, prevSharedContext);
+                        prevWorkingChunks[slotPosition] =
+                                inputSources[opIdx].getChunkType().makeWritableChunk(chunkSize);
                     }
                 }
 
-                operators[opIdx].initializeForUpdate(opContext[opIdx], upstream, source.getRowSet(), false, upstreamAppendOnly);
+                operators[opIdx].initializeForUpdate(opContext[opIdx], upstream, source.getRowSet(), false,
+                        upstreamAppendOnly);
             }
         }
 
@@ -196,7 +204,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
         }
 
         void setChunkSize(int newChunkSize) {
-            if(newChunkSize <= chunkSize) {
+            if (newChunkSize <= chunkSize) {
                 return;
             }
 
@@ -205,7 +213,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
             this.sharedContext.close();
             this.sharedContext = SharedContext.makeSharedContext();
 
-            if(prevSharedContext != null) {
+            if (prevSharedContext != null) {
                 this.prevSharedContext.close();
                 this.prevSharedContext = null;
             }
@@ -213,39 +221,39 @@ class ZeroKeyUpdateBy extends UpdateBy {
             this.chunkSize = newChunkSize;
             this.keyChunk.ensureCapacity(newChunkSize);
 
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if(!opAffected[opIdx]) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (!opAffected[opIdx]) {
                     continue;
                 }
 
                 operators[opIdx].setChunkSize(opContext[opIdx], newChunkSize);
-                if(fillContexts[opIdx] != null) {
+                if (fillContexts[opIdx] != null) {
                     fillContexts[opIdx].ensureCapacity(newChunkSize);
                     postWorkingChunks[opIdx].ensureCapacity(newChunkSize);
 
-                    // Note that this doesn't include the prevFillContexts or prevWorkingChunks.  If they become
-                    // needed for an op,  they must be added here.
+                    // Note that this doesn't include the prevFillContexts or prevWorkingChunks. If they become
+                    // needed for an op, they must be added here.
                 }
             }
         }
 
         void initializeFor(@NotNull final RowSet updateRowSet,
-                           @NotNull final UpdateType type) {
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if(opAffected[opIdx]) {
+                @NotNull final UpdateType type) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx]) {
                     operators[opIdx].initializeFor(opContext[opIdx], updateRowSet, type);
                     anyRequireKeys |= operators[opIdx].requiresKeys();
                 }
             }
 
-            if(anyRequireKeys) {
+            if (anyRequireKeys) {
                 keyChunk.ensureCapacity(chunkSize);
             }
         }
 
         void finishFor(@NotNull final UpdateType type) {
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if(opAffected[opIdx]) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx]) {
                     operators[opIdx].finishFor(opContext[opIdx], type);
                 }
             }
@@ -259,32 +267,32 @@ class ZeroKeyUpdateBy extends UpdateBy {
             sharedContext.close();
             keyChunk.close();
 
-            if(prevKeyChunk != null) {
+            if (prevKeyChunk != null) {
                 prevKeyChunk.close();
             }
 
-            if(prevSharedContext != null) {
+            if (prevSharedContext != null) {
                 prevSharedContext.close();
             }
 
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if(opContext[opIdx] != null) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opContext[opIdx] != null) {
                     opContext[opIdx].close();
                 }
 
-                if(fillContexts[opIdx] != null) {
+                if (fillContexts[opIdx] != null) {
                     fillContexts[opIdx].close();
                 }
 
-                if(postWorkingChunks[opIdx] != null) {
+                if (postWorkingChunks[opIdx] != null) {
                     postWorkingChunks[opIdx].close();
                 }
 
-                if(prevFillContexts != null && prevFillContexts[opIdx] != null) {
+                if (prevFillContexts != null && prevFillContexts[opIdx] != null) {
                     prevFillContexts[opIdx].close();
                 }
 
-                if(prevWorkingChunks != null && prevWorkingChunks[opIdx] != null) {
+                if (prevWorkingChunks != null && prevWorkingChunks[opIdx] != null) {
                     prevWorkingChunks[opIdx].close();
                 }
             }
@@ -303,8 +311,8 @@ class ZeroKeyUpdateBy extends UpdateBy {
          * @return true if any operator produced more modified rows.
          */
         boolean anyModified() {
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if(opAffected[opIdx] && operators[opIdx].anyModified(opContext[opIdx])) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx] && operators[opIdx].anyModified(opContext[opIdx])) {
                     return true;
                 }
             }
@@ -312,34 +320,36 @@ class ZeroKeyUpdateBy extends UpdateBy {
         }
 
         void doUpdate(@NotNull final RowSet updateRowSet,
-                      @NotNull final RowSet preShiftUpdateRowSet,
-                      @NotNull final UpdateType type) {
-            if(updateRowSet.isEmpty()) {
+                @NotNull final RowSet preShiftUpdateRowSet,
+                @NotNull final UpdateType type) {
+            if (updateRowSet.isEmpty()) {
                 return;
             }
 
-            try(final RowSequence.Iterator okIt = updateRowSet.getRowSequenceIterator();
-                final RowSequence.Iterator preShiftOkIt = preShiftUpdateRowSet == updateRowSet ? null : preShiftUpdateRowSet.getRowSequenceIterator()) {
+            try (final RowSequence.Iterator okIt = updateRowSet.getRowSequenceIterator();
+                    final RowSequence.Iterator preShiftOkIt = preShiftUpdateRowSet == updateRowSet ? null
+                            : preShiftUpdateRowSet.getRowSequenceIterator()) {
                 initializeFor(updateRowSet, type);
 
                 while (okIt.hasMore()) {
                     sharedContext.reset();
-                    if(prevSharedContext != null) {
+                    if (prevSharedContext != null) {
                         prevSharedContext.reset();
                     }
                     Arrays.fill(inputChunkPopulated, false);
 
                     final RowSequence chunkOk = okIt.getNextRowSequenceWithLength(chunkSize);
-                    final RowSequence prevChunkOk = preShiftUpdateRowSet == updateRowSet ? chunkOk : preShiftOkIt.getNextRowSequenceWithLength(chunkSize);
+                    final RowSequence prevChunkOk = preShiftUpdateRowSet == updateRowSet ? chunkOk
+                            : preShiftOkIt.getNextRowSequenceWithLength(chunkSize);
 
-                    if(anyRequireKeys) {
+                    if (anyRequireKeys) {
                         chunkOk.fillRowKeyChunk(keyChunk.get());
                         if (prevChunkOk != chunkOk) {
                             prevChunkOk.fillRowKeyChunk(prevKeyChunk);
                         }
                     }
 
-                    for(int opIdx = 0; opIdx < operators.length; opIdx++) {
+                    for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                         if (!opAffected[opIdx]) {
                             continue;
                         }
@@ -350,12 +360,14 @@ class ZeroKeyUpdateBy extends UpdateBy {
                             prepareValuesChunkFor(opIdx, slotPosition, false, true, chunkOk, prevChunkOk,
                                     null, postWorkingChunks[slotPosition].get(),
                                     null, fillContexts[slotPosition].get());
-                            currentOp.addChunk(opContext[opIdx], chunkOk, keyChunk.get(), postWorkingChunks[slotPosition].get(), 0);
+                            currentOp.addChunk(opContext[opIdx], chunkOk, keyChunk.get(),
+                                    postWorkingChunks[slotPosition].get(), 0);
                         } else if (type == UpdateType.Remove) {
                             prepareValuesChunkFor(opIdx, slotPosition, true, false, chunkOk, prevChunkOk,
                                     postWorkingChunks[slotPosition].get(), null,
                                     fillContexts[slotPosition].get(), null);
-                            currentOp.removeChunk(opContext[opIdx], keyChunk.get(), postWorkingChunks[slotPosition].get(), 0);
+                            currentOp.removeChunk(opContext[opIdx], keyChunk.get(),
+                                    postWorkingChunks[slotPosition].get(), 0);
                         } else if (type == UpdateType.Modify) {
                             prepareValuesChunkFor(opIdx, slotPosition, true, true, chunkOk, prevChunkOk,
                                     prevWorkingChunks[slotPosition], postWorkingChunks[slotPosition].get(),
@@ -366,22 +378,24 @@ class ZeroKeyUpdateBy extends UpdateBy {
                                     prevWorkingChunks[slotPosition],
                                     postWorkingChunks[slotPosition].get(),
                                     0);
-                        } else if(type == UpdateType.Reprocess) {
-                            // TODO: When we reprocess rows, we are basically re-adding the entire table starting at the lowest key.
-                            //       Since every operator might start at a different key, we could try to be efficient and not replay
-                            //       chunks of rows to operators that don't actually need them.
+                        } else if (type == UpdateType.Reprocess) {
+                            // TODO: When we reprocess rows, we are basically re-adding the entire table starting at the
+                            // lowest key.
+                            // Since every operator might start at a different key, we could try to be efficient and not
+                            // replay
+                            // chunks of rows to operators that don't actually need them.
                             //
-                            //       At the time of writing, any op that reprocesses uses the same logic to decide when,
-                            //       so there is no  need for fancyness deciding if we need to push this particular set
-                            //       of RowSequence through.
+                            // At the time of writing, any op that reprocesses uses the same logic to decide when,
+                            // so there is no need for fancyness deciding if we need to push this particular set
+                            // of RowSequence through.
                             prepareValuesChunkFor(opIdx, slotPosition, false, true, chunkOk, null,
                                     null, postWorkingChunks[slotPosition].get(),
                                     null, fillContexts[slotPosition].get());
                             currentOp.reprocessChunk(opContext[opIdx],
-                                                     chunkOk,
-                                                     keyChunk.get(),
-                                                     postWorkingChunks[slotPosition].get(),
-                                                     source.getRowSet());
+                                    chunkOk,
+                                    keyChunk.get(),
+                                    postWorkingChunks[slotPosition].get(),
+                                    source.getRowSet());
                         }
                     }
                 }
@@ -397,13 +411,15 @@ class ZeroKeyUpdateBy extends UpdateBy {
             // Get a sub-index of the source from that minimum reprocessing index and make sure we update our
             // contextual chunks and FillContexts to an appropriate size for this step.
             final RowSet sourceRowSet = source.getRowSet();
-            try(final RowSet indexToReprocess = sourceRowSet.subSetByKeyRange(smallestModifiedKey, sourceRowSet.lastRowKey())) {
+            try (final RowSet indexToReprocess =
+                    sourceRowSet.subSetByKeyRange(smallestModifiedKey, sourceRowSet.lastRowKey())) {
                 final int newChunkSize = (int) Math.min(control.getChunkCapacity(), indexToReprocess.size());
                 setChunkSize(newChunkSize);
 
                 final long keyBefore;
-                try(final RowSet.SearchIterator sit = sourceRowSet.searchIterator()) {
-                    keyBefore = sit.binarySearchValue((compareTo, ignored) -> Long.compare(smallestModifiedKey - 1, compareTo), 1);
+                try (final RowSet.SearchIterator sit = sourceRowSet.searchIterator()) {
+                    keyBefore = sit.binarySearchValue(
+                            (compareTo, ignored) -> Long.compare(smallestModifiedKey - 1, compareTo), 1);
                 }
 
                 for (int opRowSet = 0; opRowSet < operators.length; opRowSet++) {
@@ -414,8 +430,8 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
                 // We will not mess with shifts if we are using a redirection because we'll have applied the shift
                 // to the redirection index already by now.
-                if(redirectionRowSet == null && shifted.nonempty()) {
-                    try(final RowSet prevIdx = source.getRowSet().copyPrev()) {
+                if (redirectionRowSet == null && shifted.nonempty()) {
+                    try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
                         shifted.apply((begin, end, delta) -> {
                             try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
                                 for (int opIdx = 0; opIdx < operators.length; opIdx++) {
@@ -440,28 +456,28 @@ class ZeroKeyUpdateBy extends UpdateBy {
          * @param prevChunkOk the {@link RowSequence} for previous values.
          */
         private void prepareValuesChunkFor(final int opRowSet,
-                                           final int inputSlot,
-                                           final boolean usePrev,
-                                           final boolean useCurrent,
-                                           final RowSequence chunkOk,
-                                           final RowSequence prevChunkOk,
-                                           final WritableChunk<Values> prevWorkingChunk,
-                                           final WritableChunk<Values> postWorkingChunk,
-                                           final ChunkSource.FillContext prevFillContext,
-                                           final ChunkSource.FillContext postFillContext) {
-            if(!operators[opRowSet].requiresValues(opContext[opRowSet])) {
+                final int inputSlot,
+                final boolean usePrev,
+                final boolean useCurrent,
+                final RowSequence chunkOk,
+                final RowSequence prevChunkOk,
+                final WritableChunk<Values> prevWorkingChunk,
+                final WritableChunk<Values> postWorkingChunk,
+                final ChunkSource.FillContext prevFillContext,
+                final ChunkSource.FillContext postFillContext) {
+            if (!operators[opRowSet].requiresValues(opContext[opRowSet])) {
                 return;
             }
 
-            if(!inputChunkPopulated[inputSlot]) {
+            if (!inputChunkPopulated[inputSlot]) {
                 // Using opRowSet below is OK, because if we are sharing an input slot, we are referring to the same
-                // input source.  Instead of maintaining another array of sourced by slot,  we'll just use the opRowSet
+                // input source. Instead of maintaining another array of sourced by slot, we'll just use the opRowSet
                 inputChunkPopulated[inputSlot] = true;
-                if(usePrev) {
+                if (usePrev) {
                     inputSources[opRowSet].fillPrevChunk(prevFillContext, prevWorkingChunk, prevChunkOk);
                 }
 
-                if(useCurrent) {
+                if (useCurrent) {
                     inputSources[opRowSet].fillChunk(postFillContext, postWorkingChunk, chunkOk);
                 }
             }
@@ -474,8 +490,8 @@ class ZeroKeyUpdateBy extends UpdateBy {
         }
 
         public boolean canAnyProcessNormally() {
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if(opAffected[opIdx] && operators[opIdx].canProcessNormalUpdate(opContext[opIdx])) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx] && operators[opIdx].canProcessNormalUpdate(opContext[opIdx])) {
                     return true;
                 }
             }
@@ -494,8 +510,8 @@ class ZeroKeyUpdateBy extends UpdateBy {
         private final ModifiedColumnSet.Transformer transformer;
 
         public ZeroKeyUpdateByListener(@Nullable String description,
-                                       @NotNull final QueryTable source,
-                                       @NotNull final QueryTable result) {
+                @NotNull final QueryTable source,
+                @NotNull final QueryTable result) {
             super(description, source, false);
             this.result = result;
             this.inputModifiedColumnSets = new ModifiedColumnSet[operators.length];
@@ -507,23 +523,24 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 outputModifiedColumnSets[ii] = result.newModifiedColumnSet(outputColumnNames);
             }
 
-            this.transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
+            this.transformer =
+                    source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
         }
 
         @Override
         public void onUpdate(TableUpdate upstream) {
-            try(final UpdateContext ctx = new UpdateContext(upstream, inputModifiedColumnSets, false)) {
-                if(redirectionRowSet != null) {
+            try (final UpdateContext ctx = new UpdateContext(upstream, inputModifiedColumnSets, false)) {
+                if (redirectionRowSet != null) {
                     processUpdateForRedirection(upstream);
                 }
 
-                // If anything can process normal operations we have to pass them down,  otherwise we can skip this
+                // If anything can process normal operations we have to pass them down, otherwise we can skip this
                 // entirely.
-                if(ctx.canAnyProcessNormally()) {
+                if (ctx.canAnyProcessNormally()) {
                     ctx.doUpdate(upstream.removed(), upstream.removed(), UpdateType.Remove);
                     if (upstream.shifted().nonempty()) {
                         try (final WritableRowSet prevRowSet = source.getRowSet().copyPrev();
-                             final RowSet modPreShift = upstream.getModifiedPreShift()) {
+                                final RowSet modPreShift = upstream.getModifiedPreShift()) {
 
                             prevRowSet.remove(upstream.removed());
                             for (int ii = 0; ii < operators.length; ii++) {
@@ -539,7 +556,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     ctx.doUpdate(upstream.added(), upstream.added(), UpdateType.Add);
                 }
 
-                if(source.getRowSet().isEmpty()) {
+                if (source.getRowSet().isEmpty()) {
                     ctx.onBucketsRemoved(RowSetFactory.fromKeys(0));
                 }
 
@@ -558,7 +575,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
                     WritableRowSet modifiedRowSet = RowSetFactory.empty();
                     downstream.modified = modifiedRowSet;
-                    if(upstream.modified().isNonempty()) {
+                    if (upstream.modified().isNonempty()) {
                         // Transform any untouched modified columns to the output.
                         transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
                         modifiedRowSet.insert(upstream.modified());
@@ -567,13 +584,14 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                         if (ctx.opAffected[opIdx]) {
                             downstream.modifiedColumnSet.setAll(outputModifiedColumnSets[opIdx]);
-                            if(operators[opIdx].anyModified(ctx.opContext[opIdx])) {
-                                modifiedRowSet.insert(operators[opIdx].getAdditionalModifications(ctx.opContext[opIdx]));
+                            if (operators[opIdx].anyModified(ctx.opContext[opIdx])) {
+                                modifiedRowSet
+                                        .insert(operators[opIdx].getAdditionalModifications(ctx.opContext[opIdx]));
                             }
                         }
                     }
 
-                    if(ctx.anyModified()) {
+                    if (ctx.anyModified()) {
                         modifiedRowSet.remove(upstream.added());
                     }
                 } else {

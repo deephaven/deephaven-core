@@ -76,17 +76,19 @@ public class JoinControl {
         return getRedirectionType(leftTable, 4.0, true);
     }
 
-    static RedirectionType getRedirectionType(final @NotNull Table table, final double maximumOverhead, final boolean allowSparseRedirection) {
+    static RedirectionType getRedirectionType(final @NotNull Table table, final double maximumOverhead,
+            final boolean allowSparseRedirection) {
         if (table.isFlat() && table.size() < Integer.MAX_VALUE) {
             if (table.isRefreshing()) {
                 return RedirectionType.Sparse;
             } else {
                 return RedirectionType.Contiguous;
             }
-        } else if (allowSparseRedirection && !SparseConstants.sparseStructureExceedsOverhead(table.getRowSet(), maximumOverhead)) {
+        } else if (allowSparseRedirection
+                && !SparseConstants.sparseStructureExceedsOverhead(table.getRowSet(), maximumOverhead)) {
             // If we are going to use at least a quarter of a sparse array block, then it is a better answer than a
             // hash table for redirection; because the hash table must store both the key and value, and then has a
-            // load factor of ~50%.  Additionally, the sparse array source will have much faster sets and lookups so is
+            // load factor of ~50%. Additionally, the sparse array source will have much faster sets and lookups so is
             // a win, win, win (memory, set, lookup).
             return RedirectionType.Sparse;
         } else {

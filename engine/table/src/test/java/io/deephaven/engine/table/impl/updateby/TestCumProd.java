@@ -32,11 +32,12 @@ public class TestCumProd extends BaseUpdateByTest {
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(1000, false, false, false, 0xABCD1234).t;
         final Table result = t.updateBy(UpdateByClause.prod());
-        for(String col : t.getDefinition().getColumnNamesArray()) {
-            if("boolCol".equals(col)) {
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithCumProd(t.getColumn(col).getDirect(), result.getColumn(col).getDirect(), result.getColumn(col).getType());
+            assertWithCumProd(t.getColumn(col).getDirect(), result.getColumn(col).getDirect(),
+                    result.getColumn(col).getType());
         }
     }
 
@@ -47,23 +48,22 @@ public class TestCumProd extends BaseUpdateByTest {
     @Test
     public void testNullOnBucketChange() throws IOException {
         final TableWithDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
-                byteCol("ByteVal", (byte)1, (byte)2, NULL_BYTE, (byte)3),
-                shortCol("ShortVal", (short)1, (short)2, NULL_SHORT, (short)3),
+                byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
+                shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
                 intCol("IntVal", 1, 2, NULL_INT, 3));
 
         final TableWithDefaults expected = testTable(stringCol("Sym", "A", "A", "B", "B"),
-                byteCol("ByteVal", (byte)1, (byte)2, NULL_BYTE, (byte)3),
-                shortCol("ShortVal", (short)1, (short)2, NULL_SHORT, (short)3),
+                byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
+                shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
                 intCol("IntVal", 1, 2, NULL_INT, 3),
                 longCol("ByteValProd", 1, 2, NULL_LONG, 3),
                 longCol("ShortValProd", 1, 2, NULL_LONG, 3),
                 longCol("IntValProd", 1, 2, NULL_LONG, 3));
 
         final Table r = t.updateBy(UpdateByClause.of(
-                        UpdateByClause.prod("ByteValProd=ByteVal"),
-                        UpdateByClause.prod("ShortValProd=ShortVal"),
-                        UpdateByClause.prod("IntValProd=IntVal"))
-                , "Sym");
+                UpdateByClause.prod("ByteValProd=ByteVal"),
+                UpdateByClause.prod("ShortValProd=ShortVal"),
+                UpdateByClause.prod("IntValProd=IntVal")), "Sym");
 
         assertTableEquals(expected, r);
     }
@@ -72,6 +72,7 @@ public class TestCumProd extends BaseUpdateByTest {
     public void testStaticBucketed() {
         doTestStaticBucketed(false);
     }
+
     @Test
     public void testStaticGroupedBucketed() {
         doTestStaticBucketed(true);
@@ -80,27 +81,29 @@ public class TestCumProd extends BaseUpdateByTest {
     private void doTestStaticBucketed(boolean grouped) {
         final QueryTable t = createTestTable(10000, true, grouped, false, 0x4321CBDA).t;
 
-        final Table result = t.updateBy(UpdateByClause.prod("byteCol", "shortCol", "intCol", "longCol", "floatCol", "doubleCol", "bigIntCol", "bigDecimalCol"), "Sym");
+        final Table result = t.updateBy(UpdateByClause.prod("byteCol", "shortCol", "intCol", "longCol", "floatCol",
+                "doubleCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
         final PartitionedTable preOpMap = t.partitionBy("Sym");
         final PartitionedTable postOpMap = result.partitionBy("Sym");
 
-        for (String sym : (String[])preOpMap.table().getColumn("Sym").getDirect()) {
+        for (String sym : (String[]) preOpMap.table().getColumn("Sym").getDirect()) {
             final Table source = preOpMap.constituentFor(sym);
             final Table actual = postOpMap.constituentFor(sym);
 
             for (String col : source.getDefinition().getColumnNamesArray()) {
-                if("Sym".equals(col) || "boolCol".equals(col)) {
+                if ("Sym".equals(col) || "boolCol".equals(col)) {
                     continue;
                 }
-                assertWithCumProd(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(), actual.getColumn(col).getType());
+                assertWithCumProd(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
+                        actual.getColumn(col).getType());
             }
         }
     }
 
     // endregion
 
-    //region Live Tests
+    // region Live Tests
 
     @Test
     public void testZeroKeyAppendOnly() {
@@ -121,14 +124,14 @@ public class TestCumProd extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return bucketed ? t.updateBy(UpdateByClause.prod(),"Sym")
+                        return bucketed ? t.updateBy(UpdateByClause.prod(), "Sym")
                                 : t.updateBy(UpdateByClause.prod());
                     }
                 }
         };
 
         final Random billy = new Random(0xB177B177);
-        for(int ii = 0; ii < 100; ii++) {
+        for (int ii = 0; ii < 100; ii++) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
@@ -149,8 +152,9 @@ public class TestCumProd extends BaseUpdateByTest {
         };
 
         final Random billy = new Random(0xB177B177);
-        for(int ii = 0; ii < 100; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(100, billy, t, result.infos));
+        for (int ii = 0; ii < 100; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateTableUpdates(100, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
     }
@@ -170,7 +174,7 @@ public class TestCumProd extends BaseUpdateByTest {
         };
 
         final Random billy = new Random(0xB177B177);
-        for(int ii = 0; ii < 100; ii++) {
+        for (int ii = 0; ii < 100; ii++) {
             try {
                 simulateShiftAwareStep(100, billy, t, result.infos, nuggets);
             } catch (Throwable ex) {
@@ -180,7 +184,7 @@ public class TestCumProd extends BaseUpdateByTest {
         }
     }
 
-    //endregion
+    // endregion
 
     public static long[] cumprod(byte[] values) {
         if (values == null) {
@@ -283,10 +287,11 @@ public class TestCumProd extends BaseUpdateByTest {
                 result[i] = values[i];
             } else if (values[i] == null) {
                 result[i] = result[i - 1];
-            } else if(isBD) {
-                result[i] = ((BigDecimal)result[i - 1]).multiply((BigDecimal) values[i], UpdateByControl.DEFAULT.getDefaultMathContext());
+            } else if (isBD) {
+                result[i] = ((BigDecimal) result[i - 1]).multiply((BigDecimal) values[i],
+                        UpdateByControl.DEFAULT.getDefaultMathContext());
             } else {
-                result[i] = ((BigInteger)result[i - 1]).multiply((BigInteger) values[i]);
+                result[i] = ((BigInteger) result[i - 1]).multiply((BigInteger) values[i]);
             }
         }
 
@@ -294,20 +299,20 @@ public class TestCumProd extends BaseUpdateByTest {
     }
 
     final void assertWithCumProd(final @NotNull Object expected, final @NotNull Object actual, Class<?> type) {
-        if(expected instanceof byte[]) {
-            assertArrayEquals(cumprod((byte[])expected), (long[])actual);
-        } else if(expected instanceof short[]) {
-            assertArrayEquals(cumprod((short[])expected), (long[])actual);
-        } else if(expected instanceof int[]) {
-            assertArrayEquals(cumprod((int[])expected), (long[])actual);
-        } else if(expected instanceof long[]) {
-            assertArrayEquals(Numeric.cumprod((long[])expected), (long[])actual);
-        } else if(expected instanceof float[]) {
-            assertArrayEquals(Numeric.cumprod((float[])expected), (float[])actual, .001f);
-        } else if(expected instanceof double[]) {
-            assertArrayEquals(Numeric.cumprod((double[])expected), (double[])actual, .001d);
+        if (expected instanceof byte[]) {
+            assertArrayEquals(cumprod((byte[]) expected), (long[]) actual);
+        } else if (expected instanceof short[]) {
+            assertArrayEquals(cumprod((short[]) expected), (long[]) actual);
+        } else if (expected instanceof int[]) {
+            assertArrayEquals(cumprod((int[]) expected), (long[]) actual);
+        } else if (expected instanceof long[]) {
+            assertArrayEquals(Numeric.cumprod((long[]) expected), (long[]) actual);
+        } else if (expected instanceof float[]) {
+            assertArrayEquals(Numeric.cumprod((float[]) expected), (float[]) actual, .001f);
+        } else if (expected instanceof double[]) {
+            assertArrayEquals(Numeric.cumprod((double[]) expected), (double[]) actual, .001d);
         } else {
-            assertArrayEquals(cumprod((Object[])expected, type == BigDecimal.class), (Object[])actual);
+            assertArrayEquals(cumprod((Object[]) expected, type == BigDecimal.class), (Object[]) actual);
         }
     }
 }

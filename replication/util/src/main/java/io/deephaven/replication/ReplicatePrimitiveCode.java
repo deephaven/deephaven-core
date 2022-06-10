@@ -353,7 +353,8 @@ public class ReplicatePrimitiveCode {
         charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions);
     }
 
-    public static List<String> charToAllButBooleanAndFloats(String sourceClass, String... exemptions) throws IOException {
+    public static List<String> charToAllButBooleanAndFloats(String sourceClass, String... exemptions)
+            throws IOException {
         return charToAllButBooleanAndFloats(sourceClass, null, exemptions);
     }
 
@@ -363,7 +364,8 @@ public class ReplicatePrimitiveCode {
         charToShort(sourceClassJavaPath, null, exemptions);
     }
 
-    public static List<String> charToAllButBooleanAndFloats(String sourceClass, Map<String, Long> serialVersionUIDs, String... exemptions) throws IOException {
+    public static List<String> charToAllButBooleanAndFloats(String sourceClass, Map<String, Long> serialVersionUIDs,
+            String... exemptions) throws IOException {
         final List<String> files = new ArrayList<>();
         files.add(charToInteger(sourceClass, serialVersionUIDs, exemptions));
         files.add(charToByte(sourceClass, serialVersionUIDs, exemptions));
@@ -412,7 +414,8 @@ public class ReplicatePrimitiveCode {
         return shortToAllIntegralTypes(sourceClass, null, exemptions);
     }
 
-    private static List<String> shortToAllIntegralTypes(String sourceClass, Map<String, Long> serialVersionUIDs, String... exemptions) throws IOException {
+    private static List<String> shortToAllIntegralTypes(String sourceClass, Map<String, Long> serialVersionUIDs,
+            String... exemptions) throws IOException {
         final List<String> results = new ArrayList<>();
         results.add(shortToByte(sourceClass, serialVersionUIDs, exemptions));
         results.add(shortToInteger(sourceClass, serialVersionUIDs, exemptions));

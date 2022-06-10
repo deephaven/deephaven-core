@@ -3023,9 +3023,10 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table updateBy(@NotNull final UpdateByControl control,
-                          @NotNull final Collection<UpdateByClause> ops,
-                          @NotNull final MatchPair... byColumns) {
-        return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> UpdateBy.updateBy(this, ops, byColumns, control));
+            @NotNull final Collection<UpdateByClause> ops,
+            @NotNull final MatchPair... byColumns) {
+        return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(),
+                () -> UpdateBy.updateBy(this, ops, byColumns, control));
     }
 
     /**

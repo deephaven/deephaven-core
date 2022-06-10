@@ -10,18 +10,17 @@ public final class ComparableCumMinMaxOperator<T extends Comparable<T>> extends 
     private final boolean isMax;
 
     public ComparableCumMinMaxOperator(final Class<T> colType,
-                                       @NotNull final MatchPair inputPair,
-                                       final boolean isMax,
-                                       @Nullable final RowRedirection redirectionIndex
-    ) {
-        super(colType, inputPair, new String[] { inputPair.rightColumn }, redirectionIndex);
+            @NotNull final MatchPair inputPair,
+            final boolean isMax,
+            @Nullable final RowRedirection redirectionIndex) {
+        super(colType, inputPair, new String[] {inputPair.rightColumn}, redirectionIndex);
         this.isMax = isMax;
     }
 
     @Override
     protected T doOperation(T bucketCurVal, T chunkCurVal) {
-        if((isMax && chunkCurVal.compareTo(bucketCurVal) > 0) ||
-           (!isMax && chunkCurVal.compareTo(bucketCurVal) < 0)  ) {
+        if ((isMax && chunkCurVal.compareTo(bucketCurVal) > 0) ||
+                (!isMax && chunkCurVal.compareTo(bucketCurVal) < 0)) {
             return chunkCurVal;
         }
 

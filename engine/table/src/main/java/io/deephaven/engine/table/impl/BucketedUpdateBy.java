@@ -94,7 +94,9 @@ public class BucketedUpdateBy extends UpdateBy {
         /** A chunk to store the start positions of runs after a run detection and possible permutation */
         final SizedIntChunk<ChunkPositions> runStarts;
 
-        /** A chunk to store the lengths of runs after a run detection and possible permutation. Parallel to runStarts */
+        /**
+         * A chunk to store the lengths of runs after a run detection and possible permutation. Parallel to runStarts
+         */
         final SizedIntChunk<ChunkLengths> runLengths;
 
         /** A chunk to store the chunk positions of values in the original chunks after a permutation */
@@ -113,34 +115,34 @@ public class BucketedUpdateBy extends UpdateBy {
         RowSetBuilderRandom accumulator;
 
         // TODO: If I write my own I can avoid extra object creation for the pairs and all of the
-        //       virtual comparator method calls.  I will make it work this way first so I'm not chasing
-        //       data structure bugs.
+        // virtual comparator method calls. I will make it work this way first so I'm not chasing
+        // data structure bugs.
         /**
          * A Priority queue that we'll use to populate the output position chunk when we are iterating changes by
-         *  affected bucket.
+         * affected bucket.
          */
         TrackerPriorityQueue bucketQ;
 
         @SuppressWarnings("resource")
         BucketedContext(@NotNull final TableUpdate upstream,
-                        @NotNull final ModifiedColumnSet keyModifiedColumnSet,
-                        @Nullable final ModifiedColumnSet[] inputModifiedColumnSets) {
+                @NotNull final ModifiedColumnSet keyModifiedColumnSet,
+                @Nullable final ModifiedColumnSet[] inputModifiedColumnSets) {
             final int updateSize = UpdateSizeCalculator.chunkSize(upstream, control.getChunkCapacity());
 
             this.inputChunkPopulated = new boolean[operators.length];
             this.keysModified = upstream.modifiedColumnSet().containsAny(keyModifiedColumnSet);
             this.chunkSize = UpdateSizeCalculator.chunkSize(updateSize, upstream.shifted(), control.getChunkCapacity());
             this.opAffected = new boolean[operators.length];
-            //noinspection unchecked
+            // noinspection unchecked
             this.fillContexts = new SizedSafeCloseable[operators.length];
             this.opContext = new UpdateByOperator.UpdateContext[operators.length];
             this.keyChunk = new SizedLongChunk<>(chunkSize);
             this.permuteKernels = new PermuteKernel[operators.length];
             this.permutedKeyChunk = new SizedLongChunk<>(chunkSize);
 
-            //noinspection unchecked
+            // noinspection unchecked
             this.postWorkingChunks = new SizedSafeCloseable[operators.length];
-            //noinspection unchecked
+            // noinspection unchecked
             this.permutedPostWorkingChunks = new SizedSafeCloseable[operators.length];
 
             this.outputPositions = new SizedIntChunk<>(chunkSize);
@@ -148,32 +150,38 @@ public class BucketedUpdateBy extends UpdateBy {
             this.runLengths = new SizedIntChunk<>(chunkSize);
             this.chunkPositions = new SizedIntChunk<>(chunkSize);
 
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 opAffected[opIdx] = upstream.added().isNonempty() ||
                         upstream.removed().isNonempty() ||
                         upstream.shifted().nonempty() ||
-                        (upstream.modifiedColumnSet().nonempty() && (inputModifiedColumnSets == null || upstream.modifiedColumnSet().containsAny(inputModifiedColumnSets[opIdx])));
+                        (upstream.modifiedColumnSet().nonempty() && (inputModifiedColumnSets == null
+                                || upstream.modifiedColumnSet().containsAny(inputModifiedColumnSets[opIdx])));
 
-                // TODO: Would be nice to abort if the thing is unaffected here and let us recreate later on if we need it
-                //       during reprocess.
+                // TODO: Would be nice to abort if the thing is unaffected here and let us recreate later on if we need
+                // it
+                // during reprocess.
                 opContext[opIdx] = operators[opIdx].makeUpdateContext(chunkSize);
-                if(opAffected[opIdx]) {
+                if (opAffected[opIdx]) {
                     operators[opIdx].initializeForUpdate(opContext[opIdx], upstream, source.getRowSet(), true, true);
                     anyAffected = true;
                 }
 
                 final int slotPosition = inputSourceSlots[opIdx];
-                if(fillContexts[slotPosition] == null) {
-                    fillContexts[slotPosition] = new SizedSafeCloseable<>(sz -> inputSources[slotPosition].makeFillContext(sz, getSharedContext()));
+                if (fillContexts[slotPosition] == null) {
+                    fillContexts[slotPosition] = new SizedSafeCloseable<>(
+                            sz -> inputSources[slotPosition].makeFillContext(sz, getSharedContext()));
                     fillContexts[slotPosition].ensureCapacity(chunkSize);
 
-                    postWorkingChunks[slotPosition] = new SizedSafeCloseable<>(sz -> inputSources[slotPosition].getChunkType().makeWritableChunk(sz));
+                    postWorkingChunks[slotPosition] = new SizedSafeCloseable<>(
+                            sz -> inputSources[slotPosition].getChunkType().makeWritableChunk(sz));
                     postWorkingChunks[slotPosition].ensureCapacity(chunkSize);
 
                     // TODO: Maybe can not allocate this all the time.
-                    permutedPostWorkingChunks[slotPosition] = new SizedSafeCloseable<>(sz -> inputSources[slotPosition].getChunkType().makeWritableChunk(sz));
+                    permutedPostWorkingChunks[slotPosition] = new SizedSafeCloseable<>(
+                            sz -> inputSources[slotPosition].getChunkType().makeWritableChunk(sz));
                     permutedPostWorkingChunks[slotPosition].ensureCapacity(chunkSize);
-                    permuteKernels[slotPosition] = PermuteKernel.makePermuteKernel(inputSources[slotPosition].getChunkType());
+                    permuteKernels[slotPosition] =
+                            PermuteKernel.makePermuteKernel(inputSources[slotPosition].getChunkType());
                 }
             }
 
@@ -197,22 +205,22 @@ public class BucketedUpdateBy extends UpdateBy {
             findCtx.close();
             bc.close();
 
-            if(pc != null) {
+            if (pc != null) {
                 pc.close();
             }
 
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 opContext[opIdx].close();
 
-                if(fillContexts[opIdx] != null) {
+                if (fillContexts[opIdx] != null) {
                     fillContexts[opIdx].close();
                 }
 
-                if(postWorkingChunks[opIdx] != null) {
+                if (postWorkingChunks[opIdx] != null) {
                     postWorkingChunks[opIdx].close();
                 }
 
-                if(permutedPostWorkingChunks[opIdx] != null) {
+                if (permutedPostWorkingChunks[opIdx] != null) {
                     permutedPostWorkingChunks[opIdx].close();
                 }
             }
@@ -226,7 +234,7 @@ public class BucketedUpdateBy extends UpdateBy {
          * @return an appropriate probe context.
          */
         private SafeCloseable getProbeContet() {
-            if(pc == null) {
+            if (pc == null) {
                 pc = hashTable.makeUpdateByProbeContext(keySources, chunkSize);
             }
 
@@ -234,13 +242,13 @@ public class BucketedUpdateBy extends UpdateBy {
         }
 
         /**
-         * TableUpdate the chunk sizes used for all internal state objects, for use when reprocessing keys is required and
-         * the initial selected chunk size is insufficient.
+         * TableUpdate the chunk sizes used for all internal state objects, for use when reprocessing keys is required
+         * and the initial selected chunk size is insufficient.
          *
          * @param newChunkSize the new chunk size to use.
          */
         void setChunkSize(final int newChunkSize) {
-            if(newChunkSize <= this.chunkSize) {
+            if (newChunkSize <= this.chunkSize) {
                 return;
             }
 
@@ -259,8 +267,8 @@ public class BucketedUpdateBy extends UpdateBy {
             chunkPositions.ensureCapacity(newChunkSize);
             findCtx.ensureCapacity(newChunkSize);
 
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if(opAffected[opIdx]) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx]) {
                     operators[opIdx].setChunkSize(opContext[opIdx], newChunkSize);
                     if (fillContexts[opIdx] != null) {
                         fillContexts[opIdx].ensureCapacity(newChunkSize);
@@ -272,12 +280,12 @@ public class BucketedUpdateBy extends UpdateBy {
         }
 
         /**
-         * Ensure that all operators  have enough space to support the proper number of buckets.
+         * Ensure that all operators have enough space to support the proper number of buckets.
          *
          * @param nBuckets the number of buckets
          */
         public void setBucketCapacity(final int nBuckets) {
-            for(final UpdateByOperator op : operators) {
+            for (final UpdateByOperator op : operators) {
                 op.setBucketCapacity(nBuckets);
             }
         }
@@ -306,8 +314,8 @@ public class BucketedUpdateBy extends UpdateBy {
          * @return true if additional updates were produced.
          */
         boolean anyModified() {
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if(opAffected[opIdx] && operators[opIdx].anyModified(opContext[opIdx])) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx] && operators[opIdx].anyModified(opContext[opIdx])) {
                     return true;
                 }
             }
@@ -315,29 +323,29 @@ public class BucketedUpdateBy extends UpdateBy {
         }
 
         /**
-         * Initialize the operators for the specified operation.  This is always going to be add or reprocess.
+         * Initialize the operators for the specified operation. This is always going to be add or reprocess.
          *
          * @param updateIndex the index that will be processed
          * @param type the type of update to prepare for.
          */
         void initializeFor(@NotNull final RowSet updateIndex,
-                           @NotNull final UpdateType type) {
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if(opAffected[opIdx]) {
+                @NotNull final UpdateType type) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx]) {
                     operators[opIdx].initializeFor(opContext[opIdx], updateIndex, type);
                 }
             }
         }
 
         /**
-         * Finish the operation specified.  This will always be preceded by a single call to
-         * {@link  #initializeFor(RowSet, UpdateType)}
+         * Finish the operation specified. This will always be preceded by a single call to
+         * {@link #initializeFor(RowSet, UpdateType)}
          *
          * @param type the type
          */
         void finishFor(@NotNull final UpdateType type) {
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if(opAffected[opIdx]) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx]) {
                     operators[opIdx].finishFor(opContext[opIdx], type);
                 }
             }
@@ -355,16 +363,16 @@ public class BucketedUpdateBy extends UpdateBy {
          * @param fillContext the {@link ChunkSource.FillContext}
          */
         private void prepareValuesChunkFor(final int inputSlot,
-                                           final boolean permuteRequired,
-                                           final RowSequence chunkOk,
-                                           final WritableChunk<Values> workingChunk,
-                                           final IntChunk<ChunkPositions> chunkPositions,
-                                           final WritableChunk<? super Values> permutedWorkingChunk,
-                                           final ChunkSource.FillContext fillContext) {
-            if(!inputChunkPopulated[inputSlot]) {
+                final boolean permuteRequired,
+                final RowSequence chunkOk,
+                final WritableChunk<Values> workingChunk,
+                final IntChunk<ChunkPositions> chunkPositions,
+                final WritableChunk<? super Values> permutedWorkingChunk,
+                final ChunkSource.FillContext fillContext) {
+            if (!inputChunkPopulated[inputSlot]) {
                 inputChunkPopulated[inputSlot] = true;
                 inputSources[inputSlot].fillChunk(fillContext, workingChunk, chunkOk);
-                if(permuteRequired) {
+                if (permuteRequired) {
                     permuteKernels[inputSlot].permuteInput(workingChunk,
                             chunkPositions,
                             permutedWorkingChunk);
@@ -373,17 +381,19 @@ public class BucketedUpdateBy extends UpdateBy {
         }
 
         /**
-         * Process the shifts and modifies of the upstream and separate rows that had key changes from those that did not.
-         * For rows that did, treat them as removed from one bucket and added to another.  This method is taken from
+         * Process the shifts and modifies of the upstream and separate rows that had key changes from those that did
+         * not. For rows that did, treat them as removed from one bucket and added to another. This method is taken from
          * {@link ChunkedOperatorAggregationHelper} and modified to suit the needs of updateBy.
          */
         private void processModifiesForChangedKeys(@NotNull final TableUpdate upstream) {
             Require.requirement(keysModified, "keysModified");
 
             final boolean shifted = upstream.shifted().nonempty();
-            try (final RowSequence.Iterator modifiedPreShiftIterator = upstream.getModifiedPreShift().getRowSequenceIterator();
-                 final RowSequence.Iterator modifiedPostShiftIterator = shifted ? upstream.modified().getRowSequenceIterator() : null;
-                 final WritableIntChunk<RowKeys> postSlots = WritableIntChunk.makeWritableChunk(chunkSize)) {
+            try (final RowSequence.Iterator modifiedPreShiftIterator =
+                    upstream.getModifiedPreShift().getRowSequenceIterator();
+                    final RowSequence.Iterator modifiedPostShiftIterator =
+                            shifted ? upstream.modified().getRowSequenceIterator() : null;
+                    final WritableIntChunk<RowKeys> postSlots = WritableIntChunk.makeWritableChunk(chunkSize)) {
 
                 // NULL_ROW_KEY is lower than any other possible index, so we should not trip on the first pass
                 long lastCurrentIndex = NULL_ROW_KEY;
@@ -393,18 +403,21 @@ public class BucketedUpdateBy extends UpdateBy {
 
                 // We will repurpose keyChunk and permutedKeyChunk here to avoid creating even more chunks
                 final WritableLongChunk<OrderedRowKeys> preShiftIndicesChunk = keyChunk.get();
-                final WritableLongChunk<OrderedRowKeys> postShiftIndicesChunk = WritableLongChunk.downcast(permutedKeyChunk.get());
+                final WritableLongChunk<OrderedRowKeys> postShiftIndicesChunk =
+                        WritableLongChunk.downcast(permutedKeyChunk.get());
                 while (modifiedPreShiftIterator.hasMore()) {
-                    final RowSequence modifiedPreShiftOk = modifiedPreShiftIterator.getNextRowSequenceWithLength(chunkSize);
-                    final RowSequence modifiedPostShiftOk = shifted ? modifiedPostShiftIterator.getNextRowSequenceWithLength(chunkSize)
-                                                                    : modifiedPreShiftOk;
+                    final RowSequence modifiedPreShiftOk =
+                            modifiedPreShiftIterator.getNextRowSequenceWithLength(chunkSize);
+                    final RowSequence modifiedPostShiftOk =
+                            shifted ? modifiedPostShiftIterator.getNextRowSequenceWithLength(chunkSize)
+                                    : modifiedPreShiftOk;
 
                     hashTable.remove(getProbeContet(), modifiedPreShiftOk, keySources, localOutputPositions);
                     hashTable.add(bc, modifiedPostShiftOk, keySources, nextOutputPosition, postSlots);
 
                     modifiedPreShiftOk.fillRowKeyChunk(preShiftIndicesChunk);
                     final LongChunk<OrderedRowKeys> postShiftIndices;
-                    if(shifted) {
+                    if (shifted) {
                         modifiedPostShiftOk.fillRowKeyChunk(postShiftIndicesChunk);
                         postShiftIndices = postShiftIndicesChunk;
                     } else {
@@ -424,17 +437,17 @@ public class BucketedUpdateBy extends UpdateBy {
                         Assert.gt(currentIndex, "currentIndex", lastCurrentIndex, "lastCurrentIndex");
                         Assert.gt(previousIndex, "previousIndex", lastPreviousIndex, "lastPreviousIndex");
 
-                        // TODO: Would it be better to do this in chunks?  This method requires:
-                        //  1) LCS get()
-                        //  2) comparison
-                        //  3) subtraction
-                        //  4) LCS get()
-                        //  5) randombuilder insert
+                        // TODO: Would it be better to do this in chunks? This method requires:
+                        // 1) LCS get()
+                        // 2) comparison
+                        // 3) subtraction
+                        // 4) LCS get()
+                        // 5) randombuilder insert
                         //
-                        //  Using chunks would require
-                        //    1) 2 more chunks allocated
-                        //    2) Hashed run finder x2 (one for modified only, one for removed)
-                        //    3) permute x2
+                        // Using chunks would require
+                        // 1) 2 more chunks allocated
+                        // 2) Hashed run finder x2 (one for modified only, one for removed)
+                        // 3) permute x2
                         if (previousSlot == currentSlot) {
                             slotTracker.modifyBucket(currentSlot, currentIndex);
                         } else {
@@ -455,7 +468,7 @@ public class BucketedUpdateBy extends UpdateBy {
          * @param additions the additions.
          */
         private void accumulateAdditions(@NotNull final RowSequence additions) {
-            try(final RowSequence.Iterator okIt = additions.getRowSequenceIterator()) {
+            try (final RowSequence.Iterator okIt = additions.getRowSequenceIterator()) {
                 final WritableIntChunk<RowKeys> localOutputPositions = outputPositions.get();
                 final WritableIntChunk<ChunkPositions> localRunStarts = runStarts.get();
                 final WritableIntChunk<ChunkLengths> localRunLengths = runLengths.get();
@@ -466,15 +479,15 @@ public class BucketedUpdateBy extends UpdateBy {
                     hashTable.add(bc, chunkOk, keySources, nextOutputPosition, localOutputPositions);
                     final boolean permuteRequired = findRunsAndPermute(chunkOk);
 
-                    for(int runIdx = 0; runIdx < localRunStarts.size(); runIdx++) {
+                    for (int runIdx = 0; runIdx < localRunStarts.size(); runIdx++) {
                         final int runStart = localRunStarts.get(runIdx);
                         final int runLength = localRunLengths.get(runIdx);
                         final int bucketPosition = localOutputPositions.get(runStart);
 
                         slotTracker.addToBucket(bucketPosition,
-                                                permuteRequired ? localPermutedKeyIndicesChunk : localKeyIndicesChunk,
-                                                runStart,
-                                                runLength);
+                                permuteRequired ? localPermutedKeyIndicesChunk : localKeyIndicesChunk,
+                                runStart,
+                                runLength);
                     }
                 }
             }
@@ -486,7 +499,7 @@ public class BucketedUpdateBy extends UpdateBy {
          * @param removals the removals.
          */
         private void accumulateRemovals(@NotNull final RowSequence removals) {
-            try(final RowSequence.Iterator okIt = removals.getRowSequenceIterator()) {
+            try (final RowSequence.Iterator okIt = removals.getRowSequenceIterator()) {
                 final WritableIntChunk<RowKeys> localOutputPositions = outputPositions.get();
                 final WritableIntChunk<ChunkPositions> localRunStarts = runStarts.get();
                 final WritableIntChunk<ChunkLengths> localRunLengths = runLengths.get();
@@ -503,23 +516,23 @@ public class BucketedUpdateBy extends UpdateBy {
                         final int bucketPosition = localOutputPositions.get(runStart);
 
                         slotTracker.removeFromBucket(bucketPosition,
-                                                     permuteRequired ? localPermutedKeyIndicesChunk : localKeyIndicesChunk,
-                                                     runStart,
-                                                     runLength);
+                                permuteRequired ? localPermutedKeyIndicesChunk : localKeyIndicesChunk,
+                                runStart,
+                                runLength);
                     }
                 }
             }
         }
 
         /**
-         * Process the upstream modifications and accumulate them to the {@link UpdateBySlotTracker}.  Note that this
+         * Process the upstream modifications and accumulate them to the {@link UpdateBySlotTracker}. Note that this
          * method can only be called if there are no changes to the key columns. Otherwise we must use
          * {@link #processModifiesForChangedKeys(TableUpdate)}.
          *
          * @param modifications the the modifications.
          */
         private void accumulateModifications(@NotNull final RowSequence modifications) {
-            try(final RowSequence.Iterator okIt = modifications.getRowSequenceIterator()) {
+            try (final RowSequence.Iterator okIt = modifications.getRowSequenceIterator()) {
                 final WritableIntChunk<RowKeys> localOutputPositions = outputPositions.get();
                 final WritableIntChunk<ChunkPositions> localRunStarts = runStarts.get();
                 final WritableIntChunk<ChunkLengths> localRunLengths = runLengths.get();
@@ -536,9 +549,9 @@ public class BucketedUpdateBy extends UpdateBy {
                         final int bucketPosition = localOutputPositions.get(runStart);
 
                         slotTracker.modifyBucket(bucketPosition,
-                                                     permuteRequired ? localPermutedKeyIndicesChunk : localKeyIndicesChunk,
-                                                     runStart,
-                                                     runLength);
+                                permuteRequired ? localPermutedKeyIndicesChunk : localKeyIndicesChunk,
+                                runStart,
+                                runLength);
                     }
                 }
             }
@@ -553,31 +566,32 @@ public class BucketedUpdateBy extends UpdateBy {
             final WritableLongChunk<OrderedRowKeys> localKeyChunk = keyChunk.get();
             int nextChunkPosition = 0;
 
-            // We don't want to apply shifts later on and be linear in buckets, so let's identify the affected shift buckets
+            // We don't want to apply shifts later on and be linear in buckets, so let's identify the affected shift
+            // buckets
             // and only apply to those.
-            try(final RowSet.SearchIterator curIt = source.getRowSet().searchIterator()) {
-                for(int shiftIdx = 0; shiftIdx < shifted.size(); shiftIdx++) {
+            try (final RowSet.SearchIterator curIt = source.getRowSet().searchIterator()) {
+                for (int shiftIdx = 0; shiftIdx < shifted.size(); shiftIdx++) {
                     final long start = shifted.getBeginRange(shiftIdx);
                     final long end = shifted.getEndRange(shiftIdx);
                     final long delta = shifted.getShiftDelta(shiftIdx);
 
                     // If we don't have any more valid keys, we're done.
-                    if(!curIt.advance(start + delta)) {
+                    if (!curIt.advance(start + delta)) {
                         break;
                     }
 
                     // Accumulate the keys into a chunk until it is full,
                     // Then we'll hash the chunk to bucket it and accumulate those into the tracker.
                     long keyToTrack = curIt.currentValue();
-                    while(keyToTrack <= (end + delta)) {
+                    while (keyToTrack <= (end + delta)) {
                         localKeyChunk.set(nextChunkPosition++, keyToTrack);
-                        if(nextChunkPosition == localKeyChunk.capacity()) {
+                        if (nextChunkPosition == localKeyChunk.capacity()) {
                             localKeyChunk.setSize(nextChunkPosition);
                             locateAndTrackShiftedBuckets();
                             nextChunkPosition = 0;
                         }
 
-                        if(!curIt.hasNext()) {
+                        if (!curIt.hasNext()) {
                             break;
                         }
                         keyToTrack = curIt.nextLong();
@@ -585,7 +599,7 @@ public class BucketedUpdateBy extends UpdateBy {
                 }
 
                 // Make sure we hash whatever is left over.
-                if(nextChunkPosition > 0) {
+                if (nextChunkPosition > 0) {
                     localKeyChunk.setSize(nextChunkPosition);
                     locateAndTrackShiftedBuckets();
                 }
@@ -593,7 +607,7 @@ public class BucketedUpdateBy extends UpdateBy {
         }
 
         /**
-         * Hash the output positions chunk to determine which buckets are affected by the shifts,  then pass that
+         * Hash the output positions chunk to determine which buckets are affected by the shifts, then pass that
          * information along to the slot tracker,
          */
         private void locateAndTrackShiftedBuckets() {
@@ -610,7 +624,7 @@ public class BucketedUpdateBy extends UpdateBy {
                     chunkPositions.get(),
                     localOutputPositions);
 
-            for(int runIdx = 0; runIdx < localRunStarts.size(); runIdx++) {
+            for (int runIdx = 0; runIdx < localRunStarts.size(); runIdx++) {
                 final int runStart = localRunStarts.get(runIdx);
                 final int bucketPosition = localOutputPositions.get(runStart);
                 slotTracker.markForShift(bucketPosition);
@@ -618,19 +632,21 @@ public class BucketedUpdateBy extends UpdateBy {
         }
 
         /**
-         * Accumulate all the bucketed changes into an index to reprocess.  If we can detect that a particular
-         * bucket was simply appended to,  we can just accumulate the "added part of that bucket's TableUpdate,  otherwise
-         * we determine the smallest affected key for each bucket and insert a sub-index of the bucket's total index
-         * beginning at that lowest key.  This produces a reprocessing index that we can iterate which will only contain
+         * Accumulate all the bucketed changes into an index to reprocess. If we can detect that a particular bucket was
+         * simply appended to, we can just accumulate the "added part of that bucket's TableUpdate, otherwise we
+         * determine the smallest affected key for each bucket and insert a sub-index of the bucket's total index
+         * beginning at that lowest key. This produces a reprocessing index that we can iterate which will only contain
          * rows from buckets that were actually affected, yet still allows us to reprocess those rows sequentially.
          *
          * @param tracker the tracker object for this slot.
-         * @param slotIndex the index for this slot, after the specified updates have been {@link UpdateBySlotTracker#applyUpdates(RowSetShiftData) applied}
+         * @param slotIndex the index for this slot, after the specified updates have been
+         *        {@link UpdateBySlotTracker#applyUpdates(RowSetShiftData) applied}
          */
         private void accumulateIndexToReprocess(@NotNull final UpdateBySlotTracker.UpdateTracker tracker,
-                                                @NotNull final RowSet slotIndex) {
-            if(tracker.wasShiftOnly()) {
-                // If the bucket was simply shifted, there's nothing to do. None of the data changed, and the output sources
+                @NotNull final RowSet slotIndex) {
+            if (tracker.wasShiftOnly()) {
+                // If the bucket was simply shifted, there's nothing to do. None of the data changed, and the output
+                // sources
                 // will get adjusted when we call the shiftOutputSources() method later.
                 return;
             }
@@ -640,26 +656,29 @@ public class BucketedUpdateBy extends UpdateBy {
             boolean addedRowsToReprocess = false;
 
             // This will never be less than, but it costs us nothing.
-            if(smallestModifiedKey <= slotIndex.firstRowKey()) {
+            if (smallestModifiedKey <= slotIndex.firstRowKey()) {
                 addedRowsToReprocess = true;
                 accumulator.addRowSet(slotIndex);
-            } else if(smallestModifiedKey <= slotIndex.lastRowKey()) {
+            } else if (smallestModifiedKey <= slotIndex.lastRowKey()) {
                 addedRowsToReprocess = true;
-                try(final RowSet indexToInsert = indexToAccumulate.subSetByKeyRange(smallestModifiedKey, indexToAccumulate.lastRowKey())) {
+                try (final RowSet indexToInsert =
+                        indexToAccumulate.subSetByKeyRange(smallestModifiedKey, indexToAccumulate.lastRowKey())) {
                     accumulator.addRowSet(indexToInsert);
                 }
             }
 
-            // It's possible we marked the operator as untouched if it's column was not affected.  Then, later on,
-            // we discovered that a key changed and a row switched buckets.  That means one bucket had removed rows
-            // and the other had added rows,  and now the operators -need- to be visited.
-            final boolean bucketHasAddedOrRemoved = tracker.getAdded().isNonempty() || tracker.getRemoved().isNonempty();
+            // It's possible we marked the operator as untouched if it's column was not affected. Then, later on,
+            // we discovered that a key changed and a row switched buckets. That means one bucket had removed rows
+            // and the other had added rows, and now the operators -need- to be visited.
+            final boolean bucketHasAddedOrRemoved =
+                    tracker.getAdded().isNonempty() || tracker.getRemoved().isNonempty();
 
             // If the tracker wasn't append only, we'll issue a reset command to the operators for this bucket.
-            if(!tracker.wasAppendOnly()) {
+            if (!tracker.wasAppendOnly()) {
                 final long keyBefore;
                 try (final RowSet.SearchIterator sit = slotIndex.searchIterator()) {
-                    keyBefore = sit.binarySearchValue((compareTo, ignored) -> Long.compare(smallestModifiedKey - 1, compareTo), 1);
+                    keyBefore = sit.binarySearchValue(
+                            (compareTo, ignored) -> Long.compare(smallestModifiedKey - 1, compareTo), 1);
                 }
 
                 // Notify the operators to reset their bucket states, and update their affectivity.
@@ -671,8 +690,8 @@ public class BucketedUpdateBy extends UpdateBy {
                 }
             }
 
-            if(!addedRowsToReprocess) {
-                // There's nothing to do,  the modified key is after our last valid index.
+            if (!addedRowsToReprocess) {
+                // There's nothing to do, the modified key is after our last valid index.
                 return;
             }
 
@@ -681,32 +700,33 @@ public class BucketedUpdateBy extends UpdateBy {
             tracker.setBucketIterator(iterator);
 
             if (bucketQ == null) {
-                bucketQ = new TrackerPriorityQueue((int)slotTracker.getModifiedBucketCount());
+                bucketQ = new TrackerPriorityQueue((int) slotTracker.getModifiedBucketCount());
             }
             bucketQ.add(tracker);
         }
 
         /**
-         * Iterate over the set of rows accumulated from the set of modified buckets by {@link #accumulateIndexToReprocess(UpdateBySlotTracker.UpdateTracker, RowSet)}
-         * This will use the {@link #bucketQ priority queue} to associate values with buckets, instead of the hash table
-         * and then push the update down to the operators.
+         * Iterate over the set of rows accumulated from the set of modified buckets by
+         * {@link #accumulateIndexToReprocess(UpdateBySlotTracker.UpdateTracker, RowSet)} This will use the
+         * {@link #bucketQ priority queue} to associate values with buckets, instead of the hash table and then push the
+         * update down to the operators.
          */
         public void processBucketedUpdates() {
             final RowSet modifiedBucketIndex = accumulator.build();
 
-            //  This can happen if all we did was completely remove some buckets.
-            if(modifiedBucketIndex.isEmpty()) {
+            // This can happen if all we did was completely remove some buckets.
+            if (modifiedBucketIndex.isEmpty()) {
                 return;
             }
 
-            try(final RowSequence.Iterator okIt = modifiedBucketIndex.getRowSequenceIterator()) {
+            try (final RowSequence.Iterator okIt = modifiedBucketIndex.getRowSequenceIterator()) {
                 final int newChunkSize = (int) Math.min(control.getChunkCapacity(), modifiedBucketIndex.size());
                 setChunkSize(newChunkSize);
                 initializeFor(modifiedBucketIndex, UpdateType.Reprocess);
 
-                // TODO: This is a lot of iteration.  Maybe a RangeIterator would be more better for the buckets?
+                // TODO: This is a lot of iteration. Maybe a RangeIterator would be more better for the buckets?
                 UpdateBySlotTracker.UpdateTracker tracker = bucketQ.pop();
-                if(tracker == null) {
+                if (tracker == null) {
                     Assert.statementNeverExecuted("Bucketing queue is empty, but there are still keys to process");
                 }
                 RowSet.SearchIterator trackerIt = tracker.getIterator();
@@ -725,19 +745,20 @@ public class BucketedUpdateBy extends UpdateBy {
                     chunkOk.fillRowKeyChunk(localKeyChunk);
 
                     // TableUpdate the outputPositions chunk using the PriQ we built during the accumulate step
-                    for(int chunkPosition = 0; chunkPosition < localKeyChunk.size(); chunkPosition++) {
+                    for (int chunkPosition = 0; chunkPosition < localKeyChunk.size(); chunkPosition++) {
                         final long keyToInspect = localKeyChunk.get(chunkPosition);
                         // If the key we're looking for is not part of this bucket, insert it back into
                         // the queue, so long as there is a next key.
-                        if(keyToInspect != trackerCurKey) {
-                            if(trackerCurKey != NULL_ROW_KEY) {
+                        if (keyToInspect != trackerCurKey) {
+                            if (trackerCurKey != NULL_ROW_KEY) {
                                 bucketQ.add(tracker);
                             }
 
                             // Grab the next bucket from the queue and continue.
                             tracker = bucketQ.pop();
-                            if(tracker == null) {
-                                Assert.statementNeverExecuted("Bucketing queue is empty, but there are still keys to process");
+                            if (tracker == null) {
+                                Assert.statementNeverExecuted(
+                                        "Bucketing queue is empty, but there are still keys to process");
                             }
                             trackerIt = tracker.getIterator();
                             trackerCurKey = trackerIt.currentValue();
@@ -753,24 +774,25 @@ public class BucketedUpdateBy extends UpdateBy {
 
                     // Now, find the runs of buckets and permute them if necessary
                     final boolean permuteRequired = HashedRunFinder.findRunsHashed(findCtx.get(),
-                                                                                   localRunStarts,
-                                                                                   localRunLengths,
-                                                                                   localChunkPositions,
-                                                                                   localOutputPositions);
+                            localRunStarts,
+                            localRunLengths,
+                            localChunkPositions,
+                            localOutputPositions);
 
                     // Now permute the keys to match the found ranges
-                    if(permuteRequired) {
+                    if (permuteRequired) {
                         localPermutedKeyChunk.setSize(localKeyChunk.size());
                         LongPermuteKernel.permuteInput(localKeyChunk, localChunkPositions, localPermutedKeyChunk);
                     }
 
                     Arrays.fill(inputChunkPopulated, false);
                     // Finally, push the chunk down into the affected oeprators.
-                    for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                        if(opAffected[opIdx]) {
+                    for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                        if (opAffected[opIdx]) {
                             final int slotPosition = inputSourceSlots[opIdx];
                             final WritableChunk<Values> localPostWorkingChunk = postWorkingChunks[slotPosition].get();
-                            final WritableChunk<Values> localPermutedWorkingChunk = permutedPostWorkingChunks[slotPosition].get();
+                            final WritableChunk<Values> localPermutedWorkingChunk =
+                                    permutedPostWorkingChunks[slotPosition].get();
 
                             prepareValuesChunkFor(
                                     slotPosition,
@@ -782,12 +804,12 @@ public class BucketedUpdateBy extends UpdateBy {
                                     fillContexts[slotPosition].get());
 
                             operators[opIdx].reprocessChunk(opContext[opIdx],
-                                                            chunkOk,
-                                                            permuteRequired ? localPermutedWorkingChunk : localPostWorkingChunk,
-                                                            permuteRequired ? localPermutedKeyChunk : localKeyChunk,
-                                                            localOutputPositions,
-                                                            localRunStarts,
-                                                            localRunLengths);
+                                    chunkOk,
+                                    permuteRequired ? localPermutedWorkingChunk : localPostWorkingChunk,
+                                    permuteRequired ? localPermutedKeyChunk : localKeyChunk,
+                                    localOutputPositions,
+                                    localRunStarts,
+                                    localRunLengths);
                         }
                     }
                 }
@@ -797,21 +819,21 @@ public class BucketedUpdateBy extends UpdateBy {
         }
 
         /**
-         * Inspect the chunk positions and find sorted runs of individual buckets.  If required,  permute the input
-         * key chunk so that input keys remain adjacent to their values.
+         * Inspect the chunk positions and find sorted runs of individual buckets. If required, permute the input key
+         * chunk so that input keys remain adjacent to their values.
          *
          * @param chunkOk the chunk of input keys.
          */
         private boolean findRunsAndPermute(@NotNull final RowSequence chunkOk) {
             final boolean permuteRequired = HashedRunFinder.findRunsHashed(findCtx.get(),
-                                                                           runStarts.get(),
-                                                                           runLengths.get(),
-                                                                           chunkPositions.get(),
-                                                                           outputPositions.get());
+                    runStarts.get(),
+                    runLengths.get(),
+                    chunkPositions.get(),
+                    outputPositions.get());
 
             chunkOk.fillRowKeyChunk(keyChunk.get());
             // Now permute the keys to match the found ranges
-            if(permuteRequired) {
+            if (permuteRequired) {
                 permutedKeyChunk.get().setSize(chunkOk.intSize());
                 LongPermuteKernel.permuteInput(keyChunk.get(), chunkPositions.get(), permutedKeyChunk.get());
             }
@@ -827,7 +849,7 @@ public class BucketedUpdateBy extends UpdateBy {
         private void doAppendOnlyAdds(@NotNull final RowSet added) {
             initializeFor(added, UpdateType.Add);
 
-            try(final RowSequence.Iterator okIt = added.getRowSequenceIterator()) {
+            try (final RowSequence.Iterator okIt = added.getRowSequenceIterator()) {
                 final WritableIntChunk<ChunkPositions> localRunStarts = runStarts.get();
                 final WritableIntChunk<ChunkLengths> localRunLengths = runLengths.get();
                 final WritableIntChunk<RowKeys> localOutputPositions = outputPositions.get();
@@ -835,7 +857,7 @@ public class BucketedUpdateBy extends UpdateBy {
                 final WritableLongChunk<OrderedRowKeys> localKeys = keyChunk.get();
                 final WritableIntChunk<ChunkPositions> localChunkPositions = chunkPositions.get();
 
-                while(okIt.hasMore()) {
+                while (okIt.hasMore()) {
                     sharedContext.reset();
                     final RowSequence chunkOk = okIt.getNextRowSequenceWithLength(chunkSize);
 
@@ -847,25 +869,26 @@ public class BucketedUpdateBy extends UpdateBy {
                     final boolean permuteRequired = findRunsAndPermute(chunkOk);
 
                     // If we need to track the slot indices, make sure we insert them into the tracker.
-                    if(slotTracker != null) {
+                    if (slotTracker != null) {
                         for (int runIdx = 0; runIdx < localRunStarts.size(); runIdx++) {
                             final int runStart = localRunStarts.get(runIdx);
                             final int runLength = localRunLengths.get(runIdx);
                             final int bucketPosition = localOutputPositions.get(runStart);
 
                             slotTracker.addToBucket(bucketPosition,
-                                                    permuteRequired ? localPermutedKeys : localKeys,
-                                                    runStart,
-                                                    runLength);
+                                    permuteRequired ? localPermutedKeys : localKeys,
+                                    runStart,
+                                    runLength);
                         }
                     }
 
                     Arrays.fill(inputChunkPopulated, false);
-                    for(int opIdx = 0; opIdx < operators.length; opIdx++) {
-                        if(opAffected[opIdx]) {
+                    for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                        if (opAffected[opIdx]) {
                             final int slotPosition = inputSourceSlots[opIdx];
                             final WritableChunk<Values> localPostWorkingChunk = postWorkingChunks[slotPosition].get();
-                            final WritableChunk<Values> localPermutedPostWorkingChunk = permutedPostWorkingChunks[slotPosition].get();
+                            final WritableChunk<Values> localPermutedPostWorkingChunk =
+                                    permutedPostWorkingChunks[slotPosition].get();
                             prepareValuesChunkFor(
                                     slotPosition,
                                     permuteRequired,
@@ -876,11 +899,11 @@ public class BucketedUpdateBy extends UpdateBy {
                                     fillContexts[slotPosition].get());
 
                             operators[opIdx].addChunk(opContext[opIdx],
-                                                      permuteRequired ? localPermutedPostWorkingChunk : localPostWorkingChunk,
-                                                      permuteRequired ? localPermutedKeys : localKeys,
-                                                      localOutputPositions,
-                                                      localRunStarts,
-                                                      localRunLengths);
+                                    permuteRequired ? localPermutedPostWorkingChunk : localPostWorkingChunk,
+                                    permuteRequired ? localPermutedKeys : localKeys,
+                                    localOutputPositions,
+                                    localRunStarts,
+                                    localRunLengths);
                         }
                     }
                 }
@@ -890,11 +913,11 @@ public class BucketedUpdateBy extends UpdateBy {
         }
 
         private void applyShiftsToOutput(@NotNull final RowSetShiftData shifts) {
-            if(shifts.empty()) {
+            if (shifts.empty()) {
                 return;
             }
 
-            try(final RowSet prevIdx = source.getRowSet().copyPrev()) {
+            try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
                 shifts.apply((begin, end, delta) -> {
                     try (final RowSet subIndex = prevIdx.subSetByKeyRange(begin, end)) {
                         for (int opIdx = 0; opIdx < operators.length; opIdx++) {
@@ -910,7 +933,7 @@ public class BucketedUpdateBy extends UpdateBy {
      * An object to hold the transient state during a static grouped bucketed addition
      */
     private class GroupedContext implements SafeCloseable {
-        /** An array of closeables to help with cleanup  */
+        /** An array of closeables to help with cleanup */
         final SafeCloseableList closeables = new SafeCloseableList();
 
         /** The expected size of chunks to the various update stages */
@@ -932,20 +955,22 @@ public class BucketedUpdateBy extends UpdateBy {
         final WritableChunk<Values>[] postWorkingChunks;
 
         GroupedContext(final TableUpdate upstream) {
-            this.chunkSize = Math.min((int)source.size(), control.getChunkCapacity());
+            this.chunkSize = Math.min((int) source.size(), control.getChunkCapacity());
             this.inputChunkPopulated = new boolean[operators.length];
             this.fillContexts = new ChunkSource.FillContext[operators.length];
             this.opContext = new UpdateByOperator.UpdateContext[operators.length];
 
-            //noinspection unchecked
+            // noinspection unchecked
             this.postWorkingChunks = new WritableChunk[operators.length];
 
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 opContext[opIdx] = closeables.add(operators[opIdx].makeUpdateContext(chunkSize));
                 final int slotPosition = inputSourceSlots[opIdx];
-                if(fillContexts[slotPosition] == null) {
-                    fillContexts[slotPosition] = closeables.add(inputSources[slotPosition].makeFillContext(chunkSize, sharedContext));
-                    postWorkingChunks[slotPosition] = closeables.add(inputSources[slotPosition].getChunkType().makeWritableChunk(chunkSize));
+                if (fillContexts[slotPosition] == null) {
+                    fillContexts[slotPosition] =
+                            closeables.add(inputSources[slotPosition].makeFillContext(chunkSize, sharedContext));
+                    postWorkingChunks[slotPosition] =
+                            closeables.add(inputSources[slotPosition].getChunkType().makeWritableChunk(chunkSize));
                 }
                 operators[opIdx].initializeForUpdate(opContext[opIdx], upstream, source.getRowSet(), false, true);
             }
@@ -953,13 +978,13 @@ public class BucketedUpdateBy extends UpdateBy {
 
         void initialize(@NotNull final RowSet bucketIndex) {
             sharedContext.reset();
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 operators[opIdx].initializeFor(opContext[opIdx], bucketIndex, UpdateType.Add);
             }
         }
 
         void finish() {
-            for(int opIdx = 0; opIdx < operators.length; opIdx++) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 operators[opIdx].finishFor(opContext[opIdx], UpdateType.Add);
             }
         }
@@ -980,10 +1005,10 @@ public class BucketedUpdateBy extends UpdateBy {
          * @param chunkOk the {@link RowSequence} for current values
          */
         private void prepareValuesChunkFor(final int inputSlot,
-                                           final RowSequence chunkOk,
-                                           final WritableChunk<Values> workingChunk,
-                                           final ChunkSource.FillContext fillContext) {
-            if(!inputChunkPopulated[inputSlot]) {
+                final RowSequence chunkOk,
+                final WritableChunk<Values> workingChunk,
+                final ChunkSource.FillContext fillContext) {
+            if (!inputChunkPopulated[inputSlot]) {
                 inputChunkPopulated[inputSlot] = true;
                 inputSources[inputSlot].fillChunk(fillContext, workingChunk, chunkOk);
             }
@@ -993,32 +1018,33 @@ public class BucketedUpdateBy extends UpdateBy {
     /**
      * Perform a bucketed updateBy.
      *
-     * @param control          the {@link UpdateByControl} to set hashing parameters
-     * @param description      the operation description
-     * @param source           the source table
-     * @param ops              the operations to perform
-     * @param resultSources    the result sources
+     * @param control the {@link UpdateByControl} to set hashing parameters
+     * @param description the operation description
+     * @param source the source table
+     * @param ops the operations to perform
+     * @param resultSources the result sources
      * @param redirectionIndex the redirection index, if one was used.
-     * @param keySources       the sources for key columns.
-     * @param byColumns        the grouping column pairs
+     * @param keySources the sources for key columns.
+     * @param byColumns the grouping column pairs
      * @return the result table
      */
     @SuppressWarnings("rawtypes")
     public static Table compute(@NotNull final String description,
-                                @NotNull final QueryTable source,
-                                @NotNull final UpdateByOperator[] ops,
-                                @NotNull final Map<String, ColumnSource<?>> resultSources,
-                                @Nullable final WritableRowRedirection redirectionIndex,
-                                @NotNull final ColumnSource<?>[] keySources,
-                                @NotNull final MatchPair[] byColumns,
-                                @NotNull final UpdateByControl control) {
+            @NotNull final QueryTable source,
+            @NotNull final UpdateByOperator[] ops,
+            @NotNull final Map<String, ColumnSource<?>> resultSources,
+            @Nullable final WritableRowRedirection redirectionIndex,
+            @NotNull final ColumnSource<?>[] keySources,
+            @NotNull final MatchPair[] byColumns,
+            @NotNull final UpdateByControl control) {
         final QueryTable result = new QueryTable(source.getRowSet(), resultSources);
         final boolean useGrouping = JoinControl.useGrouping(source, keySources);
-        final BucketedUpdateBy updateBy = new BucketedUpdateBy(ops, source, keySources, useGrouping, redirectionIndex, control);
+        final BucketedUpdateBy updateBy =
+                new BucketedUpdateBy(ops, source, keySources, useGrouping, redirectionIndex, control);
         updateBy.doInitialAdditions(useGrouping, byColumns);
 
-        if(source.isRefreshing()) {
-            if(redirectionIndex != null) {
+        if (source.isRefreshing()) {
+            if (redirectionIndex != null) {
                 redirectionIndex.startTrackingPrevValues();
             }
             Arrays.stream(ops).forEach(UpdateByOperator::startTrackingPrev);
@@ -1031,15 +1057,15 @@ public class BucketedUpdateBy extends UpdateBy {
     }
 
     private BucketedUpdateBy(@NotNull final UpdateByOperator[] operators,
-                             @NotNull final QueryTable source,
-                             @NotNull final ColumnSource<?>[] keySources,
-                             final boolean useGrouping,
-                             @Nullable final WritableRowRedirection redirectionIndex,
-                             @NotNull final UpdateByControl control) {
+            @NotNull final QueryTable source,
+            @NotNull final ColumnSource<?>[] keySources,
+            final boolean useGrouping,
+            @Nullable final WritableRowRedirection redirectionIndex,
+            @NotNull final UpdateByControl control) {
         super(operators, source, redirectionIndex, control);
         this.keySources = keySources;
 
-        if(source.isRefreshing() && !source.isAddOnly()) {
+        if (source.isRefreshing() && !source.isAddOnly()) {
             final int hashTableSize = control.initialHashTableSize(source);
             slotTracker = new UpdateBySlotTracker(control.getChunkCapacity());
             this.hashTable = new IncrementalUpdateByStateManager(keySources,
@@ -1048,7 +1074,7 @@ public class BucketedUpdateBy extends UpdateBy {
                     control.getTargetLoadFactor());
         } else {
             slotTracker = null;
-            if(!useGrouping) {
+            if (!useGrouping) {
                 final int hashTableSize = control.initialHashTableSize(source);
                 this.hashTable = new AddOnlyUpdateByStateManager(keySources,
                         hashTableSize,
@@ -1067,8 +1093,8 @@ public class BucketedUpdateBy extends UpdateBy {
      * @return a listener to process updates.
      */
     public InstrumentedTableUpdateListener newListener(@NotNull final String description,
-                                          @NotNull final QueryTable result,
-                                          @NotNull final MatchPair[] byColumns) {
+            @NotNull final QueryTable result,
+            @NotNull final MatchPair[] byColumns) {
         return new BucketedUpdateByListener(description, source, result, byColumns);
     }
 
@@ -1079,32 +1105,33 @@ public class BucketedUpdateBy extends UpdateBy {
      * @param byColumns the grouping columns
      */
     private void doInitialAdditions(final boolean useGrouping, @NotNull final MatchPair[] byColumns) {
-        if(source.isEmpty()) {
+        if (source.isEmpty()) {
             return;
         }
 
         final TableUpdateImpl initialUpdate = new TableUpdateImpl(source.getRowSet(),
-                                                                                    RowSetFactory.empty(),
-                                                                                    RowSetFactory.empty(),
-                                                                                      RowSetShiftData.EMPTY,
-                                                                                      ModifiedColumnSet.ALL);
-        if(useGrouping) {
-            try(final GroupedContext ctx = new GroupedContext(initialUpdate)) {
+                RowSetFactory.empty(),
+                RowSetFactory.empty(),
+                RowSetShiftData.EMPTY,
+                ModifiedColumnSet.ALL);
+        if (useGrouping) {
+            try (final GroupedContext ctx = new GroupedContext(initialUpdate)) {
                 doStaticGroupedAddition(ctx, source.getRowSet());
             }
         } else {
-            final ModifiedColumnSet keyModifiedColumnSet = source.newModifiedColumnSet(MatchPair.getRightColumns(byColumns));
+            final ModifiedColumnSet keyModifiedColumnSet =
+                    source.newModifiedColumnSet(MatchPair.getRightColumns(byColumns));
             try (final BucketedContext ctx = new BucketedContext(initialUpdate, keyModifiedColumnSet, null)) {
                 ctx.setAllAffected();
                 ctx.initializeFor(source.getRowSet(), UpdateType.Add);
 
-                if(redirectionRowSet != null && source.isRefreshing()) {
+                if (redirectionRowSet != null && source.isRefreshing()) {
                     processUpdateForRedirection(initialUpdate);
                 }
 
                 ctx.doAppendOnlyAdds(source.getRowSet());
-                if(slotTracker != null) {
-                    //noinspection resource
+                if (slotTracker != null) {
+                    // noinspection resource
                     slotTracker.applyUpdates(RowSetShiftData.EMPTY);
                     slotTracker.reset();
                 }
@@ -1122,13 +1149,13 @@ public class BucketedUpdateBy extends UpdateBy {
 
         final Map<?, RowSet> grouping = keySources[0].getGroupToRange(added);
 
-        if(grouping == null) {
+        if (grouping == null) {
             Assert.statementNeverExecuted("Trying to do grouped addition, but no groups exist");
         }
 
         MutableInt groupPosition = new MutableInt(0);
         grouping.forEach((key, groupRowSet) -> {
-            if(groupRowSet == null) {
+            if (groupRowSet == null) {
                 Assert.statementNeverExecuted("Found a null RowSet for group key " + key);
             }
             ctx.initialize(groupRowSet);
@@ -1169,9 +1196,9 @@ public class BucketedUpdateBy extends UpdateBy {
         private final ModifiedColumnSet keyModifiedColumnSet;
 
         BucketedUpdateByListener(@Nullable final String description,
-                                 @NotNull final QueryTable source,
-                                 @NotNull final QueryTable result,
-                                 @NotNull final MatchPair[] byColumns) {
+                @NotNull final QueryTable source,
+                @NotNull final QueryTable result,
+                @NotNull final MatchPair[] byColumns) {
             super(description, source, false);
             this.result = result;
 
@@ -1180,30 +1207,34 @@ public class BucketedUpdateBy extends UpdateBy {
 
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 final String[] outputColumnNames = operators[opIdx].getOutputColumnNames();
-                inputModifiedColumnSets[opIdx] = source.newModifiedColumnSet(operators[opIdx].getAffectingColumnNames());
+                inputModifiedColumnSets[opIdx] =
+                        source.newModifiedColumnSet(operators[opIdx].getAffectingColumnNames());
                 outputModifiedColumnSets[opIdx] = result.newModifiedColumnSet(outputColumnNames);
             }
 
             this.keyModifiedColumnSet = source.newModifiedColumnSet(MatchPair.getRightColumns(byColumns));
-            this.transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
+            this.transformer =
+                    source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
         }
 
         @Override
         public void onUpdate(@NotNull final TableUpdate upstream) {
-            try(final BucketedContext ctx = new BucketedContext(upstream, keyModifiedColumnSet, inputModifiedColumnSets)) {
-                if(redirectionRowSet != null) {
+            try (final BucketedContext ctx =
+                    new BucketedContext(upstream, keyModifiedColumnSet, inputModifiedColumnSets)) {
+                if (redirectionRowSet != null) {
                     processUpdateForRedirection(upstream);
                 }
 
                 // If the update was, in itself, append-only, we can just push it through.
-                final boolean isAppendOnly = UpdateByOperator.isAppendOnly(upstream, source.getRowSet().lastRowKeyPrev());
-                if(isAppendOnly) {
+                final boolean isAppendOnly =
+                        UpdateByOperator.isAppendOnly(upstream, source.getRowSet().lastRowKeyPrev());
+                if (isAppendOnly) {
                     ctx.doAppendOnlyAdds(upstream.added());
                 } else {
                     accumulateUpdatesByBucket(upstream, ctx);
                 }
 
-                if(slotTracker != null) {
+                if (slotTracker != null) {
                     processAccumulatedUpdates(upstream, ctx, isAppendOnly);
                 }
 
@@ -1212,16 +1243,17 @@ public class BucketedUpdateBy extends UpdateBy {
         }
 
         /**
-         * Process the upstream update and divide it into affected buckets, so that we can be smart about how we reprocess
-         * rows from buckets.  We want to ensure that we can re-read only the rows we need from the table and on top of that,
-         * ensure we can read them sequentially without revisiting blocks of data,
+         * Process the upstream update and divide it into affected buckets, so that we can be smart about how we
+         * reprocess rows from buckets. We want to ensure that we can re-read only the rows we need from the table and
+         * on top of that, ensure we can read them sequentially without revisiting blocks of data,
          *
          * @param upstream the upstream update
          * @param ctx the update context
          */
-        private void accumulateUpdatesByBucket(@NotNull final TableUpdate upstream, @NotNull final BucketedContext ctx) {
+        private void accumulateUpdatesByBucket(@NotNull final TableUpdate upstream,
+                @NotNull final BucketedContext ctx) {
             // Build a unique TableUpdate for each bucket affected by the
-            // modification and issue each of them separately.  Hopefully, most buckets
+            // modification and issue each of them separately. Hopefully, most buckets
             // will shake out as append-only, while the ones that are not can be marked
             // and revisited during the reprocessing phase.
             if (upstream.removed().isNonempty()) {
@@ -1229,14 +1261,14 @@ public class BucketedUpdateBy extends UpdateBy {
             }
 
             if (upstream.modified().isNonempty()) {
-                if(ctx.keysModified) {
+                if (ctx.keysModified) {
                     ctx.processModifiesForChangedKeys(upstream);
-                } else if(ctx.anyAffected) {
+                } else if (ctx.anyAffected) {
                     ctx.accumulateModifications(upstream.modified());
                 }
             }
 
-            if(upstream.shifted().nonempty()) {
+            if (upstream.shifted().nonempty()) {
                 ctx.accumulateShifts(upstream.shifted());
             }
 
@@ -1253,28 +1285,28 @@ public class BucketedUpdateBy extends UpdateBy {
          * @param isAppendOnly if the update was append-only
          */
         private void processAccumulatedUpdates(@NotNull final TableUpdate upstream,
-                                               @NotNull final BucketedContext ctx,
-                                               final boolean isAppendOnly) {
+                @NotNull final BucketedContext ctx,
+                final boolean isAppendOnly) {
             // Apply the updates to the tracked bucket indices and reset the tracker for the
             // next cycle.
             final RowSet emptiedBuckets = slotTracker.applyUpdates(upstream.shifted());
-            if(emptiedBuckets.isNonempty()) {
+            if (emptiedBuckets.isNonempty()) {
                 ctx.onBucketsRemoved(emptiedBuckets);
             }
 
-            if(!isAppendOnly) {
+            if (!isAppendOnly) {
                 // First, process the bucketed changes and create an index of rows to be processed.
                 // Explicitly, we are not going to let operators decide to handle remove/modify/shift on their own
-                // when we are processing general updates like this.  Simplifying in this way lets us treat the update
-                // as a "reset" to a particular state and then adds.  See the method doc for more detail
+                // when we are processing general updates like this. Simplifying in this way lets us treat the update
+                // as a "reset" to a particular state and then adds. See the method doc for more detail
                 ctx.accumulator = RowSetFactory.builderRandom();
                 slotTracker.forAllModifiedSlots(ctx::accumulateIndexToReprocess);
 
                 // Note that we must do this AFTER the accumulateIndexToReprocess to ensure that when we reset
-                // state, we don't have to worry about shifts messing with our indices.  We don't want to do this
+                // state, we don't have to worry about shifts messing with our indices. We don't want to do this
                 // as a bucket because the shifts have to apply to the output column source, and we'd rather not
                 // iterate the shift O(nBuckets * nOps) times, to do it bucket by bucket.
-                if(redirectionRowSet == null) {
+                if (redirectionRowSet == null) {
                     ctx.applyShiftsToOutput(upstream.shifted());
                 }
 
@@ -1313,7 +1345,7 @@ public class BucketedUpdateBy extends UpdateBy {
                 for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                     if (ctx.opAffected[opIdx]) {
                         downstream.modifiedColumnSet.setAll(outputModifiedColumnSets[opIdx]);
-                        if(operators[opIdx].anyModified(ctx.opContext[opIdx])) {
+                        if (operators[opIdx].anyModified(ctx.opContext[opIdx])) {
                             modifiedRowSet.insert(operators[opIdx].getAdditionalModifications(ctx.opContext[opIdx]));
                         }
                     }

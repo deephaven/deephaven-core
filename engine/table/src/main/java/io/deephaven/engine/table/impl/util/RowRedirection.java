@@ -110,8 +110,8 @@ public interface RowRedirection {
     }
 
     /**
-     * If this RowRedirection is guaranteed to map outer keys in ascending order to inner keys in ascending order;
-     * then return true; all other redirections must return false.
+     * If this RowRedirection is guaranteed to map outer keys in ascending order to inner keys in ascending order; then
+     * return true; all other redirections must return false.
      *
      * @return if our output maintains ascending order
      */

@@ -33,7 +33,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
     public void testMixedAppendOnlyZeroKey() {
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
-                doTestTicking(seed > 15,false, true, 20, size, seed);
+                doTestTicking(seed > 15, false, true, 20, size, seed);
             }
         }
     }
@@ -51,7 +51,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
     public void testMixedGeneralZeroKey() {
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
-                doTestTicking(seed > 15,false, false, 20, size, seed);
+                doTestTicking(seed > 15, false, false, 20, size, seed);
             }
         }
     }
@@ -65,9 +65,10 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
         }
     }
 
-    private void doTestTicking(boolean redirected, boolean bucketed, boolean appendOnly, int steps, int size, int seed) {
+    private void doTestTicking(boolean redirected, boolean bucketed, boolean appendOnly, int steps, int size,
+            int seed) {
         final CreateResult result = createTestTable(size, bucketed, false, true, seed,
-                new String[]{"ts"}, new TstUtils.Generator[]{new TstUtils.SortedDateTimeGenerator(
+                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))});
 
@@ -82,25 +83,26 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
         final EvalNugget[] nuggets = new EvalNugget[] {
                 new EvalNugget() {
                     Table base;
+
                     @Override
                     protected Table e() {
                         TableWithDefaults base = result.t;
                         if (!appendOnly) {
-                            base = (TableWithDefaults)base.sort("ts");
+                            base = (TableWithDefaults) base.sort("ts");
                         }
 
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
                         final Collection<UpdateByClause> clauses = UpdateByClause.of(
                                 UpdateByClause.fill(),
-                                UpdateByClause.ema("ts", 10 * MINUTE, skipControl, makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
+                                UpdateByClause.ema("ts", 10 * MINUTE, skipControl,
+                                        makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByClause.sum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
                                 UpdateByClause.min(makeOpColNames(columnNamesArray, "_min", "boolCol")),
                                 UpdateByClause.max(makeOpColNames(columnNamesArray, "_max", "boolCol")),
-                                UpdateByClause.prod(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol"))
-                        );
+                                UpdateByClause.prod(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
 
                         final UpdateByControl control;
-                        if(redirected) {
+                        if (redirected) {
                             control = new UpdateByControl() {
                                 @Override
                                 public boolean useRedirection() {
@@ -129,7 +131,8 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                     simulateShiftAwareStep(size, result.random, result.t, result.infos, nuggets);
                 }
             } catch (Throwable t) {
-                System.out.println("Crapped out on step " + step + " steps " + steps + " size " + size + " seed " + seed);
+                System.out
+                        .println("Crapped out on step " + step + " steps " + steps + " size " + size + " seed " + seed);
                 throw t;
             }
         }
@@ -139,7 +142,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
         final Set<String> omissions = new HashSet<>(Arrays.asList(toOmit));
         return Arrays.stream(colNames)
                 .filter(cn -> !omissions.contains(cn))
-                .map(cn -> cn + suffix +"="+cn)
+                .map(cn -> cn + suffix + "=" + cn)
                 .toArray(String[]::new);
     }
 }

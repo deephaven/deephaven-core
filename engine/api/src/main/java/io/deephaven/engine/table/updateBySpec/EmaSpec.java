@@ -14,8 +14,8 @@ public class EmaSpec implements UpdateBySpec {
     private final EmaControl control;
 
     public static EmaSpec ofTime(@NotNull final EmaControl control,
-                                 @NotNull final String timestampCol,
-                                 long timeScaleNanos) {
+            @NotNull final String timestampCol,
+            long timeScaleNanos) {
         return new EmaSpec(control, timestampCol, timeScaleNanos);
     }
 
@@ -44,7 +44,8 @@ public class EmaSpec implements UpdateBySpec {
     @NotNull
     @Override
     public String describe() {
-        return "Ema(" + (timestampCol == null ? "TickBased" : timestampCol) + ", " + timeScaleUnits + ", " + control + ")";
+        return "Ema(" + (timestampCol == null ? "TickBased" : timestampCol) + ", " + timeScaleUnits + ", " + control
+                + ")";
     }
 
     @Override

@@ -14,9 +14,9 @@ public final class BigDecimalCumSumOperator extends BaseObjectBinaryOperator<Big
     private final MathContext mathContext;
 
     public BigDecimalCumSumOperator(@NotNull final MatchPair inputPair,
-                                    @Nullable final RowRedirection redirectionIndex,
-                                    @NotNull final MathContext mathContext) {
-        super(BigDecimal.class, inputPair, new String[] { inputPair.rightColumn }, redirectionIndex);
+            @Nullable final RowRedirection redirectionIndex,
+            @NotNull final MathContext mathContext) {
+        super(BigDecimal.class, inputPair, new String[] {inputPair.rightColumn}, redirectionIndex);
         this.mathContext = mathContext;
     }
 

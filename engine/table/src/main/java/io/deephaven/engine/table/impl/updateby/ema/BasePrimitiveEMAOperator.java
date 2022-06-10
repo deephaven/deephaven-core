@@ -52,21 +52,21 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     /**
      * An operator that computes an EMA from a short column using an exponential decay function.
      *
-     * @param pair             the {@link MatchPair} that defines the input/output for this operation
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param control          the control parameters for EMA
-     * @param timeRecorder     an optional recorder for a timestamp column.  If this is null, it will be assumed time is
-     *                         measured in integer ticks.
-     * @param timeScaleUnits   the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
-     *                         in ticks,  otherwise it is measured in nanoseconds.
+     * @param control the control parameters for EMA
+     * @param timeRecorder an optional recorder for a timestamp column. If this is null, it will be assumed time is
+     *        measured in integer ticks.
+     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
+     *        in ticks, otherwise it is measured in nanoseconds.
      * @param redirectionIndex
      */
     public BasePrimitiveEMAOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @NotNull final EmaControl control,
-                                    @Nullable final LongRecordingUpdateByOperator timeRecorder,
-                                    final long timeScaleUnits,
-                                    @Nullable final RowRedirection redirectionIndex) {
+            @NotNull final String[] affectingColumns,
+            @NotNull final EmaControl control,
+            @Nullable final LongRecordingUpdateByOperator timeRecorder,
+            final long timeScaleUnits,
+            @Nullable final RowRedirection redirectionIndex) {
         super(pair, affectingColumns, redirectionIndex);
         this.control = control;
         this.timeRecorder = timeRecorder;
@@ -87,27 +87,27 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
     @Override
     public void initializeForUpdate(@NotNull final UpdateByOperator.UpdateContext context,
-                                    @NotNull final TableUpdate upstream,
-                                    @NotNull final RowSet resultSourceIndex,
-                                    final boolean usingBuckets,
-                                    final boolean isAppendOnly) {
+            @NotNull final TableUpdate upstream,
+            @NotNull final RowSet resultSourceIndex,
+            final boolean usingBuckets,
+            final boolean isAppendOnly) {
         final EmaContext ctx = (EmaContext) context;
-        if(!initialized) {
+        if (!initialized) {
             initialized = true;
-            if(usingBuckets) {
+            if (usingBuckets) {
                 this.bucketLastVal = new DoubleArraySource();
                 this.bucketLastTimestamp = new LongArraySource();
             }
         }
 
         // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
-        // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
+        // to have a bad time. This is not necessary for non-redirections since the SparseArraySources do not
         // need to do anything with capacity.
-        if(isRedirected) {
+        if (isRedirected) {
             outputSource.ensureCapacity(resultSourceIndex.size() + 1);
         }
 
-        if(!usingBuckets) {
+        if (!usingBuckets) {
             // If we aren't bucketing, we'll just remember the appendyness.
             ctx.canProcessDirectly = isAppendOnly;
         }
@@ -115,15 +115,15 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
     @Override
     public void initializeFor(@NotNull final UpdateByOperator.UpdateContext updateContext,
-                              @NotNull final RowSet updateIndex,
-                              @NotNull final UpdateBy.UpdateType type) {
+            @NotNull final RowSet updateIndex,
+            @NotNull final UpdateBy.UpdateType type) {
         super.initializeFor(updateContext, updateIndex, type);
-        ((EmaContext)updateContext).lastStamp = NULL_LONG;
+        ((EmaContext) updateContext).lastStamp = NULL_LONG;
     }
 
     @Override
     public void onBucketsRemoved(@NotNull final RowSet removedBuckets) {
-        if(bucketLastVal != null) {
+        if (bucketLastVal != null) {
             bucketLastVal.setNull(removedBuckets);
             bucketLastTimestamp.setNull(removedBuckets);
         } else {
@@ -134,11 +134,11 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
     @Override
     protected void doAddChunk(@NotNull final Context context,
-                              @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk,
-                              long groupPosition) {
+            @NotNull final RowSequence inputKeys,
+            @NotNull final Chunk<Values> workingChunk,
+            long groupPosition) {
         final EmaContext ctx = (EmaContext) context;
-        if(groupPosition == singletonGroup) {
+        if (groupPosition == singletonGroup) {
             ctx.lastStamp = singletonLastStamp;
             ctx.curVal = singletonVal;
         } else {
@@ -146,7 +146,7 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             ctx.curVal = NULL_DOUBLE;
         }
 
-        if(timeRecorder == null) {
+        if (timeRecorder == null) {
             computeWithTicks(ctx, workingChunk, 0, inputKeys.intSize());
         } else {
             computeWithTime(ctx, workingChunk, 0, inputKeys.intSize());
@@ -160,13 +160,13 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
     @Override
     public void addChunk(@NotNull final UpdateByOperator.UpdateContext context,
-                         @NotNull final Chunk<Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                         @NotNull final IntChunk<RowKeys> bucketPositions,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> runLengths) {
+            @NotNull final Chunk<Values> values,
+            @NotNull final LongChunk<? extends RowKeys> keyChunk,
+            @NotNull final IntChunk<RowKeys> bucketPositions,
+            @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final IntChunk<ChunkLengths> runLengths) {
         final EmaContext ctx = (EmaContext) context;
-        for(int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
+        for (int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
             final int runStart = startPositions.get(runIdx);
             final int runLength = runLengths.get(runIdx);
             final int runEnd = runStart + runLength;
@@ -174,7 +174,7 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
             ctx.lastStamp = bucketLastTimestamp.getLong(bucketPosition);
             ctx.curVal = bucketLastVal.getDouble(bucketPosition);
-            if(timeRecorder == null) {
+            if (timeRecorder == null) {
                 computeWithTicks(ctx, values, runStart, runEnd);
             } else {
                 computeWithTime(ctx, values, runStart, runEnd);
@@ -184,29 +184,31 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             bucketLastTimestamp.set(bucketPosition, ctx.lastStamp);
         }
 
-        //noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(), (LongChunk<RowKeys>) keyChunk);
+        // noinspection unchecked
+        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(),
+                (LongChunk<RowKeys>) keyChunk);
     }
 
     @Override
     public void resetForReprocess(@NotNull final UpdateByOperator.UpdateContext context,
-                                  @NotNull final RowSet sourceIndex,
-                                  final long firstUnmodifiedKey) {
+            @NotNull final RowSet sourceIndex,
+            final long firstUnmodifiedKey) {
         super.resetForReprocess(context, sourceIndex, firstUnmodifiedKey);
 
-        if(timeRecorder == null) {
+        if (timeRecorder == null) {
             return;
         }
 
         final EmaContext ctx = (EmaContext) context;
-        if(!ctx.canProcessDirectly) {
-            // If we set the last state to null,  then we know it was a reset state and the timestamp must also
+        if (!ctx.canProcessDirectly) {
+            // If we set the last state to null, then we know it was a reset state and the timestamp must also
             // have been reset.
-            if(singletonVal == NULL_DOUBLE || (firstUnmodifiedKey == NULL_ROW_KEY)) {
+            if (singletonVal == NULL_DOUBLE || (firstUnmodifiedKey == NULL_ROW_KEY)) {
                 singletonLastStamp = NULL_LONG;
             } else {
-                // If it hasn't been reset to null, then it's possible that the value at that position was null, in which case
-                // we must have ignored it,  and so we have to actually keep looking backwards until we find something
+                // If it hasn't been reset to null, then it's possible that the value at that position was null, in
+                // which case
+                // we must have ignored it, and so we have to actually keep looking backwards until we find something
                 // not null.
 
 
@@ -219,22 +221,24 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
     @Override
     public void resetForReprocess(@NotNull final UpdateByOperator.UpdateContext ctx,
-                                  @NotNull final RowSet bucketIndex,
-                                  final long bucketPosition,
-                                  final long firstUnmodifiedKey) {
-        final double previousVal = firstUnmodifiedKey == NULL_ROW_KEY ? QueryConstants.NULL_DOUBLE : outputSource.getDouble(firstUnmodifiedKey);
+            @NotNull final RowSet bucketIndex,
+            final long bucketPosition,
+            final long firstUnmodifiedKey) {
+        final double previousVal = firstUnmodifiedKey == NULL_ROW_KEY ? QueryConstants.NULL_DOUBLE
+                : outputSource.getDouble(firstUnmodifiedKey);
         bucketLastVal.set(bucketPosition, previousVal);
 
-        if(timeRecorder == null) {
+        if (timeRecorder == null) {
             return;
         }
 
         long potentialResetTimestamp;
-        if(previousVal == NULL_DOUBLE) {
+        if (previousVal == NULL_DOUBLE) {
             potentialResetTimestamp = NULL_LONG;
         } else {
-            // If it hasn't been reset to null, then it's possible that the value at that position was null, in which case
-            // we must have ignored it,  and so we have to actually keep looking backwards until we find something
+            // If it hasn't been reset to null, then it's possible that the value at that position was null, in which
+            // case
+            // we must have ignored it, and so we have to actually keep looking backwards until we find something
             // not null.
 
 
@@ -246,18 +250,18 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     }
 
     private long locateFirstValidPreviousTimestamp(@NotNull final RowSet indexToSearch,
-                                                   final long firstUnmodifiedKey) {
+            final long firstUnmodifiedKey) {
         long potentialResetTimestamp = timeRecorder.getCurrentLong(firstUnmodifiedKey);
-        if(potentialResetTimestamp != NULL_LONG && isValueValid(firstUnmodifiedKey)) {
+        if (potentialResetTimestamp != NULL_LONG && isValueValid(firstUnmodifiedKey)) {
             return potentialResetTimestamp;
         }
 
-        try(final RowSet.SearchIterator rIt = indexToSearch.reverseIterator()) {
+        try (final RowSet.SearchIterator rIt = indexToSearch.reverseIterator()) {
             rIt.advance(firstUnmodifiedKey);
-            while(rIt.hasNext()) {
+            while (rIt.hasNext()) {
                 final long nextKey = rIt.nextLong();
                 potentialResetTimestamp = timeRecorder.getCurrentLong(nextKey);
-                if(potentialResetTimestamp != NULL_LONG && isValueValid(nextKey)) {
+                if (potentialResetTimestamp != NULL_LONG && isValueValid(nextKey)) {
                     return potentialResetTimestamp;
                 }
             }
@@ -269,43 +273,43 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     abstract boolean isValueValid(final long atKey);
 
     abstract void computeWithTicks(final EmaContext ctx,
-                                   final Chunk<Values> valueChunk,
-                                   final int chunkStart,
-                                   final int chunkEnd);
+            final Chunk<Values> valueChunk,
+            final int chunkStart,
+            final int chunkEnd);
 
     abstract void computeWithTime(final EmaContext ctx,
-                                  final Chunk<Values> valueChunk,
-                                  final int chunkStart,
-                                  final int chunkEnd);
+            final Chunk<Values> valueChunk,
+            final int chunkStart,
+            final int chunkEnd);
 
     void handleBadData(@NotNull final EmaContext ctx,
-                       final boolean isNull,
-                       final boolean isNan,
-                       final boolean isNullTime) {
+            final boolean isNull,
+            final boolean isNan,
+            final boolean isNullTime) {
         boolean doReset = false;
-        if(isNull) {
+        if (isNull) {
             if (control.onNullValue == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered null value during EMA processing");
             }
             doReset = control.onNullValue == BadDataBehavior.Reset;
-        } else if(isNan) {
+        } else if (isNan) {
             if (control.onNanValue == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered NaN value during EMA processing");
-            } else if(control.onNanValue == BadDataBehavior.Poison) {
+            } else if (control.onNanValue == BadDataBehavior.Poison) {
                 ctx.curVal = Double.NaN;
             } else {
                 doReset = control.onNanValue == BadDataBehavior.Reset;
             }
         }
 
-        if(isNullTime) {
+        if (isNullTime) {
             if (control.onNullTime == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered null timestamp during EMA processing");
             }
             doReset = control.onNullTime == BadDataBehavior.Reset;
         }
 
-        if(doReset) {
+        if (doReset) {
             ctx.curVal = NULL_DOUBLE;
             ctx.lastStamp = NULL_LONG;
         }
@@ -313,19 +317,19 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
     void handleBadTime(@NotNull final EmaContext ctx, final long dt) {
         boolean doReset = false;
-        if(dt == 0) {
-            if(control.onZeroDeltaTime == BadDataBehavior.Throw) {
+        if (dt == 0) {
+            if (control.onZeroDeltaTime == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered zero delta time during EMA processing");
             }
             doReset = control.onZeroDeltaTime == BadDataBehavior.Reset;
-        } else if(dt < 0) {
-            if(control.onNegativeDeltaTime == BadDataBehavior.Throw) {
+        } else if (dt < 0) {
+            if (control.onNegativeDeltaTime == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered negative delta time during EMA processing");
             }
             doReset = control.onNegativeDeltaTime == BadDataBehavior.Reset;
         }
 
-        if(doReset) {
+        if (doReset) {
             ctx.curVal = NULL_DOUBLE;
             ctx.lastStamp = NULL_LONG;
         }

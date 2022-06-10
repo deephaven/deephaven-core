@@ -6,15 +6,19 @@ import java.math.MathContext;
 import java.util.Collection;
 
 /**
- * <p>Control parameters for performing EMAs with {@link Table#updateBy(Collection, String...)}</p>
- * <p>Defaults are as follows</p>
+ * <p>
+ * Control parameters for performing EMAs with {@link Table#updateBy(Collection, String...)}
+ * </p>
+ * <p>
+ * Defaults are as follows
+ * </p>
  * <ul>
- *     <li>On null Values - Skip</li>
- *     <li>On NaN Values - Skip</li>
- *     <li>On null timestamps - Skip</li>
- *     <li>On zero delta Time - Skip</li>
- *     <li>On negative delta time - Throw Exception</li>
- *     <li>BigDecimal / BigInteger MathContext - Decimal 128</li>
+ * <li>On null Values - Skip</li>
+ * <li>On NaN Values - Skip</li>
+ * <li>On null timestamps - Skip</li>
+ * <li>On zero delta Time - Skip</li>
+ * <li>On negative delta time - Throw Exception</li>
+ * <li>BigDecimal / BigInteger MathContext - Decimal 128</li>
  * </ul>
  */
 public class EmaControl {
@@ -29,11 +33,12 @@ public class EmaControl {
     public static Builder get() {
         return new Builder();
     }
-    
+
     private EmaControl(@NotNull final BadDataBehavior onNullValue,
-                       @NotNull final BadDataBehavior onNanValue,
-                       @NotNull final BadDataBehavior onNullTime,
-                       BadDataBehavior onZeroDeltaTime, BadDataBehavior onNegativeDeltaTime, @NotNull final MathContext bigValueContext){
+            @NotNull final BadDataBehavior onNanValue,
+            @NotNull final BadDataBehavior onNullTime,
+            BadDataBehavior onZeroDeltaTime, BadDataBehavior onNegativeDeltaTime,
+            @NotNull final MathContext bigValueContext) {
         this.onNullValue = onNullValue;
         this.onNanValue = onNanValue;
         this.onNullTime = onNullTime;
@@ -44,6 +49,7 @@ public class EmaControl {
 
     /**
      * Get the behavior for when null values are encountered.
+     * 
      * @return the behavior for null values.
      */
     public BadDataBehavior getOnNullValue() {
@@ -52,6 +58,7 @@ public class EmaControl {
 
     /**
      * Get the behavior for when NaN values are encountered.
+     * 
      * @return the behavior for NaN values
      */
     public BadDataBehavior getOnNanValue() {
@@ -60,6 +67,7 @@ public class EmaControl {
 
     /**
      * Get the behavior for when null timestamps are encountered.
+     * 
      * @return the behavior for null timestamps.
      */
     public BadDataBehavior getOnNullTime() {
@@ -68,6 +76,7 @@ public class EmaControl {
 
     /**
      * Get the behavior for when negative sample-to-sample time differences are encountered
+     * 
      * @return the behavior for when dt is negative
      */
     public BadDataBehavior getOnNegativeDeltaTime() {
@@ -76,6 +85,7 @@ public class EmaControl {
 
     /**
      * Get the behavior for when zero sample-to-sample-time differences are encountered.
+     * 
      * @return the behavior for when dt is zero
      */
     public BadDataBehavior getOnZeroDeltaTime() {
@@ -83,8 +93,9 @@ public class EmaControl {
     }
 
     /**
-     * Get the {@link MathContext} to use when processing {@link java.math.BigInteger} and {@link  java.math.BigDecimal}
+     * Get the {@link MathContext} to use when processing {@link java.math.BigInteger} and {@link java.math.BigDecimal}
      * values.
+     * 
      * @return the {@link MathContext}
      */
     public MathContext getBigValueContext() {
@@ -146,7 +157,8 @@ public class EmaControl {
         }
 
         /**
-         * Set the behavior for when zero sample-to-sample times are encountered. Defaults to {@link BadDataBehavior#Skip}.
+         * Set the behavior for when zero sample-to-sample times are encountered. Defaults to
+         * {@link BadDataBehavior#Skip}.
          *
          * @param behavior the desired behavior
          * @return this builder
@@ -158,7 +170,8 @@ public class EmaControl {
         }
 
         /**
-         * Set the behavior for when negative sample-to-sample times are encountered. Defaults to {@link BadDataBehavior#Throw}.
+         * Set the behavior for when negative sample-to-sample times are encountered. Defaults to
+         * {@link BadDataBehavior#Throw}.
          *
          * @param behavior the desired behavior
          * @return this builder
@@ -170,8 +183,8 @@ public class EmaControl {
         }
 
         /**
-         * Set the {@link MathContext} to use for processing {@link java.math.BigDecimal} and {@link java.math.BigInteger} types.
-         * Defaults to {@link MathContext#DECIMAL128}.
+         * Set the {@link MathContext} to use for processing {@link java.math.BigDecimal} and
+         * {@link java.math.BigInteger} types. Defaults to {@link MathContext#DECIMAL128}.
          *
          * @param bigValueContext the desired behavior
          * @return this builder
@@ -184,11 +197,13 @@ public class EmaControl {
 
         /**
          * Construct an {@link EmaControl} from this builder.
+         * 
          * @return
          */
         @NotNull
         public EmaControl build() {
-            return new EmaControl(onNullValue, onNanValue, onNullTime, onZeroDeltaTime, onNegativeDeltaTime, bigValueContext);
+            return new EmaControl(onNullValue, onNanValue, onNullTime, onZeroDeltaTime, onNegativeDeltaTime,
+                    bigValueContext);
         }
     }
 }

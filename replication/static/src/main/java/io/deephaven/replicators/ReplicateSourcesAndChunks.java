@@ -77,7 +77,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateObjectSizedChunk() throws IOException {
-        String path = ReplicatePrimitiveCode.charToObject("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
+        String path = ReplicatePrimitiveCode
+                .charToObject("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
         final File classFile = new File(path);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -136,7 +137,7 @@ public class ReplicateSourcesAndChunks {
         try {
             lines = ReplicationUtils.removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
         } catch (Exception e) {
-            // Hey'  it's fiiiiine.  Don't worrrryy about it!
+            // Hey' it's fiiiiine. Don't worrrryy about it!
         }
         lines = globalReplacements(lines,
                 "class ObjectSingleValueSource", "class ObjectSingleValueSource<T>",

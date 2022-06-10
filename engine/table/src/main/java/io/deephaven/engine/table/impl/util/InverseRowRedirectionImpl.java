@@ -64,12 +64,13 @@ public class InverseRowRedirectionImpl implements WritableRowRedirection {
             @NotNull final WritableLongChunk<? extends RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
         try (final RowSet prevWrappedIndex = wrappedIndex.copyPrev();
-            final RowSequence.Iterator prevOkIt = prevWrappedIndex.getRowSequenceIterator()) {
+                final RowSequence.Iterator prevOkIt = prevWrappedIndex.getRowSequenceIterator()) {
             doMapping(mappedKeysOut, keysToMap, prevOkIt);
         }
     }
 
-    private void doMapping(@NotNull WritableLongChunk<? extends RowKeys> mappedKeysOut, @NotNull RowSequence keysToMap, RowSequence.Iterator okit) {
+    private void doMapping(@NotNull WritableLongChunk<? extends RowKeys> mappedKeysOut, @NotNull RowSequence keysToMap,
+            RowSequence.Iterator okit) {
         final MutableLong currentPosition = new MutableLong(0);
         mappedKeysOut.setSize(0);
         keysToMap.forEachRowKeyRange((start, end) -> {
@@ -82,6 +83,7 @@ public class InverseRowRedirectionImpl implements WritableRowRedirection {
             return true;
         });
     }
+
     @Override
     public void startTrackingPrevValues() {
         // Deliberately left blank. Nothing to do here.

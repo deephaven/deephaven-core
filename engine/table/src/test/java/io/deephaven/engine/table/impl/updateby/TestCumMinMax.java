@@ -30,14 +30,18 @@ public class TestCumMinMax extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, false, false, false, 0x2134BCFA).t;
 
         final Table result = t.updateBy(UpdateByClause.of(
-                UpdateByClause.min("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol", "longColMin=longCol", "floatColMin=floatCol", "doubleColMin=doubleCol", "bigIntColMin=bigIntCol", "bigDecimalColMin=bigDecimalCol"),
-                UpdateByClause.max("byteColMax=byteCol", "shortColMax=shortCol", "intColMax=intCol", "longColMax=longCol", "floatColMax=floatCol", "doubleColMax=doubleCol", "bigIntColMax=bigIntCol", "bigDecimalColMax=bigDecimalCol")));
-        for(String col : t.getDefinition().getColumnNamesArray()) {
-            if("boolCol".equals(col)) {
+                UpdateByClause.min("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",
+                        "longColMin=longCol", "floatColMin=floatCol", "doubleColMin=doubleCol",
+                        "bigIntColMin=bigIntCol", "bigDecimalColMin=bigDecimalCol"),
+                UpdateByClause.max("byteColMax=byteCol", "shortColMax=shortCol", "intColMax=intCol",
+                        "longColMax=longCol", "floatColMax=floatCol", "doubleColMax=doubleCol",
+                        "bigIntColMax=bigIntCol", "bigDecimalColMax=bigDecimalCol")));
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithCumMin(t.getColumn(col).getDirect(), result.getColumn(col+"Min").getDirect());
-            assertWithCumMax(t.getColumn(col).getDirect(), result.getColumn(col+"Max").getDirect());
+            assertWithCumMin(t.getColumn(col).getDirect(), result.getColumn(col + "Min").getDirect());
+            assertWithCumMax(t.getColumn(col).getDirect(), result.getColumn(col + "Max").getDirect());
         }
     }
 
@@ -49,6 +53,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
     public void testStaticBucketed() {
         doTestStaticBucketed(false);
     }
+
     @Test
     public void testStaticGroupedBucketed() {
         doTestStaticBucketed(true);
@@ -58,30 +63,34 @@ public class TestCumMinMax extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, true, grouped, false, 0xACDB4321).t;
 
         final Table result = t.updateBy(UpdateByClause.of(
-                UpdateByClause.min("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol", "longColMin=longCol", "floatColMin=floatCol", "doubleColMin=doubleCol", "bigIntColMin=bigIntCol", "bigDecimalColMin=bigDecimalCol"),
-                UpdateByClause.max("byteColMax=byteCol", "shortColMax=shortCol", "intColMax=intCol", "longColMax=longCol", "floatColMax=floatCol", "doubleColMax=doubleCol", "bigIntColMax=bigIntCol", "bigDecimalColMax=bigDecimalCol")),
+                UpdateByClause.min("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",
+                        "longColMin=longCol", "floatColMin=floatCol", "doubleColMin=doubleCol",
+                        "bigIntColMin=bigIntCol", "bigDecimalColMin=bigDecimalCol"),
+                UpdateByClause.max("byteColMax=byteCol", "shortColMax=shortCol", "intColMax=intCol",
+                        "longColMax=longCol", "floatColMax=floatCol", "doubleColMax=doubleCol",
+                        "bigIntColMax=bigIntCol", "bigDecimalColMax=bigDecimalCol")),
                 "Sym");
 
         final PartitionedTable preOpMap = t.partitionBy("Sym");
         final PartitionedTable postOpMap = result.partitionBy("Sym");
 
-        for (String sym : (String[])preOpMap.table().getColumn("Sym").getDirect()) {
+        for (String sym : (String[]) preOpMap.table().getColumn("Sym").getDirect()) {
             final Table source = preOpMap.constituentFor(sym);
             final Table actual = postOpMap.constituentFor(sym);
 
             for (String col : source.getDefinition().getColumnNamesArray()) {
-                if("Sym".equals(col) || "boolCol".equals(col)) {
+                if ("Sym".equals(col) || "boolCol".equals(col)) {
                     continue;
                 }
-                assertWithCumMin(source.getColumn(col).getDirect(), actual.getColumn(col+"Min").getDirect());
-                assertWithCumMax(source.getColumn(col).getDirect(), actual.getColumn(col+"Max").getDirect());
+                assertWithCumMin(source.getColumn(col).getDirect(), actual.getColumn(col + "Min").getDirect());
+                assertWithCumMax(source.getColumn(col).getDirect(), actual.getColumn(col + "Max").getDirect());
             }
         }
     }
 
     // endregion
 
-    //region Live Tests
+    // region Live Tests
 
     @Test
     public void testZeroKeyAppendOnly() {
@@ -107,7 +116,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
         final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131);
         final QueryTable t = result.t;
 
-        if(appendOnly) {
+        if (appendOnly) {
             t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         }
 
@@ -115,22 +124,22 @@ public class TestCumMinMax extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return bucketed ? t.updateBy(UpdateByClause.min(),"Sym")
+                        return bucketed ? t.updateBy(UpdateByClause.min(), "Sym")
                                 : t.updateBy(UpdateByClause.min());
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return bucketed ? t.updateBy(UpdateByClause.max(),"Sym")
+                        return bucketed ? t.updateBy(UpdateByClause.max(), "Sym")
                                 : t.updateBy(UpdateByClause.max());
                     }
                 }
         };
 
         final Random billy = new Random(0xB177B177);
-        for(int ii = 0; ii < 100; ii++) {
-            if(appendOnly) {
+        for (int ii = 0; ii < 100; ii++) {
+            if (appendOnly) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
                 TstUtils.validate("Table", nuggets);
             } else {
@@ -138,7 +147,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
             }
         }
     }
-    //endregion
+    // endregion
 
     public static Object[] cumMin(Object... values) {
         if (values == null) {
@@ -158,7 +167,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
             } else if (values[i] == null) {
                 result[i] = result[i - 1];
             } else {
-                result[i] = ((Comparable)result[i-1]).compareTo(values[i]) < 0 ? result[i-1] : values[i];
+                result[i] = ((Comparable) result[i - 1]).compareTo(values[i]) < 0 ? result[i - 1] : values[i];
             }
         }
 
@@ -183,7 +192,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
             } else if (values[i] == null) {
                 result[i] = result[i - 1];
             } else {
-                result[i] = ((Comparable)result[i-1]).compareTo(values[i]) > 0 ? result[i-1] : values[i];
+                result[i] = ((Comparable) result[i - 1]).compareTo(values[i]) > 0 ? result[i - 1] : values[i];
             }
         }
 
@@ -191,38 +200,38 @@ public class TestCumMinMax extends BaseUpdateByTest {
     }
 
     final void assertWithCumMin(final @NotNull Object expected, final @NotNull Object actual) {
-        if(expected instanceof byte[]) {
-            assertArrayEquals(Numeric.cumMin((byte[])expected), (byte[])actual);
-        } else if(expected instanceof short[]) {
-            assertArrayEquals(Numeric.cumMin((short[])expected), (short[])actual);
-        } else if(expected instanceof int[]) {
-            assertArrayEquals(Numeric.cumMin((int[])expected), (int[])actual);
-        } else if(expected instanceof long[]) {
-            assertArrayEquals(Numeric.cumMin((long[])expected), (long[])actual);
-        } else if(expected instanceof float[]) {
-            assertArrayEquals(Numeric.cumMin((float[])expected), (float[])actual, .001f);
-        } else if(expected instanceof double[]) {
-            assertArrayEquals(Numeric.cumMin((double[])expected), (double[])actual, .001d);
+        if (expected instanceof byte[]) {
+            assertArrayEquals(Numeric.cumMin((byte[]) expected), (byte[]) actual);
+        } else if (expected instanceof short[]) {
+            assertArrayEquals(Numeric.cumMin((short[]) expected), (short[]) actual);
+        } else if (expected instanceof int[]) {
+            assertArrayEquals(Numeric.cumMin((int[]) expected), (int[]) actual);
+        } else if (expected instanceof long[]) {
+            assertArrayEquals(Numeric.cumMin((long[]) expected), (long[]) actual);
+        } else if (expected instanceof float[]) {
+            assertArrayEquals(Numeric.cumMin((float[]) expected), (float[]) actual, .001f);
+        } else if (expected instanceof double[]) {
+            assertArrayEquals(Numeric.cumMin((double[]) expected), (double[]) actual, .001d);
         } else {
-            assertArrayEquals(cumMin((Object[])expected), (Object[])actual);
+            assertArrayEquals(cumMin((Object[]) expected), (Object[]) actual);
         }
     }
 
     final void assertWithCumMax(final @NotNull Object expected, final @NotNull Object actual) {
-        if(expected instanceof byte[]) {
-            assertArrayEquals(Numeric.cumMax((byte[])expected), (byte[])actual);
-        } else if(expected instanceof short[]) {
-            assertArrayEquals(Numeric.cumMax((short[])expected), (short[])actual);
-        } else if(expected instanceof int[]) {
-            assertArrayEquals(Numeric.cumMax((int[])expected), (int[])actual);
-        } else if(expected instanceof long[]) {
-            assertArrayEquals(Numeric.cumMax((long[])expected), (long[])actual);
-        } else if(expected instanceof float[]) {
-            assertArrayEquals(Numeric.cumMax((float[])expected), (float[])actual, .001f);
-        } else if(expected instanceof double[]) {
-            assertArrayEquals(Numeric.cumMax((double[])expected), (double[])actual, .001d);
+        if (expected instanceof byte[]) {
+            assertArrayEquals(Numeric.cumMax((byte[]) expected), (byte[]) actual);
+        } else if (expected instanceof short[]) {
+            assertArrayEquals(Numeric.cumMax((short[]) expected), (short[]) actual);
+        } else if (expected instanceof int[]) {
+            assertArrayEquals(Numeric.cumMax((int[]) expected), (int[]) actual);
+        } else if (expected instanceof long[]) {
+            assertArrayEquals(Numeric.cumMax((long[]) expected), (long[]) actual);
+        } else if (expected instanceof float[]) {
+            assertArrayEquals(Numeric.cumMax((float[]) expected), (float[]) actual, .001f);
+        } else if (expected instanceof double[]) {
+            assertArrayEquals(Numeric.cumMax((double[]) expected), (double[]) actual, .001d);
         } else {
-            assertArrayEquals(cumMax((Object[])expected), (Object[])actual);
+            assertArrayEquals(cumMax((Object[]) expected), (Object[]) actual);
         }
     }
 }

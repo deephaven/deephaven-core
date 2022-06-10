@@ -12,14 +12,14 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * <p>
- *     This class tracks indices by individual bucket. During an update cycle it also provides a means to accumulate
- *     updates to each bucket so that they can be processed on a per-bucket basis.
+ * This class tracks indices by individual bucket. During an update cycle it also provides a means to accumulate updates
+ * to each bucket so that they can be processed on a per-bucket basis.
  * </p>
  * <br>
  * <p>
- *     Accumulation of bucketed changes is done by assigning a cookie, incrementally, to each visited bucket.  The cookie
- *     can be then used to retrieve the changes to that bucket which lets the update use space proportional to the number
- *     of visited buckets in the update, instead of the total number of buckets in the table.
+ * Accumulation of bucketed changes is done by assigning a cookie, incrementally, to each visited bucket. The cookie can
+ * be then used to retrieve the changes to that bucket which lets the update use space proportional to the number of
+ * visited buckets in the update, instead of the total number of buckets in the table.
  * </p>
  */
 public class UpdateBySlotTracker {
@@ -76,7 +76,7 @@ public class UpdateBySlotTracker {
         private RowSet.SearchIterator buckIt;
 
         private long smallestModifiedKey;
-        
+
         public UpdateTracker(final int slot) {
             this.slot = slot;
         }
@@ -91,15 +91,15 @@ public class UpdateBySlotTracker {
 
         @NotNull
         public RowSet getAdded() {
-            if(added == null) {
+            if (added == null) {
                 WritableRowSet newAdded = null;
-                if(addedBuilder != null) {
+                if (addedBuilder != null) {
                     newAdded = addedBuilder.build();
                     addedBuilder = null;
                 }
 
-                if(changedBucketAddedBuilder != null) {
-                    if(newAdded == null) {
+                if (changedBucketAddedBuilder != null) {
+                    if (newAdded == null) {
                         newAdded = changedBucketAddedBuilder.build();
                     } else {
                         newAdded.insert(changedBucketAddedBuilder.build());
@@ -114,8 +114,8 @@ public class UpdateBySlotTracker {
 
         @NotNull
         public RowSet getModified() {
-            if(modified == null) {
-                modified = modifiedBuilder == null ? EMPTY_INDEX: modifiedBuilder.build();
+            if (modified == null) {
+                modified = modifiedBuilder == null ? EMPTY_INDEX : modifiedBuilder.build();
                 modifiedBuilder = null;
             }
             return modified;
@@ -123,15 +123,15 @@ public class UpdateBySlotTracker {
 
         @NotNull
         public RowSet getRemoved() {
-            if(removed == null) {
+            if (removed == null) {
                 WritableRowSet newRemoved = null;
-                if(removedBuilder != null) {
+                if (removedBuilder != null) {
                     newRemoved = removedBuilder.build();
                     removedBuilder = null;
                 }
 
-                if(changedBucketRemovedBuilder != null) {
-                    if(newRemoved == null) {
+                if (changedBucketRemovedBuilder != null) {
+                    if (newRemoved == null) {
                         newRemoved = changedBucketRemovedBuilder.build();
                     } else {
                         newRemoved.insert(changedBucketRemovedBuilder.build());
@@ -154,31 +154,31 @@ public class UpdateBySlotTracker {
 
         private void applyTo(@NotNull final WritableRowSet slotindex, @NotNull final RowSetShiftData shifts) {
             final RowSet removed = getRemoved();
-            if(removed.isNonempty()) {
+            if (removed.isNonempty()) {
                 wasAppendOnly = false;
                 slotindex.remove(removed);
             }
 
-            if(shifts.nonempty() && affectedByShift && shifts.apply(slotindex)) {
+            if (shifts.nonempty() && affectedByShift && shifts.apply(slotindex)) {
                 wasAppendOnly = false;
             }
 
             final RowSet added = getAdded();
-            if(added.isNonempty()) {
-               wasAppendOnly &= added.firstRowKey() > slotindex.lastRowKey();
-               slotindex.insert(added);
+            if (added.isNonempty()) {
+                wasAppendOnly &= added.firstRowKey() > slotindex.lastRowKey();
+                slotindex.insert(added);
             }
 
             final RowSet modified = getModified();
-            if(modified.isNonempty()) {
+            if (modified.isNonempty()) {
                 wasAppendOnly = false;
             }
 
             this.smallestModifiedKey = UpdateByOperator.determineSmallestVisitedKey(added,
-                                                                                    modified,
-                                                                                    removed,
-                                                                                    shifts,
-                                                                                    slotindex);
+                    modified,
+                    removed,
+                    shifts,
+                    slotindex);
         }
 
         public void setBucketIterator(@NotNull final RowSet.SearchIterator iter) {
@@ -203,7 +203,7 @@ public class UpdateBySlotTracker {
      */
     public void reset() {
         // Make sure we clear out references to any UpdateTrackers we may have allocated.
-        for(int ii = 0; ii < pointer; ii++) {
+        for (int ii = 0; ii < pointer; ii++) {
             slotUpdates.setNull(ii);
         }
 
@@ -232,11 +232,12 @@ public class UpdateBySlotTracker {
     }
 
     private RowSetBuilderRandom applyUpdateAndTrackEmpty(@NotNull final UpdateTracker tracker,
-                                                         @Nullable final WritableRowSet slotIndex,
-                                                         @NotNull final RowSetShiftData shiftsToApply,
-                                                         @Nullable RowSetBuilderRandom emptiedSlotsBuilder) {
+            @Nullable final WritableRowSet slotIndex,
+            @NotNull final RowSetShiftData shiftsToApply,
+            @Nullable RowSetBuilderRandom emptiedSlotsBuilder) {
         if (slotIndex == null) {
-            Assert.assertion(tracker.modifiedBuilder == null && tracker.removedBuilder == null, "For a missing slot index the update must have been add only");
+            Assert.assertion(tracker.modifiedBuilder == null && tracker.removedBuilder == null,
+                    "For a missing slot index the update must have been add only");
             slotIndices.set(tracker.slot, (WritableRowSet) tracker.getAdded());
         } else {
             tracker.applyTo(slotIndex, shiftsToApply);
@@ -270,25 +271,25 @@ public class UpdateBySlotTracker {
      * @param slot the slot to add.
      */
     public void addToBucket(final int slot,
-                            @NotNull final LongChunk<? extends RowKeys> addedChunk,
-                            final int startPos,
-                            final int length) {
+            @NotNull final LongChunk<? extends RowKeys> addedChunk,
+            final int startPos,
+            final int length) {
         largestSlotPosition = Math.max(largestSlotPosition, slot);
         final UpdateTracker tracker = getTracker(slot);
-        if(tracker.addedBuilder == null) {
+        if (tracker.addedBuilder == null) {
             tracker.addedBuilder = RowSetFactory.builderSequential();
         }
 
-        for(int chunkIdx = startPos; chunkIdx < startPos+length; chunkIdx++) {
+        for (int chunkIdx = startPos; chunkIdx < startPos + length; chunkIdx++) {
             tracker.addedBuilder.appendKey(addedChunk.get(chunkIdx));
         }
     }
 
     public void addToBucket(final int slot,
-                            final long keyToAdd) {
+            final long keyToAdd) {
         largestSlotPosition = Math.max(largestSlotPosition, slot);
         final UpdateTracker tracker = getTracker(slot);
-        if(tracker.changedBucketAddedBuilder == null) {
+        if (tracker.changedBucketAddedBuilder == null) {
             tracker.changedBucketAddedBuilder = RowSetFactory.builderSequential();
         }
 
@@ -296,45 +297,45 @@ public class UpdateBySlotTracker {
     }
 
     public void modifyBucket(final int slot,
-                            @NotNull final LongChunk<? extends RowKeys> modifiedChunk,
-                            final int startPos,
-                            final int length) {
+            @NotNull final LongChunk<? extends RowKeys> modifiedChunk,
+            final int startPos,
+            final int length) {
         final UpdateTracker tracker = getTracker(slot);
-        if(tracker.modifiedBuilder == null) {
+        if (tracker.modifiedBuilder == null) {
             tracker.modifiedBuilder = RowSetFactory.builderSequential();
         }
 
-        for(int chunkIdx = startPos; chunkIdx < startPos+length; chunkIdx++) {
+        for (int chunkIdx = startPos; chunkIdx < startPos + length; chunkIdx++) {
             tracker.modifiedBuilder.appendKey(modifiedChunk.get(chunkIdx));
         }
     }
 
     public void modifyBucket(final int slot,
-                             final long modifiedKey) {
+            final long modifiedKey) {
         final UpdateTracker tracker = getTracker(slot);
-        if(tracker.modifiedBuilder == null) {
+        if (tracker.modifiedBuilder == null) {
             tracker.modifiedBuilder = RowSetFactory.builderSequential();
         }
         tracker.modifiedBuilder.appendKey(modifiedKey);
     }
 
     public void removeFromBucket(final int slot,
-                                 @NotNull final LongChunk<? extends RowKeys> removedChunk,
-                                 final int startPos,
-                                 final int length) {
+            @NotNull final LongChunk<? extends RowKeys> removedChunk,
+            final int startPos,
+            final int length) {
         final UpdateTracker tracker = getTracker(slot);
-        if(tracker.removedBuilder == null) {
+        if (tracker.removedBuilder == null) {
             tracker.removedBuilder = RowSetFactory.builderSequential();
         }
-        for(int chunkIdx = startPos; chunkIdx < startPos+length; chunkIdx++) {
+        for (int chunkIdx = startPos; chunkIdx < startPos + length; chunkIdx++) {
             tracker.removedBuilder.appendKey(removedChunk.get(chunkIdx));
         }
     }
 
     public void removeFromBucket(final int slot,
-                                 final long removedKey) {
+            final long removedKey) {
         final UpdateTracker tracker = getTracker(slot);
-        if(tracker.changedBucketRemovedBuilder == null) {
+        if (tracker.changedBucketRemovedBuilder == null) {
             tracker.changedBucketRemovedBuilder = RowSetFactory.builderSequential();
         }
         tracker.changedBucketRemovedBuilder.appendKey(removedKey);
@@ -371,8 +372,8 @@ public class UpdateBySlotTracker {
     }
 
     /**
-     * Is this cookie within our valid range (greater than or equal to our generation, but less than the pointer
-     * after adjustment?
+     * Is this cookie within our valid range (greater than or equal to our generation, but less than the pointer after
+     * adjustment?
      *
      * @param cookie the cookie to check for validity
      *

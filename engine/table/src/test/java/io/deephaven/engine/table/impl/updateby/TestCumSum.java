@@ -31,12 +31,13 @@ public class TestCumSum extends BaseUpdateByTest {
 
     @Test
     public void testStaticZeroKey() {
-        final QueryTable t = createTestTable(100000,false, false, false, 0x31313131).t;
+        final QueryTable t = createTestTable(100000, false, false, false, 0x31313131).t;
         t.setRefreshing(false);
 
         final Table summed = t.updateBy(UpdateByClause.sum());
-        for(String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithCumSum(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(), summed.getColumn(col).getType());
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithCumSum(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
+                    summed.getColumn(col).getType());
         }
     }
 
@@ -47,23 +48,22 @@ public class TestCumSum extends BaseUpdateByTest {
     @Test
     public void testNullOnBucketChange() throws IOException {
         final TableWithDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
-                                  byteCol("ByteVal", (byte)1, (byte)2, NULL_BYTE, (byte)3),
-                                  shortCol("ShortVal", (short)1, (short)2, NULL_SHORT, (short)3),
-                                  intCol("IntVal", 1, 2, NULL_INT, 3));
+                byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
+                shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
+                intCol("IntVal", 1, 2, NULL_INT, 3));
 
         final TableWithDefaults expected = testTable(stringCol("Sym", "A", "A", "B", "B"),
-                                        byteCol("ByteVal", (byte)1, (byte)2, NULL_BYTE, (byte)3),
-                                        shortCol("ShortVal", (short)1, (short)2, NULL_SHORT, (short)3),
-                                        intCol("IntVal", 1, 2, NULL_INT, 3),
-                                        longCol("ByteValSum", 1, 3, NULL_LONG, 3),
-                                        longCol("ShortValSum", 1, 3, NULL_LONG, 3),
-                                        longCol("IntValSum", 1, 3, NULL_LONG, 3));
+                byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
+                shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
+                intCol("IntVal", 1, 2, NULL_INT, 3),
+                longCol("ByteValSum", 1, 3, NULL_LONG, 3),
+                longCol("ShortValSum", 1, 3, NULL_LONG, 3),
+                longCol("IntValSum", 1, 3, NULL_LONG, 3));
 
         final Table r = t.updateBy(UpdateByClause.of(
-                                UpdateByClause.sum("ByteValSum=ByteVal"),
-                                UpdateByClause.sum("ShortValSum=ShortVal"),
-                                UpdateByClause.sum("IntValSum=IntVal"))
-                , "Sym");
+                UpdateByClause.sum("ByteValSum=ByteVal"),
+                UpdateByClause.sum("ShortValSum=ShortVal"),
+                UpdateByClause.sum("IntValSum=IntVal")), "Sym");
 
         assertTableEquals(expected, r);
     }
@@ -81,27 +81,29 @@ public class TestCumSum extends BaseUpdateByTest {
     private void doTestStaticBucketed(boolean grouped) {
         final QueryTable t = createTestTable(100000, true, grouped, false, 0x31313131).t;
 
-        final Table summed = t.updateBy(UpdateByClause.sum("byteCol", "shortCol", "intCol", "longCol", "floatCol", "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"), "Sym");
+        final Table summed = t.updateBy(UpdateByClause.sum("byteCol", "shortCol", "intCol", "longCol", "floatCol",
+                "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
         final PartitionedTable preOpMap = t.partitionBy("Sym");
         final PartitionedTable postOpMap = summed.partitionBy("Sym");
 
-        for (String sym : (String[])preOpMap.table().getColumn("Sym").getDirect()) {
+        for (String sym : (String[]) preOpMap.table().getColumn("Sym").getDirect()) {
             final Table source = preOpMap.constituentFor(sym);
             final Table actual = postOpMap.constituentFor(sym);
 
             for (String col : source.getDefinition().getColumnNamesArray()) {
-                if("Sym".equals(col)) {
+                if ("Sym".equals(col)) {
                     continue;
                 }
-                assertWithCumSum(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(), actual.getColumn(col).getType());
+                assertWithCumSum(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
+                        actual.getColumn(col).getType());
             }
         }
     }
 
     // endregion
 
-    //region Live Tests
+    // region Live Tests
 
     @Test
     public void testZeroKeyAppendOnly() {
@@ -119,17 +121,17 @@ public class TestCumSum extends BaseUpdateByTest {
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-            new EvalNugget() {
-                @Override
-                protected Table e() {
-                    return bucketed ? t.updateBy(UpdateByClause.sum(),"Sym")
-                                    : t.updateBy(UpdateByClause.sum());
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return bucketed ? t.updateBy(UpdateByClause.sum(), "Sym")
+                                : t.updateBy(UpdateByClause.sum());
+                    }
                 }
-            }
         };
 
         final Random billy = new Random(0xB177B177);
-        for(int ii = 0; ii < 100; ii++) {
+        for (int ii = 0; ii < 100; ii++) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
@@ -150,8 +152,9 @@ public class TestCumSum extends BaseUpdateByTest {
         };
 
         final Random billy = new Random(0xB177B177);
-        for(int ii = 0; ii < 100; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(100, billy, t, result.infos));
+        for (int ii = 0; ii < 100; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateTableUpdates(100, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
     }
@@ -171,7 +174,7 @@ public class TestCumSum extends BaseUpdateByTest {
         };
 
         final Random billy = new Random(0xB177B177);
-        for(int ii = 0; ii < 100; ii++) {
+        for (int ii = 0; ii < 100; ii++) {
             try {
                 simulateShiftAwareStep(100, billy, t, result.infos, nuggets);
             } catch (Throwable ex) {
@@ -182,12 +185,9 @@ public class TestCumSum extends BaseUpdateByTest {
     }
 
     /*
-     * Ideas for specialized tests:
-     * 1) Remove first index
-     * 2) Removed everything, add some back
-     * 3) Make sandwiches
+     * Ideas for specialized tests: 1) Remove first index 2) Removed everything, add some back 3) Make sandwiches
      */
-    //endregion
+    // endregion
 
     private long[] cumsum(byte[] values) {
         if (values == null) {
@@ -318,10 +318,11 @@ public class TestCumSum extends BaseUpdateByTest {
                 result[i] = values[i];
             } else if (values[i] == null) {
                 result[i] = result[i - 1];
-            } else if(isBD) {
-                result[i] = ((BigDecimal)result[i - 1]).add((BigDecimal) values[i], UpdateByControl.DEFAULT.getDefaultMathContext());
+            } else if (isBD) {
+                result[i] = ((BigDecimal) result[i - 1]).add((BigDecimal) values[i],
+                        UpdateByControl.DEFAULT.getDefaultMathContext());
             } else {
-                result[i] = ((BigInteger)result[i - 1]).add((BigInteger) values[i]);
+                result[i] = ((BigInteger) result[i - 1]).add((BigInteger) values[i]);
             }
         }
 
@@ -329,22 +330,22 @@ public class TestCumSum extends BaseUpdateByTest {
     }
 
     final void assertWithCumSum(final @NotNull Object expected, final @NotNull Object actual, Class type) {
-        if(expected instanceof byte[]) {
-            assertArrayEquals(cumsum((byte[])expected), (long[])actual);
-        } else if(expected instanceof short[]) {
-            assertArrayEquals(cumsum((short[])expected), (long[])actual);
-        } else if(expected instanceof int[]) {
-            assertArrayEquals(cumsum((int[])expected), (long[])actual);
-        } else if(expected instanceof long[]) {
-            assertArrayEquals(Numeric.cumsum((long[])expected), (long[])actual);
-        } else if(expected instanceof float[]) {
-            assertArrayEquals(Numeric.cumsum((float[])expected), (float[])actual, .001f);
-        } else if(expected instanceof double[]) {
-            assertArrayEquals(Numeric.cumsum((double[])expected), (double[])actual, .001d);
-        } else if(expected instanceof Boolean[]) {
-            assertArrayEquals(cumsum((Boolean[])expected), (long[]) actual);
+        if (expected instanceof byte[]) {
+            assertArrayEquals(cumsum((byte[]) expected), (long[]) actual);
+        } else if (expected instanceof short[]) {
+            assertArrayEquals(cumsum((short[]) expected), (long[]) actual);
+        } else if (expected instanceof int[]) {
+            assertArrayEquals(cumsum((int[]) expected), (long[]) actual);
+        } else if (expected instanceof long[]) {
+            assertArrayEquals(Numeric.cumsum((long[]) expected), (long[]) actual);
+        } else if (expected instanceof float[]) {
+            assertArrayEquals(Numeric.cumsum((float[]) expected), (float[]) actual, .001f);
+        } else if (expected instanceof double[]) {
+            assertArrayEquals(Numeric.cumsum((double[]) expected), (double[]) actual, .001d);
+        } else if (expected instanceof Boolean[]) {
+            assertArrayEquals(cumsum((Boolean[]) expected), (long[]) actual);
         } else {
-            assertArrayEquals(cumSum((Object[])expected, type == BigDecimal.class), (Object[])actual);
+            assertArrayEquals(cumSum((Object[]) expected, type == BigDecimal.class), (Object[]) actual);
         }
     }
 }

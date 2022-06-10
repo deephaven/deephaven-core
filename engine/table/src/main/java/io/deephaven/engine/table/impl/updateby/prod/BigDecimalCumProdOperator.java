@@ -14,9 +14,9 @@ public final class BigDecimalCumProdOperator extends BaseObjectBinaryOperator<Bi
     private final MathContext mathContext;
 
     public BigDecimalCumProdOperator(@NotNull final MatchPair inputPair,
-                                     @Nullable final RowRedirection redirectionIndex,
-                                     @NotNull final MathContext mathContext) {
-        super(BigDecimal.class, inputPair, new String[] { inputPair.rightColumn }, redirectionIndex);
+            @Nullable final RowRedirection redirectionIndex,
+            @NotNull final MathContext mathContext) {
+        super(BigDecimal.class, inputPair, new String[] {inputPair.rightColumn}, redirectionIndex);
         this.mathContext = mathContext;
     }
 

@@ -1119,27 +1119,34 @@ public interface TableWithDefaults extends Table {
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * <p>Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified
-     * set of row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted
-     * but are capable of processing state between rows. This operation will group the table by the specified set of
-     * keys if provided before applying the operation.  </p>
+     * <p>
+     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
+     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows. This operation will group the table by the specified set of keys if
+     * provided before applying the operation.
+     * </p>
      *
      * @param operations the operations to apply to the table.
      * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the {@code byColumns}
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
      */
     @ConcurrentMethod
-    Table updateBy(@NotNull final UpdateByControl control, @NotNull final Collection<UpdateByClause> operations, final MatchPair... byColumns);
+    Table updateBy(@NotNull final UpdateByControl control, @NotNull final Collection<UpdateByClause> operations,
+            final MatchPair... byColumns);
 
     /**
-     * <p>Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified
-     * set of row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted
-     * but are capable of processing state between rows.This operation will group the table by the specified set of
-     * keys if provided  </p>
+     * <p>
+     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
+     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows.This operation will group the table by the specified set of keys if
+     * provided
+     * </p>
      *
      * @param operations the operations to apply to the table.
      * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the {@code byColumns}
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
      */
     @ConcurrentMethod
     default Table updateBy(@NotNull final Collection<UpdateByClause> operations, final String... byColumns) {
@@ -1147,9 +1154,11 @@ public interface TableWithDefaults extends Table {
     }
 
     /**
-     * <p>Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified
-     * set of row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted
-     * but are capable of processing state between rows.</p>
+     * <p>
+     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
+     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows.
+     * </p>
      *
      * @param operations the operations to apply to the table.
      * @return a table with the same index, with the specified operations applied to the entire table.
@@ -1160,13 +1169,15 @@ public interface TableWithDefaults extends Table {
     }
 
     /**
-     * <p>Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified
-     * row based operation to it. This operation will additionally group the table by a set of
-     * keys before applying the operation.  </p>
+     * <p>
+     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified row based
+     * operation to it. This operation will additionally group the table by a set of keys before applying the operation.
+     * </p>
      *
      * @param operation the operation to apply to the table.
      * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the {@code byColumns}
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
      */
     @ConcurrentMethod
     default Table updateBy(@NotNull final UpdateByClause operation, final MatchPair... byColumns) {
@@ -1174,29 +1185,35 @@ public interface TableWithDefaults extends Table {
     }
 
     /**
-     * <p>Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified
-     * row based operation to it. This operation will additionally group the table by a set of
-     * keys before applying the operation.  </p>
+     * <p>
+     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified row based
+     * operation to it. This operation will additionally group the table by a set of keys before applying the operation.
+     * </p>
      *
      * @param operation the operation to apply to the table.
      * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the {@code byColumns}
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
      */
     @ConcurrentMethod
     default Table updateBy(@NotNull final UpdateByClause operation, final String... byColumns) {
-        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), MatchPairFactory.getExpressions(byColumns));
+        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation),
+                MatchPairFactory.getExpressions(byColumns));
     }
 
     /**
-     * <p>Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified
-     * set of row based operation to it. </p>
+     * <p>
+     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
+     * row based operation to it.
+     * </p>
      *
      * @param operation the operation to apply to the table.
      * @return a table with the same index, with the specified operations applied to the entire table
      */
     @ConcurrentMethod
     default Table updateBy(@NotNull final UpdateByClause operation) {
-        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
+        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation),
+                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
 

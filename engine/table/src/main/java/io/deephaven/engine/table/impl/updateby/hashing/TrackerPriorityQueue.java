@@ -3,23 +3,24 @@ package io.deephaven.engine.table.impl.updateby.hashing;
 import io.deephaven.configuration.Configuration;
 
 /**
- * A Min-Heap priority queue used to order {@link UpdateBySlotTracker.UpdateTracker}
- * instances for classifying row keys to buckets.
+ * A Min-Heap priority queue used to order {@link UpdateBySlotTracker.UpdateTracker} instances for classifying row keys
+ * to buckets.
  */
 public class TrackerPriorityQueue {
-    private static final int doublingAllocThreshold = Configuration.getInstance().getIntegerWithDefault("TrackerPriorityQueue.doublingAllocThreshold", 4 * 1024 * 1024);
+    private static final int doublingAllocThreshold = Configuration.getInstance()
+            .getIntegerWithDefault("TrackerPriorityQueue.doublingAllocThreshold", 4 * 1024 * 1024);
 
     // Things are nicer (integer division will be bit shift) if this is a power of 2, but it is not mandatory.
-    private static final int linearAllocStep = Configuration.getInstance().getIntegerWithDefault("TrackerPriorityQueue.linearAllocStep", 1024 * 1024);
+    private static final int linearAllocStep =
+            Configuration.getInstance().getIntegerWithDefault("TrackerPriorityQueue.linearAllocStep", 1024 * 1024);
 
     /** The trackers, slot 0 is unused. */
     private UpdateBySlotTracker.UpdateTracker[] trackers;
 
     /**
-     * The size of the queue (invariant: size < start.length - 1).
-     * Note since we don't use element 0 in start and end arrays, this size does not match
-     * the normal invariant in array access where the last element
-     * used is an array a[] is a[size - 1]; in our case the last element used is a[size].
+     * The size of the queue (invariant: size < start.length - 1). Note since we don't use element 0 in start and end
+     * arrays, this size does not match the normal invariant in array access where the last element used is an array a[]
+     * is a[size - 1]; in our case the last element used is a[size].
      */
     private int size = 0;
 
@@ -129,7 +130,8 @@ public class TrackerPriorityQueue {
             smallestChildIdx = itemIndex << 1;
             while (smallestChildIdx <= size) {
                 smallestChild = trackers[smallestChildIdx];
-                if (smallestChildIdx < size && valueOf(nextChild = trackers[smallestChildIdx+1]) < valueOf(smallestChild)) {
+                if (smallestChildIdx < size
+                        && valueOf(nextChild = trackers[smallestChildIdx + 1]) < valueOf(smallestChild)) {
                     smallestChild = nextChild;
                     smallestChildIdx++;
                 }

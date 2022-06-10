@@ -32,15 +32,16 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     protected final EmaControl control;
     protected final LongRecordingUpdateByOperator timeRecorder;
     protected final double timeScaleUnits;
-    
+
     private LongArraySource bucketLastTimestamp;
-    
+
     private long singletonLastStamp = NULL_LONG;
     private long singletonGroup = NULL_LONG;
 
     class EmaContext extends Context {
         BigDecimal alpha = BigDecimal.valueOf(Math.exp(-1 / timeScaleUnits));
-        BigDecimal oneMinusAlpha = timeRecorder == null ? BigDecimal.ONE.subtract(alpha, control.bigValueContext) : null;
+        BigDecimal oneMinusAlpha =
+                timeRecorder == null ? BigDecimal.ONE.subtract(alpha, control.bigValueContext) : null;
         long lastStamp = NULL_LONG;
 
         EmaContext(final int chunkSize) {
@@ -58,22 +59,22 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param control        defines how to handle {@code null} input values.
-     * @param timeRecorder   an optional recorder for a timestamp column.  If this is null, it will be assumed time is
-     *                       measured in integer ticks.
+     * @param control defines how to handle {@code null} input values.
+     * @param timeRecorder an optional recorder for a timestamp column. If this is null, it will be assumed time is
+     *        measured in integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
-     * @param valueSource the input column source.  Used when determining reset positions for reprocessing
+     * @param valueSource the input column source. Used when determining reset positions for reprocessing
      */
     public BigNumberEMAOperator(@NotNull final MatchPair pair,
-                                @NotNull final String[] affectingColumns,
-                                @NotNull final EmaControl control,
-                                @Nullable final LongRecordingUpdateByOperator timeRecorder,
-                                final long timeScaleUnits,
-                                @NotNull ColumnSource<T> valueSource,
-                                @Nullable final RowRedirection redirectionIndex
-                                // region extra-constructor-args
-                                // endregion extra-constructor-args
-                                ) {
+            @NotNull final String[] affectingColumns,
+            @NotNull final EmaControl control,
+            @Nullable final LongRecordingUpdateByOperator timeRecorder,
+            final long timeScaleUnits,
+            @NotNull ColumnSource<T> valueSource,
+            @Nullable final RowRedirection redirectionIndex
+    // region extra-constructor-args
+    // endregion extra-constructor-args
+    ) {
         super(pair, affectingColumns, redirectionIndex, BigDecimal.class);
         this.control = control;
         this.timeRecorder = timeRecorder;
@@ -97,28 +98,28 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
     @Override
     public void initializeForUpdate(@NotNull UpdateContext context,
-                                    @NotNull TableUpdate upstream,
-                                    @NotNull RowSet resultSourceIndex,
-                                    boolean usingBuckets,
-                                    boolean isAppendOnly) {
-        //noinspection unchecked
+            @NotNull TableUpdate upstream,
+            @NotNull RowSet resultSourceIndex,
+            boolean usingBuckets,
+            boolean isAppendOnly) {
+        // noinspection unchecked
         final EmaContext ctx = (EmaContext) context;
-        if(!initialized) {
+        if (!initialized) {
             initialized = true;
-            if(usingBuckets) {
+            if (usingBuckets) {
                 this.bucketLastVal = new ObjectArraySource<>(BigDecimal.class);
                 this.bucketLastTimestamp = new LongArraySource();
             }
         }
 
         // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
-        // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
+        // to have a bad time. This is not necessary for non-redirections since the SparseArraySources do not
         // need to do anything with capacity.
-        if(isRedirected) {
+        if (isRedirected) {
             outputSource.ensureCapacity(resultSourceIndex.size() + 1);
         }
 
-        if(!usingBuckets) {
+        if (!usingBuckets) {
             // If we aren't bucketing, we'll just remember the appendyness.
             ctx.canProcessDirectly = isAppendOnly;
         }
@@ -127,21 +128,21 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     @SuppressWarnings("unchecked")
     @Override
     public void initializeFor(@NotNull final UpdateContext updateContext,
-                              @NotNull final RowSet updateIndex, 
-                              @NotNull final UpdateBy.UpdateType type) {
+            @NotNull final RowSet updateIndex,
+            @NotNull final UpdateBy.UpdateType type) {
         super.initializeFor(updateContext, updateIndex, type);
         ((EmaContext) updateContext).lastStamp = NULL_LONG;
     }
 
     @Override
     protected void doAddChunk(@NotNull final Context updateContext,
-                              @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk,
-                              long groupPosition) {
+            @NotNull final RowSequence inputKeys,
+            @NotNull final Chunk<Values> workingChunk,
+            long groupPosition) {
         final ObjectChunk<T, Values> asObjects = workingChunk.asObjectChunk();
         final EmaContext ctx = (EmaContext) updateContext;
 
-        if(groupPosition == singletonGroup) {
+        if (groupPosition == singletonGroup) {
             ctx.lastStamp = singletonLastStamp;
             ctx.curVal = singletonVal;
         } else {
@@ -163,13 +164,13 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
     @Override
     public void addChunk(@NotNull final UpdateContext context,
-                         @NotNull final Chunk<Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                         @NotNull final IntChunk<RowKeys> bucketPositions,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> runLengths) {
+            @NotNull final Chunk<Values> values,
+            @NotNull final LongChunk<? extends RowKeys> keyChunk,
+            @NotNull final IntChunk<RowKeys> bucketPositions,
+            @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final IntChunk<ChunkLengths> runLengths) {
         final ObjectChunk<T, Values> asObjects = values.asObjectChunk();
-        //noinspection unchecked
+        // noinspection unchecked
         final EmaContext ctx = (EmaContext) context;
         for (int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
             final int runStart = startPositions.get(runIdx);
@@ -188,29 +189,31 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             bucketLastVal.set(bucketPosition, ctx.curVal);
             bucketLastTimestamp.set(bucketPosition, ctx.lastStamp);
         }
-        //noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(), (LongChunk<RowKeys>) keyChunk);
+        // noinspection unchecked
+        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(),
+                (LongChunk<RowKeys>) keyChunk);
     }
 
     @Override
     public void resetForReprocess(@NotNull final UpdateContext context,
-                                  @NotNull final RowSet sourceIndex,
-                                  final long firstUnmodifiedKey) {
+            @NotNull final RowSet sourceIndex,
+            final long firstUnmodifiedKey) {
         super.resetForReprocess(context, sourceIndex, firstUnmodifiedKey);
 
-        if(timeRecorder == null) {
+        if (timeRecorder == null) {
             return;
         }
 
         final EmaContext ctx = (EmaContext) context;
-        if(!ctx.canProcessDirectly) {
-            // If we set the last state to null,  then we know it was a reset state and the timestamp must also
+        if (!ctx.canProcessDirectly) {
+            // If we set the last state to null, then we know it was a reset state and the timestamp must also
             // have been reset.
-            if(singletonVal == null || (firstUnmodifiedKey == NULL_ROW_KEY)) {
+            if (singletonVal == null || (firstUnmodifiedKey == NULL_ROW_KEY)) {
                 singletonLastStamp = NULL_LONG;
             } else {
-                // If it hasn't been reset to null, then it's possible that the value at that position was null, in which case
-                // we must have ignored it,  and so we have to actually keep looking backwards until we find something
+                // If it hasn't been reset to null, then it's possible that the value at that position was null, in
+                // which case
+                // we must have ignored it, and so we have to actually keep looking backwards until we find something
                 // not null.
 
 
@@ -223,22 +226,23 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
     @Override
     public void resetForReprocess(@NotNull final UpdateContext ctx,
-                                  @NotNull final RowSet bucketIndex,
-                                  final long bucketPosition,
-                                  final long firstUnmodifiedKey) {
+            @NotNull final RowSet bucketIndex,
+            final long bucketPosition,
+            final long firstUnmodifiedKey) {
         final BigDecimal previousVal = firstUnmodifiedKey == NULL_ROW_KEY ? null : outputSource.get(firstUnmodifiedKey);
         bucketLastVal.set(bucketPosition, previousVal);
 
-        if(timeRecorder == null) {
+        if (timeRecorder == null) {
             return;
         }
 
         long potentialResetTimestamp;
-        if(previousVal == null) {
+        if (previousVal == null) {
             potentialResetTimestamp = NULL_LONG;
         } else {
-            // If it hasn't been reset to null, then it's possible that the value at that position was null, in which case
-            // we must have ignored it,  and so we have to actually keep looking backwards until we find something
+            // If it hasn't been reset to null, then it's possible that the value at that position was null, in which
+            // case
+            // we must have ignored it, and so we have to actually keep looking backwards until we find something
             // not null.
 
 
@@ -250,18 +254,18 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     }
 
     private long locateFirstValidPreviousTimestamp(@NotNull final RowSet indexToSearch,
-                                                   final long firstUnmodifiedKey) {
+            final long firstUnmodifiedKey) {
         long potentialResetTimestamp = timeRecorder.getCurrentLong(firstUnmodifiedKey);
-        if(potentialResetTimestamp != NULL_LONG && isValueValid(firstUnmodifiedKey)) {
+        if (potentialResetTimestamp != NULL_LONG && isValueValid(firstUnmodifiedKey)) {
             return potentialResetTimestamp;
         }
 
-        try(final RowSet.SearchIterator rIt = indexToSearch.reverseIterator()) {
+        try (final RowSet.SearchIterator rIt = indexToSearch.reverseIterator()) {
             rIt.advance(firstUnmodifiedKey);
-            while(rIt.hasNext()) {
+            while (rIt.hasNext()) {
                 final long nextKey = rIt.nextLong();
                 potentialResetTimestamp = timeRecorder.getCurrentLong(nextKey);
-                if(potentialResetTimestamp != NULL_LONG && isValueValid(nextKey)) {
+                if (potentialResetTimestamp != NULL_LONG && isValueValid(nextKey)) {
                     return potentialResetTimestamp;
                 }
             }
@@ -275,18 +279,18 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     }
 
     abstract void computeWithTicks(final EmaContext ctx,
-                                   final ObjectChunk<T, Values> valueChunk,
-                                   final int chunkStart,
-                                   final int chunkEnd);
+            final ObjectChunk<T, Values> valueChunk,
+            final int chunkStart,
+            final int chunkEnd);
 
     abstract void computeWithTime(final EmaContext ctx,
-                                  final ObjectChunk<T, Values> valueChunk,
-                                  final int chunkStart,
-                                  final int chunkEnd);
+            final ObjectChunk<T, Values> valueChunk,
+            final int chunkStart,
+            final int chunkEnd);
 
     void handleBadData(@NotNull final EmaContext ctx,
-                       final boolean isNull,
-                       final boolean isNullTime) {
+            final boolean isNull,
+            final boolean isNullTime) {
         boolean doReset = false;
         if (isNull) {
             if (control.onNullValue == BadDataBehavior.Throw) {
@@ -310,19 +314,19 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
     void handleBadTime(@NotNull final EmaContext ctx, final long dt) {
         boolean doReset = false;
-        if(dt == 0) {
-            if(control.onZeroDeltaTime == BadDataBehavior.Throw) {
+        if (dt == 0) {
+            if (control.onZeroDeltaTime == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered zero delta time during EMA processing");
             }
             doReset = control.onZeroDeltaTime == BadDataBehavior.Reset;
-        } else if(dt < 0) {
-            if(control.onNegativeDeltaTime == BadDataBehavior.Throw) {
+        } else if (dt < 0) {
+            if (control.onNegativeDeltaTime == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered negative delta time during EMA processing");
             }
             doReset = control.onNegativeDeltaTime == BadDataBehavior.Reset;
         }
 
-        if(doReset) {
+        if (doReset) {
             ctx.curVal = null;
             ctx.lastStamp = NULL_LONG;
         }
