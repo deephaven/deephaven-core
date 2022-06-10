@@ -9,9 +9,8 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -265,6 +264,13 @@ public class DeferredViewTable extends RedefinableTable {
                 new SimpleTableReference(this), null, viewColumns, null);
         deferredViewTable.setRefreshing(isRefreshing());
         return deferredViewTable;
+    }
+
+    @Override
+    public Table updateBy(@NotNull final UpdateByControl control,
+                          @NotNull final Collection<UpdateByClause> ops,
+                          @NotNull final MatchPair... byColumns) {
+        return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control));
     }
 
     /**

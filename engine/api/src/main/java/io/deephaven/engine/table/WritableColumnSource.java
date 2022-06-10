@@ -46,6 +46,11 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
         throw new UnsupportedOperationException();
     }
 
+    void setNull(long key);
+
+    default void setNull(RowSequence orderedKeys) {
+        orderedKeys.forAllRowKeys(this::setNull);
+    }
     /**
      * Equivalent to {@code ensureCapacity(capacity, true)}.
      */

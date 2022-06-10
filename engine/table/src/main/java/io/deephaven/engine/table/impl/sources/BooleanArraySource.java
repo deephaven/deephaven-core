@@ -49,6 +49,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
+    public void setNull(long key) {
+        set(key, NULL_BOOLEAN_AS_BYTE);
+    }
+
+    @Override
     public void set(long key, Boolean value) {
         set(key, BooleanUtils.booleanAsByte(value));
     }
@@ -606,6 +611,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         @Override
         public void fillPrevChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends RowKeys> keyIndices) {
             fillSparsePrevChunkUnordered(destination, keyIndices);
+        }
+
+        @Override
+        public void setNull(long key) {
+            BooleanArraySource.this.setNull(key);
         }
 
         @Override
