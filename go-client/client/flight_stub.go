@@ -82,7 +82,7 @@ func (fs *flightStub) ImportTable(ctx context.Context, rec array.Record) (*Table
 	}
 	defer doPut.CloseSend()
 
-	ticketNum := fs.client.NewTicketNum()
+	ticketNum := fs.client.newTicketNum()
 
 	descr := &flight.FlightDescriptor{Type: flight.FlightDescriptor_PATH, Path: []string{"export", strconv.Itoa(int(ticketNum))}}
 
@@ -104,7 +104,7 @@ func (fs *flightStub) ImportTable(ctx context.Context, rec array.Record) (*Table
 		return nil, err
 	}
 
-	ticket := fs.client.MakeTicket(ticketNum)
+	ticket := fs.client.makeTicket(ticketNum)
 
 	schema := rec.Schema()
 

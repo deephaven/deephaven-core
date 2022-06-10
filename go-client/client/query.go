@@ -101,7 +101,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 
 		var resultId *ticketpb2.Ticket = nil
 		if node, ok := b.needsExport(opIdx, node.builder.uniqueId); ok {
-			t := b.client.NewTicket()
+			t := b.client.newTicket()
 			resultId = &t
 			b.nodeOrder[node] = resultId
 		}
@@ -171,7 +171,7 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*Table
 }
 
 func newQueryBuilder(client *Client, table *TableHandle) QueryBuilder {
-	return QueryBuilder{uniqueId: client.NewTicketNum(), table: table}
+	return QueryBuilder{uniqueId: client.newTicketNum(), table: table}
 }
 
 type emptyTableOp struct {

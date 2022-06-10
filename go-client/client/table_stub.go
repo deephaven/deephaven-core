@@ -67,7 +67,7 @@ func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, 
 	fieldId := fieldId{appId: "scope", fieldName: name}
 	if tbl, ok := ts.client.tables[fieldId]; ok {
 		sourceId := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: tbl.ticket}}
-		resultId := ts.client.NewTicket()
+		resultId := ts.client.newTicket()
 
 		req := tablepb2.FetchTableRequest{SourceId: &sourceId, ResultId: &resultId}
 		resp, err := ts.stub.FetchTable(ctx, &req)
@@ -94,7 +94,7 @@ func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
 func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandle, error) {
 	ctx = ts.client.WithToken(ctx)
 
-	result := ts.client.NewTicket()
+	result := ts.client.newTicket()
 
 	req := tablepb2.EmptyTableRequest{ResultId: &result, Size: numRows}
 	resp, err := ts.stub.EmptyTable(ctx, &req)
@@ -126,7 +126,7 @@ func (ts *tableStub) TimeTableQuery(period int64, startTime *int64) QueryNode {
 func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int64) (*TableHandle, error) {
 	ctx = ts.client.WithToken(ctx)
 
-	result := ts.client.NewTicket()
+	result := ts.client.newTicket()
 
 	var realStartTime int64
 	if startTime == nil {
@@ -148,7 +148,7 @@ func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int
 func (ts *tableStub) DropColumns(ctx context.Context, table *TableHandle, cols []string) (*TableHandle, error) {
 	ctx = ts.client.WithToken(ctx)
 
-	result := ts.client.NewTicket()
+	result := ts.client.newTicket()
 
 	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}
 
@@ -164,7 +164,7 @@ func (ts *tableStub) DropColumns(ctx context.Context, table *TableHandle, cols [
 func (ts *tableStub) Update(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	ctx = ts.client.WithToken(ctx)
 
-	result := ts.client.NewTicket()
+	result := ts.client.newTicket()
 
 	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}
 

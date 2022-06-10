@@ -87,7 +87,7 @@ func (client *Client) GrpcChannel() *grpc.ClientConn {
 	return client.grpcChannel
 }
 
-func (client *Client) NewTicketNum() int32 {
+func (client *Client) newTicketNum() int32 {
 	client.nextTicket += 1
 	if client.nextTicket <= 0 {
 		// TODO:
@@ -97,13 +97,13 @@ func (client *Client) NewTicketNum() int32 {
 	return client.nextTicket
 }
 
-func (client *Client) NewTicket() ticketpb2.Ticket {
-	id := client.NewTicketNum()
+func (client *Client) newTicket() ticketpb2.Ticket {
+	id := client.newTicketNum()
 
-	return client.MakeTicket(id)
+	return client.makeTicket(id)
 }
 
-func (client *Client) MakeTicket(id int32) ticketpb2.Ticket {
+func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 	bytes := []byte{'e', byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
 
 	return ticketpb2.Ticket{Ticket: bytes}
