@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.base.SafeCloneable",
- "methods": {
-  "safeClone": ":return: SafeCloneable.T"
- },
- "path": "io.deephaven.base.SafeCloneable",
- "text": "This interface specifies a safe clone operation that never throws a CloneNotSupported exception, and also allows a\n bound to be placed on the result object's type.\n\n Note that any class that extends a base that implements SafeCloneable must *always* re-implement the safeClone\n method.",
- "typeName": "interface"
-}

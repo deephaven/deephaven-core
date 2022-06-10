@@ -9,12 +9,14 @@ import org.gradle.util.ConfigureUtil
 
 class PythonWheelExtension {
     private Action<? super CopySpec> contents
+    private List<String> sourceDirs;
 
     PythonWheelExtension(ObjectFactory objectFactory) {
         //objectFactory.newInstance(DefaultCopySpec.class)
         contents {
             exclude 'build', 'dist'
         }
+        sourceDirs = []
     }
 
     void contents(Action<? super CopySpec> action) {
@@ -26,5 +28,12 @@ class PythonWheelExtension {
 
     Action<? super CopySpec> contents() {
         return contents;
+    }
+
+    void src(String srcDir) {
+        sourceDirs += srcDir
+    }
+    List<String> src() {
+        return sourceDirs
     }
 }

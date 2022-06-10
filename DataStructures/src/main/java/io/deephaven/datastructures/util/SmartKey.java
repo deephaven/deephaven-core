@@ -10,9 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.Serializable;
 import java.util.Arrays;
 
-public class SmartKey implements Serializable, Comparable {
-
-    private static final long serialVersionUID = -1543127380480080565L;
+public class SmartKey implements Comparable {
 
     public static final SmartKey EMPTY = new SmartKey(CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
 

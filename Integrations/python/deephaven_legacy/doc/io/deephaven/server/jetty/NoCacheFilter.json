@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.server.jetty.NoCacheFilter",
- "methods": {
-  "doFilter": ":param request: jakarta.servlet.ServletRequest\n:param response: jakarta.servlet.ServletResponse\n:param filterChain: jakarta.servlet.FilterChain"
- },
- "path": "io.deephaven.server.jetty.NoCacheFilter",
- "typeName": "class"
-}

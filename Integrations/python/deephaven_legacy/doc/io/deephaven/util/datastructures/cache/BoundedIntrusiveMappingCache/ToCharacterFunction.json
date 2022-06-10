@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache$ToCharacterFunction",
- "methods": {
-  "applyAsCharacter": ":param value: BoundedIntrusiveMappingCache.ToCharacterFunction.T\n:return: char"
- },
- "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.ToCharacterFunction",
- "typeName": "interface"
-}

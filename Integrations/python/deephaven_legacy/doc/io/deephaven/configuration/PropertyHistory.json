@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.configuration.PropertyHistory",
- "methods": {},
- "path": "io.deephaven.configuration.PropertyHistory",
- "text": "A simple datastore to record one step in the history of a property. A property may have its value overwritten by\n subsequent declarations or in subsequent files, but it is convenient to be able to identify what the active value of\n a property is, where that value was created, and what other values the property may have been assigned by other files\n before getting to this final value.",
- "typeName": "class"
-}

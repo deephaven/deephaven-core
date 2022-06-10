@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.web.shared.ide.lsp.TextDocumentContentChangeEvent",
- "methods": {
-  "toString": ":return: java.lang.String"
- },
- "path": "io.deephaven.web.shared.ide.lsp.TextDocumentContentChangeEvent",
- "typeName": "class"
-}

@@ -192,9 +192,9 @@ public class GeneratePlottingConvenience {
 
     private String generateCode() {
 
-        String code = "/*\n" +
-                " * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending\n" +
-                " */\n\n" +
+        String code = "/**\n" +
+                " * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending\n" +
+                " */\n" +
                 "/****************************************************************************************************************************\n"
                 +
                 " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GeneratePlottingConvenience or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n"

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.integrations.learn.Future",
- "methods": {
-  "get": "Gets the result of the deferred calculation. The calculation is performed at most once, and results are cached.\n\n:return: (java.lang.Object) result of the deferred calculation."
- },
- "path": "io.deephaven.integrations.learn.Future",
- "text": "Future performs a deferred computation on a portion of a table.",
- "typeName": "class"
-}

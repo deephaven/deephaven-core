@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.log.LogOutput$ObjIntIntFormatter",
- "methods": {
-  "format": ":param logOutput: io.deephaven.base.log.LogOutput\n:param t: LogOutput.ObjIntIntFormatter.T\n:param nOffset: int\n:param nLength: int"
- },
- "path": "io.deephaven.base.log.LogOutput.ObjIntIntFormatter",
- "typeName": "interface"
-}

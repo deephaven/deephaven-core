@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.lang.generated.ParseException",
- "methods": {},
- "path": "io.deephaven.lang.generated.ParseException",
- "text": "This exception is thrown when parse errors are encountered.\n You can explicitly create objects of this exception type by\n calling the method generateParseException in the generated\n parser.\n\n You can modify this class to customize your error reporting\n mechanisms so long as you retain the public fields.",
- "typeName": "class"
-}

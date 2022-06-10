@@ -1,9 +1,10 @@
 #
-#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 ######################################################################################################################
 #               This code is auto generated. DO NOT EDIT FILE!
-# Run generatePythonFigureWrapper2 or "./gradlew :Generators:generatePythonFigureWrapper2" to generate
+# Run generatePythonFigureWrapper or "./gradlew :Generators:generatePythonFigureWrapper" to generate
 ######################################################################################################################
 """ This module implements the Figure class for creating plots, charts, line, axis, color, etc. """
 

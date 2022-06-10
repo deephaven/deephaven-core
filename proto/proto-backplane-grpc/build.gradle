@@ -42,6 +42,10 @@ dependencies {
   Classpaths.inheritArrow(project, 'flight-core', 'download')
 }
 
+license {
+  include 'src/**/*.proto'
+}
+
 TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'generateProtobuf') {
   copyIn {
     from(project.projectDir) {

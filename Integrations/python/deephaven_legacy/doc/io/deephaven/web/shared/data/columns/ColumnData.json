@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.web.shared.data.columns.ColumnData",
- "methods": {
-  "getData": ":return: java.lang.Object"
- },
- "path": "io.deephaven.web.shared.data.columns.ColumnData",
- "typeName": "class"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.process.Wrapper",
- "methods": {
-  "hashCode": ":return: int",
-  "value": ":return: Wrapper.T"
- },
- "path": "io.deephaven.process.Wrapper",
- "typeName": "class"
-}

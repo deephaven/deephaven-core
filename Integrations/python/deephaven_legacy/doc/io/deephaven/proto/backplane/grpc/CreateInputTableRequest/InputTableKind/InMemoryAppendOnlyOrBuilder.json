@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest$InputTableKind$InMemoryAppendOnlyOrBuilder",
- "methods": {},
- "path": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnlyOrBuilder",
- "typeName": "interface"
-}

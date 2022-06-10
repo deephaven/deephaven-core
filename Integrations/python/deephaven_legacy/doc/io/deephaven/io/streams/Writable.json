@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.io.streams.Writable",
- "methods": {
-  "write": "Writes this object to the given byte buffer.\n\n:param byteBuffer: java.nio.ByteBuffer"
- },
- "path": "io.deephaven.io.streams.Writable",
- "text": "An object that can write itself to a byte buffer.",
- "typeName": "interface"
-}

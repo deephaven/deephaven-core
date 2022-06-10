@@ -5,7 +5,6 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -125,9 +124,8 @@ class TableShowTools {
             len = Math.max(len, 33);
         } else if (columnSource.getType() == java.util.Date.class) {
             len = Math.max(len, 33);
-        } else if (columnSource.getType() == SmartKey.class) {
-            len = Math.max(len, 40);
         } else {
+            // noinspection unchecked
             final Annotation annotation = columnSource.getType().getAnnotation(TableToolsShowControl.class);
             if (annotation != null) {
                 len = Math.max(len, ((TableToolsShowControl) annotation).getWidth());

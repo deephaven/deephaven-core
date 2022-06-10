@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Function$Ternary",
- "methods": {
-  "call": ":param arg: Function.Ternary.A1\n:param arg2: Function.Ternary.A2\n:param arg3: Function.Ternary.A3\n:return: Function.Ternary.R"
- },
- "path": "io.deephaven.base.Function.Ternary",
- "typeName": "interface"
-}

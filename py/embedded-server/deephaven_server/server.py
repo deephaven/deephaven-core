@@ -2,7 +2,7 @@
 #  Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from .start_jvm import start_jvm
 
@@ -19,7 +19,7 @@ class Server:
     def j_object(self):
         return self.j_server
 
-    def __init__(self, port:int = 8080, jvm_args:List[str] = None, dh_args: Dict[str, str] = {}):
+    def __init__(self, host: Optional[str] = None, port: Optional[int] = None, jvm_args: Optional[List[str]] = None, dh_args: Dict[str, str] = {}):
         """
         Creates a Deephaven embedded server. Only one instance can be created at this time.
         """
@@ -36,7 +36,7 @@ class Server:
         import jpy
 
         # Create a wrapped java server that we can reference to talk to the platform
-        self.j_server = jpy.get_type('io.deephaven.python.server.EmbeddedServer')(port, dh_args)
+        self.j_server = jpy.get_type('io.deephaven.python.server.EmbeddedServer')(host, port, dh_args)
 
         # Keep a reference to the server so we know it is running
         Server.instance = self

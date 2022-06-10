@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.jpy.JpyConfigExt",
- "methods": {
-  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
-  "stopPython": ":param cleanupTimeout: java.time.Duration"
- },
- "path": "io.deephaven.jpy.JpyConfigExt",
- "typeName": "class"
-}

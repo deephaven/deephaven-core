@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.intrusive.IntrusiveSoftLRU",
- "methods": {
-  "touch": ":param t: IntrusiveSoftLRU.T",
-  "verify": ":param numStored: int\n:return: boolean"
- },
- "path": "io.deephaven.util.datastructures.intrusive.IntrusiveSoftLRU",
- "typeName": "class"
-}

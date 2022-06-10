@@ -5,8 +5,10 @@ plugins {
 
 license {
     header rootProject.file('license-header')
-    include "**/*.java"
+    include '**/*.java'
     strictCheck true
     useDefaultMappings true
     ignoreFailures true
 }
+
+project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')

@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 /****************************************************************************************************************************
  ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GenerateFigureImmutable or "./gradlew :Generators:generateFigureImmutable" to regenerate
  ****************************************************************************************************************************/
@@ -1234,7 +1233,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure seriesNamingFunction( groovy.lang.Closure<java.lang.String> namingFunction );
 
-    @Override  Figure seriesNamingFunction( java.util.function.Function<java.lang.Object, java.lang.String> namingFunction );
+    @Override  Figure seriesNamingFunction( java.util.function.Function<java.lang.Object[], java.lang.String> namingFunction );
 
     @Override  Figure toolTipPattern( java.lang.String toolTipPattern );
 

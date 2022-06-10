@@ -8,7 +8,6 @@ import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -20,7 +19,6 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeProvider;
 import io.deephaven.time.TimeZone;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.table.impl.replay.Replayer;
@@ -507,52 +505,6 @@ public class TableTools {
             result.set(i, values[i]);
         }
         return result;
-    }
-
-    /**
-     * Returns a SmartKey for the specified row from a set of ColumnSources.
-     *
-     * @param groupByColumnSources a set of ColumnSources from which to retrieve the data
-     * @param row the row number for which to retrieve data
-     * @return a Deephaven SmartKey object
-     */
-    public static Object getKey(ColumnSource<?>[] groupByColumnSources, long row) {
-        Object key;
-        if (groupByColumnSources.length == 0) {
-            return SmartKey.EMPTY;
-        } else if (groupByColumnSources.length == 1) {
-            key = C14nUtil.maybeCanonicalize(groupByColumnSources[0].get(row));
-        } else {
-            Object[] keyData = new Object[groupByColumnSources.length];
-            for (int col = 0; col < groupByColumnSources.length; col++) {
-                keyData[col] = groupByColumnSources[col].get(row);
-            }
-            key = C14nUtil.makeSmartKey(keyData);
-        }
-        return key;
-    }
-
-    /**
-     * Returns a SmartKey for the row previous to the specified row from a set of ColumnSources.
-     *
-     * @param groupByColumnSources a set of ColumnSources from which to retrieve the data
-     * @param row the row number for which to retrieve the previous row's data
-     * @return a Deephaven SmartKey object
-     */
-    public static Object getPrevKey(ColumnSource<?>[] groupByColumnSources, long row) {
-        Object key;
-        if (groupByColumnSources.length == 0) {
-            return SmartKey.EMPTY;
-        } else if (groupByColumnSources.length == 1) {
-            key = C14nUtil.maybeCanonicalize(groupByColumnSources[0].getPrev(row));
-        } else {
-            Object[] keyData = new Object[groupByColumnSources.length];
-            for (int col = 0; col < groupByColumnSources.length; col++) {
-                keyData[col] = groupByColumnSources[col].getPrev(row);
-            }
-            key = C14nUtil.makeSmartKey(keyData);
-        }
-        return key;
     }
 
     /**

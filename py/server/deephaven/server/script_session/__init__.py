@@ -1,8 +1,4 @@
 # Implementation utilities for io.deephaven.engine.util.PythonDeephavenSession
-try:
-    from deephaven_legacy.Plot import FigureWrapper
-except ImportError:
-    FigureWrapper = None
 from jpy import JType
 
 from deephaven._wrapper import JObjectWrapper
@@ -50,7 +46,5 @@ def unwrap_to_java_type(object):
         return object
     if isinstance(object, JObjectWrapper):
         return object.j_object
-    if FigureWrapper is not None and isinstance(object, FigureWrapper):
-        return object.figure
-    # add more here when/if necessary
+     # add more here when/if necessary
     return None

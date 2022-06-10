@@ -1,23 +1,36 @@
 package io.deephaven.server.jetty;
 
+import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.runner.GrpcServer;
+import io.deephaven.ssl.config.CiphersIntermediate;
+import io.deephaven.ssl.config.ProtocolsIntermediate;
+import io.deephaven.ssl.config.SSLConfig;
+import io.deephaven.ssl.config.TrustJdk;
+import io.deephaven.ssl.config.impl.KickstartUtils;
 import io.grpc.servlet.web.websocket.WebSocketServerStream;
 import jakarta.servlet.DispatcherType;
 import jakarta.websocket.server.ServerEndpointConfig;
+import nl.altindag.ssl.SSLFactory;
+import nl.altindag.ssl.util.JettySslUtils;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
@@ -32,14 +45,10 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
     @Inject
     public JettyBackedGrpcServer(
-            final @Named("http.port") int port,
+            final JettyConfig config,
             final GrpcFilter filter) {
-        jetty = new Server(port);
-        ServerConnector sc = (ServerConnector) jetty.getConnectors()[0];
-        HTTP2CServerConnectionFactory factory =
-                new HTTP2CServerConnectionFactory(new HttpConfiguration());
-        factory.setRateControlFactory(new RateControl.Factory() {});
-        sc.addConnectionFactory(factory);
+        jetty = new Server();
+        jetty.addConnector(createConnector(jetty, config));
 
         final WebAppContext context =
                 new WebAppContext(null, "/", null, null, null, new ErrorPageErrorHandler(), SESSIONS);
@@ -50,7 +59,6 @@ public class JettyBackedGrpcServer implements GrpcServer {
         } catch (IOException ioException) {
             throw new UncheckedIOException(ioException);
         }
-
 
         // For the Web UI, cache everything in the static folder
         // https://create-react-app.dev/docs/production-build/#static-file-caching
@@ -71,20 +79,21 @@ public class JettyBackedGrpcServer implements GrpcServer {
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
         // Set up websocket for grpc-web
-        JakartaWebSocketServletContainerInitializer.configure(context, (servletContext, container) -> {
-            container.addEndpoint(
-                    ServerEndpointConfig.Builder.create(WebSocketServerStream.class, "/{service}/{method}")
-                            .configurator(new ServerEndpointConfig.Configurator() {
-                                @Override
-                                public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException {
-                                    return (T) filter.create(WebSocketServerStream::new);
-                                }
-                            })
-                            .build());
-        });
-
+        if (config.websockets()) {
+            JakartaWebSocketServletContainerInitializer.configure(context, (servletContext, container) -> {
+                container.addEndpoint(
+                        ServerEndpointConfig.Builder.create(WebSocketServerStream.class, "/{service}/{method}")
+                                .configurator(new ServerEndpointConfig.Configurator() {
+                                    @Override
+                                    public <T> T getEndpointInstance(Class<T> endpointClass)
+                                            throws InstantiationException {
+                                        return (T) filter.create(WebSocketServerStream::new);
+                                    }
+                                })
+                                .build());
+            });
+        }
         jetty.setHandler(context);
-
     }
 
     @Override
@@ -119,5 +128,36 @@ public class JettyBackedGrpcServer implements GrpcServer {
     @Override
     public int getPort() {
         return ((ServerConnector) jetty.getConnectors()[0]).getLocalPort();
+    }
+
+    private static ServerConnector createConnector(Server server, ServerConfig config) {
+        // https://www.eclipse.org/jetty/documentation/jetty-11/programming-guide/index.html#pg-server-http-connector-protocol-http2-tls
+        final HttpConfiguration httpConfig = new HttpConfiguration();
+        final HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfig);
+        final ServerConnector serverConnector;
+        if (config.ssl().isPresent()) {
+            httpConfig.addCustomizer(new SecureRequestCustomizer());
+            final HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
+            h2.setRateControlFactory(new RateControl.Factory() {});
+            final ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+            alpn.setDefaultProtocol(http11.getProtocol());
+            // The Jetty server is getting intermediate setup by default if none are configured. This is most similar to
+            // how the Netty servers gets setup by default via GrpcSslContexts.
+            final SSLConfig sslConfig = config.ssl().get()
+                    .orTrust(TrustJdk.of())
+                    .orProtocols(ProtocolsIntermediate.of())
+                    .orCiphers(CiphersIntermediate.of());
+            final SSLFactory kickstart = KickstartUtils.create(sslConfig);
+            final SslContextFactory.Server jetty = JettySslUtils.forServer(kickstart);
+            final SslConnectionFactory tls = new SslConnectionFactory(jetty, alpn.getProtocol());
+            serverConnector = new ServerConnector(server, tls, alpn, h2, http11);
+        } else {
+            final HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(httpConfig);
+            h2c.setRateControlFactory(new RateControl.Factory() {});
+            serverConnector = new ServerConnector(server, http11, h2c);
+        }
+        config.host().ifPresent(serverConnector::setHost);
+        serverConnector.setPort(config.port());
+        return serverConnector;
     }
 }

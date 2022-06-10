@@ -448,14 +448,14 @@ int JType_CreateJavaShortObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyArg, 
 int JType_CreateJavaNumberFromPythonInt(JNIEnv* jenv, JPy_JType* type, PyObject* pyArg, jobject* objectRef)
 {
     jvalue value;
-    char b;
+    signed char b;
     short s;
     long i;
     long long j;
     j = JPy_AS_JLONG(pyArg);
     i = (int) j;
     s = (short) j;
-    b = (char) j;
+    b = (signed char) j;
 
     if (i != j) {
         value.j = j;

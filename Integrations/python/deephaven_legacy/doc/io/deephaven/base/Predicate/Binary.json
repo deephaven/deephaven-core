@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Predicate$Binary",
- "methods": {
-  "call": ":param arg: Predicate.Binary.A1\n:param arg2: Predicate.Binary.A2\n:return: boolean"
- },
- "path": "io.deephaven.base.Predicate.Binary",
- "typeName": "interface"
-}

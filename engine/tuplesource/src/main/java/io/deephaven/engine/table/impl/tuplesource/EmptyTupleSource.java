@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl.tuplesource;
 
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
@@ -52,11 +51,6 @@ enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.Wit
     @Override
     public Object exportElement(EmptyTuple tuple, int elementIndex) {
         throw new UnsupportedOperationException("EmptyTuple does not contain any elements to export");
-    }
-
-    @Override
-    public Object exportToExternalKey(@NotNull final EmptyTuple tuple) {
-        return SmartKey.EMPTY;
     }
 
     @Override

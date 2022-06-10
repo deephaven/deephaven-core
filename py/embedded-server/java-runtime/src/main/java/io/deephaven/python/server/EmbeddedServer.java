@@ -1,12 +1,16 @@
 package io.deephaven.python.server;
 
+import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.console.python.PythonGlobalScopeModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
+import io.deephaven.server.jetty.JettyConfig;
+import io.deephaven.server.jetty.JettyConfig.Builder;
 import io.deephaven.server.jetty.JettyServerModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
+import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServer;
 import io.deephaven.server.runner.DeephavenApiServerComponent;
 import io.deephaven.server.runner.DeephavenApiServerModule;
@@ -24,6 +28,7 @@ public class EmbeddedServer {
     @Singleton
     @Component(modules = {
             DeephavenApiServerModule.class,
+            DeephavenApiConfigModule.class,
             PythonGlobalScopeModule.class,
             HealthCheckModule.class,
             PythonPluginsRegistration.Module.class,
@@ -32,6 +37,9 @@ public class EmbeddedServer {
     public interface PythonServerComponent extends DeephavenApiServerComponent {
         @Component.Builder
         interface Builder extends DeephavenApiServerComponent.Builder<PythonServerComponent.Builder> {
+            @BindsInstance
+            Builder withJettyConfig(JettyConfig config);
+
             PythonServerComponent build();
         }
 
@@ -45,19 +53,18 @@ public class EmbeddedServer {
     @Inject
     Provider<ScriptSession> scriptSession;
 
-    public EmbeddedServer(int port, PyObject dict) throws IOException {
+    public EmbeddedServer(String host, Integer port, PyObject dict) throws IOException {
         final Configuration config = Main.init(new String[0], EmbeddedServer.class);
-
-        int httpSessionExpireMs = config.getIntegerWithDefault("http.session.durationMs", 300000);
-        int schedulerPoolSize = config.getIntegerWithDefault("scheduler.poolSize", 4);
-        int maxInboundMessageSize = config.getIntegerWithDefault("grpc.maxInboundMessageSize", 100 * 1024 * 1024);
-
+        final Builder builder = JettyConfig.buildFromConfig(config);
+        if (host != null) {
+            builder.host(host);
+        }
+        if (port != null) {
+            builder.port(port);
+        }
         DaggerEmbeddedServer_PythonServerComponent
                 .builder()
-                .withPort(port)
-                .withSchedulerPoolSize(schedulerPoolSize)
-                .withSessionTokenExpireTmMs(httpSessionExpireMs)
-                .withMaxInboundMessageSize(maxInboundMessageSize)
+                .withJettyConfig(builder.build())
                 .withOut(null)
                 .withErr(null)
                 .build()

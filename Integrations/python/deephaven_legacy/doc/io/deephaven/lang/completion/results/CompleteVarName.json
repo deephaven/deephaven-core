@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.lang.completion.results.CompleteVarName",
- "methods": {
-  "doCompletion": ":param results: java.util.Collection<io.deephaven.proto.backplane.script.grpc.CompletionItem.Builder>\n:param request: io.deephaven.lang.completion.CompletionRequest\n:param varName: java.lang.String"
- },
- "path": "io.deephaven.lang.completion.results.CompleteVarName",
- "text": "A class specifically for completing variable names.",
- "typeName": "class"
-}

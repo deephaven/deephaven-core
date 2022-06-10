@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.stats.StatsMemoryCollector",
- "methods": {
-  "update": "At each invocation, measure all thread's CPU usage."
- },
- "path": "io.deephaven.stats.StatsMemoryCollector",
- "typeName": "class"
-}

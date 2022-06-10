@@ -2,7 +2,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.StringUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -20,6 +19,7 @@ import gnu.trove.map.hash.TCharIntHashMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TShortIntHashMap;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.tuple.ArrayTuple;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -64,15 +64,15 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
                     new TstUtils.SetGenerator<>(duplicateRights.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             rightGenerator = new TstUtils.CompositeGenerator<>(generatorList, 0.9);
             leftGenerator = new TstUtils.FromUniqueStringGenerator(uniqueStringGenerator, 0.5);
-        } else if (dataType == SmartKey.class) {
-            final TstUtils.UniqueSmartKeyGenerator uniqueSmartKeyGenerator =
-                    new TstUtils.UniqueSmartKeyGenerator(new TstUtils.LongGenerator(0, 2 * (long) Math.sqrt(rightSize)),
+        } else if (dataType == ArrayTuple.class) {
+            final UniqueTupleGenerator uniqueTupleGenerator =
+                    new UniqueTupleGenerator(new TstUtils.LongGenerator(0, 2 * (long) Math.sqrt(rightSize)),
                             new TstUtils.IntGenerator(0, 2 * (int) Math.sqrt(rightSize)));
-            final TstUtils.SmartKeyGenerator defaultGenerator =
-                    new TstUtils.SmartKeyGenerator(new TstUtils.LongGenerator(0, (long) Math.sqrt(rightSize)),
+            final TupleGenerator defaultGenerator =
+                    new TupleGenerator(new TstUtils.LongGenerator(0, (long) Math.sqrt(rightSize)),
                             new TstUtils.IntGenerator(0, (int) Math.sqrt(rightSize)));
-            rightGenerator = uniqueSmartKeyGenerator;
-            leftGenerator = new TstUtils.FromUniqueSmartKeyGenerator(uniqueSmartKeyGenerator, defaultGenerator, 0.75);
+            rightGenerator = uniqueTupleGenerator;
+            leftGenerator = new FromUniqueTupleGenerator(uniqueTupleGenerator, defaultGenerator, 0.75);
         } else {
             throw new UnsupportedOperationException("Invalid Data Type: " + dataType);
         }
@@ -161,11 +161,11 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             QueryScope.addParam("rightMap", rightMap);
             updateString = "RightSentinel=(int)(rightMap.getOrDefault(JoinKey, null))";
         } else // noinspection ConstantConditions
-        if (dataType == SmartKey.class) {
-            final Map<SmartKey, Integer> rightMap = new HashMap<>();
+        if (dataType == ArrayTuple.class) {
+            final Map<ArrayTuple, Integer> rightMap = new HashMap<>();
 
             // noinspection unchecked
-            final ColumnSource<SmartKey> rightKey = rightTable.getColumnSource("JoinKey");
+            final ColumnSource<ArrayTuple> rightKey = rightTable.getColumnSource("JoinKey");
             // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
             for (final RowSet.Iterator it = rightTable.getRowSet().iterator(); it.hasNext();) {
@@ -175,13 +175,13 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             QueryScope.addParam("rightMap", rightMap);
             updateString = "RightSentinel=(int)(rightMap.getOrDefault(JoinKey, null))";
 
-            leftJoinTable =
-                    leftTable.update("JoinLong=JoinKey.get(0)", "JoinInt=JoinKey.get(1)").dropColumns("JoinKey");
-            rightJoinTable =
-                    rightTable.update("JoinLong=JoinKey.get(0)", "JoinInt=JoinKey.get(1)").dropColumns("JoinKey");
+            leftJoinTable = leftTable.update("JoinLong=JoinKey.getElement(0)", "JoinInt=JoinKey.getElement(1)")
+                    .dropColumns("JoinKey");
+            rightJoinTable = rightTable.update("JoinLong=JoinKey.getElement(0)", "JoinInt=JoinKey.getElement(1)")
+                    .dropColumns("JoinKey");
             matchKeys = "JoinLong,JoinInt";
-            updateFixup = x -> x.update("JoinLong=JoinKey.get(0)", "JoinInt=JoinKey.get(1)").view("LeftSentinel",
-                    "JoinLong", "JoinInt", "RightSentinel");
+            updateFixup = x -> x.update("JoinLong=JoinKey.getElement(0)", "JoinInt=JoinKey.getElement(1)")
+                    .view("LeftSentinel", "JoinLong", "JoinInt", "RightSentinel");
         } else {
             throw new UnsupportedOperationException();
         }
@@ -225,7 +225,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         for (int leftSize = 10; leftSize <= 100_000; leftSize *= 10) {
             for (int rightSize = 10; rightSize <= 100_000; rightSize *= 10) {
                 for (int seed = 0; seed < 2; ++seed) {
-                    for (Class dataType : Arrays.asList(String.class, int.class, SmartKey.class)) {
+                    for (Class dataType : Arrays.asList(String.class, int.class, ArrayTuple.class)) {
                         for (boolean grouped : Arrays.asList(Boolean.TRUE, Boolean.FALSE)) {
                             System.out.println("Seed = " + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize
                                     + ", type=" + dataType + ", grouped=" + grouped);
@@ -262,7 +262,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         for (int leftSize = 10_000; leftSize <= 100_000; leftSize *= 10) {
             for (int rightSize = 10_000; rightSize <= 100_000; rightSize *= 10) {
                 for (int seed = 0; seed < 2; ++seed) {
-                    for (Class dataType : Arrays.asList(String.class, int.class, SmartKey.class)) {
+                    for (Class dataType : Arrays.asList(String.class, int.class, ArrayTuple.class)) {
                         System.out.println("Seed = " + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize
                                 + ", type=" + dataType);
                         testNaturalJoinRandomStatic(seed, leftSize, rightSize, dataType, false, false,

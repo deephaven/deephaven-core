@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.stats.Driver",
- "methods": {
-  "start": ":param clock: io.deephaven.base.clock.Clock\n:param intraday: io.deephaven.stats.StatsIntradayLogger\n:param getFdStats: boolean"
- },
- "path": "io.deephaven.stats.Driver",
- "text": "A Deephaven-side shim for StatsDriver.",
- "typeName": "class"
-}

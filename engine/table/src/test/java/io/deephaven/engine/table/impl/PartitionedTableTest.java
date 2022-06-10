@@ -388,7 +388,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             // view table in this case
             final boolean flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(((QueryTable) aa2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(aa2.satisfied(LogicalClock.DEFAULT.currentStep()));
         });
     }
 

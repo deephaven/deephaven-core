@@ -27,7 +27,7 @@ import static io.deephaven.plot.util.PlotGeneratorUtils.indent;
  * Generates methods for the MultiSeries datasets.
  */
 public class GenerateMultiSeries {
-    private static Logger log = Logger.getLogger(GenerateMultiSeries.class.toString());
+    private static final Logger log = Logger.getLogger(GenerateMultiSeries.class.toString());
 
     public static void main(String[] args) throws ClassNotFoundException, IOException, NoSuchMethodException {
 
@@ -816,9 +816,9 @@ public class GenerateMultiSeries {
                     .append(indent(2)).append("} else {");
             code.append("\n").append(indent(3))
                     .append(mapName)
-                    .append(".put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), ");
+                    .append(".put(namingFunction.apply(multiSeriesKey), ");
             if (oneArgument) {
-                code.append("\n").append(indent(4)).append(args).append(");\n").append(indent(2)).append("}\n");
+                code.append(args).append(");\n").append(indent(2)).append("}\n");
             } else {
                 code.append("\n").append(indent(4)).append("new Object[]{ ").append(args).append("});\n")
                         .append(indent(2)).append("}\n");
@@ -849,16 +849,15 @@ public class GenerateMultiSeries {
         }
 
         private String createArgsString(final GroovyStaticImportGenerator.JavaFunction function) {
-            String args = "";
+            StringBuilder args = new StringBuilder();
             for (final Type type : function.getParameterTypes()) {
                 String typeName = type.getTypeName();
                 final int indCarrot = typeName.indexOf("<");
                 typeName = typeName.substring(0, indCarrot > 0 ? indCarrot : typeName.length());
                 final int indDot = typeName.lastIndexOf(".");
-                args += typeName.substring(indDot + 1, typeName.length()).replaceAll("\\[", "Array").replaceAll("\\]",
-                        "");
+                args.append(typeName.substring(indDot + 1).replaceAll("\\[", "Array").replaceAll("]", ""));
             }
-            return args;
+            return args.toString();
         }
     }
 

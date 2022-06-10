@@ -7,7 +7,6 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -97,15 +96,6 @@ public class ByteFloatReinterpretedDateTimeColumnTupleSource extends AbstractTup
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
-    }
-
-    @Override
-    public final Object exportToExternalKey(@NotNull final ByteFloatLongTuple tuple) {
-        return new SmartKey(
-                TypeUtils.box(tuple.getFirstElement()),
-                TypeUtils.box(tuple.getSecondElement()),
-                DateTimeUtils.nanosToTime(tuple.getThirdElement())
-        );
     }
 
     @Override

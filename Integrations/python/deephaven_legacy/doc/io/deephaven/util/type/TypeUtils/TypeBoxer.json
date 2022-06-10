@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.type.TypeUtils$TypeBoxer",
- "methods": {
-  "get": ":param result: TypeUtils.TypeBoxer.T\n:return: TypeUtils.TypeBoxer.T"
- },
- "path": "io.deephaven.util.type.TypeUtils.TypeBoxer",
- "typeName": "class"
-}

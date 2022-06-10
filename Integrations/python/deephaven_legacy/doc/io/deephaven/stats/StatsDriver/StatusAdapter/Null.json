@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.stats.StatsDriver$StatusAdapter$Null",
- "methods": {
-  "cmsAlertEnabled": ":return: boolean",
-  "sendAlert": ":param unused: java.lang.String"
- },
- "path": "io.deephaven.stats.StatsDriver.StatusAdapter.Null",
- "typeName": "class"
-}

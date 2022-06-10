@@ -293,8 +293,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameToStringMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                errorBarColor);
+            errorBarColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), errorBarColor);
         }
 
         return this;
@@ -310,8 +309,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameTointMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                errorBarColor);
+            errorBarColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey), errorBarColor);
         }
 
         return this;
@@ -327,8 +325,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameToPaintMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                errorBarColor);
+            errorBarColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey), errorBarColor);
         }
 
         return this;
@@ -344,8 +341,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             gradientVisibleSeriesNameTobooleanMap.setDefault(gradientVisible);
         } else {
-            gradientVisibleSeriesNameTobooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                gradientVisible);
+            gradientVisibleSeriesNameTobooleanMap.put(namingFunction.apply(multiSeriesKey), gradientVisible);
         }
 
         return this;
@@ -361,8 +357,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             groupSeriesNameTointMap.setDefault(group);
         } else {
-            groupSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                group);
+            groupSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey), group);
         }
 
         return this;
@@ -378,8 +373,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameToStringMap.setDefault(color);
         } else {
-            lineColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            lineColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -395,8 +389,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameTointMap.setDefault(color);
         } else {
-            lineColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            lineColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -412,8 +405,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameToPaintMap.setDefault(color);
         } else {
-            lineColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            lineColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -429,8 +421,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineStyleSeriesNameToLineStyleMap.setDefault(lineStyle);
         } else {
-            lineStyleSeriesNameToLineStyleMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                lineStyle);
+            lineStyleSeriesNameToLineStyleMap.put(namingFunction.apply(multiSeriesKey), lineStyle);
         }
 
         return this;
@@ -446,8 +437,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             linesVisibleSeriesNameToBooleanMap.setDefault(visible);
         } else {
-            linesVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                visible);
+            linesVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey), visible);
         }
 
         return this;
@@ -463,8 +453,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             piePercentLabelFormatSeriesNameToStringMap.setDefault(pieLabelFormat);
         } else {
-            piePercentLabelFormatSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pieLabelFormat);
+            piePercentLabelFormatSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), pieLabelFormat);
         }
 
         return this;
@@ -480,8 +469,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToStringMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColor);
+            pointColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), pointColor);
         }
 
         return this;
@@ -497,8 +485,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameTointMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColor);
+            pointColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey), pointColor);
         }
 
         return this;
@@ -514,8 +501,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToPaintMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColor);
+            pointColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey), pointColor);
         }
 
         return this;
@@ -531,8 +517,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToMapMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColor);
+            pointColorSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey), pointColor);
         }
 
         return this;
@@ -548,7 +533,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToComparableStringMap.setDefault(new Object[]{category, pointColor});
         } else {
-            pointColorSeriesNameToComparableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointColorSeriesNameToComparableStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ category, pointColor});
         }
 
@@ -565,7 +550,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToComparableintMap.setDefault(new Object[]{category, pointColor});
         } else {
-            pointColorSeriesNameToComparableintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointColorSeriesNameToComparableintMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ category, pointColor});
         }
 
@@ -582,7 +567,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToComparablePaintMap.setDefault(new Object[]{category, pointColor});
         } else {
-            pointColorSeriesNameToComparablePaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointColorSeriesNameToComparablePaintMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ category, pointColor});
         }
 
@@ -601,7 +586,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToTableStringStringMap.setDefault(new Object[]{tHandle, category, pointColor});
         } else {
-            pointColorSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointColorSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ tHandle, category, pointColor});
         }
 
@@ -618,7 +603,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToSelectableDataSetStringStringMap.setDefault(new Object[]{sds, category, pointColor});
         } else {
-            pointColorSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointColorSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ sds, category, pointColor});
         }
 
@@ -635,8 +620,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorIntegerSeriesNameToMapMap.setDefault(colors);
         } else {
-            pointColorIntegerSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                colors);
+            pointColorIntegerSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey), colors);
         }
 
         return this;
@@ -652,8 +636,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToObjectMap.setDefault(pointLabel);
         } else {
-            pointLabelSeriesNameToObjectMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointLabel);
+            pointLabelSeriesNameToObjectMap.put(namingFunction.apply(multiSeriesKey), pointLabel);
         }
 
         return this;
@@ -669,8 +652,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToMapMap.setDefault(pointLabels);
         } else {
-            pointLabelSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointLabels);
+            pointLabelSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey), pointLabels);
         }
 
         return this;
@@ -686,7 +668,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToComparableObjectMap.setDefault(new Object[]{category, pointLabel});
         } else {
-            pointLabelSeriesNameToComparableObjectMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointLabelSeriesNameToComparableObjectMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ category, pointLabel});
         }
 
@@ -705,7 +687,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToTableStringStringMap.setDefault(new Object[]{tHandle, category, pointLabel});
         } else {
-            pointLabelSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointLabelSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ tHandle, category, pointLabel});
         }
 
@@ -722,7 +704,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToSelectableDataSetStringStringMap.setDefault(new Object[]{sds, category, pointLabel});
         } else {
-            pointLabelSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointLabelSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ sds, category, pointLabel});
         }
 
@@ -739,8 +721,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelFormatSeriesNameToStringMap.setDefault(pointLabelFormat);
         } else {
-            pointLabelFormatSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointLabelFormat);
+            pointLabelFormatSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), pointLabelFormat);
         }
 
         return this;
@@ -756,8 +737,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToStringMap.setDefault(pointShape);
         } else {
-            pointShapeSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointShape);
+            pointShapeSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), pointShape);
         }
 
         return this;
@@ -773,8 +753,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToShapeMap.setDefault(pointShape);
         } else {
-            pointShapeSeriesNameToShapeMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointShape);
+            pointShapeSeriesNameToShapeMap.put(namingFunction.apply(multiSeriesKey), pointShape);
         }
 
         return this;
@@ -790,8 +769,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToMapMap.setDefault(pointShapes);
         } else {
-            pointShapeSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointShapes);
+            pointShapeSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey), pointShapes);
         }
 
         return this;
@@ -807,7 +785,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToComparableStringMap.setDefault(new Object[]{category, pointShape});
         } else {
-            pointShapeSeriesNameToComparableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointShapeSeriesNameToComparableStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ category, pointShape});
         }
 
@@ -824,7 +802,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToComparableShapeMap.setDefault(new Object[]{category, pointShape});
         } else {
-            pointShapeSeriesNameToComparableShapeMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointShapeSeriesNameToComparableShapeMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ category, pointShape});
         }
 
@@ -843,7 +821,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToTableStringStringMap.setDefault(new Object[]{tHandle, category, pointShape});
         } else {
-            pointShapeSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointShapeSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ tHandle, category, pointShape});
         }
 
@@ -860,7 +838,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToSelectableDataSetStringStringMap.setDefault(new Object[]{sds, category, pointShape});
         } else {
-            pointShapeSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointShapeSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ sds, category, pointShape});
         }
 
@@ -877,8 +855,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToNumberMap.setDefault(pointSize);
         } else {
-            pointSizeSeriesNameToNumberMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointSize);
+            pointSizeSeriesNameToNumberMap.put(namingFunction.apply(multiSeriesKey), pointSize);
         }
 
         return this;
@@ -894,8 +871,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToMapMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointSizes);
+            pointSizeSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey), pointSizes);
         }
 
         return this;
@@ -911,7 +887,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToCATEGORYArrayNUMBERArrayMap.setDefault(new Object[]{categories, pointSizes});
         } else {
-            pointSizeSeriesNameToCATEGORYArrayNUMBERArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToCATEGORYArrayNUMBERArrayMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ categories, pointSizes});
         }
 
@@ -928,7 +904,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToCATEGORYArraydoubleArrayMap.setDefault(new Object[]{categories, pointSizes});
         } else {
-            pointSizeSeriesNameToCATEGORYArraydoubleArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToCATEGORYArraydoubleArrayMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ categories, pointSizes});
         }
 
@@ -945,7 +921,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToCATEGORYArrayintArrayMap.setDefault(new Object[]{categories, pointSizes});
         } else {
-            pointSizeSeriesNameToCATEGORYArrayintArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToCATEGORYArrayintArrayMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ categories, pointSizes});
         }
 
@@ -962,7 +938,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToCATEGORYArraylongArrayMap.setDefault(new Object[]{categories, pointSizes});
         } else {
-            pointSizeSeriesNameToCATEGORYArraylongArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToCATEGORYArraylongArrayMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ categories, pointSizes});
         }
 
@@ -979,7 +955,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToComparableNumberMap.setDefault(new Object[]{category, pointSize});
         } else {
-            pointSizeSeriesNameToComparableNumberMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToComparableNumberMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ category, pointSize});
         }
 
@@ -996,7 +972,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToComparabledoubleMap.setDefault(new Object[]{category, pointSize});
         } else {
-            pointSizeSeriesNameToComparabledoubleMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToComparabledoubleMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ category, pointSize});
         }
 
@@ -1013,7 +989,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToComparableintMap.setDefault(new Object[]{category, pointSize});
         } else {
-            pointSizeSeriesNameToComparableintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToComparableintMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ category, pointSize});
         }
 
@@ -1030,7 +1006,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToComparablelongMap.setDefault(new Object[]{category, pointSize});
         } else {
-            pointSizeSeriesNameToComparablelongMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToComparablelongMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ category, pointSize});
         }
 
@@ -1049,7 +1025,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToTableStringStringMap.setDefault(new Object[]{tHandle, category, pointSize});
         } else {
-            pointSizeSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ tHandle, category, pointSize});
         }
 
@@ -1066,7 +1042,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToSelectableDataSetStringStringMap.setDefault(new Object[]{sds, category, pointSize});
         } else {
-            pointSizeSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ sds, category, pointSize});
         }
 
@@ -1083,8 +1059,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointsVisibleSeriesNameToBooleanMap.setDefault(visible);
         } else {
-            pointsVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                visible);
+            pointsVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey), visible);
         }
 
         return this;
@@ -1100,8 +1075,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameToStringMap.setDefault(color);
         } else {
-            seriesColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            seriesColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -1117,8 +1091,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameTointMap.setDefault(color);
         } else {
-            seriesColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            seriesColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -1134,8 +1107,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameToPaintMap.setDefault(color);
         } else {
-            seriesColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            seriesColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -1151,8 +1123,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             toolTipPatternSeriesNameToStringMap.setDefault(toolTipPattern);
         } else {
-            toolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                toolTipPattern);
+            toolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), toolTipPattern);
         }
 
         return this;
@@ -1168,8 +1139,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             xToolTipPatternSeriesNameToStringMap.setDefault(xToolTipPattern);
         } else {
-            xToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                xToolTipPattern);
+            xToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), xToolTipPattern);
         }
 
         return this;
@@ -1185,8 +1155,7 @@ public class MultiCatErrorBarSeries extends AbstractPartitionedTableHandleMultiS
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             yToolTipPatternSeriesNameToStringMap.setDefault(yToolTipPattern);
         } else {
-            yToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                yToolTipPattern);
+            yToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), yToolTipPattern);
         }
 
         return this;

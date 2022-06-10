@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.client.impl.SessionBase",
- "methods": {
-  "export": "Creates a new export with a logging listener.\n\n \n Equivalent to export(ExportsRequest.logging(table)).get(0).\n\n:param table: (io.deephaven.qst.table.TableSpec) - the table\n:return: (io.deephaven.client.impl.Export) the export"
- },
- "path": "io.deephaven.client.impl.SessionBase",
- "typeName": "class"
-}

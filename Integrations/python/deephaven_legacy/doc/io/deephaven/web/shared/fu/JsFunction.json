@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.web.shared.fu.JsFunction",
- "methods": {
-  "apply": ":param input: JsFunction.I\n:return: JsFunction.O"
- },
- "path": "io.deephaven.web.shared.fu.JsFunction",
- "text": "A js-friendly Function FunctionalInterface",
- "typeName": "interface"
-}

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.web.shared.fu.RemoverFn",
- "methods": {},
- "path": "io.deephaven.web.shared.fu.RemoverFn",
- "text": "Like Gwt's HandlerRegistration, but future-friendly (JsFunction), dependency-free, and easier to type!",
- "typeName": "interface"
-}

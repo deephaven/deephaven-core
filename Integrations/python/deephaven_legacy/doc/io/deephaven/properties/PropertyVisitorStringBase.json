@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.properties.PropertyVisitorStringBase",
- "methods": {
-  "visit": "**Incompatible overloads text - text from the first overload:**\n\nEquivalent to visit(key, Boolean.toString(value)).\n\n*Overload 1*  \n  :param key: (java.lang.String) - the key\n  :param value: (int) - the value\n  \n*Overload 2*  \n  :param key: (java.lang.String) - the key\n  :param value: (long) - the value\n  \n*Overload 3*  \n  :param key: (java.lang.String) - the key\n  :param value: (boolean) - the value"
- },
- "path": "io.deephaven.properties.PropertyVisitorStringBase",
- "text": "An PropertyVisitor base which converts the non-String valued calls into PropertyVisitor.visit(String, String).",
- "typeName": "class"
-}

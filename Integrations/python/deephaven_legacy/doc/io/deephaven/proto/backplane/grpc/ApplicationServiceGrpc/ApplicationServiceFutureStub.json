@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc$ApplicationServiceFutureStub",
- "methods": {},
- "path": "io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceFutureStub",
- "text": "Allows clients to list fields that are accessible to them.",
- "typeName": "class"
-}

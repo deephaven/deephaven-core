@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.AbstractColumnSource$DefaultedMutable",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.AbstractColumnSource.DefaultedMutable",
- "typeName": "class"
-}

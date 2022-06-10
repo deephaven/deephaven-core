@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.chunk.util.ObjectChunkIterator",
- "methods": {
-  "hasNext": ":return: boolean",
-  "next": ":return: ObjectChunkIterator.TYPE"
- },
- "path": "io.deephaven.chunk.util.ObjectChunkIterator",
- "typeName": "class"
-}

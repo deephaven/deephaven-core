@@ -76,11 +76,11 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
     private final Map<Object, Object> __lazyResultCache;
 
 
-    public FormulaSample(final TrackingRowSet rowSet,
+    public FormulaSample(final TrackingRowSet __rowSet,
             final boolean __lazy,
             final java.util.Map<String, ? extends io.deephaven.engine.table.ColumnSource> __columnsToData,
             final io.deephaven.engine.table.lang.QueryScopeParam... __params) {
-        super(rowSet);
+        super(__rowSet);
         II = __columnsToData.get("II");
         I = __columnsToData.get("I");
         II_ = new io.deephaven.engine.table.impl.vector.LongVectorColumnWrapper(__columnsToData.get("II"), __rowSet);
@@ -96,7 +96,7 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
         final long __temp0 = II.getLong(k);
         final int __temp1 = I.getInt(k);
         if (__lazyResultCache != null) {
-            final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeSmartKey(i, ii, __temp0, __temp1);
+            final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __temp0, __temp1);
             return (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __temp0, __temp1));
         }
         return applyFormulaPerItem(i, ii, __temp0, __temp1);
@@ -113,7 +113,7 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
         final long __temp0 = II.getPrevLong(k);
         final int __temp1 = I.getPrevInt(k);
         if (__lazyResultCache != null) {
-            final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeSmartKey(i, ii, __temp0, __temp1);
+            final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __temp0, __temp1);
             return (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __temp0, __temp1));
         }
         return applyFormulaPerItem(i, ii, __temp0, __temp1);
@@ -166,7 +166,7 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
                 final int __chunkPos = __chunkPosHolder[0]++;
                 final int i = __context.__iChunk.get(__chunkPos);
                 final long ii = __context.__iiChunk.get(__chunkPos);
-                final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeSmartKey(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos));
+                final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos));
                 __typedDestination.set(__chunkPos, (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos))));
             }
             );

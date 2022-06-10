@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.integrations.python.PythonListenerAdapter",
- "methods": {
-  "onUpdate": "Process notification of table changes.\n\n:param update: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates."
- },
- "path": "io.deephaven.integrations.python.PythonListenerAdapter",
- "text": "A Deephaven table listener which passes update events to a Python listener object.\n\n The Python listener object can be either (1) a callable or (2) an object which provides an \"onUpdate\" method. In\n either case, the method must take one argument (updates).",
- "typeName": "class"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.jdbc.JdbcTypeMapper$DoubleDataTypeMapping",
- "methods": {
-  "bindFromChunk": "Bind the given value from the chunk in the given prepared statement.\n\n:param srcChunk: (io.deephaven.chunk.Chunk<io.deephaven.chunk.attributes.Values>) - the chunk to read from\n:param srcOffset: (int) - the location in the chunk to read from\n:param stmt: (java.sql.PreparedStatement) - statement to which to bind the given value\n:param parameterIndex: (int) - parameter index to bind\n:param context: (io.deephaven.jdbc.JdbcTypeMapper.Context) - context information for the binding",
-  "bindToChunk": "Get a value from the current row in the given ResultSet, convert to the target type, insert into destination\n chunk. A Context object is provided for additional context or \"settings\" regarding how to perform the\n conversion (for example, the source time zone).\n\n:param destChunk: (io.deephaven.chunk.WritableChunk<io.deephaven.chunk.attributes.Values>) - the chunk to write to\n:param destOffset: (int) - the location in the chunk to write to\n:param resultSet: (java.sql.ResultSet) - from which to extract the value\n:param columnIndex: (int) - ResultSet column from which to extract the value (1-based)\n:param context: (io.deephaven.jdbc.JdbcTypeMapper.Context) - conversion context information"
- },
- "path": "io.deephaven.jdbc.JdbcTypeMapper.DoubleDataTypeMapping",
- "typeName": "class"
-}

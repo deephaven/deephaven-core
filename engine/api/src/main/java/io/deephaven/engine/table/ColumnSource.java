@@ -146,11 +146,6 @@ public interface ColumnSource<T>
     }
 
     @Override
-    default Object exportToExternalKey(T tuple) {
-        return tuple;
-    }
-
-    @Override
     ColumnSource<T> getPrevSource();
 
     /**

@@ -111,7 +111,7 @@ public class JsFigureFactory {
         descriptor.setTitle(jsDescriptor.title);
         descriptor.setTitleFont(jsDescriptor.titleFont);
         descriptor.setTitleColor(jsDescriptor.titleColor);
-        descriptor.setUpdateInterval(jsDescriptor.updateInterval);
+        descriptor.setUpdateInterval("" + jsDescriptor.updateInterval);
         descriptor.setCols(jsDescriptor.cols);
         descriptor.setRows(jsDescriptor.rows);
 

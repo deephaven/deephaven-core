@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Function$Double_ObjectObjectInt",
- "methods": {
-  "call": ":param arg1: Function.Double_ObjectObjectInt.A\n:param arg2: Function.Double_ObjectObjectInt.A\n:param i: int\n:return: double"
- },
- "path": "io.deephaven.base.Function.Double_ObjectObjectInt",
- "typeName": "interface"
-}

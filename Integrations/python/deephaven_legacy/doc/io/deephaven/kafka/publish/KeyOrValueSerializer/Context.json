@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.kafka.publish.KeyOrValueSerializer$Context",
- "methods": {},
- "path": "io.deephaven.kafka.publish.KeyOrValueSerializer.Context",
- "text": "Context interface.",
- "typeName": "interface"
-}

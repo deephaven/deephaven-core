@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.base.reference.WeakSimpleReference",
- "methods": {},
- "path": "io.deephaven.base.reference.WeakSimpleReference",
- "text": "Weakly-held SimpleReference.",
- "typeName": "class"
-}

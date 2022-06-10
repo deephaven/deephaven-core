@@ -291,12 +291,12 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private CodeGenerator generateConstructor() {
         final CodeGenerator g = CodeGenerator.create(
-                "public $CLASSNAME$(final TrackingRowSet rowSet,", CodeGenerator.indent(
+                "public $CLASSNAME$(final TrackingRowSet __rowSet,", CodeGenerator.indent(
                         "final boolean __lazy,",
                         "final java.util.Map<String, ? extends [[COLUMN_SOURCE_CLASSNAME]]> __columnsToData,",
                         "final [[PARAM_CLASSNAME]]... __params)"),
                 CodeGenerator.block(
-                        "super(rowSet);",
+                        "super(__rowSet);",
                         CodeGenerator.repeated("initColumn",
                                 "[[COLUMN_NAME]] = __columnsToData.get(\"[[COLUMN_NAME]]\");"),
                         CodeGenerator.repeated("initNormalColumnArray",
@@ -375,7 +375,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                                 "final long ii = findResult;"),
                         CodeGenerator.repeated("cacheColumnSourceGet", "final [[TYPE]] [[VAR]] = [[GET_EXPRESSION]];"),
                         "if ([[LAZY_RESULT_CACHE_NAME]] != null)", CodeGenerator.block(
-                                "final Object __lazyKey = [[C14NUTIL_CLASSNAME]].maybeMakeSmartKey([[FORMULA_ARGS]]);",
+                                "final Object __lazyKey = [[C14NUTIL_CLASSNAME]].maybeMakeCompoundKey([[FORMULA_ARGS]]);",
                                 "return ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[FORMULA_ARGS]]));"),
                         "return applyFormulaPerItem([[FORMULA_ARGS]]);"));
         final String returnTypeString;
@@ -569,7 +569,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                                                 "final int i = __context.__iChunk.get(__chunkPos);"),
                                         CodeGenerator.optional("maybeCreateII",
                                                 "final long ii = __context.__iiChunk.get(__chunkPos);"),
-                                        "final Object __lazyKey = [[C14NUTIL_CLASSNAME]].maybeMakeSmartKey([[APPLY_FORMULA_ARGS]]);",
+                                        "final Object __lazyKey = [[C14NUTIL_CLASSNAME]].maybeMakeCompoundKey([[APPLY_FORMULA_ARGS]]);",
                                         "__typedDestination.set(__chunkPos, ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[APPLY_FORMULA_ARGS]])));"),
                                 ");" // close the lambda
                         ), CodeGenerator.samelineBlock("else",

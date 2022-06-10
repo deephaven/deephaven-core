@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.annotations.AllowNulls",
- "methods": {},
- "path": "io.deephaven.annotations.AllowNulls",
- "text": "Annotation to allow nulls in Value.Immutable collections.",
- "typeName": "class"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.rowset.impl.rsp.container.AbortableRangeConsumer",
- "methods": {
-  "accept": "Deliver a single range. Methods receiving a RangeConsumer should call accept on it for non-empty, disjoint\n ranges. Calls should be made in increasing order of values contained in the ranges.\n\n:param begin: (int) - first value of the range to add.\n:param end: (int) - one past the last value in the range to add (ie, end is exclusive).\n:return: (boolean) false if no more ranges are desired, true otherwise."
- },
- "path": "io.deephaven.engine.rowset.impl.rsp.container.AbortableRangeConsumer",
- "text": "Results comprised of multiple, ordered ranges are provided via this interface.",
- "typeName": "interface"
-}

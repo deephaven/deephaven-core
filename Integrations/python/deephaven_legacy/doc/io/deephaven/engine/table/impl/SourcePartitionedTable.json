@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.SourcePartitionedTable",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.SourcePartitionedTable",
- "text": "PartitionedTable of single-location SourceTables keyed by TableLocationKey. Refer to\n TableLocationKey for an explanation of partitioning.",
- "typeName": "class"
-}
