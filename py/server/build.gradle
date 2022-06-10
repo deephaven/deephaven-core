@@ -5,3 +5,10 @@ plugins {
 dependencies {
     pythonWheel project(path: ':deephaven-jpy', targetConfiguration: 'pythonWheel')
 }
+
+wheel {
+    src 'deephaven'
+    src 'integration-tests'
+    src 'test_helper'
+    src 'tests'
+}

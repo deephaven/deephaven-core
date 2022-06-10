@@ -142,6 +142,8 @@ include(':ParquetHadoop')
 
 include(':codegen')
 
+include(':cpp-client')
+
 include(':replication-util')
 project(':replication-util').projectDir = file('replication/util')
 

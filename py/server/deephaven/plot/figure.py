@@ -1,6 +1,7 @@
 #
-#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 ######################################################################################################################
 #               This code is auto generated. DO NOT EDIT FILE!
 # Run generatePythonFigureWrapper or "./gradlew :Generators:generatePythonFigureWrapper" to generate
