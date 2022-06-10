@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	applicationpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/application"
+	consolepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/console"
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 
 	"google.golang.org/grpc"
@@ -12,6 +14,11 @@ import (
 )
 
 var ErrClosedClient = errors.New("client is closed")
+
+type fieldId struct {
+	appId     string
+	fieldName string
+}
 
 type Client struct {
 	grpcChannel *grpc.ClientConn
@@ -22,6 +29,8 @@ type Client struct {
 	tableStub
 
 	nextTicket int32
+
+	tables map[fieldId]*TableHandle
 }
 
 type SyncOption int
@@ -43,7 +52,7 @@ func NewClient(ctx context.Context, host string, port string) (*Client, error) {
 		return nil, err
 	}
 
-	client := &Client{grpcChannel: grpcChannel}
+	client := &Client{grpcChannel: grpcChannel, tables: make(map[fieldId]*TableHandle)}
 
 	client.sessionStub, err = NewSessionStub(ctx, client)
 	if err != nil {
@@ -112,4 +121,31 @@ func (client *Client) Close() {
 
 func (client *Client) WithToken(ctx context.Context) context.Context {
 	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("deephaven_session_id", string(client.Token())))
+}
+
+func (client *Client) handleScriptChanges(resp *consolepb2.ExecuteCommandResponse) {
+	client.handleFieldChanges(resp.Changes)
+}
+
+func (client *Client) handleFieldChanges(resp *applicationpb2.FieldsChangeUpdate) {
+	for _, created := range resp.Created {
+		if created.TypedTicket.Type == "Table" {
+			fieldId := fieldId{appId: created.ApplicationId, fieldName: created.FieldName}
+			client.tables[fieldId] = newTableHandle(client, created.TypedTicket.Ticket, nil, 0, false)
+		}
+	}
+
+	for _, updated := range resp.Updated {
+		if updated.TypedTicket.Type == "Table" {
+			fieldId := fieldId{appId: updated.ApplicationId, fieldName: updated.FieldName}
+			client.tables[fieldId] = newTableHandle(client, updated.TypedTicket.Ticket, nil, 0, false)
+		}
+	}
+
+	for _, removed := range resp.Removed {
+		if removed.TypedTicket.Type == "Table" {
+			fieldId := fieldId{appId: removed.ApplicationId, fieldName: removed.FieldName}
+			delete(client.tables, fieldId)
+		}
+	}
 }

@@ -60,6 +60,27 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 	return exportedTables, nil
 }
 
+// Opens a globally-scoped table with the given name on the server.
+func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, error) {
+	ctx = ts.client.WithToken(ctx)
+
+	fieldId := fieldId{appId: "scope", fieldName: name}
+	if tbl, ok := ts.client.tables[fieldId]; ok {
+		sourceId := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: tbl.ticket}}
+		resultId := ts.client.NewTicket()
+
+		req := tablepb2.FetchTableRequest{SourceId: &sourceId, ResultId: &resultId}
+		resp, err := ts.stub.FetchTable(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+
+		return parseCreationResponse(ts.client, resp)
+	} else {
+		return nil, errors.New("no table by the name " + name + " (maybe it isn't synced?)")
+	}
+}
+
 // Like `EmptyTable`, except it can be used as part of a query.
 func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
 	qb := newQueryBuilder(ts.client, nil)

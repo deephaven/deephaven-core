@@ -45,3 +45,17 @@ func (console *consoleStub) BindToVariable(ctx context.Context, name string, tab
 
 	return nil
 }
+
+func (console *consoleStub) RunScript(ctx context.Context, script string) error {
+	ctx = console.client.WithToken(ctx)
+
+	req := consolepb2.ExecuteCommandRequest{ConsoleId: console.consoleId, Code: script}
+	resp, err := console.stub.ExecuteCommand(ctx, &req)
+	if err != nil {
+		return err
+	}
+
+	console.client.handleScriptChanges(resp)
+
+	return nil
+}
