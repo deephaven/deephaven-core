@@ -194,7 +194,7 @@ tasks.register 'generateAllPython', {
 
 
 tasks.register 'generateAllPythonAssert', {
-    Task t -> t.dependsOn; ':Generators:generatePythonFigureWrapperAssert'
+    Task t -> t.dependsOn ':Generators:generatePythonFigureWrapperAssert'
 }
 
 tasks.register 'generateAll', {
@@ -202,7 +202,9 @@ tasks.register 'generateAll', {
                            ':Generators:generateAxesPlotMethods',
                            ':Generators:generateMultiSeries',
                            ':Generators:generateFigureImmutable',
-                           ':Generators:generatePlottingConvenience'
+                           ':Generators:generatePlottingConvenience',
+                           ':Generators:generateAllPython'
+
     t.group = '~Deephaven'
     t.description = 'Runs all code generators'
 }
