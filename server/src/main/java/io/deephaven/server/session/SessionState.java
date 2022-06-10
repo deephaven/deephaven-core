@@ -402,12 +402,11 @@ public class SessionState {
      *          already been invoked or will be invoked by the SessionState.
      */
     public boolean removeOnCloseCallback(final Closeable onClose) {
+        if (isExpired()) {
+            // After the session has expired, nothing can be removed from the collection.
+            return false;
+        }
         synchronized (onCloseCallbacks) {
-            if (isExpired()) {
-                // After the session has expired, nothing can be removed from the collection. We return false here,
-                // preventing a closeable from trying to remove itself during its own close()
-                return false;
-            }
             return onCloseCallbacks.remove(onClose) != null;
         }
     }
@@ -441,16 +440,19 @@ public class SessionState {
             exportListeners.clear();
         }
 
+        final List<Closeable> callbacksToClose;
         synchronized (onCloseCallbacks) {
-            onCloseCallbacks.forEach((ref, callback) -> {
-                try {
-                    callback.close();
-                } catch (final IOException e) {
-                    log.error().append(logPrefix).append("error during onClose callback: ").append(e).endl();
-                }
-            });
+            callbacksToClose = new ArrayList<>(onCloseCallbacks.size());
+            onCloseCallbacks.forEach((ref, callback) -> callbacksToClose.add(callback));
             onCloseCallbacks.clear();
         }
+        callbacksToClose.forEach(callback -> {
+            try {
+                callback.close();
+            } catch (final IOException e) {
+                log.error().append(logPrefix).append("error during onClose callback: ").append(e).endl();
+            }
+        });
     }
 
     /**
