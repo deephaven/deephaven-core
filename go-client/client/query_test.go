@@ -2,8 +2,10 @@ package client_test
 
 import (
 	"context"
+	"sort"
 	"testing"
 
+	"github.com/apache/arrow/go/arrow/array"
 	"github.com/deephaven/deephaven-core/go-client/client"
 	"github.com/deephaven/deephaven-core/go-client/internal/test_setup"
 )
@@ -258,6 +260,116 @@ func TestUpdateDropQuery(t *testing.T) {
 	col0, col1, col2 := drpTbl.ColumnName(0), drpTbl.ColumnName(1), drpTbl.ColumnName(2)
 	if col0 != "Close" || col1 != "Vol" || col2 != "Foo" {
 		t.Errorf("wrong columns %s %s %s", col0, col1, col2)
+		return
+	}
+}
+
+type queryOp func(*client.TableHandle) []client.QueryNode
+
+func doQueryTest(inputRec array.Record, t *testing.T, op queryOp) []array.Record {
+	defer inputRec.Release()
+
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, "localhost", "10000")
+	if err != nil {
+		t.Fatalf("NewClient %s", err.Error())
+	}
+	defer c.Close()
+
+	input, err := c.ImportTable(ctx, inputRec)
+	if err != nil {
+		t.Errorf("ImportTable %s", err.Error())
+		return nil
+	}
+	defer input.Release(ctx)
+
+	query := op(input)
+
+	tables, err := c.ExecQuery(ctx, query...)
+	if err != nil {
+		t.Errorf("ExecQuery %s", err.Error())
+		return nil
+	}
+
+	for _, table := range tables {
+		defer table.Release(ctx)
+	}
+
+	var recs []array.Record
+	for _, table := range tables {
+		rec, err := table.Snapshot(ctx)
+		if err != nil {
+			t.Errorf("Snapshot %s", err.Error())
+			return nil
+		}
+		recs = append(recs, rec)
+	}
+
+	return recs
+}
+
+func TestSort(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(2, 10, 1000), t, func(tbl *client.TableHandle) []client.QueryNode {
+		return []client.QueryNode{tbl.Query().Sort("a"), tbl.Query().SortBy(client.SortDsc("a"))}
+	})
+	defer results[0].Release()
+	defer results[1].Release()
+
+	asc := results[0].Column(0).(*array.Int32).Int32Values()
+
+	if !sort.SliceIsSorted(asc, func(i, j int) bool { return asc[i] < asc[j] }) {
+		t.Error("Slice was not sorted ascending:", asc)
+		return
+	}
+
+	dsc := results[1].Column(0).(*array.Int32).Int32Values()
+
+	if !sort.SliceIsSorted(dsc, func(i, j int) bool { return dsc[i] > dsc[j] }) {
+		t.Error("Slice was not sorted descending:", dsc)
+		return
+	}
+}
+
+func TestHeadTail(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(2, 10, 1000), t, func(tbl *client.TableHandle) []client.QueryNode {
+		return []client.QueryNode{tbl.Query().Head(3), tbl.Query().Tail(4)}
+	})
+	defer results[0].Release()
+	defer results[1].Release()
+
+	if results[0].NumRows() != 3 {
+		t.Error("Head returned wrong size")
+		return
+	}
+
+	if results[1].NumRows() != 4 {
+		t.Error("Tail returned wrong size")
+		return
+	}
+}
+
+func TestSelectDistinct(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(2, 20, 10), t, func(tbl *client.TableHandle) []client.QueryNode {
+		return []client.QueryNode{tbl.Query().SelectDistinct("a")}
+	})
+	defer results[0].Release()
+
+	if results[0].NumCols() != 1 || results[0].NumRows() > 10 {
+		t.Errorf("SelectDistinct had wrong size %d x %d", results[0].NumCols(), results[0].NumRows())
+		return
+	}
+}
+
+func TestComboAgg(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(3, 20, 10), t, func(tbl *client.TableHandle) []client.QueryNode {
+		b := client.NewAggBuilder().Min("minB = b").Sum("sumC = c")
+		return []client.QueryNode{tbl.Query().AggBy(b, "a")}
+	})
+	defer results[0].Release()
+
+	if results[0].NumCols() != 3 || results[0].NumRows() > 10 {
+		t.Errorf("ComboAgg had wrong size %d x %d", results[0].NumCols(), results[0].NumRows())
 		return
 	}
 }

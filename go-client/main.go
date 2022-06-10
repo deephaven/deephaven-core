@@ -24,7 +24,7 @@ func main() {
 	}
 	defer tbl.Release(ctx)
 
-	err = s.BindToVariable(ctx, "gotest", &tbl)
+	err = s.BindToVariable(ctx, "gotest", tbl)
 	if err != nil {
 		fmt.Println("BindToVariable err:", err)
 		return

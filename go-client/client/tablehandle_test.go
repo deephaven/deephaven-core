@@ -9,7 +9,7 @@ import (
 	"github.com/deephaven/deephaven-core/go-client/internal/test_setup"
 )
 
-type unaryTableOp func(context.Context, *client.TableHandle) (client.TableHandle, error)
+type unaryTableOp func(context.Context, *client.TableHandle) (*client.TableHandle, error)
 
 func applyTableOp(t *testing.T, op unaryTableOp) *array.Record {
 	ctx := context.Background()
@@ -30,7 +30,7 @@ func applyTableOp(t *testing.T, op unaryTableOp) *array.Record {
 	}
 	defer before.Release(ctx)
 
-	after, err := op(ctx, &before)
+	after, err := op(ctx, before)
 	if err != nil {
 		t.Errorf("DropColumns %s", err.Error())
 		return nil
@@ -47,7 +47,7 @@ func applyTableOp(t *testing.T, op unaryTableOp) *array.Record {
 }
 
 func TestDropColumns(t *testing.T) {
-	result := applyTableOp(t, func(ctx context.Context, before *client.TableHandle) (client.TableHandle, error) {
+	result := applyTableOp(t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.DropColumns(ctx, []string{"Ticker", "Vol"})
 	})
 
@@ -68,7 +68,7 @@ func TestDropColumns(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	result := applyTableOp(t, func(ctx context.Context, before *client.TableHandle) (client.TableHandle, error) {
+	result := applyTableOp(t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.Update(ctx, []string{"Foo = Close * 17.0", "Bar = Vol + 1"})
 	})
 

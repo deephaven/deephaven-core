@@ -98,7 +98,7 @@ func (client *Client) MakeTicket(id int32) ticketpb2.Ticket {
 	return ticketpb2.Ticket{Ticket: bytes}
 }
 
-func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]TableHandle, error) {
+func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]*TableHandle, error) {
 	return execQuery(client, ctx, nodes)
 }
 

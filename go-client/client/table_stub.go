@@ -24,7 +24,7 @@ func NewTableStub(client *Client) (tableStub, error) {
 	return tableStub{client: client, stub: stub}, nil
 }
 
-func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableRequest_Operation) ([]TableHandle, error) {
+func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableRequest_Operation) ([]*TableHandle, error) {
 	ctx = ts.client.WithToken(ctx)
 
 	req := tablepb2.BatchTableRequest{Ops: ops}
@@ -34,7 +34,7 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 	}
 	defer resp.CloseSend()
 
-	exportedTables := []TableHandle{}
+	exportedTables := []*TableHandle{}
 
 	for {
 		created, err := resp.Recv()
@@ -70,7 +70,7 @@ func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
 // Creates a new empty table in the global scope.
 //
 // The table will have zero columns and the specified number of rows.
-func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (TableHandle, error) {
+func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandle, error) {
 	ctx = ts.client.WithToken(ctx)
 
 	result := ts.client.NewTicket()
@@ -78,7 +78,7 @@ func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (TableHandle
 	req := tablepb2.EmptyTableRequest{ResultId: &result, Size: numRows}
 	resp, err := ts.stub.EmptyTable(ctx, &req)
 	if err != nil {
-		return TableHandle{}, err
+		return nil, err
 	}
 
 	return parseCreationResponse(ts.client, resp)
@@ -102,7 +102,7 @@ func (ts *tableStub) TimeTableQuery(period int64, startTime *int64) QueryNode {
 // Creates a ticking time table in the global scope.
 // The period is in nanoseconds and represents the interval between adding new rows to the table.
 // The startTime is in nanoseconds since epoch and defaults to the current time when it is nil.
-func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int64) (TableHandle, error) {
+func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int64) (*TableHandle, error) {
 	ctx = ts.client.WithToken(ctx)
 
 	result := ts.client.NewTicket()
@@ -118,13 +118,13 @@ func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int
 	req := tablepb2.TimeTableRequest{ResultId: &result, PeriodNanos: period, StartTimeNanos: realStartTime}
 	resp, err := ts.stub.TimeTable(ctx, &req)
 	if err != nil {
-		return TableHandle{}, err
+		return nil, err
 	}
 
 	return parseCreationResponse(ts.client, resp)
 }
 
-func (ts *tableStub) DropColumns(ctx context.Context, table *TableHandle, cols []string) (TableHandle, error) {
+func (ts *tableStub) DropColumns(ctx context.Context, table *TableHandle, cols []string) (*TableHandle, error) {
 	ctx = ts.client.WithToken(ctx)
 
 	result := ts.client.NewTicket()
@@ -134,13 +134,13 @@ func (ts *tableStub) DropColumns(ctx context.Context, table *TableHandle, cols [
 	req := tablepb2.DropColumnsRequest{ResultId: &result, SourceId: &source, ColumnNames: cols}
 	resp, err := ts.stub.DropColumns(ctx, &req)
 	if err != nil {
-		return TableHandle{}, err
+		return nil, err
 	}
 
 	return parseCreationResponse(ts.client, resp)
 }
 
-func (ts *tableStub) Update(ctx context.Context, table *TableHandle, formulas []string) (TableHandle, error) {
+func (ts *tableStub) Update(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	ctx = ts.client.WithToken(ctx)
 
 	result := ts.client.NewTicket()
@@ -150,26 +150,26 @@ func (ts *tableStub) Update(ctx context.Context, table *TableHandle, formulas []
 	req := tablepb2.SelectOrUpdateRequest{ResultId: &result, SourceId: &source, ColumnSpecs: formulas}
 	resp, err := ts.stub.Update(ctx, &req)
 	if err != nil {
-		return TableHandle{}, err
+		return nil, err
 	}
 
 	return parseCreationResponse(ts.client, resp)
 }
 
-func parseCreationResponse(client *Client, resp *tablepb2.ExportedTableCreationResponse) (TableHandle, error) {
+func parseCreationResponse(client *Client, resp *tablepb2.ExportedTableCreationResponse) (*TableHandle, error) {
 	if !resp.Success {
-		return TableHandle{}, errors.New("server error: `" + resp.GetErrorInfo() + "`")
+		return nil, errors.New("server error: `" + resp.GetErrorInfo() + "`")
 	}
 
 	respTicket := resp.ResultId.GetTicket()
 	if respTicket == nil {
-		return TableHandle{}, errors.New("server response did not have ticket")
+		return nil, errors.New("server response did not have ticket")
 	}
 
 	alloc := memory.NewGoAllocator()
 	schema, err := flight.DeserializeSchema(resp.SchemaHeader, alloc)
 	if err != nil {
-		return TableHandle{}, err
+		return nil, err
 	}
 
 	return newTableHandle(client, respTicket, schema, resp.Size, resp.IsStatic), nil

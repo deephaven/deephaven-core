@@ -73,12 +73,12 @@ func (fs *flightStub) SnapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 // Uploads a table to the deephaven server.
 //
 // The table can then be manipulated and referenced using the returned TableHandle.
-func (fs *flightStub) ImportTable(ctx context.Context, rec array.Record) (TableHandle, error) {
+func (fs *flightStub) ImportTable(ctx context.Context, rec array.Record) (*TableHandle, error) {
 	ctx = fs.client.WithToken(ctx)
 
 	doPut, err := fs.stub.DoPut(ctx)
 	if err != nil {
-		return TableHandle{}, err
+		return nil, err
 	}
 	defer doPut.CloseSend()
 
@@ -91,17 +91,17 @@ func (fs *flightStub) ImportTable(ctx context.Context, rec array.Record) (TableH
 	writer.SetFlightDescriptor(descr)
 	err = writer.Write(rec)
 	if err != nil {
-		return TableHandle{}, err
+		return nil, err
 	}
 
 	err = writer.Close()
 	if err != nil {
-		return TableHandle{}, err
+		return nil, err
 	}
 
 	_, err = doPut.Recv()
 	if err != nil {
-		return TableHandle{}, err
+		return nil, err
 	}
 
 	ticket := fs.client.MakeTicket(ticketNum)

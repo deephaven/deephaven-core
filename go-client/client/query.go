@@ -134,7 +134,7 @@ func getGrpcOps(client *Client, nodes []QueryNode) ([]*tablepb2.BatchTableReques
 
 // TODO: Duplicate entries in `nodes`
 
-func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]TableHandle, error) {
+func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*TableHandle, error) {
 	ops, nodeOrder, err := getGrpcOps(client, nodes)
 	if err != nil {
 		return nil, err
@@ -153,7 +153,7 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]TableH
 		return nil, errors.New("wrong number of tables in response")
 	}
 
-	var output []TableHandle
+	var output []*TableHandle
 
 	for i, ticket := range nodeOrder {
 		for _, tbl := range exportedTables {
@@ -623,62 +623,67 @@ func (b *AggBuilder) Count(col string) *AggBuilder {
 	return b
 }
 
-func (b *AggBuilder) AbsSum(cols []string) *AggBuilder {
+func (b *AggBuilder) Sum(cols ...string) *AggBuilder {
+	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_SUM})
+	return b
+}
+
+func (b *AggBuilder) AbsSum(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_ABS_SUM})
 	return b
 }
 
-func (b *AggBuilder) Group(cols []string) *AggBuilder {
+func (b *AggBuilder) Group(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_GROUP})
 	return b
 }
 
-func (b *AggBuilder) Avg(cols []string) *AggBuilder {
+func (b *AggBuilder) Avg(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_AVG})
 	return b
 }
 
-func (b *AggBuilder) First(cols []string) *AggBuilder {
+func (b *AggBuilder) First(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_FIRST})
 	return b
 }
 
-func (b *AggBuilder) Last(cols []string) *AggBuilder {
+func (b *AggBuilder) Last(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_LAST})
 	return b
 }
 
-func (b *AggBuilder) Min(cols []string) *AggBuilder {
+func (b *AggBuilder) Min(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_MIN})
 	return b
 }
 
-func (b *AggBuilder) Max(cols []string) *AggBuilder {
+func (b *AggBuilder) Max(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_MAX})
 	return b
 }
 
-func (b *AggBuilder) Median(cols []string) *AggBuilder {
+func (b *AggBuilder) Median(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_MEDIAN})
 	return b
 }
 
-func (b *AggBuilder) Percentile(percentile float64, cols []string) *AggBuilder {
+func (b *AggBuilder) Percentile(percentile float64, cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, percentile: percentile, kind: tablepb2.ComboAggregateRequest_PERCENTILE})
 	return b
 }
 
-func (b *AggBuilder) StdDev(cols []string) *AggBuilder {
+func (b *AggBuilder) StdDev(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_STD})
 	return b
 }
 
-func (b *AggBuilder) Variance(cols []string) *AggBuilder {
+func (b *AggBuilder) Variance(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_VAR})
 	return b
 }
 
-func (b *AggBuilder) WeightedAvg(weightCol string, cols []string) *AggBuilder {
+func (b *AggBuilder) WeightedAvg(weightCol string, cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, columnName: weightCol, kind: tablepb2.ComboAggregateRequest_WEIGHTED_AVG})
 	return b
 }
@@ -706,7 +711,7 @@ func (op aggByOp) makeBatchOp(resultId *ticketpb2.Ticket, sourceId *tablepb2.Tab
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_ComboAggregate{ComboAggregate: req}}
 }
 
-func (qb QueryNode) AggBy(agg *AggBuilder, by []string) QueryNode {
+func (qb QueryNode) AggBy(agg *AggBuilder, by ...string) QueryNode {
 	aggs := make([]aggPart, len(agg.aggs))
 	copy(aggs, agg.aggs)
 	return qb.addOp(aggByOp{colNames: by, aggs: aggs})
