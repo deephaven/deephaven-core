@@ -68,8 +68,10 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
     private static final int CHUNK_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(ParquetColumnLocation.class, "chunkSize", 4096);
-    private static final int INITIAL_PAGE_CACHE_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(ParquetColumnLocation.class, "initialPageCacheSize", 128);
-    private static final int MAX_PAGE_CACHE_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(ParquetColumnLocation.class, "maxPageCacheSize", 1 << 13);
+    private static final int INITIAL_PAGE_CACHE_SIZE = Configuration.getInstance()
+            .getIntegerForClassWithDefault(ParquetColumnLocation.class, "initialPageCacheSize", 128);
+    private static final int MAX_PAGE_CACHE_SIZE = Configuration.getInstance()
+            .getIntegerForClassWithDefault(ParquetColumnLocation.class, "maxPageCacheSize", 1 << 13);
 
     private static final Logger log = LoggerFactory.getLogger(ParquetColumnLocation.class);
 
@@ -108,12 +110,12 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     }
 
     private PageCache<ATTR> ensurePageCache() {
-        if(pageCache != null) {
+        if (pageCache != null) {
             return pageCache;
         }
 
         synchronized (this) {
-            if(pageCache != null) {
+            if (pageCache != null) {
                 return pageCache;
             }
 
