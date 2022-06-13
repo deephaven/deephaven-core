@@ -44,16 +44,6 @@ func (th *TableHandle) Snapshot(ctx context.Context) (array.Record, error) {
 	return th.client.snapshotRecord(ctx, th.ticket)
 }
 
-// Returns a new table without the given columns.
-func (th *TableHandle) DropColumns(ctx context.Context, cols []string) (*TableHandle, error) {
-	return th.client.DropColumns(ctx, th, cols)
-}
-
-// Returns a new table with additional columns calculated according to the formulas.
-func (th *TableHandle) Update(ctx context.Context, formulas []string) (*TableHandle, error) {
-	return th.client.Update(ctx, th, formulas)
-}
-
 // Creates a new query based on this table. Table operations can be performed on query nodes,
 //
 func (th *TableHandle) Query() QueryNode {

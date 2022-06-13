@@ -114,7 +114,7 @@ func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandl
 	return parseCreationResponse(ts.client, resp)
 }
 
-// Like `TimeTable`, except it can be used as part of a query
+// Like `TimeTable`, except it can be used as part of a query.
 func (ts *tableStub) TimeTableQuery(period int64, startTime *int64) QueryNode {
 	var realStartTime int64
 	if startTime == nil {
@@ -154,7 +154,7 @@ func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int
 	return parseCreationResponse(ts.client, resp)
 }
 
-func (ts *tableStub) DropColumns(ctx context.Context, table *TableHandle, cols []string) (*TableHandle, error) {
+func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols []string) (*TableHandle, error) {
 	ctx = ts.client.withToken(ctx)
 
 	result := ts.client.newTicket()
@@ -170,7 +170,7 @@ func (ts *tableStub) DropColumns(ctx context.Context, table *TableHandle, cols [
 	return parseCreationResponse(ts.client, resp)
 }
 
-func (ts *tableStub) Update(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
+func (ts *tableStub) update(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	ctx = ts.client.withToken(ctx)
 
 	result := ts.client.newTicket()
