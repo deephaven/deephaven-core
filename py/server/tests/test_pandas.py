@@ -11,7 +11,7 @@ from deephaven import dtypes, new_table, DHError
 from deephaven.jcompat import j_array_list
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
-from deephaven.constants import NULL_LONG, NULL_BYTE, NULL_SHORT, NULL_INT
+from deephaven.constants import NULL_LONG, NULL_BYTE, NULL_SHORT, NULL_INT, NULL_DOUBLE
 from deephaven.pandas import to_pandas, to_table
 from deephaven.time import to_datetime
 from tests.testbase import BaseTestCase
@@ -164,6 +164,23 @@ class PandasTestCase(BaseTestCase):
         table = to_table(df)
         df2 = to_pandas(table)
         self.assertTrue(np.array_equal(df2["A"].values, df2["B"].values))
+
+    def test_to_table_nullable(self):
+        int_array = pd.array([1, 2, None], dtype=pd.Int64Dtype())
+        double_array = pd.array([1.1, 2.2, None], dtype=pd.Float64Dtype())
+        df = pd.DataFrame({"NullableInt64": int_array, "NullableDouble": double_array})
+
+        with self.assertRaises(DHError) as cm:
+            table = to_table(df)
+        self.assertRegex(str(cm.exception), r"TypeError.* NAType")
+
+        int_array = int_array.fillna(NULL_LONG)
+        double_array = double_array.fillna(NULL_DOUBLE)
+        df = pd.DataFrame({"NullableInt64": int_array, "NullableDouble": double_array})
+        table = to_table(df)
+        self.assertEqual(table.size, 3)
+        table_string = table.to_string()
+        self.assertEqual(2, table_string.count("null"))
 
 
 if __name__ == '__main__':
