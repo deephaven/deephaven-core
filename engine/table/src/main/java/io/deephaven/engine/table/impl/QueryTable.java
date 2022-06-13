@@ -617,13 +617,20 @@ public class QueryTable extends BaseTable {
     @Override
     public Table aggBy(
             final Collection<? extends Aggregation> aggregations,
+            final boolean preserveEmpty,
+            final Table initialGroups,
             final Collection<? extends ColumnName> groupByColumns) {
         if (aggregations.isEmpty()) {
             throw new IllegalArgumentException(
                     "aggBy must have at least one aggregation, none specified. groupByColumns="
                             + toString(groupByColumns));
         }
-
+        if (preserveEmpty) {
+            throw new UnsupportedOperationException("aggBy: preserveEmpty support is not yet implemented");
+        }
+        if (initialGroups != null) {
+            throw new UnsupportedOperationException("aggBy: initialGroups support is not yet implemented");
+        }
         final List<? extends Aggregation> optimized = AggregationOptimizer.of(aggregations);
         final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, groupByColumns);
         final Table aggregationTable =
@@ -639,13 +646,6 @@ public class QueryTable extends BaseTable {
         final List<ColumnName> resultOrder =
                 Stream.concat(groupByColumns.stream(), userOrder.stream()).collect(Collectors.toList());
         return aggregationTable.view(resultOrder);
-    }
-
-    @Override
-    public Table countBy(String countColumnName, ColumnName... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget(
-                "countBy(" + countColumnName + "," + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
-                () -> aggBy(Aggregation.AggCount(countColumnName), Arrays.asList(groupByColumns)));
     }
 
     private QueryTable aggNoMemo(@NotNull final AggregationContextFactory aggregationContextFactory,

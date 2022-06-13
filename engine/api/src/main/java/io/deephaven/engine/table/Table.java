@@ -997,6 +997,14 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
+    Table aggBy(Collection<? extends Aggregation> aggregations);
+
+    @Override
+    @ConcurrentMethod
+    Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty);
+
+    @Override
+    @ConcurrentMethod
     Table aggBy(Aggregation aggregation, String... groupByColumns);
 
     @Override
@@ -1005,15 +1013,16 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
-    Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns);
-
-    @Override
-    @ConcurrentMethod
     Table aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns);
 
     @Override
     @ConcurrentMethod
-    Table aggBy(Collection<? extends Aggregation> aggregations);
+    Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns);
+
+    @Override
+    @ConcurrentMethod
+    Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups,
+                        Collection<? extends ColumnName> groupByColumns);
 
     Table headBy(long nRows, Collection<String> groupByColumnNames);
 

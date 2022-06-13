@@ -161,11 +161,6 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table countBy(String countColumnName, ColumnName... groupByColumns) {
-        return throwUnsupported("countBy()");
-    }
-
-    @Override
     public Table ungroup(boolean nullFill, String... columnsToUngroup) {
         return throwUnsupported("ungroup()");
     }
@@ -186,8 +181,8 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table aggBy(Collection<? extends Aggregation> aggregations,
-            Collection<? extends ColumnName> groupByColumns) {
+    public Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups,
+                       Collection<? extends ColumnName> groupByColumns) {
         return throwUnsupported("aggBy()");
     }
 

@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @Immutable
 @NodeStyle
-public abstract class UpdateByTable extends ByTableBase {
+public abstract class UpdateByTable extends ByTableBase implements SingleParentTable {
 
     public static Builder builder() {
         return ImmutableUpdateByTable.builder();
