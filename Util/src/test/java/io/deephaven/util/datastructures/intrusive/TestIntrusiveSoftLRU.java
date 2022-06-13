@@ -35,7 +35,7 @@ public class TestIntrusiveSoftLRU {
         System.gc();
         iterateAssertAndCount(objs, lru);
 
-        for (final ListIterator<WeakReference<TestNode>> i = objs.listIterator(objs.size()); i.hasPrevious(); ) {
+        for (final ListIterator<WeakReference<TestNode>> i = objs.listIterator(objs.size()); i.hasPrevious();) {
             final TestNode testNode = i.previous().get();
 
             if (testNode != null) {
@@ -90,16 +90,16 @@ public class TestIntrusiveSoftLRU {
             createAndAddToCache(null, objRefs, lru, i);
 
             // Check the we resize by doubling and don't internally shuffle things before we are LRU
-            if(i == 15 || i == 31 || i == 63 || i == 127) {
+            if (i == 15 || i == 31 || i == 63 || i == 127) {
                 assertEquals(i + 1, lru.currentCapacity());
                 System.gc();
-                for(int jj = 0; jj <=i; jj++) {
+                for (int jj = 0; jj <= i; jj++) {
                     final TestNode object = objRefs.get(jj).get();
                     assertNotNull(object);
                     assertEquals(jj, object.getSlot());
                     lru.touch(object);
                     assertEquals(jj, object.getSlot());
-                    assertEquals(i+1, lru.currentCapacity());
+                    assertEquals(i + 1, lru.currentCapacity());
                 }
             }
         }
@@ -108,7 +108,7 @@ public class TestIntrusiveSoftLRU {
         iterateAssertAndCount(objRefs, lru);
         assertTrue(lru.verifyLRU(256));
 
-        for(int ii = 0; ii < 16; ii++) {
+        for (int ii = 0; ii < 16; ii++) {
             createAndAddToCache(null, objRefs, lru, ii);
         }
 
@@ -129,10 +129,11 @@ public class TestIntrusiveSoftLRU {
         }
     }
 
-    private void iterateAssertAndCount(@NotNull final List<WeakReference<TestNode>> objs, @NotNull final IntrusiveSoftLRU<TestNode> lru) {
+    private void iterateAssertAndCount(@NotNull final List<WeakReference<TestNode>> objs,
+            @NotNull final IntrusiveSoftLRU<TestNode> lru) {
         int nonNullItems = 0;
         final Set<Integer> used = new HashSet<>();
-        for (final Iterator<WeakReference<TestNode>> i = objs.iterator(); i.hasNext(); ) {
+        for (final Iterator<WeakReference<TestNode>> i = objs.iterator(); i.hasNext();) {
             final TestNode testNode = i.next().get();
 
             if (testNode == null) {
@@ -149,10 +150,10 @@ public class TestIntrusiveSoftLRU {
     }
 
     private void createAndAddToCache(@Nullable final List<TestNode> objects,
-                                     @NotNull final List<WeakReference<TestNode>> objRefs,
-                                     @NotNull final IntrusiveSoftLRU<TestNode> lru, int i) {
+            @NotNull final List<WeakReference<TestNode>> objRefs,
+            @NotNull final IntrusiveSoftLRU<TestNode> lru, int i) {
         final TestNode testNode = new TestNode(i);
-        if(objects != null) {
+        if (objects != null) {
             objects.add(testNode);
         }
         objRefs.add(new WeakReference<>(testNode));

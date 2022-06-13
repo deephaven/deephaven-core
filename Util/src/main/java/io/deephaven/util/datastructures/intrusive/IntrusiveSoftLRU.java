@@ -13,8 +13,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A Caching structure that uses simple arrays with doubling, until a threshold is reached.  It then switches to an
- * LRU cache beyond the maximum size.
+ * A Caching structure that uses simple arrays with doubling, until a threshold is reached. It then switches to an LRU
+ * cache beyond the maximum size.
  *
  * @param <T> the cached type
  */
@@ -37,7 +37,7 @@ public class IntrusiveSoftLRU<T> {
     }
 
     /**
-     * Create a cache object with the specified initial capacity.  The structure will switch to LRU mode once maxCapacity
+     * Create a cache object with the specified initial capacity. The structure will switch to LRU mode once maxCapacity
      * has been reached.
      *
      * @param adapter the {@link Adapter} object for setting the intrusive properties.
@@ -63,13 +63,13 @@ public class IntrusiveSoftLRU<T> {
     }
 
     /**
-     * Touch an item in the cache.  If it has not been visited yet, it will be added, potentially dropping the least recently
-     * accessed item in the cache.
+     * Touch an item in the cache. If it has not been visited yet, it will be added, potentially dropping the least
+     * recently accessed item in the cache.
      *
      * @param itemToTouch the item to touch.
      */
     public synchronized void touch(@NotNull final T itemToTouch) {
-        if(softReferences.length == maxCapacity) {
+        if (softReferences.length == maxCapacity) {
             touchLRU(itemToTouch);
         } else {
             touchSimple(itemToTouch);
@@ -85,6 +85,7 @@ public class IntrusiveSoftLRU<T> {
 
     /**
      * Check the current capacity of the cache.
+     * 
      * @return the current capacity
      */
     @TestUseOnly
@@ -157,10 +158,10 @@ public class IntrusiveSoftLRU<T> {
     private void touchSimple(@NotNull final T itemToTouch) {
         final int slot = adapter.getSlot(itemToTouch);
         final SoftReference<T> owner = adapter.getOwner(itemToTouch);
-        if(slot == -1 || softReferences[slot] != owner) {
-            // We'll have to add it, we haven't seen it before.  First, do we need to resize?
-            if(size < softReferences.length) {
-                // No,  cool. Just add it.
+        if (slot == -1 || softReferences[slot] != owner) {
+            // We'll have to add it, we haven't seen it before. First, do we need to resize?
+            if (size < softReferences.length) {
+                // No, cool. Just add it.
                 final int slotForItem = size++;
                 adapter.setSlot(itemToTouch, slotForItem);
                 softReferences[slotForItem] = owner;
@@ -173,19 +174,19 @@ public class IntrusiveSoftLRU<T> {
     }
 
     /**
-     * Resize the cache by doubling,  stopping at the maximum capacity.  If maximum capacity is reached, then switch
-     * the structure into LRU mode.
+     * Resize the cache by doubling, stopping at the maximum capacity. If maximum capacity is reached, then switch the
+     * structure into LRU mode.
      *
      */
     private void doResize() {
         // Time to reallocate or change internal structures
         final int newCapacity = Math.min(softReferences.length << 1, maxCapacity);
         final SoftReference<T>[] oldRefs = softReferences;
-        //noinspection unchecked
+        // noinspection unchecked
         softReferences = new SoftReference[newCapacity];
 
-        // We have grown too large,  switch to LRU mode.
-        if(newCapacity == maxCapacity) {
+        // We have grown too large, switch to LRU mode.
+        if (newCapacity == maxCapacity) {
             initializeLinks();
             for (final SoftReference<T> reference : oldRefs) {
                 final T maybeItem = reference.get();
@@ -216,7 +217,7 @@ public class IntrusiveSoftLRU<T> {
         int v = tail;
 
         for (int i = 0; i < nexts.length; ++i) {
-            // We should never visit the same position twice.  We should also
+            // We should never visit the same position twice. We should also
             // never encounter the same object twice.
             if (!visited.add(v) || !refsVisited.add(softReferences[v].get())) {
                 return false;
@@ -243,8 +244,9 @@ public class IntrusiveSoftLRU<T> {
     }
 
     /**
-     * An interface defining the required intrusive property getters and setters.  Users should not directly call these
-     * methods,  or they risk corrupting the internal datastructure.
+     * An interface defining the required intrusive property getters and setters. Users should not directly call these
+     * methods, or they risk corrupting the internal datastructure.
+     * 
      * @param <T>
      */
     public interface Adapter<T> {
@@ -276,6 +278,7 @@ public class IntrusiveSoftLRU<T> {
 
     /**
      * An intrusive node for storing items in the cache.
+     * 
      * @param <T> the actual node type
      */
     public interface Node<T extends Node<T>> {
@@ -288,6 +291,7 @@ public class IntrusiveSoftLRU<T> {
 
         /**
          * The base node implementation for items in the cache.
+         * 
          * @param <T>
          */
         class Impl<T extends Impl<T>> implements Node<T> {
@@ -319,6 +323,7 @@ public class IntrusiveSoftLRU<T> {
 
         /**
          * A basic adapter class for {@link Node} items in the cache.
+         * 
          * @param <T>
          */
         class Adapter<T extends Node<T>> implements IntrusiveSoftLRU.Adapter<T> {
