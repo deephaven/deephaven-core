@@ -26,11 +26,6 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
         return (WeakReference<IntrusivePage<ATTR>>) NULL_PAGE;
     }
 
-    public <ATTR2 extends Any> PageCache<ATTR2> castAttr() {
-        // noinspection unchecked
-        return (PageCache<ATTR2>) this;
-    }
-
     /**
      * Intrusive data structure for page caching.
      */
@@ -47,7 +42,12 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
         }
     }
 
-    public PageCache(final int initialSize, final int maxSize) {
-        super(IntrusiveSoftLRU.Node.Adapter.getInstance(), initialSize, maxSize);
+    public <ATTR2 extends Any> PageCache<ATTR2> castAttr() {
+        // noinspection unchecked
+        return (PageCache<ATTR2>) this;
+    }
+
+    public PageCache(final int initialCapacity, final int maxCapacity) {
+        super(IntrusiveSoftLRU.Node.Adapter.getInstance(), initialCapacity, maxCapacity);
     }
 }
