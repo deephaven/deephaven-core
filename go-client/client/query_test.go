@@ -6,7 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apache/arrow/go/arrow/array"
+	"github.com/apache/arrow/go/v8/arrow"
+	"github.com/apache/arrow/go/v8/arrow/array"
 	"github.com/deephaven/deephaven-core/go-client/client"
 	"github.com/deephaven/deephaven-core/go-client/internal/test_setup"
 )
@@ -267,7 +268,7 @@ func TestUpdateDropQuery(t *testing.T) {
 
 type queryOp func(*client.TableHandle) []client.QueryNode
 
-func doQueryTest(inputRec array.Record, t *testing.T, op queryOp) []array.Record {
+func doQueryTest(inputRec arrow.Record, t *testing.T, op queryOp) []arrow.Record {
 	defer inputRec.Release()
 
 	ctx := context.Background()
@@ -297,7 +298,7 @@ func doQueryTest(inputRec array.Record, t *testing.T, op queryOp) []array.Record
 		defer table.Release(ctx)
 	}
 
-	var recs []array.Record
+	var recs []arrow.Record
 	for _, table := range tables {
 		rec, err := table.Snapshot(ctx)
 		if err != nil {

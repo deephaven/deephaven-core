@@ -4,8 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/apache/arrow/go/arrow"
-	"github.com/apache/arrow/go/arrow/array"
+	"github.com/apache/arrow/go/v8/arrow"
 
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
@@ -40,7 +39,7 @@ func (th *TableHandle) IsStatic() bool {
 // Downloads the current state of the table on the server and returns it as a Record.
 //
 // If a Record is returned successfully, it must be freed later with `record.Release()`
-func (th *TableHandle) Snapshot(ctx context.Context) (array.Record, error) {
+func (th *TableHandle) Snapshot(ctx context.Context) (arrow.Record, error) {
 	return th.client.snapshotRecord(ctx, th.ticket)
 }
 

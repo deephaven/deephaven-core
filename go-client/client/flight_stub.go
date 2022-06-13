@@ -7,9 +7,9 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/apache/arrow/go/arrow/array"
-	"github.com/apache/arrow/go/arrow/flight"
-	"github.com/apache/arrow/go/arrow/ipc"
+	"github.com/apache/arrow/go/v8/arrow"
+	"github.com/apache/arrow/go/v8/arrow/flight"
+	"github.com/apache/arrow/go/v8/arrow/ipc"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -37,7 +37,7 @@ func newFlightStub(client *Client, host string, port string) (flightStub, error)
 	return flightStub{client: client, stub: stub}, nil
 }
 
-func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (array.Record, error) {
+func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (arrow.Record, error) {
 	ctx = fs.client.withToken(ctx)
 
 	fticket := &flight.Ticket{Ticket: ticket.GetTicket()}
@@ -73,7 +73,7 @@ func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 // Uploads a table to the deephaven server.
 //
 // The table can then be manipulated and referenced using the returned TableHandle.
-func (fs *flightStub) ImportTable(ctx context.Context, rec array.Record) (*TableHandle, error) {
+func (fs *flightStub) ImportTable(ctx context.Context, rec arrow.Record) (*TableHandle, error) {
 	ctx = fs.client.withToken(ctx)
 
 	doPut, err := fs.stub.DoPut(ctx)
@@ -84,7 +84,7 @@ func (fs *flightStub) ImportTable(ctx context.Context, rec array.Record) (*Table
 
 	ticketNum := fs.client.newTicketNum()
 
-	descr := &flight.FlightDescriptor{Type: flight.FlightDescriptor_PATH, Path: []string{"export", strconv.Itoa(int(ticketNum))}}
+	descr := &flight.FlightDescriptor{Type: flight.DescriptorPATH, Path: []string{"export", strconv.Itoa(int(ticketNum))}}
 
 	writer := flight.NewRecordWriter(doPut, ipc.WithSchema(rec.Schema()))
 

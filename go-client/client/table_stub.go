@@ -6,8 +6,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/apache/arrow/go/arrow/flight"
-	"github.com/apache/arrow/go/arrow/memory"
+	"github.com/apache/arrow/go/v8/arrow/flight"
+	"github.com/apache/arrow/go/v8/arrow/memory"
 
 	tablepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/table"
 )

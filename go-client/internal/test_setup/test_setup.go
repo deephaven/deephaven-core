@@ -5,12 +5,12 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/apache/arrow/go/arrow"
-	"github.com/apache/arrow/go/arrow/array"
-	"github.com/apache/arrow/go/arrow/memory"
+	"github.com/apache/arrow/go/v8/arrow"
+	"github.com/apache/arrow/go/v8/arrow/array"
+	"github.com/apache/arrow/go/v8/arrow/memory"
 )
 
-func ExampleRecord() array.Record {
+func ExampleRecord() arrow.Record {
 	pool := memory.NewGoAllocator()
 
 	schema := arrow.NewSchema(
@@ -32,7 +32,7 @@ func ExampleRecord() array.Record {
 	return b.NewRecord()
 }
 
-func RandomRecord(numCols int, numRows int, maxNum int) array.Record {
+func RandomRecord(numCols int, numRows int, maxNum int) arrow.Record {
 	pool := memory.NewGoAllocator()
 
 	var fields []arrow.Field
