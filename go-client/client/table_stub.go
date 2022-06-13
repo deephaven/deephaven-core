@@ -12,6 +12,16 @@ import (
 	tablepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/table"
 )
 
+// May be returned by ExecQuery as the result of an invalid query.
+// Typically, the associated message isn't very helpful.
+type QueryError struct {
+	msg string
+}
+
+func (err QueryError) Error() string {
+	return "query error: " + err.msg
+}
+
 type tableStub struct {
 	client *Client
 
@@ -45,7 +55,7 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 		}
 
 		if !created.Success {
-			return nil, errors.New(created.GetErrorInfo())
+			return nil, QueryError{msg: created.GetErrorInfo()}
 		}
 
 		if _, ok := created.ResultId.Ref.(*tablepb2.TableReference_Ticket); ok {

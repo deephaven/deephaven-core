@@ -471,12 +471,12 @@ func (op headOrTailByOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tab
 }
 
 // Performs a group aggregation on the given columns and then a Head request
-func (qb QueryNode) HeadBy(numRows int64, by []string) QueryNode {
+func (qb QueryNode) HeadBy(numRows int64, by ...string) QueryNode {
 	return qb.addOp(headOrTailByOp{child: qb, numRows: numRows, by: by, isTail: false})
 }
 
 // Performs a group aggregation on the given columns and then a Tail request
-func (qb QueryNode) TailBy(numRows int64, by []string) QueryNode {
+func (qb QueryNode) TailBy(numRows int64, by ...string) QueryNode {
 	return qb.addOp(headOrTailByOp{child: qb, numRows: numRows, by: by, isTail: true})
 }
 

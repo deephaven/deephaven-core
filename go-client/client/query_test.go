@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/deephaven/deephaven-core/go-client/client"
@@ -386,6 +387,60 @@ func TestWhere(t *testing.T) {
 	}
 }
 
+func TestUpdateViewSelect(t *testing.T) {
+	type usvOp func(qb client.QueryNode, columns ...string) client.QueryNode
+
+	ops := []usvOp{client.QueryNode.Update, client.QueryNode.LazyUpdate, client.QueryNode.View, client.QueryNode.UpdateView, client.QueryNode.Select}
+
+	for _, op := range ops {
+		results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+			return []client.QueryNode{op(tbl.Query(), "Sum = a + b", "b", "Foo = Sum % 2")}
+		})
+		defer results[0].Release()
+
+		if results[0].NumCols() < 3 || results[0].NumRows() != 30 {
+			t.Errorf("result had wrong size %d x %d", results[0].NumCols(), results[0].NumRows())
+			return
+		}
+	}
+}
+
+func TestExactJoin(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
+		query := tbl.Query().GroupBy("a").Update("b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]") // Make sure the key column is only unique values
+		leftTable := query.DropColumns("c", "d", "e")
+		rightTable := query.DropColumns("b", "c")
+		resultTable := leftTable.NaturalJoin(rightTable, []string{"a"}, []string{"d", "e"})
+		return []client.QueryNode{leftTable, resultTable}
+	})
+	defer results[0].Release()
+	defer results[1].Release()
+
+	leftTable, resultTable := results[0], results[1]
+	if resultTable.NumCols() != 4 || resultTable.NumRows() != leftTable.NumRows() {
+		t.Errorf("result table had wrong size %d x %d", resultTable.NumCols(), resultTable.NumRows())
+		return
+	}
+}
+
+func TestNaturalJoin(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
+		query := tbl.Query().GroupBy("a").Update("b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]") // Make sure the key column is only unique values
+		leftTable := query.DropColumns("c", "d", "e")
+		rightTable := query.DropColumns("b", "c").Head(10)
+		resultTable := leftTable.NaturalJoin(rightTable, []string{"a"}, []string{"d", "e"})
+		return []client.QueryNode{leftTable, resultTable}
+	})
+	defer results[0].Release()
+	defer results[1].Release()
+
+	leftTable, resultTable := results[0], results[1]
+	if resultTable.NumCols() != 4 || resultTable.NumRows() != leftTable.NumRows() {
+		t.Errorf("result table had wrong size %d x %d", resultTable.NumCols(), resultTable.NumRows())
+		return
+	}
+}
+
 func TestCrossJoin(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
 		leftTable := tbl.Query().DropColumns("e")
@@ -409,5 +464,169 @@ func TestCrossJoin(t *testing.T) {
 	if result2.NumRows() <= left.NumRows() {
 		t.Error("result2 was too small")
 		return
+	}
+}
+
+func TestAsOfJoin(t *testing.T) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	if err != nil {
+		t.Fatalf("NewClient %s", err.Error())
+	}
+	defer c.Close()
+
+	startTime := time.Now().UnixNano() - 2_000_000_000
+
+	tt1 := c.TimeTableQuery(100000, &startTime).Update("Col1 = i")
+	tt2 := c.TimeTableQuery(200000, &startTime).Update("Col1 = i")
+
+	normalTable := tt1.AsOfJoin(tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleLessThanEqual)
+	reverseTable := tt2.AsOfJoin(tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleGreaterThanEqual)
+
+	tables, err := c.ExecQuery(ctx, tt1, normalTable, reverseTable)
+	if err != nil {
+		t.Errorf("ExecQuery %s", err.Error())
+		return
+	}
+	if len(tables) != 3 {
+		t.Errorf("wrong number of tables")
+		return
+	}
+	defer tables[0].Release(ctx)
+	defer tables[1].Release(ctx)
+	defer tables[2].Release(ctx)
+
+	ttRec, err := tables[0].Snapshot(ctx)
+	if err != nil {
+		t.Errorf("Snapshot %s", err.Error())
+		return
+	}
+
+	normalRec, err := tables[1].Snapshot(ctx)
+	if err != nil {
+		t.Errorf("Snapshot %s", err.Error())
+		return
+	}
+
+	reverseRec, err := tables[2].Snapshot(ctx)
+	if err != nil {
+		t.Errorf("Snapshot %s", err.Error())
+		return
+	}
+
+	if normalRec.NumRows() == 0 || normalRec.NumRows() > ttRec.NumRows() {
+		t.Error("record had wrong size")
+		return
+	}
+
+	if reverseRec.NumRows() == 0 || reverseRec.NumRows() > ttRec.NumRows() {
+		t.Error("record had wrong size")
+		return
+	}
+}
+
+func TestHeadByTailBy(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(3, 10, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		query := tbl.Query()
+		headTbl := query.HeadBy(1, "a")
+		tailTbl := query.TailBy(1, "b")
+		return []client.QueryNode{headTbl, tailTbl}
+	})
+	defer results[0].Release()
+	defer results[1].Release()
+
+	headTbl, tailTbl := results[0], results[1]
+	if headTbl.NumRows() > 5 {
+		t.Errorf("head table had wrong size %d", headTbl.NumRows())
+		return
+	}
+	if tailTbl.NumRows() > 5 {
+		t.Errorf("tail table had wrong size %d", tailTbl.NumRows())
+		return
+	}
+}
+
+func TestGroup(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		query := tbl.Query()
+		oneCol := query.GroupBy("a")
+		bothCols := query.GroupBy()
+		return []client.QueryNode{oneCol, bothCols}
+	})
+	defer results[0].Release()
+	defer results[1].Release()
+
+	oneCol, bothCols := results[0], results[1]
+	if oneCol.NumRows() > 5 {
+		t.Errorf("one-column-grouped table had wrong size %d", oneCol.NumRows())
+		return
+	}
+	if bothCols.NumRows() > 25 {
+		t.Errorf("all-grouped table had wrong size %d", bothCols.NumRows())
+		return
+	}
+}
+
+func TestUngroup(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		ungrouped := tbl.Query().GroupBy("a").Ungroup([]string{"b"}, false)
+		return []client.QueryNode{ungrouped}
+	})
+	defer results[0].Release()
+
+	ungrouped := results[0]
+	if ungrouped.NumRows() != 30 {
+		t.Errorf("table had wrong size %d", ungrouped.NumRows())
+		return
+	}
+}
+
+func TestCountBy(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		query := tbl.Query()
+		distinct := query.SelectDistinct("a")
+		counted := query.CountBy("Counted", "a")
+		return []client.QueryNode{distinct, counted}
+	})
+	defer results[0].Release()
+
+	distinct, counted := results[0], results[1]
+
+	if distinct.NumRows() != counted.NumRows() || counted.NumCols() != 2 {
+		t.Errorf("table had wrong size %d x %d (expected %d by %d)", counted.NumCols(), counted.NumRows(), 3, distinct.NumRows())
+	}
+}
+
+func TestCount(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		return []client.QueryNode{tbl.Query().Count("a")}
+	})
+	defer results[0].Release()
+
+	result := results[0].Column(0).(*array.Int64).Int64Values()[0]
+	if result != 30 {
+		t.Errorf("Count returned wrong value %d", result)
+		return
+	}
+}
+
+func TestDedicatedAgg(t *testing.T) {
+	type AggOp = func(qb client.QueryNode, by ...string) client.QueryNode
+
+	ops := []AggOp{
+		client.QueryNode.FirstBy, client.QueryNode.LastBy, client.QueryNode.SumBy, client.QueryNode.AvgBy, client.QueryNode.StdBy,
+		client.QueryNode.VarBy, client.QueryNode.MedianBy, client.QueryNode.MinBy, client.QueryNode.MaxBy}
+
+	for _, op := range ops {
+		results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+			return []client.QueryNode{op(tbl.Query(), "a")}
+		})
+		defer results[0].Release()
+
+		if results[0].NumRows() > 5 {
+			t.Errorf("table had wrong size %d", results[0].NumRows())
+			return
+		}
 	}
 }

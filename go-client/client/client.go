@@ -109,6 +109,12 @@ func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 	return ticketpb2.Ticket{Ticket: bytes}
 }
 
+// Sends an entire query over to the server all at once and returns the resulting tables.
+//
+// If this function completes successfully, the number of tables returned will always match the
+// number of query nodes passed.
+//
+// This may return a QueryError if the query is invalid.
 func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]*TableHandle, error) {
 	return execQuery(client, ctx, nodes)
 }
