@@ -33,14 +33,6 @@ type Client struct {
 	tables map[fieldId]*TableHandle
 }
 
-type SyncOption int
-
-const (
-	NoSync        SyncOption = iota
-	SyncOnce      SyncOption = iota
-	SyncRepeating SyncOption = iota
-)
-
 // Starts a connection to the deephaven server.
 //
 // scriptLanguage can be either "python" or "groovy", and must match the language used on the server. Python is the default.
@@ -56,35 +48,31 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 
 	client := &Client{grpcChannel: grpcChannel, tables: make(map[fieldId]*TableHandle)}
 
-	client.sessionStub, err = NewSessionStub(ctx, client)
+	client.sessionStub, err = newSessionStub(ctx, client)
 	if err != nil {
 		client.Close()
 		return nil, err
 	}
 
-	client.tableStub, err = NewTableStub(client)
+	client.tableStub, err = newTableStub(client)
 	if err != nil {
 		client.Close()
 		return nil, err
 	}
 
-	client.consoleStub, err = NewConsoleStub(ctx, client, scriptLanguage)
+	client.consoleStub, err = newConsoleStub(ctx, client, scriptLanguage)
 	if err != nil {
 		client.Close()
 		return nil, err
 	}
 
-	client.flightStub, err = NewFlightStub(client, host, port)
+	client.flightStub, err = newFlightStub(client, host, port)
 	if err != nil {
 		client.Close()
 		return nil, err
 	}
 
 	return client, nil
-}
-
-func (client *Client) GrpcChannel() *grpc.ClientConn {
-	return client.grpcChannel
 }
 
 func (client *Client) newTicketNum() int32 {
@@ -119,6 +107,8 @@ func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]*Tab
 	return execQuery(client, ctx, nodes)
 }
 
+// Closes the connection to the server and frees any associated resources.
+// Once this method is called, the client and any TableHandles from it cannot be used.
 func (client *Client) Close() {
 	client.sessionStub.Close()
 	if client.grpcChannel != nil {
@@ -127,8 +117,8 @@ func (client *Client) Close() {
 	}
 }
 
-func (client *Client) WithToken(ctx context.Context) context.Context {
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("deephaven_session_id", string(client.Token())))
+func (client *Client) withToken(ctx context.Context) context.Context {
+	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("deephaven_session_id", string(client.getToken())))
 }
 
 func (client *Client) handleScriptChanges(resp *consolepb2.ExecuteCommandResponse) {

@@ -23,7 +23,7 @@ type flightStub struct {
 	stub flight.FlightServiceClient
 }
 
-func NewFlightStub(client *Client, host string, port string) (flightStub, error) {
+func newFlightStub(client *Client, host string, port string) (flightStub, error) {
 	stub, err := flight.NewClientWithMiddleware(
 		net.JoinHostPort(host, port),
 		nil,
@@ -37,8 +37,8 @@ func NewFlightStub(client *Client, host string, port string) (flightStub, error)
 	return flightStub{client: client, stub: stub}, nil
 }
 
-func (fs *flightStub) SnapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (array.Record, error) {
-	ctx = fs.client.WithToken(ctx)
+func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (array.Record, error) {
+	ctx = fs.client.withToken(ctx)
 
 	fticket := &flight.Ticket{Ticket: ticket.GetTicket()}
 
@@ -74,7 +74,7 @@ func (fs *flightStub) SnapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 //
 // The table can then be manipulated and referenced using the returned TableHandle.
 func (fs *flightStub) ImportTable(ctx context.Context, rec array.Record) (*TableHandle, error) {
-	ctx = fs.client.WithToken(ctx)
+	ctx = fs.client.withToken(ctx)
 
 	doPut, err := fs.stub.DoPut(ctx)
 	if err != nil {

@@ -616,7 +616,7 @@ func TestDedicatedAgg(t *testing.T) {
 
 	ops := []AggOp{
 		client.QueryNode.FirstBy, client.QueryNode.LastBy, client.QueryNode.SumBy, client.QueryNode.AvgBy, client.QueryNode.StdBy,
-		client.QueryNode.VarBy, client.QueryNode.MedianBy, client.QueryNode.MinBy, client.QueryNode.MaxBy}
+		client.QueryNode.VarBy, client.QueryNode.MedianBy, client.QueryNode.MinBy, client.QueryNode.MaxBy, client.QueryNode.AbsSumBy}
 
 	for _, op := range ops {
 		results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {

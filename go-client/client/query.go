@@ -21,11 +21,12 @@ type tableOp interface {
 	makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation
 }
 
-// A pointer into a Query DAG
+// A pointer into a Query DAG.
+// Table operations can be performed on it to build up a query, which can then be executed using client.ExecQuery().
 type QueryNode struct {
-	// -1 refers to the QueryBuilder's base table
+	// -1 refers to the queryBuilder's base table
 	index   int
-	builder *QueryBuilder
+	builder *queryBuilder
 }
 
 func (qb QueryNode) addOp(op tableOp) QueryNode {
@@ -34,17 +35,17 @@ func (qb QueryNode) addOp(op tableOp) QueryNode {
 }
 
 // This is (some subset of) the Query DAG.
-type QueryBuilder struct {
+type queryBuilder struct {
 	uniqueId int32
 	table    *TableHandle
 	ops      []tableOp
 }
 
-func (qb *QueryBuilder) curRootNode() QueryNode {
+func (qb *queryBuilder) curRootNode() QueryNode {
 	return QueryNode{index: len(qb.ops) - 1, builder: qb}
 }
 
-// Every op can be uniquely identified by its QueryBuilder ID and its index within that QueryBuilder.
+// Every op can be uniquely identified by its queryBuilder ID and its index within that queryBuilder.
 type opKey struct {
 	index     int
 	builderId int32
@@ -167,8 +168,8 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*Table
 	return output, nil
 }
 
-func newQueryBuilder(client *Client, table *TableHandle) QueryBuilder {
-	return QueryBuilder{uniqueId: client.newTicketNum(), table: table}
+func newQueryBuilder(client *Client, table *TableHandle) queryBuilder {
+	return queryBuilder{uniqueId: client.newTicketNum(), table: table}
 }
 
 type emptyTableOp struct {
@@ -314,6 +315,7 @@ func (op selectOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Select{Select: req}}
 }
 
+// Performs a selection operation basesd on the given formulas
 func (qb QueryNode) Select(formulas ...string) QueryNode {
 	return qb.addOp(selectOp{child: qb, formulas: formulas})
 }
@@ -551,6 +553,11 @@ func (qb QueryNode) SumBy(by ...string) QueryNode {
 	return qb.addOp(dedicatedAggOp{child: qb, colNames: by, kind: tablepb2.ComboAggregateRequest_SUM})
 }
 
+// Performs a sum-absolute-value-by agggregation on the table. Columns not used in the grouping must be numeric.
+func (qb QueryNode) AbsSumBy(by ...string) QueryNode {
+	return qb.addOp(dedicatedAggOp{child: qb, colNames: by, kind: tablepb2.ComboAggregateRequest_ABS_SUM})
+}
+
 // Performs an average-by aggregation on the table. Columns not used in the grouping must be numeric.
 func (qb QueryNode) AvgBy(by ...string) QueryNode {
 	return qb.addOp(dedicatedAggOp{child: qb, colNames: by, kind: tablepb2.ComboAggregateRequest_AVG})
@@ -601,6 +608,8 @@ type aggPart struct {
 }
 
 // AggBuilder is the main way to construct aggregations with multiple parts in them.
+// Each one of the methods is the same as the corresponding method on a QueryNode.
+// The columns to aggregate over are selected in AggBy.
 type AggBuilder struct {
 	aggs []aggPart
 }
@@ -613,71 +622,88 @@ func (b *AggBuilder) addAgg(part aggPart) {
 	b.aggs = append(b.aggs, part)
 }
 
+// Performs a count aggregation on the table.
+// The count of each group is stored in a new column named after the `col` argument.
 func (b *AggBuilder) Count(col string) *AggBuilder {
 	b.addAgg(aggPart{columnName: col, kind: tablepb2.ComboAggregateRequest_COUNT})
 	return b
 }
 
+// Performs a sum-by aggregation on the table.
 func (b *AggBuilder) Sum(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_SUM})
 	return b
 }
 
+// Performs a sum-absolute-value-by agggregation on the table.
 func (b *AggBuilder) AbsSum(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_ABS_SUM})
 	return b
 }
 
+// Performs a group-by aggregation on the table.
+// Columns not in the aggregation become array-type.
+// If no group-by columns are given, the content of each column is grouped into its own array.
 func (b *AggBuilder) Group(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_GROUP})
 	return b
 }
 
+// Performs an average-by aggregation on the table.
 func (b *AggBuilder) Avg(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_AVG})
 	return b
 }
 
+// Performs a first-by aggregation on the table, i.e. it returns a table that contains the first row of each distinct group.
 func (b *AggBuilder) First(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_FIRST})
 	return b
 }
 
+// Performs a last-by aggregation on the table, i.e. it returns a table that contains the last row of each distinct group.
 func (b *AggBuilder) Last(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_LAST})
 	return b
 }
 
+// Performs a minimum-by aggregation on the table.
 func (b *AggBuilder) Min(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_MIN})
 	return b
 }
 
+// Performs a maximum-by aggregation on the table.
 func (b *AggBuilder) Max(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_MAX})
 	return b
 }
 
+// Performs a median-by aggregation on the table.
 func (b *AggBuilder) Median(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_MEDIAN})
 	return b
 }
 
+// Performs a percentile aggregation on the table.
 func (b *AggBuilder) Percentile(percentile float64, cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, percentile: percentile, kind: tablepb2.ComboAggregateRequest_PERCENTILE})
 	return b
 }
 
+// Performs a standard-deviation-by aggregation on the table.
 func (b *AggBuilder) StdDev(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_STD})
 	return b
 }
 
+// Performs a variance-by aggregation on the table.
 func (b *AggBuilder) Variance(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_VAR})
 	return b
 }
 
+// Performs a weighted average on the table. `weightCol` is used as the weights.
 func (b *AggBuilder) WeightedAvg(weightCol string, cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, columnName: weightCol, kind: tablepb2.ComboAggregateRequest_WEIGHTED_AVG})
 	return b
@@ -753,8 +779,11 @@ func (op joinOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.Ta
 }
 
 // Performs a cross-join with this table as the left table.
+//
 // `on` is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
+//
 // `joins` is the columns to add from the right table.
+//
 // `reserveBits` is the number of bits of key-space to initially reserve per group, default is 10.
 func (qb QueryNode) Join(rightTable QueryNode, on []string, joins []string, reserveBits int32) QueryNode {
 	op := joinOp{
@@ -769,7 +798,9 @@ func (qb QueryNode) Join(rightTable QueryNode, on []string, joins []string, rese
 }
 
 // Performs an exact-join with this table as the left table.
+//
 // `on` is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
+//
 // `joins` is the columns to add from the right table.
 func (qb QueryNode) ExactJoin(rightTable QueryNode, on []string, joins []string) QueryNode {
 	op := joinOp{
@@ -783,7 +814,9 @@ func (qb QueryNode) ExactJoin(rightTable QueryNode, on []string, joins []string)
 }
 
 // Performs a natural-join with this table as the left table.
+//
 // `on` is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
+//
 // `joins` is the columns to add from the right table.
 func (qb QueryNode) NaturalJoin(rightTable QueryNode, on []string, joins []string) QueryNode {
 	op := joinOp{
@@ -840,8 +873,11 @@ func (op asOfJoinOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb
 }
 
 // Performs an as-of-join with this table as the left table.
+//
 // `on` is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
+//
 // `joins` is the columns to add from the right table.
+//
 // `matchRule` is the match rule for the join, default is MatchRuleLessThanEqual normally, or MatchRuleGreaterThanEqual or a reverse-as-of-join
 func (qb QueryNode) AsOfJoin(rightTable QueryNode, on []string, joins []string, matchRule int) QueryNode {
 	op := asOfJoinOp{

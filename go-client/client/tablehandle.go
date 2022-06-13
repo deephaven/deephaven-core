@@ -31,6 +31,8 @@ func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Sche
 	}
 }
 
+// Returns true if this table does not change over time.
+// This will be false for things like streaming tables or timetables.
 func (th *TableHandle) IsStatic() bool {
 	return th.isStatic
 }
@@ -39,7 +41,7 @@ func (th *TableHandle) IsStatic() bool {
 //
 // If a Record is returned successfully, it must be freed later with `record.Release()`
 func (th *TableHandle) Snapshot(ctx context.Context) (array.Record, error) {
-	return th.client.SnapshotRecord(ctx, th.ticket)
+	return th.client.snapshotRecord(ctx, th.ticket)
 }
 
 // Returns a new table without the given columns.
@@ -52,11 +54,14 @@ func (th *TableHandle) Update(ctx context.Context, formulas []string) (*TableHan
 	return th.client.Update(ctx, th, formulas)
 }
 
+// Creates a new query based on this table. Table operations can be performed on query nodes,
+//
 func (th *TableHandle) Query() QueryNode {
 	qb := newQueryBuilder(th.client, th)
 	return qb.curRootNode()
 }
 
+// Releases this table handle's resources on the server. The TableHandle is no longer usable after Release is called.
 func (th *TableHandle) Release(ctx context.Context) {
 	if th.client != nil {
 		err := th.client.release(ctx, th.ticket)

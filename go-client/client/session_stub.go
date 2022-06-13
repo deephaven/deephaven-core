@@ -116,8 +116,8 @@ type sessionStub struct {
 
 // Performs the first handshake to get a client token.
 //
-func NewSessionStub(ctx context.Context, client *Client) (sessionStub, error) {
-	stub := sessionpb2.NewSessionServiceClient(client.GrpcChannel())
+func newSessionStub(ctx context.Context, client *Client) (sessionStub, error) {
+	stub := sessionpb2.NewSessionServiceClient(client.grpcChannel)
 
 	cancelCh := make(chan struct{})
 
@@ -142,7 +142,7 @@ func NewSessionStub(ctx context.Context, client *Client) (sessionStub, error) {
 	return hs, nil
 }
 
-func (hs *sessionStub) Token() []byte {
+func (hs *sessionStub) getToken() []byte {
 	hs.tokenMutex.Lock()
 	if hs.token.Error != nil {
 		panic("TODO: Error in refreshing token")
@@ -155,7 +155,7 @@ func (hs *sessionStub) Token() []byte {
 }
 
 func (hs *sessionStub) release(ctx context.Context, ticket *ticketpb2.Ticket) error {
-	ctx = hs.client.WithToken(ctx)
+	ctx = hs.client.withToken(ctx)
 
 	req := sessionpb2.ReleaseRequest{Id: ticket}
 	_, err := hs.stub.Release(ctx, &req)

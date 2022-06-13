@@ -13,13 +13,12 @@ import (
 )
 
 // May be returned by ExecQuery as the result of an invalid query.
-// Typically, the associated message isn't very helpful.
 type QueryError struct {
-	msg string
+	Msg string
 }
 
 func (err QueryError) Error() string {
-	return "query error: " + err.msg
+	return "query error: " + err.Msg
 }
 
 type tableStub struct {
@@ -28,14 +27,14 @@ type tableStub struct {
 	stub tablepb2.TableServiceClient
 }
 
-func NewTableStub(client *Client) (tableStub, error) {
-	stub := tablepb2.NewTableServiceClient(client.GrpcChannel())
+func newTableStub(client *Client) (tableStub, error) {
+	stub := tablepb2.NewTableServiceClient(client.grpcChannel)
 
 	return tableStub{client: client, stub: stub}, nil
 }
 
 func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableRequest_Operation) ([]*TableHandle, error) {
-	ctx = ts.client.WithToken(ctx)
+	ctx = ts.client.withToken(ctx)
 
 	req := tablepb2.BatchTableRequest{Ops: ops}
 	resp, err := ts.stub.Batch(ctx, &req)
@@ -55,7 +54,7 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 		}
 
 		if !created.Success {
-			return nil, QueryError{msg: created.GetErrorInfo()}
+			return nil, QueryError{Msg: created.GetErrorInfo()}
 		}
 
 		if _, ok := created.ResultId.Ref.(*tablepb2.TableReference_Ticket); ok {
@@ -72,7 +71,7 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 
 // Opens a globally-scoped table with the given name on the server.
 func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, error) {
-	ctx = ts.client.WithToken(ctx)
+	ctx = ts.client.withToken(ctx)
 
 	fieldId := fieldId{appId: "scope", fieldName: name}
 	if tbl, ok := ts.client.tables[fieldId]; ok {
@@ -102,7 +101,7 @@ func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
 //
 // The table will have zero columns and the specified number of rows.
 func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandle, error) {
-	ctx = ts.client.WithToken(ctx)
+	ctx = ts.client.withToken(ctx)
 
 	result := ts.client.newTicket()
 
@@ -134,7 +133,7 @@ func (ts *tableStub) TimeTableQuery(period int64, startTime *int64) QueryNode {
 // The period is in nanoseconds and represents the interval between adding new rows to the table.
 // The startTime is in nanoseconds since epoch and defaults to the current time when it is nil.
 func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int64) (*TableHandle, error) {
-	ctx = ts.client.WithToken(ctx)
+	ctx = ts.client.withToken(ctx)
 
 	result := ts.client.newTicket()
 
@@ -156,7 +155,7 @@ func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int
 }
 
 func (ts *tableStub) DropColumns(ctx context.Context, table *TableHandle, cols []string) (*TableHandle, error) {
-	ctx = ts.client.WithToken(ctx)
+	ctx = ts.client.withToken(ctx)
 
 	result := ts.client.newTicket()
 
@@ -172,7 +171,7 @@ func (ts *tableStub) DropColumns(ctx context.Context, table *TableHandle, cols [
 }
 
 func (ts *tableStub) Update(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
-	ctx = ts.client.WithToken(ctx)
+	ctx = ts.client.withToken(ctx)
 
 	result := ts.client.newTicket()
 
