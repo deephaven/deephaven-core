@@ -6,6 +6,7 @@ plugins {
 license {
     header rootProject.file('license-header')
     include '**/*.java'
+    exclude '**/generated/**'
     strictCheck true
     useDefaultMappings true
     ignoreFailures true

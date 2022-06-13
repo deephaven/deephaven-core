@@ -1,3 +1,5 @@
+import nl.javadude.gradle.plugins.license.License
+
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
@@ -14,4 +16,7 @@ dependencies {
 
     implementation 'com.google.guava:guava:19.0'
 
+}
+tasks.withType(License) {
+    enabled = false
 }

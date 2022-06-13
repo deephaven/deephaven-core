@@ -1,3 +1,5 @@
+import nl.javadude.gradle.plugins.license.License
+
 plugins {
     id 'io.deephaven.project.register'
     id 'com.bmuschko.docker-remote-api'
@@ -7,6 +9,10 @@ evaluationDependsOn Docker.registryProject('python-dev-base')
 
 configurations {
     pythonWheel
+}
+
+tasks.withType(License) {
+    enabled = false
 }
 
 test {

@@ -1,6 +1,12 @@
+import nl.javadude.gradle.plugins.license.License
+
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
+}
+
+tasks.withType(License) {
+    enabled = false
 }
 
 dependencies {
