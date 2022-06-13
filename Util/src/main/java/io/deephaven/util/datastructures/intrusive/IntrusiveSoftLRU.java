@@ -118,7 +118,9 @@ public class IntrusiveSoftLRU<T> {
     private void touchLRU(@NotNull T itemToTouch) {
         final int slot = adapter.getSlot(itemToTouch);
 
-        if (slot == -1 || softReferences[slot].get() != itemToTouch) {
+        if (slot < 0 ||
+            slot >= currentCapacity() ||
+            softReferences[slot].get() != itemToTouch) {
             // A new entry, place it on top of the tail
             adapter.setSlot(itemToTouch, tail);
             softReferences[tail] = adapter.getOwner(itemToTouch);
@@ -157,14 +159,15 @@ public class IntrusiveSoftLRU<T> {
      */
     private void touchSimple(@NotNull final T itemToTouch) {
         final int slot = adapter.getSlot(itemToTouch);
-        final SoftReference<T> owner = adapter.getOwner(itemToTouch);
-        if (slot == -1 || softReferences[slot] != owner) {
+        if (slot < 0 ||
+            slot >= currentCapacity() ||
+            softReferences[slot].get() != itemToTouch) {
             // We'll have to add it, we haven't seen it before. First, do we need to resize?
             if (size < softReferences.length) {
                 // No, cool. Just add it.
                 final int slotForItem = size++;
                 adapter.setSlot(itemToTouch, slotForItem);
-                softReferences[slotForItem] = owner;
+                softReferences[slotForItem] = adapter.getOwner(itemToTouch);
             } else {
                 // Yep, resize, copy, and potentially switch to LRU mode.
                 doResize();
@@ -176,36 +179,34 @@ public class IntrusiveSoftLRU<T> {
     /**
      * Resize the cache by doubling, stopping at the maximum capacity. If maximum capacity is reached, then switch the
      * structure into LRU mode.
-     *
      */
     private void doResize() {
-        // Time to reallocate or change internal structures
-        final int newCapacity = Math.min(softReferences.length << 1, maxCapacity);
-        final SoftReference<T>[] oldRefs = softReferences;
-        // noinspection unchecked
-        softReferences = new SoftReference[newCapacity];
+        // First we will try to compact the references.  Maybe we can get away without actually resizing
+        int nullsFound = 0;
+        for(int refIdx = 0; refIdx < softReferences.length; refIdx++) {
+            final T object = softReferences[refIdx].get();
+            if(object == null) {
+                nullsFound++;
+            } else if(nullsFound > 0) {
+                softReferences[refIdx - nullsFound] = softReferences[refIdx];
+                softReferences[refIdx] = getNull();
+                adapter.setSlot(object, refIdx - nullsFound);
+            }
+        }
 
-        // We have grown too large, switch to LRU mode.
+        // We free'd up space!  Cool!
+        size -= nullsFound;
+        if(size < softReferences.length - 1) {
+            return;
+        }
+
+        // Time to reallocate or change internal structures
+        final int oldCapacity = softReferences.length;
+        final int newCapacity = Math.min(oldCapacity << 1, maxCapacity);
+        softReferences = Arrays.copyOf(softReferences, newCapacity);
+        Arrays.fill(softReferences, oldCapacity, newCapacity, getNull());
         if (newCapacity == maxCapacity) {
             initializeLinks();
-            for (final SoftReference<T> reference : oldRefs) {
-                final T maybeItem = reference.get();
-                if (maybeItem != null) {
-                    // Clear the slot since we're changing ownership.
-                    adapter.setSlot(maybeItem, -1);
-                    touchLRU(maybeItem);
-                }
-            }
-        } else {
-            this.size = 0;
-            for (final SoftReference<T> reference : oldRefs) {
-                final T maybeItem = reference.get();
-                if (maybeItem != null) {
-                    final int slotForItem = size++;
-                    adapter.setSlot(maybeItem, slotForItem);
-                    softReferences[slotForItem] = reference;
-                }
-            }
         }
     }
 
@@ -244,23 +245,41 @@ public class IntrusiveSoftLRU<T> {
     }
 
     /**
+     * Evict an item from the cache by nulling it's internal reference. Intended for test use only.
+     * @param refIdx
+     */
+    @TestUseOnly
+    void evict(int refIdx) {
+        if(refIdx < 0 || refIdx > softReferences.length || softReferences[refIdx] == getNull()) {
+            return;
+        }
+
+        softReferences[refIdx].clear();
+    }
+
+    @TestUseOnly
+    int size() {
+        return size;
+    }
+
+    /**
      * An interface defining the required intrusive property getters and setters. Users should not directly call these
-     * methods, or they risk corrupting the internal datastructure.
+     * methods, or they risk corrupting the internal data structure.
      * 
      * @param <T>
      */
     public interface Adapter<T> {
 
         /**
-         * Get the {@link SoftReference} object which owns the object being cached.
+         * Get a {@link SoftReference} object which refers to the object being cached and will act as its "owner" in the cache.
          *
          * @param cachedObject the object being cached.
-         * @return the {@link SoftReference} that owns the item.
+         * @return a {@link SoftReference} that refers to the item and will act as its "owner" in the cache.
          */
         SoftReference<T> getOwner(T cachedObject);
 
         /**
-         * Get the slot in which the reference is stored in the cache.
+         * Get the slot in which the object is stored in the cache.
          *
          * @param cachedObject the being cached.
          * @return the slot for the object.

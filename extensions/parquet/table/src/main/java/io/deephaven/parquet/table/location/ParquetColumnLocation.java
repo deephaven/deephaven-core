@@ -71,7 +71,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private static final int INITIAL_PAGE_CACHE_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(ParquetColumnLocation.class, "initialPageCacheSize", 128);
     private static final int MAX_PAGE_CACHE_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(ParquetColumnLocation.class, "maxPageCacheSize", 1 << 13);
+            .getIntegerForClassWithDefault(ParquetColumnLocation.class, "maxPageCacheSize", 8192);
 
     private static final Logger log = LoggerFactory.getLogger(ParquetColumnLocation.class);
 
@@ -84,7 +84,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private final boolean hasGroupingTable;
 
     // We should consider moving this to column level if needed. Column-location level likely allows more parallelism.
-    private PageCache<ATTR> pageCache;
+    private volatile PageCache<ATTR> pageCache;
 
     private ColumnChunkPageStore<ATTR>[] pageStores;
     private Supplier<Chunk<ATTR>>[] dictionaryChunkSuppliers;
@@ -110,18 +110,17 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     }
 
     private PageCache<ATTR> ensurePageCache() {
-        if (pageCache != null) {
-            return pageCache;
+        PageCache<ATTR> localPageCache;
+        if ((localPageCache = pageCache) != null) {
+            return localPageCache;
         }
 
         synchronized (this) {
-            if (pageCache != null) {
-                return pageCache;
+            if ((localPageCache = pageCache) != null) {
+                return localPageCache;
             }
-
-            pageCache = new PageCache<>(INITIAL_PAGE_CACHE_SIZE, MAX_PAGE_CACHE_SIZE);
+            return pageCache = new PageCache<>(INITIAL_PAGE_CACHE_SIZE, MAX_PAGE_CACHE_SIZE);
         }
-        return pageCache;
     }
 
     // -----------------------------------------------------------------------------------------------------------------

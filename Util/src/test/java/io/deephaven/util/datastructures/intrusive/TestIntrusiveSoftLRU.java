@@ -129,6 +129,25 @@ public class TestIntrusiveSoftLRU {
         }
     }
 
+    @Test
+    public void testResizeWithCompact() {
+        final List<WeakReference<TestNode>> objs = new LinkedList<>();
+        final IntrusiveSoftLRU<TestNode> lru = new IntrusiveSoftLRU<>(ADAPTER, 10, 40);
+
+        for (int i = 0; i < 10; ++i) {
+            createAndAddToCache(null, objs, lru, i);
+        }
+
+        // Now we'll artificially null out some references
+        for(int refIdx = 0; refIdx < 10; refIdx += 2) {
+            lru.evict(refIdx);
+        }
+
+        createAndAddToCache(null, objs, lru, 10);
+        assertEquals(10, lru.currentCapacity());
+        assertEquals(6, lru.size());
+    }
+
     private void iterateAssertAndCount(@NotNull final List<WeakReference<TestNode>> objs,
             @NotNull final IntrusiveSoftLRU<TestNode> lru) {
         int nonNullItems = 0;

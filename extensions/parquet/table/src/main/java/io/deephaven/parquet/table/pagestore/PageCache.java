@@ -4,11 +4,12 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.util.datastructures.intrusive.IntrusiveSoftLRU;
 
+import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 
 /**
- * A Cache for {@link IntrusivePage IntrusivePages}. This datastructure stores pages as soft references and maintains
- * them as an LRU cache. Externally references can be held as WeakReferences so that as memory pressure builds they can
+ * A cache for {@link IntrusivePage IntrusivePages}. This data structure stores pages as {@link SoftReference soft references} and maintains
+ * them as an LRU cache. External references to cached pages should be held via {@link WeakReference weak references} so that as memory pressure builds the pages can
  * be evicted from the cache.
  */
 public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.IntrusivePage<ATTR>> {
