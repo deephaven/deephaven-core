@@ -3,6 +3,7 @@ package test_setup
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"testing"
 
 	"github.com/apache/arrow/go/v8/arrow"
@@ -61,5 +62,23 @@ func RandomRecord(numCols int, numRows int, maxNum int) arrow.Record {
 func CheckError(t *testing.T, msg string, err error) {
 	if err != nil {
 		t.Fatalf("%s error %s", msg, err.Error())
+	}
+}
+
+func GetHost() string {
+	host := os.Getenv("DH_HOST")
+	if host == "" {
+		return "localhost"
+	} else {
+		return host
+	}
+}
+
+func GetPort() string {
+	port := os.Getenv("DH_PORT")
+	if port == "" {
+		return "8080"
+	} else {
+		return port
 	}
 }

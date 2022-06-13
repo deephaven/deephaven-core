@@ -15,7 +15,7 @@ import (
 func TestDagQuery(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	test_setup.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -86,7 +86,7 @@ func TestDagQuery(t *testing.T) {
 func TestMergeQuery(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	test_setup.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -116,7 +116,7 @@ func TestMergeQuery(t *testing.T) {
 func TestSeparateQueries(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	test_setup.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -160,7 +160,7 @@ func TestSeparateQueries(t *testing.T) {
 func TestEmptyTableQuery(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -208,7 +208,7 @@ func TestEmptyTableQuery(t *testing.T) {
 func TestUpdateDropQuery(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -273,7 +273,7 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, op queryOp) []arrow.Record
 
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -471,7 +471,7 @@ func TestCrossJoin(t *testing.T) {
 func TestAsOfJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}

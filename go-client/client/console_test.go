@@ -11,7 +11,7 @@ import (
 func TestOpenTable(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	test_setup.CheckError(t, "NewClient", err)
 
 	err = c.RunScript(ctx,
