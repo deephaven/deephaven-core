@@ -168,7 +168,7 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
 
 
 def from_jtype(j_class: Any) -> DType:
-    """ look up a DType that matches the java type, if not found, create a DType for it. """
+    """ looks up a DType that matches the java type, if not found, creates a DType for it. """
     if not j_class:
         return None
 
@@ -180,8 +180,16 @@ def from_jtype(j_class: Any) -> DType:
         return dtype
 
 
-def from_np_dtype(np_dtype: np.dtype) -> DType:
-    """ Look up a DType that matches the numpy.dtype, if not found, return PyObject. """
+def from_np_dtype(np_dtype) -> DType:
+    """ Looks up a DType that matches the provided numpy dtype or Pandas's nullable equivalent, if not found,
+    returns PyObject. """
+
+    if not isinstance(np_dtype, np.dtype):
+        # check if it is a Pandas nullable numeric types such as pd.core.arrays.floating.Float64Dtype/Int32Dtype
+        if hasattr(np_dtype, "numpy_dtype"):
+            np_dtype = np_dtype.numpy_dtype
+        else:
+            return PyObject
 
     if np_dtype.kind in {'U', 'S'}:
         return string
