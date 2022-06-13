@@ -77,7 +77,7 @@ func GetHost() string {
 func GetPort() string {
 	port := os.Getenv("DH_PORT")
 	if port == "" {
-		return "8080"
+		return "10000"
 	} else {
 		return port
 	}

@@ -732,6 +732,8 @@ func (op aggByOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.T
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_ComboAggregate{ComboAggregate: req}}
 }
 
+// Performs an aggregation, grouping by the given columns.
+// See the docs on AggBuilder for details on what each of the aggregation types do.
 func (qb QueryNode) AggBy(agg *AggBuilder, by ...string) QueryNode {
 	aggs := make([]aggPart, len(agg.aggs))
 	copy(aggs, agg.aggs)
