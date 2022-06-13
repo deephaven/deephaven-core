@@ -7,7 +7,9 @@ import io.deephaven.util.datastructures.intrusive.IntrusiveSoftLRU;
 import java.lang.ref.WeakReference;
 
 /**
- * Page cache data structure.
+ * A Cache for {@link IntrusivePage IntrusivePages}.  This datastructure stores pages as soft references and maintains
+ * them as an LRU cache.  Externally references can be held as WeakReferences so that as memory pressure builds they
+ * can be evicted from the cache.
  */
 public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.IntrusivePage<ATTR>> {
 
@@ -22,6 +24,11 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
     public static <ATTR extends Any> WeakReference<IntrusivePage<ATTR>> getNullPage() {
         // noinspection unchecked
         return (WeakReference<IntrusivePage<ATTR>>) NULL_PAGE;
+    }
+
+    public <ATTR2 extends Any> PageCache<ATTR2> castAttr() {
+        // noinspection unchecked
+        return (PageCache<ATTR2>) this;
     }
 
     /**
@@ -40,12 +47,7 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
         }
     }
 
-    public <ATTR2 extends Any> PageCache<ATTR2> castAttr() {
-        // noinspection unchecked
-        return (PageCache<ATTR2>) this;
-    }
-
-    public PageCache(final int maxSize) {
-        super(IntrusiveSoftLRU.Node.Adapter.getInstance(), maxSize);
+    public PageCache(final int initialSize, final int maxSize) {
+        super(IntrusiveSoftLRU.Node.Adapter.getInstance(), initialSize, maxSize);
     }
 }
