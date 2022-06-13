@@ -373,3 +373,41 @@ func TestComboAgg(t *testing.T) {
 		return
 	}
 }
+
+func TestWhere(t *testing.T) {
+	results := doQueryTest(test_setup.ExampleRecord(), t, func(tbl *client.TableHandle) []client.QueryNode {
+		return []client.QueryNode{tbl.Query().Where("Vol % 1000 != 0")}
+	})
+	defer results[0].Release()
+
+	if results[0].NumCols() != 3 || results[0].NumRows() != 3 {
+		t.Error("Where had wrong size")
+		return
+	}
+}
+
+func TestCrossJoin(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
+		leftTable := tbl.Query().DropColumns("e")
+		rightTable := tbl.Query().Where("a % 2 > 0 && b % 3 == 1").DropColumns("b", "c", "d")
+		resultTbl1 := leftTable.Join(rightTable, []string{"a"}, []string{"e"}, 10)
+		resultTbl2 := leftTable.Join(rightTable, nil, []string{"e"}, 10)
+		return []client.QueryNode{leftTable, rightTable, resultTbl1, resultTbl2}
+	})
+	defer results[0].Release()
+	defer results[1].Release()
+	defer results[2].Release()
+	defer results[3].Release()
+
+	left, _, result1, result2 := results[0], results[1], results[2], results[3]
+
+	if result1.NumRows() >= left.NumRows() {
+		t.Error("result1 was too large")
+		return
+	}
+
+	if result2.NumRows() <= left.NumRows() {
+		t.Error("result2 was too small")
+		return
+	}
+}
