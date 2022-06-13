@@ -8,9 +8,9 @@ import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 
 /**
- * A cache for {@link IntrusivePage IntrusivePages}. This data structure stores pages as {@link SoftReference soft references} and maintains
- * them as an LRU cache. External references to cached pages should be held via {@link WeakReference weak references} so that as memory pressure builds the pages can
- * be evicted from the cache.
+ * A cache for {@link IntrusivePage IntrusivePages}. This data structure stores pages as {@link SoftReference soft
+ * references} and maintains them as an LRU cache. External references to cached pages should be held via
+ * {@link WeakReference weak references} so that as memory pressure builds the pages can be evicted from the cache.
  */
 public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.IntrusivePage<ATTR>> {
 

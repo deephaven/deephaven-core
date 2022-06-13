@@ -139,7 +139,7 @@ public class TestIntrusiveSoftLRU {
         }
 
         // Now we'll artificially null out some references
-        for(int refIdx = 0; refIdx < 10; refIdx += 2) {
+        for (int refIdx = 0; refIdx < 10; refIdx += 2) {
             lru.evict(refIdx);
         }
 

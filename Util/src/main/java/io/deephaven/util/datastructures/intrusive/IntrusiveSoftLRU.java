@@ -119,8 +119,8 @@ public class IntrusiveSoftLRU<T> {
         final int slot = adapter.getSlot(itemToTouch);
 
         if (slot < 0 ||
-            slot >= currentCapacity() ||
-            softReferences[slot].get() != itemToTouch) {
+                slot >= currentCapacity() ||
+                softReferences[slot].get() != itemToTouch) {
             // A new entry, place it on top of the tail
             adapter.setSlot(itemToTouch, tail);
             softReferences[tail] = adapter.getOwner(itemToTouch);
@@ -160,8 +160,8 @@ public class IntrusiveSoftLRU<T> {
     private void touchSimple(@NotNull final T itemToTouch) {
         final int slot = adapter.getSlot(itemToTouch);
         if (slot < 0 ||
-            slot >= currentCapacity() ||
-            softReferences[slot].get() != itemToTouch) {
+                slot >= currentCapacity() ||
+                softReferences[slot].get() != itemToTouch) {
             // We'll have to add it, we haven't seen it before. First, do we need to resize?
             if (size < softReferences.length) {
                 // No, cool. Just add it.
@@ -181,22 +181,22 @@ public class IntrusiveSoftLRU<T> {
      * structure into LRU mode.
      */
     private void doResize() {
-        // First we will try to compact the references.  Maybe we can get away without actually resizing
+        // First we will try to compact the references. Maybe we can get away without actually resizing
         int nullsFound = 0;
-        for(int refIdx = 0; refIdx < softReferences.length; refIdx++) {
+        for (int refIdx = 0; refIdx < softReferences.length; refIdx++) {
             final T object = softReferences[refIdx].get();
-            if(object == null) {
+            if (object == null) {
                 nullsFound++;
-            } else if(nullsFound > 0) {
+            } else if (nullsFound > 0) {
                 softReferences[refIdx - nullsFound] = softReferences[refIdx];
                 softReferences[refIdx] = getNull();
                 adapter.setSlot(object, refIdx - nullsFound);
             }
         }
 
-        // We free'd up space!  Cool!
+        // We free'd up space! Cool!
         size -= nullsFound;
-        if(size < softReferences.length - 1) {
+        if (size < softReferences.length - 1) {
             return;
         }
 
@@ -246,11 +246,12 @@ public class IntrusiveSoftLRU<T> {
 
     /**
      * Evict an item from the cache by nulling it's internal reference. Intended for test use only.
-     * @param refIdx
+     * 
+     * @param refIdx the index to evict
      */
     @TestUseOnly
     void evict(int refIdx) {
-        if(refIdx < 0 || refIdx > softReferences.length || softReferences[refIdx] == getNull()) {
+        if (refIdx < 0 || refIdx > softReferences.length || softReferences[refIdx] == getNull()) {
             return;
         }
 
@@ -271,7 +272,8 @@ public class IntrusiveSoftLRU<T> {
     public interface Adapter<T> {
 
         /**
-         * Get a {@link SoftReference} object which refers to the object being cached and will act as its "owner" in the cache.
+         * Get a {@link SoftReference} object which refers to the object being cached and will act as its "owner" in the
+         * cache.
          *
          * @param cachedObject the object being cached.
          * @return a {@link SoftReference} that refers to the item and will act as its "owner" in the cache.
