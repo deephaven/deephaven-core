@@ -120,7 +120,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
                     .append(", Added: ").append(upstream.added()).append(" size=").append(upstream.added().size())
                     .append(", Removed: ").append(upstream.removed()).append(" size=").append(upstream.removed().size())
                     .endl();
-            //noinspection ThrowableNotThrown
+            // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted("Result Size Mismatch");
         }
 
@@ -133,7 +133,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
                     .append(", Added: ").append(upstream.added()).append(" size=").append(upstream.added().size())
                     .append(", Removed: ").append(upstream.removed()).append(" size=").append(upstream.removed().size())
                     .endl();
-            //noinspection ThrowableNotThrown
+            // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted("Parent Size Mismatch");
         }
 
