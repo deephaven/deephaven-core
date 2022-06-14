@@ -189,14 +189,15 @@ public class IntrusiveSoftLRU<T> {
                 nullsFound++;
             } else if (nullsFound > 0) {
                 softReferences[refIdx - nullsFound] = softReferences[refIdx];
-                softReferences[refIdx] = getNull();
                 adapter.setSlot(object, refIdx - nullsFound);
             }
         }
 
-        // We free'd up space! Cool!
-        size -= nullsFound;
-        if (size < softReferences.length - 1) {
+        if (nullsFound > 0) {
+            // We free'd up space! Cool!
+            size -= nullsFound;
+            Assert.lt(size, "size", softReferences.length, "softReferences.length");
+            Arrays.fill(softReferences, size, softReferences.length, getNull());
             return;
         }
 
