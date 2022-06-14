@@ -26,9 +26,12 @@ service PartitionedTableService {
    */
   rpc Merge(MergeRequest) returns (ExportedTableCreationResponse);
   /*
-   * Given a partitioned table and a row indicated by position or by the values of a 1-row table,
-   * returns a table that matched that row, if any. If none is present, NOT_FOUND will be sent in
-   * response. If more than one is present, FAILED_PRECONDITION will be sent in response.
+   * Given a partitioned table and a row described by another table's contents, returns a table
+   * that matched that row, if any. If none is present, NOT_FOUND will be sent in response. If
+   * more than one is present, FAILED_PRECONDITION will be sent in response.
+   *
+   * If the provided key table has any number of rows other than one, INVALID_ARGUMENT will be
+   * sent in response.
    *
    * The simplest way to generally use this is to subscribe to the key columns of the underlying
    * table of a given PartitionedTable, then use /FlightService/DoPut to create a table with the

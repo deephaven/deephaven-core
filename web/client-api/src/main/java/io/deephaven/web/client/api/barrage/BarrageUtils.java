@@ -13,7 +13,6 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_gene
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.KeyValue;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
@@ -99,7 +98,8 @@ public class BarrageUtils {
         // - IPC_CONTINUATION_TOKEN (4-byte int of -1)
         // - message size (4-byte int)
         // - a Message wrapping the schema
-        io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer bb = new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(flightSchemaMessage);
+        io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer bb =
+                new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(flightSchemaMessage);
         bb.setPosition(bb.position() + 8);
         Message headerMessage = Message.getRootAsMessage(bb);
 
@@ -108,7 +108,7 @@ public class BarrageUtils {
     }
 
     public static Map<String, String> keyValuePairs(String filterPrefix, double count,
-                                                    DoubleFunction<KeyValue> accessor) {
+            DoubleFunction<KeyValue> accessor) {
         Map<String, String> map = new HashMap<>();
         for (int i = 0; i < count; i++) {
             KeyValue pair = accessor.apply(i);

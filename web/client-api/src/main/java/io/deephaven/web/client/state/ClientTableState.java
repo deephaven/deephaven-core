@@ -1035,8 +1035,11 @@ public final class ClientTableState extends TableConfig {
         ColumnDefinition[] cols = BarrageUtils.readColumnDefinitions(schema);
 
         TableAttributesDefinition attributes = new TableAttributesDefinition(
-                BarrageUtils.keyValuePairs("deephaven:attribute.", schema.customMetadataLength(), schema::customMetadata),
-                BarrageUtils.keyValuePairs("deephaven:unsent.attribute.", schema.customMetadataLength(), schema::customMetadata)
+                BarrageUtils.keyValuePairs("deephaven:attribute.", schema.customMetadataLength(),
+                        schema::customMetadata),
+                BarrageUtils
+                        .keyValuePairs("deephaven:unsent.attribute.", schema.customMetadataLength(),
+                                schema::customMetadata)
                         .keySet());
         setTableDef(new InitialTableDefinition()
                 .setAttributes(attributes)

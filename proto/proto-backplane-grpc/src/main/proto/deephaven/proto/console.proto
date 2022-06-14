@@ -216,12 +216,11 @@ message FigureDescriptor {
 
     repeated ChartDescriptor charts = 10;
 
-    // Deprecated: not set by the server anymore. See tables (id 14).
+    // Deprecated: not set by the server anymore, this is replaced by the object fetch mechanism
     reserved 11;
 
-    // TODO (deephaven-core#62) implement once tablemaps are ready
-    reserved 12;// reserved for tablemaps
-//    repeated Ticket table_maps = 12;
+    // Deprecated: not set by the server anymore, this is replaced by the object fetch mechanism
+    reserved 12;
 
     repeated string errors = 13;
 
@@ -418,7 +417,7 @@ message FigureDescriptor {
 
         SourceType type = 2;
 
-        int32 table_map_id = 3;
+        int32 partitioned_table_id = 3;
         string column_name = 4;
     }
 
@@ -446,7 +445,7 @@ message FigureDescriptor {
         SourceType type = 2;
 
         int32 table_id = 3;
-        int32 table_map_id = 4;
+        int32 partitioned_table_id = 4;
         string column_name = 5;
 
         string column_type = 6;

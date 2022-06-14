@@ -6,11 +6,6 @@ import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.Event;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Field;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.GetTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.MergeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionedTableDescriptor;
@@ -21,13 +16,13 @@ import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
+import io.deephaven.web.shared.fu.JsConsumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,14 +101,14 @@ public class JsPartitionedTable extends HasEventHandling {
         added.indexIterator().forEachRemaining((long index) -> {
             // extract the key to use
             JsArray<Any> key = eventData.getColumns().map((c, p1, p2) -> eventData.getData(index, c));
-            populateLazyTable(key, index);
+            populateLazyTable(key);
             CustomEventInit init = CustomEventInit.create();
             init.setDetail(key);
             fireEvent(EVENT_KEYADDED, init);
         });
     }
 
-    private void populateLazyTable(JsArray<Any> key, long index) {
+    private void populateLazyTable(JsArray<Any> key) {
         tables.put(key, JsLazy.of(() -> {
             // If we've entered this lambda, the JsLazy is being used, so we need to go ahead and get the tablehandle
             final ClientTableState entry = connection.newState((c, cts, metadata) -> {
@@ -140,15 +135,12 @@ public class JsPartitionedTable extends HasEventHandling {
 
             // later, when the CTS is released, remove this "table" from the map and replace with an unresolved JsLazy
             entry.onRunning(
-                    ignore -> {
-                    },
-                    ignore -> {
-                    },
-                    () -> populateLazyTable(key, index));
+                    JsConsumer.doNothing(),
+                    JsConsumer.doNothing(),
+                    () -> populateLazyTable(key));
 
             // we'll make a table to return later, this func here just produces the JsLazy of the CTS
             return entry.refetch(this, connection.metadata());
-
         }));
     }
 

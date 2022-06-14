@@ -169,7 +169,7 @@ public class JsFigure extends HasEventHandling {
         }, err -> {
             final FigureFetchError fetchError = new FigureFetchError(LazyPromise.ofObject(err),
                     this.descriptor != null ? this.descriptor.getErrorsList() : new JsArray<>());
-            //noinspection unchecked
+            // noinspection unchecked
             final CustomEventInit<FigureFetchError> init = CustomEventInit.create();
             init.setDetail(fetchError);
             unsuppressEvents();
@@ -549,6 +549,7 @@ public class JsFigure extends HasEventHandling {
             plotHandlesToTables.put((int) (double) plotTableHandles.getAt(j), table);
         }
     }
+
     private void registerTableMapWithId(JsPartitionedTable table, JsArray<Double> plotTableHandles) {
         for (int j = 0; j < plotTableHandles.length; j++) {
             plotHandlesToTableMaps.put((int) (double) plotTableHandles.getAt(j), table);
@@ -668,9 +669,11 @@ public class JsFigure extends HasEventHandling {
                 promises[p1] = Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
                     FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
                     partitionedTableRequest.setSourceId(p0);
-                    connection.objectServiceClient().fetchObject(partitionedTableRequest, connection.metadata(), c::apply);
+                    connection.objectServiceClient().fetchObject(partitionedTableRequest, connection.metadata(),
+                            c::apply);
                 }).then(object -> {
-                    JsPartitionedTable partitionedTable = new JsPartitionedTable(connection, new JsWidget(connection, callback -> callback.handleResponse(null, object, p0.getTicket())));
+                    JsPartitionedTable partitionedTable = new JsPartitionedTable(connection, new JsWidget(connection,
+                            callback -> callback.handleResponse(null, object, p0.getTicket())));
                     tableMaps[tableMaps.length] = partitionedTable;
                     return partitionedTable.refetch();
                 });
