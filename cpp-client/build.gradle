@@ -8,6 +8,7 @@ license {
     include '**/*.h'
     include '**/*.cc'
     exclude '**/*_generated.*'
+    mapping('cc', 'JAVADOC_STYLE')
     strictCheck true
     useDefaultMappings true
     ignoreFailures true
