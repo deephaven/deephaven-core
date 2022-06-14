@@ -41,7 +41,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     private static final AtomicLongFieldUpdater<InstrumentedTableListenerBase> LAST_ENQUEUED_STEP_UPDATER =
             AtomicLongFieldUpdater.newUpdater(InstrumentedTableListenerBase.class, "lastEnqueuedStep");
 
-    private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
+    private static final Logger log = LoggerFactory.getLogger(InstrumentedTableListenerBase.class);
 
     private final PerformanceEntry entry;
     private final boolean terminalListener;
@@ -49,7 +49,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     private boolean failed = false;
     private static volatile boolean verboseLogging = Configuration
             .getInstance()
-            .getBooleanWithDefault("ShiftObliviousInstrumentedListener.verboseLogging", false);
+            .getBooleanWithDefault("InstrumentedTableListenerBase.verboseLogging", false);
 
     private volatile long lastCompletedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile long lastEnqueuedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
@@ -81,7 +81,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        return logOutput.append("ShiftObliviousInstrumentedListener:(identity=").append(System.identityHashCode(this))
+        return logOutput.append("InstrumentedTableListenerBase:(identity=").append(System.identityHashCode(this))
                 .append(", ")
                 .append(entry).append(")");
     }
@@ -298,7 +298,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 if (useVerboseLogging) {
                     // This is a failure and shouldn't happen, so it is OK to be verbose here. Particularly as it is not
                     // clear what is actually going on in some cases of assertion failure related to the indices.
-                    log.error().append("ShiftObliviousListener is: ").append(this.toString()).endl();
+                    log.error().append("InstrumentedTableListenerBase is: ").append(this.toString()).endl();
                     log.error().append("Added: ").append(update.added().toString()).endl();
                     log.error().append("Modified: ").append(update.modified().toString()).endl();
                     log.error().append("Removed: ").append(update.removed().toString()).endl();
