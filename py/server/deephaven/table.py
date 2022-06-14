@@ -1295,9 +1295,12 @@ class Table(JObjectWrapper):
 
 
 class PartitionedTable(JObjectWrapper):
-    """A partitioned table is a table with one column containing like-defined constituent tables, optionally with
-    key columns defined to allow binary operation based transformation or joins with other like-keyed partitioned
-    tables. """
+    """ A partitioned table is a table that has been partitioned into subtables, known as constituent tables.  
+    Each constituent table has the same schema.
+    PartitionedTable is implemented as a table containing (optional) key columns plus a column of constituent tables.
+
+    Key values can be used to retrieve constituent tables from the partitioned table.
+    """
 
     j_object_type = _JPartitionedTable
 
@@ -1316,7 +1319,7 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def table(self) -> Table:
-        """The underlying Table."""
+        """The underlying Table containing (optional) key columns plus a column of constituent tables."""
         if self._table is None:
             self._table = Table(j_table=self.j_partitioned_table.table())
         return self._table
@@ -1330,22 +1333,22 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def unique_keys(self) -> bool:
-        """Whether the keys in the underlying table are unique. If keys are unique, one can expect that
-        select_distinct(key_column_names) and view(key_column_names) operations produce equivalent tables."""
+        """Whether the keys in the underlying table must always be unique. If keys must be unique, one can expect that
+        select_distinct(key_column_names) and view(key_column_names) operations always produce equivalent tables."""
         if self._unique_keys is None:
             self._unique_keys = self.j_partitioned_table.uniqueKeys()
         return self._unique_keys
 
     @property
     def constituent_column(self) -> str:
-        """The constituent column name."""
+        """The name of the column containing constituent tables."""
         if self._constituent_column is None:
             self._constituent_column = self.j_partitioned_table.constituentColumnName()
         return self._constituent_column
 
     @property
     def constituent_table_columns(self) -> List[Column]:
-        """The column definitions shared by the constituent tables."""
+        """The column definitions for constituent tables.  All constituent tables in a partitioned table have the same column definitiions."""
         if not self._schema:
             self._schema = _td_to_columns(self.j_partitioned_table.constituentDefinition())
 
@@ -1353,9 +1356,14 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def constituent_changes_permitted(self) -> bool:
-        """Whether the constituents of the underlying partitioned table can change, specifically whether the values of
-        the constituent column can change.
+        """Can the constituents of the underlying partitioned table change?  Specifically, can the values of the constituent column change?
 
+        If constituent changes are not permitted, the  underlying partitioned table:
+        (1) has no adds
+        (2) has no removes
+        (3) has no shifts
+        (4) has no modifies that include the constituent column  
+        
         Note, this is unrelated to whether the constituent tables are refreshing, or whether the underlying partitioned
         table is refreshing. Also note that the underlying partitioned table must be refreshing if it contains
         any refreshing constituents.
@@ -1366,6 +1374,8 @@ class PartitionedTable(JObjectWrapper):
 
     def merge(self) -> Table:
         """Makes a new Table that contains all the rows from all the constituent tables.
+        In the merged result, data from a constituent table is contiguous, and data from constituent tables appears
+        in the same order the constituent table appears in the PartitionedTable. 
 
         Returns:
             a Table
@@ -1379,7 +1389,8 @@ class PartitionedTable(JObjectWrapper):
             raise DHError(e, "failed to merge all the constituent tables.")
 
     def filter(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> PartitionedTable:
-        """Makes a new PartitionedTable from the result of applying filters to the underlying partitioned table.
+        """The filter method creates a new partitioned table with only the rows meeting the filter criteria in the
+        key column(s) of the table.
 
         Args:
             filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition  expression(s) or
@@ -1402,10 +1413,11 @@ class PartitionedTable(JObjectWrapper):
 
     def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTable:
-        """Makes a new PartitionedTable from sorting the underlying partitioned table.
+        """The sort method creates a new partitioned table where (1) rows are sorted in a smallest to largest order based on the order_by column(s) 
+        (2) where rows are sorted in the order defined by the order argument.  Sorting columns can only be key columns.
 
          Args:
-             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on, can't include the constituent column
+             order_by (Union[str, Sequence[str]]): the key column(s) to be sorted on
              order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
@@ -1431,20 +1443,27 @@ class PartitionedTable(JObjectWrapper):
             raise DHError(e, "failed to sort the partitioned table.") from e
 
     def get_constituent(self, key_values: Union[Any, Sequence[Any]]) -> Optional[Table]:
-        """Gets a single constituent table by its corresponding key column values.
+        """Gets a single constituent table by its corresponding key column value(s).
+        If there are no matching rows, the result is None. If there are multiple matching rows, a DHError is thrown.
 
         Args:
             key_values (Union[Any, Sequence[Any]]): the value(s) of the key column(s)
 
         Returns:
             a Table or None
+
+        Raises:
+            DHError
         """
-        key_values = to_sequence(key_values)
-        j_table = self.j_partitioned_table.constituentFor(key_values)
-        if j_table:
-            return Table(j_table=j_table)
-        else:
-            return None
+        try:
+            key_values = to_sequence(key_values)
+            j_table = self.j_partitioned_table.constituentFor(key_values)
+            if j_table:
+                return Table(j_table=j_table)
+            else:
+                return None
+        except Exception as e:
+            raise DHError(e, "unable to get constituent table.") from e
 
     @property
     def constituent_tables(self) -> List[Table]:
