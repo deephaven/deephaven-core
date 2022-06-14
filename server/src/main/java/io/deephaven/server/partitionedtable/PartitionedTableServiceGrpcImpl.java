@@ -105,7 +105,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     ticketRouter.resolve(session, request.getKeyTableTicket(), "keyTableTicket");
 
             session.newExport(request.getResultId(), "resultId")
-                    .require(partitionedTable)
+                    .require(partitionedTable, keys)
                     .onError(responseObserver)
                     .submit(() -> {
                         final Table table;
