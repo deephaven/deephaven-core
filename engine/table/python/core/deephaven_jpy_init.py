@@ -1,10 +1,5 @@
 #!/usr/bin/python
 
-# DO NOT DELETE THESE IMPORTS:
-# dill and base64 are required for our PickledResult to function properly
-import dill
-import base64
-
 import jpy
 import os
 
