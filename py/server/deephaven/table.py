@@ -1334,7 +1334,7 @@ class PartitionedTable(JObjectWrapper):
     @property
     def unique_keys(self) -> bool:
         """Whether the keys in the underlying table must always be unique. If keys must be unique, one can expect that
-        select_distinct(key_column_names) and view(key_column_names) operations always produce equivalent tables."""
+        self.table.select_distinct(self.key_columns) and self.table.view(self.key_columns) operations always produce equivalent tables."""
         if self._unique_keys is None:
             self._unique_keys = self.j_partitioned_table.uniqueKeys()
         return self._unique_keys
@@ -1359,10 +1359,10 @@ class PartitionedTable(JObjectWrapper):
         """Can the constituents of the underlying partitioned table change?  Specifically, can the values of the constituent column change?
 
         If constituent changes are not permitted, the  underlying partitioned table:
-        (1) has no adds
-        (2) has no removes
-        (3) has no shifts
-        (4) has no modifies that include the constituent column  
+        1. has no adds
+        2. has no removes
+        3. has no shifts
+        4. has no modifies that include the constituent column  
         
         Note, this is unrelated to whether the constituent tables are refreshing, or whether the underlying partitioned
         table is refreshing. Also note that the underlying partitioned table must be refreshing if it contains
@@ -1375,7 +1375,8 @@ class PartitionedTable(JObjectWrapper):
     def merge(self) -> Table:
         """Makes a new Table that contains all the rows from all the constituent tables.
         In the merged result, data from a constituent table is contiguous, and data from constituent tables appears
-        in the same order the constituent table appears in the PartitionedTable. 
+        in the same order the constituent table appears in the PartitionedTable.
+        Basically, merge stacks constituent tables on top of each other in the same relative order as the partitioned table. 
 
         Returns:
             a Table
