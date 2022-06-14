@@ -43,7 +43,7 @@ dependencies {
 }
 
 license {
-  include 'src/**/*.proto'
+  include '**/*.proto'
 }
 
 TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'generateProtobuf') {
