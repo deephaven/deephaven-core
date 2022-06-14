@@ -46,7 +46,10 @@ dependencies {
 
 license {
   include '**/*.proto'
-  mapping('proto', 'JAVADOC_STYLE')
+  mapping('proto', 'SLASHSTAR_STYLE')
+}
+tasks.withType(License) {
+  source 'src/main/proto'
 }
 
 TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'generateProtobuf') {
