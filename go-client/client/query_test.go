@@ -311,7 +311,7 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, op queryOp) []arrow.Record
 	return recs
 }
 
-func TestSort(t *testing.T) {
+func TestSortQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(2, 10, 1000), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Sort("a"), tbl.Query().SortBy(client.SortDsc("a"))}
 	})
@@ -333,7 +333,7 @@ func TestSort(t *testing.T) {
 	}
 }
 
-func TestHeadTail(t *testing.T) {
+func TestHeadTailQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(2, 10, 1000), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Head(3), tbl.Query().Tail(4)}
 	})
@@ -351,7 +351,7 @@ func TestHeadTail(t *testing.T) {
 	}
 }
 
-func TestSelectDistinct(t *testing.T) {
+func TestSelectDistinctQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(2, 20, 10), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().SelectDistinct("a")}
 	})
@@ -363,8 +363,8 @@ func TestSelectDistinct(t *testing.T) {
 	}
 }
 
-func TestComboAgg(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(3, 20, 10), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestComboAggQuery(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(4, 20, 10), t, func(tbl *client.TableHandle) []client.QueryNode {
 		b := client.NewAggBuilder().Min("minB = b").Sum("sumC = c")
 		return []client.QueryNode{tbl.Query().AggBy(b, "a")}
 	})
@@ -376,7 +376,7 @@ func TestComboAgg(t *testing.T) {
 	}
 }
 
-func TestWhere(t *testing.T) {
+func TestWhereQuery(t *testing.T) {
 	results := doQueryTest(test_setup.ExampleRecord(), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Where("Vol % 1000 != 0")}
 	})
@@ -388,7 +388,7 @@ func TestWhere(t *testing.T) {
 	}
 }
 
-func TestUpdateViewSelect(t *testing.T) {
+func TestUpdateViewSelectQuery(t *testing.T) {
 	type usvOp func(qb client.QueryNode, columns ...string) client.QueryNode
 
 	ops := []usvOp{client.QueryNode.Update, client.QueryNode.LazyUpdate, client.QueryNode.View, client.QueryNode.UpdateView, client.QueryNode.Select}
@@ -406,12 +406,12 @@ func TestUpdateViewSelect(t *testing.T) {
 	}
 }
 
-func TestExactJoin(t *testing.T) {
+func TestExactJoinQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query().GroupBy("a").Update("b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]") // Make sure the key column is only unique values
 		leftTable := query.DropColumns("c", "d", "e")
 		rightTable := query.DropColumns("b", "c")
-		resultTable := leftTable.NaturalJoin(rightTable, []string{"a"}, []string{"d", "e"})
+		resultTable := leftTable.ExactJoin(rightTable, []string{"a"}, []string{"d", "e"})
 		return []client.QueryNode{leftTable, resultTable}
 	})
 	defer results[0].Release()
@@ -424,7 +424,7 @@ func TestExactJoin(t *testing.T) {
 	}
 }
 
-func TestNaturalJoin(t *testing.T) {
+func TestNaturalJoinQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query().GroupBy("a").Update("b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]") // Make sure the key column is only unique values
 		leftTable := query.DropColumns("c", "d", "e")
@@ -442,7 +442,7 @@ func TestNaturalJoin(t *testing.T) {
 	}
 }
 
-func TestCrossJoin(t *testing.T) {
+func TestCrossJoinQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
 		leftTable := tbl.Query().DropColumns("e")
 		rightTable := tbl.Query().Where("a % 2 > 0 && b % 3 == 1").DropColumns("b", "c", "d")
@@ -468,7 +468,7 @@ func TestCrossJoin(t *testing.T) {
 	}
 }
 
-func TestAsOfJoin(t *testing.T) {
+func TestAsOfJoinQuery(t *testing.T) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
@@ -483,7 +483,7 @@ func TestAsOfJoin(t *testing.T) {
 	tt2 := c.TimeTableQuery(200000, &startTime).Update("Col1 = i")
 
 	normalTable := tt1.AsOfJoin(tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleLessThanEqual)
-	reverseTable := tt2.AsOfJoin(tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleGreaterThanEqual)
+	reverseTable := tt1.AsOfJoin(tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleGreaterThanEqual)
 
 	tables, err := c.ExecQuery(ctx, tt1, normalTable, reverseTable)
 	if err != nil {
@@ -527,7 +527,7 @@ func TestAsOfJoin(t *testing.T) {
 	}
 }
 
-func TestHeadByTailBy(t *testing.T) {
+func TestHeadByTailByQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(3, 10, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		headTbl := query.HeadBy(1, "a")
@@ -548,7 +548,7 @@ func TestHeadByTailBy(t *testing.T) {
 	}
 }
 
-func TestGroup(t *testing.T) {
+func TestGroupQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		oneCol := query.GroupBy("a")
@@ -569,7 +569,7 @@ func TestGroup(t *testing.T) {
 	}
 }
 
-func TestUngroup(t *testing.T) {
+func TestUngroupQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		ungrouped := tbl.Query().GroupBy("a").Ungroup([]string{"b"}, false)
 		return []client.QueryNode{ungrouped}
@@ -583,7 +583,7 @@ func TestUngroup(t *testing.T) {
 	}
 }
 
-func TestCountBy(t *testing.T) {
+func TestCountByQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		distinct := query.SelectDistinct("a")
@@ -599,7 +599,7 @@ func TestCountBy(t *testing.T) {
 	}
 }
 
-func TestCount(t *testing.T) {
+func TestCountQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Count("a")}
 	})
@@ -612,7 +612,7 @@ func TestCount(t *testing.T) {
 	}
 }
 
-func TestDedicatedAgg(t *testing.T) {
+func TestDedicatedAggQuery(t *testing.T) {
 	type AggOp = func(qb client.QueryNode, by ...string) client.QueryNode
 
 	ops := []AggOp{
