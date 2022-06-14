@@ -1416,7 +1416,7 @@ public class Numeric {
      * Returns the cumulative minimum.  Null values are excluded.
      *
      * @param values values.
-     * @return cumulative sum of non-null values.
+     * @return cumulative min of non-null values.
      */
     public static ${pt.primitive}[] cumMin(${pt.primitive}... values) {
         if (values == null) {
@@ -1444,10 +1444,10 @@ public class Numeric {
     }
 
     /**
-     * Returns the cumulative minimum.  Null values are excluded.
+     * Returns the cumulative maximum.  Null values are excluded.
      *
      * @param values values.
-     * @return cumulative sum of non-null values.
+     * @return cumulative max of non-null values.
      */
     public static ${pt.primitive}[] cumMax(${pt.primitive}... values) {
         if (values == null) {
