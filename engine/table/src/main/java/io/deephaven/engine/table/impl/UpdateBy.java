@@ -170,8 +170,8 @@ public abstract class UpdateBy {
 
     protected void processUpdateForRedirection(@NotNull final TableUpdate upstream) {
         if (upstream.removed().isNonempty()) {
-            final RowSetBuilderSequential freeBuilder = RowSetFactory.builderSequential();
-            upstream.removed().forAllRowKeys(key -> freeBuilder.appendKey(redirectionRowSet.remove(key)));
+            final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
+            upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(redirectionRowSet.remove(key)));
             freeRows.insert(freeBuilder.build());
         }
 

@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
@@ -329,17 +330,18 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         final Table filled = t.updateBy(UpdateByClause.fill(), "Sym");
 
-        final PartitionedTable preOpMap = t.partitionBy("Sym");
-        final PartitionedTable postOpMap = filled.partitionBy("Sym");
+        final PartitionedTable preOp = t.partitionBy("Sym");
+        final PartitionedTable postOp = filled.partitionBy("Sym");
 
-        for (String sym : (String[]) preOpMap.table().getColumn("Sym").getDirect()) {
-            final Table source = preOpMap.constituentFor(sym);
-            final Table actual = postOpMap.constituentFor(sym);
+        String[] columns = Arrays.stream(t.getDefinition().getColumnNamesArray())
+                .filter(col -> !col.equals("Sym") && !col.equals("boolCol")).toArray(String[]::new);
 
-            for (String col : source.getDefinition().getColumnNamesArray()) {
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            Arrays.stream(columns).forEach(col -> {
                 assertWithForwardFill(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect());
-            }
-        }
+            });
+            return source;
+        });
     }
 
     @Test
@@ -349,17 +351,18 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         final Table filled = t.updateBy(UpdateByClause.fill(), "Sym");
 
-        final PartitionedTable preOpMap = t.partitionBy("Sym");
-        final PartitionedTable postOpMap = filled.partitionBy("Sym");
+        final PartitionedTable preOp = t.partitionBy("Sym");
+        final PartitionedTable postOp = filled.partitionBy("Sym");
 
-        for (String sym : (String[]) preOpMap.table().getColumn("Sym").getDirect()) {
-            final Table source = preOpMap.constituentFor(sym);
-            final Table actual = postOpMap.constituentFor(sym);
+        String[] columns = Arrays.stream(t.getDefinition().getColumnNamesArray())
+                .filter(col -> !col.equals("Sym") && !col.equals("boolCol")).toArray(String[]::new);
 
-            for (String col : source.getDefinition().getColumnNamesArray()) {
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            Arrays.stream(columns).forEach(col -> {
                 assertWithForwardFill(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect());
-            }
-        }
+            });
+            return source;
+        });
     }
     // endregion
 

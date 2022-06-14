@@ -15,8 +15,10 @@ import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.string.StringUtils;
+import io.deephaven.numerics.movingaverages.AbstractMa;
+import io.deephaven.numerics.movingaverages.ByEma;
+import io.deephaven.numerics.movingaverages.ByEmaSimple;
 import io.deephaven.test.types.OutOfBandTest;
-import org.assertj.core.data.Index;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 

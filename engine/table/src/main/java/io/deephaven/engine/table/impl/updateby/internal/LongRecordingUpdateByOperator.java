@@ -18,6 +18,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByOperator;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +39,7 @@ public class LongRecordingUpdateByOperator implements UpdateByOperator {
                                          @NotNull final ColumnSource<?> columnSource) {
         this.inputColumnName = inputColumnName;
         this.affectingColumns = affectingColumns;
-        this.columnSource = columnSource;
+        this.columnSource = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
     }
 
     private class RecordingContext implements UpdateContext {

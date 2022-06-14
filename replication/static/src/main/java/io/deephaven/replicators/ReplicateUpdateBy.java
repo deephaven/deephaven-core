@@ -278,7 +278,8 @@ public class ReplicateUpdateBy {
                 "import java.util.Map;",
                 "import java.util.Collections;",
                 "import io.deephaven.time.DateTime;",
-                "import java.time.Instant;");
+                "import java.time.Instant;",
+                "import io.deephaven.engine.table.impl.sources.ReinterpretUtils;");
         lines = replaceRegion(lines, "extra-fields",
                 Collections.singletonList("    private final Class<?> type;"));
         lines = replaceRegion(lines, "extra-constructor-args",
@@ -292,9 +293,7 @@ public class ReplicateUpdateBy {
                                 "    public Map<String, ColumnSource<?>> getOutputColumns() {\n" +
                                 "        final ColumnSource<?> actualOutput;\n" +
                                 "        if(type == DateTime.class) {\n" +
-                                "            actualOutput = outputSource.reinterpret(DateTime.class);\n" +
-                                "        } else if(type == Instant.class) {\n" +
-                                "            actualOutput = outputSource.reinterpret(Instant.class);\n" +
+                                "            actualOutput = ReinterpretUtils.longToDateTimeSource(outputSource);\n" +
                                 "        } else {\n" +
                                 "            actualOutput = outputSource;\n" +
                                 "        }\n" +

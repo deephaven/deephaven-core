@@ -14,6 +14,7 @@ import org.junit.experimental.categories.Category;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Random;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
@@ -84,21 +85,19 @@ public class TestCumProd extends BaseUpdateByTest {
         final Table result = t.updateBy(UpdateByClause.prod("byteCol", "shortCol", "intCol", "longCol", "floatCol",
                 "doubleCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
-        final PartitionedTable preOpMap = t.partitionBy("Sym");
-        final PartitionedTable postOpMap = result.partitionBy("Sym");
+        final PartitionedTable preOp = t.partitionBy("Sym");
+        final PartitionedTable postOp = result.partitionBy("Sym");
 
-        for (String sym : (String[]) preOpMap.table().getColumn("Sym").getDirect()) {
-            final Table source = preOpMap.constituentFor(sym);
-            final Table actual = postOpMap.constituentFor(sym);
+        String[] columns = Arrays.stream(t.getDefinition().getColumnNamesArray())
+                .filter(col -> !col.equals("Sym") && !col.equals("boolCol")).toArray(String[]::new);
 
-            for (String col : source.getDefinition().getColumnNamesArray()) {
-                if ("Sym".equals(col) || "boolCol".equals(col)) {
-                    continue;
-                }
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            Arrays.stream(columns).forEach(col -> {
                 assertWithCumProd(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
                         actual.getColumn(col).getType());
-            }
-        }
+            });
+            return source;
+        });
     }
 
     // endregion

@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
@@ -71,21 +72,19 @@ public class TestCumMinMax extends BaseUpdateByTest {
                         "bigIntColMax=bigIntCol", "bigDecimalColMax=bigDecimalCol")),
                 "Sym");
 
-        final PartitionedTable preOpMap = t.partitionBy("Sym");
-        final PartitionedTable postOpMap = result.partitionBy("Sym");
+        final PartitionedTable preOp = t.partitionBy("Sym");
+        final PartitionedTable postOp = result.partitionBy("Sym");
 
-        for (String sym : (String[]) preOpMap.table().getColumn("Sym").getDirect()) {
-            final Table source = preOpMap.constituentFor(sym);
-            final Table actual = postOpMap.constituentFor(sym);
+        String[] columns = Arrays.stream(t.getDefinition().getColumnNamesArray())
+                .filter(col -> !col.equals("Sym") && !col.equals("boolCol")).toArray(String[]::new);
 
-            for (String col : source.getDefinition().getColumnNamesArray()) {
-                if ("Sym".equals(col) || "boolCol".equals(col)) {
-                    continue;
-                }
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            Arrays.stream(columns).forEach(col -> {
                 assertWithCumMin(source.getColumn(col).getDirect(), actual.getColumn(col + "Min").getDirect());
                 assertWithCumMax(source.getColumn(col).getDirect(), actual.getColumn(col + "Max").getDirect());
-            }
-        }
+            });
+            return source;
+        });
     }
 
     // endregion

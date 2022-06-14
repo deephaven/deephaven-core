@@ -14,6 +14,7 @@ import org.junit.experimental.categories.Category;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Random;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
@@ -84,21 +85,20 @@ public class TestCumSum extends BaseUpdateByTest {
         final Table summed = t.updateBy(UpdateByClause.sum("byteCol", "shortCol", "intCol", "longCol", "floatCol",
                 "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
-        final PartitionedTable preOpMap = t.partitionBy("Sym");
-        final PartitionedTable postOpMap = summed.partitionBy("Sym");
 
-        for (String sym : (String[]) preOpMap.table().getColumn("Sym").getDirect()) {
-            final Table source = preOpMap.constituentFor(sym);
-            final Table actual = postOpMap.constituentFor(sym);
+        final PartitionedTable preOp = t.partitionBy("Sym");
+        final PartitionedTable postOp = summed.partitionBy("Sym");
 
-            for (String col : source.getDefinition().getColumnNamesArray()) {
-                if ("Sym".equals(col)) {
-                    continue;
-                }
+        String[] columns = Arrays.stream(t.getDefinition().getColumnNamesArray())
+                .filter(col -> !col.equals("Sym") && !col.equals("boolCol")).toArray(String[]::new);
+
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            Arrays.stream(columns).forEach(col -> {
                 assertWithCumSum(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
                         actual.getColumn(col).getType());
-            }
-        }
+            });
+            return source;
+        });
     }
 
     // endregion

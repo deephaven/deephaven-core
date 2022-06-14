@@ -224,6 +224,7 @@ public class BucketedUpdateBy extends UpdateBy {
                     permutedPostWorkingChunks[opIdx].close();
                 }
             }
+            sharedContext.close();
         }
 
         /**

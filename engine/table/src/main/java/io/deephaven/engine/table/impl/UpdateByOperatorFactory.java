@@ -19,9 +19,6 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -137,8 +134,8 @@ public class UpdateByOperatorFactory {
          * @return true if the type is one of the useable time types
          */
         public boolean isTimeType(final @NotNull Class<?> type) {
-            return type == DateTime.class || type == Instant.class || type == ZonedDateTime.class ||
-                    type == LocalDate.class || type == LocalTime.class;
+            // TODO: extend time handling similar to enterprise (Instant, ZonedDateTime, LocalDate, LocalTime)
+            return type == DateTime.class;
         }
 
         @Override
@@ -256,7 +253,7 @@ public class UpdateByOperatorFactory {
             }
 
             final String[] inputColumns = Stream.concat(Stream.of(colName),
-                    Arrays.stream(pairs).map(MatchPair::right)).toArray(String[]::new);
+                    Arrays.stream(pairs).map(MatchPair::rightColumn)).toArray(String[]::new);
 
             return new LongRecordingUpdateByOperator(colName, inputColumns, columnSource);
         }
@@ -293,8 +290,7 @@ public class UpdateByOperatorFactory {
                 return new ShortCumMinMaxOperator(fc, isMax, redirectionRowSet);
             } else if (csType == int.class || csType == Integer.class) {
                 return new IntCumMinMaxOperator(fc, isMax, redirectionRowSet);
-            } else if (csType == long.class || csType == Long.class ||
-                    isTimeType(csType) && columnSource.allowsReinterpret(long.class)) {
+            } else if (csType == long.class || csType == Long.class || isTimeType(csType)) {
                 return new LongCumMinMaxOperator(fc, isMax, redirectionRowSet, csType);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatCumMinMaxOperator(fc, isMax, redirectionRowSet);
@@ -344,8 +340,7 @@ public class UpdateByOperatorFactory {
                 return new ShortFillByOperator(fc, redirectionRowSet);
             } else if (csType == int.class || csType == Integer.class) {
                 return new IntFillByOperator(fc, redirectionRowSet);
-            } else if (csType == long.class || csType == Long.class ||
-                    isTimeType(csType) && columnSource.allowsReinterpret(long.class)) {
+            } else if (csType == long.class || csType == Long.class || isTimeType(csType)) {
                 return new LongFillByOperator(fc, redirectionRowSet, csType);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatFillByOperator(fc, redirectionRowSet);

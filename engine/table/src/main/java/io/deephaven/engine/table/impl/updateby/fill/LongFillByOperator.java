@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Collections;
 import io.deephaven.time.DateTime;
 import java.time.Instant;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -48,9 +49,7 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
     public Map<String, ColumnSource<?>> getOutputColumns() {
         final ColumnSource<?> actualOutput;
         if(type == DateTime.class) {
-            actualOutput = outputSource.reinterpret(DateTime.class);
-        } else if(type == Instant.class) {
-            actualOutput = outputSource.reinterpret(Instant.class);
+            actualOutput = ReinterpretUtils.longToDateTimeSource(outputSource);
         } else {
             actualOutput = outputSource;
         }

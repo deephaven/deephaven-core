@@ -47,11 +47,6 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         EmaContext(final int chunkSize) {
             super(chunkSize);
         }
-
-        @Override
-        public void close() {
-            outputValues.close();
-        }
     }
 
     /**
