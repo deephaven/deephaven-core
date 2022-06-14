@@ -622,8 +622,7 @@ class Table(JObjectWrapper):
 
     def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> Table:
-        """The sort method creates a new table where (1) rows are sorted in a smallest to largest order based on the
-        order_by column(s) (2) where rows are sorted in the order defined by the order argument.
+        """The sort method creates a new table where the rows are ordered based on values in a specified set of columns.
 
         Args:
             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
@@ -1390,8 +1389,8 @@ class PartitionedTable(JObjectWrapper):
             raise DHError(e, "failed to merge all the constituent tables.")
 
     def filter(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> PartitionedTable:
-        """The filter method creates a new partitioned table with only the rows meeting the filter criteria in the
-        key column(s) of the table.
+        """The filter method creates a new partitioned table containing only the rows meeting the filter criteria.
+        Filters can not use the constituent column.
 
         Args:
             filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition  expression(s) or
@@ -1414,11 +1413,10 @@ class PartitionedTable(JObjectWrapper):
 
     def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTable:
-        """The sort method creates a new partitioned table where (1) rows are sorted in a smallest to largest order based on the order_by column(s) 
-        (2) where rows are sorted in the order defined by the order argument.  Sorting columns can only be key columns.
-
+        """The sort method creates a new partitioned table where the rows are ordered based values in a specified set of columns.
+        
          Args:
-             order_by (Union[str, Sequence[str]]): the key column(s) to be sorted on
+             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
              order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
