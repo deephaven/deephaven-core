@@ -70,8 +70,7 @@ func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 	return rec1, nil
 }
 
-// Uploads a table to the deephaven server.
-//
+// Uploads a table to the Deephaven server.
 // The table can then be manipulated and referenced using the returned TableHandle.
 func (fs *flightStub) ImportTable(ctx context.Context, rec arrow.Record) (*TableHandle, error) {
 	ctx = fs.client.withToken(ctx)

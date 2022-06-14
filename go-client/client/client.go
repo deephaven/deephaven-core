@@ -21,6 +21,9 @@ type fieldId struct {
 	fieldName string
 }
 
+// Maintains a connection to a Deephaven server.
+// It can be used to run scripts, create new tables, execute queries, etc.
+// Check the various methods of Client to learn more.
 type Client struct {
 	grpcChannel *grpc.ClientConn
 
@@ -36,8 +39,7 @@ type Client struct {
 	tables     map[fieldId]*TableHandle
 }
 
-// Starts a connection to the deephaven server.
-//
+// Starts a connection to a Deephaven server.
 // scriptLanguage can be either "python" or "groovy", and must match the language used on the server. Python is the default.
 //
 // The client should be closed using `Close()` after it is done being used.
