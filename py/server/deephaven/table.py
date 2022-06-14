@@ -1294,7 +1294,7 @@ class Table(JObjectWrapper):
 
 
 class PartitionedTable(JObjectWrapper):
-    """ A partitioned table is a table that has been partitioned into subtables, known as constituent tables.  
+    """A partitioned table is a table that has been partitioned into subtables, known as constituent tables.  
     Each constituent table has the same schema.
     PartitionedTable is implemented as a table containing (optional) key columns plus a column of constituent tables.
 
