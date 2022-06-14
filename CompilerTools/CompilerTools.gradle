@@ -4,12 +4,12 @@ plugins {
 
 configurations {
     compile.extendsFrom fishConfig, commonsLang3
-    testCompile.extendsFrom fishIoTest
+    testImplementation.extendsFrom fishIoTest
 }
 
 dependencies {
     compile project(':Util')
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs'), project(path: ':test-configs')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

@@ -7,16 +7,16 @@ plugins {
 }
 
 configurations {
-    testCompile.extendsFrom fishBaseTest
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {
     compile project(':engine-table')
 
-    runtime project(':configs')
+    runtimeOnly project(':configs')
 
-    testCompile TestTools.projectDependency(project, 'engine-table')
-    testRuntime project(':Numerics')
+    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testRuntimeOnly project(':Numerics')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

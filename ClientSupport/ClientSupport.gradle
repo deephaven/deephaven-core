@@ -10,7 +10,7 @@ dependencies {
     compile project(':engine-table'),
             project(':engine-function')
 
-    testCompile TestTools.projectDependency(project, 'Base'),
+    testImplementation TestTools.projectDependency(project, 'Base'),
             TestTools.projectDependency(project, 'engine-table'),
             project(':extensions-csv')
 

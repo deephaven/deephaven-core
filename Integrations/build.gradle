@@ -9,7 +9,7 @@ evaluationDependsOn ':docker-server'
 
 configurations {
     compile.extendsFrom dhIntegrations
-    testCompile.extendsFrom fishBaseTest
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {
@@ -17,7 +17,7 @@ dependencies {
     compile project(':engine-table')
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
-    testRuntime project(':configs'),
+    testRuntimeOnly project(':configs'),
             project(':test-configs'),
             // need these projects so session default imports / generated type wrappers resolve correctly
             project(':Numerics'),
@@ -81,7 +81,7 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             }
 
             // Unpack the config contents for now, since we don't seem to read the configs from inside a jar.
-            // This does not add a task dependency, but we already put :configs in the testRuntime classpath,
+            // This does not add a task dependency, but we already put :configs in the testRuntimeOnly classpath,
             // so it is part of the previous statement
             from(zipTree(project(':configs').tasks.getByName('jar').outputs.files.singleFile)) {
                 into 'python/configs'

@@ -6,5 +6,5 @@ dependencies {
     compile project(':Base'), project(':DataStructures'), project(':IO'), project(':Configuration'), project(':log-factory')
     compile depCommonsEmail, depCommonsNet
 
-    testCompile project(path: ':Base', configuration: 'tests')
+    testImplementation project(path: ':Base', configuration: 'tests')
 }

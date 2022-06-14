@@ -4,12 +4,12 @@ plugins {
 
 configurations {
     compile.extendsFrom dhNumerics
-    testCompile.extendsFrom fishBaseTest
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {
     compile project(':engine-table'),
             project(':engine-function')
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs'), project(path: ':test-configs')
 }

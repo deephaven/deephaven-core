@@ -5,7 +5,7 @@ plugins {
 
 configurations {
     compile.extendsFrom irisDb
-    testCompile.extendsFrom irisDbTest
+    testImplementation.extendsFrom irisDbTest
 }
 
 description = 'An extension integrating Barrage with Deephaven\'s Table Model'

@@ -4,7 +4,10 @@ plugins {
 
 dependencies {
     compile project(':Base'), project(':SevenZip'), depCommonsCodec
-    testCompile project(path: ':Base', configuration: 'tests')
+    testImplementation project(path: ':Base', configuration: 'tests'),
+            'junit:junit:4.13.2',
+            'org.jmock:jmock-junit4:2.12.0',
+            'org.jmock:jmock-imposters:2.12.0'
 }
 
 sourceSets {
@@ -27,7 +30,7 @@ task jarTests(type: Jar, dependsOn: testClasses) {
 }
 configurations {
     tests {
-        extendsFrom testRuntime
+        extendsFrom testRuntimeOnly
     }
 }
 artifacts {

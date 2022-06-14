@@ -22,7 +22,7 @@ dependencies {
 
     testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
 
-    testRuntime project(path: ':configs'),
+    testRuntimeOnly project(path: ':configs'),
             project(path: ':test-configs'),
             'org.openjdk.jmh:jmh-generator-annprocess:1.21'
 }

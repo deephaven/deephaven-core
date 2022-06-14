@@ -14,7 +14,7 @@ configurations {
   }
 
   // automatically pick up the standard junit version
-  testCompile.extendsFrom junit
+  testImplementation.extendsFrom junit
 }
 
 dependencies {

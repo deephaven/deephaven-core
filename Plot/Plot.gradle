@@ -5,7 +5,7 @@ plugins {
 configurations {
     compile.extendsFrom dhPlot
 
-    testCompile.extendsFrom fishIoTest
+    testImplementation.extendsFrom fishIoTest
 }
 
 dependencies {
@@ -22,10 +22,10 @@ dependencies {
 
     implementation 'com.google.guava:guava:19.0'
 
-    testCompile TestTools.projectDependency(project, 'Util'),
+    testImplementation TestTools.projectDependency(project, 'Util'),
                 TestTools.projectDependency(project, 'engine-table')
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs'), project(':Numerics')
+    testRuntimeOnly project(path: ':configs'), project(path: ':test-configs'), project(':Numerics')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

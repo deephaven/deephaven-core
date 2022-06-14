@@ -7,7 +7,7 @@ evaluationDependsOn Docker.registryProject('python')
 
 configurations {
     compile.extendsFrom fishConfig, jdom
-    testCompile.extendsFrom fishBaseTest
+    testImplementation.extendsFrom fishBaseTest
     combinedJavadoc
 }
 
@@ -21,14 +21,14 @@ dependencies {
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
 
-    runtime project(path: ':configs'),
+    runtimeOnly project(path: ':configs'),
             project(path: ':test-configs'),
             project(':extensions-kafka')
 
     runtimeOnly project(':log-to-slf4j')
     Classpaths.inheritLogbackClassic(project)
 
-    testRuntime project(path: ':configs'),
+    testRuntimeOnly project(path: ':configs'),
             project(path: ':test-configs')
 
     combinedJavadoc project(path: ':combined-javadoc', targetConfiguration: 'combinedJavadoc')

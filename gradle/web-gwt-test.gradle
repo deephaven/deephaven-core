@@ -1,6 +1,6 @@
 
 configurations {
-    testCompile.extendsFrom junit
+    testImplementation.extendsFrom junit
 }
 
 // for now, all gwt testing will be manual, since we need to have full
@@ -15,7 +15,7 @@ String testDir = "$buildDir/testGwt"
 task 'gwtTest', type: Test, {
     Test t ->
         t.inputs.files(sourceSets.test.output.files)
-//        t.classpath = configurations.testRuntime
+//        t.classpath = configurations.testRuntimeOnly
         t.systemProperties = [ 'gwt.args': "${manualGwt ? '-runStyle Manual:1' : ''} ${testPort ? /-port $testPort/ : ''} -war $testDir/war -setProperty dhTestServer=$testServer -ea -style PRETTY -generateJsInteropExports",
                                'gwt.persistentunitcachedir': "$testDir/unitCache",
                                'dhTestServer': testServer

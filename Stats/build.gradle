@@ -7,9 +7,10 @@ dependencies {
             project(':Net')
     compileOnly 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:3.3.0'
 
-    testCompile project(path: ':Base', configuration: 'tests')
+    testImplementation project(path: ':Base', configuration: 'tests'),
+            'junit:junit:4.13.2'
 
-    testRuntimeOnly project(':log-to-slf4j')
+            testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 

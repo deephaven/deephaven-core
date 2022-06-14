@@ -7,7 +7,7 @@ description 'Engine Functions: Libraries for use in query expressions'
 
 configurations {
     primitiveCodegen
-    testCompile.extendsFrom junit
+    testImplementation.extendsFrom junit
 }
 
 dependencies {

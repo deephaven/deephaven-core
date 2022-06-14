@@ -15,7 +15,7 @@ test {
 }
 
 dependencies {
-    testCompile 'junit:junit:4.13.2' // but we still want tests to compile
+    testImplementation 'junit:junit:4.13.2' // but we still want tests to compile
 }
 
 // For DH Community, we need to currently move fast, and will prefer to make edits directly in py/jpy.

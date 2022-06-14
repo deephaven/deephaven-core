@@ -6,7 +6,7 @@ plugins {
 description 'Engine Time: Types and libraries for working with instants, periods, and calendars'
 
 configurations {
-    testCompile.extendsFrom junit
+    testImplementation.extendsFrom junit
 }
 
 dependencies {

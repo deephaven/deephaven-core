@@ -10,9 +10,9 @@ dependencies {
 
     compile 'io.deephaven:hash:0.1.0'
 
-    testCompile 'junit:junit:4.13.2'
-    testCompile 'org.jmock:jmock-junit4:2.12.0'
-    testCompile 'org.jmock:jmock-imposters:2.12.0'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.jmock:jmock-junit4:2.12.0'
+    testImplementation 'org.jmock:jmock-imposters:2.12.0'
 
 }
 
@@ -36,7 +36,7 @@ task jarTests(type: Jar, dependsOn: testClasses) {
 }
 configurations {
     tests {
-        extendsFrom testRuntime
+        extendsFrom testRuntimeOnly
     }
 }
 artifacts {

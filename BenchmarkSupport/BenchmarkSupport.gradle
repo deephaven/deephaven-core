@@ -5,9 +5,9 @@ plugins {
 configurations {
     compile.extendsFrom dhBenchmarkSupport
 
-    testCompile.extendsFrom fishIoTest
+    testImplementation.extendsFrom fishIoTest
 
-    testRuntime.extendsFrom fishDataGenerator
+    testRuntimeOnly.extendsFrom fishDataGenerator
 }
 
 sourceSets {
@@ -31,10 +31,10 @@ dependencies {
             project(':extensions-parquet-table'),
             'org.openjdk.jmh:jmh-core:1.20'
 
-    testCompile TestTools.projectDependency(project, 'Util'),
+    testImplementation TestTools.projectDependency(project, 'Util'),
             TestTools.projectDependency(project, 'engine-table')
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs'), project(':Numerics')
+    testRuntimeOnly project(path: ':configs'), project(path: ':test-configs'), project(':Numerics')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
