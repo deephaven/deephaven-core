@@ -1294,11 +1294,12 @@ class Table(JObjectWrapper):
 
 
 class PartitionedTable(JObjectWrapper):
-    """A partitioned table is a table that has been partitioned into subtables, known as constituent tables.  
+    """A partitioned table is a table containing subtables, known as constituent tables.
+    The table underlying the partitioned table contains one column containing constituent tables plus (optional) key columns.
     Each constituent table has the same schema.
-    PartitionedTable is implemented as a table containing (optional) key columns plus a column of constituent tables.
 
-    Key values can be used to retrieve constituent tables from the partitioned table.
+    Key values can be used to retrieve constituent tables from the partitioned table and 
+    can be used to perform operations with other like-keyed partitioned tables.
     """
 
     j_object_type = _JPartitionedTable
