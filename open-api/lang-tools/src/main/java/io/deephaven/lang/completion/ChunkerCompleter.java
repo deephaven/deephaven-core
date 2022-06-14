@@ -1033,7 +1033,7 @@ public class ChunkerCompleter implements CompletionHandler {
             // This is pretty hacky, but our only use case here is looking for table loads, so...
             if (assignment.getValue() instanceof IsScope) {
                 final List<IsScope> subscope = ((IsScope) assignment.getValue()).asScopeList();
-                if (!alreadyVisited.contains(subscope)) {
+                if (alreadyVisited.add(subscope)) {
                     result = resolveScopeType(request, subscope, alreadyVisited);
                     if (result.isPresent()) {
                         return result;
