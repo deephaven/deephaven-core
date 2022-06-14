@@ -14,6 +14,7 @@ import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.subscription.SubscriptionTableData;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.widget.JsWidget;
+import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.fu.JsConsumer;
@@ -85,8 +86,10 @@ public class JsPartitionedTable extends HasEventHandling {
                     JsArray.asJsArray(keys.findColumns(descriptor.getKeyColumnNamesList().asArray(new String[0]))));
             subscription.addEventListener(TableSubscription.EVENT_UPDATED, this::handleKeys);
 
-            // TODO consider being kinder and don't return until the snapshot is back from the server
-            return Promise.resolve(this);
+            LazyPromise<JsPartitionedTable> promise = new LazyPromise<>();
+            subscription.addEventListenerOneShot(TableSubscription.EVENT_UPDATED, data -> promise.succeed(this));
+            keys.addEventListener(JsTable.EVENT_DISCONNECT, promise::fail);
+            return promise.asPromise();
         });
     }
 
@@ -112,24 +115,26 @@ public class JsPartitionedTable extends HasEventHandling {
         tables.put(key, JsLazy.of(() -> {
             // If we've entered this lambda, the JsLazy is being used, so we need to go ahead and get the tablehandle
             final ClientTableState entry = connection.newState((c, cts, metadata) -> {
-
-                // TODO make this parallel
-                // TODO stop leaking this table
-                connection.newTable(
-                        descriptor.getKeyColumnNamesList().asArray(new String[0]),
-                        keyColumnTypes.toArray(new String[0]),
-                        key.map((p0, p1, p2) -> JsArray.of((Object) p0).asArray(new Object[0]))
-                                .asArray(new Object[0][]),
-                        null,
-                        this).then(table -> {
-                            GetTableRequest getTableRequest = new GetTableRequest();
-                            getTableRequest.setPartitionedTable(widget.getTicket());
-                            getTableRequest.setKeyTableTicket(table.getHandle().makeTicket());
-                            getTableRequest.setResultId(cts.getHandle().makeTicket());
-                            connection.partitionedTableServiceClient().getTable(getTableRequest, connection.metadata(),
-                                    c::apply);
-                            return null;
-                        });
+                        // TODO deephaven-core#2529 parallelize this
+                        connection.newTable(
+                                        descriptor.getKeyColumnNamesList().asArray(new String[0]),
+                                        keyColumnTypes.toArray(new String[0]),
+                                        key.map((p0, p1, p2) -> JsArray.of((Object) p0).asArray(new Object[0]))
+                                                .asArray(new Object[0][]),
+                                        null,
+                                        this)
+                                .then(table -> {
+                                    GetTableRequest getTableRequest = new GetTableRequest();
+                                    getTableRequest.setPartitionedTable(widget.getTicket());
+                                    getTableRequest.setKeyTableTicket(table.getHandle().makeTicket());
+                                    getTableRequest.setResultId(cts.getHandle().makeTicket());
+                                    connection.partitionedTableServiceClient().getTable(getTableRequest, connection.metadata(),
+                                            (error, success) -> {
+                                                table.close();
+                                                c.apply(error, success);
+                                            });
+                                    return null;
+                                });
             },
                     "tablemap key " + key);
 
