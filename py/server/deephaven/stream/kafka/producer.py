@@ -1,6 +1,7 @@
 #
-#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ The kafka.producer module supports publishing Deephaven tables to Kafka streams. """
 from typing import Dict, Callable, List
 

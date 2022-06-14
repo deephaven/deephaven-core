@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 #include <exception>
 #include <iostream>
 #include "deephaven/client/highlevel/client.h"

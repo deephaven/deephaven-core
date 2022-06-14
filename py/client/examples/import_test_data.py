@@ -1,6 +1,7 @@
 #
-#  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ Demo the steps to upload CSV data into Deephaven
 
     1. use pyarrow to load external data of interest into memory

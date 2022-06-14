@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2018 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.configuration;
 
 import junit.framework.TestCase;
@@ -445,30 +444,23 @@ public class TestConfiguration extends TestCase {
         assertEquals("EFGH", history.get(0).value);
         assertEquals("[]", history.get(0).context);
         final String javaVersion = System.getProperty("java.specification.version");
-        if ("1.8".equals(javaVersion)) {
+        if ("11".equals(javaVersion)) {
             assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
-                            +
-                            "sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
-                            "sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
-                    history.get(0).fileName);
-        } else if ("11".equals(javaVersion)) {
-            assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:439)\n"
                             +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
                     history.get(0).fileName);
         } else if ("17".equals(javaVersion)) {
             assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:439)\n"
                             +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n",
                     history.get(0).fileName);
         } else if ("18".equals(javaVersion)) {
             assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:439)\n"
                             +
                             "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n"
                             +
