@@ -32,6 +32,8 @@ func main() {
 		return
 	}
 
+	s.FetchTables(ctx, client.FetchOnce)
+
 	rec, err := tbl.Snapshot(ctx)
 	if err != nil {
 		fmt.Println("Snapshot err:", err)

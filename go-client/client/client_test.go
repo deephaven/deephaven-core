@@ -3,6 +3,7 @@ package client_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/deephaven/deephaven-core/go-client/client"
 	"github.com/deephaven/deephaven-core/go-client/internal/test_setup"
@@ -124,4 +125,124 @@ func TestTableUpload(t *testing.T) {
 			t.Error("DataType differed", expCol.DataType(), " and ", actCol.DataType())
 		}
 	}
+}
+
+func contains(slice []string, elem string) bool {
+	for _, e := range slice {
+		if e == elem {
+			return true
+		}
+	}
+	return false
+}
+
+func TestFieldSyncOnce(t *testing.T) {
+	ctx := context.Background()
+
+	client1, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	test_setup.CheckError(t, "NewClient", err)
+	defer client1.Close()
+
+	err = client1.RunScript(ctx,
+		`
+gotesttable = None
+`)
+	test_setup.CheckError(t, "RunScript", err)
+
+	client2, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	test_setup.CheckError(t, "NewClient", err)
+	defer client2.Close()
+
+	err = client2.FetchTables(ctx, client.FetchOnce)
+	test_setup.CheckError(t, "FetchTables", err)
+
+	if contains(client2.ListOpenableTables(), "gotesttable") {
+		t.Errorf("test table should not exist")
+		return
+	}
+
+	err = client1.RunScript(ctx,
+		`
+from deephaven import empty_table
+gotesttable = empty_table(10)
+`)
+	test_setup.CheckError(t, "RunScript", err)
+
+	err = client2.FetchTables(ctx, client.FetchOnce)
+	test_setup.CheckError(t, "FetchTables", err)
+
+	if !contains(client2.ListOpenableTables(), "gotesttable") {
+		t.Errorf("test table should exist")
+		return
+	}
+}
+
+func TestFieldSyncRepeating(t *testing.T) {
+	ctx := context.Background()
+
+	client1, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	test_setup.CheckError(t, "NewClient", err)
+	defer client1.Close()
+
+	err = client1.RunScript(ctx,
+		`
+gotesttable1 = None
+`)
+	test_setup.CheckError(t, "RunScript", err)
+
+	client2, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	test_setup.CheckError(t, "NewClient", err)
+	defer client2.Close()
+
+	err = client2.FetchTables(ctx, client.FetchRepeating)
+	test_setup.CheckError(t, "FetchTables", err)
+
+	err = client1.RunScript(ctx,
+		`
+from deephaven import empty_table
+gotesttable1 = empty_table(10)
+`)
+	test_setup.CheckError(t, "RunScript", err)
+
+	timer := time.After(time.Second)
+	for {
+		if contains(client2.ListOpenableTables(), "gotesttable1") {
+			break
+		}
+
+		select {
+		case <-timer:
+			t.Errorf("test table should exist")
+			return
+		default:
+		}
+	}
+
+	err = client2.RunScript(ctx, "print('hi')")
+	test_setup.CheckError(t, "RunScript", err)
+
+	client1.RunScript(ctx,
+		`
+from deephaven import empty_table
+gotesttable2 = empty_table(20)
+`)
+	test_setup.CheckError(t, "RunScript", err)
+
+	timer = time.After(time.Second)
+	for {
+		if contains(client2.ListOpenableTables(), "gotesttable1") && contains(client2.ListOpenableTables(), "gotesttable2") {
+			break
+		}
+
+		select {
+		case <-timer:
+			t.Errorf("test tables should exist")
+			return
+		default:
+		}
+	}
+
+	tbl, err := client2.OpenTable(ctx, "gotesttable1")
+	test_setup.CheckError(t, "OpenTable", err)
+	defer tbl.Release(ctx)
 }

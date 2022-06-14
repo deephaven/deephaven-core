@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"sync"
 
 	applicationpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/application"
 	consolepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/console"
@@ -27,10 +28,12 @@ type Client struct {
 	consoleStub
 	flightStub
 	tableStub
+	appStub
 
 	nextTicket int32
 
-	tables map[fieldId]*TableHandle
+	tablesLock sync.Mutex
+	tables     map[fieldId]*TableHandle
 }
 
 // Starts a connection to the deephaven server.
@@ -72,7 +75,49 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 		return nil, err
 	}
 
+	client.appStub = newAppStub(client)
+
 	return client, nil
+}
+
+type FetchOption int
+
+const (
+	FetchOnce      FetchOption = iota
+	FetchRepeating FetchOption = iota
+)
+
+// Fetches the list of tables from the server.
+// This allows the client to see the list of named global tables on the server,
+// and thus allows it to open them using OpenTables.
+func (client *Client) FetchTables(ctx context.Context, opt FetchOption) error {
+	err := client.listFields(ctx, func(update *applicationpb2.FieldsChangeUpdate) {
+		client.handleFieldChanges(update)
+	})
+	if err != nil {
+		return err
+	}
+
+	if opt == FetchOnce {
+		client.appStub.cancelFunc()
+	}
+
+	return nil
+}
+
+// Returns a list of the (global) tables that can be opened with OpenTable.
+// This can be updated using FetchTables.
+func (client *Client) ListOpenableTables() []string {
+	client.tablesLock.Lock()
+	defer client.tablesLock.Unlock()
+
+	var result []string
+	for id := range client.tables {
+		if id.appId == "scope" {
+			result = append(result, id.fieldName)
+		}
+	}
+	return result
 }
 
 func (client *Client) newTicketNum() int32 {
@@ -111,21 +156,57 @@ func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]*Tab
 // Once this method is called, the client and any TableHandles from it cannot be used.
 func (client *Client) Close() {
 	client.sessionStub.Close()
+	client.appStub.Close()
 	if client.grpcChannel != nil {
 		client.grpcChannel.Close()
 		client.grpcChannel = nil
 	}
 }
 
+// This is thread-safe
 func (client *Client) withToken(ctx context.Context) context.Context {
 	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("deephaven_session_id", string(client.getToken())))
 }
 
+// Directly uploads and executes a script on the deephaven server.
+// The script language depends on the scriptLanguage argument passed when creating the client.
+func (client *Client) RunScript(context context.Context, script string) error {
+	// This has to shadow the consoleStub method in order to handle the listfields loop
+
+	restartLoop := client.appStub.isListing()
+	client.appStub.cancelListLoop()
+
+	if restartLoop {
+		// Clear out the table list to avoid any duplicate entries
+		client.tables = make(map[fieldId]*TableHandle)
+	}
+
+	err := client.consoleStub.RunScript(context, script)
+	if err != nil {
+		client.FetchTables(context, FetchRepeating) // At least try to restart this
+		return err
+	}
+
+	if restartLoop {
+		err = client.FetchTables(context, FetchRepeating)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// This is thread-safe
 func (client *Client) handleScriptChanges(resp *consolepb2.ExecuteCommandResponse) {
 	client.handleFieldChanges(resp.Changes)
 }
 
+// This is thread-safe
 func (client *Client) handleFieldChanges(resp *applicationpb2.FieldsChangeUpdate) {
+	client.tablesLock.Lock()
+	defer client.tablesLock.Unlock()
+
 	for _, created := range resp.Created {
 		if created.TypedTicket.Type == "Table" {
 			fieldId := fieldId{appId: created.ApplicationId, fieldName: created.FieldName}

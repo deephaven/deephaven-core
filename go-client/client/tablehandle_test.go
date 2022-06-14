@@ -17,7 +17,7 @@ type unaryTableOp func(context.Context, *client.TableHandle) (*client.TableHandl
 func applyTableOp(input arrow.Record, t *testing.T, op unaryTableOp) arrow.Record {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -182,7 +182,7 @@ func TestMerge(t *testing.T) {
 func TestExactJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	test_setup.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -230,7 +230,7 @@ func TestExactJoin(t *testing.T) {
 func TestNaturalJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	test_setup.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -278,7 +278,7 @@ func TestNaturalJoin(t *testing.T) {
 func TestCrossJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, "localhost", "10000", "python")
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
 	test_setup.CheckError(t, "NewClient", err)
 	defer c.Close()
 
