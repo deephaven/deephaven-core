@@ -9,10 +9,7 @@ GwtTools.gwtLib project
 // Contains all shared ide-related configuration and Data Transfer Objects.
 
 dependencies {
-    compile project(':open-api-shared-fu'),
-            // this should be considered a legacy dependency that we want to reverse by moving types into open-api.
-            project(':web-shared-beans')
-
+    compile project(':open-api-shared-fu')
 }
 
 Classpaths.inheritGwt(project)
