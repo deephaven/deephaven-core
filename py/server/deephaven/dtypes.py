@@ -7,10 +7,11 @@ Each data type is represented by a DType class which supports creating arrays of
 """
 from __future__ import annotations
 
-from typing import Any, Sequence, Callable, Dict, Type
+from typing import Any, Sequence, Callable, Dict, Type, Union
 
 import jpy
 import numpy as np
+import pandas as pd
 
 from deephaven import DHError
 
@@ -180,14 +181,16 @@ def from_jtype(j_class: Any) -> DType:
         return dtype
 
 
-def from_np_dtype(np_dtype) -> DType:
-    """ Looks up a DType that matches the provided numpy dtype or Pandas's nullable equivalent, if not found,
+def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -> DType:
+    """ Looks up a DType that matches the provided numpy dtype or Pandas's nullable equivalent; if not found,
     returns PyObject. """
 
-    if not isinstance(np_dtype, np.dtype):
-        # check if it is a Pandas nullable numeric types such as pd.core.arrays.floating.Float64Dtype/Int32Dtype
+    if isinstance(np_dtype, pd.api.extensions.ExtensionDtype):
+        # check if it is a Pandas nullable numeric types such as pd.Float64Dtype/Int32Dtype/BooleanDtype etc.
         if hasattr(np_dtype, "numpy_dtype"):
             np_dtype = np_dtype.numpy_dtype
+        elif isinstance(np_dtype, pd.StringDtype):
+            return string
         else:
             return PyObject
 
