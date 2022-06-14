@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ The kafka.consumer module supports consuming a Kakfa topic as a Deephaven live table. """
 from enum import Enum
 from typing import Dict, Tuple, List, Callable

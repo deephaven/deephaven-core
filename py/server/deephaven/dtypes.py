@@ -1,6 +1,7 @@
 #
-#   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ This module defines the data types supported by the Deephaven engine.
 
 Each data type is represented by a DType class which supports creating arrays of the same type and more.

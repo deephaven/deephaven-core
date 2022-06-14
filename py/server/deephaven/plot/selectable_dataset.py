@@ -1,6 +1,7 @@
 #
-#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ This module defines the SelectableDateSet which is used to provides a view of a selectable subset of a table.
 For example, in some selectable data sets, a GUI click can be used to select a portion of a table. """
 

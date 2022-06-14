@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset.impl.sortedranges;
 
 public abstract class SortedRangesTyped<ArrayType> extends SortedRanges {
