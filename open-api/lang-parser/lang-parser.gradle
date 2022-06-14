@@ -16,7 +16,6 @@ dependencies {
     compile project(':proto:proto-backplane-grpc')
 }
 Classpaths.inheritJavaParser project
-GwtTools.gwtLib project
 
 // All javacc plugin configuration disabled to avoid weird IntelliJ breakage
 // when we try to manually patch the plugin.  Will reinstate once upstream

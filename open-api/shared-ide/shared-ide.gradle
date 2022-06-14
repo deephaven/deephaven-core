@@ -4,12 +4,8 @@ plugins {
 
 apply from: "$rootDir/gradle/web-common.gradle"
 
-GwtTools.gwtLib project
-
 // Contains all shared ide-related configuration and Data Transfer Objects.
 
 dependencies {
     compile project(':open-api-shared-fu')
 }
-
-Classpaths.inheritGwt(project)
