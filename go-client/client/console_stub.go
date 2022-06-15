@@ -35,6 +35,10 @@ func newConsoleStub(ctx context.Context, client *Client, sessionType string) (co
 
 // Binds a table reference to a given name so that it can be referenced by other clients or the web UI.
 func (console *consoleStub) BindToVariable(ctx context.Context, name string, table *TableHandle) error {
+	if console.client.Closed() {
+		return ErrClosedClient
+	}
+
 	ctx = console.client.withToken(ctx)
 
 	req := consolepb2.BindTableToVariableRequest{ConsoleId: console.consoleId, VariableName: name, TableId: table.ticket}
@@ -49,6 +53,10 @@ func (console *consoleStub) BindToVariable(ctx context.Context, name string, tab
 // Directly uploads and executes a script on the deephaven server.
 // The script language depends on the scriptLanguage argument passed when creating the client.
 func (console *consoleStub) RunScript(ctx context.Context, script string) error {
+	if console.client.Closed() {
+		return ErrClosedClient
+	}
+
 	ctx = console.client.withToken(ctx)
 
 	req := consolepb2.ExecuteCommandRequest{ConsoleId: console.consoleId, Code: script}

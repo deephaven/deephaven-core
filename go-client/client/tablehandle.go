@@ -52,17 +52,19 @@ func (th *TableHandle) Query() QueryNode {
 }
 
 // Releases this table handle's resources on the server. The TableHandle is no longer usable after Release is called.
-func (th *TableHandle) Release(ctx context.Context) {
+func (th *TableHandle) Release(ctx context.Context) error {
 	if th.client != nil {
 		err := th.client.release(ctx, th.ticket)
 		if err != nil {
 			log.Println("unable to release table:", err.Error())
+			return err
 		}
 
 		th.client = nil
 		th.ticket = nil
 		th.schema = nil
 	}
+	return nil
 }
 
 // Returns a new table without the given columns.

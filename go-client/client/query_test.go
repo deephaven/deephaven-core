@@ -294,10 +294,6 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, op queryOp) []arrow.Record
 		return nil
 	}
 
-	for _, table := range tables {
-		defer table.Release(ctx)
-	}
-
 	var recs []arrow.Record
 	for _, table := range tables {
 		rec, err := table.Snapshot(ctx)
@@ -306,6 +302,11 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, op queryOp) []arrow.Record
 			return nil
 		}
 		recs = append(recs, rec)
+		err = table.Release(ctx)
+		if err != nil {
+			t.Errorf("Release %s", err.Error())
+			return nil
+		}
 	}
 
 	return recs
@@ -349,6 +350,13 @@ func TestDuplicateQuery(t *testing.T) {
 	if records[1].NumCols() != 1 || records[3].NumCols() != 1 {
 		t.Errorf("query1 had wrong size")
 	}
+}
+
+func TestEmptyUpdateQuery(t *testing.T) {
+	result := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		return []client.QueryNode{tbl.Query().Update()}
+	})
+	defer result[0].Release()
 }
 
 func TestEmptyQuery(t *testing.T) {

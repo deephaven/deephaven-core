@@ -38,6 +38,10 @@ func newFlightStub(client *Client, host string, port string) (flightStub, error)
 }
 
 func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (arrow.Record, error) {
+	if fs.client.Closed() {
+		return nil, ErrClosedClient
+	}
+
 	ctx = fs.client.withToken(ctx)
 
 	fticket := &flight.Ticket{Ticket: ticket.GetTicket()}
@@ -55,10 +59,10 @@ func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 	}
 
 	rec1, err := reader.Read()
-	rec1.Retain()
 	if err != nil {
 		return nil, err
 	}
+	rec1.Retain()
 
 	rec2, err := reader.Read()
 	if err != io.EOF {
@@ -73,6 +77,10 @@ func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 // Uploads a table to the Deephaven server.
 // The table can then be manipulated and referenced using the returned TableHandle.
 func (fs *flightStub) ImportTable(ctx context.Context, rec arrow.Record) (*TableHandle, error) {
+	if fs.client.Closed() {
+		return nil, ErrClosedClient
+	}
+
 	ctx = fs.client.withToken(ctx)
 
 	doPut, err := fs.stub.DoPut(ctx)

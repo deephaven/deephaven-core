@@ -90,6 +90,11 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 	return client, nil
 }
 
+// Checks if the client is closed, i.e. it can no longer perform operations on the server.
+func (client *Client) Closed() bool {
+	return client.grpcChannel == nil
+}
+
 type FetchOption int
 
 const (
@@ -101,6 +106,10 @@ const (
 // This allows the client to see the list of named global tables on the server,
 // and thus allows it to open them using OpenTables.
 func (client *Client) FetchTables(ctx context.Context, opt FetchOption) error {
+	if client.Closed() {
+		return ErrClosedClient
+	}
+
 	err := client.listFields(ctx, func(update *applicationpb2.FieldsChangeUpdate) {
 		client.handleFieldChanges(update)
 	})
@@ -159,6 +168,10 @@ func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 //
 // This may return a QueryError if the query is invalid.
 func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]*TableHandle, error) {
+	if client.Closed() {
+		return nil, ErrClosedClient
+	}
+
 	return execQuery(client, ctx, nodes)
 }
 
@@ -182,6 +195,10 @@ func (client *Client) withToken(ctx context.Context) context.Context {
 // The script language depends on the scriptLanguage argument passed when creating the client.
 func (client *Client) RunScript(context context.Context, script string) error {
 	// This has to shadow the consoleStub method in order to handle the listfields loop
+
+	if client.Closed() {
+		return ErrClosedClient
+	}
 
 	restartLoop := client.appStub.isListing()
 	client.appStub.cancelListLoop()
