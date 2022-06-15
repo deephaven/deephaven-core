@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+// Returned as an error when trying to perform a network operation on a client that's been closed.
 var ErrClosedClient = errors.New("client is closed")
 
 type fieldId struct {
