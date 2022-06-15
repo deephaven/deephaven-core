@@ -22,7 +22,7 @@ public interface MultiSeries extends Series {
      *
      * @param namingFunction series naming function
      */
-    MultiSeries seriesNamingFunction(final Function<Object[], String> namingFunction);
+    MultiSeries seriesNamingFunction(final Function<Object, String> namingFunction);
 
     /**
      * Defines the procedure to name a generated series. The input of the naming function is an array of the column

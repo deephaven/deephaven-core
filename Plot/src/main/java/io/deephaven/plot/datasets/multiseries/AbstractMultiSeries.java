@@ -48,17 +48,22 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
     private transient Set<Object> seriesKeys;
     private transient Map<String, Object> seriesNames;
 
-    private final transient java.util.function.Function<Object[], String> DEFAULT_NAMING_FUNCTION = key -> {
+    private final transient java.util.function.Function<Object, String> DEFAULT_NAMING_FUNCTION = key -> {
         final String keyString;
-        if (key.length > 1) {
-            keyString = Arrays.toString(key);
+        if (key instanceof Object[]) {
+            Object[] arr = (Object[]) key;
+            if (arr.length == 1) {
+                keyString = Objects.toString(arr[0]);
+            } else {
+                keyString = Arrays.toString(arr);
+            }
         } else {
             keyString = Objects.toString(key);
         }
         return name() + ": " + keyString;
     };
 
-    transient java.util.function.Function<Object[], String> namingFunction;
+    transient java.util.function.Function<Object, String> namingFunction;
 
     private DynamicSeriesNamer seriesNamer;
     private transient Object seriesNamerLock;
@@ -135,7 +140,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
     @Override
     public AbstractMultiSeries<SERIES> seriesNamingFunction(
-            final Function<Object[], String> namingFunction) {
+            final Function<Object, String> namingFunction) {
         if (namingFunction == null) {
             this.namingFunction = DEFAULT_NAMING_FUNCTION;
         } else {
@@ -158,19 +163,18 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
         applyNamingFunction(namingFunction);
     }
 
-    private void applyNamingFunction(final java.util.function.Function<Object[], String> namingFunction) {
+    private void applyNamingFunction(final java.util.function.Function<Object, String> namingFunction) {
         ArgumentValidations.assertNotNull(namingFunction, "namingFunction", getPlotInfo());
         seriesNameColumnName =
                 seriesNameColumnName == null ? ColumnNameConstants.SERIES_NAME + this.hashCode() : seriesNameColumnName;
-        applyFunction(namingFunction, seriesNameColumnName, String.class);
+        applyFunction(namingFunction, seriesNameColumnName);
     }
 
     /**
      * Applies the {@code function} to the given input of the underlying table to create a new column
      * {@code columnName}.
      */
-    protected void applyFunction(final java.util.function.Function function, final String columnName,
-            final Class resultClass) {
+    protected void applyFunction(final java.util.function.Function<Object, String> function, final String columnName) {
         final String functionInput;
         if (byColumns.length > 1) {
             functionInput = String.join(",", byColumns);
@@ -178,14 +182,14 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
             functionInput = byColumns[0];
         }
 
-        applyFunction(function, columnName, functionInput, resultClass);
+        applyFunction(function, columnName, functionInput, String.class);
     }
 
     /**
      * Applies the {@code function} to the byColumns of the underlying table to create a new column {@code columnName}.
      */
-    protected void applyFunction(final java.util.function.Function function, final String columnName,
-            final String functionInput, final Class resultClass) {
+    protected <T, R> void applyFunction(final java.util.function.Function<? super T, ? extends R> function, final String columnName,
+            final String functionInput, final Class<R> resultClass) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";
         final Map<String, Object> params = new HashMap<>();
