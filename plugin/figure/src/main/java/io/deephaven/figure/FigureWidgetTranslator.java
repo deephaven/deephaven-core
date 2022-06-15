@@ -116,7 +116,7 @@ public class FigureWidgetTranslator {
         for (Map.Entry<PartitionedTable, List<PartitionedTableHandle>> entry : figure.getPartitionedTableHandles()
                 .stream().collect(Collectors.groupingBy(PartitionedTableHandle::getPartitionedTable)).entrySet()) {
 
-            //TODO deephaven-core#2535 Restore this with a "PartitionedTableSupplier" type, if it is created
+            // TODO deephaven-core#2535 Restore this with a "PartitionedTableSupplier" type, if it is created
             // Set<String> relevantColumns =
             // entry.getValue().stream().map(PartitionedTableHandle::getColumns).flatMap(Set::stream).collect(Collectors.toSet());
             // PartitionedTable partitionedTable = new PartitionedTableSupplier(entry.getKey(),
