@@ -1,8 +1,10 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -1237,7 +1239,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             for (int ii = 0; ii < columns.length; ++ii) {
                 keyValues[ii] = columnSources[ii].get(value);
             }
-            sb.append(value).append("=").append(new SmartKey(keyValues)).append("\n");
+            sb.append(value).append("=").append(Arrays.toString(keyValues)).append("\n");
         }
 
         final RowSet prevRowSet = rowSet.copyPrev();
@@ -1249,7 +1251,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             for (int ii = 0; ii < columns.length; ++ii) {
                 keyValues[ii] = columnSources[ii].getPrev(value);
             }
-            sb.append(value).append("=").append(new SmartKey(keyValues)).append("\n");
+            sb.append(value).append("=").append(Arrays.toString(keyValues)).append("\n");
         }
 
         System.out.println(sb);

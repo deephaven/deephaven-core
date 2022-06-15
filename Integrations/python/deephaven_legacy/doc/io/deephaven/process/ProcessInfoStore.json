@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.process.ProcessInfoStore",
- "methods": {
-  "put": ":param info: io.deephaven.process.ProcessInfo"
- },
- "path": "io.deephaven.process.ProcessInfoStore",
- "typeName": "interface"
-}

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.pool.Pool$Factory",
- "methods": {
-  "create": "Creates a new pool.\n\nNote: Java generics information - <T>\n\n:param nSize: (int) - A hint of the maximum number of items expected to be taken from the pool at once. The behavior\n        when more items are taken depends on the pool. The pool may preallocate this many items. When the\n        maximum can't be given, use 0.\n:param itemFactory: (io.deephaven.base.Function.Nullary<T>) - Creates new items. May be null if items will be given\n        rather than created.\n:param clearingProcedure: (io.deephaven.base.Procedure.Unary<T>) - Called on each item given to the pool to clear the fields of the item. May be\n        null.\n:return: io.deephaven.base.pool.Pool<T>"
- },
- "path": "io.deephaven.base.pool.Pool.Factory",
- "typeName": "interface"
-}

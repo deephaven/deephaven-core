@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.plot.AxesImpl;
@@ -93,8 +92,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameToStringMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                errorBarColor);
+            errorBarColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), errorBarColor);
         }
 
         return this;
@@ -110,8 +108,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameTointMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                errorBarColor);
+            errorBarColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey), errorBarColor);
         }
 
         return this;
@@ -127,8 +124,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameToPaintMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                errorBarColor);
+            errorBarColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey), errorBarColor);
         }
 
         return this;
@@ -144,8 +140,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             gradientVisibleSeriesNameTobooleanMap.setDefault(gradientVisible);
         } else {
-            gradientVisibleSeriesNameTobooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                gradientVisible);
+            gradientVisibleSeriesNameTobooleanMap.put(namingFunction.apply(multiSeriesKey), gradientVisible);
         }
 
         return this;
@@ -161,8 +156,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameToStringMap.setDefault(color);
         } else {
-            lineColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            lineColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -178,8 +172,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameTointMap.setDefault(color);
         } else {
-            lineColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            lineColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -195,8 +188,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameToPaintMap.setDefault(color);
         } else {
-            lineColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            lineColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -212,8 +204,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineStyleSeriesNameToLineStyleMap.setDefault(lineStyle);
         } else {
-            lineStyleSeriesNameToLineStyleMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                lineStyle);
+            lineStyleSeriesNameToLineStyleMap.put(namingFunction.apply(multiSeriesKey), lineStyle);
         }
 
         return this;
@@ -229,8 +220,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             linesVisibleSeriesNameToBooleanMap.setDefault(visible);
         } else {
-            linesVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                visible);
+            linesVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey), visible);
         }
 
         return this;
@@ -246,8 +236,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameTointArrayMap.setDefault(pointColors);
         } else {
-            pointColorSeriesNameTointArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColors);
+            pointColorSeriesNameTointArrayMap.put(namingFunction.apply(multiSeriesKey), pointColors);
         }
 
         return this;
@@ -263,8 +252,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToPaintArrayMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToPaintArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColor);
+            pointColorSeriesNameToPaintArrayMap.put(namingFunction.apply(multiSeriesKey), pointColor);
         }
 
         return this;
@@ -280,8 +268,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToIntegerArrayMap.setDefault(pointColors);
         } else {
-            pointColorSeriesNameToIntegerArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColors);
+            pointColorSeriesNameToIntegerArrayMap.put(namingFunction.apply(multiSeriesKey), pointColors);
         }
 
         return this;
@@ -297,8 +284,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToStringArrayMap.setDefault(pointColors);
         } else {
-            pointColorSeriesNameToStringArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColors);
+            pointColorSeriesNameToStringArrayMap.put(namingFunction.apply(multiSeriesKey), pointColors);
         }
 
         return this;
@@ -314,8 +300,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToStringMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColor);
+            pointColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), pointColor);
         }
 
         return this;
@@ -331,8 +316,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameTointMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColor);
+            pointColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey), pointColor);
         }
 
         return this;
@@ -348,8 +332,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToPaintMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColor);
+            pointColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey), pointColor);
         }
 
         return this;
@@ -365,8 +348,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToIndexableDataMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointColor);
+            pointColorSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey), pointColor);
         }
 
         return this;
@@ -384,7 +366,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, pointColors});
         } else {
-            pointColorSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointColorSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ tHandle, pointColors});
         }
 
@@ -401,7 +383,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, pointColors});
         } else {
-            pointColorSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointColorSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ sds, pointColors});
         }
 
@@ -418,8 +400,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorIntegerSeriesNameToIndexableDataMap.setDefault(colors);
         } else {
-            pointColorIntegerSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                colors);
+            pointColorIntegerSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey), colors);
         }
 
         return this;
@@ -435,8 +416,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToObjectArrayMap.setDefault(new Object[]{pointLabels});
         } else {
-            pointLabelSeriesNameToObjectArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                new Object[]{pointLabels});
+            pointLabelSeriesNameToObjectArrayMap.put(namingFunction.apply(multiSeriesKey), new Object[]{pointLabels});
         }
 
         return this;
@@ -452,8 +432,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToObjectMap.setDefault(pointLabel);
         } else {
-            pointLabelSeriesNameToObjectMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointLabel);
+            pointLabelSeriesNameToObjectMap.put(namingFunction.apply(multiSeriesKey), pointLabel);
         }
 
         return this;
@@ -469,8 +448,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToIndexableDataMap.setDefault(pointLabels);
         } else {
-            pointLabelSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointLabels);
+            pointLabelSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey), pointLabels);
         }
 
         return this;
@@ -488,7 +466,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, pointLabel});
         } else {
-            pointLabelSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointLabelSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ tHandle, pointLabel});
         }
 
@@ -505,7 +483,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, pointLabel});
         } else {
-            pointLabelSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointLabelSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ sds, pointLabel});
         }
 
@@ -522,8 +500,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelFormatSeriesNameToStringMap.setDefault(pointLabelFormat);
         } else {
-            pointLabelFormatSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointLabelFormat);
+            pointLabelFormatSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), pointLabelFormat);
         }
 
         return this;
@@ -539,8 +516,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToShapeArrayMap.setDefault(pointShapes);
         } else {
-            pointShapeSeriesNameToShapeArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointShapes);
+            pointShapeSeriesNameToShapeArrayMap.put(namingFunction.apply(multiSeriesKey), pointShapes);
         }
 
         return this;
@@ -556,8 +532,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToStringArrayMap.setDefault(pointShapes);
         } else {
-            pointShapeSeriesNameToStringArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointShapes);
+            pointShapeSeriesNameToStringArrayMap.put(namingFunction.apply(multiSeriesKey), pointShapes);
         }
 
         return this;
@@ -573,8 +548,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToStringMap.setDefault(pointShape);
         } else {
-            pointShapeSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointShape);
+            pointShapeSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), pointShape);
         }
 
         return this;
@@ -590,8 +564,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToShapeMap.setDefault(pointShape);
         } else {
-            pointShapeSeriesNameToShapeMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointShape);
+            pointShapeSeriesNameToShapeMap.put(namingFunction.apply(multiSeriesKey), pointShape);
         }
 
         return this;
@@ -607,8 +580,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToIndexableDataMap.setDefault(pointShapes);
         } else {
-            pointShapeSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointShapes);
+            pointShapeSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey), pointShapes);
         }
 
         return this;
@@ -626,7 +598,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, pointShape});
         } else {
-            pointShapeSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointShapeSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ tHandle, pointShape});
         }
 
@@ -643,7 +615,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, pointShape});
         } else {
-            pointShapeSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointShapeSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ sds, pointShape});
         }
 
@@ -660,8 +632,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToTArrayMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameToTArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointSizes);
+            pointSizeSeriesNameToTArrayMap.put(namingFunction.apply(multiSeriesKey), pointSizes);
         }
 
         return this;
@@ -677,8 +648,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameTodoubleArrayMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameTodoubleArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointSizes);
+            pointSizeSeriesNameTodoubleArrayMap.put(namingFunction.apply(multiSeriesKey), pointSizes);
         }
 
         return this;
@@ -694,8 +664,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameTointArrayMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameTointArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointSizes);
+            pointSizeSeriesNameTointArrayMap.put(namingFunction.apply(multiSeriesKey), pointSizes);
         }
 
         return this;
@@ -711,8 +680,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameTolongArrayMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameTolongArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointSizes);
+            pointSizeSeriesNameTolongArrayMap.put(namingFunction.apply(multiSeriesKey), pointSizes);
         }
 
         return this;
@@ -728,8 +696,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToNumberMap.setDefault(pointSize);
         } else {
-            pointSizeSeriesNameToNumberMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointSize);
+            pointSizeSeriesNameToNumberMap.put(namingFunction.apply(multiSeriesKey), pointSize);
         }
 
         return this;
@@ -745,8 +712,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToIndexableDataMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                pointSizes);
+            pointSizeSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey), pointSizes);
         }
 
         return this;
@@ -764,7 +730,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, pointSizes});
         } else {
-            pointSizeSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ tHandle, pointSizes});
         }
 
@@ -781,7 +747,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, pointSize});
         } else {
-            pointSizeSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
+            pointSizeSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey), 
                 new Object[]{ sds, pointSize});
         }
 
@@ -798,8 +764,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointsVisibleSeriesNameToBooleanMap.setDefault(visible);
         } else {
-            pointsVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                visible);
+            pointsVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey), visible);
         }
 
         return this;
@@ -815,8 +780,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameToStringMap.setDefault(color);
         } else {
-            seriesColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            seriesColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -832,8 +796,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameTointMap.setDefault(color);
         } else {
-            seriesColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            seriesColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -849,8 +812,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameToPaintMap.setDefault(color);
         } else {
-            seriesColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                color);
+            seriesColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey), color);
         }
 
         return this;
@@ -866,8 +828,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             toolTipPatternSeriesNameToStringMap.setDefault(toolTipPattern);
         } else {
-            toolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                toolTipPattern);
+            toolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), toolTipPattern);
         }
 
         return this;
@@ -883,8 +844,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             xToolTipPatternSeriesNameToStringMap.setDefault(xToolTipPattern);
         } else {
-            xToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                xToolTipPattern);
+            xToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), xToolTipPattern);
         }
 
         return this;
@@ -900,8 +860,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
         if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             yToolTipPatternSeriesNameToStringMap.setDefault(yToolTipPattern);
         } else {
-            yToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
-                yToolTipPattern);
+            yToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey), yToolTipPattern);
         }
 
         return this;

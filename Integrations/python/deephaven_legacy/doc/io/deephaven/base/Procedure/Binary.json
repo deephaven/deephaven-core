@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Procedure$Binary",
- "methods": {
-  "call": ":param arg1: Procedure.Binary.A1\n:param arg2: Procedure.Binary.A2"
- },
- "path": "io.deephaven.base.Procedure.Binary",
- "typeName": "interface"
-}

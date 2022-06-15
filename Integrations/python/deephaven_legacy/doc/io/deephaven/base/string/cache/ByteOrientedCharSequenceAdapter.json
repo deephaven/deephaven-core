@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.base.string.cache.ByteOrientedCharSequenceAdapter",
- "methods": {},
- "path": "io.deephaven.base.string.cache.ByteOrientedCharSequenceAdapter",
- "text": "Common parent for CharSequenceAdapters that store chars as single bytes (for simple encodings).",
- "typeName": "class"
-}

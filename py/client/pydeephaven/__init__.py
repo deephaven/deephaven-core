@@ -1,6 +1,7 @@
 #
-#  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """Deephaven Python Client (`pydeephaven`) is a Python API built on top of Deephaven's highly efficient Open API which is
 based on gRPC and Apache Arrow. It allows Python applications to remotely connect to Deephaven data servers,
 export/import data with the server, run Python scripts on the server, and execute powerful queries on data tables.

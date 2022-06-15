@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.io.streams.MultiFileInputStream$DecoratedInputStream",
- "methods": {},
- "path": "io.deephaven.io.streams.MultiFileInputStream.DecoratedInputStream",
- "typeName": "class"
-}

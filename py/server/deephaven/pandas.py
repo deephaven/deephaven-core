@@ -1,16 +1,18 @@
 #
-#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ This module supports the conversion between Deephaven tables and Pandas DataFrames. """
-import re
 from typing import List
 
 import jpy
 import numpy as np
 import pandas
+import pandas as pd
 
 from deephaven import DHError, new_table, dtypes
 from deephaven.column import Column
+from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_BOOLEAN
 from deephaven.numpy import column_to_numpy_array, freeze_table, _make_input_column
 from deephaven.table import Table
 
@@ -88,6 +90,35 @@ def to_pandas(table: Table, cols: List[str] = None) -> pandas.DataFrame:
         raise DHError(e, "failed to create a Pandas DataFrame from table.") from e
 
 
+EX_DTYPE_NULL_MAP = {
+    # This reflects the fact that in the server we use NULL_BOOLEAN_AS_BYTE - the byte encoding of null boolean to
+    # translate boxed Boolean to/from primitive bytes
+    pd.BooleanDtype: NULL_BYTE,
+    pd.Int8Dtype: NULL_BYTE,
+    pd.Int16Dtype: NULL_SHORT,
+    pd.Int32Dtype: NULL_INT,
+    pd.Int64Dtype: NULL_LONG,
+    pd.Float32Dtype: NULL_FLOAT,
+    pd.Float64Dtype: NULL_DOUBLE,
+    pd.StringDtype: None,
+}
+
+
+def _map_na(np_array: np.ndarray):
+    """Replaces the pd.NA values in the array if it is of Pandas ExtensionDtype(nullable)."""
+    pd_dtype = np_array.dtype
+    if not isinstance(pd_dtype, pandas.api.extensions.ExtensionDtype):
+        return np_array
+
+    dh_null = EX_DTYPE_NULL_MAP.get(type(pd_dtype), None)
+    if isinstance(pd_dtype, pd.StringDtype) or isinstance(pd_dtype, pd.BooleanDtype):
+        np_array = np.array(list(map(lambda v: dh_null if v is pd.NA else v, np_array)))
+    elif dh_null is not None:
+        np_array = np_array.fillna(dh_null)
+
+    return np_array
+
+
 def to_table(df: pandas.DataFrame, cols: List[str] = None) -> Table:
     """  Creates a new table from a pandas.DataFrame.
 
@@ -112,7 +143,10 @@ def to_table(df: pandas.DataFrame, cols: List[str] = None) -> Table:
 
         input_cols = []
         for col in cols:
-            input_cols.append(_make_input_column(col, df.get(col).values))
+            np_array = df.get(col).values
+            dtype = dtypes.from_np_dtype(np_array.dtype)
+            np_array = _map_na(np_array)
+            input_cols.append(_make_input_column(col, np_array, dtype))
 
         return new_table(cols=input_cols)
     except DHError:

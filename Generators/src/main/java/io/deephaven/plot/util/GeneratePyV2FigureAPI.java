@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.plot.util;
 
 import io.deephaven.base.Pair;
@@ -72,7 +75,7 @@ public class GeneratePyV2FigureAPI {
             String oldCode = new String(Files.readAllBytes(Paths.get(figureWrapperOutput)));
             if (!pyCode.equals(oldCode)) {
                 throw new RuntimeException(
-                        "Change in generated code.  Run GeneratePyV2FigureAPI or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n");
+                        "Change in generated code.  Run GeneratePyV2FigureAPI or \"./gradlew :Generators:generatePythonFigureWrapper\" to regenerate\n");
             }
         } else {
             try (final PrintWriter out = new PrintWriter(pythonFile)) {

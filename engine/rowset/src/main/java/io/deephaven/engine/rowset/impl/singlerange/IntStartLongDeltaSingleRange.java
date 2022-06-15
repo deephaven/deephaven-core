@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset.impl.singlerange;
 
 // On 64 bit VMs object header overhead is 12 bytes, and objects sizes are rounded to 8 bytes.

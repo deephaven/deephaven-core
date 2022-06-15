@@ -1,6 +1,7 @@
 #
-#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 import unittest
 from dataclasses import dataclass
 
@@ -8,10 +9,10 @@ import numpy as np
 import pandas as pd
 
 from deephaven import dtypes, new_table, DHError
-from deephaven.jcompat import j_array_list
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_LONG, NULL_BYTE, NULL_SHORT, NULL_INT
+from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
 from deephaven.time import to_datetime
 from tests.testbase import BaseTestCase
@@ -164,6 +165,43 @@ class PandasTestCase(BaseTestCase):
         table = to_table(df)
         df2 = to_pandas(table)
         self.assertTrue(np.array_equal(df2["A"].values, df2["B"].values))
+
+    def test_to_table_nullable(self):
+        boolean_array = pd.array([True, False, None], dtype=pd.BooleanDtype())
+        int8_array = pd.array([1, 2, None], dtype=pd.Int8Dtype())
+        int16_array = pd.array([1, 2, None], dtype=pd.Int16Dtype())
+        int32_array = pd.array([1, 2, None], dtype=pd.Int32Dtype())
+        int64_array = pd.array([1, 2, None], dtype=pd.Int64Dtype())
+        float_array = pd.array([1.1, 2.2, None], dtype=pd.Float32Dtype())
+        double_array = pd.array([1.1, 2.2, None], dtype=pd.Float64Dtype())
+        string_array = pd.array(["s11", "s22", None], dtype=pd.StringDtype())
+        object_array = pd.array([pd.NA, "s22", None], dtype=object)
+
+        df = pd.DataFrame({
+                              "NullableBoolean": boolean_array,
+                              "NullableInt8": int8_array,
+                              "NullableInt16": int16_array,
+                              "NullableInt32": int32_array,
+                              "NullableInt64": int64_array,
+                              "NullableFloat": float_array,
+                              "NullableDouble": double_array,
+                              "NullableString": string_array,
+                              "NullableObject": object_array,
+        })
+
+        table = to_table(df)
+        self.assertIs(table.columns[0].data_type, dtypes.bool_)
+        self.assertIs(table.columns[1].data_type, dtypes.int8)
+        self.assertIs(table.columns[2].data_type, dtypes.int16)
+        self.assertIs(table.columns[3].data_type, dtypes.int32)
+        self.assertIs(table.columns[4].data_type, dtypes.int64)
+        self.assertIs(table.columns[5].data_type, dtypes.float32)
+        self.assertIs(table.columns[6].data_type, dtypes.double)
+        self.assertIs(table.columns[7].data_type, dtypes.string)
+        self.assertIs(table.columns[8].data_type, dtypes.PyObject)
+        self.assertEqual(table.size, 3)
+        table_string = table.to_string()
+        self.assertEqual(9, table_string.count("null"))
 
 
 if __name__ == '__main__':

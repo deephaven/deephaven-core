@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 /****************************************************************************************************************************
  ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GenerateFigureImmutable or "./gradlew :Generators:generateFigureImmutable" to regenerate
  ****************************************************************************************************************************/
@@ -4871,14 +4870,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl seriesNamingFunction( java.util.function.Function<java.lang.Object, java.lang.String> namingFunction ) {
+    @Override public  FigureImpl seriesNamingFunction( java.util.function.Function<java.lang.Object[], java.lang.String> namingFunction ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
             MultiSeries result = ((MultiSeries) series).seriesNamingFunction( namingFunction);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesNamingFunction( java.util.function.Function<java.lang.Object, java.lang.String> namingFunction )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesNamingFunction( java.util.function.Function<java.lang.Object[], java.lang.String> namingFunction )'", figure);
         }
     }
 

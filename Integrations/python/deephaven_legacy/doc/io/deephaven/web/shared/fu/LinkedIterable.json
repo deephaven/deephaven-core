@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.web.shared.fu.LinkedIterable",
- "methods": {
-  "iterator": ":return: java.util.Iterator<LinkedIterable.T>",
-  "setRemover": ":param remover: io.deephaven.web.shared.fu.JsBiConsumer<LinkedIterable.T,LinkedIterable.T>\n:return: io.deephaven.web.shared.fu.LinkedIterable<LinkedIterable.T>"
- },
- "path": "io.deephaven.web.shared.fu.LinkedIterable",
- "typeName": "class"
-}

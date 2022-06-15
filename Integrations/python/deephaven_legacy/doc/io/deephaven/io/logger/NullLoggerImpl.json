@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.io.logger.NullLoggerImpl",
- "methods": {
-  "getEntry": "Override to avoid writing timestamp and level to the entry, as it's assumed they'll be handled independently\n\n:param level: io.deephaven.io.log.LogLevel\n:param currentTimeMicros: long\n:param t: java.lang.Throwable\n:return: io.deephaven.io.log.LogEntry"
- },
- "path": "io.deephaven.io.logger.NullLoggerImpl",
- "text": "Logger implementation that calls Interceptors on log entries, but doesn't write them to anything. Note that this\n implementation does not append the timestamp or level to the entries.",
- "typeName": "class"
-}

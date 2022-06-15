@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.logback.LogBufferAppender",
- "methods": {
-  "setEncoder": ":param encoder: ch.qos.logback.core.encoder.Encoder<ch.qos.logback.classic.spi.ILoggingEvent>"
- },
- "path": "io.deephaven.logback.LogBufferAppender",
- "typeName": "class"
-}

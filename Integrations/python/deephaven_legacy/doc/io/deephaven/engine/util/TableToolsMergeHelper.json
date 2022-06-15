@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.util.TableToolsMergeHelper",
- "methods": {},
- "path": "io.deephaven.engine.util.TableToolsMergeHelper",
- "text": "Helper for coalescing and de-unioning tables prior to a merge. Only for engine-internal usage.",
- "typeName": "class"
-}

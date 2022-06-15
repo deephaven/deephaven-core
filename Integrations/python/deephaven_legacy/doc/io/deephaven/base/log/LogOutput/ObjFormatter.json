@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.log.LogOutput$ObjFormatter",
- "methods": {
-  "format": ":param logOutput: io.deephaven.base.log.LogOutput\n:param t: LogOutput.ObjFormatter.T"
- },
- "path": "io.deephaven.base.log.LogOutput.ObjFormatter",
- "typeName": "interface"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.plot.util.tables.SwappablePartitionedTable",
- "methods": {
-  "getPartitionedTableHandle": ":return: io.deephaven.plot.util.tables.PartitionedTableHandle"
- },
- "path": "io.deephaven.plot.util.tables.SwappablePartitionedTable",
- "text": "SwappableTable backed by a PartitionedTableHandle",
- "typeName": "interface"
-}

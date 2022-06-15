@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.appmode.ApplicationConfigImpl",
- "methods": {
-  "find": ":param dir: java.nio.file.Path\n:return: java.util.List<io.deephaven.appmode.ApplicationConfig>",
-  "parse": ":param file: java.nio.file.Path\n:return: io.deephaven.appmode.ApplicationConfig"
- },
- "path": "io.deephaven.appmode.ApplicationConfigImpl",
- "typeName": "class"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.integrations.python.PythonFunction",
- "methods": {
-  "apply": ":param t: PythonFunction.T\n:return: java.lang.Object"
- },
- "path": "io.deephaven.integrations.python.PythonFunction",
- "text": "A Function implementation which calls a Python callable.",
- "typeName": "class"
-}

@@ -13,6 +13,7 @@ wheel {
             into('deephaven_server/jars')
         }
     }
+    src 'deephaven_server'
 }
 
 dependencies {

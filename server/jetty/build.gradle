@@ -11,15 +11,23 @@ dependencies {
     Classpaths.inheritDagger(project, /* test */ true)
 
     Classpaths.inheritGrpcPlatform(project)
+    Classpaths.inheritJetty11Platform(project)
 
-    implementation('org.eclipse.jetty:jetty-servlet:11.0.8')
-    implementation 'org.eclipse.jetty:jetty-webapp:11.0.8'
-    implementation 'org.eclipse.jetty.http2:http2-server:11.0.8'
+    implementation 'org.eclipse.jetty:jetty-servlet'
+    implementation 'org.eclipse.jetty:jetty-webapp'
+    implementation 'org.eclipse.jetty.http2:http2-server'
+    implementation 'org.eclipse.jetty:jetty-alpn-server'
+    // TODO(deephaven-core#2506): Support for alternative ALPN implementations
+    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server'
 
 //    implementation 'io.grpc:grpc-servlet-jakarta'
     implementation project(':grpc-java:grpc-servlet-jakarta')
     implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
-    implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server:11.0.8'
+    implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server'
+
+    Classpaths.inheritImmutables(project)
+    implementation project(':ssl-kickstart')
+    Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-jetty')
 
     testImplementation project(':server-test')
 

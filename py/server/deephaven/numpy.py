@@ -1,12 +1,14 @@
 #
-#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ This module supports the conversion between Deephaven tables and numpy arrays. """
 import re
 from typing import List
 
 import jpy
 import numpy as np
+from deephaven.dtypes import DType
 
 from deephaven import DHError, dtypes, empty_table, new_table
 from deephaven.column import Column, InputColumn
@@ -81,9 +83,8 @@ def _columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np
         raise DHError(e, f"failed to create a numpy array for the column {col_def.name}") from e
 
 
-def _make_input_column(col: str, np_array: np.ndarray) -> InputColumn:
+def _make_input_column(col: str, np_array: np.ndarray, dtype: DType) -> InputColumn:
     """ Creates a InputColumn with the given column name and the numpy array. """
-    dtype = dtypes.from_np_dtype(np_array.dtype)
     if dtype == dtypes.bool_:
         bytes_ = np_array.astype(dtype=np.int8)
         j_bytes = dtypes.array(dtypes.byte, bytes_)
@@ -164,11 +165,13 @@ def to_table(np_array: np.ndarray, cols: List[str]) -> Table:
                             f"the number of column names {len(cols)}")
 
         input_cols = []
+        dtype = dtypes.from_np_dtype(np_array.dtype)
+
         if len(cols) == 1:
-            input_cols.append(_make_input_column(cols[0], np_array))
+            input_cols.append(_make_input_column(cols[0], np_array, dtype))
         else:
             for i, col in enumerate(cols):
-                input_cols.append(_make_input_column(col, np_array[:, [i]]))
+                input_cols.append(_make_input_column(col, np_array[:, [i]], dtype))
 
         return new_table(cols=input_cols)
     except DHError:

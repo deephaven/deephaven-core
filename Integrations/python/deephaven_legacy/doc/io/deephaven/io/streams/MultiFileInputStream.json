@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.io.streams.MultiFileInputStream",
- "methods": {
-  "getCurrentFilename": "Get the filename of the current stream\n\n:return: (java.lang.String) filename, null if no current file",
-  "read": "*Overload 1*  \n  :return: int\n  \n*Overload 2*  \n  :param b: byte[]\n  :param off: int\n  :param len: int\n  :return: int\n  \n*Overload 3*  \n  :param b: byte[]\n  :return: int"
- },
- "path": "io.deephaven.io.streams.MultiFileInputStream",
- "typeName": "class"
-}

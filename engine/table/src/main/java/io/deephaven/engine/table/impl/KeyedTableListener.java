@@ -1,16 +1,15 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
+import io.deephaven.tuple.ArrayTuple;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,16 +20,16 @@ public class KeyedTableListener {
 
     public enum KeyEvent {
         ADDED, REMOVED, MODIFIED
-    };
+    }
 
     public interface KeyUpdateListener {
-        void update(KeyedTableListener keyedTableListener, SmartKey key, long index, KeyEvent event);
+        void update(KeyedTableListener keyedTableListener, ArrayTuple key, long index, KeyEvent event);
     }
 
     private final QueryTable table;
-    private final TObjectLongHashMap<SmartKey> keyToIndexHashMap;
-    private final TLongObjectHashMap<SmartKey> indexToKeyHashMap;
-    private final HashMap<SmartKey, CopyOnWriteArrayList<KeyUpdateListener>> keyListenerHashMap;
+    private final TObjectLongHashMap<ArrayTuple> keyToIndexHashMap;
+    private final TLongObjectHashMap<ArrayTuple> indexToKeyHashMap;
+    private final HashMap<ArrayTuple, CopyOnWriteArrayList<KeyUpdateListener>> keyListenerHashMap;
     private final String[] keyColumnNames;
     private final String[] allColumnNames;
     private final Map<String, ColumnSource<?>> parentColumnSourceMap;
@@ -40,7 +39,8 @@ public class KeyedTableListener {
 
     // TODO: create an even more generic internals to handle multiple matches
     // TODO: Refactor with some sort of internal assistant object (unique versus generic)
-    // TODO: private HashMap<SmartKey, TrackingWritableRowSet> keyToIndexObjectHashMap; // for storing multiple matches
+    // TODO: private HashMap<ArrayTuple, TrackingWritableRowSet> keyToIndexObjectHashMap; // for storing multiple
+    // matches
 
     public KeyedTableListener(QueryTable table, String... keyColumnNames) {
         this.table = table;
@@ -73,7 +73,7 @@ public class KeyedTableListener {
         // Add all the new rows to the hashmap
         for (RowSet.Iterator iterator = added.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
-            SmartKey key = constructSmartKey(next);
+            ArrayTuple key = constructArrayTuple(next);
             keyToIndexHashMap.put(key, next);
             indexToKeyHashMap.put(next, key);
             handleListeners(key, next, KeyEvent.ADDED);
@@ -82,7 +82,7 @@ public class KeyedTableListener {
         // Remove all the removed rows from the hashmap
         for (RowSet.Iterator iterator = removed.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
-            SmartKey oldKey = indexToKeyHashMap.remove(next);
+            ArrayTuple oldKey = indexToKeyHashMap.remove(next);
             Assert.assertion(oldKey != null, "oldKey != null");
             long oldIndex = keyToIndexHashMap.remove(oldKey);
             Assert.assertion(oldIndex != NO_ENTRY, "oldRow != NO_ENTRY");
@@ -92,8 +92,8 @@ public class KeyedTableListener {
         // Modifies are a special case -- need to look for keys being removed / added
         for (RowSet.Iterator iterator = modified.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
-            SmartKey currentKey = constructSmartKey(next);
-            SmartKey prevKey = indexToKeyHashMap.get(next);
+            ArrayTuple currentKey = constructArrayTuple(next);
+            ArrayTuple prevKey = indexToKeyHashMap.get(next);
 
             // Check if the key values have changed
             if (!currentKey.equals(prevKey)) {
@@ -121,15 +121,15 @@ public class KeyedTableListener {
         }
     }
 
-    private SmartKey constructSmartKey(long index) {
-        Object[] smartKeyVals = new Object[keyColumnNames.length];
+    private ArrayTuple constructArrayTuple(long index) {
+        Object[] ArrayTupleVals = new Object[keyColumnNames.length];
         for (int i = 0; i < keyColumnNames.length; i++) {
-            smartKeyVals[i] = parentColumnSourceMap.get(keyColumnNames[i]).get(index);
+            ArrayTupleVals[i] = parentColumnSourceMap.get(keyColumnNames[i]).get(index);
         }
-        return new SmartKey(smartKeyVals);
+        return new ArrayTuple(ArrayTupleVals);
     }
 
-    private void handleListeners(SmartKey key, long index, KeyEvent event) {
+    private void handleListeners(ArrayTuple key, long index, KeyEvent event) {
         synchronized (keyListenerHashMap) {
             CopyOnWriteArrayList<KeyUpdateListener> listeners = keyListenerHashMap.get(key);
             if (listeners != null && listeners.size() > 0) {
@@ -140,16 +140,16 @@ public class KeyedTableListener {
         }
     }
 
-    public long getIndex(SmartKey key) {
+    public long getIndex(ArrayTuple key) {
         return keyToIndexHashMap.get(key);
     }
 
     // Make sure these are in the same order as the keys defined on construction
     public Object[] getRow(Object... keyValues) {
-        return getRow(new SmartKey(keyValues));
+        return getRow(new ArrayTuple(keyValues));
     }
 
-    public Object[] getRow(SmartKey key) {
+    public Object[] getRow(ArrayTuple key) {
         return getRow(key, allColumnNames);
     }
 
@@ -157,7 +157,7 @@ public class KeyedTableListener {
         return getRowAtIndex(index, allColumnNames);
     }
 
-    public Object[] getRow(SmartKey key, String... columnNames) {
+    public Object[] getRow(ArrayTuple key, String... columnNames) {
         long index = getIndex(key);
         return getRowAtIndex(index, columnNames);
     }
@@ -167,16 +167,16 @@ public class KeyedTableListener {
         return (index != -1) ? table.getRecord(tableRow, columnNames) : null;
     }
 
-    public long getTableRow(SmartKey key) {
+    public long getTableRow(ArrayTuple key) {
         long index = getIndex(key);
         return (index == -1) ? -1 : table.getRowSet().find(index);
     }
 
-    public void subscribe(SmartKey key, KeyUpdateListener listener) {
+    public void subscribe(ArrayTuple key, KeyUpdateListener listener) {
         subscribe(key, listener, false);
     }
 
-    public void subscribe(SmartKey key, KeyUpdateListener listener, boolean replayInitialData) {
+    public void subscribe(ArrayTuple key, KeyUpdateListener listener, boolean replayInitialData) {
         synchronized (keyListenerHashMap) {
             if (!keyListenerHashMap.containsKey(key)) {
                 keyListenerHashMap.put(key, new CopyOnWriteArrayList<>());
@@ -193,7 +193,7 @@ public class KeyedTableListener {
         }
     }
 
-    public void unsubscribe(SmartKey key, KeyUpdateListener listener) {
+    public void unsubscribe(ArrayTuple key, KeyUpdateListener listener) {
         synchronized (keyListenerHashMap) {
             CopyOnWriteArrayList<KeyUpdateListener> callBackList = keyListenerHashMap.get(key);
             if (callBackList != null) {

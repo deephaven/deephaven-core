@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.StaticNaturalJoinStateManager",
- "methods": {
-  "buildRowRedirection": ":param leftTable: io.deephaven.engine.table.impl.QueryTable\n:param exactMatch: boolean\n:param rightSideFromSlot: java.util.function.LongUnaryOperator\n:param redirectionType: io.deephaven.engine.table.impl.JoinControl.RedirectionType\n:return: io.deephaven.engine.table.impl.util.WritableRowRedirection",
-  "checkExactMatch": ":param exactMatch: boolean\n:param leftKeyIndex: long\n:param rightSide: long"
- },
- "path": "io.deephaven.engine.table.impl.StaticNaturalJoinStateManager",
- "typeName": "class"
-}

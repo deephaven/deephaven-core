@@ -1,8 +1,0 @@
-{
- "className": "io.grpc.servlet.jakarta.ServletAdapter$AdapterConstructor",
- "methods": {
-  "newInstance": ":param sharedListener: io.grpc.internal.ServerTransportListener\n:param extend: java.util.List<?\n:param maxInboundMessageSize: int\n:param attributes: io.grpc.Attributes\n:return: ServletAdapter.AdapterConstructor.T"
- },
- "path": "io.grpc.servlet.jakarta.ServletAdapter.AdapterConstructor",
- "typeName": "interface"
-}

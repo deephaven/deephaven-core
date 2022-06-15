@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.process.ProcessEnvironment$GlobalHelper",
- "methods": {},
- "path": "io.deephaven.util.process.ProcessEnvironment.GlobalHelper",
- "text": "State and private methods for maintaining a shared global instance of ProcessEnvironment.",
- "typeName": "class"
-}

@@ -10,6 +10,12 @@ plugins {
     id 'io.deephaven.python-wheel'
 }
 
+wheel {
+    src 'pydeephaven'
+    src 'examples'
+    src 'tests'
+}
+
 // Start up a docker container for the grpc server, then run pydeephaven test
 evaluationDependsOn(':docker-server')
 String randomSuffix = UUID.randomUUID().toString();
@@ -69,7 +75,7 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
     dockerfile {
         from('deephaven/python:local-build')
         runCommand '''set -eux; \\
-                      pip3 install unittest-xml-reporting==3.0.4 pyarrow==7.0.0 protobuf==3.20.1 grpcio==1.46.0 bitstring==3.1.9 pandas==1.2.5;\\
+                      pip3 install unittest-xml-reporting==3.0.4 pyarrow==7.0.0 protobuf==3.20.1 grpcio==1.46.0 bitstring==3.1.9 pandas==1.2.5 timeout-decorator==0.5.0;\\
                       mkdir -p /out/report'''
         environmentVariable 'DH_HOST', dockerContainerName
         environmentVariable 'DH_PORT', '8080'

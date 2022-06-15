@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table;
 
 import io.deephaven.base.verify.Require;
@@ -142,11 +141,6 @@ public interface ColumnSource<T>
     @Override
     default Object exportElement(T tuple, int elementIndex) {
         Require.eqZero(elementIndex, "elementIndex");
-        return tuple;
-    }
-
-    @Override
-    default Object exportToExternalKey(T tuple) {
         return tuple;
     }
 

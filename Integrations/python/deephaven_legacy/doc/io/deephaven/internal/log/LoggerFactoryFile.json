@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.internal.log.LoggerFactoryFile",
- "methods": {
-  "createInternal": ":return: io.deephaven.io.logger.Logger"
- },
- "path": "io.deephaven.internal.log.LoggerFactoryFile",
- "typeName": "class"
-}

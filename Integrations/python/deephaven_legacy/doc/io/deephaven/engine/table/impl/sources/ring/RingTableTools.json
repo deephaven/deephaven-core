@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.sources.ring.RingTableTools",
- "methods": {
-  "of": "**Incompatible overloads text - text from the first overload:**\n\nConstructs a \"ring\" table, whereby the latest capacity rows from the parent are retained and\n re-indexed by the resulting ring table. Latest is determined solely by the TableUpdate.added() updates,\n TableUpdate.removed() are ignored; and TableUpdate.modified() / TableUpdate.shifted() are\n not expected. In particular, this is a useful construction with\n stream tables which do not retain their\n own data for more than an update cycle.\n\n*Overload 1*  \n  :param parent: (io.deephaven.engine.table.Table) - the parent\n  :param capacity: (int) - the capacity\n  :return: (io.deephaven.engine.table.Table) the ring table\n  \n*Overload 2*  \n  :param parent: (io.deephaven.engine.table.Table) - the parent\n  :param capacity: (int) - the capacity\n  :param initialize: (boolean) - if the resulting table should source initial data from the snapshot of parent\n  :return: (io.deephaven.engine.table.Table) the ring table",
-  "of2": "Constructs a \"ring\" table, where the next-power-of-2 capacity from the parent are retained and\n re-indexed, with an additional Table.tail(long) to restructure for capacity.\n\n \n Logically equivalent to of(parent, Integer.highestOneBit(capacity - 1) << 1, initialize).tail(capacity).\n\n \n This setup may be useful when consumers need to maximize random access fill speed from a ring table.\n\n:param parent: (io.deephaven.engine.table.Table) - the parent\n:param capacity: (int) - the capacity\n:param initialize: (boolean) - if the resulting table should source initial data from the snapshot of parent\n:return: (io.deephaven.engine.table.Table) the ring table"
- },
- "path": "io.deephaven.engine.table.impl.sources.ring.RingTableTools",
- "typeName": "class"
-}

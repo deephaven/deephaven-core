@@ -5,7 +5,6 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -82,14 +81,6 @@ public class BooleanBooleanColumnTupleSource extends AbstractTupleSource<ByteByt
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
-    }
-
-    @Override
-    public final Object exportToExternalKey(@NotNull final ByteByteTuple tuple) {
-        return new SmartKey(
-                BooleanUtils.byteAsBoolean(tuple.getFirstElement()),
-                BooleanUtils.byteAsBoolean(tuple.getSecondElement())
-        );
     }
 
     @Override

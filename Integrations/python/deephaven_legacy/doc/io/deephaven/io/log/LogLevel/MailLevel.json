@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.io.log.LogLevel$MailLevel",
- "methods": {
-  "getSubject": ":return: java.lang.String"
- },
- "path": "io.deephaven.io.log.LogLevel.MailLevel",
- "typeName": "class"
-}

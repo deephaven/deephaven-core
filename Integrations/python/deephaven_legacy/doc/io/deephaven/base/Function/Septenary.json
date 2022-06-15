@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Function$Septenary",
- "methods": {
-  "call": ":param arg: Function.Septenary.A1\n:param arg2: Function.Septenary.A2\n:param arg3: Function.Septenary.A3\n:param arg4: Function.Septenary.A4\n:param arg5: Function.Septenary.A5\n:param arg6: Function.Septenary.A6\n:param arg7: Function.Septenary.A7\n:return: Function.Septenary.R"
- },
- "path": "io.deephaven.base.Function.Septenary",
- "typeName": "interface"
-}

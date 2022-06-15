@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.annotations.DynamicUse",
- "methods": {},
- "path": "io.deephaven.util.annotations.DynamicUse",
- "text": "This annotation indicates that a field is used in dynamically generated code.",
- "typeName": "class"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.io.log.LogSink$Interceptor",
- "methods": {
-  "element": ":param e: LogSink.Interceptor.T\n:param output: io.deephaven.base.log.LogOutput"
- },
- "path": "io.deephaven.io.log.LogSink.Interceptor",
- "text": "An interceptor is called with each element logged, *and* with the formatted output. It will receive buffers that\n are flipped, and should not change the position or limit of these buffers.",
- "typeName": "interface"
-}

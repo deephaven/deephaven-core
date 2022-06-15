@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.clientsupport.plotdownsampling.RunChartDownsample",
- "methods": {
-  "apply": ":param wholeTable: io.deephaven.engine.table.Table\n:return: io.deephaven.engine.table.Table"
- },
- "path": "io.deephaven.clientsupport.plotdownsampling.RunChartDownsample",
- "text": "Downsamples a table assuming its contents will be rendered in a run chart, with the each subsequent row holding a\n later X value (i.e. is sorted on that column). Multiple Y columns can be specified, as can a range of values for the\n X value (providing a \"zoom\" feature, with high resolution data in that range, and low resolution data outside of it).",
- "typeName": "class"
-}

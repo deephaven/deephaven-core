@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.metrics.LongCounterMetric",
- "methods": {
-  "sample": ":param n: long"
- },
- "path": "io.deephaven.util.metrics.LongCounterMetric",
- "typeName": "class"
-}

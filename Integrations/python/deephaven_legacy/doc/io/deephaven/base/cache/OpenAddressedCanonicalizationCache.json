@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.base.cache.OpenAddressedCanonicalizationCache",
- "methods": {
-  "getCachedItem": "*Overload 1*  \n  Note: Java generics information - <INPUT_OUTPUT_TYPE>\n  \n  :param item: INPUT_OUTPUT_TYPE\n  :return: INPUT_OUTPUT_TYPE\n  \n*Overload 2*  \n  Note: Java generics information - <INPUT_TYPE,\n  OUTPUT_TYPE>\n  \n  :param item: INPUT_TYPE\n  :param adapter: io.deephaven.base.cache.OpenAddressedCanonicalizationCache.Adapter<INPUT_TYPE,OUTPUT_TYPE>\n  :return: OUTPUT_TYPE"
- },
- "path": "io.deephaven.base.cache.OpenAddressedCanonicalizationCache",
- "text": "An object canonicalization cache, suitable for use with objects that define equals(...) in such a way as to identify\n objects that can be mutually substituted in a manner appropriate for the application using the cache. Objects with an\n improper hashCode() implementation will cause undefined behavior.\n\n See KeyedObjectHashMap and its parent classes for many of the ideas I'm working from. The implementation is (loosely)\n based on an open-addressed hash map.\n\n The intended problem domain is effectively single-threaded, so I've optimized on single-threaded efficiency and used\n coarse synchronization instead of optimizing for concurrency.",
- "typeName": "class"
-}

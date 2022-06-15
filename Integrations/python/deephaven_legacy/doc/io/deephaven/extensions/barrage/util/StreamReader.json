@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.extensions.barrage.util.StreamReader",
- "methods": {
-  "safelyParseFrom": "Converts an InputStream to a BarrageMessage in the context of the provided parameters.\n\n:param options: (io.deephaven.extensions.barrage.util.StreamReaderOptions) - the options related to parsing this message\n:param expectedColumns: (java.util.BitSet) - the columns expected to appear in the stream, null implies all columns\n:param columnChunkTypes: (io.deephaven.chunk.ChunkType[]) - the types to use for each column chunk\n:param columnTypes: (java.lang.Class<?>[]) - the actual type for the column\n:param componentTypes: (java.lang.Class<?>[]) - the actual component type for the column\n:param stream: (java.io.InputStream) - the input stream that holds the message to be parsed\n:return: (io.deephaven.engine.table.impl.util.BarrageMessage) a BarrageMessage filled out by the stream's payload"
- },
- "path": "io.deephaven.extensions.barrage.util.StreamReader",
- "text": "Thread safe re-usable reader that converts an InputStreams to BarrageMessages.",
- "typeName": "interface"
-}

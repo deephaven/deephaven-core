@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Factory$Unary",
- "methods": {
-  "create": ":param argument: Factory.Unary.A\n:return: Factory.Unary.T"
- },
- "path": "io.deephaven.base.Factory.Unary",
- "typeName": "interface"
-}

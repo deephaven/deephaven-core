@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.io.log.impl.DynamicLogEntryPoolImpl",
- "methods": {},
- "path": "io.deephaven.io.log.impl.DynamicLogEntryPoolImpl",
- "typeName": "class"
-}

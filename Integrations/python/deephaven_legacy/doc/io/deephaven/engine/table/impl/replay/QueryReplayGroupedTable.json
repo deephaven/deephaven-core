@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.replay.QueryReplayGroupedTable",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.replay.QueryReplayGroupedTable",
- "typeName": "class"
-}

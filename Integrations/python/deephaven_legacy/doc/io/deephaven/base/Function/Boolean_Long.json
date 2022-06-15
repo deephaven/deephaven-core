@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Function$Boolean_Long",
- "methods": {
-  "call": ":param arg: long\n:return: boolean"
- },
- "path": "io.deephaven.base.Function.Boolean_Long",
- "typeName": "interface"
-}

@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
@@ -456,18 +455,23 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         classBody.append("\n").append(indenter)
-                .append("public $CLASSNAME$(Table table, RowSet fullSet, QueryScopeParam... params) {\n");
+                .append("public $CLASSNAME$(Table __table, RowSet __fullSet, QueryScopeParam... __params) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < params.length; i++) {
             final QueryScopeParam param = params[i];
             /*
-             * Initializing context parameters this.p1 = (Integer) params[0].getValue(); this.p2 = (Float)
-             * params[1].getValue(); this.p3 = (String) params[2].getValue();
+             * @formatter:off
+             * Initializing context parameters:
+             *
+             * this.p1 = (Integer) __params[0].getValue();
+             * this.p2 = (Float) __params[1].getValue();
+             * this.p3 = (String) __params[2].getValue();
+             * @formatter:on
              */
             final String name = param.getName();
             classBody.append(indenter).append("this.").append(name).append(" = (")
                     .append(QueryScopeParamTypeUtil.getDeclaredTypeName(param.getValue()))
-                    .append(") params[").append(i).append("].getValue();\n");
+                    .append(") __params[").append(i).append("].getValue();\n");
         }
 
         if (!usedColumnArrays.isEmpty()) {
@@ -489,8 +493,8 @@ public class ConditionFilter extends AbstractConditionFilter {
                  * Adding array column fields.
                  */
                 classBody.append(indenter).append(column.getName()).append(COLUMN_SUFFIX).append(" = new ")
-                        .append(arrayType).append("(table.getColumnSource(\"").append(columnName)
-                        .append("\"), fullSet);\n");
+                        .append(arrayType).append("(__table.getColumnSource(\"").append(columnName)
+                        .append("\"), __fullSet);\n");
             }
         }
 
@@ -498,12 +502,12 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         indenter.indent(classBody, "}\n" +
                 "@Override\n" +
-                "public Context getContext(int maxChunkSize) {\n" +
-                "    return new Context(maxChunkSize);\n" +
+                "public Context getContext(int __maxChunkSize) {\n" +
+                "    return new Context(__maxChunkSize);\n" +
                 "}\n" +
                 "\n" +
                 "@Override\n" +
-                "public LongChunk<OrderedRowKeys> filter(Context context, LongChunk<OrderedRowKeys> indices, Chunk... inputChunks) {\n");
+                "public LongChunk<OrderedRowKeys> filter(Context __context, LongChunk<OrderedRowKeys> __indices, Chunk... __inputChunks) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < usedInputs.size(); i++) {
             final Class columnType = usedInputs.get(i).second;
@@ -515,11 +519,11 @@ public class ConditionFilter extends AbstractConditionFilter {
                 chunkType = "ObjectChunk";
             }
             classBody.append(indenter).append("final ").append(chunkType).append(" __columnChunk").append(i)
-                    .append(" = inputChunks[").append(i).append("].as").append(chunkType).append("();\n");
+                    .append(" = __inputChunks[").append(i).append("].as").append(chunkType).append("();\n");
         }
-        indenter.indent(classBody, "final int size = indices.size();\n" +
-                "context.resultChunk.setSize(0);\n" +
-                "for (int __my_i__ = 0; __my_i__ < size; __my_i__++) {\n");
+        indenter.indent(classBody, "final int __size = __indices.size();\n" +
+                "__context.resultChunk.setSize(0);\n" +
+                "for (int __my_i__ = 0; __my_i__ < __size; __my_i__++) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < usedInputs.size(); i++) {
             final Pair<String, Class> usedInput = usedInputs.get(i);
@@ -531,10 +535,10 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
         classBody.append(
                 "            if (").append(result.getConvertedExpression()).append(") {\n" +
-                        "                context.resultChunk.add(indices.get(__my_i__));\n" +
+                        "                __context.resultChunk.add(__indices.get(__my_i__));\n" +
                         "            }\n" +
                         "        }\n" +
-                        "        return context.resultChunk;\n" +
+                        "        return __context.resultChunk;\n" +
                         "    }\n" +
                         "}");
         return classBody;

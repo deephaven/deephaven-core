@@ -70,7 +70,6 @@ autodoc_typehints = 'none'
 
 #########################################################################################################################################################################
 
-import deephaven_legacy
 
 # Turn on jpy so the modern deephaven API can reference Java types.
 # The Deephaven wheel can't be used without the JVM running and the
@@ -89,7 +88,7 @@ jpyutil.init_jvm(
 import deephaven
 import jpy
 docs_title = "Deephaven python modules."
-package_roots = [jpy, deephaven_legacy, deephaven]
+package_roots = [jpy, deephaven]
 package_excludes = ['._']
 
 import dh_sphinx

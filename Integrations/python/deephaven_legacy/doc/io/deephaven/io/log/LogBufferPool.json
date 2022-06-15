@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.io.log.LogBufferPool",
- "methods": {
-  "take": ":param minSize: int\n:return: java.nio.ByteBuffer"
- },
- "path": "io.deephaven.io.log.LogBufferPool",
- "typeName": "interface"
-}

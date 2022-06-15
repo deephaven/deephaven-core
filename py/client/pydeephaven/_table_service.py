@@ -1,6 +1,7 @@
 #
-#  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 from pydeephaven._batch_assembler import BatchOpAssembler
 from pydeephaven._table_ops import TableOp
 from pydeephaven.dherror import DHError

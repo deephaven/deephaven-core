@@ -1,3 +1,7 @@
+#
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+#
+
 from deephaven.pandas import to_table
 from deephaven.plugin.object import Exporter, ObjectType
 from pandas import DataFrame

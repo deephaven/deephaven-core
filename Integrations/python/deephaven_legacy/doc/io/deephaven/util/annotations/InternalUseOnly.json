@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.annotations.InternalUseOnly",
- "methods": {},
- "path": "io.deephaven.util.annotations.InternalUseOnly",
- "text": "Indicates that a particular method is for internal use only and should not be used by client code. It is subject to\n change/removal at any time.",
- "typeName": "class"
-}

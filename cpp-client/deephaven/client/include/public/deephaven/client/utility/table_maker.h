@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 #pragma once
 /*
  * Copyright (c) 2016-2020 Deephaven Data Labs and Patent Pending

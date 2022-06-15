@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.UnfairMutex",
- "methods": {
-  "getOwner": ":return: java.lang.Thread"
- },
- "path": "io.deephaven.base.UnfairMutex",
- "typeName": "class"
-}

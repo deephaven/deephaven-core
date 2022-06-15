@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.base.verify.Assert;
@@ -68,9 +67,10 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
     private static final int CHUNK_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(ParquetColumnLocation.class, "chunkSize", 4096);
-    private static final int PAGE_CACHE_SIZE =
-            Configuration.getInstance().getIntegerForClassWithDefault(ParquetColumnLocation.class, "pageCacheSize",
-                    1 << 13);
+    private static final int INITIAL_PAGE_CACHE_SIZE = Configuration.getInstance()
+            .getIntegerForClassWithDefault(ParquetColumnLocation.class, "initialPageCacheSize", 128);
+    private static final int MAX_PAGE_CACHE_SIZE = Configuration.getInstance()
+            .getIntegerForClassWithDefault(ParquetColumnLocation.class, "maxPageCacheSize", 8192);
 
     private static final Logger log = LoggerFactory.getLogger(ParquetColumnLocation.class);
 
@@ -83,7 +83,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private final boolean hasGroupingTable;
 
     // We should consider moving this to column level if needed. Column-location level likely allows more parallelism.
-    private final PageCache<ATTR> pageCache = new PageCache<>(PAGE_CACHE_SIZE);
+    private volatile PageCache<ATTR> pageCache;
 
     private ColumnChunkPageStore<ATTR>[] pageStores;
     private Supplier<Chunk<ATTR>>[] dictionaryChunkSuppliers;
@@ -106,6 +106,20 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         this.parquetColumnName = parquetColumnName;
         this.columnChunkReaders = columnChunkReaders;
         this.hasGroupingTable = hasGroupingTable;
+    }
+
+    private PageCache<ATTR> ensurePageCache() {
+        PageCache<ATTR> localPageCache;
+        if ((localPageCache = pageCache) != null) {
+            return localPageCache;
+        }
+
+        synchronized (this) {
+            if ((localPageCache = pageCache) != null) {
+                return localPageCache;
+            }
+            return pageCache = new PageCache<>(INITIAL_PAGE_CACHE_SIZE, MAX_PAGE_CACHE_SIZE);
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -180,22 +194,26 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 return null;
             }
 
+
+            final PageCache<ATTR> localPageCache = ensurePageCache();
+
             // noinspection unchecked
             return (METADATA_TYPE) new MetaDataTableFactory(
                     ColumnChunkPageStore.<Values>create(
-                            pageCache.castAttr(), groupingKeyReader,
+                            localPageCache.castAttr(), groupingKeyReader,
                             ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                             makeToPage(columnTypes.get(GROUPING_KEY), ParquetInstructions.EMPTY,
                                     GROUPING_KEY, groupingKeyReader, columnDefinition)).pageStore,
                     ColumnChunkPageStore.<UnorderedRowKeys>create(
-                            pageCache.castAttr(), beginPosReader,
+                            localPageCache.castAttr(), beginPosReader,
                             ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                             makeToPage(columnTypes.get(BEGIN_POS), ParquetInstructions.EMPTY, BEGIN_POS,
                                     beginPosReader, FIRST_KEY_COL_DEF)).pageStore,
-                    ColumnChunkPageStore.<UnorderedRowKeys>create(pageCache.castAttr(), endPosReader,
+                    ColumnChunkPageStore.<UnorderedRowKeys>create(
+                            localPageCache.castAttr(), endPosReader,
                             ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                             makeToPage(columnTypes.get(END_POS), ParquetInstructions.EMPTY, END_POS,
-                                    beginPosReader, LAST_KEY_COL_DEF)).pageStore).get();
+                                    endPosReader, LAST_KEY_COL_DEF)).pageStore).get();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -385,7 +403,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 try {
                     final ColumnChunkPageStore.CreatorResult<ATTR> creatorResult =
                             ColumnChunkPageStore.create(
-                                    pageCache,
+                                    ensurePageCache(),
                                     columnChunkReader,
                                     tl().getRegionParameters().regionMask,
                                     makeToPage(tl().getColumnTypes().get(parquetColumnName),

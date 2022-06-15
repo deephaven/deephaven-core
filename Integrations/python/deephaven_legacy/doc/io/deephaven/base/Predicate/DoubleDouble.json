@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Predicate$DoubleDouble",
- "methods": {
-  "call": ":param arg1: double\n:param arg2: double\n:return: boolean"
- },
- "path": "io.deephaven.base.Predicate.DoubleDouble",
- "typeName": "interface"
-}

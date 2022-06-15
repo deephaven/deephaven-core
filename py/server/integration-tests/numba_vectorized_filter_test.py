@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 import unittest
 
 from numba import vectorize, int64, boolean, short

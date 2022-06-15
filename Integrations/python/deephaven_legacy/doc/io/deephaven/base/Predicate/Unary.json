@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Predicate$Unary",
- "methods": {
-  "call": ":param arg: Predicate.Unary.A\n:return: boolean"
- },
- "path": "io.deephaven.base.Predicate.Unary",
- "typeName": "interface"
-}

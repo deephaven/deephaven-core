@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+/**
  * Tools to help adapt bidirectional streams for use in browsers. Using the improbably-eng implementation of grpc-web,
  * we can use websockets for true bidirectional streams. Websockets are an imperfect solution, as this implementation
  * creates one per stream, which could exhaust the maximum allowed websocket count in a browser. Additionally, for

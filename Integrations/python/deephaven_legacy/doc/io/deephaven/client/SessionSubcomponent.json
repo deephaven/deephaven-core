@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.client.SessionSubcomponent",
- "methods": {
-  "newSession": ":return: io.deephaven.client.impl.SessionImpl",
-  "newSessionFuture": ":return: java.util.concurrent.CompletableFuture<? extends io.deephaven.client.impl.SessionImpl>"
- },
- "path": "io.deephaven.client.SessionSubcomponent",
- "typeName": "interface"
-}

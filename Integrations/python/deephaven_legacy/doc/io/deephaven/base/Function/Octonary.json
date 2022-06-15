@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Function$Octonary",
- "methods": {
-  "call": ":param arg: Function.Octonary.A1\n:param arg2: Function.Octonary.A2\n:param arg3: Function.Octonary.A3\n:param arg4: Function.Octonary.A4\n:param arg5: Function.Octonary.A5\n:param arg6: Function.Octonary.A6\n:param arg7: Function.Octonary.A7\n:param arg8: Function.Octonary.A8\n:return: Function.Octonary.R"
- },
- "path": "io.deephaven.base.Function.Octonary",
- "typeName": "interface"
-}

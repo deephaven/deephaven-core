@@ -1,11 +1,9 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plot.*;
@@ -17,15 +15,16 @@ import io.deephaven.plot.errors.PlotRuntimeException;
 import io.deephaven.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.functions.ClosureFunction;
-import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.impl.*;
 import groovy.lang.Closure;
 
 import io.deephaven.internal.log.LoggerFactory;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 
 import static io.deephaven.engine.util.TableTools.emptyTable;
 
@@ -49,17 +48,17 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
     private transient Set<Object> seriesKeys;
     private transient Map<String, Object> seriesNames;
 
-    private final transient java.util.function.Function<Object, String> DEFAULT_NAMING_FUNCTION = key -> {
+    private final transient java.util.function.Function<Object[], String> DEFAULT_NAMING_FUNCTION = key -> {
         final String keyString;
-        if (key instanceof SmartKey) {
-            keyString = Arrays.toString(((SmartKey) key).values_);
+        if (key.length > 1) {
+            keyString = Arrays.toString(key);
         } else {
             keyString = Objects.toString(key);
         }
         return name() + ": " + keyString;
     };
 
-    transient java.util.function.Function<Object, String> namingFunction;
+    transient java.util.function.Function<Object[], String> namingFunction;
 
     private DynamicSeriesNamer seriesNamer;
     private transient Object seriesNamerLock;
@@ -136,7 +135,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
     @Override
     public AbstractMultiSeries<SERIES> seriesNamingFunction(
-            final java.util.function.Function<Object, String> namingFunction) {
+            final Function<Object[], String> namingFunction) {
         if (namingFunction == null) {
             this.namingFunction = DEFAULT_NAMING_FUNCTION;
         } else {
@@ -159,7 +158,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
         applyNamingFunction(namingFunction);
     }
 
-    private void applyNamingFunction(final java.util.function.Function<Object, String> namingFunction) {
+    private void applyNamingFunction(final java.util.function.Function<Object[], String> namingFunction) {
         ArgumentValidations.assertNotNull(namingFunction, "namingFunction", getPlotInfo());
         seriesNameColumnName =
                 seriesNameColumnName == null ? ColumnNameConstants.SERIES_NAME + this.hashCode() : seriesNameColumnName;
@@ -174,8 +173,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
             final Class resultClass) {
         final String functionInput;
         if (byColumns.length > 1) {
-            QueryLibrary.importClass(SmartKey.class);
-            functionInput = "new SmartKey(" + String.join(",", byColumns) + ")";
+            functionInput = String.join(",", byColumns);
         } else {
             functionInput = byColumns[0];
         }
