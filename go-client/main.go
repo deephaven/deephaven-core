@@ -10,6 +10,7 @@ import (
 )
 
 var exampleMap = map[string]func(){
+	"ExampleFetchTable":  examples.ExampleFetchTable,
 	"ExampleRunScript":   examples.ExampleRunScript,
 	"ExampleImportTable": examples.ExampleImportTable,
 	"ExampleQuery":       examples.ExampleQuery,
