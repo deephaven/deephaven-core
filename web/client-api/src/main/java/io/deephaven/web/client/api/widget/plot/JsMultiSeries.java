@@ -29,7 +29,7 @@ public class JsMultiSeries {
 
     @JsIgnore
     public void initSources(Map<Integer, JsPartitionedTable> plotHandlesToTableMaps) {
-        descriptor.getDataSourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getTableMapId)
+        descriptor.getDataSourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getPartitionedTableId)
                 .distinct()
                 // TODO assert only one at this stage
                 .forEach(plotHandle -> {
