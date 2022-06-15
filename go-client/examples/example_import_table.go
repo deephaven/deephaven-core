@@ -9,22 +9,7 @@ import (
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/apache/arrow/go/v8/arrow/array"
 	"github.com/apache/arrow/go/v8/arrow/memory"
-	"github.com/apache/arrow/go/v8/parquet/file"
 )
-
-// Note: Deephaven has built-in functions on the server to download data,
-// so in many cases this can also be done with a RunScript call.
-// See https://deephaven.io/core/docs/how-to-guides/parquet-flat/ for details.
-func ReadTestData(cl *client.Client) (arrow.Record, error) {
-	rdr, err := file.OpenParquetFile(PathToTestData(), false)
-	if err != nil {
-		return nil, err
-	}
-	defer rdr.Close()
-
-	// TODO:
-	return nil, nil
-}
 
 func GetExampleRecord() arrow.Record {
 	pool := memory.NewGoAllocator()
