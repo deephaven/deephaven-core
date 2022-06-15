@@ -35,7 +35,6 @@ String[] webMods = [
         'open-api-lang-parser', // a javacc generated general-purpose language parser.
         'open-api-lang-tools', // language processing tools that we want to be accessible to many modules
         'open-api-shared-fu', // general purpose tools and dtos for both client and server
-        'open-api-shared-ide', // ide-related dto and configuration objects for both client and server
 ]
 
 // Include our modules

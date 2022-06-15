@@ -10,7 +10,6 @@ plugins {
 apply from: "$rootDir/gradle/web-common.gradle"
 
 dependencies {
-    compile project(':open-api-shared-ide')
     compile project(':open-api-shared-fu')
     compile project(':log-factory')
     compile project(':proto:proto-backplane-grpc')
