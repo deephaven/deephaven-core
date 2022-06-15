@@ -45,8 +45,13 @@ if (hasProperty('devCerts')) {
     extraJvmArgs += [
             '-Dhttp.port=8443',
             '-Dssl.identity.type=privatekey',
-            '-Dssl.identity.certChainPath=../dev-certs/ca.crt',
-            '-Dssl.identity.privateKeyPath=../dev-certs/key.pem']
+            '-Dssl.identity.certChainPath=../dev-certs/server.chain.crt',
+            '-Dssl.identity.privateKeyPath=../dev-certs/server.key']
+    if (hasProperty('devMTLS')) {
+        extraJvmArgs += [
+                '-Dssl.trust.type=certs',
+                '-Dssl.trust.path=../dev-certs/ca.crt']
+    }
 }
 
 tasks.withType(JavaExec).configureEach {
