@@ -189,8 +189,6 @@ class PandasTestCase(BaseTestCase):
         })
 
         table = to_table(df)
-        print(table.to_string())
-        print(table.meta_table.to_string())
         self.assertIs(table.columns[0].data_type, dtypes.bool_)
         self.assertIs(table.columns[1].data_type, dtypes.int8)
         self.assertIs(table.columns[2].data_type, dtypes.int16)
