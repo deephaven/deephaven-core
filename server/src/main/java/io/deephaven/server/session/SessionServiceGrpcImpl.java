@@ -158,9 +158,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (export) {
                 final ExportNotification.State currState = export.getState();
-                if (currState != ExportNotification.State.PENDING
-                        && currState != ExportNotification.State.QUEUED
-                        && currState != ExportNotification.State.EXPORTED) {
+                if (SessionState.isExportStateTerminal(currState)) {
                     responseObserver.onError(
                             GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Ticket already in state: " + currState));
                     return;
