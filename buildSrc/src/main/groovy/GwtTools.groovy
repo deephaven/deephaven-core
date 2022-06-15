@@ -100,7 +100,7 @@ class GwtTools {
                 /** Fail compilation if any input file contains an error. */
                 strict = true
                 /** Specifies Java source level. ("1.6", "1.7")*/
-                sourceLevel = "1.8"
+                sourceLevel = "11"
                 /** The number of local workers to use when compiling permutations. */
                 localWorkers = 1
                 /** Emit extra information allow chrome dev tools to display Java identifiers in many places instead of JavaScript functions. (NONE, ONLY_METHOD_NAME, ABBREVIATED, FULL)*/
