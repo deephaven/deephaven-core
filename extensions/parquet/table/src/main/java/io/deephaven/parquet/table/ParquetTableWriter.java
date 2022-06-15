@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
@@ -38,7 +41,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
@@ -84,53 +86,6 @@ public class ParquetTableWriter {
     }
 
     /**
-     * <p>
-     * Information about a writing destination (e.g. a particular output partition). Couples destination path, input
-     * table data, and grouping information.
-     */
-    public static final class DestinationInfo {
-
-        private final String outputPath;
-        private final Table inputTable;
-        private final Map<String, Map<?, long[]>> columnNameToGroupToRange;
-
-        public DestinationInfo(@NotNull final String outputPath,
-                @NotNull final Table inputTable,
-                @NotNull final Map<String, Map<?, long[]>> columnNameToGroupToRange) {
-            this.outputPath = outputPath;
-            this.inputTable = inputTable;
-            this.columnNameToGroupToRange = columnNameToGroupToRange;
-        }
-
-        /**
-         * Get the output path name for this destination.
-         *
-         * @return The output path
-         */
-        public String getOutputPath() {
-            return outputPath;
-        }
-
-        /**
-         * Get the input table that should be read for this destination.
-         *
-         * @return The input table
-         */
-        public Table getInputTable() {
-            return inputTable;
-        }
-
-        /**
-         * Get a map from column name to the column's "group to range" map.
-         *
-         * @return Get this destination's grouping information
-         */
-        public Map<String, Map<?, long[]>> getColumnNameToGroupToRange() {
-            return columnNameToGroupToRange;
-        }
-    }
-
-    /**
      * Writes a table in parquet format under a given path
      *
      * @param t The table to write
@@ -144,7 +99,10 @@ public class ParquetTableWriter {
      * @throws IOException For file writing related errors
      */
     public static void write(
-            Table t, String path, Map<String, String> incomingMeta, Function<String, String> groupingPathFactory,
+            Table t,
+            String path,
+            Map<String, String> incomingMeta,
+            Function<String, String> groupingPathFactory,
             String... groupingColumns) throws SchemaMappingException, IOException {
         write(t, t.getDefinition(), ParquetInstructions.EMPTY, path, incomingMeta, groupingPathFactory,
                 groupingColumns);
@@ -214,9 +172,12 @@ public class ParquetTableWriter {
     }
 
     public static void write(
-            final Table t, final TableDefinition definition, final ParquetInstructions writeInstructions,
+            final Table t,
+            final TableDefinition definition,
+            final ParquetInstructions writeInstructions,
             final String path,
-            final Map<String, String> incomingMeta, final String... groupingColumns)
+            final Map<String, String> incomingMeta,
+            final String... groupingColumns)
             throws SchemaMappingException, IOException {
         write(t, definition, writeInstructions, path, incomingMeta, defaultGroupingFileName(path), groupingColumns);
     }
@@ -242,8 +203,6 @@ public class ParquetTableWriter {
             final Map<String, String> tableMeta,
             final TableInfo.Builder tableInfoBuilder) throws SchemaMappingException, IOException {
 
-        final CompressionCodecName compressionCodecName =
-                CompressionCodecName.valueOf(writeInstructions.getCompressionCodecName());
         final Table t = pretransformTable(table, definition);
         final TrackingRowSet tableRowSet = t.getRowSet();
         final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
@@ -253,7 +212,7 @@ public class ParquetTableWriter {
         final Map<String, Map<CacheTags, Object>> computedCache = new HashMap<>();
         final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
                 columnSourceMap, path, writeInstructions, tableMeta,
-                tableInfoBuilder, compressionCodecName);
+                tableInfoBuilder);
         final long nrows = t.size();
         if (nrows > 0) {
             RowGroupWriter rowGroupWriter = parquetFileWriter.addRowGroup(nrows);
@@ -314,8 +273,8 @@ public class ParquetTableWriter {
             final String path,
             final ParquetInstructions writeInstructions,
             final Map<String, String> tableMeta,
-            final TableInfo.Builder tableInfoBuilder,
-            final CompressionCodecName codecName) throws IOException {
+            final TableInfo.Builder tableInfoBuilder) throws IOException {
+        // First, map the TableDefinition to a parquet Schema
         final MappedSchema mappedSchema =
                 MappedSchema.create(computedCache, definition, tableRowSet, columnSourceMap, writeInstructions);
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
@@ -340,6 +299,7 @@ public class ParquetTableWriter {
                 columnInfoBuilder.codec(codecInfoBuilder.build());
                 usedColumnInfo = true;
             }
+
             if (StringSet.class.isAssignableFrom(column.getDataType())) {
                 columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.StringSet);
                 usedColumnInfo = true;
@@ -353,7 +313,8 @@ public class ParquetTableWriter {
         }
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
         return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getInstance(), PAGE_SIZE,
-                new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(), codecName, extraMetaData);
+                new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
+                writeInstructions.getCompressionCodecName(), extraMetaData);
     }
 
     private static <DATA_TYPE> void writeColumnSource(

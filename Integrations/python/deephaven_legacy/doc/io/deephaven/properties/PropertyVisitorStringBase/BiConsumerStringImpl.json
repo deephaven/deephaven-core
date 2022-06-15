@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.properties.PropertyVisitorStringBase$BiConsumerStringImpl",
- "methods": {
-  "visit": "Performs this operation on the given key and String value.\n\n:param key: (java.lang.String) - the key\n:param value: (java.lang.String) - the value"
- },
- "path": "io.deephaven.properties.PropertyVisitorStringBase.BiConsumerStringImpl",
- "text": "Adapts a String BiConsumer into a PropertyVisitor via PropertyVisitorStringBase.",
- "typeName": "class"
-}

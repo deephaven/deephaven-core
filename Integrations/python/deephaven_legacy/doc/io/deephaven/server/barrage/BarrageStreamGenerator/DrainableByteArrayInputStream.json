@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.server.barrage.BarrageStreamGenerator$DrainableByteArrayInputStream",
- "methods": {
-  "available": "A defensive drainable needs to override available. As opposed to the generic InputStream, this method\n must return the exact amount available.\n\n:return: (int) the exact amount available",
-  "drainTo": ":param outputStream: java.io.OutputStream\n:return: int"
- },
- "path": "io.deephaven.server.barrage.BarrageStreamGenerator.DrainableByteArrayInputStream",
- "typeName": "class"
-}

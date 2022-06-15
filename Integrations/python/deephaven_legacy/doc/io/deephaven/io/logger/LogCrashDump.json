@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.io.logger.LogCrashDump",
- "methods": {
-  "logCrashDump": ":param log: io.deephaven.io.logger.Logger"
- },
- "path": "io.deephaven.io.logger.LogCrashDump",
- "typeName": "class"
-}

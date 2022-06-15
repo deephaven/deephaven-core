@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.PrimitiveArrayType$Visitor",
- "methods": {
-  "visit": "*Overload 1*  \n  :param booleans: io.deephaven.util.PrimitiveArrayType.Booleans\n  \n*Overload 2*  \n  :param bytes: io.deephaven.util.PrimitiveArrayType.Bytes\n  \n*Overload 3*  \n  :param chars: io.deephaven.util.PrimitiveArrayType.Chars\n  \n*Overload 4*  \n  :param shorts: io.deephaven.util.PrimitiveArrayType.Shorts\n  \n*Overload 5*  \n  :param ints: io.deephaven.util.PrimitiveArrayType.Ints\n  \n*Overload 6*  \n  :param longs: io.deephaven.util.PrimitiveArrayType.Longs\n  \n*Overload 7*  \n  :param floats: io.deephaven.util.PrimitiveArrayType.Floats\n  \n*Overload 8*  \n  :param doubles: io.deephaven.util.PrimitiveArrayType.Doubles"
- },
- "path": "io.deephaven.util.PrimitiveArrayType.Visitor",
- "typeName": "interface"
-}

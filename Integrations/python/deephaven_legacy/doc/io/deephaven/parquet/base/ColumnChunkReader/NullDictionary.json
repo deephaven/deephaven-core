@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.parquet.base.ColumnChunkReader$NullDictionary",
- "methods": {
-  "getMaxId": ":return: int"
- },
- "path": "io.deephaven.parquet.base.ColumnChunkReader.NullDictionary",
- "typeName": "class"
-}

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.table.Table;
@@ -79,7 +82,7 @@ class IncrementalBenchmark {
         final InstrumentedTableUpdateListenerAdapter failureListener;
         if (DynamicNode.isDynamicAndIsRefreshing(result)) {
             failureListener =
-                    new InstrumentedTableUpdateListenerAdapter("Failure ShiftObliviousListener", (Table) result,
+                    new InstrumentedTableUpdateListenerAdapter("Failure Listener", (Table) result,
                             false) {
                         @Override
                         public void onUpdate(TableUpdate upstream) {}

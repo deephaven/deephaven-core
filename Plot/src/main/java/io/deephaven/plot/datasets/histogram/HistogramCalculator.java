@@ -1,11 +1,10 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.datasets.histogram;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.function.DoubleFpPrimitives;
+import io.deephaven.function.Numeric;
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.plot.util.ArgumentValidations;
@@ -45,7 +44,7 @@ public class HistogramCalculator {
 
         return t
                 .view(view)
-                .where("io.deephaven.function.DoubleFpPrimitives.isNormal(X)");
+                .where("io.deephaven.function.Numeric.isFinite(X)");
     }
 
     private static Table counts(final Table data, final Table range, final String... byColumns) {
@@ -83,7 +82,7 @@ public class HistogramCalculator {
      * Finds the minimum and maximum of the data in the {@code column} of the {@code table} and splits this range into
      * {@code nbins} equally sized bins. Calculates the number of data values in each bin.
      * <p>
-     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is filtered out of the data set.
+     * Data which is not finite as defined in {@link Numeric#isFinite} is filtered out of the data set.
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code table} and {@code column} must not be null
      * @throws RuntimeException {@code column} must be numeric
@@ -110,7 +109,7 @@ public class HistogramCalculator {
      * Finds the minimum and maximum of the data in the {@code column} of the {@code table} and splits this range into
      * {@code nbins} equally sized bins. Calculates the number of data values in each bin.
      * <p>
-     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is filtered out of the data set.
+     * Data which is not finite as defined in {@link Numeric#isFinite} is filtered out of the data set.
      *
      * @param table table
      * @param column column in {@code table}
@@ -131,7 +130,7 @@ public class HistogramCalculator {
      * Splits the specified range into {@code nbins} equally sized bins. Calculates the number of data values in each
      * bin.
      * <p>
-     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is filtered out of the data set.
+     * Data which is not finite as defined in {@link Numeric#isFinite} is filtered out of the data set.
      *
      * @param table table
      * @param histogramColumn histogramColumn in {@code table}
@@ -158,7 +157,7 @@ public class HistogramCalculator {
      * Splits the specified range into {@code nbins} equally sized bins. Calculates the number of data values in each
      * bin.
      * <p>
-     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is filtered out of the data set.
+     * Data which is not finite as defined in {@link Numeric#isFinite} is filtered out of the data set.
      *
      * @param table table
      * @param histogramColumn histogramColumn in {@code table}

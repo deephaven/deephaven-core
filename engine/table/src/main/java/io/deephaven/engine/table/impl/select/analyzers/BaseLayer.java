@@ -1,12 +1,17 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -65,7 +70,7 @@ public class BaseLayer extends SelectAndViewAnalyzer {
 
     @Override
     public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
-            SelectLayerCompletionHandler onCompletion) {
+            @Nullable LivenessNode liveResultOwner, SelectLayerCompletionHandler onCompletion) {
         // nothing to do at the base layer
         onCompletion.onLayerCompleted(BASE_LAYER_INDEX);
     }

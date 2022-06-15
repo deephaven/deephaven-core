@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Procedure$Ternary",
- "methods": {
-  "call": ":param arg1: Procedure.Ternary.A1\n:param arg2: Procedure.Ternary.A2\n:param arg3: Procedure.Ternary.A3"
- },
- "path": "io.deephaven.base.Procedure.Ternary",
- "typeName": "interface"
-}

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
@@ -16,7 +19,7 @@ public class FuzzerPrintListener extends InstrumentedTableUpdateListener {
     }
 
     FuzzerPrintListener(final String description, final Table table, final int rowCount) {
-        super("Fuzzer Failure ShiftObliviousListener");
+        super("Fuzzer Failure Listener");
         this.description = description;
         this.table = table;
         this.rowCount = rowCount;

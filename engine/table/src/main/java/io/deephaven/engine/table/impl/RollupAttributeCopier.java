@@ -1,7 +1,9 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.impl.by.PartitionByChunkedOperator;
 
 /**
@@ -15,7 +17,10 @@ public class RollupAttributeCopier {
     public final static PartitionByChunkedOperator.AttributeCopier LEAF_WITHCONSTITUENTS_INSTANCE = (pt, st) -> {
         pt.copyAttributes(st, BaseTable.CopyAttributeOperation.PartitionBy);
         st.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Constituent);
-        st.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, EmptyTableMap.INSTANCE);
+        st.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
+                // TODO (https://github.com/deephaven/deephaven-core/issues/65):
+                // Make rollups work with partitioned tables instead of table maps. Empty PartitionedTable here?
+                "placeholder");
         st.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
     };
 

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.annotations.FinalDefault",
- "methods": {},
- "path": "io.deephaven.util.annotations.FinalDefault",
- "text": "Indicates that a defaulted method should be treated as final and never overridden.",
- "typeName": "class"
-}

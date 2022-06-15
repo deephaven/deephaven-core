@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.table;
 
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -27,7 +30,7 @@ public class BigDecimalParquetBytesCodec implements ObjectCodec<BigDecimal> {
      *        precision.
      */
     public BigDecimalParquetBytesCodec(final int precision, final int scale, final int encodedSizeInBytes,
-            final RoundingMode roundingMode) {
+                                       final RoundingMode roundingMode) {
         if (precision <= 0) {
             throw new IllegalArgumentException("precision (=" + precision + ") should be > 0");
         }

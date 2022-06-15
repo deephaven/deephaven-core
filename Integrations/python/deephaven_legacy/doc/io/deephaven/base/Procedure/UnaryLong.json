@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Procedure$UnaryLong",
- "methods": {
-  "call": ":param arg: long"
- },
- "path": "io.deephaven.base.Procedure.UnaryLong",
- "typeName": "interface"
-}

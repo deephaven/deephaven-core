@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.time.DateTime;
@@ -65,8 +68,10 @@ public class QueryFactory {
             {"AggSum", "AggVar", "AggStd", "AggCount", "AggMin", "AggMax", "AggFirst", "AggLast"};
     private static final String[] SAFE_AGG = {"AggMin", "AggMax", "AggFirst", "AggLast"};
     private static final String[] SAFE_BY = {"maxBy", "minBy", "firstBy", "lastBy", "sortedFirstBy", "sortedLastBy"};
+    // TODO (https://github.com/deephaven/deephaven-core/issues/64): Re-enable treeTable
+    // TODO (https://github.com/deephaven/deephaven-core/issues/65): Re-enable rollup
     private static final String[] FINAL_OPS =
-            {"selectDistinct", "byOperation", "aggCombo", "treeTable", "rollup", "applyToAllBy"};
+            {"selectDistinct", "byOperation", "aggCombo", /* "treeTable", "rollup", */ "applyToAllBy"};
     private static final HashMap<String, String[]> DEFAULT_SWITCH_CONTROL = new HashMap<String, String[]>() {
         {
             put("supportedOps", IMPLEMENTED_OPS);
@@ -265,13 +270,13 @@ public class QueryFactory {
         final int style = random.nextInt(10);// Make the old style rare
         if (style != 0) {
             // make sure we have at least some values
-            opChain.append("map = merge(table").append(nameSeed).append("_").append(opNum - 1).append(", ");
+            opChain.append("partitioned = merge(table").append(nameSeed).append("_").append(opNum - 1).append(", ");
             opChain.append(tableNameOne).append(".head(1L)").append(", ");
             opChain.append(tableNameTwo).append(".head(1L)").append(")");
 
             opChain.append(".partitionBy(\"").append(columnNames[random.nextInt(columnNames.length)]).append("\");\n");
             opChain.append("table").append(nameSeed).append("_").append(opNum).append(" = ");
-            opChain.append("map.asTable().merge();\n");
+            opChain.append("partitioned.merge();\n");
         } else {
             opChain.append("table").append(nameSeed).append("_").append(opNum).append(" = merge(");
             if (random.nextInt(2) == 0) {
@@ -448,15 +453,17 @@ public class QueryFactory {
     }
 
     private void addPartitionByOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
-        final StringBuilder mapName = new StringBuilder("map").append(nameSeed).append("_").append(opNum);
+        final StringBuilder partitionedName =
+                new StringBuilder("partitioned").append(nameSeed).append("_").append(opNum);
         final StringBuilder previousTableName =
                 new StringBuilder("table").append(nameSeed).append("_").append(opNum - 1);
-        opChain.append(mapName).append(" = ").append(previousTableName).append(".partitionBy(\"")
+        opChain.append(partitionedName).append(" = ").append(previousTableName).append(".partitionBy(\"")
                 .append(columnNames[random.nextInt(columnNames.length)]).append("\");\n");
         opChain.append("table").append(nameSeed).append("_").append(opNum).append(" = ");
-        opChain.append(mapName).append(".getKeySet().length == 0 ? ").append(previousTableName).append(" : ");
-        opChain.append(mapName).append(".get(").append(mapName).append(".getKeySet()[0]);\n");
-
+        opChain.append(partitionedName).append(".table().size() == 0 ? ").append(previousTableName).append(" : ");
+        opChain.append(partitionedName).append(".table().getColumnSource(")
+                .append(partitionedName).append(".constituentColumnName()").append(").get(")
+                .append(partitionedName).append(".table().getRowSet().firstRowKey());\n");
     }
 
     private void addJoinOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {

@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -16,6 +14,7 @@ import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.table.impl.UpdateValidatorNugget;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.tuple.ArrayTuple;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -24,13 +23,13 @@ import java.util.Random;
 
 public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
     public void testSimple() {
-        final HashSet<SmartKey> set = new HashSet<>();
-        set.add(new SmartKey("Raylan", "USMS"));
-        set.add(new SmartKey("Bowd", "Crowder"));
-        set.add(new SmartKey("Dewey", "Crow"));
-        set.add(new SmartKey("Darryl", "Crow"));
-        set.add(new SmartKey("Art", "USMS"));
-        set.add(new SmartKey("Earl", "Crow"));
+        final HashSet<ArrayTuple> set = new HashSet<>();
+        set.add(new ArrayTuple("Raylan", "USMS"));
+        set.add(new ArrayTuple("Bowd", "Crowder"));
+        set.add(new ArrayTuple("Dewey", "Crow"));
+        set.add(new ArrayTuple("Darryl", "Crow"));
+        set.add(new ArrayTuple("Art", "USMS"));
+        set.add(new ArrayTuple("Earl", "Crow"));
 
         final Table result = HashSetBackedTableFactory.create(() -> set, 0, "Name", "Faction");
 
@@ -38,13 +37,13 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
 
         assertEquals(result.size(), set.size());
 
-        final HashSet<SmartKey> tableAsSet = tableToSet(result);
+        final HashSet<ArrayTuple> tableAsSet = tableToSet(result);
 
         assertEquals(set, tableAsSet);
     }
 
     public void testIterative() {
-        final HashSet<SmartKey> set = new HashSet<>();
+        final HashSet<ArrayTuple> set = new HashSet<>();
 
         final Table result = HashSetBackedTableFactory.create(() -> set, 0, "Arg");
 
@@ -69,7 +68,7 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
                 for (int jj = 0; jj < removals; ++jj) {
                     if (!set.isEmpty()) {
                         int element = random.nextInt(set.size());
-                        final Iterator<SmartKey> it = set.iterator();
+                        final Iterator<ArrayTuple> it = set.iterator();
                         do {
                             if (it.hasNext())
                                 it.next();
@@ -79,21 +78,21 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
                     }
                 }
                 for (int jj = 0; jj < additions; ++jj) {
-                    set.add(new SmartKey(generator.nextValue(null, 0, random)));
+                    set.add(new ArrayTuple(generator.nextValue(null, 0, random)));
                 }
 
                 ((Runnable) result).run();
             });
 
-            final HashSet<SmartKey> tableAsSet = tableToSet(result);
+            final HashSet<ArrayTuple> tableAsSet = tableToSet(result);
             assertEquals(set, tableAsSet);
 
             TstUtils.validate("ii=" + ii, en);
         }
     }
 
-    private HashSet<SmartKey> tableToSet(Table result) {
-        final HashSet<SmartKey> set = new HashSet<>();
+    private HashSet<ArrayTuple> tableToSet(Table result) {
+        final HashSet<ArrayTuple> set = new HashSet<>();
 
         assertTrue(result instanceof QueryTable);
 
@@ -115,7 +114,7 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
             for (ii = 0; ii < columnSources.length; ++ii) {
                 values[ii] = columnSources[ii].get(idx);
             }
-            set.add(new SmartKey((Object[]) values));
+            set.add(new ArrayTuple((Object[]) values));
         }
 
         return set;

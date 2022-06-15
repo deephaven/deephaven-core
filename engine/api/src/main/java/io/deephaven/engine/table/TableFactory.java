@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table;
 
 import io.deephaven.qst.TableCreator;
@@ -14,10 +17,13 @@ import java.util.ServiceLoader;
 import java.util.stream.Stream;
 
 /**
- * Factory for producing Deephaven engine Table instances.
+ * Factory for producing Deephaven engine {@link Table} instances.
  */
 public class TableFactory {
 
+    /**
+     * Creator provider to supply the implementation at runtime.
+     */
     @FunctionalInterface
     public interface TableCreatorProvider {
         TableCreator<Table> get();

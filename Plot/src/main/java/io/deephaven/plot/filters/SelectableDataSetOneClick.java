@@ -1,21 +1,20 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.filters;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.ChartImpl;
 import io.deephaven.plot.util.ArgumentValidations;
+import io.deephaven.plot.util.tables.PartitionedTableHandle;
 import io.deephaven.plot.util.tables.SwappableTable;
-import io.deephaven.plot.util.tables.SwappableTableOneClickMap;
-import io.deephaven.plot.util.tables.TableMapBackedTableMapHandle;
-import io.deephaven.plot.util.tables.TableMapHandle;
+import io.deephaven.plot.util.tables.SwappableTableOneClickPartitioned;
+import io.deephaven.plot.util.tables.PartitionedTableBackedPartitionedTableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.TableMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
@@ -30,64 +29,54 @@ import java.util.stream.Collectors;
  * requireAllFiltersToDisplay is false, data is displayed when not all oneclicks are selected
  */
 public class SelectableDataSetOneClick implements SelectableDataSet<String, Set<Object>> {
-    private final TableMap tableMap;
-    private final TableDefinition tableMapTableDefinition;
-    private final String[] byColumns;
+    private final PartitionedTable partitionedTable;
     private final boolean requireAllFiltersToDisplay;
     private final Map<Object, WeakReference<SelectableDataSet<String, Set<Object>>>> transformationCache =
             new HashMap<>();
 
     /**
      * Creates a SelectableDataSetOneClick instance.
-     *
+     * <p>
      * Listens for OneClick events for the specified {@code byColumns} and calculates the {@link SwappableTable} by
      * filtering the {@code table}. The {@link SwappableTable} will be null until all {@code byColumns} have a
      * corresponding OneClick filter.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code tableMap}, {@code table} and {@code byColumns} must
-     *         not be null
-     * @param tableMap table map
-     * @param tableMapTableDefinition table definition
-     * @param byColumns selected columns
+     * @param partitionedTable partitioned table
+     * @throws io.deephaven.base.verify.RequirementFailure {@code partitionedTable}, {@code table} and {@code byColumns}
+     *         must not be null
      */
-    public SelectableDataSetOneClick(TableMap tableMap, TableDefinition tableMapTableDefinition, String[] byColumns) {
-        this(tableMap, tableMapTableDefinition, byColumns, true);
+    public SelectableDataSetOneClick(PartitionedTable partitionedTable) {
+        this(partitionedTable, true);
     }
 
     /**
      * Creates a SelectableDataSetOneClick instance.
-     *
+     * <p>
      * Listens for OneClick events for the specified {@code byColumns} and calculates the {@link SwappableTable} by
      * filtering the {@code table}. If {@code requireAllFiltersToDisplay} is true, the {@link SwappableTable} will be
      * null until all {@code byColumns} have a corresponding OneClick filter. If {@code requireAllFiltersToDisplay} is
      * false, the {@link SwappableTable} will be calculated by filtering the {@code table} with the OneClicks used.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code tableMap}, {@code table} and {@code byColumns} must
-     *         not be null
-     * @param tableMap table map
-     * @param tableMapTableDefinition TableDefinition of the underlying table
-     * @param byColumns selected columns
+     * @param partitionedTable PartitionedTable
      * @param requireAllFiltersToDisplay false to display data when not all oneclicks are selected; true to only display
      *        data when appropriate oneclicks are selected
+     * @throws io.deephaven.base.verify.RequirementFailure {@code partitionedTable}, {@code table} and {@code byColumns}
+     *         must not be null
      */
-    public SelectableDataSetOneClick(TableMap tableMap, TableDefinition tableMapTableDefinition, String[] byColumns,
+    public SelectableDataSetOneClick(final PartitionedTable partitionedTable,
             final boolean requireAllFiltersToDisplay) {
-        Require.neqNull(tableMap, "tableMap");
-        Require.neqNull(tableMapTableDefinition, "tableMapTableDefinition");
-        Require.neqNull(byColumns, "byColumns");
-        this.tableMap = tableMap;
-        this.tableMapTableDefinition = tableMapTableDefinition;
-        this.byColumns = byColumns;
+        Require.neqNull(partitionedTable, "partitionedTable");
+        this.partitionedTable = partitionedTable;
         this.requireAllFiltersToDisplay = requireAllFiltersToDisplay;
     }
 
     @Override
     public TableDefinition getTableDefinition() {
-        return tableMapTableDefinition;
+        return partitionedTable.constituentDefinition();
     }
 
     public String[] getByColumns() {
-        return byColumns;
+        return partitionedTable.keyColumnNames().toArray(new String[0]);
     }
 
     @Override
@@ -100,10 +89,11 @@ public class SelectableDataSetOneClick implements SelectableDataSet<String, Set<
 
         final BaseFigureImpl figure = chart.figure();
 
-        final TableDefinition updatedTableDef = transformTableDefinition(tableMapTableDefinition, tableTransform);
+        final TableDefinition updatedTableDef =
+                transformTableDefinition(partitionedTable.constituentDefinition(), tableTransform);
 
         final List<String> allCols = new ArrayList<>(Arrays.asList(cols));
-        allCols.addAll(Arrays.asList(byColumns));
+        allCols.addAll(partitionedTable.keyColumnNames());
 
         final List<String> missingColumns = allCols.stream()
                 .filter(col -> updatedTableDef.getColumn(col) == null)
@@ -117,22 +107,22 @@ public class SelectableDataSetOneClick implements SelectableDataSet<String, Set<
 
         final List<String> viewColumns;
         // If these do not match Then we'll have to use a different set of view columns.
-        if (!updatedTableDef.equals(tableMapTableDefinition)) {
+        if (!updatedTableDef.equals(partitionedTable.constituentDefinition())) {
             viewColumns = allCols.stream()
-                    .filter(col -> tableMapTableDefinition.getColumn(col) != null)
+                    .filter(col -> partitionedTable.constituentDefinition().getColumn(col) != null)
                     .collect(Collectors.toList());
         } else {
             viewColumns = null;
         }
 
-        final TableMapHandle tableMapHandle = new TableMapBackedTableMapHandle(tableMap, updatedTableDef, byColumns,
-                chart.getPlotInfo(), allCols, viewColumns);
-        tableMapHandle.setTableMap(tableMap);
-        tableMapHandle.setKeyColumnsOrdered(byColumns);
-        tableMapHandle.setOneClickMap(true);
+        final String[] byColumns = partitionedTable.keyColumnNames().toArray(new String[0]);
+        final PartitionedTableHandle partitionedTableHandle = new PartitionedTableBackedPartitionedTableHandle(
+                partitionedTable, updatedTableDef, byColumns, chart.getPlotInfo(), allCols, viewColumns);
+        partitionedTableHandle.setKeyColumnsOrdered(byColumns);
+        partitionedTableHandle.setOneClickMap(true);
 
-        return new SwappableTableOneClickMap(seriesName, figure.getUpdateInterval(), tableMapHandle, tableTransform,
-                requireAllFiltersToDisplay, byColumns);
+        return new SwappableTableOneClickPartitioned(seriesName, figure.getUpdateInterval(), partitionedTableHandle,
+                tableTransform, requireAllFiltersToDisplay, byColumns);
     }
 
     private TableDefinition transformTableDefinition(TableDefinition toTransform,
@@ -151,9 +141,7 @@ public class SelectableDataSetOneClick implements SelectableDataSet<String, Set<
         }
 
         if (value == null) {
-            value = new SelectableDataSetOneClick(tableMap.transformTables(transformation),
-                    transformTableDefinition(tableMapTableDefinition, transformation),
-                    byColumns,
+            value = new SelectableDataSetOneClick(partitionedTable.transform(transformation::apply),
                     requireAllFiltersToDisplay);
 
             transformationCache.put(memoKey, new WeakReference<>(value));

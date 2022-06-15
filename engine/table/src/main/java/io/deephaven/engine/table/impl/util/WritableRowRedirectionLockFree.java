@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.util;
 
 import gnu.trove.iterator.TLongLongIterator;
@@ -42,7 +41,7 @@ import org.jetbrains.annotations.NotNull;
  * phase. 5. The Writer has no special responsibility when transitioning the LogicalClock from Idle to Update. 6.
  * However, upon the transition from Update to Idle, the Writer does have an additional responsibility. Namely, the
  * writer must first transition the LogicalClock (from Update generation N to Idle generation N+1), then call our method
- * commitUpdates(). A logical place to do this might be the Terminal ShiftObliviousListener.
+ * commitUpdates(). A logical place to do this might be the Terminal Listener.
  *
  * Rationale that this code implements correct lock-free behavior:
  *

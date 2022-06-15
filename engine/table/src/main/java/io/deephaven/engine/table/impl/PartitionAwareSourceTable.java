@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
@@ -172,7 +171,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             // Nothing changed - we have the same columns in the same order.
             return this;
         }
-        if (newDefinition.getColumns().length == definition.getColumns().length
+        if (newDefinition.numColumns() == definition.numColumns()
                 || newDefinition.getPartitioningColumns().size() == partitioningColumnDefinitions.size()) {
             // Nothing changed except ordering, *or* some columns were dropped but the partitioning column was retained.
             return newInstance(newDefinition,
@@ -181,7 +180,7 @@ public class PartitionAwareSourceTable extends SourceTable {
                     partitioningColumnFilters);
         }
         // Some partitioning columns are gone - defer dropping them.
-        final List<ColumnDefinition<?>> newColumnDefinitions = new ArrayList<>(newDefinition.getColumnList());
+        final List<ColumnDefinition<?>> newColumnDefinitions = new ArrayList<>(newDefinition.getColumns());
         final Map<String, ColumnDefinition<?>> retainedPartitioningColumnDefinitions =
                 extractPartitioningColumnDefinitions(newDefinition);
         final Collection<ColumnDefinition<?>> droppedPartitioningColumnDefinitions =
@@ -189,7 +188,7 @@ public class PartitionAwareSourceTable extends SourceTable {
                         .stream().filter(cd -> !retainedPartitioningColumnDefinitions.containsKey(cd.getName()))
                         .collect(Collectors.toList());
         newColumnDefinitions.addAll(droppedPartitioningColumnDefinitions);
-        final PartitionAwareSourceTable redefined = newInstance(new TableDefinition(newColumnDefinitions),
+        final PartitionAwareSourceTable redefined = newInstance(TableDefinition.of(newColumnDefinitions),
                 description + "-retainColumns",
                 componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                 partitioningColumnFilters);

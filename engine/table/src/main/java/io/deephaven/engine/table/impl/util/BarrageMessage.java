@@ -1,16 +1,17 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.SafeCloseable;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -28,13 +29,15 @@ public class BarrageMessage implements SafeCloseable {
         public RowSet rowsModified;
         public Class<?> type;
         public Class<?> componentType;
-        public Chunk<Values> data;
+        public ArrayList<Chunk<Values>> data;
+        public ChunkType chunkType;
     }
 
     public static class AddColumnData {
         public Class<?> type;
         public Class<?> componentType;
-        public Chunk<Values> data;
+        public ArrayList<Chunk<Values>> data;
+        public ChunkType chunkType;
     }
 
     public long firstSeq = -1;
@@ -94,9 +97,13 @@ public class BarrageMessage implements SafeCloseable {
                     continue;
                 }
 
-                if (acd.data instanceof PoolableChunk) {
-                    ((PoolableChunk) acd.data).close();
+                for (Chunk<Values> chunk : acd.data) {
+                    if (chunk instanceof PoolableChunk) {
+                        ((PoolableChunk) chunk).close();
+                    }
                 }
+
+                acd.data.clear();
             }
         }
         if (modColumnData != null) {
@@ -105,12 +112,13 @@ public class BarrageMessage implements SafeCloseable {
                     continue;
                 }
 
-                if (mcd.rowsModified != null) {
-                    mcd.rowsModified.close();
+                for (Chunk<Values> chunk : mcd.data) {
+                    if (chunk instanceof PoolableChunk) {
+                        ((PoolableChunk) chunk).close();
+                    }
                 }
-                if (mcd.data instanceof PoolableChunk) {
-                    ((PoolableChunk) mcd.data).close();
-                }
+
+                mcd.data.clear();
             }
         }
     }

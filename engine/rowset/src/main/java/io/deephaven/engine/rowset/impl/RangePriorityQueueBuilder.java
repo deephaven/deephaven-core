@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.configuration.Configuration;
@@ -246,20 +245,20 @@ public class RangePriorityQueueBuilder {
         reset();
     }
 
-    private OrderedLongSet getTreeIndexImplInternal() {
+    private OrderedLongSet getOrderedLongSetInternal() {
         final OrderedLongSet.BuilderSequential sequentialBuilder = new OrderedLongSetBuilderSequential();
         populateSequentialBuilder(sequentialBuilder);
-        return sequentialBuilder.getTreeIndexImpl();
+        return sequentialBuilder.getOrderedLongSet();
     }
 
-    public OrderedLongSet getTreeIndexImpl() {
-        final OrderedLongSet ix = getTreeIndexImplInternal();
+    public OrderedLongSet getOrderedLongSet() {
+        final OrderedLongSet ix = getOrderedLongSetInternal();
         start = end = null;
         return ix;
     }
 
-    public OrderedLongSet getTreeIndexImplAndReset() {
-        final OrderedLongSet ix = getTreeIndexImplInternal();
+    public OrderedLongSet getOrderedLongSetAndReset() {
+        final OrderedLongSet ix = getOrderedLongSetInternal();
         reset();
         return ix;
     }

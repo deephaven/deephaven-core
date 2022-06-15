@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -59,7 +62,7 @@ public interface RowRedirection {
 
     /**
      * Lookup each element in a {@link RowSequence} and write the result to a {@link WritableLongChunk}.
-     * 
+     *
      * @param fillContext The FillContext
      * @param innerRowKeys The result chunk
      * @param outerRowKeys The row keys to lookup in this RowRedirection
@@ -76,7 +79,7 @@ public interface RowRedirection {
 
     /**
      * Lookup each element in a {@link LongChunk} and write the result to a {@link WritableLongChunk}.
-     * 
+     *
      * @param fillContext The FillContext
      * @param innerRowKeys The result chunk
      * @param outerRowKeys The row keys to lookup in this RowRedirection
@@ -107,6 +110,16 @@ public interface RowRedirection {
         outerRowKeys.forAllRowKeys((final long outerRowKey) -> {
             innerRowKeys.add(getPrev(outerRowKey));
         });
+    }
+
+    /**
+     * If this RedirectionIndex is guaranteed to map outer keys in ascending order to inner keys in ascending order;
+     * then return true; all other redirections must return false.
+     *
+     * @return if our output maintains ascending order
+     */
+    default boolean ascendingMapping() {
+        return false;
     }
 
     /**

@@ -1,8 +1,12 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
@@ -507,14 +511,9 @@ public class QueryTableAjTest {
         } else {
             resultBucket = leftTable.aj(rightTable, "Bucket," + stampMatch, "RightSentinel");
         }
-        final TableMap bucketResults = resultBucket.partitionBy("Bucket");
-        final TableMap leftBucket = leftTable.partitionBy("Bucket");
-        final TableMap rightBucket = rightTable.partitionBy("Bucket");
-
-        for (Object key : bucketResults.getKeySet()) {
-            System.out.println("Bucket:" + key);
-            checkAjResult(leftBucket.get(key), rightBucket.get(key), bucketResults.get(key), reverse, noexact);
-        }
+        checkAjResults(resultBucket.partitionBy("Bucket"),
+                leftTable.partitionBy("Bucket"), rightTable.partitionBy("Bucket"),
+                reverse, noexact);
     }
 
     @Test
@@ -542,14 +541,8 @@ public class QueryTableAjTest {
         final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
                 (QueryTable) rightTable.reverse(), MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
                 MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
-
-        final TableMap bucketResults = result.partitionBy("Bucket");
-        final TableMap leftBucket = leftTable.partitionBy("Bucket");
-        final TableMap rightBucket = rightTable.partitionBy("Bucket");
-
-        for (Object key : bucketResults.getKeySet()) {
-            checkAjResult(leftBucket.get(key), rightBucket.get(key), bucketResults.get(key), true, true);
-        }
+        checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"), rightTable.partitionBy("Bucket"),
+                true, true);
     }
 
     @Test
@@ -773,7 +766,22 @@ public class QueryTableAjTest {
 
                                                 @Override
                                                 double getMaximumLoadFactor() {
-                                                    return 20.0;
+                                                    if (AsOfJoinHelper.USE_TYPED_STATE_MANAGER) {
+                                                        // allow this test to function for OA
+                                                        return 0.75;
+                                                    } else {
+                                                        return 20.0;
+                                                    }
+                                                }
+
+                                                @Override
+                                                int initialBuildSize() {
+                                                    if (AsOfJoinHelper.USE_TYPED_STATE_MANAGER) {
+                                                        // allow this test to function for OA
+                                                        return 1 << 3;
+                                                    } else {
+                                                        return super.initialBuildSize();
+                                                    }
                                                 }
 
                                                 @Override
@@ -1179,6 +1187,22 @@ public class QueryTableAjTest {
                 TableTools.showWithRowSet(rightTable, 100);
             }
             joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en, random);
+        }
+    }
+
+    private void checkAjResults(
+            PartitionedTable bucketResults, PartitionedTable leftBucket, PartitionedTable rightBucket,
+            boolean reverse, boolean noexact) {
+        final Table correlated = bucketResults.table()
+                .naturalJoin(leftBucket.table(), "Bucket", "Left=" + leftBucket.constituentColumnName())
+                .naturalJoin(rightBucket.table(), "Bucket", "Right=" + rightBucket.constituentColumnName());
+        try (final ObjectColumnIterator<Table> results =
+                correlated.objectColumnIterator(bucketResults.constituentColumnName());
+                final ObjectColumnIterator<Table> lefts = correlated.objectColumnIterator("Left");
+                final ObjectColumnIterator<Table> rights = correlated.objectColumnIterator("Right")) {
+            while (results.hasNext()) {
+                checkAjResult(lefts.next(), rights.next(), results.next(), reverse, noexact);
+            }
         }
     }
 

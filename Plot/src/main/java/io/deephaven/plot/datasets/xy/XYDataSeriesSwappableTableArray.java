@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.datasets.xy;
 
 import io.deephaven.plot.AxesImpl;
@@ -50,7 +49,7 @@ public class XYDataSeriesSwappableTableArray extends XYDataSeriesArray implement
         this.y = series.y;
     }
 
-    private <S, T> Function<Table, Table> constructTableMapFromFunction(final Function<S, T> function,
+    private <S, T> Function<Table, Table> constructPartitionedTableFromFunction(final Function<S, T> function,
             final Class resultClass, final String onColumn, final String columnName) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";

@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.engine.table.impl;
 
@@ -38,6 +38,7 @@ import org.jetbrains.annotations.NotNull;
 
 // region extra imports
 import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.engine.table.impl.asofjoin.StaticHashedAsOfJoinStateManager;
 // endregion extra imports
 
 import static io.deephaven.util.SafeCloseable.closeArray;
@@ -46,6 +47,7 @@ import static io.deephaven.util.SafeCloseable.closeArray;
 // endregion class visibility
 class StaticChunkedAsOfJoinStateManager
     // region extensions
+    extends StaticHashedAsOfJoinStateManager
     // endregion extensions
 {
     // region constants
@@ -167,11 +169,12 @@ class StaticChunkedAsOfJoinStateManager
 
     StaticChunkedAsOfJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
-                                      // region constructor arguments
-                                         , ColumnSource<?>[] tableKeySourcesForErrors
+            // region constructor arguments
+            , ColumnSource<?>[] tableKeySourcesForErrors
                                               // endregion constructor arguments
     ) {
         // region super
+        super(tableKeySourcesForErrors);
         // endregion super
         keyColumnCount = tableKeySources.length;
 
@@ -251,24 +254,26 @@ class StaticChunkedAsOfJoinStateManager
     }
 
     // region build wrappers
-    int buildFromRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots) {
-        if (rightIndex.isEmpty()) {
+    @Override
+    public int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots) {
+        if (rightRowSet.isEmpty()) {
             return 0;
         }
-        try (final BuildContext bc = makeBuildContext(rightSources, rightIndex.size())) {
+        try (final BuildContext bc = makeBuildContext(rightSources, rightRowSet.size())) {
             final MutableInt slotCount = new MutableInt(0);
-            buildTable(bc, rightIndex, rightSources, false, addedSlots, slotCount);
+            buildTable(bc, rightRowSet, rightSources, false, addedSlots, slotCount);
             return slotCount.intValue();
         }
     }
 
-    int buildFromLeftSide(RowSequence leftIndex, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
-        if (leftIndex.isEmpty()) {
+    @Override
+    public int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots) {
+        if (leftRowSet.isEmpty()) {
             return 0;
         }
-        try (final BuildContext bc = makeBuildContext(leftSources, leftIndex.size())) {
+        try (final BuildContext bc = makeBuildContext(leftSources, leftRowSet.size())) {
             final MutableInt slotCount = new MutableInt(0);
-            buildTable(bc, leftIndex, leftSources, true, addedSlots, slotCount);
+            buildTable(bc, leftRowSet, leftSources, true, addedSlots, slotCount);
             return slotCount.intValue();
         }
     }
@@ -523,7 +528,7 @@ class StaticChunkedAsOfJoinStateManager
 
     }
 
-    BuildContext makeBuildContext(ColumnSource<?>[] buildSources,
+    public BuildContext makeBuildContext(ColumnSource<?>[] buildSources,
                                   long maxSize
                                   // region makeBuildContext args
                                   // endregion makeBuildContext args
@@ -904,8 +909,8 @@ class StaticChunkedAsOfJoinStateManager
             if (tableHashPivot == tableSize) {
                 tableSize *= 2;
                 ensureCapacity(tableSize);
-                            // region rehash ensure capacity
-                            buildCookieSource.ensureCapacity(tableSize);
+                // region rehash ensure capacity
+            buildCookieSource.ensureCapacity(tableSize);
                 // endregion rehash ensure capacity
             }
 
@@ -975,13 +980,13 @@ class StaticChunkedAsOfJoinStateManager
                     final byte stateValueToMove = stateSource.getUnsafe(oldHashLocation);
                     stateSource.set(newHashLocation, stateValueToMove);
                     stateSource.set(oldHashLocation, EMPTY_VALUE);
-                                // region rehash move values
+                    // region rehash move values
 
-                                leftRowSetSource.set(newHashLocation, leftRowSetSource.get(oldHashLocation));
-                                leftRowSetSource.set(oldHashLocation, null);
+                    leftRowSetSource.set(newHashLocation, leftRowSetSource.get(oldHashLocation));
+                    leftRowSetSource.set(oldHashLocation, null);
 
-                                rightRowSetSource.set(newHashLocation, rightRowSetSource.get(oldHashLocation));
-                                rightRowSetSource.set(oldHashLocation, null);
+                    rightRowSetSource.set(newHashLocation, rightRowSetSource.get(oldHashLocation));
+                    rightRowSetSource.set(oldHashLocation, null);
 
                                 final int cookie = buildCookieSource.getInt(oldHashLocation);
                                 addedSlots.set(cookie, newHashLocation);
@@ -1060,13 +1065,13 @@ class StaticChunkedAsOfJoinStateManager
                         }
                         bc.sourcePositions.add(ii);
                         bc.destinationLocationPositionInWriteThrough.add((int)(tableLocation - firstBackingChunkLocation));
-                                    // region promotion move
-                                    final long overflowLocation = bc.overflowLocationsAsKeyIndices.get(ii);
-                                    leftRowSetSource.set(tableLocation, overflowLeftRowSetSource.get(overflowLocation));
-                                    overflowLeftRowSetSource.set(overflowLocation, null);
+                        // region promotion move
+                        final long overflowLocation = bc.overflowLocationsAsKeyIndices.get(ii);
+                        leftRowSetSource.set(tableLocation, overflowLeftRowSetSource.get(overflowLocation));
+                        overflowLeftRowSetSource.set(overflowLocation, null);
 
-                                    rightRowSetSource.set(tableLocation, overflowRightRowSetSource.get(overflowLocation));
-                                    overflowRightRowSetSource.set(overflowLocation, null);
+                        rightRowSetSource.set(tableLocation, overflowRightRowSetSource.get(overflowLocation));
+                        overflowRightRowSetSource.set(overflowLocation, null);
 
                                     final int cookie = overflowBuildCookieSource.getInt(overflowLocation);
                                     addedSlots.set(cookie, tableLocation);
@@ -1329,32 +1334,35 @@ class StaticChunkedAsOfJoinStateManager
 
 
     // region probe wrappers
-    void probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources)  {
-        if (leftIndex.isEmpty()) {
+    @Override
+    public void probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources)  {
+        if (leftRowSet.isEmpty()) {
             return;
         }
-        try (final ProbeContext pc = makeProbeContext(leftSources, leftIndex.size())) {
-            decorationProbe(pc, leftIndex, leftSources, true, null, null, null);
+        try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
+            decorationProbe(pc, leftRowSet, leftSources, true, null, null,null);
         }
     }
 
-    int probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilderRandom foundBuilder)  {
-        if (leftIndex.isEmpty()) {
+    @Override
+    public int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilderRandom foundBuilder)  {
+        if (leftRowSet.isEmpty()) {
             return 0;
         }
-        try (final ProbeContext pc = makeProbeContext(leftSources, leftIndex.size())) {
+        try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
             final MutableInt slotCount = new MutableInt();
-            decorationProbe(pc, leftIndex, leftSources, true, slots, slotCount, foundBuilder);
+            decorationProbe(pc, leftRowSet, leftSources, true, slots, slotCount, foundBuilder);
             return slotCount.intValue();
         }
     }
 
-    void probeRight(RowSequence rightIndex, ColumnSource<?>[] rightSources)  {
-        if (rightIndex.isEmpty()) {
+    @Override
+    public void probeRight(RowSequence rightRowSet, ColumnSource<?>[] rightSources)  {
+        if (rightRowSet.isEmpty()) {
             return;
         }
-        try (final ProbeContext pc = makeProbeContext(rightSources, rightIndex.size())) {
-            decorationProbe(pc, rightIndex, rightSources, false, null, null, null);
+        try (final ProbeContext pc = makeProbeContext(rightSources, rightRowSet.size())) {
+            decorationProbe(pc, rightRowSet, rightSources, false, null, null, null);
         }
     }
     // endregion probe wrappers
@@ -1697,11 +1705,13 @@ class StaticChunkedAsOfJoinStateManager
     }
 
     // region extraction functions
-    int getTableSize() {
+    @Override
+    public int getTableSize() {
         return tableSize;
     }
 
-    int getOverflowSize() {
+    @Override
+    public int getOverflowSize() {
         return nextOverflowLocation;
     }
 
@@ -1716,7 +1726,8 @@ class StaticChunkedAsOfJoinStateManager
      * @param slot the slot in the table (either positive for a main slot, or negative for overflow)
      * @return the RowSet for this slot
      */
-    RowSet getLeftIndex(long slot) {
+    @Override
+    public RowSet getLeftIndex(long slot) {
         final RowSetBuilderSequential builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -1732,7 +1743,8 @@ class StaticChunkedAsOfJoinStateManager
         return builder.build();
     }
 
-    void convertRightBuildersToIndex(LongArraySource slots, int slotCount) {
+        @Override
+    public void convertRightBuildersToIndex(LongArraySource slots, int slotCount) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final long slot = slots.getLong(slotIndex);
             if (isOverflowLocation(slot)) {
@@ -1751,7 +1763,12 @@ class StaticChunkedAsOfJoinStateManager
         rightBuildersConverted = true;
     }
 
-    void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource) {
+    protected String extractKeyStringFromSourceTable(long leftKey) {
+        return super.extractKeyStringFromSourceTable(leftKey);
+    }
+
+    @Override
+    public void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final long slot = slots.getLong(slotIndex);
             if (isOverflowLocation(slot)) {
@@ -1778,7 +1795,8 @@ class StaticChunkedAsOfJoinStateManager
         return rowSetSource.getUnsafe(groupedRowSet.get(0));
     }
 
-    RowSet getRightIndex(long slot) {
+    @Override
+    public RowSet getRightIndex(long slot) {
         if (rightBuildersConverted) {
             if (isOverflowLocation(slot)) {
                 final long overflowLocation = hashLocationToOverflowLocation(slot);

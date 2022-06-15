@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.shared.data;
 
 import com.google.common.collect.Collections2;
@@ -408,8 +411,68 @@ public class RangeSetTest {
         assertEquals(of(
                 new Range(5, 10),
                 new Range(15, 20)), rangeSet);
+    }
 
+    @Test
+    public void testLarge() {
+        long largeA = (long) Integer.MAX_VALUE + 10L;
+        long largeB = (long) Integer.MAX_VALUE + (long) Integer.MAX_VALUE;
+        long largeC = Long.MAX_VALUE - 100L;
 
+        // Add to empty range
+        RangeSet rangeSet = RangeSet.empty();
+        rangeSet.addRange(new Range(0, largeA));
+        assertEquals(of(new Range(0, largeA)), rangeSet);
+
+        rangeSet = RangeSet.empty();
+        rangeSet.addRange(new Range(largeA, largeA));
+        assertEquals(of(new Range(largeA, largeA)), rangeSet);
+
+        rangeSet = RangeSet.empty();
+        rangeSet.addRange(new Range(largeA, largeB));
+        assertEquals(of(new Range(largeA, largeB)), rangeSet);
+
+        rangeSet = RangeSet.empty();
+        rangeSet.addRange((new Range(0, largeC)));
+        assertEquals(of(new Range(0, largeC)), rangeSet);
+
+        rangeSet = RangeSet.empty();
+        rangeSet.addRange(new Range(largeA, largeC));
+        assertEquals(of(new Range(largeA, largeC)), rangeSet);
+
+        // Remove when nothing is present
+        rangeSet = RangeSet.empty();
+        rangeSet.removeRange(new Range(0, largeA));
+        assertEquals(RangeSet.empty(), rangeSet);
+
+        // Remove until nothing is left
+        rangeSet = RangeSet.ofRange(0, largeA);
+        rangeSet.removeRange(new Range(0, largeA));
+        assertEquals(RangeSet.empty(), rangeSet);
+
+        rangeSet = RangeSet.ofRange(1, largeA);
+        rangeSet.removeRange(new Range(0, largeA));
+        assertEquals(RangeSet.empty(), rangeSet);
+
+        rangeSet = RangeSet.ofRange(largeA, largeC);
+        rangeSet.removeRange(new Range(0, largeC));
+        assertEquals(RangeSet.empty(), rangeSet);
+
+        // Remove section before/between/after any actual existing element (no effect)
+        rangeSet = RangeSet.ofRange(largeA, largeB);
+        rangeSet.removeRange(new Range(0, largeA - 2));
+        rangeSet.removeRange(new Range(largeB + 1, largeB + 5));
+        assertEquals(RangeSet.ofRange(largeA, largeB), rangeSet);
+
+        rangeSet = RangeSet.ofItems(5, largeA, largeB);
+        rangeSet.removeRange(new Range(6, largeA - 1));
+        rangeSet.removeRange(new Range(largeA + 1, largeB - 1));
+        assertEquals(RangeSet.ofItems(5, largeA, largeB), rangeSet);
+
+        rangeSet = RangeSet.ofItems(largeA, largeB);
+        rangeSet.removeRange(new Range(0, largeA - 1));
+        rangeSet.removeRange(new Range(largeB + 1, largeC));
+        assertEquals(RangeSet.ofItems(largeA, largeB), rangeSet);
     }
 
 }

@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.count;
 
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -9,12 +8,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.by.RollupConstants;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.*;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctRollupContext;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.CharSsmBackedSource;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.DistinctOperatorFactory;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctRollupContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
@@ -59,7 +55,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
         this.ssms = new CharSsmBackedSource();
         // endregion SsmCreation
 
-        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(DistinctOperatorFactory.NODE_SIZE);
+        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(SsmDistinctContext.NODE_SIZE);
     }
 
     //region Bucketed Updates

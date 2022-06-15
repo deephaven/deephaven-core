@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.internal.log.InitSink",
- "methods": {
-  "accept": ":param sink: io.deephaven.io.log.LogSink\n:param logBuffer: io.deephaven.io.logger.LogBuffer"
- },
- "path": "io.deephaven.internal.log.InitSink",
- "typeName": "interface"
-}

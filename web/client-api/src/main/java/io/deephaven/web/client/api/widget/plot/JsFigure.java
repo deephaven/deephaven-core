@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
@@ -35,9 +38,6 @@ import java.util.stream.Stream;
 
 @JsType(name = "Figure", namespace = "dh.plot")
 public class JsFigure extends HasEventHandling {
-    private static native Throwable ofObject(Object obj) /*-{
-      return @java.lang.Throwable::of(*)(obj);
-    }-*/;
 
     @JsProperty(namespace = "dh.plot.Figure")
     public static final String EVENT_UPDATED = "updated",
@@ -161,7 +161,7 @@ public class JsFigure extends HasEventHandling {
             fireEvent(EVENT_RECONNECT);
             return Promise.resolve(this);
         }, err -> {
-            final FigureFetchError fetchError = new FigureFetchError(ofObject(err),
+            final FigureFetchError fetchError = new FigureFetchError(LazyPromise.ofObject(err),
                     this.descriptor != null ? this.descriptor.getErrorsList() : new JsArray<>());
             final CustomEventInit init = CustomEventInit.create();
             init.setDetail(fetchError);
@@ -194,7 +194,7 @@ public class JsFigure extends HasEventHandling {
 
     @JsProperty
     public double getUpdateInterval() {
-        return descriptor.getUpdateInterval();
+        return Long.parseLong(descriptor.getUpdateInterval());
     }
 
     @JsProperty

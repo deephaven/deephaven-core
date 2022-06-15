@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
@@ -35,7 +34,7 @@ public class UpdateValidatorNugget implements EvalNuggetInterface {
 
     // We should listen for failures on the table, and if we get any, the test case is no good.
     private final TableUpdateListener failureListener =
-            new InstrumentedTableUpdateListener("Failure ShiftObliviousListener") {
+            new InstrumentedTableUpdateListener("Failure Listener") {
                 @Override
                 public void onUpdate(TableUpdate update) {}
 

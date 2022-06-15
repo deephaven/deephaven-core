@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
@@ -27,7 +30,8 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
 
 /**
- * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#groupBy}.
+ * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#groupBy},
+ * {@link io.deephaven.api.agg.spec.AggSpecGroup}, and {@link io.deephaven.api.agg.Aggregation#AggGroup(String...)}.
  */
 public final class GroupByChunkedOperator implements IterativeChunkedAggregationOperator {
 

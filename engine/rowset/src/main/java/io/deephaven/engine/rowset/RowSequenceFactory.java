@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset;
 
 import io.deephaven.chunk.LongChunk;
@@ -196,8 +199,6 @@ public class RowSequenceFactory {
      * @return A new {@link RowSequence} object covering the requested range of row keys
      */
     public static RowSequence forRange(final long firstRowKey, final long lastRowKey) {
-        // NB: We could use a pooled chunk, here, but the pool doesn't usually
-        // hold chunks this small. Probably not worth the code complexity for release, either.
         return new SingleRangeRowSequence(firstRowKey, lastRowKey);
     }
 }

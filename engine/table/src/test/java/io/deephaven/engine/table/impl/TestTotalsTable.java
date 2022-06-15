@@ -1,11 +1,11 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.function.ByteNumericPrimitives;
-import io.deephaven.function.DoubleNumericPrimitives;
-import io.deephaven.function.FloatNumericPrimitives;
-import io.deephaven.function.IntegerNumericPrimitives;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TotalsTableBuilder;
+import io.deephaven.function.Numeric;
 import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
@@ -60,13 +60,13 @@ public class TestTotalsTable extends RefreshingTableTestCase {
         assertEquals(new LinkedHashSet<>(Arrays.asList("intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2",
                 "floatCol", "byteCol", "shortCol")), resultColumns.keySet());
 
-        assertEquals((long) IntegerNumericPrimitives.sum((int[]) queryTable.getColumn("intCol").getDirect()),
+        assertEquals((long) Numeric.sum((int[]) queryTable.getColumn("intCol").getDirect()),
                 totals.getColumn("intCol").get(0));
-        assertEquals(DoubleNumericPrimitives.sum((double[]) queryTable.getColumn("doubleCol").getDirect()),
+        assertEquals(Numeric.sum((double[]) queryTable.getColumn("doubleCol").getDirect()),
                 totals.getColumn("doubleCol").get(0));
-        assertEquals(DoubleNumericPrimitives.sum((double[]) queryTable.getColumn("doubleNullCol").getDirect()),
+        assertEquals(Numeric.sum((double[]) queryTable.getColumn("doubleNullCol").getDirect()),
                 totals.getColumn("doubleNullCol").get(0));
-        assertEquals("floatCol", FloatNumericPrimitives.sum((float[]) queryTable.getColumn("floatCol").getDirect()),
+        assertEquals("floatCol", Numeric.sum((float[]) queryTable.getColumn("floatCol").getDirect()),
                 (float) totals.getColumn("floatCol").get(0), 0.02);
         assertEquals(shortSum((short[]) queryTable.getColumn("shortCol").getDirect()),
                 totals.getColumn("shortCol").get(0));
@@ -80,7 +80,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                 .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
         assertEquals(new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "byteCol")),
                 totals2.getColumnSourceMap().keySet());
-        assertEquals(ByteNumericPrimitives.min((byte[]) queryTable.getColumn("byteCol").getDirect()),
+        assertEquals(Numeric.min((byte[]) queryTable.getColumn("byteCol").getDirect()),
                 totals2.getColumn("byteCol").get(0));
         assertEquals(queryTable.getColumn("Sym").get(0), totals2.getColumn("Sym").get(0));
         assertEquals(queryTable.getColumn("intCol2").get(queryTable.size() - 1), totals2.getColumn("intCol2").get(0));
@@ -100,19 +100,19 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                     new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "doubleCol", "doubleNullCol__Std",
                             "doubleNullCol__Count", "doubleCol2", "byteCol", "shortCol")),
                     totals3.getColumnSourceMap().keySet());
-            assertEquals(ByteNumericPrimitives.max((byte[]) queryTable.getColumn("byteCol").getDirect()),
+            assertEquals(Numeric.max((byte[]) queryTable.getColumn("byteCol").getDirect()),
                     totals3.getColumn("byteCol").get(0));
             assertEquals(
-                    DoubleNumericPrimitives
+                    Numeric
                             .var(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol").getDirect())),
                     totals3.getColumn("doubleCol").get(0));
             assertEquals(
-                    DoubleNumericPrimitives
+                    Numeric
                             .std(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleNullCol").getDirect())),
                     totals3.getColumn("doubleNullCol__Std").get(0));
             assertEquals(queryTable.size(), totals3.getColumn("doubleNullCol__Count").get(0));
             assertEquals(
-                    DoubleNumericPrimitives
+                    Numeric
                             .avg(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol2").getDirect())),
                     totals3.getColumn("doubleCol2").get(0));
             assertEquals(queryTable.size(), (long) totals3.getColumn("shortCol").get(0));

@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.by.typed.TypedHasherFactory$HasherConfig",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.by.typed.TypedHasherFactory.HasherConfig",
- "typeName": "class"
-}

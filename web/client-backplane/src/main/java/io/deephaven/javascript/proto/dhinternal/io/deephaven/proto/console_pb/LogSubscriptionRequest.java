@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb;
 
 import elemental2.core.JsArray;
@@ -22,13 +25,13 @@ public class LogSubscriptionRequest {
         }
 
         @JsProperty
-        double getLastSeenLogTimestamp();
+        String getLastSeenLogTimestamp();
 
         @JsProperty
         JsArray<String> getLevelsList();
 
         @JsProperty
-        void setLastSeenLogTimestamp(double lastSeenLogTimestamp);
+        void setLastSeenLogTimestamp(String lastSeenLogTimestamp);
 
         @JsProperty
         void setLevelsList(JsArray<String> levelsList);
@@ -47,13 +50,13 @@ public class LogSubscriptionRequest {
         }
 
         @JsProperty
-        double getLastSeenLogTimestamp();
+        String getLastSeenLogTimestamp();
 
         @JsProperty
         JsArray<String> getLevelsList();
 
         @JsProperty
-        void setLastSeenLogTimestamp(double lastSeenLogTimestamp);
+        void setLastSeenLogTimestamp(String lastSeenLogTimestamp);
 
         @JsProperty
         void setLevelsList(JsArray<String> levelsList);
@@ -80,13 +83,13 @@ public class LogSubscriptionRequest {
 
     public native void clearLevelsList();
 
-    public native double getLastSeenLogTimestamp();
+    public native String getLastSeenLogTimestamp();
 
     public native JsArray<String> getLevelsList();
 
     public native Uint8Array serializeBinary();
 
-    public native void setLastSeenLogTimestamp(double value);
+    public native void setLastSeenLogTimestamp(String value);
 
     public native void setLevelsList(JsArray<String> value);
 

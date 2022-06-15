@@ -1,6 +1,7 @@
 #
-#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ This module supports the conversion between Deephaven tables and Pandas DataFrames. """
 import re
 from typing import List
@@ -11,7 +12,7 @@ import pandas
 
 from deephaven import DHError, new_table, dtypes
 from deephaven.column import Column
-from deephaven.numpy import _column_to_numpy_array, freeze_table, _make_input_column
+from deephaven.numpy import column_to_numpy_array, freeze_table, _make_input_column
 from deephaven.table import Table
 
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
@@ -32,7 +33,7 @@ def _column_to_series(table: Table, col_def: Column) -> pandas.Series:
     """
     try:
         data_col = table.j_table.getColumn(col_def.name)
-        np_array = _column_to_numpy_array(col_def, data_col.getDirect())
+        np_array = column_to_numpy_array(col_def, data_col.getDirect())
 
         return pandas.Series(data=np_array, copy=False)
     except DHError:

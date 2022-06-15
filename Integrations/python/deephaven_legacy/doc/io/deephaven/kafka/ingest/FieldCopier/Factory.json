@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.kafka.ingest.FieldCopier$Factory",
- "methods": {
-  "make": ":param fieldName: java.lang.String\n:param chunkType: io.deephaven.chunk.ChunkType\n:param dataType: java.lang.Class<?>\n:return: io.deephaven.kafka.ingest.FieldCopier"
- },
- "path": "io.deephaven.kafka.ingest.FieldCopier.Factory",
- "typeName": "interface"
-}

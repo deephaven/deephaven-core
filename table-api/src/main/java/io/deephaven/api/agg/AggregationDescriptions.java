@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.api.agg;
 
 import java.util.Collection;
@@ -58,5 +61,11 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
     @Override
     public void visit(LastRowKey lastRowKey) {
         out.put(lastRowKey.column().name(), "last row key");
+    }
+
+    @Override
+    public void visit(Partition partition) {
+        out.put(partition.column().name(), "partition sub-table"
+                + (partition.includeGroupByColumns() ? " (including group-by columns)" : ""));
     }
 }

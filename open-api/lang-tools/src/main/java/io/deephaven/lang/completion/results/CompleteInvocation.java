@@ -1,12 +1,15 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.lang.completion.results;
 
 import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.ChunkerConstants;
 import io.deephaven.lang.generated.Token;
-import io.deephaven.function.BytePrimitives;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
+import io.deephaven.function.Basic;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -63,8 +66,7 @@ public class CompleteInvocation extends CompletionBuilder {
             range = replaceToken(replacing, request);
         }
         final String displayCompletion;
-        if (method.getDeclaringClass().getSimpleName().endsWith("Primitives") &&
-                BytePrimitives.class.getPackage().equals(method.getDeclaringClass().getPackage())) {
+        if (method.getDeclaringClass().getPackage().getName().startsWith(Basic.class.getPackage().getName())) {
             // reduce massive duplication from same-named primitives methods.
             // In the future, when we have better column/type inference, we should be able to delete this workaround
             displayCompletion = "*Primitives." + method.getName() + "(";

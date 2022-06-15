@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import gnu.trove.list.TLongList;
@@ -277,7 +280,7 @@ public class TreeTableOrphanPromoter implements Function<Table, QueryTable> {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
                                 final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                                downstream.modifiedColumnSet = result.modifiedColumnSet;
+                                downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
 
                                 final boolean modifiedInputColumns =
                                         upstream.modifiedColumnSet().containsAny(inputColumns);
@@ -285,7 +288,7 @@ public class TreeTableOrphanPromoter implements Function<Table, QueryTable> {
                                         && upstream.shifted().empty()
                                         && !modifiedInputColumns) {
                                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
-                                            downstream.modifiedColumnSet());
+                                            downstream.modifiedColumnSet);
                                     result.notifyListeners(downstream);
                                     return;
                                 }

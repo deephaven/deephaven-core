@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
@@ -10,9 +13,9 @@ public class ReplicateParquetChunkedWriters {
 
         ReplicatePrimitiveCode.intToLongAndFloatingPoints(
                 "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/PlainIntChunkedWriter.java",
-                "int pageSize", "IntBuffer.allocate(4)", "int originalLimit", "int writeBulk", "int valueCount",
+                "int pageSize", "IntBuffer.allocate\\(4\\)", "int originalLimit", "int writeBulk", "int valueCount",
                 "int rowCount",
-                "int nullCount", "writeInt\\(", "IntBuffer repeatCount", "length != Integer.MIN_VALUE", "int length",
+                "int nullCount", "writeInt\\(", "IntBuffer repeatCount", "length != Integer\\.MIN_VALUE", "int length",
                 "int i = 0;", "int targetCapacity", "IntBuffer nullOffsets");
     }
 

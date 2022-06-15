@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.table.ops.filter;
 
 import io.deephaven.proto.backplane.grpc.CaseSensitivity;
@@ -26,7 +29,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
         FilterPrinter visitor = new FilterPrinter(false);
         visitor.onLiteral(literal);
 
-        return "\"" + visitor.sb.toString() + "\"";
+        return visitor.sb.toString();
     }
 
     public FilterPrinter(boolean escapeStrings) {
@@ -34,10 +37,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     private String stringEscape(String str) {
-        if (escapeStrings) {
-            return "\"" + StringEscapeUtils.escapeJava(str) + "\"";
-        }
-        return str;
+        return "\"" + (escapeStrings ? StringEscapeUtils.escapeJava(str) : str) + "\"";
     }
 
     @Override

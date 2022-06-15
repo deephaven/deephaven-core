@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table;
 
 import io.deephaven.engine.liveness.LivenessNode;
@@ -11,6 +10,7 @@ import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
 /**
@@ -191,7 +191,7 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
      *        argument the tables in the other map are the second argument.
      * @return a new TableMap where each table has had function applied
      */
-    TableMap transformTablesWithMap(TableMap otherMap, BiFunction<Table, Table, Table> function);
+    TableMap transformTablesWithMap(TableMap otherMap, BinaryOperator<Table> function);
 
     /**
      * Table map change listener.

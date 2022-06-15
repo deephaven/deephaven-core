@@ -1,21 +1,26 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.TestUseOnly;
 import gnu.trove.iterator.TObjectLongIterator;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import gnu.trove.set.hash.THashSet;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -286,7 +291,31 @@ public class ReverseLookupListener extends LivenessArtifact
      * @return an individual object or SmartKey for multi-column keys
      */
     protected Object getKey(long row) {
-        return TableTools.getKey(columns, row);
+        return getKey(columns, row);
+    }
+
+    /**
+     * Returns a SmartKey for the specified row from a set of ColumnSources.
+     *
+     * @param groupByColumnSources a set of ColumnSources from which to retrieve the data
+     * @param row the row number for which to retrieve data
+     * @return a Deephaven SmartKey object
+     */
+    @VisibleForTesting
+    static Object getKey(ColumnSource<?>[] groupByColumnSources, long row) {
+        Object key;
+        if (groupByColumnSources.length == 0) {
+            return SmartKey.EMPTY;
+        } else if (groupByColumnSources.length == 1) {
+            key = C14nUtil.maybeCanonicalize(groupByColumnSources[0].get(row));
+        } else {
+            Object[] keyData = new Object[groupByColumnSources.length];
+            for (int col = 0; col < groupByColumnSources.length; col++) {
+                keyData[col] = groupByColumnSources[col].get(row);
+            }
+            key = makeSmartKey(keyData);
+        }
+        return key;
     }
 
     /**
@@ -296,7 +325,80 @@ public class ReverseLookupListener extends LivenessArtifact
      * @return an individual object or SmartKey for multi-column keys
      */
     private Object getPrevKey(long row) {
-        return TableTools.getPrevKey(columns, row);
+        return getPrevKey(columns, row);
+    }
+
+    /**
+     * Returns a SmartKey for the row previous to the specified row from a set of ColumnSources.
+     *
+     * @param groupByColumnSources a set of ColumnSources from which to retrieve the data
+     * @param row the row number for which to retrieve the previous row's data
+     * @return a Deephaven SmartKey object
+     */
+    @VisibleForTesting
+    static Object getPrevKey(ColumnSource<?>[] groupByColumnSources, long row) {
+        Object key;
+        if (groupByColumnSources.length == 0) {
+            return SmartKey.EMPTY;
+        } else if (groupByColumnSources.length == 1) {
+            key = C14nUtil.maybeCanonicalize(groupByColumnSources[0].getPrev(row));
+        } else {
+            Object[] keyData = new Object[groupByColumnSources.length];
+            for (int col = 0; col < groupByColumnSources.length; col++) {
+                keyData[col] = groupByColumnSources[col].getPrev(row);
+            }
+            key = makeSmartKey(keyData);
+        }
+        return key;
+    }
+
+    /**
+     * Make a SmartKey appropriate for values.
+     *
+     * @param values The values to include
+     * @return A canonicalized CanonicalizedSmartKey if all values are canonicalizable, else a new SmartKey
+     */
+    public static SmartKey makeSmartKey(final Object... values) {
+        return C14nUtil.maybeCanonicalizeAll(values) ? /* canonicalize( */new CanonicalizedSmartKey(values)
+                /* ) */ : new SmartKey(values);
+    }
+
+    /**
+     * A version of SmartKey that stores canonical versions of each object member.
+     */
+    private static class CanonicalizedSmartKey extends SmartKey {
+
+        private CanonicalizedSmartKey(final Object... values) {
+            super(values);
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (!(obj instanceof CanonicalizedSmartKey)) {
+                // Just use standard SmartKey equality.
+                return super.equals(obj);
+            }
+            final CanonicalizedSmartKey other = (CanonicalizedSmartKey) obj;
+
+            if (values_ == other.values_) {
+                return true;
+            }
+            if (values_.length != other.values_.length) {
+                return false;
+            }
+            for (int vi = 0; vi < values_.length; ++vi) {
+                // Because the members of values are canonicalized, we can use reference equality here.
+                if (values_[vi] != other.values_[vi]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "{CanonicalizedSmartKey: values:" + Arrays.toString(values_) + " hashCode:" + hashCode() + "}";
+        }
     }
 
     private void addEntries(@NotNull final RowSet index, final boolean usePrev,

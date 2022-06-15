@@ -99,6 +99,12 @@ project(':log-example-stream').projectDir = file('log-factory/examples/example-s
 include(':log-example-file')
 project(':log-example-file').projectDir = file('log-factory/examples/example-file')
 
+include(':ssl-config')
+project(':ssl-config').projectDir = file('ssl/config')
+
+include(':ssl-kickstart')
+project(':ssl-kickstart').projectDir = file('ssl/kickstart')
+
 include(':server-test')
 project(':server-test').projectDir = file('server/test')
 
@@ -133,6 +139,10 @@ include(':Stats')
 include(':Container')
 
 include(':ParquetHadoop')
+
+include(':codegen')
+
+include(':cpp-client')
 
 include(':replication-util')
 project(':replication-util').projectDir = file('replication/util')
@@ -191,6 +201,9 @@ project(':extensions-kafka').projectDir = file('extensions/kafka')
 include(':extensions-parquet-base')
 project(':extensions-parquet-base').projectDir = file('extensions/parquet/base')
 
+include(':extensions-parquet-compression')
+project(':extensions-parquet-compression').projectDir = file('extensions/parquet/compression')
+
 include(':extensions-parquet-table')
 project(':extensions-parquet-table').projectDir = file('extensions/parquet/table')
 
@@ -199,6 +212,9 @@ project(':extensions-barrage').projectDir = file('extensions/barrage')
 
 include(':extensions-classgraph')
 project(':extensions-classgraph').projectDir = file('extensions/classgraph')
+
+include(':extensions-jdbc')
+project(':extensions-jdbc').projectDir = file('extensions/jdbc')
 
 include(':extensions-suanshu')
 project(':extensions-suanshu').projectDir = file('extensions/suanshu')
@@ -273,8 +289,11 @@ project(':py-client').projectDir = file('py/client')
 include(':py-server')
 project(':py-server').projectDir = file('py/server')
 
-include(':deephaven-legacy-wheel')
-project(':deephaven-legacy-wheel').projectDir = file('py/deephaven-legacy-wheel')
+include(':py-embedded-server')
+project(':py-embedded-server').projectDir = file('py/embedded-server')
+
+include(':py-embedded-server-java-runtime')
+project(':py-embedded-server-java-runtime').projectDir = file('py/embedded-server/java-runtime')
 
 include(':sphinx')
 project(':sphinx').buildFileName = 'sphinx.gradle'

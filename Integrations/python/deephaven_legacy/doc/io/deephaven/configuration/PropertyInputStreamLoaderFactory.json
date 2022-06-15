@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.configuration.PropertyInputStreamLoaderFactory",
- "methods": {
-  "newInstance": ":return: io.deephaven.configuration.PropertyInputStreamLoader"
- },
- "path": "io.deephaven.configuration.PropertyInputStreamLoaderFactory",
- "text": "Uses ServiceLoader.load(Class) to find the best PropertyInputStreamLoader (the loader with the\n smallest priority).",
- "typeName": "class"
-}

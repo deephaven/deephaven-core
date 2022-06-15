@@ -1,13 +1,13 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.remote;
 
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
@@ -78,6 +78,8 @@ public class ConstructSnapshot {
      */
     private static final int MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttemptDurationMillis", 5000);
+
+    public static final int SNAPSHOT_CHUNK_SIZE = ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
 
     /**
      * Holder for thread-local state.
@@ -1316,8 +1318,6 @@ public class ConstructSnapshot {
             snapshot.rowsIncluded = snapshot.rowsAdded.copy();
         }
 
-        LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
-
         final Map<String, ? extends ColumnSource> sourceMap = table.getColumnSourceMap();
         final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
@@ -1340,16 +1340,19 @@ public class ConstructSnapshot {
                 final RowSet rows = columnIsEmpty ? RowSetFactory.empty() : snapshot.rowsIncluded;
                 // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
                 // when empty
-                acd.data = getSnapshotDataAsChunk(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
+                acd.data =
+                        getSnapshotDataAsChunkList(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
                 acd.type = columnSource.getType();
                 acd.componentType = columnSource.getComponentType();
+                acd.chunkType = columnSource.getChunkType();
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
                 snapshot.modColumnData[ii] = mcd;
                 mcd.rowsModified = RowSetFactory.empty();
-                mcd.data = getSnapshotDataAsChunk(columnSource, null, RowSetFactory.empty(), usePrev);
+                mcd.data = getSnapshotDataAsChunkList(columnSource, null, RowSetFactory.empty(), usePrev);
                 mcd.type = acd.type;
                 mcd.componentType = acd.componentType;
+                mcd.chunkType = columnSource.getChunkType();
             }
         }
 
@@ -1430,6 +1433,52 @@ public class ConstructSnapshot {
         }
     }
 
+    private static <T> ArrayList<Chunk<Values>> getSnapshotDataAsChunkList(final ColumnSource<T> columnSource,
+            final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
+        final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
+        long offset = 0;
+        final long size = rowSet.size();
+        final ArrayList<Chunk<Values>> result = new ArrayList<>();
+
+        if (size == 0) {
+            return result;
+        }
+
+        final int maxChunkSize = (int) Math.min(size, SNAPSHOT_CHUNK_SIZE);
+
+        try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(maxChunkSize, sharedContext);
+                final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+            int chunkSize = maxChunkSize;
+            while (it.hasMore()) {
+                final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(chunkSize);
+                final ChunkType chunkType = sourceToUse.getChunkType();
+
+                // create a new chunk
+                WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
+
+                if (usePrev) {
+                    sourceToUse.fillPrevChunk(context, currentChunk, reducedRowSet);
+                } else {
+                    sourceToUse.fillChunk(context, currentChunk, reducedRowSet);
+                }
+
+                // add the chunk to the current list
+                result.add(currentChunk);
+
+                // increment the offset for the next chunk (using the actual values written)
+                offset += currentChunk.size();
+
+                // recompute the size of the next chunk
+                if (size - offset > maxChunkSize) {
+                    chunkSize = maxChunkSize;
+                } else {
+                    chunkSize = (int) (size - offset);
+                }
+            }
+        }
+        return result;
+    }
+
     /**
      * Estimate the size of a complete table snapshot in bytes.
      *
@@ -1437,8 +1486,8 @@ public class ConstructSnapshot {
      * @return the estimated snapshot size in bytes.
      */
     public static long estimateSnapshotSize(Table table) {
-        final BitSet columns = new BitSet(table.getColumns().length);
-        columns.set(0, table.getColumns().length);
+        final BitSet columns = new BitSet(table.numColumns());
+        columns.set(0, table.numColumns());
         return estimateSnapshotSize(table.getDefinition(), columns, table.size());
     }
 
@@ -1455,15 +1504,16 @@ public class ConstructSnapshot {
         long sizePerRow = 0;
         long totalSize = 0;
 
-        final ColumnDefinition[] columnDefinitions = tableDefinition.getColumns();
-        for (int ii = 0; ii < columnDefinitions.length; ++ii) {
+        final int numColumns = tableDefinition.numColumns();
+        final List<ColumnDefinition<?>> columnDefinitions = tableDefinition.getColumns();
+        for (int ii = 0; ii < numColumns; ++ii) {
             if (!columns.get(ii)) {
                 continue;
             }
 
             totalSize += 44; // for an array
 
-            final ColumnDefinition definition = columnDefinitions[ii];
+            final ColumnDefinition<?> definition = columnDefinitions.get(ii);
             if (definition.getDataType() == byte.class || definition.getDataType() == char.class
                     || definition.getDataType() == Boolean.class) {
                 sizePerRow += 1;

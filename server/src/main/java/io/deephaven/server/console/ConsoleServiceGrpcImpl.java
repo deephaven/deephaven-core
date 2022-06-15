@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.server.console;
 
 import com.google.rpc.Code;
@@ -106,6 +105,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 responseObserver.onNext(GetConsoleTypesResponse.newBuilder()
                         .addConsoleTypes(scriptSessionProvider.get().scriptType().toLowerCase())
                         .build());
+            } else {
+                responseObserver.onNext(GetConsoleTypesResponse.getDefaultInstance());
             }
             responseObserver.onCompleted();
         });

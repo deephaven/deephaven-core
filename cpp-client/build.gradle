@@ -1,0 +1,21 @@
+plugins {
+    id 'io.deephaven.project.register'
+    id 'license'
+}
+
+license {
+    header rootProject.file('license-header')
+    include '**/*.h'
+    include '**/*.cc'
+    strictCheck true
+    useDefaultMappings true
+    ignoreFailures true
+}
+tasks.getByName('license').dependsOn(tasks.create("licensePy", com.hierynomus.gradle.license.tasks.LicenseCheck) {
+    source = ['deephaven', 'tests', '../cpp-examples']
+})
+tasks.getByName('licenseFormat').dependsOn(tasks.create("licenseFormatPy", com.hierynomus.gradle.license.tasks.LicenseFormat) {
+    source = ['deephaven', 'tests', '../cpp-examples']
+})
+
+project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')

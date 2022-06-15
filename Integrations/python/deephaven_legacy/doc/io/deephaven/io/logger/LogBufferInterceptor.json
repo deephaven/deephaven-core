@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.io.logger.LogBufferInterceptor",
- "methods": {
-  "element": ":param e: io.deephaven.io.log.LogEntry\n:param output: io.deephaven.base.log.LogOutput"
- },
- "path": "io.deephaven.io.logger.LogBufferInterceptor",
- "typeName": "class"
-}

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.by.rollup;
 
 import io.deephaven.api.ColumnName;
@@ -33,10 +36,5 @@ public class RollupAggregationPairs extends AggregationPairs implements RollupAg
     @Override
     public void visit(NullColumns nullColumns) {
         out = nullColumns.resultColumns().keySet().stream().map(ColumnName::of);
-    }
-
-    @Override
-    public void visit(Partition partition) {
-        out = Stream.empty();
     }
 }

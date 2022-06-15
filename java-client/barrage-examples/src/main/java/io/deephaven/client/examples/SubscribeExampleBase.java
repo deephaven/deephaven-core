@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.BarrageSession;
@@ -25,10 +24,10 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
     TableUpdateListener listener;
 
     @CommandLine.Option(names = {"--tail"}, required = false, description = "Tail viewport size")
-    int tailSize = 0;
+    long tailSize = 0;
 
     @CommandLine.Option(names = {"--head"}, required = false, description = "Header viewport size")
-    int headerSize = 0;
+    long headerSize = 0;
 
     static class Mode {
         @CommandLine.Option(names = {"-b", "--batch"}, required = true, description = "Batch mode")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2020 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/client/utility/utility.h"

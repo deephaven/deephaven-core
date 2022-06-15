@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -10,7 +13,7 @@ import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 
 public class SsmDistinctRollupContext implements IterativeChunkedAggregationOperator.SingletonContext {
     public final SegmentedSortedMultiSet.RemoveContext removeContext =
-            SegmentedSortedMultiSet.makeRemoveContext(DistinctOperatorFactory.NODE_SIZE);
+            SegmentedSortedMultiSet.makeRemoveContext(SsmDistinctContext.NODE_SIZE);
     public final SizedChunk<Values> valueCopy;
     public final SizedIntChunk<ChunkLengths> counts;
 

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.util.datastructures.linked;
 
 import org.jetbrains.annotations.NotNull;
@@ -120,7 +123,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
     }
 
     /**
-     * Add a node at the the specified offset into the queue. This is necessarily an O(n) operation.
+     * Add a node at the specified offset into the queue. This is necessarily an O(n) operation.
      *
      * @param node The node to add
      * @param offset The offset (in [0, size()] to add the node at
@@ -144,6 +147,21 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
             head = node;
         }
         ++size;
+    }
+
+    /**
+     * Insert {@code node} before {@code other}. If {@code other} is {@code null}, inserts at the end. This is intended
+     * for use in a pattern combined with iteration.
+     *
+     * @param node The node to insert
+     * @param other The node to insert before; if {@code null} then this method is the same as {@code offer(node)}
+     */
+    public final void insertBefore(@NotNull final VALUE_TYPE node, @Nullable final VALUE_TYPE other) {
+        if (other == null) {
+            offer(node);
+        } else {
+            linkBefore(node, other);
+        }
     }
 
     /**
@@ -275,11 +293,8 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
 
     @Override
     public Spliterator<VALUE_TYPE> spliterator() {
-        return Spliterators.spliterator(iterator(), size(), Spliterator.ORDERED | Spliterator.NONNULL); // Implicitly |
-                                                                                                        // SIZED |
-                                                                                                        // SUBSIZED,
-                                                                                                        // too.
-
+        // Implicitly | SIZED | SUBSIZED, too.
+        return Spliterators.spliterator(iterator(), size(), Spliterator.ORDERED | Spliterator.NONNULL);
     }
 
     @NotNull

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.locations;
 
 import io.deephaven.base.log.LogOutputAppendable;
@@ -25,7 +28,7 @@ import java.util.Set;
  *
  * <p>
  * Generally, only {@link io.deephaven.engine.table.impl.PartitionAwareSourceTable PartitionAwareSourceTable} and
- * {@link io.deephaven.engine.table.impl.SourceTableMap SourceTableMap} are properly partition-aware.
+ * {@link io.deephaven.engine.table.impl.SourcePartitionedTable SourcePartitionedTable} are properly partition-aware.
  */
 public interface TableLocationKey extends Comparable<TableLocationKey>, NamedImplementation, LogOutputAppendable {
 

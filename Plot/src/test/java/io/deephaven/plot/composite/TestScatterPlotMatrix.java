@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.composite;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
@@ -92,7 +91,7 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
         }
         t = TableTools.newTable(columns).updateView("Cat = i == 0 ? `A` : `B`");
         SelectableDataSetOneClick oneClick =
-                new SelectableDataSetOneClick(t.partitionBy(columnNames), t.getDefinition(), new String[] {"Cat"});
+                new SelectableDataSetOneClick(t.partitionBy(columnNames));
         final ScatterPlotMatrix matrix = ScatterPlotMatrix.scatterPlotMatrix(oneClick, columnNames);
         final XYDataSeriesInternal series = (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
         for (int j = 0; j < series.size(); j++) {

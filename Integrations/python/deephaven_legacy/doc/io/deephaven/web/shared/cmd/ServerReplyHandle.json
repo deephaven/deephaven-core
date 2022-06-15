@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.web.shared.cmd.ServerReplyHandle",
- "methods": {
-  "getClientId": ":return: int"
- },
- "path": "io.deephaven.web.shared.cmd.ServerReplyHandle",
- "text": "Like a TableHandle, but not constrained to tables (i.e. not always a TableHandle).\n\n This allows us to build infrastructure like metrics without requiring use of table handle semantics.",
- "typeName": "class"
-}

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ImmutableCharArraySource and regenerate
@@ -78,6 +81,12 @@ public class ImmutableLongArraySource extends AbstractDeferredGroupingColumnSour
 
     public final long getUnsafe(long index) {
         return data[(int)index];
+    }
+
+    public final long getAndSetUnsafe(long index, long newValue) {
+        long oldValue = data[(int)index];
+        data[(int)index] = newValue;
+        return oldValue;
     }
 
     @Override

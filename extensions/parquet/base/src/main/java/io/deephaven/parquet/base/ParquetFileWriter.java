@@ -1,14 +1,17 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import org.apache.hadoop.conf.Configuration;
+import io.deephaven.parquet.compress.Compressor;
+import io.deephaven.parquet.compress.DeephavenCodecFactory;
 import org.apache.parquet.Version;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesUtils;
 
 import org.apache.parquet.format.Util;
-import org.apache.parquet.hadoop.CodecFactory;
 import org.apache.parquet.hadoop.metadata.*;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.internal.hadoop.metadata.IndexReference;
@@ -24,10 +27,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.parquet.format.Util.writeFileMetaData;
-import static org.apache.parquet.format.Util.writePageHeader;
 
 public class ParquetFileWriter {
-    private static ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
+    private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
     private static final int VERSION = 1;
 
     private final SeekableByteChannel writeChannel;
@@ -35,7 +37,7 @@ public class ParquetFileWriter {
     private final int pageSize;
     private final ByteBufferAllocator allocator;
     private final SeekableChannelsProvider channelsProvider;
-    private final CodecFactory.BytesInputCompressor compressor;
+    private final Compressor compressor;
     private final Map<String, String> extraMetaData;
     private final List<BlockMetaData> blocks = new ArrayList<>();
     private final List<List<OffsetIndex>> offsetIndexes = new ArrayList<>();
@@ -46,7 +48,7 @@ public class ParquetFileWriter {
             final int pageSize,
             final ByteBufferAllocator allocator,
             final MessageType type,
-            final CompressionCodecName codecName,
+            final String codecName,
             final Map<String, String> extraMetaData) throws IOException {
         this.pageSize = pageSize;
         this.allocator = allocator;
@@ -54,10 +56,10 @@ public class ParquetFileWriter {
         writeChannel = channelsProvider.getWriteChannel(filePath, false); // TODO add support for appending
         this.type = type;
         this.channelsProvider = channelsProvider;
-        CodecFactory codecFactory = new CodecFactory(new Configuration(), pageSize);
-        this.compressor = codecFactory.getCompressor(codecName);
+        this.compressor = DeephavenCodecFactory.getInstance().getByName(codecName);
     }
 
+    @SuppressWarnings("unused")
     RowGroupWriter addRowGroup(final String path, final boolean append) throws IOException {
         RowGroupWriterImpl rowGroupWriter =
                 new RowGroupWriterImpl(path, append, channelsProvider, type, pageSize, allocator, compressor);

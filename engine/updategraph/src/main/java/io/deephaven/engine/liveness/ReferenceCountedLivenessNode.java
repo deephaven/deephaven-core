@@ -1,5 +1,7 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.liveness;
-
 
 import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -7,6 +9,7 @@ import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
+import java.util.stream.Stream;
 
 /**
  * {@link LivenessNode} implementation that relies on reference counting to determine its liveness.
@@ -79,15 +82,53 @@ public abstract class ReferenceCountedLivenessNode extends ReferenceCounted impl
             Liveness.log.info().append("LivenessDebug: ").append(getReferentDescription()).append(" managing ")
                     .append(referent.getReferentDescription()).endl();
         }
-        if (!referent.tryRetainReference()) {
+        if (!tryRetainReference()) {
             return false;
         }
-        tracker.addReference(referent);
+        try {
+            if (!referent.tryRetainReference()) {
+                return false;
+            }
+            tracker.addReference(referent);
+        } finally {
+            dropReference();
+        }
+        return true;
+    }
+
+    @Override
+    public final boolean tryUnmanage(@NotNull final LivenessReferent referent) {
+        if (Liveness.REFERENCE_TRACKING_DISABLED) {
+            return true;
+        }
+        if (!tryRetainReference()) {
+            return false;
+        }
+        try {
+            tracker.dropReference(referent);
+        } finally {
+            dropReference();
+        }
+        return true;
+    }
+
+    @Override
+    public final boolean tryUnmanage(@NotNull final Stream<? extends LivenessReferent> referents) {
+        if (Liveness.REFERENCE_TRACKING_DISABLED) {
+            return true;
+        }
+        if (!tryRetainReference()) {
+            return false;
+        }
+        try {
+            tracker.dropReferences(referents);
+        } finally {
+            dropReference();
+        }
         return true;
     }
 
     /**
-     * <p>
      * Attempt to release (destructively when necessary) resources held by this object. This may render the object
      * unusable for subsequent operations. Implementations should be sure to call super.destroy().
      * <p>

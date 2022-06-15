@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset.impl.rsp;
 
 import io.deephaven.base.verify.Assert;
@@ -3005,7 +3008,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             long[] newAcc = acc;
             final int deltaSpans = idxPairsCount / 2;
             final int newSize = size + deltaSpans;
-            boolean accWasNull = acc == null;
+            final boolean accWasNull = acc == null;
             if (newSize > spanInfos.length) {
                 inPlace = false;
                 newSpans = new Object[newSize];

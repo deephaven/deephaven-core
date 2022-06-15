@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.TableUpdate;
@@ -5,7 +8,7 @@ import junit.framework.TestCase;
 
 public class FailureListener extends InstrumentedTableUpdateListener {
     public FailureListener() {
-        super("Fuzzer Failure ShiftObliviousListener");
+        super("Fuzzer Failure Listener");
     }
 
     @Override

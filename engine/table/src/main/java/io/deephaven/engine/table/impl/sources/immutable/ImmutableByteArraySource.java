@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ImmutableCharArraySource and regenerate
@@ -76,6 +79,12 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
 
     public final byte getUnsafe(long index) {
         return data[(int)index];
+    }
+
+    public final byte getAndSetUnsafe(long index, byte newValue) {
+        byte oldValue = data[(int)index];
+        data[(int)index] = newValue;
+        return oldValue;
     }
 
     @Override

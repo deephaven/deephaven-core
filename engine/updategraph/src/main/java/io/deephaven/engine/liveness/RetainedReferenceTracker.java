@@ -1,13 +1,17 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.liveness;
 
 import io.deephaven.base.cache.RetentionCache;
 import io.deephaven.base.reference.WeakCleanupReference;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
-import io.deephaven.hash.KeyedObjectHashSet;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.Utils;
-import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
+import io.deephaven.util.datastructures.hash.KeyIdentityKeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.SoftReference;
@@ -15,6 +19,7 @@ import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -71,7 +76,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return Utils.makeReferentDescription(this);
     }
 
@@ -84,7 +89,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
      *         invoked
      */
-    synchronized final void addReference(@NotNull final LivenessReferent referent) throws LivenessStateException {
+    synchronized void addReference(@NotNull final LivenessReferent referent) throws LivenessStateException {
         checkOutstanding();
         impl.add(referent);
     }
@@ -100,7 +105,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
      *         invoked
      */
-    synchronized final void dropReference(@NotNull final LivenessReferent referent) throws LivenessStateException {
+    synchronized void dropReference(@NotNull final LivenessReferent referent) throws LivenessStateException {
         checkOutstanding();
         impl.drop(referent);
     }
@@ -116,7 +121,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
      *         invoked
      */
-    synchronized final void dropReferences(@NotNull final Collection<? extends LivenessReferent> referents)
+    synchronized void dropReferences(@NotNull final Stream<? extends LivenessReferent> referents)
             throws LivenessStateException {
         checkOutstanding();
         impl.drop(referents);
@@ -133,7 +138,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
      *         invoked
      */
-    synchronized final void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {
+    synchronized void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {
         checkOutstanding();
         for (final LivenessReferent referent : impl) {
             if (referent != null) {
@@ -166,7 +171,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
     }
 
     @Override
-    public final void cleanup() {
+    public void cleanup() {
         ensureReferencesDroppedInternal(true);
     }
 
@@ -175,7 +180,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * Initiate the idempotent cleanup process. This will drop all retained references if their referents still exist.
      * No new references may be added to or dropped from this tracker.
      */
-    final void ensureReferencesDropped() {
+    void ensureReferencesDropped() {
         ensureReferencesDroppedInternal(false);
     }
 
@@ -244,7 +249,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         void drop(@NotNull final LivenessReferent referent);
 
-        void drop(@NotNull final Collection<? extends LivenessReferent> referents);
+        void drop(@NotNull final Stream<? extends LivenessReferent> referents);
 
         void clear();
 
@@ -287,20 +292,23 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
 
         @Override
-        public void drop(@NotNull final Collection<? extends LivenessReferent> referents) {
-            final Set<LivenessReferent> referentsToRemove =
-                    new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance());
-            referentsToRemove.addAll(referents);
+        public void drop(@NotNull final Stream<? extends LivenessReferent> referents) {
+            final KeyedObjectHashMap<LivenessReferent, DropState> referentsToRemove =
+                    new KeyedObjectHashMap<>(DropState.KEYED_OBJECT_KEY);
+            referents.forEach(referent -> referentsToRemove.putIfAbsent(referent, DropState::new).incrementDrops());
+            if (referentsToRemove.isEmpty()) {
+                return;
+            }
             for (int rrLast = retainedReferences.size() - 1, rri = 0; rri <= rrLast;) {
                 final WeakReference<? extends LivenessReferent> retainedReference = retainedReferences.get(rri);
                 final boolean cleared;
-                final boolean found;
+                final DropState foundState;
                 {
                     final LivenessReferent retained = retainedReference.get();
                     cleared = retained == null;
-                    found = !cleared && referentsToRemove.remove(retained);
+                    foundState = cleared ? null : referentsToRemove.get(retained);
                 }
-                if (!cleared && !found) {
+                if (!cleared && foundState == null) {
                     ++rri;
                     continue;
                 }
@@ -308,12 +316,8 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
                     retainedReferences.set(rri, retainedReferences.get(rrLast));
                 }
                 retainedReferences.remove(rrLast--);
-                if (found) {
-                    final LivenessReferent referent = retainedReference.get();
-                    if (referent != null) { // Probably unnecessary, unless the referents collection is engaged in some
-                                            // reference trickery internally, but better safe than sorry.
-                        referent.dropReference();
-                    }
+                if (foundState != null && foundState.doDrop()) {
+                    referentsToRemove.remove(foundState.referent);
                     if (referentsToRemove.isEmpty()) {
                         return;
                     }
@@ -334,7 +338,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         @NotNull
         @Override
         public Iterator<LivenessReferent> iterator() {
-            return new Iterator<LivenessReferent>() {
+            return new Iterator<>() {
 
                 private final Iterator<WeakReference<? extends LivenessReferent>> internal =
                         retainedReferences.iterator();
@@ -380,23 +384,26 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
 
         @Override
-        public void drop(@NotNull final Collection<? extends LivenessReferent> referents) {
-            if (referents.isEmpty()) {
+        public void drop(@NotNull final Stream<? extends LivenessReferent> referents) {
+            final KeyedObjectHashMap<LivenessReferent, DropState> referentsToRemove =
+                    new KeyedObjectHashMap<>(DropState.KEYED_OBJECT_KEY);
+            referents.forEach(referent -> referentsToRemove.putIfAbsent(referent, DropState::new).incrementDrops());
+            if (referentsToRemove.isEmpty()) {
                 return;
             }
-            final Set<LivenessReferent> referentsToRemove =
-                    new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance());
-            referentsToRemove.addAll(referents);
             for (int rLast = retained.size() - 1, ri = 0; ri <= rLast;) {
                 final LivenessReferent current = retained.get(ri);
-                if (referentsToRemove.remove(current)) {
+                final DropState foundState = referentsToRemove.get(current);
+                if (foundState != null) {
                     if (ri != rLast) {
                         retained.set(ri, retained.get(rLast));
                     }
                     retained.remove(rLast--);
-                    current.dropReference();
-                    if (referentsToRemove.isEmpty()) {
-                        return;
+                    if (foundState.doDrop()) {
+                        referentsToRemove.remove(current);
+                        if (referentsToRemove.isEmpty()) {
+                            return;
+                        }
                     }
                 } else {
                     ++ri;
@@ -420,6 +427,34 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         @Override
         public Iterator<LivenessReferent> iterator() {
             return retained.iterator();
+        }
+    }
+
+    private static final class DropState {
+
+        private static final KeyedObjectKey<LivenessReferent, DropState> KEYED_OBJECT_KEY =
+                new KeyIdentityKeyedObjectKey<>() {
+                    @Override
+                    public LivenessReferent getKey(@NotNull final DropState dropState) {
+                        return dropState.referent;
+                    }
+                };
+
+        private final LivenessReferent referent;
+
+        private int timesToDrop;
+
+        private DropState(@NotNull final LivenessReferent referent) {
+            this.referent = referent;
+        }
+
+        void incrementDrops() {
+            ++timesToDrop;
+        }
+
+        boolean doDrop() {
+            referent.dropReference();
+            return --timesToDrop == 0;
         }
     }
 }

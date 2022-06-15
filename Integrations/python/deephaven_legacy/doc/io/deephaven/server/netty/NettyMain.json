@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.server.netty.NettyMain",
- "methods": {
-  "main": ":param args: java.lang.String[]"
- },
- "path": "io.deephaven.server.netty.NettyMain",
- "typeName": "class"
-}

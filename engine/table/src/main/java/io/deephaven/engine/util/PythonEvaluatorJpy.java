@@ -1,6 +1,13 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.util;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
+import io.deephaven.engine.util.jpy.JpyInit;
 import org.jpy.KeyError;
 import org.jpy.PyDictWrapper;
 import org.jpy.PyInputMode;
@@ -16,7 +23,10 @@ import org.jpy.PyObject;
  */
 public class PythonEvaluatorJpy implements PythonEvaluator {
 
-    public static PythonEvaluatorJpy withGlobalCopy() {
+    public static PythonEvaluatorJpy withGlobalCopy() throws IOException, InterruptedException, TimeoutException {
+        // Start Jpy, if not already running from the python instance
+        JpyInit.init();
+
         // TODO: We still have to reach into the __main__ dictionary to push classes and import the Deephaven
         // quasi-module
         // because after we dill the item, the undilled item has a reference to the __main__ globals() and not our
@@ -24,6 +34,13 @@ public class PythonEvaluatorJpy implements PythonEvaluator {
 
         // we want to create a copy of globals, which is then used to execute code for this session
         return new PythonEvaluatorJpy(PyLib.getMainGlobals().asDict().copy());
+    }
+
+    public static PythonEvaluatorJpy withGlobals() throws IOException, InterruptedException, TimeoutException {
+        // Start Jpy, if not already running from the python instance
+        JpyInit.init();
+
+        return new PythonEvaluatorJpy(PyLib.getMainGlobals().asDict());
     }
 
     private final PyDictWrapper globals;

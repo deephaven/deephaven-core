@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.ExceptionUtil",
- "methods": {
-  "causedBy": ":param t: java.lang.Throwable\n:param cause: java.lang.Class<? extendsjava.lang.Throwable>\n:return: boolean"
- },
- "path": "io.deephaven.util.ExceptionUtil",
- "text": "Some utilities for inspecting exceptions",
- "typeName": "class"
-}

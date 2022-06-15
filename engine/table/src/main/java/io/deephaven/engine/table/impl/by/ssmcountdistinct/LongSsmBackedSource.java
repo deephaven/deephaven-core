@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSsmBackedSource and regenerate
@@ -36,7 +39,7 @@ public class LongSsmBackedSource extends AbstractColumnSource<LongVector>
         LongSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
         if(ssm == null) {
             //region CreateNew
-            underlying.set(key, ssm = new LongSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE));
+            underlying.set(key, ssm = new LongSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE));
             //endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);

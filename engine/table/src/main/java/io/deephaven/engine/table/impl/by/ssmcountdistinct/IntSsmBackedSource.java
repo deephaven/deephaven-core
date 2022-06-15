@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSsmBackedSource and regenerate
@@ -36,7 +39,7 @@ public class IntSsmBackedSource extends AbstractColumnSource<IntVector>
         IntSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
         if(ssm == null) {
             //region CreateNew
-            underlying.set(key, ssm = new IntSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE));
+            underlying.set(key, ssm = new IntSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE));
             //endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);

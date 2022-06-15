@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.by.rollup;
 
 import io.deephaven.api.agg.Aggregation;
@@ -13,17 +16,11 @@ public interface RollupAggregation extends Aggregation {
         return NullColumns.from(resultColumns);
     }
 
-    static RollupAggregation partition(boolean includeConstituents) {
-        return Partition.of(includeConstituents);
-    }
-
     <V extends Aggregation.Visitor> V walk(V visitor);
 
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor extends Aggregation.Visitor {
         void visit(NullColumns nullColumns);
-
-        void visit(Partition partition);
     }
 }

@@ -1,19 +1,18 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.ReversedColumnSource;
-import io.deephaven.engine.table.impl.sources.UnionRedirection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,7 +24,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     private ModifiedColumnSet.Transformer mcsTransformer;
 
     // minimum pivot is RowSet container size -- this guarantees that we only generate container shifts
-    private static final long MINIMUM_PIVOT = UnionRedirection.CHUNK_MULTIPLE;
+    private static final long MINIMUM_PIVOT = RspArray.BLOCK_SIZE;
     // since we are using highest one bit, this should be a power of two
     private static final int PIVOT_GROWTH_FACTOR = 4;
 
@@ -69,20 +68,24 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final RowSet rowSetToReverse = usePrev ? parent.getRowSet().copyPrev() : parent.getRowSet();
-        prevPivot = pivotPoint = computePivot(rowSetToReverse.lastRowKey());
-        lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
+        final Map<String, ColumnSource<?>> resultColumnSources;
+        final TrackingWritableRowSet resultRowSet;
+        try (final RowSet prevCopy = usePrev ? parent.getRowSet().copyPrev() : null) {
+            final RowSet rowSetToReverse = usePrev ? prevCopy : parent.getRowSet();
+            prevPivot = pivotPoint = computePivot(rowSetToReverse.lastRowKey());
+            lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
 
-        final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
-            resultMap.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
+            resultColumnSources = new LinkedHashMap<>();
+            for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
+                resultColumnSources.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
+            }
+
+            resultRowSet = transform(rowSetToReverse).toTracking();
+            resultSize = resultRowSet.size();
+            Assert.eq(resultSize, "resultSize", rowSetToReverse.size(), "rowSetToReverse.size()");
         }
 
-        final TrackingWritableRowSet rowSet = transform(rowSetToReverse).toTracking();
-        resultSize = rowSet.size();
-        Assert.eq(resultSize, "resultSize", rowSetToReverse.size(), "rowSetToReverse.size()");
-
-        resultTable = new QueryTable(parent.getDefinition(), rowSet, resultMap);
+        resultTable = new QueryTable(parent.getDefinition(), resultRowSet, resultColumnSources);
         mcsTransformer = parent.newModifiedColumnSetIdentityTransformer(resultTable);
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Reverse);
 
@@ -103,19 +106,34 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     private void onUpdate(final TableUpdate upstream) {
         final WritableRowSet rowSet = resultTable.getRowSet().writableCast();
-        final RowSet parentRowSet = parent.getRowSet();
-        Assert.eq(resultSize, "resultSize", rowSet.size(), "rowSet.size()");
+        final TrackingRowSet parentRowSet = parent.getRowSet();
+        if (resultSize != rowSet.size()) {
+            QueryTable.log.error()
+                    .append("Result Size Mismatch: Result rowSet: ")
+                    .append(rowSet).append(" size=").append(rowSet.size())
+                    .append(", expected result size=").append(resultSize)
+                    .append(", Original rowSet: ")
+                    .append(parentRowSet).append(" size=").append(parentRowSet.size())
+                    .append(", Previous Original rowSet: ")
+                    .append(parentRowSet.copyPrev()).append(" size=").append(parentRowSet.sizePrev())
+                    .append(", Added: ").append(upstream.added()).append(" size=").append(upstream.added().size())
+                    .append(", Removed: ").append(upstream.removed()).append(" size=").append(upstream.removed().size())
+                    .endl();
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted("Result Size Mismatch");
+        }
 
         if (parentRowSet.size() != (rowSet.size() + upstream.added().size() - upstream.removed().size())) {
             QueryTable.log.error()
-                    .append("Size Mismatch: Result rowSet: ")
+                    .append("Parent Size Mismatch: Result rowSet: ")
                     .append(rowSet).append(" size=").append(rowSet.size())
                     .append(", Original rowSet: ")
                     .append(parentRowSet).append(" size=").append(parentRowSet.size())
                     .append(", Added: ").append(upstream.added()).append(" size=").append(upstream.added().size())
                     .append(", Removed: ").append(upstream.removed()).append(" size=").append(upstream.removed().size())
                     .endl();
-            throw new IllegalStateException();
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted("Parent Size Mismatch");
         }
 
         final TableUpdateImpl downstream = new TableUpdateImpl();
@@ -185,10 +203,10 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         Assert.eq(downstream.modified().size(), "update.modified.size()", upstream.modified().size(),
                 "upstream.modified.size()");
 
-        downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
-        downstream.modifiedColumnSet().clear();
+        downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+        downstream.modifiedColumnSet.clear();
         if (downstream.modified().isNonempty()) {
-            mcsTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
+            mcsTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
         }
 
         if (rowSet.size() != parentRowSet.size()) {

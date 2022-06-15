@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
@@ -9,7 +12,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
 
 @VisibleForTesting
 public class JoinControl {
-    enum RedirectionType {
+    public enum RedirectionType {
         Contiguous, Sparse, Hash
     }
 

@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
@@ -51,7 +50,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     // We should listen for failures on the table, and if we get any, the test case is no good.
     class FailureListener extends InstrumentedTableUpdateListener {
         FailureListener() {
-            super("Failure ShiftObliviousListener");
+            super("Failure Listener");
         }
 
         @Override

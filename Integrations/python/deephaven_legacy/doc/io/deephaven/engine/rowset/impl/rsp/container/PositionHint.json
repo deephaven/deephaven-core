@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.rowset.impl.rsp.container.PositionHint",
- "methods": {
-  "isValid": ":return: boolean",
-  "resetIfNotNull": ":param positionHint: io.deephaven.engine.rowset.impl.rsp.container.PositionHint"
- },
- "path": "io.deephaven.engine.rowset.impl.rsp.container.PositionHint",
- "typeName": "class"
-}

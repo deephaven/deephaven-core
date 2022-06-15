@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.rowset.impl.rsp.container.IntConsumer",
- "methods": {
-  "accept": "Receives the integer\n\n:param value: (int) - the integer value"
- },
- "path": "io.deephaven.engine.rowset.impl.rsp.container.IntConsumer",
- "text": "An IntConsumer receives the int values contained in a data structure. Each value is visited once.\n \n Usage:\n\n \n \n  bitmap.forEach(new IntConsumer() {\n\n    public void accept(int value) {\n      // do something here\n\n    }});\n   \n }",
- "typeName": "interface"
-}

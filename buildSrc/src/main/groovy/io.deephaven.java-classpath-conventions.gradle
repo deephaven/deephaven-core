@@ -7,7 +7,7 @@ plugins {
 ext {
     depAnnotations = 'com.intellij:annotations:5.1'
     depCommonsCodec = 'commons-codec:commons-codec:1.9'
-    depCommonsCompress = 'org.apache.commons:commons-compress:1.8'
+    depCommonsCompress = 'org.apache.commons:commons-compress:1.18'
     depCommonsLang3 = 'org.apache.commons:commons-lang3:3.9'
     depCommonsNet = 'commons-net:commons-net:3.2'
     depCommonsEmail = 'org.apache.commons:commons-email:1.4'
@@ -61,7 +61,9 @@ dependencies {
     jama 'gov.nist.math.jama:gov.nist.math.jama:1.1.1'
     mockrunner 'com.mockrunner:mockrunner-jdbc:1.0.4'
     commonsCsv 'org.apache.commons:commons-csv:1.4'
-    junit fileTree(dir: "${rootDir}/test-libs", include: ['*.jar'])
+    junit 'junit:junit:4.13.2'
+    junit 'org.jmock:jmock-junit4:2.12.0'
+    junit 'org.jmock:jmock-imposters:2.12.0'
 
     // Now, all the various fish libs we depend on, with inherited dependencies matching
     // the actual dependencies used in fishlib... if we were strongly coupled, we could skip
@@ -70,7 +72,7 @@ dependencies {
             'net.sf.trove4j:trove4j:3.0.3',
             'com.intellij:annotations:5.1',
             'commons-codec:commons-codec:1.11',
-            'org.apache.commons:commons-compress:1.18'
+            depCommonsCompress
 
     fishIo project(':IO')
 
@@ -88,7 +90,8 @@ dependencies {
     fishIoTest project(path: ':IO', configuration: 'tests')
 
     // https://mvnrepository.com/artifact/com.univocity/univocity-parsers
-    dhBenchmarkSupport 'com.univocity:univocity-parsers:2.6.0',
-            // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-            'com.fasterxml.jackson.core:jackson-core:2.9.8'
+    dhBenchmarkSupport 'com.univocity:univocity-parsers:2.6.0'
+
+    Classpaths.inheritJacksonPlatform(project, 'dhBenchmarkSupport')
+    dhBenchmarkSupport 'com.fasterxml.jackson.core:jackson-core'
 }

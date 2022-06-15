@@ -1,9 +1,9 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.MixedBuilderRandom;
-import io.deephaven.engine.rowset.impl.OrderedLongSet;
-import io.deephaven.engine.rowset.impl.RangePriorityQueueBuilder;
 import junit.framework.TestCase;
 
 import java.util.Random;
@@ -20,8 +20,8 @@ public class MixedBuilderTest extends TestCase {
             mb.addKey(v);
             pqb.addKey(v);
         }
-        final OrderedLongSet mbi = mb.getTreeIndexImpl();
-        final OrderedLongSet pqbi = pqb.getTreeIndexImpl();
+        final OrderedLongSet mbi = mb.getOrderedLongSet();
+        final OrderedLongSet pqbi = pqb.getOrderedLongSet();
         assertEquals(pqbi.ixCardinality(), mbi.ixCardinality());
         final RowSet.Iterator mbit = mbi.ixIterator();
         final RowSet.Iterator pqbit = pqbi.ixIterator();

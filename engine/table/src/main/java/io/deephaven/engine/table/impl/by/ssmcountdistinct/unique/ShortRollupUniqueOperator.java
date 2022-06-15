@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollupUniqueOperator and regenerate
@@ -14,12 +17,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.by.RollupConstants;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.*;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctRollupContext;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.ShortSsmBackedSource;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.DistinctOperatorFactory;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctRollupContext;
 import io.deephaven.engine.table.impl.sources.ShortArraySource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -76,7 +76,7 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
         // region ResultAssignment
         this.externalResult = internalResult;
         // endregion ResultAssignment
-        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(DistinctOperatorFactory.NODE_SIZE);
+        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(SsmDistinctContext.NODE_SIZE);
     }
 
     //region Bucketed Updates

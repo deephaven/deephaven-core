@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.ChunkSource;
@@ -58,21 +57,21 @@ public class WrappedRowSetWritableRowRedirection implements WritableRowRedirecti
     /*
      * TODO: Switch to this version if we ever uncomment the override for fillChunkUnordered. private static final class
      * FillContext implements MutableChunkSource.FillContext {
-     * 
+     *
      * private final int chunkCapacity; private final WritableLongChunk<RowKeys> indexPositions;
-     * 
+     *
      * private LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext; private
      * WritableIntChunk<ChunkPositions> unorderedFillChunkPositions; private WritableLongChunk<RowKeys>
      * unorderedFillMappedKeys;
-     * 
+     *
      * private FillContext(final int chunkCapacity) { this.chunkCapacity = chunkCapacity; indexPositions =
      * WritableLongChunk.makeWritableChunk(chunkCapacity); }
-     * 
+     *
      * private void ensureUnorderedFillFieldsInitialized() { if (sortKernelContext == null) { sortKernelContext =
      * LongIntTimsortKernel.createContext(chunkCapacity); } if (unorderedFillChunkPositions == null) {
      * unorderedFillChunkPositions = WritableIntChunk.makeWritableChunk(chunkCapacity); } if (unorderedFillMappedKeys ==
      * null) { unorderedFillMappedKeys = WritableLongChunk.makeWritableChunk(chunkCapacity); } }
-     * 
+     *
      * @Override public void close() { indexPositions.close(); if (sortKernelContext != null) {
      * sortKernelContext.close(); } if (unorderedFillChunkPositions != null) { unorderedFillChunkPositions.close(); } if
      * (unorderedFillMappedKeys != null) { unorderedFillMappedKeys.close(); } } }
@@ -108,27 +107,32 @@ public class WrappedRowSetWritableRowRedirection implements WritableRowRedirecti
         innerRowKeys.setSize(outerRowKeys.intSize());
     }
 
+    @Override
+    public boolean ascendingMapping() {
+        return true;
+    }
+
     /*
      * TODO: Uncomment and test this if we ever start using WrappedRowSetWritableRowRedirection for unordered reads.
-     * 
+     *
      * @Override public void fillChunkUnordered(@NotNull final MutableChunkSource.FillContext fillContext,
-     * 
+     *
      * @NotNull final WritableLongChunk<RowKeys> mappedKeysOut,
-     * 
+     *
      * @NotNull final LongChunk<RowKeys> keysToMap) { final FillContext typedFillContext = (FillContext) fillContext;
      * typedFillContext.ensureUnorderedFillFieldsInitialized(); final WritableLongChunk<RowKeys> indexPositions =
      * typedFillContext.indexPositions; final LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions>
      * sortKernelContext = typedFillContext.sortKernelContext; final WritableIntChunk<ChunkPositions>
      * outputChunkPositions = typedFillContext.unorderedFillChunkPositions; final WritableLongChunk<RowKeys>
      * orderedMappedKeys = typedFillContext.unorderedFillMappedKeys; final int chunkSize = keysToMap.size();
-     * 
+     *
      * indexPositions.copyFromTypedChunk(keysToMap, 0, 0, chunkSize); indexPositions.setSize(chunkSize);
      * outputChunkPositions.setSize(chunkSize); ChunkUtils.fillInOrder(outputChunkPositions);
      * LongIntTimsortKernel.sort(sortKernelContext, outputChunkPositions, indexPositions);
-     * 
+     *
      * wrappedRowSet.getKeysForPositions(new LongChunkIterator(indexPositions), new
      * LongChunkAppender(orderedMappedKeys)); orderedMappedKeys.setSize(chunkSize);
-     * 
+     *
      * mappedKeysOut.setSize(chunkSize); LongPermuteKernel.permute(orderedMappedKeys, outputChunkPositions,
      * mappedKeysOut); }
      */

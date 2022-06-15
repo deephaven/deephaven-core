@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
@@ -9,8 +12,7 @@ import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.*;
-
+import java.nio.IntBuffer;
 
 /**
  * Plain encoding except for booleans
@@ -19,8 +21,8 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, N
     private final ByteBufferAllocator allocator;
     private final int originalLimit;
 
-    private IntBuffer targetBuffer;
-    private ByteBuffer innerBuffer;
+    private final IntBuffer targetBuffer;
+    private final ByteBuffer innerBuffer;
 
     PlainIntChunkedWriter(int pageSize, ByteBufferAllocator allocator) {
         innerBuffer = allocator.allocate(pageSize);
@@ -31,7 +33,6 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, N
         targetBuffer.mark();
         innerBuffer.mark();
     }
-
 
     @Override
     public final void writeInteger(int v) {
@@ -90,14 +91,12 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, N
     @Override
     public WriteResult writeBulkFilterNulls(IntBuffer bulkValues, Number nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
         int nullInt = nullValue.intValue();
-        int nullCount = 0;
         while (bulkValues.hasRemaining()) {
             int next = bulkValues.get();
             if (next != nullInt) {
                 writeInteger(next);
                 dlEncoder.writeInt(1);
             } else {
-                nullCount++;
                 dlEncoder.writeInt(0);
             }
         }
@@ -107,7 +106,6 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, N
     @Override
     public WriteResult writeBulkFilterNulls(IntBuffer bulkValues, Number nullValue, int rowCount) {
         int nullInt = nullValue.intValue();
-        int nullCount = 0;
         int i = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
@@ -117,13 +115,9 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, N
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
-                nullCount++;
             }
             i++;
         }
         return new WriteResult(rowCount, nullOffsets);
     }
-
-
-
 }

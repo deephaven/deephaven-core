@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.base.verify.Assert;
@@ -131,7 +134,7 @@ public class SortBenchmark {
 
         mcsWithSortColumn = inputTable.newModifiedColumnSet(sortCol);
         MutableInt ci = new MutableInt();
-        final String[] sortColumns = new String[inputTable.getColumns().length - 1];
+        final String[] sortColumns = new String[inputTable.numColumns() - 1];
         inputTable.getColumnSourceMap().keySet().forEach(columnName -> {
             if (!columnName.equals(sortCol)) {
                 sortColumns[ci.intValue()] = columnName;

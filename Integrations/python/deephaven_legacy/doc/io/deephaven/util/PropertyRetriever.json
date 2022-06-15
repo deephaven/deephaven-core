@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.PropertyRetriever",
- "methods": {
-  "getProperty": "Return a property value from a set of possible locations, allowing for optional base64 decoding. The following\n order is used.\n \n* First, if an environment variable is provided, it is checked. if it exists, then it is returned,\n base64-decoded if requested.\n* Next, the property file is checked if the property is provided (the configuration is checked for the provided\n property, and the resulting property value defines the filename). If it exists, the contents are read,\n base64-decoded if requested, then returned.\n* Finally, the property is checked. If it exists it is base64-decoded if requested and returned.\n* At least one of environmentVariable, fileProperty, or propertyName must be specified and exist.\n* If both a property file and property name are provided and exist in the Configuration instance, an exception\n will be thrown.\n\n\n:param configuration: (io.deephaven.configuration.Configuration) - the Configuration instance to check\n:param propertyMeaning: (java.lang.String) - a user-friendly property meaning, included in thrown exceptions\n:param environmentVariable: (java.lang.String) - an optional environment variable to check for the value\n:param fileProperty: (java.lang.String) - an optional Configuration property that specifies the file that contains the value\n:param propertyName: (java.lang.String) - an optional Configuration property that specifies the value\n:param base64Encoded: (boolean) - if true, the retrieved value is base64 decoded before being returned to the caller\n:return: (java.lang.String) the found value, base64-decoded if requested"
- },
- "path": "io.deephaven.util.PropertyRetriever",
- "text": "Class to assist with retrieving properties such as passwords from environment variables, files, and properties.",
- "typeName": "class"
-}

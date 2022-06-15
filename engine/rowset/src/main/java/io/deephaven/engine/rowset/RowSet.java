@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset;
 
 import gnu.trove.list.array.TLongArrayList;
@@ -77,7 +80,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
 
     /**
      * <p>
-     * Returns a {@link WritableRowSet} with the row positions of <i>row keys</i> in this RowSet.
+     * Returns a {@link WritableRowSet} with the row positions of {@code keys} in this RowSet.
      *
      * <p>
      * This can be thought of as an iterative find() over the values in keys, but <b>all</b> keys <b>must</b> exist
@@ -92,7 +95,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
 
     /**
      * <p>
-     * Returns the row positions of <i>row keys</i> in the current set as a {@link WritableRowSet}, stopping at
+     * Returns the row positions of {@code keys} in the current set as a {@link WritableRowSet}, stopping at
      * maximumPosition.
      *
      * <p>

@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
@@ -699,13 +698,13 @@ public class ReplicateSourcesAndChunks {
                 "        }",
                 "",
                 "        @Override",
-                "        public byte getByte(long rowSet) {",
-                "            return wrapped.getByte(rowSet);",
+                "        public byte getByte(long rowKey) {",
+                "            return wrapped.getByte(rowKey);",
                 "        }",
                 "",
                 "        @Override",
-                "        public byte getPrevByte(long rowSet) {",
-                "            return wrapped.getPrevByte(rowSet);",
+                "        public byte getPrevByte(long rowKey) {",
+                "            return wrapped.getPrevByte(rowKey);",
                 "        }",
                 "",
                 "        @Override",

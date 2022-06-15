@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.plot.AxesImpl;
@@ -13,7 +12,7 @@ import io.deephaven.plot.datasets.DynamicSeriesNamer;
 import io.deephaven.plot.errors.PlotExceptionCause;
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.PartitionedTable;
 
 import java.util.Map;
 
@@ -111,9 +110,9 @@ public interface MultiSeriesInternal<T extends DataSeriesInternal>
     void initializeSeries(T series);
 
     /**
-     * @return the underlying {@link TableMap}
+     * @return the underlying {@link PartitionedTable}
      */
-    TableMap getTableMap();
+    PartitionedTable getPartitionedTable();
 
     /**
      * Add the given series to this MultiSeries

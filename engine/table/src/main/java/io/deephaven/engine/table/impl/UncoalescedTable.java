@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.JoinMatch;
@@ -36,7 +35,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     private volatile Table coalesced;
 
     public UncoalescedTable(@NotNull final TableDefinition definition, @NotNull final String description) {
-        super(definition, description);
+        super(definition, description, null);
     }
 
     // region coalesce support
@@ -155,23 +154,18 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public ByteColumnIterator byteColumnIterator(@NotNull String columnName) {
-        return coalesce().byteColumnIterator(columnName);
-    }
-
-    @Override
     public CharacterColumnIterator characterColumnIterator(@NotNull String columnName) {
         return coalesce().characterColumnIterator(columnName);
     }
 
     @Override
-    public DoubleColumnIterator doubleColumnIterator(@NotNull String columnName) {
-        return coalesce().doubleColumnIterator(columnName);
+    public ByteColumnIterator byteColumnIterator(@NotNull String columnName) {
+        return coalesce().byteColumnIterator(columnName);
     }
 
     @Override
-    public FloatColumnIterator floatColumnIterator(@NotNull String columnName) {
-        return coalesce().floatColumnIterator(columnName);
+    public ShortColumnIterator shortColumnIterator(@NotNull String columnName) {
+        return coalesce().shortColumnIterator(columnName);
     }
 
     @Override
@@ -185,8 +179,18 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public ShortColumnIterator shortColumnIterator(@NotNull String columnName) {
-        return coalesce().shortColumnIterator(columnName);
+    public FloatColumnIterator floatColumnIterator(@NotNull String columnName) {
+        return coalesce().floatColumnIterator(columnName);
+    }
+
+    @Override
+    public DoubleColumnIterator doubleColumnIterator(@NotNull String columnName) {
+        return coalesce().doubleColumnIterator(columnName);
+    }
+
+    @Override
+    public <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
+        return coalesce().objectColumnIterator(columnName);
     }
 
     @Override
@@ -457,7 +461,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public TableMap partitionBy(boolean dropKeys, String... keyColumnNames) {
+    public PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames) {
         return coalesce().partitionBy(dropKeys, keyColumnNames);
     }
 

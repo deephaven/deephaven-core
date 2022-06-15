@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
@@ -61,5 +64,10 @@ public class AggregationPairs implements Aggregation.Visitor {
     @Override
     public void visit(LastRowKey lastRowKey) {
         out = Stream.of(lastRowKey.column());
+    }
+
+    @Override
+    public void visit(Partition partition) {
+        out = Stream.of(partition.column());
     }
 }

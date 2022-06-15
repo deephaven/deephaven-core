@@ -1,4 +1,12 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.util;
+
+import io.deephaven.UncheckedDeephavenException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * {@link SafeCloseable} that will close non-null values inside of an array.
@@ -17,11 +25,18 @@ public class SafeCloseableArray<T extends SafeCloseable> implements SafeCloseabl
 
     @Override
     public final void close() {
+        List<Exception> exceptions = null;
         for (int ii = 0; ii < array.length; ii++) {
-            if (array[ii] != null) {
-                array[ii].close();
+            try (final SafeCloseable ignored = array[ii]) {
                 array[ii] = null;
+            } catch (Exception e) {
+                (exceptions = new ArrayList<>()).add(e);
             }
+        }
+        // noinspection ConstantConditions
+        if (exceptions != null) {
+            throw new UncheckedDeephavenException("Exception while closing resources",
+                    MultiException.maybeWrapInMultiException("Close exceptions for multiple resources", exceptions));
         }
     }
 }

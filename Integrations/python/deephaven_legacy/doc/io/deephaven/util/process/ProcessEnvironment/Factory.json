@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.process.ProcessEnvironment$Factory",
- "methods": {
-  "make": "Factory method.\n\n:param configuration: (io.deephaven.configuration.Configuration) - The configuration\n:param mainClassName: (java.lang.String) - The main class name\n:param log: (io.deephaven.io.logger.Logger) - The log\n:return: (io.deephaven.util.process.ProcessEnvironment) A new instance of the appropriate ProcessEnvironment implementation"
- },
- "path": "io.deephaven.util.process.ProcessEnvironment.Factory",
- "text": "Factory interface for constructing instances of ProcessEnvironment implementations.",
- "typeName": "interface"
-}

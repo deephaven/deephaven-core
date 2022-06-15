@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
@@ -52,14 +51,14 @@ public abstract class RedefinableTable extends UncoalescedTable {
             allColumns.put(selectColumn.getName(), columnDef);
         }
 
-        TableDefinition newDefExternal = new TableDefinition(
+        TableDefinition newDefExternal = TableDefinition.of(
                 resultColumnsExternal.values().toArray(ColumnDefinition.ZERO_LENGTH_COLUMN_DEFINITION_ARRAY));
         if (simpleRetain) {
             // NB: We use the *external* TableDefinition because it's ordered appropriately.
             return redefine(newDefExternal);
         }
         TableDefinition newDefInternal =
-                new TableDefinition(
+                TableDefinition.of(
                         resultColumnsInternal.toArray(ColumnDefinition.ZERO_LENGTH_COLUMN_DEFINITION_ARRAY));
         return redefine(newDefExternal, newDefInternal, columns, columnDependency);
     }
@@ -100,7 +99,7 @@ public abstract class RedefinableTable extends UncoalescedTable {
                 resultColumns.add(cDef);
             }
         }
-        return redefine(new TableDefinition(resultColumns));
+        return redefine(TableDefinition.of(resultColumns));
     }
 
     @Override
@@ -122,7 +121,7 @@ public abstract class RedefinableTable extends UncoalescedTable {
             columnDependency.put(pair.leftColumn, new HashSet<>(Collections.singletonList(pair.rightColumn)));
         }
 
-        ColumnDefinition<?>[] columnDefinitions = definition.getColumns();
+        ColumnDefinition<?>[] columnDefinitions = definition.getColumnsArray();
         ColumnDefinition<?>[] resultColumnsExternal = new ColumnDefinition[columnDefinitions.length];
         SelectColumn[] viewColumns = new SelectColumn[columnDefinitions.length];
         for (int ci = 0; ci < columnDefinitions.length; ++ci) {
@@ -132,11 +131,11 @@ public abstract class RedefinableTable extends UncoalescedTable {
                 resultColumnsExternal[ci] = cDef;
                 viewColumns[ci] = new SourceColumn(cDef.getName());
             } else {
-                resultColumnsExternal[ci] = cDef.rename(newName);
+                resultColumnsExternal[ci] = cDef.withName(newName);
                 viewColumns[ci] = new SourceColumn(cDef.getName(), newName);
             }
         }
-        return redefine(new TableDefinition(resultColumnsExternal), definition, viewColumns, columnDependency);
+        return redefine(TableDefinition.of(resultColumnsExternal), definition, viewColumns, columnDependency);
     }
 
     /**

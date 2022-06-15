@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
@@ -257,8 +256,8 @@ public class GenerateTableUpdates {
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             } else {
                 final ArrayList<String> modifiedColumns = new ArrayList<>();
-                update.modifiedColumnSet = table.modifiedColumnSet;
-                update.modifiedColumnSet().clear();
+                update.modifiedColumnSet = table.getModifiedColumnSetForUpdates();
+                update.modifiedColumnSet.clear();
 
                 final String mustModifyColumn = (mutableColumns.length == 0) ? null
                         : mutableColumns[random.nextInt(mutableColumns.length)].name;

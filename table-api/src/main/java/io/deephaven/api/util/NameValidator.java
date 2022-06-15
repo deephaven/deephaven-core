@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.api.util;
 
 import javax.lang.model.SourceVersion;
@@ -340,7 +339,6 @@ public class NameValidator {
      * @param customReplace a function that is applied to the name before processing legality
      * @param takenNames the list of names that are already taken
      * @return whether the name is valid for a new table
-     * 
      */
     public static boolean isLegalTableName(String name, Function<String, String> customReplace,
             Set<String> takenNames) {

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.table;
 
 import io.deephaven.api.Selectable;
@@ -15,6 +18,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -264,6 +268,8 @@ public class ParquetTableReadWriteTest {
             final Table table1 = getTableFlat(10000, false);
             ParquetTools.writeTable(table1, path);
             assertTrue(new File(path).length() > 0);
+            final Table table2 = ParquetTools.readTable(path);
+            TstUtils.assertTableEquals(table1, table2);
         } finally {
             ParquetInstructions.setDefaultCompressionCodecName(currentCodec);
         }
@@ -279,6 +285,7 @@ public class ParquetTableReadWriteTest {
         compressionCodecTestHelper("LZ4");
     }
 
+    @Ignore("See BrotliParquetReadWriteTest instead")
     @Test
     public void testParquetBrotliCompressionCodec() {
         compressionCodecTestHelper("BROTLI");

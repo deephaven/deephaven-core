@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.base.stats.Stats$Maker",
- "methods": {
-  "makeItem": "Note: Java generics information - <V extends io.deephaven.base.stats.Value>\n\n:param groupName: java.lang.String\n:param itemName: java.lang.String\n:param valueFactory: io.deephaven.base.Function.Unary<V,java.lang.Long>\n:return: io.deephaven.base.stats.Item<V>"
- },
- "path": "io.deephaven.base.stats.Stats.Maker",
- "text": "A non-static interface to the Stats component.",
- "typeName": "interface"
-}

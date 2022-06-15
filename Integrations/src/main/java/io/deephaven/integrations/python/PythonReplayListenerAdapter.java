@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.integrations.python;
 
 import io.deephaven.engine.table.Table;
@@ -80,12 +79,12 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
         final TableUpdate update =
                 new TableUpdateImpl(source.getRowSet(), emptyRowSet, emptyRowSet, emptyShift, emptyColumnSet);
         final boolean isReplay = true;
-        pyCallable.call("__call__", isReplay, update);
+        pyCallable.call("__call__", update, isReplay);
     }
 
     @Override
     public void onUpdate(final TableUpdate update) {
         final boolean isReplay = false;
-        pyCallable.call("__call__", isReplay, update);
+        pyCallable.call("__call__", update, isReplay);
     }
 }

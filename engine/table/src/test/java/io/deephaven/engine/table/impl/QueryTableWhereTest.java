@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.RawString;
@@ -592,7 +591,7 @@ public class QueryTableWhereTest {
     public void testWhereWithExcessiveShifting() {
         // Select a prime that guarantees shifts from the merge operations.
         final int PRIME = 61409;
-        assertTrue(2 * PRIME > UnionRedirection.CHUNK_MULTIPLE);
+        assertTrue(2 * PRIME > UnionRedirection.ALLOCATION_UNIT_ROW_KEYS);
 
         final ColumnInfo[] filteredInfo;
 

@@ -51,27 +51,15 @@ import static io.deephaven.base.string.cache.CompressedString.*;
 import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;
 import static io.deephaven.engine.table.impl.verify.TableAssertions.*;
 import static io.deephaven.engine.util.ColorUtilImpl.*;
+import static io.deephaven.function.Basic.*;
 import static io.deephaven.function.BinSearch.*;
-import static io.deephaven.function.BooleanPrimitives.*;
-import static io.deephaven.function.ByteNumericPrimitives.*;
-import static io.deephaven.function.BytePrimitives.*;
-import static io.deephaven.function.Casting.*;
-import static io.deephaven.function.CharacterPrimitives.*;
-import static io.deephaven.function.ComparePrimitives.*;
-import static io.deephaven.function.DoubleFpPrimitives.*;
-import static io.deephaven.function.DoubleNumericPrimitives.*;
-import static io.deephaven.function.DoublePrimitives.*;
-import static io.deephaven.function.FloatFpPrimitives.*;
-import static io.deephaven.function.FloatNumericPrimitives.*;
-import static io.deephaven.function.FloatPrimitives.*;
-import static io.deephaven.function.IntegerNumericPrimitives.*;
-import static io.deephaven.function.IntegerPrimitives.*;
-import static io.deephaven.function.LongNumericPrimitives.*;
-import static io.deephaven.function.LongPrimitives.*;
-import static io.deephaven.function.ObjectPrimitives.*;
-import static io.deephaven.function.PrimitiveParseUtil.*;
-import static io.deephaven.function.ShortNumericPrimitives.*;
-import static io.deephaven.function.ShortPrimitives.*;
+import static io.deephaven.function.BinSearchAlgo.*;
+import static io.deephaven.function.Cast.*;
+import static io.deephaven.function.Logic.*;
+import static io.deephaven.function.Numeric.*;
+import static io.deephaven.function.Parse.*;
+import static io.deephaven.function.Random.*;
+import static io.deephaven.function.Sort.*;
 import static io.deephaven.gui.color.Color.*;
 import static io.deephaven.time.DateTimeUtils.*;
 import static io.deephaven.time.TimeZone.*;
@@ -86,26 +74,26 @@ public class FilterKernelArraySample implements io.deephaven.engine.table.impl.s
     private final io.deephaven.vector.ShortVector v1_;
 
 
-    public FilterKernelArraySample(Table table, RowSet fullSet, QueryScopeParam... params) {
+    public FilterKernelArraySample(Table __table, RowSet __fullSet, QueryScopeParam... __params) {
 
         // Array Column Variables
-        v2_ = new io.deephaven.engine.table.impl.vector.DoubleVectorColumnWrapper(table.getColumnSource("v2"), fullSet);
-        v1_ = new io.deephaven.engine.table.impl.vector.ShortVectorColumnWrapper(table.getColumnSource("v1"), fullSet);
+        v2_ = new io.deephaven.engine.table.impl.vector.DoubleVectorColumnWrapper(__table.getColumnSource("v2"), __fullSet);
+        v1_ = new io.deephaven.engine.table.impl.vector.ShortVectorColumnWrapper(__table.getColumnSource("v1"), __fullSet);
     }
     @Override
-    public Context getContext(int maxChunkSize) {
-        return new Context(maxChunkSize);
+    public Context getContext(int __maxChunkSize) {
+        return new Context(__maxChunkSize);
     }
     
     @Override
-    public LongChunk<OrderedRowKeys> filter(Context context, LongChunk<OrderedRowKeys> indices, Chunk... inputChunks) {
-        final int size = indices.size();
-        context.resultChunk.setSize(0);
-        for (int __my_i__ = 0; __my_i__ < size; __my_i__++) {
+    public LongChunk<OrderedRowKeys> filter(Context __context, LongChunk<OrderedRowKeys> __indices, Chunk... __inputChunks) {
+        final int __size = __indices.size();
+        __context.resultChunk.setSize(0);
+        for (int __my_i__ = 0; __my_i__ < __size; __my_i__++) {
             if (eq(v1_.size(), v2_.size())) {
-                context.resultChunk.add(indices.get(__my_i__));
+                __context.resultChunk.add(__indices.get(__my_i__));
             }
         }
-        return context.resultChunk;
+        return __context.resultChunk;
     }
 }

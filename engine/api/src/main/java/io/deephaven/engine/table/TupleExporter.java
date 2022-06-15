@@ -1,12 +1,13 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table;
 
-import io.deephaven.datastructures.util.SmartKey;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Interface for classes that know how to export the elements of a given tuple type. Currently supports element-wise
- * export to a {@link WritableColumnSource} without unnecessary boxing, or full export to a "{@link SmartKey}" with the
- * necessary boxing.
+ * Interface for classes that know how to export the elements of a given tuple type. Currently, supports element-wise
+ * export to a {@link WritableColumnSource} without unnecessary boxing.
  */
 public interface TupleExporter<TUPLE_TYPE> {
 
@@ -60,20 +61,4 @@ public interface TupleExporter<TUPLE_TYPE> {
     default Object exportElementReinterpreted(TUPLE_TYPE tuple, int elementIndex) {
         return exportElement(tuple, elementIndex);
     }
-
-    /**
-     * <p>
-     * Export this tuple's element list as a key suitable for the {@link TableMap table maps} resulting from
-     * {@link Table#partitionBy}.
-     * <p>
-     * For the empty tuple this is a unsupported.
-     * <p>
-     * For singles, this is the (boxed) sole element itself.
-     * <p>
-     * For doubles and longer, this is a newly-allocated "{@link SmartKey}".
-     *
-     * @param tuple The tuple to export all elements from
-     * @return The new smart key
-     */
-    Object exportToExternalKey(TUPLE_TYPE tuple);
 }

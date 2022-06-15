@@ -8,8 +8,12 @@ import org.gradle.api.Project
 class CombinedJavadoc {
 
     static boolean includeProject(Project p) {
+        def exclusions = [ 'hotspot-impl' ].toSet()
         ProjectType type = ProjectType.getType(p)
         if (!type.isPublic) {
+            return false
+        }
+        if (exclusions.contains(p.name)) {
             return false
         }
         switch (type) {

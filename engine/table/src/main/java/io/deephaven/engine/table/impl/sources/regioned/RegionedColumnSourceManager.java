@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -40,7 +39,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     /**
      * The column definitions that define our column sources.
      */
-    private final ColumnDefinition[] columnDefinitions;
+    private final List<ColumnDefinition<?>> columnDefinitions;
 
     /**
      * The column sources that make up this table.
@@ -86,7 +85,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     RegionedColumnSourceManager(final boolean isRefreshing,
             @NotNull final RegionedTableComponentFactory componentFactory,
             @NotNull final ColumnToCodecMappings codecMappings,
-            @NotNull final ColumnDefinition... columnDefinitions) {
+            @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
         this.isRefreshing = isRefreshing;
         this.columnDefinitions = columnDefinitions;
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
@@ -241,7 +240,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     private static final KeyedObjectKey<ImmutableTableLocationKey, EmptyTableLocationEntry> EMPTY_TABLE_LOCATION_ENTRY_KEY =
-            new KeyedObjectKey.Basic<ImmutableTableLocationKey, EmptyTableLocationEntry>() {
+            new KeyedObjectKey.Basic<>() {
 
                 @Override
                 public ImmutableTableLocationKey getKey(
@@ -381,7 +380,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     private static final KeyedObjectKey<ImmutableTableLocationKey, IncludedTableLocationEntry> INCLUDED_TABLE_LOCATION_ENTRY_KEY =
-            new KeyedObjectKey.Basic<ImmutableTableLocationKey, IncludedTableLocationEntry>() {
+            new KeyedObjectKey.Basic<>() {
 
                 @Override
                 public ImmutableTableLocationKey getKey(

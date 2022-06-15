@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.test;
 
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -561,8 +564,8 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     private void assertSchemaMatchesTable(Schema schema, Table table) {
-        Assert.eq(schema.getFields().size(), "schema.getFields().size()", table.getColumns().length,
-                "table.getColumns().length");
+        Assert.eq(schema.getFields().size(), "schema.getFields().size()", table.numColumns(),
+                "table.numColumns()");
         Assert.equals(BarrageUtil.convertArrowSchema(schema).tableDef,
                 "BarrageUtil.convertArrowSchema(schema)",
                 table.getDefinition(), "table.getDefinition()");

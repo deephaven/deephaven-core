@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.replicators;
 
 import io.deephaven.base.ClassUtil;
@@ -30,7 +33,6 @@ public class TupleSourceCodeGenerator {
 
     private static final String[] DEFAULT_IMPORTS = new String[] {
             "org.jetbrains.annotations.NotNull",
-            "io.deephaven.datastructures.util.SmartKey",
             "io.deephaven.engine.table.TupleSource",
             "io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource",
             "io.deephaven.engine.table.ColumnSource",
@@ -395,21 +397,6 @@ public class TupleSourceCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public final Object exportToExternalKey(@NotNull final ").append(tupleClassName)
-                .append(" tuple) {").append(NEW_LINE);
-        indenter.increaseLevel();
-        code.append(indenter).append("return new SmartKey(").append(NEW_LINE);
-        indenter.increaseLevel(2);
-        code.append(indenter).append(type1.getBoxingText("tuple.getFirstElement()")).append(',').append(NEW_LINE);
-        code.append(indenter).append(type2.getBoxingText("tuple.getSecondElement()")).append(NEW_LINE);
-        indenter.decreaseLevel(2);
-        code.append(indenter).append(");").append(NEW_LINE);
-        indenter.decreaseLevel();
-        code.append(indenter).append('}').append(NEW_LINE);
-
-        code.append(NEW_LINE);
-
-        code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final Object exportElement(@NotNull final ").append(tupleClassName)
                 .append(" tuple, int elementIndex) {").append(NEW_LINE);
         indenter.increaseLevel();
@@ -689,22 +676,6 @@ public class TupleSourceCodeGenerator {
         code.append(indenter).append(
                 "throw new IndexOutOfBoundsException(\"Invalid element index \" + elementIndex + \" for export\");")
                 .append(NEW_LINE);
-        indenter.decreaseLevel();
-        code.append(indenter).append('}').append(NEW_LINE);
-
-        code.append(NEW_LINE);
-
-        code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public final Object exportToExternalKey(@NotNull final ").append(tupleClassName)
-                .append(" tuple) {").append(NEW_LINE);
-        indenter.increaseLevel();
-        code.append(indenter).append("return new SmartKey(").append(NEW_LINE);
-        indenter.increaseLevel(2);
-        code.append(indenter).append(type1.getBoxingText("tuple.getFirstElement()")).append(',').append(NEW_LINE);
-        code.append(indenter).append(type2.getBoxingText("tuple.getSecondElement()")).append(',').append(NEW_LINE);
-        code.append(indenter).append(type3.getBoxingText("tuple.getThirdElement()")).append(NEW_LINE);
-        indenter.decreaseLevel(2);
-        code.append(indenter).append(");").append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
 

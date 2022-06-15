@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.util;
 
 import com.github.f4b6a3.uuid.UuidCreator;
@@ -11,9 +10,9 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.lang.QueryScopeParam;
@@ -103,12 +102,31 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
     protected synchronized void publishInitial() {
-        applyDiff(emptySnapshot(), takeSnapshot(), null);
+        try (S empty = emptySnapshot(); S snapshot = takeSnapshot()) {
+            applyDiff(empty, snapshot, null);
+        }
     }
 
-    interface Snapshot {
+    interface Snapshot extends SafeCloseable {
 
     }
+
+    @Override
+    public synchronized SnapshotScope snapshot(@Nullable SnapshotScope previousIfPresent) {
+        // TODO deephaven-core#2453 this should be redone, along with other scope change handling
+        if (previousIfPresent != null) {
+            previousIfPresent.close();
+        }
+        S snapshot = takeSnapshot();
+        return () -> finishSnapshot(snapshot);
+    }
+
+    private synchronized void finishSnapshot(S beforeSnapshot) {
+        try (beforeSnapshot; S afterSnapshot = takeSnapshot()) {
+            applyDiff(beforeSnapshot, afterSnapshot, null);
+        }
+    }
+
 
     protected abstract S emptySnapshot();
 
@@ -127,34 +145,37 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     @Override
     public synchronized final Changes evaluateScript(final String script, final @Nullable String scriptName) {
         RuntimeException evaluateErr = null;
-        final S fromSnapshot = takeSnapshot();
+        final Changes diff;
+        try (S fromSnapshot = takeSnapshot()) {
 
-        // store pointers to exist query scope static variables
-        final QueryLibrary prevQueryLibrary = QueryLibrary.getLibrary();
-        final CompilerTools.Context prevCompilerContext = CompilerTools.getContext();
-        final QueryScope prevQueryScope = QueryScope.getScope();
+            // store pointers to exist query scope static variables
+            final QueryLibrary prevQueryLibrary = QueryLibrary.getLibrary();
+            final CompilerTools.Context prevCompilerContext = CompilerTools.getContext();
+            final QueryScope prevQueryScope = QueryScope.getScope();
 
-        // retain any objects which are created in the executed code, we'll release them when the script session closes
-        try (final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
-            // point query scope static state to our session's state
-            QueryScope.setScope(queryScope);
-            CompilerTools.setContext(compilerContext);
-            QueryLibrary.setLibrary(queryLibrary);
+            // retain any objects which are created in the executed code, we'll release them when the script session
+            // closes
+            try (final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
+                // point query scope static state to our session's state
+                QueryScope.setScope(queryScope);
+                CompilerTools.setContext(compilerContext);
+                QueryLibrary.setLibrary(queryLibrary);
 
-            // actually evaluate the script
-            evaluate(script, scriptName);
-        } catch (final RuntimeException err) {
-            evaluateErr = err;
-        } finally {
-            // restore pointers to query scope static variables
-            QueryScope.setScope(prevQueryScope);
-            CompilerTools.setContext(prevCompilerContext);
-            QueryLibrary.setLibrary(prevQueryLibrary);
+                // actually evaluate the script
+                evaluate(script, scriptName);
+            } catch (final RuntimeException err) {
+                evaluateErr = err;
+            } finally {
+                // restore pointers to query scope static variables
+                QueryScope.setScope(prevQueryScope);
+                CompilerTools.setContext(prevCompilerContext);
+                QueryLibrary.setLibrary(prevQueryLibrary);
+            }
+
+            try (S toSnapshot = takeSnapshot()) {
+                diff = applyDiff(fromSnapshot, toSnapshot, evaluateErr);
+            }
         }
-
-        final S toSnapshot = takeSnapshot();
-
-        final Changes diff = applyDiff(fromSnapshot, toSnapshot, evaluateErr);
 
         // re-throw any captured exception now that our listener knows what query scope state had changed prior
         // to the script session execution error
@@ -212,10 +233,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             }
             return Optional.of("Table");
         }
-        if (object instanceof TableMap) {
-            return Optional.empty();
-            // TODO(deephaven-core#1762): Implement Smart-Keys and Table-Maps
-            // return Optional.of("TableMap");
+        if (object instanceof PartitionedTable) {
+            return Optional.of("PartitionedTable");
         }
         return objectTypeLookup.findObjectType(object).map(ObjectType::name);
     }
@@ -267,7 +286,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     protected abstract QueryScope newQueryScope();
 
     @Override
-    public Class getVariableType(final String var) {
+    public Class<?> getVariableType(final String var) {
         final Object result = getVariable(var, null);
         if (result == null) {
             return null;

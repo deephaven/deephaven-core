@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.shared.data;
 
 import javax.annotation.Nonnull;
@@ -110,7 +113,7 @@ public class Range implements Serializable, Comparable<Range> {
     }
 
     public long size() {
-        return (int) (last - first + 1);
+        return last - first + 1;
     }
 
     @Override

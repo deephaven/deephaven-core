@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.shared.data;
 
 import org.junit.Test;
@@ -45,4 +48,15 @@ public class RangeTest {
         assertEquals(new Range(0, 5), rangeB.overlap(rangeA));
     }
 
+    @Test
+    public void testLargeRange() {
+        long largeA = (long) Integer.MAX_VALUE + 10L;
+        long largeB = (long) Integer.MAX_VALUE + 11L;
+        long largeC = Long.MAX_VALUE - 100L;
+        assertEquals(largeA + 1, new Range(0, largeA).size());
+        assertEquals(largeA, new Range(1, largeA).size());
+        assertEquals(1, new Range(largeA, largeA).size());
+        assertEquals(2, new Range(largeA, largeB).size());
+        assertEquals(largeC + 1, new Range(0, largeC).size());
+    }
 }

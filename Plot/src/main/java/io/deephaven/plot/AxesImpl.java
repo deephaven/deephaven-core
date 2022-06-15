@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot;
 
 import io.deephaven.api.Selectable;
@@ -14,8 +13,8 @@ import io.deephaven.plot.axisformatters.NanosAxisFormat;
 import io.deephaven.plot.axistransformations.AxisTransform;
 import io.deephaven.plot.datasets.category.*;
 import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesMap;
-import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesSwappableTableMap;
-import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesTableMap;
+import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesSwappablePartitionedTable;
+import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesPartitionedTable;
 import io.deephaven.plot.datasets.data.*;
 import io.deephaven.plot.datasets.histogram.HistogramCalculator;
 import io.deephaven.plot.datasets.interval.IntervalXYDataSeriesArray;
@@ -314,15 +313,15 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         return result;
     }
 
-    public Set<TableMapHandle> getTableMapHandles() {
-        final Set<TableMapHandle> result = new HashSet<>();
+    public Set<PartitionedTableHandle> getPartitionedTableHandles() {
+        final Set<PartitionedTableHandle> result = new HashSet<>();
 
         for (final AxisImpl axis : axes) {
-            result.addAll(axis.getTableMapHandles());
+            result.addAll(axis.getPartitionedTableHandles());
         }
 
         for (SeriesCollection.SeriesDescription seriesDescription : dataSeries().getSeriesDescriptions().values()) {
-            result.addAll(seriesDescription.getSeries().getTableMapHandles());
+            result.addAll(seriesDescription.getSeries().getPartitionedTableHandles());
         }
 
         return result;
@@ -873,7 +872,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureXYPlot();
 
-        final TableBackedTableMapHandle h = new TableBackedTableMapHandle(t,
+        final TableBackedPartitionedTableHandle h = new TableBackedPartitionedTableHandle(t,
                 Arrays.asList(x, xLow, xHigh, y, yLow, yHigh), byColumns, new PlotInfo(this, seriesName));
         final MultiXYErrorBarSeries series = new MultiXYErrorBarSeries(this, dataSeries.nextId(), seriesName, h, x,
                 xLow, xHigh, y, yLow, yHigh, byColumns, true, true);
@@ -958,7 +957,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureXYPlot();
 
-        final TableBackedTableMapHandle h = new TableBackedTableMapHandle(t, Arrays.asList(x, y, yLow, yHigh),
+        final TableBackedPartitionedTableHandle h = new TableBackedPartitionedTableHandle(t, Arrays.asList(x, y, yLow, yHigh),
                 byColumns, new PlotInfo(this, seriesName));
         final MultiXYErrorBarSeries series = new MultiXYErrorBarSeries(this, dataSeries.nextId(), seriesName, h, x,
                 null, null, y, yLow, yHigh, byColumns, false, true);
@@ -1037,7 +1036,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureXYPlot();
 
-        final TableBackedTableMapHandle h = new TableBackedTableMapHandle(t, Arrays.asList(x, xLow, xHigh, y),
+        final TableBackedPartitionedTableHandle h = new TableBackedPartitionedTableHandle(t, Arrays.asList(x, xLow, xHigh, y),
                 byColumns, new PlotInfo(this, seriesName));
         final MultiXYErrorBarSeries series = new MultiXYErrorBarSeries(this, dataSeries.nextId(), seriesName, h, x,
                 xLow, xHigh, y, null, null, byColumns, true, false);
@@ -1156,7 +1155,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
-        return catPlot(new CategoryErrorBarDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories,
+        return catPlot(new CategoryErrorBarDataSeriesPartitionedTable(this, dataSeries.nextId(), seriesName, h, categories,
                 y, yLow, yHigh), new TableHandle[] {h}, null);
     }
 
@@ -1173,7 +1172,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
-        return catPlot(new CategoryErrorBarDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t,
+        return catPlot(new CategoryErrorBarDataSeriesSwappablePartitionedTable(this, dataSeries.nextId(), seriesName, t,
                 categories, y, yLow, yHigh), null, new SwappableTable[] {t});
     }
 
@@ -1188,7 +1187,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureCategoryPlot();
 
-        final TableBackedTableMapHandle h = PlotUtils.createCategoryTableMapHandle(t, categories,
+        final TableBackedPartitionedTableHandle h = PlotUtils.createCategoryPartitionedTableHandle(t, categories,
                 new String[] {y, yLow, yHigh}, byColumns, new PlotInfo(this, seriesName));
         final MultiCatErrorBarSeries series = new MultiCatErrorBarSeries(this, dataSeries.nextId(), seriesName, h,
                 categories, y, yLow, yHigh, byColumns);
@@ -1332,8 +1331,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureXYPlot();
 
-        final TableBackedTableMapHandle h =
-                new TableBackedTableMapHandle(t, Arrays.asList(x, y), byColumns, new PlotInfo(this, seriesName));
+        final TableBackedPartitionedTableHandle h =
+                new TableBackedPartitionedTableHandle(t, Arrays.asList(x, y), byColumns, new PlotInfo(this, seriesName));
         final MultiXYSeries series = new MultiXYSeries(this, dataSeries.nextId(), seriesName, h, x, y, byColumns);
 
 
@@ -1448,7 +1447,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureOHLCPlot();
 
-        final TableBackedTableMapHandle h = new TableBackedTableMapHandle(t,
+        final TableBackedPartitionedTableHandle h = new TableBackedPartitionedTableHandle(t,
                 Arrays.asList(time, open, high, low, close), byColumns, new PlotInfo(this, seriesName));
         final MultiOHLCSeries series = new MultiOHLCSeries(this, dataSeries.nextId(), seriesName, h, time, open,
                 high, low, close, byColumns);
@@ -1609,7 +1608,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     // region Category Histogram Plot
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final Table t, final String categories) {
+    public CategoryDataSeriesPartitionedTable catHistPlot(final Comparable seriesName, final Table t, final String categories) {
         configureCategoryPlot();
         plotStyle(PlotStyle.HISTOGRAM);
 
@@ -1620,16 +1619,16 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         final Table counts = PlotUtils.createCategoryHistogramTable(t, categories);
         final TableHandle h = new TableHandle(counts, categories, COUNT, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
 
-        final CategoryDataSeriesTableMap ds =
-                new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, COUNT);
+        final CategoryDataSeriesPartitionedTable ds =
+                new CategoryDataSeriesPartitionedTable(this, dataSeries.nextId(), seriesName, h, categories, COUNT);
         ds.addTableHandle(h);
         registerDataSeries(SeriesCollection.SeriesType.CATEGORY, false, ds);
         return ds;
     }
 
     @Override
-    public CategoryDataSeriesSwappableTableMap catHistPlot(final Comparable seriesName, final SelectableDataSet sds,
-            final String categories) {
+    public CategoryDataSeriesSwappablePartitionedTable catHistPlot(final Comparable seriesName, final SelectableDataSet sds,
+                                                                   final String categories) {
         configureCategoryPlot();
         plotStyle(PlotStyle.HISTOGRAM);
 
@@ -1647,7 +1646,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
                 .createCategoryHistogramTable(t, cols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
         final SwappableTable counts = sds.getSwappableTable(seriesName, chart, tableTransform, categories,
                 CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
-        final CategoryDataSeriesSwappableTableMap ds = new CategoryDataSeriesSwappableTableMap(this,
+        final CategoryDataSeriesSwappablePartitionedTable ds = new CategoryDataSeriesSwappablePartitionedTable(this,
                 dataSeries.nextId(), seriesName, counts, categories, COUNT);
         ds.addSwappableTable(counts);
         registerDataSeries(SeriesCollection.SeriesType.CATEGORY, false, ds);
@@ -1655,32 +1654,32 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public <T extends Comparable> CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final T[] categories) {
+    public <T extends Comparable> CategoryDataSeriesPartitionedTable catHistPlot(final Comparable seriesName, final T[] categories) {
         return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final int[] categories) {
+    public CategoryDataSeriesPartitionedTable catHistPlot(final Comparable seriesName, final int[] categories) {
         return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final long[] categories) {
+    public CategoryDataSeriesPartitionedTable catHistPlot(final Comparable seriesName, final long[] categories) {
         return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final float[] categories) {
+    public CategoryDataSeriesPartitionedTable catHistPlot(final Comparable seriesName, final float[] categories) {
         return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final double[] categories) {
+    public CategoryDataSeriesPartitionedTable catHistPlot(final Comparable seriesName, final double[] categories) {
         return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
     @Override
-    public <T extends Comparable> CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final List<T> categories) {
+    public <T extends Comparable> CategoryDataSeriesPartitionedTable catHistPlot(final Comparable seriesName, final List<T> categories) {
         return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
@@ -1737,7 +1736,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public CategoryDataSeriesInternal catPlot(final Comparable seriesName, final Table t, final String categories,
             final String y) {
         final TableHandle h = PlotUtils.createCategoryTableHandle(t, categories, y);
-        return catPlot(new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, y),
+        return catPlot(new CategoryDataSeriesPartitionedTable(this, dataSeries.nextId(), seriesName, h, categories, y),
                 new TableHandle[] {h}, null, ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName)));
     }
 
@@ -1749,7 +1748,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, y,
                 CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
         return catPlot(
-                new CategoryDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t, categories, y),
+                new CategoryDataSeriesSwappablePartitionedTable(this, dataSeries.nextId(), seriesName, t, categories, y),
                 null, new SwappableTable[] {t},
                 ArgumentValidations.isTime(sds, y, new PlotInfo(this, seriesName)));
     }
@@ -1763,7 +1762,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureCategoryPlot();
 
-        final TableBackedTableMapHandle h = PlotUtils.createCategoryTableMapHandle(t, categories, new String[] {y},
+        final TableBackedPartitionedTableHandle h = PlotUtils.createCategoryPartitionedTableHandle(t, categories, new String[] {y},
                 byColumns, new PlotInfo(this, seriesName));
         final MultiCatSeries series =
                 new MultiCatSeries(this, dataSeries.nextId(), seriesName, h, categories, y, byColumns);
@@ -1849,7 +1848,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public CategoryDataSeriesInternal piePlot(final Comparable seriesName, final Table t, final String categories,
             final String y) {
         final TableHandle h = PlotUtils.createCategoryTableHandle(t, categories, y);
-        return piePlot(new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, y),
+        return piePlot(new CategoryDataSeriesPartitionedTable(this, dataSeries.nextId(), seriesName, h, categories, y),
                 new TableHandle[] {h}, null);
     }
 
@@ -1861,7 +1860,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, y,
                 CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
         return piePlot(
-                new CategoryDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t, categories, y),
+                new CategoryDataSeriesSwappablePartitionedTable(this, dataSeries.nextId(), seriesName, t, categories, y),
                 null, new SwappableTable[] {t});
     }
     // endregion

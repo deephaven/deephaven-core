@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset.impl;
 
 import gnu.trove.list.array.TLongArrayList;
@@ -345,6 +348,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public final WritableRowSet subSetForPositions(RowSequence positions) {
         if (positions.isEmpty()) {
             return RowSetFactory.empty();
+        }
+        if (positions.isContiguous()) {
+            return subSetByPositionRange(positions.firstRowKey(), positions.lastRowKey() + 1);
         }
         final MutableLong currentOffset = new MutableLong();
         final RowSequence.Iterator iter = getRowSequenceIterator();

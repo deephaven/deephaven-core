@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot;
 
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -23,7 +22,7 @@ public class FigureWidget extends FigureImpl implements LiveWidget, LiveWidgetVi
     @SuppressWarnings("WeakerAccess") // this is used in the python integration
     public FigureWidget(final FigureImpl figure) {
         super(figure);
-        figure.getFigure().consolidateTableMaps();
+        figure.getFigure().consolidatePartitionedTables();
     }
 
     @ScriptApi

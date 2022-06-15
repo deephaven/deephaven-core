@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -13,7 +12,6 @@ import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.CharSsmBackedSource;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.DistinctOperatorFactory;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctContext;
 import io.deephaven.engine.table.impl.sources.CharacterArraySource;
 import io.deephaven.engine.table.ColumnSource;
@@ -71,7 +69,7 @@ public class CharChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         this.externalResult = internalResult;
         // endregion ResultAssignment
 
-        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(DistinctOperatorFactory.NODE_SIZE);
+        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(SsmDistinctContext.NODE_SIZE);
     }
 
     //region Bucketed Updates

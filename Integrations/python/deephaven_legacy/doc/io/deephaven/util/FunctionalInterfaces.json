@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.FunctionalInterfaces",
- "methods": {
-  "unexpectedException": "Note: Java generics information - <T,\nE extends java.lang.Exception>\n\n:param operator: io.deephaven.util.FunctionalInterfaces.ThrowingSupplier<T,E>\n:return: T"
- },
- "path": "io.deephaven.util.FunctionalInterfaces",
- "text": "Holder for functional interfaces not defined in the java.util.function package.",
- "typeName": "class"
-}

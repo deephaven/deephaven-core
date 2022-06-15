@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Predicate$LongDouble",
- "methods": {
-  "call": ":param arg1: long\n:param arg2: double\n:return: boolean"
- },
- "path": "io.deephaven.base.Predicate.LongDouble",
- "typeName": "interface"
-}

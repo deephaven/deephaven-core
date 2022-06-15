@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import com.google.auto.service.AutoService;
@@ -27,9 +30,14 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * Engine-specific implementation of {@link TableCreator}.
+ */
 public enum TableCreatorImpl implements TableCreator<Table> {
+
     INSTANCE;
 
+    @SuppressWarnings("unused")
     @AutoService(TableFactory.TableCreatorProvider.class)
     public static final class TableCreatorProvider implements TableFactory.TableCreatorProvider {
 

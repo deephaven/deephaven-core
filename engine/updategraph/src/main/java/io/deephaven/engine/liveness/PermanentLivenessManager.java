@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.liveness;
 
 import io.deephaven.util.Utils;
@@ -14,7 +17,7 @@ public final class PermanentLivenessManager implements LivenessManager {
     PermanentLivenessManager() {}
 
     @Override
-    public final boolean tryManage(@NotNull LivenessReferent referent) {
+    public boolean tryManage(@NotNull LivenessReferent referent) {
         if (Liveness.REFERENCE_TRACKING_DISABLED) {
             return true;
         }

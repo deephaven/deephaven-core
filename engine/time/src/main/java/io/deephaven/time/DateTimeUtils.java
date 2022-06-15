@@ -1,16 +1,15 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.time;
 
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.clock.TimeConstants;
 import io.deephaven.base.clock.TimeZones;
-import io.deephaven.function.LongNumericPrimitives;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.function.Numeric;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;
@@ -1501,7 +1500,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToTime(LongNumericPrimitives.lowerBin(dateTime.getNanos(), intervalNanos));
+        return nanosToTime(Numeric.lowerBin(dateTime.getNanos(), intervalNanos));
     }
 
     /**
@@ -1520,7 +1519,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToTime(LongNumericPrimitives.lowerBin(dateTime.getNanos() - offset, intervalNanos) + offset);
+        return nanosToTime(Numeric.lowerBin(dateTime.getNanos() - offset, intervalNanos) + offset);
     }
 
     /**
@@ -1537,7 +1536,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToTime(LongNumericPrimitives.upperBin(dateTime.getNanos(), intervalNanos));
+        return nanosToTime(Numeric.upperBin(dateTime.getNanos(), intervalNanos));
     }
 
     /**
@@ -1557,7 +1556,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToTime(LongNumericPrimitives.upperBin(dateTime.getNanos() - offset, intervalNanos) + offset);
+        return nanosToTime(Numeric.upperBin(dateTime.getNanos() - offset, intervalNanos) + offset);
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------------

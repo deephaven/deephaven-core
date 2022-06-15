@@ -1,8 +1,13 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.treetable;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.impl.QueryTableTestBase;
+import org.hamcrest.Matcher;
+import org.jmock.AbstractExpectations;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;
@@ -12,6 +17,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 public class TreeTableClientTableManagerTest extends QueryTableTestBase {
@@ -67,8 +73,10 @@ public class TreeTableClientTableManagerTest extends QueryTableTestBase {
             final int myI = i;
             checking(new Expectations() {
                 {
-                    allowing(clients[myI]).addDisconnectHandler(with(anything()));
-                    allowing(clients[myI]).removeDisconnectHandler(with(anything()));
+                    allowing(clients[myI]).addDisconnectHandler(
+                            with(AbstractExpectations.<Consumer<TreeTableClientTableManager.Client>>anything()));
+                    allowing(clients[myI]).removeDisconnectHandler(
+                            with(AbstractExpectations.<Consumer<TreeTableClientTableManager.Client>>anything()));
                 }
             });
         }

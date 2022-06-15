@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.sources.RowIdSource",
- "methods": {
-  "getLong": ":param rowKey: long\n:return: long"
- },
- "path": "io.deephaven.engine.table.impl.sources.RowIdSource",
- "typeName": "class"
-}

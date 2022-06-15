@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.engine.table.ColumnDefinition;
@@ -46,7 +49,7 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
         // Later-defined columns override earlier-defined columns. So we satisfy column dependencies "on the way
         // down" the recursion.
         if (remainingDepsToSatisfy.remove(name)) {
-            // Caller had a depenency on us, so caller gets our dependencies
+            // Caller had a dependency on us, so caller gets our dependencies
             mcsBuilder.setAll(myModifiedColumnSet);
         }
         inner.populateModifiedColumnSetRecurse(mcsBuilder, remainingDepsToSatisfy);

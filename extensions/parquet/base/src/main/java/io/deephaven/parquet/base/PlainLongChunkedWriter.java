@@ -1,6 +1,11 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PlainIntChunkedWriter and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
@@ -12,18 +17,18 @@ import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.*;
-
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 
 /**
  * Plain encoding except for booleans
  */
-public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer, Long> {
+public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer, Number> {
     private final ByteBufferAllocator allocator;
     private final int originalLimit;
 
-    private LongBuffer targetBuffer;
-    private ByteBuffer innerBuffer;
+    private final LongBuffer targetBuffer;
+    private final ByteBuffer innerBuffer;
 
     PlainLongChunkedWriter(int pageSize, ByteBufferAllocator allocator) {
         innerBuffer = allocator.allocate(pageSize);
@@ -34,7 +39,6 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer,
         targetBuffer.mark();
         innerBuffer.mark();
     }
-
 
     @Override
     public final void writeLong(long v) {
@@ -91,16 +95,14 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer,
     }
 
     @Override
-    public WriteResult writeBulkFilterNulls(LongBuffer bulkValues, Long nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
-        long nullLong = nullValue;
-        int nullCount = 0;
+    public WriteResult writeBulkFilterNulls(LongBuffer bulkValues, Number nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
+        long nullLong = nullValue.longValue();
         while (bulkValues.hasRemaining()) {
             long next = bulkValues.get();
             if (next != nullLong) {
                 writeLong(next);
                 dlEncoder.writeInt(1);
             } else {
-                nullCount++;
                 dlEncoder.writeInt(0);
             }
         }
@@ -108,9 +110,8 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer,
     }
 
     @Override
-    public WriteResult writeBulkFilterNulls(LongBuffer bulkValues, Long nullValue, int rowCount) {
-        long nullLong = nullValue;
-        int nullCount = 0;
+    public WriteResult writeBulkFilterNulls(LongBuffer bulkValues, Number nullValue, int rowCount) {
+        long nullLong = nullValue.longValue();
         int i = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
@@ -120,13 +121,9 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer,
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
-                nullCount++;
             }
             i++;
         }
         return new WriteResult(rowCount, nullOffsets);
     }
-
-
-
 }

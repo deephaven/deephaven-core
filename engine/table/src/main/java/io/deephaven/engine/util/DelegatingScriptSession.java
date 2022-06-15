@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.table.lang.QueryScope;
@@ -11,8 +14,10 @@ import java.lang.ref.WeakReference;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * The delegating script session delegates all calls to another script session. When evaluating a script it massages the
@@ -24,7 +29,7 @@ public class DelegatingScriptSession implements ScriptSession {
     private final Set<String> knownVariables = new HashSet<>();
 
     public DelegatingScriptSession(final ScriptSession delegate) {
-        this.delegate = delegate;
+        this.delegate = Objects.requireNonNull(delegate);
     }
 
     private Changes contextualizeChanges(final Changes diff) {
@@ -48,6 +53,11 @@ public class DelegatingScriptSession implements ScriptSession {
         }
         knownVariables.addAll(diff.created.keySet());
         return diff;
+    }
+
+    @Override
+    public SnapshotScope snapshot(@Nullable SnapshotScope previousIfPresent) {
+        return delegate.snapshot(previousIfPresent);
     }
 
     @NotNull
@@ -130,6 +140,16 @@ public class DelegatingScriptSession implements ScriptSession {
     @Override
     public boolean tryManage(@NotNull LivenessReferent referent) {
         return delegate.tryManage(referent);
+    }
+
+    @Override
+    public boolean tryUnmanage(@NotNull LivenessReferent referent) {
+        return delegate.tryUnmanage(referent);
+    }
+
+    @Override
+    public boolean tryUnmanage(@NotNull Stream<? extends LivenessReferent> referents) {
+        return delegate.tryUnmanage(referents);
     }
 
     @Override

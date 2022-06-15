@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.impl.singlerange.*;
@@ -19,7 +22,7 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
     }
 
     @Override
-    public OrderedLongSet getTreeIndexImpl() {
+    public OrderedLongSet getOrderedLongSet() {
         if (pendingStart != -1) {
             if (pendingSr == null && pendingContainerKey == -1 && rb == null) {
                 final SingleRange r = SingleRange.make(pendingStart, pendingEnd);
@@ -70,7 +73,7 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
     }
 
     @Override
-    public void appendTreeIndexImpl(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
+    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
         if (ix.ixIsEmpty()) {
             return;
         }

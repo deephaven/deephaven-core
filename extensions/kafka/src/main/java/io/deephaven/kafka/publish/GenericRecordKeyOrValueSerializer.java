@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.kafka.publish;
 
 import io.deephaven.chunk.attributes.Values;
@@ -427,7 +430,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             return makeIntFieldProcessor(fieldName, src);
         }
         if (type == long.class) {
-            return getLongProcessor(field, fieldName, source.getColumn(columnName).getType(), src);
+            return getLongProcessor(field, fieldName, source.getDefinition().getColumn(columnName).getDataType(), src);
         }
         if (type == float.class) {
             return makeFloatFieldProcessor(fieldName, src);

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSet;
@@ -45,7 +48,7 @@ public interface RowSetLike {
 
                 @Override
                 public void doneAdding() {
-                    idx = new TrackingWritableRowSetImpl(b.getTreeIndexImpl());
+                    idx = new TrackingWritableRowSetImpl(b.getOrderedLongSet());
                     b = null;
                 }
 

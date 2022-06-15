@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.util;
 
 import io.deephaven.base.Pair;
@@ -158,7 +161,7 @@ public class TestWindowCheck {
 
         class FailureListener extends InstrumentedTableUpdateListener {
             FailureListener() {
-                super("Failure ShiftObliviousListener");
+                super("Failure Listener");
             }
 
             @Override

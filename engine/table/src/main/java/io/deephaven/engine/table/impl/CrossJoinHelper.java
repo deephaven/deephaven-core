@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
@@ -147,8 +150,8 @@ public class CrossJoinHelper {
                             if (downstream.modified().isEmpty()) {
                                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                             } else {
-                                downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
-                                leftTransformer.transform(upstream.modifiedColumnSet(), resultTable.modifiedColumnSet);
+                                downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+                                leftTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
                             }
                         } else if (upstream.modified().isNonempty()) {
                             final RowSetBuilderSequential modBuilder = RowSetFactory.builderSequential();
@@ -160,8 +163,8 @@ public class CrossJoinHelper {
                                 }
                             });
                             downstream.modified = modBuilder.build();
-                            downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
-                            leftTransformer.transform(upstream.modifiedColumnSet(), resultTable.modifiedColumnSet);
+                            downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+                            leftTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
                         } else {
                             downstream.modified = RowSetFactory.empty();
                             downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -658,7 +661,7 @@ public class CrossJoinHelper {
                         if (downstream.modified().isEmpty()) {
                             downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                         } else {
-                            downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
+                            downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
                             downstream.modifiedColumnSet().clear();
                             if (leftChanged && tracker.hasLeftModifies) {
                                 leftTransformer.transform(upstreamLeft.modifiedColumnSet(),
@@ -830,9 +833,9 @@ public class CrossJoinHelper {
                         if (downstream.modified().isEmpty()) {
                             downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                         } else {
-                            downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
+                            downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
                             rightTransformer.clearAndTransform(upstream.modifiedColumnSet(),
-                                    downstream.modifiedColumnSet());
+                                    downstream.modifiedColumnSet);
                         }
 
                         resultTable.notifyListeners(downstream);
@@ -895,17 +898,17 @@ public class CrossJoinHelper {
             downstream.added = RowSetFactory.empty();
             downstream.removed = RowSetFactory.empty();
             downstream.modified = RowSetFactory.empty();
-            downstream.modifiedColumnSet = result.modifiedColumnSet;
-            downstream.modifiedColumnSet().clear();
+            downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+            downstream.modifiedColumnSet.clear();
 
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
 
             try (final SafeCloseableList closer = new SafeCloseableList()) {
                 if (rightChanged && rightUpdate.modified().isNonempty()) {
-                    rightTransformer.transform(rightUpdate.modifiedColumnSet(), result.modifiedColumnSet);
+                    rightTransformer.transform(rightUpdate.modifiedColumnSet(), downstream.modifiedColumnSet);
                 }
                 if (leftChanged && leftUpdate.modified().isNonempty()) {
-                    leftTransformer.transform(leftUpdate.modifiedColumnSet(), result.modifiedColumnSet);
+                    leftTransformer.transform(leftUpdate.modifiedColumnSet(), downstream.modifiedColumnSet);
                 }
 
                 long currRightShift = 0; // how far currRight has been shifted

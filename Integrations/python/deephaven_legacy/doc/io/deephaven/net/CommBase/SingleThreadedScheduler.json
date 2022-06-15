@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.net.CommBase$SingleThreadedScheduler",
- "methods": {
-  "start": ":return: io.deephaven.net.CommBase.SingleThreadedScheduler"
- },
- "path": "io.deephaven.net.CommBase.SingleThreadedScheduler",
- "text": "Create a private, single-threaded scheduler and driver thread",
- "typeName": "class"
-}

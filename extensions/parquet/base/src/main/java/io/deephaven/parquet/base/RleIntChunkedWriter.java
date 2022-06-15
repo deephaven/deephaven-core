@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
@@ -13,7 +16,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import static org.apache.parquet.bytes.BytesInput.concat;
-
 
 /**
  * Plain encoding except for booleans
@@ -101,14 +103,12 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, Int
     @Override
     public WriteResult writeBulkFilterNulls(IntBuffer bulkValues, Integer nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
         int nullInt = nullValue;
-        int nullCount = 0;
         while (bulkValues.hasRemaining()) {
             int next = bulkValues.get();
             if (next != nullInt) {
                 writeInteger(next);
                 dlEncoder.writeInt(1);
             } else {
-                nullCount++;
                 dlEncoder.writeInt(0);
             }
         }
@@ -118,7 +118,6 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, Int
     @Override
     public WriteResult writeBulkFilterNulls(IntBuffer bulkValues, Integer nullValue, int rowCount) {
         int nullInt = nullValue;
-        int nullCount = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         int i = 0;
         while (bulkValues.hasRemaining()) {
@@ -126,7 +125,6 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, Int
             if (next != nullInt) {
                 writeInteger(next);
             } else {
-                nullCount++;
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);
             }

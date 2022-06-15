@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.configuration.Configuration;
@@ -209,7 +208,7 @@ public interface OrderedLongSet {
             builder.appendKey(keys.get(ki));
         }
         builder.appendKey(last);
-        return builder.getTreeIndexImpl();
+        return builder.getOrderedLongSet();
     }
 
     OrderedLongSet EMPTY = new OrderedLongSet() {
@@ -477,13 +476,13 @@ public interface OrderedLongSet {
 
         default void setDomain(long minKey, long maxKey) {}
 
-        OrderedLongSet getTreeIndexImpl();
+        OrderedLongSet getOrderedLongSet();
 
         void appendKey(long key);
 
         void appendRange(long firstKey, long lastKey);
 
-        default void appendTreeIndexImpl(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
+        default void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
             ix.ixForEachLongRange((final long start, final long last) -> {
                 appendRange(start + shiftAmount, last + shiftAmount);
                 return true;

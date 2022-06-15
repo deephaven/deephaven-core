@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.base.RingBuffer$Iterator",
- "methods": {
-  "hasNext": ":return: boolean",
-  "next": ":return: RingBuffer.E"
- },
- "path": "io.deephaven.base.RingBuffer.Iterator",
- "typeName": "class"
-}

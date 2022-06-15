@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache$LongImpl",
- "methods": {
-  "computeIfAbsent": ":param key: BoundedIntrusiveMappingCache.LongImpl.KEY_TYPE\n:param mapper: java.util.function.ToLongFunction<BoundedIntrusiveMappingCache.LongImpl.KEY_TYPE>\n:return: long"
- },
- "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.LongImpl",
- "typeName": "class"
-}

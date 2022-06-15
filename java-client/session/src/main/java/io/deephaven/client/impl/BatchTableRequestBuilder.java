@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteStringAccess;
@@ -526,6 +529,12 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(LastRowKey lastRowKey) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
+        public void visit(Partition partition) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }

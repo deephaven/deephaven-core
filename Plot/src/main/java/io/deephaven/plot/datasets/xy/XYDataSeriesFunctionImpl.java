@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.datasets.xy;
 
 import io.deephaven.io.logger.Logger;
@@ -10,8 +9,8 @@ import io.deephaven.plot.Chart;
 import io.deephaven.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.PlotUtils;
-import io.deephaven.function.DoubleFpPrimitives;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.function.Numeric;
 
 import java.util.Map;
 import java.util.SortedMap;
@@ -143,8 +142,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     private void recomputeRange(final double xmin, final double xmax, final int npoints) {
         final double dx = (xmax - xmin) / (npoints - 1);
 
-        if (!DoubleFpPrimitives.isNormal(xmin) || !DoubleFpPrimitives.isNormal(xmax)
-                || !DoubleFpPrimitives.isNormal(dx)) {
+        if (!Numeric.isFinite(xmin) || !Numeric.isFinite(xmax) || !Numeric.isFinite(dx)) {
             log.info("XYDataSeriesFunction: abnormal range: xmin=" + xmin + " xmax=" + xmax + " dx=" + dx + " npoints="
                     + npoints);
             return;
@@ -157,10 +155,10 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     }
 
     private void computeY(final double x) {
-        if (DoubleFpPrimitives.isNormal(x)) {
+        if (Numeric.isFinite(x)) {
             buffer.computeIfAbsent(x, val -> {
                 double y = function.applyAsDouble(x);
-                if (!DoubleFpPrimitives.isNormal(y)) {
+                if (!Numeric.isFinite(y)) {
                     log.info("XYDataSeriesFunction: abnormal y value: x=" + x + " y=" + y + " xmin=" + xmin + " xmax="
                             + xmax + " npoints=" + npoints);
                     y = Double.NaN;
@@ -231,7 +229,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
      * Sets the data range for this series.
      *
      * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax} {@code xmin} and {@code xmax}
-     *         must be normal. See {@link DoubleFpPrimitives#isNormal} {@code npoints} must non-negative
+     *         must be finite. See {@link Numeric#isFinite} {@code npoints} must non-negative
      * @param xmin range minimum
      * @param xmax range maximum
      * @param npoints number of data points
@@ -309,7 +307,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
      * @return this series
      */
     private XYDataSeriesFunctionImpl funcRangeInternal(double xmin, double xmax, int npoints, boolean isUser) {
-        if (!DoubleFpPrimitives.isNormal(xmin) || !DoubleFpPrimitives.isNormal(xmax)) {
+        if (!Numeric.isFinite(xmin) || !Numeric.isFinite(xmax)) {
             throw new PlotIllegalArgumentException("Abnormal range value.  xmin=" + xmin + " xmax=" + xmax, this);
         }
 

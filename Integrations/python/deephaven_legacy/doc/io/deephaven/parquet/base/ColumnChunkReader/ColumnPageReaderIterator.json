@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.parquet.base.ColumnChunkReader$ColumnPageReaderIterator",
- "methods": {},
- "path": "io.deephaven.parquet.base.ColumnChunkReader.ColumnPageReaderIterator",
- "typeName": "interface"
-}

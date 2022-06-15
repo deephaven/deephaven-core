@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.console.python;
 
 import dagger.Module;
@@ -5,12 +8,12 @@ import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.StringKey;
 import io.deephaven.engine.util.PythonDeephavenSession;
+import io.deephaven.engine.util.PythonEvaluatorJpy;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.concurrent.TimeoutException;
 
 @Module
 public class PythonConsoleSessionModule {
@@ -22,13 +25,12 @@ public class PythonConsoleSessionModule {
     }
 
     @Provides
-    PythonDeephavenSession bindPythonSession(ObjectTypeLookup lookup, final ScriptSession.Listener listener) {
+    PythonDeephavenSession bindPythonSession(ObjectTypeLookup lookup, final ScriptSession.Listener listener,
+            PythonEvaluatorJpy pythonEvaluator) {
         try {
-            return new PythonDeephavenSession(lookup, listener, true, true);
+            return new PythonDeephavenSession(lookup, listener, true, true, pythonEvaluator);
         } catch (IOException e) {
             throw new UncheckedIOException("Unable to run python startup scripts", e);
-        } catch (InterruptedException | TimeoutException e) {
-            throw new IllegalStateException("Unable to start a python session: ", e);
         }
     }
 }

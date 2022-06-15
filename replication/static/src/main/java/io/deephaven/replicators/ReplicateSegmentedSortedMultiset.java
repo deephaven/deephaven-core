@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.replicators;
 
 import gnu.trove.set.hash.THashSet;
@@ -55,7 +58,7 @@ public class ReplicateSegmentedSortedMultiset {
         fixupObjectSsm(objectSsm,
                 ReplicateSegmentedSortedMultiset::fixupSourceConstructor,
                 (l) -> replaceRegion(l, "CreateNew", Collections.singletonList(
-                        "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE, Object.class));")));
+                        "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, Object.class));")));
 
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java");

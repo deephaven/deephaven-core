@@ -1,6 +1,7 @@
 #
-#   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ This module supports bootstrapping a Deephaven Python Script session from Python."""
 
 import os

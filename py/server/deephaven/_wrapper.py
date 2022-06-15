@@ -1,6 +1,7 @@
 #
-#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ This module defines an Abstract Class for Java object wrappers.
 
 The primary purpose of this ABC is to enable downstream code to retrieve the wrapped Java objects in a uniform way.

@@ -1,6 +1,7 @@
 #
-#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ The module implements the LineStyle class that can be used to define the line style of a plot. """
 
 from enum import Enum

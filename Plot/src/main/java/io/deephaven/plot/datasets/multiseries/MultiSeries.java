@@ -1,13 +1,11 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.plot.Series;
 import io.deephaven.plot.datasets.DataSeries;
 import groovy.lang.Closure;
-import io.deephaven.engine.table.Table;
 
 import java.util.function.Function;
 
@@ -19,16 +17,16 @@ public interface MultiSeries extends Series {
     // add functions to modify multiseries here (e.g. color)
 
     /**
-     * Defines the procedure to name a generated series. The input of the naming function is the table map key
-     * corresponding to the new series.
+     * Defines the procedure to name a generated series. The input of the naming function is an array of the column
+     * values corresponding to the new series.
      *
      * @param namingFunction series naming function
      */
-    MultiSeries seriesNamingFunction(final Function<Object, String> namingFunction);
+    MultiSeries seriesNamingFunction(final Function<Object[], String> namingFunction);
 
     /**
-     * Defines the procedure to name a generated series. The input of the naming function is the table map key
-     * corresponding to the new series.
+     * Defines the procedure to name a generated series. The input of the naming function is an array of the column
+     * values corresponding to the new series.
      *
      * @param namingFunction series naming closure
      */

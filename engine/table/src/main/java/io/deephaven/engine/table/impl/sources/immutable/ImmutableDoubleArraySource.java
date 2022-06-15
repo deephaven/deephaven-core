@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ImmutableCharArraySource and regenerate
@@ -74,6 +77,12 @@ public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSo
 
     public final double getUnsafe(long index) {
         return data[(int)index];
+    }
+
+    public final double getAndSetUnsafe(long index, double newValue) {
+        double oldValue = data[(int)index];
+        data[(int)index] = newValue;
+        return oldValue;
     }
 
     @Override

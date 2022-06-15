@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.FlightSession;
@@ -16,9 +19,13 @@ class GetDirectTable extends FlightExampleBase {
     protected void execute(FlightSession flight) throws Exception {
         try (final FlightStream stream = flight.stream(ticket)) {
             System.out.println(stream.getSchema());
+            long tableRows = 0L;
             while (stream.next()) {
-                System.out.println(stream.getRoot().contentToTSVString());
+                int batchRows = stream.getRoot().getRowCount();
+                System.out.println("    batch received: " + batchRows + " rows");
+                tableRows += batchRows;
             }
+            System.out.println("Table received: " + tableRows + " rows");
         }
     }
 

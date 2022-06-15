@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.client.impl;
 
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -68,4 +67,7 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
      * @return the {@code BarrageTable}
      */
     BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException;
+
+    @Override
+    void close();
 }

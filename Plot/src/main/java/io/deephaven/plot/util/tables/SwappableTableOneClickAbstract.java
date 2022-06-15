@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.util.tables;
 
 import io.deephaven.base.verify.Require;
@@ -12,23 +11,23 @@ import java.util.*;
 /**
  * Holds a handle on a one click table that may get swapped out for another table.
  */
-public abstract class SwappableTableOneClickAbstract extends SwappableTable implements SwappableTableMap {
+public abstract class SwappableTableOneClickAbstract extends SwappableTable implements SwappablePartitionedTable {
     private static final long serialVersionUID = 2L;
 
     protected final long updateInterval;
     protected final boolean requireAllFiltersToDisplay;
     protected final String[] byColumns;
-    protected final TableMapHandle tableMapHandle;
+    protected final PartitionedTableHandle partitionedTableHandle;
     private final Comparable seriesName;
 
     protected SwappableTableOneClickAbstract(@NotNull final Comparable seriesName,
             final long updateInterval,
-            @NotNull final TableMapHandle tableMapHandle,
+            @NotNull final PartitionedTableHandle partitionedTableHandle,
             final boolean requireAllFiltersToDisplay,
             @NotNull final String[] byColumns) {
-        super(tableMapHandle);
+        super(partitionedTableHandle);
         Require.neqNull(byColumns, "byColumns");
-        this.tableMapHandle = tableMapHandle;
+        this.partitionedTableHandle = partitionedTableHandle;
         this.seriesName = seriesName;
         this.updateInterval = updateInterval;
         this.requireAllFiltersToDisplay = requireAllFiltersToDisplay;
@@ -37,7 +36,7 @@ public abstract class SwappableTableOneClickAbstract extends SwappableTable impl
 
     @Override
     public void addColumn(final String column) {
-        this.tableMapHandle.addColumn(column);
+        this.partitionedTableHandle.addColumn(column);
     }
 
     public Comparable getSeriesName() {
@@ -47,8 +46,8 @@ public abstract class SwappableTableOneClickAbstract extends SwappableTable impl
     public abstract List<String> getByColumns();
 
     @Override
-    public TableMapHandle getTableMapHandle() {
-        return tableMapHandle;
+    public PartitionedTableHandle getPartitionedTableHandle() {
+        return partitionedTableHandle;
     }
 
     public boolean isRequireAllFiltersToDisplay() {

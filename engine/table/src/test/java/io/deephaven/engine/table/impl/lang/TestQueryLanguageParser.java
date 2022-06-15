@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.lang;
 
 import io.deephaven.base.Pair;
@@ -27,6 +26,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
+import static io.deephaven.engine.table.ColumnDefinition.*;
 import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.isWideningPrimitiveConversion;
 
 @SuppressWarnings("InstantiatingObjectToGetClassObject")
@@ -1067,13 +1067,13 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "java.util.Arrays.asList(5)";
         check(expression, resultExpression, List.class, new String[] {});
 
-        expression = "io.deephaven.engine.table.ColumnDefinition.COLUMNTYPE_NORMAL";
-        resultExpression = "io.deephaven.engine.table.ColumnDefinition.COLUMNTYPE_NORMAL";
-        check(expression, resultExpression, int.class, new String[] {});
+        expression = "io.deephaven.engine.table.ColumnDefinition.ColumnType.Normal";
+        resultExpression = "io.deephaven.engine.table.ColumnDefinition.ColumnType.Normal";
+        check(expression, resultExpression, ColumnType.class, new String[] {});
 
-        expression = "ColumnDefinition.COLUMNTYPE_NORMAL";
-        resultExpression = "ColumnDefinition.COLUMNTYPE_NORMAL";
-        check(expression, resultExpression, int.class, new String[] {});
+        expression = "ColumnDefinition.ColumnType.Normal";
+        resultExpression = "ColumnDefinition.ColumnType.Normal";
+        check(expression, resultExpression, ColumnType.class, new String[] {});
 
         expression = "Color.BLUE";
         resultExpression = "Color.BLUE";

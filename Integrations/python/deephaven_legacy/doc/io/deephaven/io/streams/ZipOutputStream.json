@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.io.streams.ZipOutputStream",
- "methods": {
-  "write": "*Overload 1*  \n  :param b: int\n  \n*Overload 2*  \n  :param b: byte[]\n  \n*Overload 3*  \n  :param b: byte[]\n  :param off: int\n  :param len: int"
- },
- "path": "io.deephaven.io.streams.ZipOutputStream",
- "typeName": "class"
-}

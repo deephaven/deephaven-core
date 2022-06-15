@@ -1,10 +1,14 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table;
 
-import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.collect.Iterators;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.BitSet;
 import java.util.Map;
@@ -430,6 +434,15 @@ public class ModifiedColumnSet {
      */
     public int numColumns() {
         return columns.size();
+    }
+
+    /**
+     * @return the names of the dirty columns in this set
+     */
+    public String[] dirtyColumnNames() {
+        if (dirtyColumns == null)
+            return ArrayTypeUtils.EMPTY_STRING_ARRAY;
+        return dirtyColumns.stream().mapToObj(ci -> columnNames[ci]).toArray(String[]::new);
     }
 
     /**

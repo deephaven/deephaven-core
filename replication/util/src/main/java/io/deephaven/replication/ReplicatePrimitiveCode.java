@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.replication;
 
 import io.deephaven.base.verify.Require;
@@ -88,7 +87,7 @@ public class ReplicatePrimitiveCode {
                 "Object", "Object", "Object", "Object", "OBJECT");
     }
 
-    private static String charToByte(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String charToByte(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Byte", "Byte", "byte", "byte", "BYTE");
@@ -118,7 +117,7 @@ public class ReplicatePrimitiveCode {
                 "Long", "Long", "long", "long", "LONG");
     }
 
-    private static String charToShort(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String charToShort(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Short", "Short", "short", "short", "SHORT");
@@ -198,7 +197,7 @@ public class ReplicatePrimitiveCode {
                 "Byte", "Byte", "byte", "byte", "BYTE");
     }
 
-    private static String intToDouble(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String intToDouble(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Double", "Double", "double", "double", "DOUBLE");
@@ -210,7 +209,7 @@ public class ReplicatePrimitiveCode {
                 "Float", "Float", "float", "float", "FLOAT");
     }
 
-    private static String intToLong(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String intToLong(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnInt(sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Long", "Long", "long", "long", "LONG");

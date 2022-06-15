@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.chunk.attributes.Values;
@@ -35,9 +38,8 @@ public class TestAvroAdapter {
         final Schema avroSchema = new Schema.Parser().parse(getSchemaFile("pageviews.avc"));
 
         final String[] names = new String[] {"viewtime", "userid", "pageid"};
-        final Class[] types = new Class[] {long.class, String.class, String.class};
-
-        final TableDefinition definition = new TableDefinition(Arrays.asList(types), Arrays.asList(names));
+        final Class<?>[] types = new Class[] {long.class, String.class, String.class};
+        final TableDefinition definition = TableDefinition.from(Arrays.asList(names), Arrays.asList(types));
 
         final GenericData.Record genericRecord = new GenericData.Record(avroSchema);
         genericRecord.put("viewtime", 1234L);
@@ -86,10 +88,9 @@ public class TestAvroAdapter {
 
         final String[] names = new String[] {"last_name", "number", "truthiness", "timestamp", "timestampMicros",
                 "timeMillis", "timeMicros"};
-        final Class[] types = new Class[] {String.class, int.class, boolean.class, DateTime.class, DateTime.class,
+        final Class<?>[] types = new Class[] {String.class, int.class, boolean.class, DateTime.class, DateTime.class,
                 int.class, long.class};
-
-        final TableDefinition definition = new TableDefinition(Arrays.asList(types), Arrays.asList(names));
+        final TableDefinition definition = TableDefinition.from(Arrays.asList(names), Arrays.asList(types));
 
         final DateTime dt1 = DateTimeUtils.convertDateTime("2021-08-23T12:00:00.123456789 NY");
         final DateTime dt2 = DateTimeUtils.convertDateTime("2021-08-23T13:00:00.500600700 NY");

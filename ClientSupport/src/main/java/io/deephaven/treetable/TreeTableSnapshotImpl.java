@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.treetable;
 
 import io.deephaven.configuration.Configuration;
@@ -18,8 +21,7 @@ import java.util.Set;
 import static io.deephaven.treetable.TreeTableConstants.RE_TREE_KEY;
 import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
 
-class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>>
-        extends AbstractTreeSnapshotImpl<TreeTableInfo, CLIENT_TYPE> {
+class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
     private static final boolean NODE_SORT_MODE =
             Configuration.getInstance().getBooleanWithDefault("TreeTableSnapshotImpl.sortAtNodes", true);
 
@@ -51,7 +53,7 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
             BitSet columns,
             @NotNull WhereFilter[] filters,
             @NotNull List<SortDirective> sorts,
-            CLIENT_TYPE client,
+            TreeTableClientTableManager.Client client,
             Set<TreeSnapshotQuery.Operation> includedOps) {
         super(baseTableId, baseTable, tablesByKey, firstRow, lastRow, columns, filters, sorts, client, includedOps);
     }

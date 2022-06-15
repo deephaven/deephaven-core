@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -12,14 +15,14 @@ import java.util.Objects;
 import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 
-abstract class StaticNaturalJoinStateManager {
+public abstract class StaticNaturalJoinStateManager {
     static final int CHUNK_SIZE = 4096;
-    static final long DUPLICATE_RIGHT_VALUE = -2;
-    static final long NO_RIGHT_ENTRY_VALUE = RowSequence.NULL_ROW_KEY;
+    public static final long DUPLICATE_RIGHT_VALUE = -2;
+    public static final long NO_RIGHT_ENTRY_VALUE = RowSequence.NULL_ROW_KEY;
 
-    final ColumnSource<?>[] keySourcesForErrorMessages;
+    protected final ColumnSource<?>[] keySourcesForErrorMessages;
 
-    StaticNaturalJoinStateManager(ColumnSource<?>[] keySourcesForErrorMessages) {
+    protected StaticNaturalJoinStateManager(ColumnSource<?>[] keySourcesForErrorMessages) {
         this.keySourcesForErrorMessages = keySourcesForErrorMessages;
     }
 
@@ -31,14 +34,14 @@ abstract class StaticNaturalJoinStateManager {
     }
 
     // produce a pretty key for error messages
-    private String extractKeyStringFromSourceTable(long leftKey) {
+    protected String extractKeyStringFromSourceTable(long leftKey) {
         if (keySourcesForErrorMessages.length == 1) {
             return Objects.toString(keySourcesForErrorMessages[0].get(leftKey));
         }
         return "[" + Arrays.stream(keySourcesForErrorMessages).map(ls -> Objects.toString(ls.get(leftKey))).collect(Collectors.joining(", ")) + "]";
     }
 
-    WritableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch, LongUnaryOperator rightSideFromSlot, JoinControl.RedirectionType redirectionType) {
+    public WritableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch, LongUnaryOperator rightSideFromSlot, JoinControl.RedirectionType redirectionType) {
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
@@ -86,5 +89,5 @@ abstract class StaticNaturalJoinStateManager {
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
 
-    abstract void decorateLeftSide(RowSet leftRowSet, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections);
+    protected abstract void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, final LongArraySource leftRedirections);
 }

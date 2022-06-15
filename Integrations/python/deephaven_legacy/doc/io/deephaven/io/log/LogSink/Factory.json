@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.io.log.LogSink$Factory",
- "methods": {
-  "create": ":param basePath: java.lang.String\n:param rollInterval: int\n:param rollFormat: java.text.DateFormat\n:param elementPool: io.deephaven.base.pool.Pool<LogSink.Factory.T>\n:param append: boolean\n:param outputBuffer: io.deephaven.base.log.LogOutput\n:param header: java.lang.String\n:param maybeWriter: io.deephaven.io.log.LogSink.LogSinkWriter<io.deephaven.io.log.impl.LogSinkImpl<LogSink.Factory.T>>\n:return: io.deephaven.io.log.LogSink<LogSink.Factory.T>"
- },
- "path": "io.deephaven.io.log.LogSink.Factory",
- "typeName": "interface"
-}

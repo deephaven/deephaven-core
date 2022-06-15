@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.verify.Assert;
@@ -36,7 +39,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
         this.wrappedOK = null;
     }
 
-    public void reset(RowSequence toWrap, long shiftAmount) {
+    public RowSequence reset(RowSequence toWrap, long shiftAmount) {
         if (toWrap instanceof ShiftedRowSequence) {
             final ShiftedRowSequence orig = ((ShiftedRowSequence) toWrap);
             this.shiftAmount = shiftAmount + orig.shiftAmount;
@@ -46,6 +49,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
             this.wrappedOK = toWrap;
         }
         invalidateRowSequenceAsChunkImpl();
+        return this;
     }
 
     public final void clear() {

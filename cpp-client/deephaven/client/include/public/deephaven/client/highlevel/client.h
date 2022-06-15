@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 #pragma once
 
 #include <future>
@@ -6,11 +9,10 @@
 #include <arrow/flight/client.h>
 #include "deephaven/client/highlevel/columns.h"
 #include "deephaven/client/highlevel/expressions.h"
+#include "deephaven/client/highlevel/ticking.h"
 #include "deephaven/client/utility/callbacks.h"
 
-namespace deephaven {
-namespace client {
-namespace highlevel {
+namespace deephaven::client::highlevel {
 namespace impl {
 class AggregateComboImpl;
 class AggregateImpl;
@@ -24,7 +26,7 @@ class TableHandleManager;
 
 namespace internal {
 class TableHandleStreamAdaptor;
-}  // namespace
+}  // namespace internal
 
 /**
  * This class provides an interface to Arrow Flight, which is the main way to push data into and
@@ -186,7 +188,7 @@ public:
   TableHandleManager getManager() const;
 
 private:
-  Client(std::shared_ptr<impl::ClientImpl> impl);
+  explicit Client(std::shared_ptr<impl::ClientImpl> impl);
   std::shared_ptr<impl::ClientImpl> impl_;
 };
 
@@ -1066,6 +1068,23 @@ public:
    */
   std::shared_ptr<arrow::flight::FlightStreamReader> getFlightStreamReader() const;
 
+  /**
+   * Early unstable interface to subscribe/unsubscribe to ticking tables. This interface supports
+   * append-only tables and will call back with an error if the table changes in a way that is not
+   * append-only.
+   */
+  void subscribe(std::shared_ptr<TickingCallback> callback);
+  /**
+   * Unsubscribe from the table.
+   */
+  void unsubscribe(std::shared_ptr<TickingCallback> callback);
+
+  /**
+   * Get access to the bytes of the Deephaven "Ticket" type (without having to reference the
+   * protobuf data structure, which we would prefer not to have a dependency on here)
+   */
+  const std::string &getTicketAsString() const;
+
 private:
   std::shared_ptr<impl::TableHandleImpl> impl_;
 };
@@ -1439,6 +1458,4 @@ TableHandle TableHandle::ungroup(bool nullFill, Args &&... args) const {
   };
   return ungroup(nullFill, std::move(groupByColumns));
 }
-}  // namespace highlevel
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::highlevel

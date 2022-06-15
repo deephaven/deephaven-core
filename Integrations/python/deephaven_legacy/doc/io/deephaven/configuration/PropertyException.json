@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.configuration.PropertyException",
- "methods": {},
- "path": "io.deephaven.configuration.PropertyException",
- "text": "Standardized runtime exception type for PropertyFile and related utilities.",
- "typeName": "class"
-}

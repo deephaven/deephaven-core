@@ -1,9 +1,12 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableMap;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -30,9 +33,8 @@ import org.junit.experimental.categories.Category;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Category(SerialTest.class)
 public class FuzzerTest {
@@ -119,9 +121,9 @@ public class FuzzerTest {
 
         session.evaluateScript(groovyString);
 
-        final List<Object> hardReferences = new ArrayList<>();
+        final Map<String, Object> hardReferences = new ConcurrentHashMap<>();
 
-        validateBindingTableMapConstituents(session, hardReferences);
+        validateBindingPartitionedTableConstituents(session, hardReferences);
         validateBindingTables(session, hardReferences);
         annotateBinding(session);
 
@@ -165,7 +167,7 @@ public class FuzzerTest {
             session.evaluateScript(query.toString());
 
             annotateBinding(session);
-            final List<Object> hardReferences = new ArrayList<>();
+            final Map<String, Object> hardReferences = new ConcurrentHashMap<>();
             validateBindingTables(session, hardReferences);
 
             final TimeTable timeTable = (TimeTable) session.getVariable("tt");
@@ -309,7 +311,8 @@ public class FuzzerTest {
         });
     }
 
-    private void addPrintListener(GroovyDeephavenSession session, final String variable, List<Object> hardReferences) {
+    private void addPrintListener(
+            GroovyDeephavenSession session, final String variable, Map<String, Object> hardReferences) {
         final Table table = (Table) session.getVariable(variable);
         System.out.println(variable);
         TableTools.showWithRowSet(table);
@@ -317,11 +320,11 @@ public class FuzzerTest {
         if (table.isRefreshing()) {
             final FuzzerPrintListener listener = new FuzzerPrintListener(variable, table);
             table.listenForUpdates(listener);
-            hardReferences.add(listener);
+            hardReferences.put("print_" + System.identityHashCode(table), listener);
         }
     }
 
-    private void validateBindingTables(GroovyDeephavenSession session, List<Object> hardReferences) {
+    private void validateBindingTables(GroovyDeephavenSession session, Map<String, Object> hardReferences) {
         // noinspection unchecked
         session.getBinding().getVariables().forEach((k, v) -> {
             if (v instanceof QueryTable && ((QueryTable) v).isRefreshing()) {
@@ -330,27 +333,30 @@ public class FuzzerTest {
         });
     }
 
-    private void validateBindingTableMapConstituents(GroovyDeephavenSession session, List<Object> hardReferences) {
+    private void validateBindingPartitionedTableConstituents(
+            GroovyDeephavenSession session, Map<String, Object> hardReferences) {
         // noinspection unchecked
         session.getBinding().getVariables().forEach((k, v) -> {
-            if (v instanceof LocalTableMap && ((LocalTableMap) v).isRefreshing()) {
-                for (final Object tablemapKey : ((LocalTableMap) v).getKeySet()) {
-                    addValidator(hardReferences, k.toString() + "_" + tablemapKey,
-                            (QueryTable) ((LocalTableMap) v).get(tablemapKey));
+            if (v instanceof PartitionedTable) {
+                final PartitionedTable partitionedTable = (PartitionedTable) v;
+                if (!partitionedTable.table().isRefreshing()) {
+                    return;
                 }
-                final TableMap.Listener listener = (key, table) -> {
-                    addValidator(hardReferences, k.toString() + "_" + key, (QueryTable) table);
-                };
-                hardReferences.add(listener);
-                ((LocalTableMap) v).addListener(listener);
+                final PartitionedTable validated = partitionedTable.transform(table -> {
+                    final String description = k.toString() + "_" + System.identityHashCode(table);
+                    final QueryTable coalesced = (QueryTable) table.coalesce();
+                    addValidator(hardReferences, description, coalesced);
+                    return coalesced;
+                });
+                hardReferences.put(k.toString(), validated);
             }
         });
     }
 
-    private void addValidator(List<Object> hardReferences, String description, QueryTable v) {
+    private void addValidator(Map<String, Object> hardReferences, String description, QueryTable v) {
         final TableUpdateValidator validator = TableUpdateValidator.make(description, v);
         final FailureListener listener = new FailureListener();
         validator.getResultTable().listenForUpdates(listener);
-        hardReferences.add(listener);
+        hardReferences.put(description, listener);
     }
 }

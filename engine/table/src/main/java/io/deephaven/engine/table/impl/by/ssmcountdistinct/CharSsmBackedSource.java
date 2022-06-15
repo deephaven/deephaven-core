@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
 import io.deephaven.vector.CharVector;
@@ -31,7 +34,7 @@ public class CharSsmBackedSource extends AbstractColumnSource<CharVector>
         CharSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
         if(ssm == null) {
             //region CreateNew
-            underlying.set(key, ssm = new CharSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE));
+            underlying.set(key, ssm = new CharSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE));
             //endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);

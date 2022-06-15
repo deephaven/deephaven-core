@@ -1,5 +1,9 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.kafka;
 
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.annotations.ScriptApi;
@@ -370,7 +374,7 @@ public class CdcTools {
     private static List<String> dbTableColumnNames(final Table streamingIn) {
         final List<String> columnNames = new ArrayList<>();
         final int nameOffset = CDC_AFTER_COLUMN_PREFIX.length();
-        for (final DataColumn<?> col : streamingIn.getColumns()) {
+        for (final ColumnDefinition<?> col : streamingIn.getDefinition().getColumns()) {
             final String name = col.getName();
             if (name.startsWith(CDC_AFTER_COLUMN_PREFIX)) {
                 columnNames.add(name.substring(nameOffset));

@@ -1,14 +1,10 @@
-/*
- * Copyright (c) 2020 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
@@ -17,7 +13,9 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 
-import java.util.Random;
+import java.util.Map;
+import java.util.Set;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -40,9 +38,9 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder("ID");
         builder.addTable("a", a);
         builder.addTable("b", b);
-        final TableMap result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
+        final Map<String, Table> result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[] {"a", "b"}, result.getKeySet());
+        assertEquals(Set.of("a", "b"), result.keySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -88,9 +86,9 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder("ID");
         builder.addTable("a", a);
         builder.addTable("b", b);
-        final TableMap result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
+        final Map<String, Table> result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[] {"a", "b"}, result.getKeySet());
+        assertEquals(Set.of("a", "b"), result.keySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -169,9 +167,9 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder().defaultId("ID").defaultKeys()
                 .addTable("a", a)
                 .addTable("b", b, "ID");
-        final TableMap result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
+        final Map<String, Table> result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[] {"a", "b"}, result.getKeySet());
+        assertEquals(Set.of("a", "b"), result.keySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -221,9 +219,9 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder();
         builder.addTable("a", a, "ID", "Key");
         builder.addTable("b", b, "Ego", "Klyuch");
-        final TableMap result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
+        final Map<String, Table> result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[] {"a", "b"}, result.getKeySet());
+        assertEquals(Set.of("a", "b"), result.keySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -300,7 +298,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder();
         builder.addTable("a", a, "ID", "Key");
         builder.addTable("b", b, "Ego", "Klyuch");
-        final TableMap result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
+        final Map<String, Table> result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -338,7 +336,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder();
         builder.addTable("a", a, "ID");
         builder.addTable("b", b, "Ego");
-        final TableMap result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
+        final Map<String, Table> result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(builder::build);
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -384,205 +382,6 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         int[] actual = (int[]) sentSum.getColumn("SS").getDirect();
         int[] expected = new int[] {606, 610};
         assertEquals(expected, actual);
-    }
-
-    public void testTableMap() {
-        final QueryTable source1 = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),
-                col("Partition", "A", "A", "B", "B", "C", "C", "C", "D", "D", "D"),
-                longCol("ID", 1, 2, /* B */ 1, 2, /* C */ 1, 2, 2, /* D */ 1, 2, 2),
-                intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110));
-
-        final QueryTable source2 = TstUtils.testRefreshingTable(RowSetFactory.flat(5).toTracking(),
-                col("Division", "A", "A", "B", "C", "C"),
-                longCol("ID", 2, 3, 1, 2, 2),
-                intCol("Sentinel", 201, 202, 203, 204, 205));
-
-        final TableMap sm1 = source1.updateView("SK1=k").partitionBy("Partition");
-        final TableMap sm2 = source2.updateView("SK2=k").partitionBy("Division");
-
-        final TableMap bykey = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> new SyncTableFilter.Builder().addTable("source1", source1, "ID", "Partition")
-                        .addTable("source2", source2, "ID", "Division").build());
-        final Table s1f = bykey.get("source1");
-        final Table s2f = bykey.get("source2");
-        showWithRowSet(s1f);
-        showWithRowSet(s2f);
-
-        final TableMap filteredByPartition =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID")
-                        .addTableMap("source1", sm1).addTableMap("source2", sm2, "ID").build());
-        for (Object key : filteredByPartition.getKeySet()) {
-            System.out.println(key);
-            showWithRowSet(filteredByPartition.get(key));
-        }
-
-        final TableMap s1tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey) sk).get(1).equals("source1"),
-                sk -> ((SmartKey) sk).get(0));
-        final TableMap s2tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey) sk).get(1).equals("source2"),
-                sk -> ((SmartKey) sk).get(0));
-
-        final Table s1merged = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(s1tm::merge);
-        final Table s2merged = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(s2tm::merge);
-        final Table s1mergedSorted = s1merged.sort("SK1").dropColumns("SK1");
-        final Table s2mergedSorted = s2merged.sort("SK2").dropColumns("SK2");
-
-        assertTableEquals(s1f, s1mergedSorted);
-        assertTableEquals(s2f, s2mergedSorted);
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(source2, i(10, 11), col("Division", "D", "B"), longCol("ID", 2, 2),
-                    intCol("Sentinel", 206, 207));
-            source2.notifyListeners(i(10, 11), i(), i());
-        });
-
-        assertTableEquals(s1f, s1mergedSorted);
-        assertTableEquals(s2f, s2mergedSorted);
-
-        showWithRowSet(s1f);
-        showWithRowSet(s2f);
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(source2, i(12, 13), col("Division", "D", "E"), longCol("ID", 3, 3),
-                    intCol("Sentinel", 208, 209));
-            source2.notifyListeners(i(12, 13), i(), i());
-            addToTable(source1, i(10, 11, 12), col("Partition", "D", "D", "E"), longCol("ID", 3, 4, 3),
-                    intCol("Sentinel", 111, 112, 113));
-            source1.notifyListeners(i(10, 11, 12), i(), i());
-        });
-
-        assertTableEquals(s1f, s1mergedSorted);
-        assertTableEquals(s2f, s2mergedSorted);
-    }
-
-    public void testTableMapRandomized() {
-        for (int seed = 0; seed < 5; ++seed) {
-            testTableMapRandomized(seed);
-        }
-    }
-
-    private void testTableMapRandomized(int seed) {
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, seed, 4, 10, 5);
-
-        final Random random = new Random(seed);
-        final ColumnInfo[] columnInfo1;
-        final ColumnInfo[] columnInfo2;
-        final ColumnInfo[] columnInfoSet1;
-        final ColumnInfo[] columnInfoSet2;
-        final int size = 10;
-        final QueryTable source1Unfiltered = getTable(size, random,
-                columnInfo1 = initColumnInfos(new String[] {"Partition", "ID", "Sentinel", "Truthy"},
-                        new SetGenerator<>("a", "b", "c", "d", "e"),
-                        new IncreasingSortedLongGenerator(2, 1000),
-                        new IntGenerator(0, 1000000),
-                        new BooleanGenerator()));
-
-        final QueryTable source2Unfiltered = getTable(size, random,
-                columnInfo2 = initColumnInfos(new String[] {"Partition", "ID", "Sentinel", "Truthy"},
-                        new SetGenerator<>("a", "b", "c", "d", "e"),
-                        new IncreasingSortedLongGenerator(2, 1000),
-                        new IntGenerator(0, 1000000),
-                        new BooleanGenerator()));
-
-        final QueryTable filterSet1 = getTable(1, random, columnInfoSet1 =
-                initColumnInfos(new String[] {"Partition"}, new SetGenerator<>("a", "b", "c", "d", "e")));
-        final QueryTable filterSet2 = getTable(1, random, columnInfoSet2 =
-                initColumnInfos(new String[] {"Partition"}, new SetGenerator<>("a", "b", "c", "d", "e")));
-
-        final Table dummy = TableTools.newTable(col("Partition", "A"), longCol("ID", 0), intCol("Sentinel", 12345678),
-                col("Truthy", true));
-
-        final Table source1 = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.merge(dummy,
-                source1Unfiltered.whereIn(filterSet1, "Partition").update("Truthy=!!Truthy")));
-        final Table source2 = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.merge(dummy,
-                source2Unfiltered.whereIn(filterSet2, "Partition").update("Truthy=!!Truthy")));
-
-        final TableMap sm1 = source1.updateView("SK1=k").partitionBy("Partition");
-        final TableMap sm2 = source2.updateView("SK2=k").partitionBy("Partition");
-
-        final TableMap bykey =
-                UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> new SyncTableFilter.Builder("ID", "Partition")
-                                .addTable("source1", source1).addTable("source2", source2).build());
-        final Table s1f = bykey.get("source1");
-        final Table s2f = bykey.get("source2");
-
-        final TableMap bykey2 = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> new SyncTableFilter.Builder("ID", "Partition", "Truthy")
-                        .addTable("source1", source1).addTable("source2", source2).build());
-        final Table s1fKeyed = bykey2.get("source1");
-        final Table s2fKeyed = bykey2.get("source2");
-
-        final TableMap filteredByPartition =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID")
-                        .addTableMap("source1", sm1).addTableMap("source2", sm2).build());
-        final TableMap filteredByPartitionKeyed =
-                UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> new SyncTableFilter.Builder("ID", "Truthy")
-                                .addTableMap("source1", sm1).addTableMap("source2", sm2).build());
-
-        final TableMap s1tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey) sk).get(1).equals("source1"),
-                sk -> ((SmartKey) sk).get(0));
-        final TableMap s2tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey) sk).get(1).equals("source2"),
-                sk -> ((SmartKey) sk).get(0));
-
-        final TableMap s1tmKeyed = new FilteredTableMap(filteredByPartitionKeyed,
-                sk -> ((SmartKey) sk).get(1).equals("source1"), sk -> ((SmartKey) sk).get(0));
-        final TableMap s2tmKeyed = new FilteredTableMap(filteredByPartitionKeyed,
-                sk -> ((SmartKey) sk).get(1).equals("source2"), sk -> ((SmartKey) sk).get(0));
-
-        final Table s1merged = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(s1tm::merge);
-        final Table s2merged = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(s2tm::merge);
-        final Table s1mergedSorted = s1merged.sort("SK1").dropColumns("SK1");
-        final Table s2mergedSorted = s2merged.sort("SK2").dropColumns("SK2");
-
-        final Table s1KeyedMerged = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(s1tmKeyed::merge);
-        final Table s2KeyedMerged = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(s2tmKeyed::merge);
-        final Table s1KeyedMergedSorted = s1KeyedMerged.sort("SK1").dropColumns("SK1");
-        final Table s2KeyedMergedSorted = s2KeyedMerged.sort("SK2").dropColumns("SK2");
-
-        assertTableEquals(s1f, s1mergedSorted);
-        assertTableEquals(s2f, s2mergedSorted);
-
-        assertTableEquals(s1fKeyed, s1KeyedMergedSorted);
-        assertTableEquals(s2fKeyed, s2KeyedMergedSorted);
-
-        for (int step = 0; step < 100; ++step) {
-            // TODO (https://github.com/deephaven/deephaven-core/issues/1911): Uncomment these lines once we uncover
-            // sufficient information to reproduce the failure observed once.
-            // if (RefreshingTableTestCase.printTableUpdates) {
-            System.out.println("Seed = " + seed + ", step=" + step);
-            // }
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                if (random.nextInt(10) == 0) {
-                    GenerateTableUpdates.generateAppends(size, random, filterSet1, columnInfoSet1);
-                }
-                if (random.nextInt(10) == 0) {
-                    GenerateTableUpdates.generateAppends(size, random, filterSet2, columnInfoSet2);
-                }
-                // append to table 1
-                GenerateTableUpdates.generateAppends(size, random, source1Unfiltered, columnInfo1);
-                // append to table 2
-                GenerateTableUpdates.generateAppends(size / 2, random, source2Unfiltered, columnInfo2);
-            });
-
-            // if (printTableUpdates) {
-            System.out.println("Source 1 (tm)");
-            showWithRowSet(s1merged);
-            System.out.println("Source 2 (tm)");
-            showWithRowSet(s2merged);
-
-            System.out.println("Source 1 Keyed (tm)");
-            showWithRowSet(s1KeyedMerged);
-            System.out.println("Source 2 (tm)");
-            showWithRowSet(s2KeyedMerged);
-            // }
-
-            assertTableEquals(s1f, s1mergedSorted);
-            assertTableEquals(s2f, s2mergedSorted);
-
-            assertTableEquals(s1fKeyed, s1KeyedMergedSorted);
-            assertTableEquals(s2fKeyed, s2KeyedMergedSorted);
-        }
     }
 
     private static class ErrorListener extends ShiftObliviousInstrumentedListenerAdapter {

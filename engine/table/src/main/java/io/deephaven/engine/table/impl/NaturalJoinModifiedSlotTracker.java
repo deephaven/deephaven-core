@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.impl.sources.LongArraySource;
@@ -10,7 +13,7 @@ import io.deephaven.engine.table.impl.sources.LongArraySource;
  *
  * To process the entries after modifications are complete, call {@link #forAllModifiedSlots(ModifiedSlotConsumer)}.
  */
-class NaturalJoinModifiedSlotTracker {
+public class NaturalJoinModifiedSlotTracker {
     private static final int CHUNK_SIZE = 4096;
     private final LongArraySource modifiedSlots = new LongArraySource();
     /** the original right values, parallel to modifiedSlots. */
@@ -26,11 +29,11 @@ class NaturalJoinModifiedSlotTracker {
     private long cookieGeneration;
 
     private static final int FLAG_SHIFT = 16;
-    static final int FLAG_MASK = 0xF;
-    static final byte FLAG_RIGHT_SHIFT = 0x1;
-    static final byte FLAG_RIGHT_MODIFY_PROBE = 0x2;
-    static final byte FLAG_RIGHT_CHANGE = 0x4;
-    static final byte FLAG_RIGHT_ADD = 0x8;
+    public static final int FLAG_MASK = 0xF;
+    public static final byte FLAG_RIGHT_SHIFT = 0x1;
+    public static final byte FLAG_RIGHT_MODIFY_PROBE = 0x2;
+    public static final byte FLAG_RIGHT_CHANGE = 0x4;
+    public static final byte FLAG_RIGHT_ADD = 0x8;
 
     /**
      * Remove all entries from the tracker.
@@ -85,7 +88,7 @@ class NaturalJoinModifiedSlotTracker {
      *
      * @return the cookie for future access
      */
-    long addMain(final long cookie, final long slot, final long originalRightValue, byte flags) {
+    public long addMain(final long cookie, final long slot, final long originalRightValue, byte flags) {
         if (originalRightValue < 0) {
             flags |= FLAG_RIGHT_ADD;
         }
@@ -159,7 +162,8 @@ class NaturalJoinModifiedSlotTracker {
      * @param oldTableLocation the old hash slot
      * @param newTableLocation the new hash slot
      */
-    void moveTableLocation(long cookie, @SuppressWarnings("unused") long oldTableLocation, long newTableLocation) {
+    public void moveTableLocation(long cookie, @SuppressWarnings("unused") long oldTableLocation,
+            long newTableLocation) {
         if (isValidCookie(cookie)) {
             final long pointer = getPointerFromCookie(cookie);
             final long existingSlotAndFlag = modifiedSlots.getLong(pointer);

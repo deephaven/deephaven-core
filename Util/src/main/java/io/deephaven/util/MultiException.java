@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.util;
 
 import java.io.PrintStream;
@@ -45,7 +48,7 @@ public class MultiException extends Exception {
      * @param causes the list of causes
      * @return a MultiException or the single Throwable
      */
-    public static Throwable maybeWrapInMultiException(String description, List<Throwable> causes) {
+    public static Throwable maybeWrapInMultiException(String description, List<? extends Throwable> causes) {
         if (causes.size() == 1) {
             return causes.get(0);
         }

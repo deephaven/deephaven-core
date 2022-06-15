@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.process.StringMapWrapper",
- "methods": {
-  "traverse": "Traverse this property set and output the property key/values to the given visitor.\n \n Callers should typically prefer to call PropertyVisitor.visitProperties(PropertySet), as the inversion of\n logic allows the visitor (the more stateful object) to potentially perform initialization logic and traverse more\n efficiently.\n\n:param visitor: (io.deephaven.properties.PropertyVisitor) - the visitor"
- },
- "path": "io.deephaven.process.StringMapWrapper",
- "typeName": "class"
-}

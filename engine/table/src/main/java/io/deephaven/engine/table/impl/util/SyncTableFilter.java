@@ -1,41 +1,33 @@
-/*
- * Copyright (c) 2020 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.util;
 
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.base.Pair;
-import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.updategraph.AbstractNotification;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -48,14 +40,14 @@ import java.util.stream.Collectors;
  * later may appear in your query before another row that was logged earlier within a different partition.
  *
  * If you tag each row with a long column that can be used to correlate the two tables, the SyncTableFilter can release
- * only rows with matching values in all of the input tables. For example, if you have input tables "a" "b" and "c",
- * with a key of "USym", if "a" has rows for SPY with IDs of 1, 2, and 3, but "b" and "c" only have rows for "2", the
- * filter will pass through the rows with ID 2. When both "b" and "c" have SPY rows for 3, then the rows for ID 2 are
- * removed and the rows for ID 3 are added to the result tables.
+ * only rows with matching values in all the input tables. For example, if you have input tables "a" "b" and "c", with a
+ * key of "USym", if "a" has rows for SPY with IDs of 1, 2, and 3, but "b" and "c" only have rows for "2", the filter
+ * will pass through the rows with ID 2. When both "b" and "c" have SPY rows for 3, then the rows for ID 2 are removed
+ * and the rows for ID 3 are added to the result tables.
  *
  * The SyncTableFilter is configured through the Builder inner class. Tables are added to the builder, providing a name
- * for each table. The return value is a TableMap of the results, each filtered input table is accessible according to
- * the name provided to the builder.
+ * for each table. The return value is a map of the results with each filtered input table accessible according to the
+ * name provided to the builder.
  *
  * For each key, only pass through the rows that have the minimum value of an ID across all tables. The IDs must be
  * monotonically increasing for each key. Your underlying tables must make use of transactions such that all rows for a
@@ -86,23 +78,17 @@ public class SyncTableFilter {
         int sortStart = -1;
     }
 
-    private static abstract class SyncDescription {
+    private static class SyncTableDescription {
+
+        final Table table;
         final String name;
         final String idColumn;
         final String[] keyColumns;
 
-        SyncDescription(final String name, final String idColumn, final String[] keyColumns) {
+        SyncTableDescription(final String name, final Table table, final String idColumn, final String[] keyColumns) {
             this.name = name;
             this.idColumn = idColumn;
             this.keyColumns = keyColumns;
-        }
-    }
-
-    private static class SyncTableDescription extends SyncDescription {
-        final Table table;
-
-        SyncTableDescription(final String name, final Table table, final String idColumn, final String[] keyColumns) {
-            super(name, idColumn, keyColumns);
             this.table = table;
             if (!table.hasColumns(idColumn)) {
                 throw new IllegalArgumentException(
@@ -112,20 +98,6 @@ public class SyncTableFilter {
                 throw new IllegalArgumentException(
                         "Table \"" + name + "\" does not have key columns \"" + Arrays.toString(keyColumns) + "\"");
             }
-        }
-    }
-
-    private static class SyncTableMapDescription extends SyncDescription {
-        final TableMap tableMap;
-
-        SyncTableMapDescription(final String name, final TableMap tableMap, final String idColumn,
-                final String[] keyColumns) {
-            super(name, idColumn, keyColumns);
-            this.tableMap = tableMap;
-        }
-
-        SyncTableDescription forPartition(Object partitionKey) {
-            return new SyncTableDescription(name, tableMap.get(partitionKey), idColumn, keyColumns);
         }
     }
 
@@ -175,8 +147,9 @@ public class SyncTableFilter {
             objectToState.add(new HashMap<>());
             keySources[ii] = TupleSourceFactory.makeTupleSource(sources);
             idSources.add(std.table.getColumnSource(std.idColumn, long.class));
+            // noinspection resource
             resultRowSet[ii] = RowSetFactory.empty().toTracking();
-            results[ii] = ((QueryTable) std.table).getSubTable(resultRowSet[ii], null, mergedListener);
+            results[ii] = ((QueryTable) std.table).getSubTable(resultRowSet[ii], null, null, mergedListener);
 
             final ListenerRecorder listenerRecorder =
                     new ListenerRecorder("SyncTableFilter(" + std.name + ")", std.table, results[ii]);
@@ -280,9 +253,10 @@ public class SyncTableFilter {
         }
 
         @Override
-        protected void notifyOnError(Exception updateException) {
-            for (QueryTable queryTable : results) {
-                notifyOnError(updateException, queryTable);
+        protected void propagateErrorDownstream(
+                @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+            for (QueryTable result : results) {
+                result.notifyListenersOnError(error, entry);
             }
         }
 
@@ -467,190 +441,22 @@ public class SyncTableFilter {
         return Arrays.stream(sources).map(cs -> cs.getType().getSimpleName()).collect(Collectors.joining(", "));
     }
 
-    private TableMap getTableMap() {
-        final LocalTableMap map = new LocalTableMap(null);
-        for (int ii = 0; ii < tables.size(); ii++) {
+    private Map<String, Table> getMap() {
+        final int size = tables.size();
+        final Map<String, Table> map = new LinkedHashMap<>(size);
+        for (int ii = 0; ii < size; ii++) {
             map.put(tables.get(ii).name, results[ii]);
         }
         return map;
     }
 
-    private static class InsertKeySetNotification extends AbstractNotification implements NotificationQueue.Dependency {
-        private final Map<Object, Set<String>> pendingPartitions;
-        private final LocalTableMap result;
-        @NotNull
-        private final List<SyncTableMapDescription> descriptions;
-        private final List<NotificationQueue.Dependency> dependencies;
-        private final Set<String> allKeys;
-
-        long notificationClock = -1;
-        long notificationCompletedClock = -1;
-        long queuedNotificationClock = -1;
-
-        private InsertKeySetNotification(Map<Object, Set<String>> pendingPartitions, LocalTableMap result,
-                List<SyncTableMapDescription> descriptions) {
-            super(false);
-
-            this.pendingPartitions = pendingPartitions;
-            this.result = result;
-            this.descriptions = descriptions;
-
-            dependencies = descriptions.stream().map(stmd -> ((NotificationQueue.Dependency) stmd.tableMap))
-                    .collect(Collectors.toList());
-            allKeys = descriptions.stream().map(desc -> desc.name).collect(Collectors.toSet());
-        }
-
-        @Override
-        public boolean canExecute(final long step) {
-            return dependencies.stream().allMatch((final NotificationQueue.Dependency dep) -> dep.satisfied(step));
-        }
-
-        @Override
-        public void run() {
-            synchronized (this) {
-                notificationClock = LogicalClock.DEFAULT.currentStep();
-            }
-            createFullyPopulatedKeys();
-            synchronized (this) {
-                notificationCompletedClock = LogicalClock.DEFAULT.currentStep();
-            }
-        }
-
-        private void notifyChanges() {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
-
-            synchronized (this) {
-                if (notificationClock == currentStep) {
-                    throw new IllegalStateException(
-                            "MergedListener was fired before both all listener records completed: listener="
-                                    + System.identityHashCode(this) + ", currentStep=" + currentStep);
-                }
-
-                // we've already got something in the notification queue that has not yet been executed for the current
-                // step.
-                if (queuedNotificationClock == currentStep) {
-                    return;
-                }
-
-                // Otherwise we should have already flushed that notification.
-                Assert.assertion(queuedNotificationClock == notificationClock,
-                        "queuedNotificationClock == notificationClock", queuedNotificationClock,
-                        "queuedNotificationClock", notificationClock, "notificationClock", currentStep, "currentStep",
-                        this, "MergedListener");
-
-                queuedNotificationClock = currentStep;
-                UpdateGraphProcessor.DEFAULT.addNotification(this);
-            }
-        }
-
-        private void createFullyPopulatedKeys() {
-            for (Iterator<Map.Entry<Object, Set<String>>> it = pendingPartitions.entrySet().iterator(); it.hasNext();) {
-                final Map.Entry<Object, Set<String>> partitionKeyAndPopulatedNames = it.next();
-                if (!partitionKeyAndPopulatedNames.getValue().equals(allKeys)) {
-                    continue;
-                }
-
-                final Object partitionKey = partitionKeyAndPopulatedNames.getKey();
-
-                final List<SyncTableDescription> syncTableDescriptions =
-                        descriptions.stream().map(stmd -> stmd.forPartition(partitionKey)).collect(Collectors.toList());
-                final TableMap syncFiltered = new SyncTableFilter(syncTableDescriptions).getTableMap();
-                result.addParentReference(syncFiltered);
-                for (Object tableName : syncFiltered.getKeySet()) {
-                    final SmartKey transformedKey;
-                    if (partitionKey instanceof SmartKey) {
-                        final Object[] partitionKeyArray = ((SmartKey) partitionKey).values_;
-                        final Object[] newKey = Arrays.copyOf(partitionKeyArray, partitionKeyArray.length + 1);
-                        newKey[newKey.length - 1] = tableName;
-                        transformedKey = new SmartKey(newKey);
-                    } else {
-                        transformedKey = new SmartKey(partitionKey, tableName);
-                    }
-                    result.put(transformedKey, syncFiltered.get(tableName));
-                }
-                it.remove();
-            }
-        }
-
-        @Override
-        public boolean satisfied(final long step) {
-            if (notificationCompletedClock == step) {
-                // we've already fired and done our work
-                return true;
-            }
-            if (queuedNotificationClock == step) {
-                // we haven't done our work, but we must do work this cycle
-                return false;
-            }
-            // otherwise, we are satisfied if we could not possibly be notified
-            return canExecute(step);
-        }
-
-        @Override
-        public LogOutput append(LogOutput output) {
-            return output.append("SyncTableFilter.InsertKeyNotification{").append(System.identityHashCode(this))
-                    .append("}");
-        }
-    }
-
-    private static TableMap createTableMapAdapter(List<SyncTableMapDescription> descriptions) {
-        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
-
-        final int mapCount = descriptions.size();
-
-        final LocalTableMap result = new LocalTableMap(null);
-
-
-        final Map<Object, Set<String>> pendingPartitions = new ConcurrentHashMap<>();
-
-
-        final InsertKeySetNotification notification =
-                new InsertKeySetNotification(pendingPartitions, result, descriptions);
-
-        final TableMap.KeyListener[] keyListeners = new TableMap.KeyListener[mapCount];
-        for (int ii = 0; ii < descriptions.size(); ++ii) {
-            final SyncTableMapDescription syncTableMapDescription = descriptions.get(ii);
-            final String name = syncTableMapDescription.name;
-            keyListeners[ii] = key -> {
-                markTablePopulated(pendingPartitions, name, key);
-                notification.notifyChanges();
-            };
-            syncTableMapDescription.tableMap.addKeyListener(keyListeners[ii]);
-
-            for (Object partitionKey : syncTableMapDescription.tableMap.getKeySet()) {
-                markTablePopulated(pendingPartitions, name, partitionKey);
-            }
-        }
-
-        notification.createFullyPopulatedKeys();
-
-        result.addParentReference(keyListeners);
-        result.setDependency(notification);
-
-        return result;
-    }
-
-    private static void markTablePopulated(Map<Object, Set<String>> pendingPartitions, String name, Object key) {
-        final Set<String> presentTables =
-                pendingPartitions.computeIfAbsent(key, (k) -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
-        presentTables.add(name);
-    }
-
     /**
-     * Produce a TableMap of synchronized tables.
-     *
-     * <p>
-     * You may include either Tables or TableMaps, but not both. When Tables are included, the result of the build call
-     * is a TableMap with a String key that corresponds to the name of the input table. When TableMaps are added, the
-     * result is a TableMap with composite keys (SmartKeys) that are prefixed with the keys from the input TableMap,
-     * with a last element that is the name of the source passed to the builder.
-     * </p>
+     * Produce a map of synchronized tables, keyed by the name assigned to each input table.
      */
     public static class Builder {
         private String defaultId;
         private String[] defaultKeys;
         private final List<SyncTableDescription> tables = new ArrayList<>();
-        private final List<SyncTableMapDescription> tableMaps = new ArrayList<>();
 
         /**
          * Create a builder with no default ID or key column.
@@ -674,7 +480,7 @@ public class SyncTableFilter {
         /**
          * Add a table to the set of tables to be synchronized.
          *
-         * @param name the key of the Table in our output TableMap.
+         * @param name the key of the Table in our output map.
          * @param table the Table to add
          * @param idColumn the name of the ID column in the table, must be a long
          * @param keyColumns the key columns, each key is coordinated independently of the other keys
@@ -682,66 +488,32 @@ public class SyncTableFilter {
          */
         public Builder addTable(final String name, final Table table, final String idColumn,
                 final String... keyColumns) {
-            if (!tableMaps.isEmpty()) {
-                throw new IllegalArgumentException("Can not mix Tables and TableMaps in a SyncTableFilter");
-            }
             tables.add(new SyncTableDescription(name, table, idColumn, keyColumns));
             return this;
         }
 
-        private void checkDefaultsInitialized(final String type) {
+        private void checkDefaultsInitialized() {
             if (defaultId == null) {
-                throw new IllegalArgumentException("Can not specify " + type
-                        + " without an ID column unless the default ID has been set on the builder!");
+                throw new IllegalArgumentException(
+                        "Can not specify table without an ID column unless the default ID has been set on the builder!");
             }
             if (defaultKeys == null) {
-                throw new IllegalArgumentException("Can not specify " + type
-                        + " without a key columns unless the default keys have been set on the builder!");
+                throw new IllegalArgumentException(
+                        "Can not specify table without a key column unless the default keys have been set on the builder!");
             }
         }
 
         /**
          * Add a table to the set of tables to be synchronized, using this builder's default ID and key column names.
          *
-         * @param name the key of the Table in our output TableMap.
+         * @param name the key of the Table in our output map.
          * @param table the Table to add
          *
          * @return this builder
          */
         public Builder addTable(final String name, final Table table) {
-            checkDefaultsInitialized("table");
+            checkDefaultsInitialized();
             return addTable(name, table, defaultId, defaultKeys);
-        }
-
-        /**
-         * Add a TableMap to the set of TableMaps to be synchronized.
-         *
-         * @param name the key of the Table in our output TableMap.
-         * @param tableMap the TableMap to add
-         *
-         * @return this builder
-         */
-        public Builder addTableMap(String name, TableMap tableMap) {
-            checkDefaultsInitialized("TableMap");
-            return addTableMap(name, tableMap, defaultId, defaultKeys);
-        }
-
-        /**
-         * Add a TableMap to the set of TableMaps to be synchronized.
-         *
-         * @param name the key of the Table in our output TableMap.
-         * @param tableMap the TableMap to add
-         * @param idColumn the name of the ID column in the table, must be a long
-         * @param keyColumns the key columns, each key is coordinated independently of the other keys
-         *
-         * @return this builder
-         */
-        public Builder addTableMap(String name, TableMap tableMap, final String idColumn, final String... keyColumns) {
-            if (!tables.isEmpty()) {
-                throw new IllegalArgumentException("Can not mix Tables and TableMaps in a SyncTableFilter");
-            }
-            tableMaps.add(new SyncTableMapDescription(name, tableMap, idColumn, keyColumns));
-            return this;
         }
 
         /**
@@ -769,20 +541,18 @@ public class SyncTableFilter {
         }
 
         /**
-         * Instantiate the TableMap of synchronized tables.
+         * Instantiate the map of synchronized tables.
          *
          * This must be called under the UpdateGraphProcessor lock.
          *
-         * @return a TableMap with one entry for each input table
+         * @return a map with one entry for each input table
          */
-        public TableMap build() {
+        public Map<String, Table> build() {
             if (!tables.isEmpty()) {
-                return new SyncTableFilter(tables).getTableMap();
-            } else if (!tableMaps.isEmpty()) {
-                return createTableMapAdapter(tableMaps);
+                return new SyncTableFilter(tables).getMap();
             } else {
                 throw new IllegalArgumentException(
-                        "You must specify tables or TableMaps as parameters to the SyncTableFilter.Builder");
+                        "You must specify tables as parameters to the SyncTableFilter.Builder");
             }
         }
     }

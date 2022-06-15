@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.plot;
 
 import io.deephaven.plot.datasets.data.IndexableData;
@@ -127,7 +130,7 @@ public abstract class DynamicChartTitle extends ChartTitle {
          * Swappable table for chart title
          */
         private SwappableTable swappableTable;
-        private TableMapHandle tableMapHandle;
+        private PartitionedTableHandle partitionedTableHandle;
 
         /**
          * Table updated on oneClick filter change
@@ -140,8 +143,8 @@ public abstract class DynamicChartTitle extends ChartTitle {
             super(titleFormat, new LinkedHashSet<>(Arrays.asList(titleColumns)), plotInfo, maxVisibleRowsCount);
             this.swappableTable = swappableTable;
 
-            if (swappableTable instanceof SwappableTableMap) {
-                this.tableMapHandle = ((SwappableTableMap) swappableTable).getTableMapHandle();
+            if (swappableTable instanceof SwappablePartitionedTable) {
+                this.partitionedTableHandle = ((SwappablePartitionedTable) swappableTable).getPartitionedTableHandle();
             }
         }
 
@@ -153,7 +156,7 @@ public abstract class DynamicChartTitle extends ChartTitle {
         void copy(final ChartTitleSwappableTable chartTitle) {
             super.copy(chartTitle);
             this.swappableTable = chartTitle.swappableTable;
-            this.tableMapHandle = chartTitle.tableMapHandle;
+            this.partitionedTableHandle = chartTitle.partitionedTableHandle;
             this.localTable = chartTitle.localTable;
         }
 
@@ -161,8 +164,8 @@ public abstract class DynamicChartTitle extends ChartTitle {
             return swappableTable;
         }
 
-        public TableMapHandle getTableMapHandle() {
-            return tableMapHandle;
+        public PartitionedTableHandle getPartitionedTableHandle() {
+            return partitionedTableHandle;
         }
     }
 

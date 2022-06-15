@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.Pair;
@@ -136,12 +139,12 @@ public class ChunkedOperatorAggregationHelper {
                 stateManager = incrementalStateManager = TypedHasherFactory.make(
                         IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
                         reinterpretedKeySources,
-                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        keySources, control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             } else if (USE_TYPED_STATE_MANAGER) {
                 stateManager = incrementalStateManager = TypedHasherFactory.make(
                         IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
-                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        keySources, control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             } else {
                 stateManager = incrementalStateManager = new IncrementalChunkedOperatorAggregationStateManager(
@@ -152,12 +155,12 @@ public class ChunkedOperatorAggregationHelper {
             if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
                 stateManager = TypedHasherFactory.make(
                         StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, reinterpretedKeySources,
-                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        keySources, control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             } else if (USE_TYPED_STATE_MANAGER) {
                 stateManager = TypedHasherFactory.make(
                         StaticChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
-                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        keySources, control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             } else {
                 stateManager = new StaticChunkedOperatorAggregationStateManager(reinterpretedKeySources,
@@ -251,6 +254,12 @@ public class ChunkedOperatorAggregationHelper {
                                         keyColumnsCopied,
                                         result.getModifiedColumnSetForUpdates(), resultModifiedColumnSetFactories);
                             }
+
+                            if (downstream.empty()) {
+                                downstream.release();
+                                return;
+                            }
+
                             result.getRowSet().writableCast().update(downstream.added(), downstream.removed());
                             result.notifyListeners(downstream);
                         }
@@ -1944,13 +1953,14 @@ public class ChunkedOperatorAggregationHelper {
                                     downstream.removed = RowSetFactory.fromKeys(0);
                                     downstream.modified = RowSetFactory.empty();
                                     result.getRowSet().writableCast().remove(0);
-                                } else {
-                                    if (!anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
-                                        return;
-                                    }
+                                } else if (anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
                                     downstream.added = RowSetFactory.empty();
                                     downstream.removed = RowSetFactory.empty();
                                     downstream.modified = RowSetFactory.fromKeys(0);
+                                } else {
+                                    downstream.added = RowSetFactory.empty();
+                                    downstream.removed = RowSetFactory.empty();
+                                    downstream.modified = RowSetFactory.empty();
                                 }
                                 lastSize = newResultSize;
 
@@ -1963,6 +1973,11 @@ public class ChunkedOperatorAggregationHelper {
 
                                 extractDownstreamModifiedColumnSet(downstream, result.getModifiedColumnSetForUpdates(),
                                         modifiedOperators, upstreamModifiedColumnSet, resultModifiedColumnSetFactories);
+
+                                if (downstream.empty()) {
+                                    downstream.release();
+                                    return;
+                                }
 
                                 result.notifyListeners(downstream);
                             }

@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.engine.table.impl.by;
 
@@ -12,6 +12,8 @@ import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;

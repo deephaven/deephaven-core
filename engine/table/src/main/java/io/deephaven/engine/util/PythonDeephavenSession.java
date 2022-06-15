@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.util;
 
 import io.deephaven.base.FileUtils;
@@ -36,6 +35,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -72,22 +72,17 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
      * @param isDefaultScriptSession true if this is in the default context of a worker jvm
+     * @param pythonEvaluator
      * @throws IOException if an IO error occurs running initialization scripts
-     * @throws InterruptedException if the current thread is interrupted while starting JPY
-     * @throws TimeoutException if jpy times out while obtaining configuration details
      */
     public PythonDeephavenSession(
             ObjectTypeLookup objectTypeLookup, @Nullable final Listener listener, boolean runInitScripts,
-            boolean isDefaultScriptSession)
-            throws IOException, InterruptedException, TimeoutException {
+            boolean isDefaultScriptSession, PythonEvaluatorJpy pythonEvaluator)
+            throws IOException {
         super(objectTypeLookup, listener, isDefaultScriptSession);
 
-        // Start Jpy, if not already running from the python instance
-        JpyInit.init(log);
-
-        PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
-        evaluator = jpy;
-        scope = jpy.getScope();
+        evaluator = pythonEvaluator;
+        scope = pythonEvaluator.getScope();
         this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
                 .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
@@ -193,7 +188,9 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     public Map<String, Object> getVariables() {
-        return Collections.unmodifiableMap(scope.getEntriesMap());
+        final Map<String, Object> outMap = new LinkedHashMap<>();
+        scope.getEntriesMap().forEach((key, value) -> outMap.put(key, maybeUnwrap(value)));
+        return outMap;
     }
 
     protected static class PythonSnapshot implements Snapshot, SafeCloseable {
@@ -226,10 +223,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         // It would be great if we could push down the maybeUnwrap logic into create_change_list (it could handle the
         // unwrapping), but we are unable to tell jpy that we want to unwrap JType objects, but pass back python objects
         // as PyObject.
-        try (
-                PythonSnapshot fromSnapshot = from;
-                PythonSnapshot toSnapshot = to;
-                PyObject changes = module.create_change_list(fromSnapshot.dict.unwrap(), toSnapshot.dict.unwrap())) {
+        try (PyObject changes = module.create_change_list(from.dict.unwrap(), to.dict.unwrap())) {
             final Changes diff = new Changes();
             diff.error = e;
             for (PyObject change : changes.asList()) {
@@ -242,6 +236,13 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
             }
             return diff;
         }
+    }
+
+    private Object maybeUnwrap(Object o) {
+        if (o instanceof PyObject) {
+            return maybeUnwrap((PyObject) o);
+        }
+        return o;
     }
 
     private Object maybeUnwrap(PyObject o) {
@@ -267,19 +268,21 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     public synchronized void setVariable(String name, @Nullable Object newValue) {
-        final PythonSnapshot fromSnapshot = takeSnapshot();
-        final PyDictWrapper globals = scope.globals();
-        if (newValue == null) {
-            try {
-                globals.delItem(name);
-            } catch (KeyError key) {
-                // ignore
+        try (PythonSnapshot fromSnapshot = takeSnapshot()) {
+            final PyDictWrapper globals = scope.globals();
+            if (newValue == null) {
+                try {
+                    globals.delItem(name);
+                } catch (KeyError key) {
+                    // ignore
+                }
+            } else {
+                globals.setItem(name, newValue);
             }
-        } else {
-            globals.setItem(name, newValue);
+            try (PythonSnapshot toSnapshot = takeSnapshot()) {
+                applyDiff(fromSnapshot, toSnapshot, null);
+            }
         }
-        final PythonSnapshot toSnapshot = takeSnapshot();
-        applyDiff(fromSnapshot, toSnapshot, null);
     }
 
     @Override

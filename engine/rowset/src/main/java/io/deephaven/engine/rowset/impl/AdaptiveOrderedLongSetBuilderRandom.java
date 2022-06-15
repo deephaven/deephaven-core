@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSet;
@@ -109,7 +112,7 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
     }
 
     @Override
-    public OrderedLongSet getTreeIndexImpl() {
+    public OrderedLongSet getOrderedLongSet() {
         final OrderedLongSet ans;
         if (innerBuilder() == null && pendingSr == null) {
             if (pendingRangeStart == -1) {
@@ -130,7 +133,7 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
                 pendingSr = null;
             } else {
                 // No counts since they are gathered by inner builder.
-                ans = innerBuilder().getTreeIndexImpl();
+                ans = innerBuilder().getOrderedLongSet();
                 setInnerBuilderNull();
             }
         }

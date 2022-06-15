@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.treetable.TreeTableClientTableManager$ClientState",
- "methods": {
-  "release": ":param baseTableId: int"
- },
- "path": "io.deephaven.treetable.TreeTableClientTableManager.ClientState",
- "text": "The complete state of all trees for a particular client.",
- "typeName": "class"
-}

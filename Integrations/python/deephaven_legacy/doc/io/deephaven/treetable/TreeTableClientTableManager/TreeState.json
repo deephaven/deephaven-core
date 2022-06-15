@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.treetable.TreeTableClientTableManager$TreeState",
- "methods": {
-  "getTable": ":param key: java.lang.Object\n:return: io.deephaven.engine.table.Table"
- },
- "path": "io.deephaven.treetable.TreeTableClientTableManager.TreeState",
- "text": "The state of a single hierarchical table. This includes a unique TreeTableClientTableManager.TableState for each expanded row of the\n table.",
- "typeName": "class"
-}

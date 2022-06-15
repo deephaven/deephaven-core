@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -560,7 +559,7 @@ public class ColumnsToRowsTransform {
             // noinspection unchecked
             final TransposeFillContext transposeFillContext = (TransposeFillContext) context;
             updateContext(transposeFillContext, rowSequence);
-            doFillAndPermute(destination, transposeFillContext, false, rowSequence.size());
+            doFillAndPermute(destination, transposeFillContext, false, rowSequence.intSize());
         }
 
         @Override
@@ -570,7 +569,7 @@ public class ColumnsToRowsTransform {
             // noinspection unchecked
             final TransposeFillContext transposeFillContext = (TransposeFillContext) context;
             updateContext(transposeFillContext, rowSequence);
-            doFillAndPermute(destination, transposeFillContext, true, rowSequence.size());
+            doFillAndPermute(destination, transposeFillContext, true, rowSequence.intSize());
         }
 
         private void updateContext(@NotNull final TransposeFillContext context,
@@ -590,7 +589,7 @@ public class ColumnsToRowsTransform {
         }
 
         private void doFillAndPermute(@NotNull final WritableChunk<? super Values> destination,
-                final TransposeFillContext transposeFillContext, final boolean usePrev, final long originalSize) {
+                final TransposeFillContext transposeFillContext, final boolean usePrev, final int originalSize) {
             for (int ii = 0; ii < transposeColumns.length; ++ii) {
                 if (transposeFillContext.innerKeys[ii].size() == 0) {
                     continue;
@@ -609,6 +608,7 @@ public class ColumnsToRowsTransform {
                 if (isComplete) {
                     return;
                 }
+                destination.setSize(originalSize);
                 // noinspection unchecked,rawtypes
                 transposeFillContext.permuteKernel.permute((WritableChunk) transposeFillContext.tempValues,
                         transposeFillContext.outputPositions[ii], destination);

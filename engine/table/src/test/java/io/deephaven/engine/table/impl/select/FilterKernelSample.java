@@ -51,27 +51,15 @@ import static io.deephaven.base.string.cache.CompressedString.*;
 import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;
 import static io.deephaven.engine.table.impl.verify.TableAssertions.*;
 import static io.deephaven.engine.util.ColorUtilImpl.*;
+import static io.deephaven.function.Basic.*;
 import static io.deephaven.function.BinSearch.*;
-import static io.deephaven.function.BooleanPrimitives.*;
-import static io.deephaven.function.ByteNumericPrimitives.*;
-import static io.deephaven.function.BytePrimitives.*;
-import static io.deephaven.function.Casting.*;
-import static io.deephaven.function.CharacterPrimitives.*;
-import static io.deephaven.function.ComparePrimitives.*;
-import static io.deephaven.function.DoubleFpPrimitives.*;
-import static io.deephaven.function.DoubleNumericPrimitives.*;
-import static io.deephaven.function.DoublePrimitives.*;
-import static io.deephaven.function.FloatFpPrimitives.*;
-import static io.deephaven.function.FloatNumericPrimitives.*;
-import static io.deephaven.function.FloatPrimitives.*;
-import static io.deephaven.function.IntegerNumericPrimitives.*;
-import static io.deephaven.function.IntegerPrimitives.*;
-import static io.deephaven.function.LongNumericPrimitives.*;
-import static io.deephaven.function.LongPrimitives.*;
-import static io.deephaven.function.ObjectPrimitives.*;
-import static io.deephaven.function.PrimitiveParseUtil.*;
-import static io.deephaven.function.ShortNumericPrimitives.*;
-import static io.deephaven.function.ShortPrimitives.*;
+import static io.deephaven.function.BinSearchAlgo.*;
+import static io.deephaven.function.Cast.*;
+import static io.deephaven.function.Logic.*;
+import static io.deephaven.function.Numeric.*;
+import static io.deephaven.function.Parse.*;
+import static io.deephaven.function.Random.*;
+import static io.deephaven.function.Sort.*;
 import static io.deephaven.gui.color.Color.*;
 import static io.deephaven.time.DateTimeUtils.*;
 import static io.deephaven.time.TimeZone.*;
@@ -85,29 +73,29 @@ public class FilterKernelSample implements io.deephaven.engine.table.impl.select
     private final float p2;
     private final java.lang.String p3;
 
-    public FilterKernelSample(Table table, RowSet fullSet, QueryScopeParam... params) {
-        this.p1 = (java.lang.Integer) params[0].getValue();
-        this.p2 = (java.lang.Float) params[1].getValue();
-        this.p3 = (java.lang.String) params[2].getValue();
+    public FilterKernelSample(Table __table, RowSet __fullSet, QueryScopeParam... __params) {
+        this.p1 = (java.lang.Integer) __params[0].getValue();
+        this.p2 = (java.lang.Float) __params[1].getValue();
+        this.p3 = (java.lang.String) __params[2].getValue();
     }
     @Override
-    public Context getContext(int maxChunkSize) {
-        return new Context(maxChunkSize);
+    public Context getContext(int __maxChunkSize) {
+        return new Context(__maxChunkSize);
     }
     
     @Override
-    public LongChunk<OrderedRowKeys> filter(Context context, LongChunk<OrderedRowKeys> indices, Chunk... inputChunks) {
-        final ShortChunk __columnChunk0 = inputChunks[0].asShortChunk();
-        final DoubleChunk __columnChunk1 = inputChunks[1].asDoubleChunk();
-        final int size = indices.size();
-        context.resultChunk.setSize(0);
-        for (int __my_i__ = 0; __my_i__ < size; __my_i__++) {
+    public LongChunk<OrderedRowKeys> filter(Context __context, LongChunk<OrderedRowKeys> __indices, Chunk... __inputChunks) {
+        final ShortChunk __columnChunk0 = __inputChunks[0].asShortChunk();
+        final DoubleChunk __columnChunk1 = __inputChunks[1].asDoubleChunk();
+        final int __size = __indices.size();
+        __context.resultChunk.setSize(0);
+        for (int __my_i__ = 0; __my_i__ < __size; __my_i__++) {
             final short v1 =  (short)__columnChunk0.get(__my_i__);
             final double v2 =  (double)__columnChunk1.get(__my_i__);
             if ("foo".equals((plus(plus(plus(p1, p2), v1), v2))+p3)) {
-                context.resultChunk.add(indices.get(__my_i__));
+                __context.resultChunk.add(__indices.get(__my_i__));
             }
         }
-        return context.resultChunk;
+        return __context.resultChunk;
     }
 }

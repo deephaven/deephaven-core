@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
@@ -1412,7 +1415,7 @@ public class WorkerConnection {
                 LogItem logItem = new LogItem();
                 logItem.setLogLevel(data.getLogLevel());
                 logItem.setMessage(data.getMessage());
-                logItem.setMicros(data.getMicros());
+                logItem.setMicros((double) java.lang.Long.parseLong(data.getMicros()));
 
                 notifyLog(logItem);
             });

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
@@ -18,9 +21,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Tools for manipulating tables.
+ * Tools for manipulating stream tables.
+ *
+ * @see Table#STREAM_TABLE_ATTRIBUTE
  */
 public class StreamTableTools {
+
     /**
      * Convert a Stream Table to an in-memory append only table.
      *

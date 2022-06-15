@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.*;
@@ -10,6 +9,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,13 +27,13 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     private final String name;
     @SuppressWarnings({"UnusedDeclaration", "FieldCanBeLocal"})
+    @ReferentialIntegrity
     private final Object parent; // DO NOT DELETE - This reference preserves strong-reachability of the owning table and
                                  // its listeners.
     private final RowSet rowSet;
     private final ColumnSource<TYPE> columnSource;
 
     public IndexedDataColumn(@NotNull final String name, @NotNull final Table table) {
-        // noinspection unchecked
         this(name, table, table.getRowSet(), table.getColumnSource(name));
     }
 
@@ -108,7 +108,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public TYPE[] get(final long startPosInclusive, final long endPosExclusive) {
         final Iterable<TYPE> iterable =
-                () -> new ColumnIterator<>(getSubIndexByPos(startPosInclusive, endPosExclusive), columnSource);
+                () -> ColumnIterator.make(columnSource, getSubIndexByPos(startPosInclusive, endPosExclusive));
         // noinspection unchecked
         return StreamSupport.stream(iterable.spliterator(), false).toArray(s -> (TYPE[]) Array
                 .newInstance(io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), s));

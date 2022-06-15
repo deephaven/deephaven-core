@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ImmutableCharArraySource and regenerate
@@ -73,6 +76,12 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
 
     public final T getUnsafe(long index) {
         return (T)data[(int)index];
+    }
+
+    public final Object getAndSetUnsafe(long index, Object newValue) {
+        Object oldValue = data[(int)index];
+        data[(int)index] = newValue;
+        return oldValue;
     }
 
     @Override

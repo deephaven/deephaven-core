@@ -161,138 +161,7 @@ task generatePlottingConvenienceAssert(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
-TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generatePyDoc") {
-    copyIn {
-        from('python') {
-            into 'python'
-        }
-
-        // TODO move these to a later sync task, so that we detect changes and minimally build images
-        // Copy existing generated JSON to where the image can get it - remove if we stop checking in JSON
-        from("$devRoot/Integrations/python/deephaven_legacy") {
-            // allow javadocExtraction.py to verify existing json
-            include 'doc'
-            // allow manualDocstrings.py to verify existing json
-            include 'docCustom'
-            into 'out'
-        }
-        // Depend on generated javadoc so we can generate JSON from it
-        from(configurations.combinedJavadoc) {
-            into 'javadoc'
-        }
-    }
-
-    dockerfile {
-        from 'deephaven/python:local-build'
-
-        runCommand 'pip3 install beautifulsoup4==4.9.3 lxml==4.6.3'
-
-        copyFile('.', '.')
-
-        runCommand '''set -eux; \\
-                      python3 /python/javadocExtraction.py / false; \\
-                      python3 /python/manualDocstrings.py / false
-                      '''
-    }
-
-    parentContainers = [ Docker.registryTask(project, 'python') ]
-    imageName = 'deephaven/pydocs:local-build'
-    copyOut {
-        into("$devRoot/Integrations/python/deephaven_legacy")
-        preserve {// only overwrite doc and docCustom directories
-            include '**/*'
-            exclude 'doc'
-            exclude 'docCustom'
-        }
-    }
-}
-
-tasks.register("generateManPyDocAssert") {
-    doLast {
-        logger.warn "This task no longer checks output, we're expecting to always regenerate now"
-    }
-}
-tasks.register("generatePyDocAssert") {
-    doLast {
-        logger.warn "This task no longer checks output, we're expecting to always regenerate now"
-    }
-}
-
-def pythonStaticMethodsArgs = ['io.deephaven.time.calendar.Calendars',
-                                    '/Integrations/python/deephaven_legacy/Calendars/__init__.py',
-                               'io.deephaven.time.DateTimeUtils',
-                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/DateTimeUtilsPreamble.txt',
-                                    '/Integrations/python/deephaven_legacy/DateTimeUtils/__init__.py',
-                               'io.deephaven.parquet.table.ParquetTools',
-                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/ParquetToolsPreamble.txt',
-                                    '/Integrations/python/deephaven_legacy/ParquetTools/__init__.py',
-                               'io.deephaven.engine.util.TableTools',
-                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/TableToolsPreamble.txt',
-                                    '/Integrations/python/deephaven_legacy/TableTools/__init__.py',
-                               'io.deephaven.plot.colors.ColorMaps',
-                                   '/Integrations/python/deephaven_legacy/Plot/ColorMaps/__init__.py',
-                               'io.deephaven.engine.util.WindowCheck',
-                                    '/Integrations/python/deephaven_legacy/TableManipulation/WindowCheck.py',
-                               'io.deephaven.engine.table.impl.util.TableLoggers',
-                                    '/Integrations/python/deephaven_legacy/TableLoggers/__init__.py',
-                               'io.deephaven.engine.table.impl.util.PerformanceQueries',
-                                    '/Integrations/python/deephaven_legacy/PerformanceQueries/__init__.py']
-
-task generatePythonIntegrationStaticMethods(type: JavaExec, dependsOn: 'classes') {
-    description 'Run GeneratePythonIntegrationStaticMethods'
-
-    main = 'io.deephaven.python.PythonStaticGenerator'
-    args ([devRoot, 'false'] + pythonStaticMethodsArgs) as String[]
-    classpath = sourceSets.main.runtimeClasspath
-    workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
-    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
-    dependsOn generatePyDoc
-}
-
-task generatePythonIntegrationStaticMethodsAssert(type: JavaExec, dependsOn: 'classes') {
-    description 'Run GeneratePythonIntegrationStaticMethods'
-
-    main = 'io.deephaven.python.PythonStaticGenerator'
-    args ([devRoot, 'true'] + pythonStaticMethodsArgs) as String[]
-    classpath = sourceSets.main.runtimeClasspath
-    workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
-    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
-    onlyIf { System.getenv('NO_ASSERT') != 'true' }
-}
-
 task generatePythonFigureWrapper(type: JavaExec, dependsOn: 'classes') {
-    description 'Run GeneratePythonFigureWrapper'
-    dependsOn generatePlottingConvenience
-
-    main = 'io.deephaven.python.PythonPlottingGenerator'
-    args devRoot, 'false'
-    classpath = sourceSets.main.runtimeClasspath
-    workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
-    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
-    dependsOn generatePyDoc, ':Generators:generateFigureImmutable'
-}
-
-task generatePythonFigureWrapperAssert(type: JavaExec, dependsOn: 'classes') {
-    description 'Run GeneratePythonFigureWrapper'
-    dependsOn generatePlottingConvenienceAssert
-
-    main = 'io.deephaven.python.PythonPlottingGenerator'
-    args devRoot, 'true'
-    classpath = sourceSets.main.runtimeClasspath
-    workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
-    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
-    onlyIf { System.getenv('NO_ASSERT') != 'true' }
-}
-
-task generatePythonFigureWrapper2(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePythonFigureWrapper'
     dependsOn generatePlottingConvenience
 
@@ -303,10 +172,10 @@ task generatePythonFigureWrapper2(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'workspace', workspace
     systemProperty 'devroot', devRoot
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
-    dependsOn generatePyDoc, ':Generators:generateFigureImmutable'
+    dependsOn ':Generators:generateFigureImmutable'
 }
 
-task generatePythonFigureWrapper2Assert(type: JavaExec, dependsOn: 'classes') {
+task generatePythonFigureWrapperAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePythonFigureWrapper'
     dependsOn generatePlottingConvenienceAssert
 
@@ -320,15 +189,12 @@ task generatePythonFigureWrapper2Assert(type: JavaExec, dependsOn: 'classes') {
 }
 
 tasks.register 'generateAllPython', {
-    Task t -> t.dependsOn ':Generators:generatePythonIntegrationStaticMethods',
-            ':Generators:generatePythonFigureWrapper',
-            ':Generators:generatePythonFigureWrapper2'
+    Task t -> t.dependsOn ':Generators:generatePythonFigureWrapper'
 }
 
 
 tasks.register 'generateAllPythonAssert', {
-    Task t -> t.dependsOn ':Generators:generatePythonIntegrationStaticMethodsAssert',
-            ':Generators:generatePythonFigureWrapperAssert'
+    Task t -> t.dependsOn ':Generators:generatePythonFigureWrapperAssert'
 }
 
 tasks.register 'generateAll', {
@@ -338,6 +204,7 @@ tasks.register 'generateAll', {
                            ':Generators:generateFigureImmutable',
                            ':Generators:generatePlottingConvenience',
                            ':Generators:generateAllPython'
+
     t.group = '~Deephaven'
     t.description = 'Runs all code generators'
 }
@@ -348,4 +215,4 @@ project.tasks.getByName('quick').dependsOn groovyStaticImportGeneratorAssert,
         generateFigureImmutableAssert,
         generatePlottingConvenienceAssert,
         generateAllPythonAssert,
-        generatePythonFigureWrapper2Assert
+        generatePythonFigureWrapperAssert

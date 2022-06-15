@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.datasets.category;
 
 import io.deephaven.plot.AxesImpl;
@@ -40,9 +39,9 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
     @Override
     public CategoryDataSeries pointShape(final Function<Comparable, String> pointShapes) {
         final String colName = ColumnNameConstants.POINT_SHAPE + this.hashCode();
-        chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),
-                constructTableMapFromFunctionOnCategoryCol(pointShapes, String.class, colName));
-        getSwappableTable().getTableMapHandle().addColumn(colName);
+        chart().figure().registerPartitionedTableFunction(getSwappableTable().getPartitionedTableHandle(),
+                constructPartitionedTableFromFunctionOnCategoryCol(pointShapes, String.class, colName));
+        getSwappableTable().getPartitionedTableHandle().addColumn(colName);
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
                     .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
@@ -62,9 +61,9 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
     @Override
     public <NUMBER extends Number> CategoryDataSeries pointSize(final Function<Comparable, NUMBER> pointSizes) {
         final String colName = ColumnNameConstants.POINT_SIZE + this.hashCode();
-        chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),
-                constructTableMapFromFunctionOnCategoryCol(pointSizes, Number.class, colName));
-        getSwappableTable().getTableMapHandle().addColumn(colName);
+        chart().figure().registerPartitionedTableFunction(getSwappableTable().getPartitionedTableHandle(),
+                constructPartitionedTableFromFunctionOnCategoryCol(pointSizes, Number.class, colName));
+        getSwappableTable().getPartitionedTableHandle().addColumn(colName);
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
                     .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
@@ -78,9 +77,9 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
     @Override
     public <COLOR extends Paint> CategoryDataSeries pointColor(final Function<Comparable, COLOR> pointColor) {
         final String colName = ColumnNameConstants.POINT_COLOR + this.hashCode();
-        chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),
-                constructTableMapFromFunctionOnCategoryCol(pointColor, Paint.class, colName));
-        getSwappableTable().getTableMapHandle().addColumn(colName);
+        chart().figure().registerPartitionedTableFunction(getSwappableTable().getPartitionedTableHandle(),
+                constructPartitionedTableFromFunctionOnCategoryCol(pointColor, Paint.class, colName));
+        getSwappableTable().getPartitionedTableHandle().addColumn(colName);
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
                     .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
@@ -94,9 +93,9 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
     @Override
     public <COLOR extends Integer> CategoryDataSeries pointColorInteger(final Function<Comparable, COLOR> colors) {
         final String colName = ColumnNameConstants.POINT_COLOR + this.hashCode();
-        chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),
-                constructTableMapFromFunctionOnCategoryCol(colors, Integer.class, colName));
-        getSwappableTable().getTableMapHandle().addColumn(colName);
+        chart().figure().registerPartitionedTableFunction(getSwappableTable().getPartitionedTableHandle(),
+                constructPartitionedTableFromFunctionOnCategoryCol(colors, Integer.class, colName));
+        getSwappableTable().getPartitionedTableHandle().addColumn(colName);
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
                     .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
@@ -116,9 +115,9 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
     @Override
     public <LABEL> CategoryDataSeries pointLabel(final Function<Comparable, LABEL> pointLabels) {
         final String colName = ColumnNameConstants.POINT_LABEL + this.hashCode();
-        chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),
-                constructTableMapFromFunctionOnCategoryCol(pointLabels, Object.class, colName));
-        getSwappableTable().getTableMapHandle().addColumn(colName);
+        chart().figure().registerPartitionedTableFunction(getSwappableTable().getPartitionedTableHandle(),
+                constructPartitionedTableFromFunctionOnCategoryCol(pointLabels, Object.class, colName));
+        getSwappableTable().getPartitionedTableHandle().addColumn(colName);
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
                     .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
@@ -135,12 +134,13 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
         return this;
     }
 
-    private <S, T> Function<Table, Table> constructTableMapFromFunctionOnCategoryCol(final Function<S, T> function,
+    private <S, T> Function<Table, Table> constructPartitionedTableFromFunctionOnCategoryCol(
+            final Function<S, T> function,
             final Class resultClass, final String columnName) {
-        return constructTableMapFromFunction(function, resultClass, getCategoryCol(), columnName);
+        return constructPartitionedTableFromFunction(function, resultClass, getCategoryCol(), columnName);
     }
 
-    protected <S, T> Function<Table, Table> constructTableMapFromFunction(final Function<S, T> function,
+    protected <S, T> Function<Table, Table> constructPartitionedTableFromFunction(final Function<S, T> function,
             final Class resultClass, final String onColumn, final String columnName) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";

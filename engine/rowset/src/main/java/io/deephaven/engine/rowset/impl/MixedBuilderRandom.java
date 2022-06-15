@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.configuration.Configuration;
@@ -36,7 +39,7 @@ public class MixedBuilderRandom implements OrderedLongSet.BuilderRandom {
         if (pqb.size() < pqSizeThreshold) {
             return;
         }
-        final OrderedLongSet ix = pqb.getTreeIndexImplAndReset();
+        final OrderedLongSet ix = pqb.getOrderedLongSetAndReset();
         merge(ix);
         newPq();
     }
@@ -53,7 +56,7 @@ public class MixedBuilderRandom implements OrderedLongSet.BuilderRandom {
         pqb.addRange(startKey, endKey);
     }
 
-    private void addTreeIndexImpl(final OrderedLongSet ix) {
+    private void addOrderedLongSet(final OrderedLongSet ix) {
         if (ix.ixCardinality() >= addAsIndexThreshold) {
             merge(ix.ixCowRef());
             return;
@@ -66,17 +69,17 @@ public class MixedBuilderRandom implements OrderedLongSet.BuilderRandom {
 
     @Override
     public void add(final SortedRanges ix, final boolean acquire) {
-        addTreeIndexImpl(ix);
+        addOrderedLongSet(ix);
     }
 
     @Override
     public void add(final RspBitmap ix, final boolean acquire) {
-        addTreeIndexImpl(ix);
+        addOrderedLongSet(ix);
     }
 
     @Override
-    public OrderedLongSet getTreeIndexImpl() {
-        final OrderedLongSet ix = pqb.getTreeIndexImpl();
+    public OrderedLongSet getOrderedLongSet() {
+        final OrderedLongSet ix = pqb.getOrderedLongSet();
         pqb = null;
         merge(ix);
         final OrderedLongSet ans = accumIndex;

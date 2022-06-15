@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.createinputtablerequest.inputtablekind;
 
 import jsinterop.annotations.JsPackage;

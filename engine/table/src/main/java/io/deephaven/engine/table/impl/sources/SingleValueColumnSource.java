@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.attributes.Values;
@@ -15,14 +14,10 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback, Serializable {
+        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback {
 
     protected transient long changeTime;
     protected boolean isTrackingPrevValues;
-
-    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
-        ois.defaultReadObject();
-    }
 
     SingleValueColumnSource(Class<T> type) {
         super(type);

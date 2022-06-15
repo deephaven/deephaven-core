@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
@@ -7,6 +10,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.codec.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -34,7 +38,7 @@ public class TestCodecColumns {
     // }
 
     private static final ColumnDefinition<byte[]> VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION;
-    private static final ColumnDefinition<ColumnDefinition> VARIABLE_WIDTH_COLUMN_DEFINITION_2;
+    private static final ColumnDefinition<ArrayTuple> VARIABLE_WIDTH_COLUMN_DEFINITION_2;
     private static final ColumnDefinition<byte[]> FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION;
     private static final ColumnDefinition<BigInteger> VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION;
     private static final ColumnDefinition<BigInteger> VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S;
@@ -46,8 +50,8 @@ public class TestCodecColumns {
                 ColumnDefinition.fromGenericType("VWBA", byte[].class, byte.class);
         writeBuilder.addColumnCodec("VWBA", SimpleByteArrayCodec.class.getName());
         readBuilder.addColumnCodec("VWBA", SimpleByteArrayCodec.class.getName());
-        VARIABLE_WIDTH_COLUMN_DEFINITION_2 = ColumnDefinition.fromGenericType("VWCD", ColumnDefinition.class);
-        readBuilder.addColumnCodec("VWCD", ExternalizableCodec.class.getName(), ColumnDefinition.class.getName());
+        VARIABLE_WIDTH_COLUMN_DEFINITION_2 = ColumnDefinition.fromGenericType("VWCD", ArrayTuple.class);
+        readBuilder.addColumnCodec("VWCD", ExternalizableCodec.class.getName(), ArrayTuple.class.getName());
         FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("FWBA", byte[].class, byte.class);
         writeBuilder.addColumnCodec("FWBA", SimpleByteArrayCodec.class.getName(), "9");
         readBuilder.addColumnCodec("FWBA", SimpleByteArrayCodec.class.getName(), "9");
@@ -69,8 +73,7 @@ public class TestCodecColumns {
 
     private static final Table TABLE = TableTools.newTable(TABLE_DEFINITION,
             TableTools.col("VWBA", new byte[] {0, 1, 2}, null, new byte[] {3, 4, 5, 6}),
-            TableTools.col("VWCD", null, VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION,
-                    VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION),
+            TableTools.col("VWCD", null, new ArrayTuple(0, 2, 4, 6), new ArrayTuple(1, 3, 5, 7)),
             TableTools.col("FWBA", new byte[] {7, 8, 9, 10, 11, 12, 13, 14, 15},
                     new byte[] {16, 17, 18, 19, 20, 21, 22, 23, 24}, new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0}),
             TableTools.col("VWBI", BigInteger.valueOf(91), BigInteger.valueOf(111111111111111L), null),

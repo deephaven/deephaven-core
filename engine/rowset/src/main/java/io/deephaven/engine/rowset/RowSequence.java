@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.rowset;
 
 import io.deephaven.util.datastructures.LongAbortableConsumer;
@@ -220,7 +219,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
         long peekNextKey();
 
         /**
-         * Get an {@code RowSequence} from the row key at the position of this iterator up to the maximum row key
+         * Get a {@code RowSequence} from the row key at the position of this iterator up to the maximum row key
          * (inclusive). Advances the position of this iterator by the size of the result. If the maximum row key
          * provided is smaller than the next row key (as would be returned by {@link #peekNextKey()}), the empty
          * RowSequence is returned.
@@ -236,7 +235,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
         RowSequence getNextRowSequenceThrough(long maxKeyInclusive);
 
         /**
-         * Get an {@code RowSequence} from the row key at the position of this iterator up to the desired number of row
+         * Get a {@code RowSequence} from the row key at the position of this iterator up to the desired number of row
          * keys. Advances the position of this iterator by the size of the result.
          *
          * The returned RowSequence object is only borrowed by the caller from the {@link Iterator}, who owns it. It is

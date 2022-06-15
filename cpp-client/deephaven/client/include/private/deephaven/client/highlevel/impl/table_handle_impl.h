@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 #pragma once
 
 #include <memory>
@@ -5,6 +8,7 @@
 #include <string>
 #include "deephaven/client/lowlevel/server.h"
 #include "deephaven/client/highlevel/client.h"
+#include "deephaven/client/highlevel/ticking.h"
 #include "deephaven/client/utility/callbacks.h"
 #include "deephaven/client/utility/cbfuture.h"
 #include "deephaven/client/utility/executor.h"
@@ -172,6 +176,9 @@ public:
   std::shared_ptr<DateTimeColImpl> getDateTimeColImpl(std::string columnName);
 
   void bindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback);
+
+  void subscribe(std::shared_ptr<TickingCallback> callback);
+  void unsubscribe(std::shared_ptr<TickingCallback> callback);
 
   // For debugging
   void observe();

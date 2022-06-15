@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.web.shared.ide.lsp.DiagnosticRelatedInformation",
- "methods": {},
- "path": "io.deephaven.web.shared.ide.lsp.DiagnosticRelatedInformation",
- "text": "Used to add N location+message pairs to a single Diagnostic message.",
- "typeName": "class"
-}

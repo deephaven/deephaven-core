@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.qst.TableAdapterResults$Output",
- "methods": {
-  "walk": ":param visitor: V\n:return: V"
- },
- "path": "io.deephaven.qst.TableAdapterResults.Output",
- "typeName": "interface"
-}

@@ -1,5 +1,10 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -7,31 +12,43 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.table.impl.util.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a
  * {@link MergedListener} that a change has occurred. The combination of a {@link ListenerRecorder} and
- * {@link MergedListener} should be used when a table has multiple sources, such that each table can process all of it's
+ * {@link MergedListener} should be used when a table has multiple sources, such that each table can process all of its
  * dependencies at once and fire a single notification to its children.
  */
-public class ListenerRecorder extends BaseTable.ListenerImpl {
+public class ListenerRecorder extends InstrumentedTableUpdateListener {
+
+    protected final Table parent;
     protected final String logPrefix;
-    protected final boolean isRefreshing;
 
     private MergedListener mergedListener;
 
     private long notificationStep = -1;
     private TableUpdate update;
 
-    public ListenerRecorder(String description, Table parent, BaseTable dependent) {
-        super(description, parent, dependent);
-        this.logPrefix = System.identityHashCode(this) + ": " + description + "ShiftObliviousListener Recorder: ";
-        this.isRefreshing = parent.isRefreshing();
+    public ListenerRecorder(
+            @NotNull final String description, @NotNull final Table parent, @Nullable final Object dependent) {
+        super(description);
+        this.parent = parent;
+        logPrefix = System.identityHashCode(this) + ": " + description + " Listener Recorder: ";
+
+        if (parent.isRefreshing()) {
+            manage(parent);
+            if (dependent instanceof Table) {
+                ((Table) dependent).addParentReference(this);
+            } else if (dependent instanceof LivenessManager) {
+                ((LivenessManager) dependent).manage(this);
+            }
+        }
     }
 
-    boolean isRefreshing() {
-        return isRefreshing;
+    public Table getParent() {
+        return parent;
     }
 
     public void release() {
@@ -44,14 +61,36 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
     @Override
     public void onUpdate(final TableUpdate upstream) {
         this.update = upstream.acquire();
-        this.notificationStep = LogicalClock.DEFAULT.currentStep();
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        Assert.lt(this.notificationStep, "this.notificationStep", currentStep, "currentStep");
+        this.notificationStep = currentStep;
 
         // notify the downstream listener merger
         if (mergedListener == null) {
-            throw new IllegalStateException("Merged listener not set!");
+            throw new IllegalStateException("Merged listener not set");
         }
 
         mergedListener.notifyChanges();
+    }
+
+    @Override
+    protected void onFailureInternal(@NotNull final Throwable originalException, @Nullable final Entry sourceEntry) {
+        this.notificationStep = LogicalClock.DEFAULT.currentStep();
+        if (mergedListener == null) {
+            throw new IllegalStateException("Merged listener not set");
+        }
+        mergedListener.notifyOnUpstreamError(originalException, sourceEntry);
+    }
+
+    @Override
+    public boolean canExecute(final long step) {
+        return parent.satisfied(step);
+    }
+
+    @Override
+    protected void destroy() {
+        super.destroy();
+        parent.removeUpdateListener(this);
     }
 
     public boolean recordedVariablesAreValid() {
@@ -92,15 +131,5 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
 
     public TableUpdate getUpdate() {
         return recordedVariablesAreValid() ? update : null;
-    }
-
-    /**
-     * The caller is responsible for closing the {@link RowSetShiftDataExpander}.
-     * 
-     * @return a backwards compatible version of added / removed / modified that account for shifting
-     */
-    public RowSetShiftDataExpander getExpandedARM() {
-        return recordedVariablesAreValid() ? new RowSetShiftDataExpander(update, getParent().getRowSet())
-                : RowSetShiftDataExpander.EMPTY;
     }
 }

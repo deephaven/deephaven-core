@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.grpcweb.service;
 
 import io.deephaven.javascript.proto.dhinternal.grpcweb.message.ProtobufMessageClass;

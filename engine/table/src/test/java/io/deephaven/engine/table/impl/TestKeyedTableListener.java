@@ -1,14 +1,13 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.tuple.ArrayTuple;
 
 public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
@@ -20,9 +19,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     private final RowSet noRemoved = RowSetFactory.empty();
     private final RowSet noModified = RowSetFactory.empty();
 
-    private SmartKey aKey;
-    private SmartKey bKey;
-    private SmartKey cKey;
+    private ArrayTuple aKey;
+    private ArrayTuple bKey;
+    private ArrayTuple cKey;
 
     @Override
     public void setUp() {
@@ -33,11 +32,12 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
                 TstUtils.c("Key1", "A", "B", "C"),
                 TstUtils.c("Key2", 1, 2, 3),
                 TstUtils.c("Data", 1.0, 2.0, 3.0));
-        this.aKey = new SmartKey("A", 1);
-        this.bKey = new SmartKey("B", 2);
-        this.cKey = new SmartKey("C", 3);
+        this.aKey = new ArrayTuple("A", 1);
+        this.bKey = new ArrayTuple("B", 2);
+        this.cKey = new ArrayTuple("C", 3);
         this.keyedTableListener = new KeyedTableListener(table, "Key1", "Key2");
-        this.keyedTableListener.listenForUpdates(); // enable immediately
+        // enable immediately
+        UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(() -> this.keyedTableListener.listenForUpdates());
     }
 
     @Override
@@ -49,24 +49,24 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     public void testGetRow() {
         Object[] data;
 
-        data = keyedTableListener.getRow(new SmartKey("A", 1));
+        data = keyedTableListener.getRow(new ArrayTuple("A", 1));
         assertEquals(1.0, data[2]);
 
-        data = keyedTableListener.getRow(new SmartKey("B", 2));
+        data = keyedTableListener.getRow(new ArrayTuple("B", 2));
         assertEquals(2.0, data[2]);
 
-        data = keyedTableListener.getRow(new SmartKey("C", 3));
+        data = keyedTableListener.getRow(new ArrayTuple("C", 3));
         assertEquals(3.0, data[2]);
 
         // Wrong key
-        data = keyedTableListener.getRow(new SmartKey("A", 2));
+        data = keyedTableListener.getRow(new ArrayTuple("A", 2));
         assertEquals(null, data);
     }
 
     public void testNoChanges() {
         checking(new Expectations() {
             {
-                never(mockListener).update(with(any(KeyedTableListener.class)), with(any(SmartKey.class)),
+                never(mockListener).update(with(any(KeyedTableListener.class)), with(any(ArrayTuple.class)),
                         with(any(long.class)), with(any(KeyedTableListener.KeyEvent.class)));
             }
         });
@@ -83,7 +83,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     }
 
     public void testAdd() {
-        final SmartKey newKey = new SmartKey("D", 4);
+        final ArrayTuple newKey = new ArrayTuple("D", 4);
         checking(new Expectations() {
             {
                 oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey), with(3L),
@@ -155,7 +155,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     }
 
     public void testModifyChangedKey() {
-        final SmartKey newKey = new SmartKey("C", 4);
+        final ArrayTuple newKey = new ArrayTuple("C", 4);
 
         checking(new Expectations() {
             {
@@ -191,7 +191,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
     // Move an existing key up, while adding one to fill its place
     public void testModifyKeyMoved() {
-        final SmartKey newKey = new SmartKey("D", 4);
+        final ArrayTuple newKey = new ArrayTuple("D", 4);
 
         checking(new Expectations() {
             {
@@ -271,7 +271,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
     // Test the combination of an add / remove and modify
     public void testAddRemoveModify() {
-        final SmartKey newKey = new SmartKey("D", 4);
+        final ArrayTuple newKey = new ArrayTuple("D", 4);
 
         checking(new Expectations() {
             {
@@ -328,7 +328,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     }
 
     public void testRemoveAdd() {
-        final SmartKey newKey = new SmartKey("D", 4);
+        final ArrayTuple newKey = new ArrayTuple("D", 4);
 
         checking(new Expectations() {
             {

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.exceptions.UncheckedTableException;
@@ -83,7 +86,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
         }
 
-        analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler,
+        analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler, this,
                 new SelectAndViewAnalyzer.SelectLayerCompletionHandler(allNewColumns, completedColumns) {
                     @Override
                     public void onAllRequiredColumnsCompleted() {
@@ -112,7 +115,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private void completionRoutine(TableUpdate upstream, SelectAndViewAnalyzer.JobScheduler jobScheduler,
             WritableRowSet toClear, SelectAndViewAnalyzer.UpdateHelper updateHelper) {
         final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
-                upstream.modified().copy(), upstream.shifted(), dependent.modifiedColumnSet);
+                upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
         transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
         dependent.notifyListeners(downstream);
         upstream.release();

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Function$Int",
- "methods": {
-  "call": ":return: int"
- },
- "path": "io.deephaven.base.Function.Int",
- "typeName": "interface"
-}

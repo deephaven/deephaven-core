@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.rowset.impl.singlerange;
 
 import io.deephaven.base.verify.Assert;
@@ -768,7 +771,7 @@ public abstract class SingleRange implements OrderedLongSet {
             }
             b.appendRange(startPos, endPos);
         }
-        return b.getTreeIndexImpl();
+        return b.getOrderedLongSet();
     }
 
     public final RspBitmap toRsp() {

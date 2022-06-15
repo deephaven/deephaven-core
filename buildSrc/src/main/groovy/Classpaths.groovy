@@ -48,14 +48,14 @@ class Classpaths {
     static final String COMMONS_GROUP = 'org.apache.commons'
 
     static final String ARROW_GROUP = 'org.apache.arrow'
-    static final String ARROW_VERSION = '6.0.1'
+    static final String ARROW_VERSION = '7.0.0'
 
     static final String SLF4J_GROUP = 'org.slf4j'
     static final String SLF4J_VERSION = '2.0.0-alpha5'
 
     static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
     static final String FLATBUFFER_NAME = 'flatbuffers-java'
-    static final String FLATBUFFER_VERSION = '1.12.0'
+    static final String FLATBUFFER_VERSION = '2.0.3'
 
     static final String DAGGER_GROUP = 'com.google.dagger'
     static final String DAGGER_NAME = 'dagger'
@@ -87,7 +87,29 @@ class Classpaths {
     static final String GROOVY_VERSION = '3.0.9'
 
     static final String GRPC_GROUP = 'io.grpc'
-    static final String GRPC_VERSION = '1.42.1'
+    static final String GRPC_NAME = 'grpc-bom'
+    static final String GRPC_VERSION = '1.46.0'
+
+    // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
+    static final String PROTOBUF_GROUP = 'com.google.protobuf'
+    static final String PROTOBUF_NAME = 'protobuf-java'
+    static final String PROTOBUF_VERSION = '3.20.1'
+
+    // See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
+    static final String BORINGSSL_GROUP = 'io.netty'
+    static final String BORINGSSL_NAME = 'netty-tcnative-boringssl-static'
+    static final String BORINGSSL_VERSION = '2.0.46.Final'
+
+    static final String JACKSON_GROUP = 'com.fasterxml.jackson'
+    static final String JACKSON_NAME = 'jackson-bom'
+    static final String JACKSON_VERSION = '2.13.3'
+
+    static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
+    static final String SSLCONTEXT_VERSION = '7.4.3'
+
+    static final String JETTY11_GROUP = 'org.eclipse.jetty'
+    static final String JETTY11_NAME = 'jetty-bom'
+    static final String JETTY11_VERSION = '11.0.8'
 
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
@@ -218,6 +240,31 @@ class Classpaths {
 
     static void inheritGrpcPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, p.getDependencies().platform(GRPC_GROUP + ":grpc-bom:" + GRPC_VERSION))
+        addDependency(config, p.getDependencies().platform(GRPC_GROUP + ":" + GRPC_NAME + ":" + GRPC_VERSION))
+    }
+
+    static void inheritProtobuf(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, PROTOBUF_GROUP, PROTOBUF_NAME, PROTOBUF_VERSION)
+    }
+
+    static void inheritBoringSsl(Project p, String configName = JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, BORINGSSL_GROUP, BORINGSSL_NAME, BORINGSSL_VERSION)
+    }
+
+    static void inheritJacksonPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform("${JACKSON_GROUP}:${JACKSON_NAME}:${JACKSON_VERSION}"))
+    }
+
+    static void inheritSSLContext(Project p, String name, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, SSLCONTEXT_GROUP, name, SSLCONTEXT_VERSION)
+    }
+
+    static void inheritJetty11Platform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform("${JETTY11_GROUP}:${JETTY11_NAME}:${JETTY11_VERSION}"))
     }
 }

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.plot;
 
 import io.deephaven.plot.util.ArgumentValidations;
@@ -18,7 +21,7 @@ public abstract class AbstractSeriesInternal implements Series, SeriesInternal {
     private final Comparable name;
     private final Set<TableHandle> tableHandles = new CopyOnWriteArraySet<>();
     private final Set<SwappableTable> swappableTables = new CopyOnWriteArraySet<>();
-    private final Set<TableMapHandle> tableMapHandles = new CopyOnWriteArraySet<>();
+    private final Set<PartitionedTableHandle> partitionedTableHandles = new CopyOnWriteArraySet<>();
 
 
     protected AbstractSeriesInternal(AxesImpl axes, int id, Comparable name) {
@@ -35,7 +38,7 @@ public abstract class AbstractSeriesInternal implements Series, SeriesInternal {
         this.id = series.id;
         this.name = series.name;
         this.tableHandles.addAll(series.tableHandles);
-        this.tableMapHandles.addAll(series.tableMapHandles);
+        this.partitionedTableHandles.addAll(series.partitionedTableHandles);
         this.swappableTables.addAll(series.swappableTables);
     }
 
@@ -70,19 +73,19 @@ public abstract class AbstractSeriesInternal implements Series, SeriesInternal {
     }
 
     @Override
-    public void addTableMapHandle(TableMapHandle map) {
-        tableMapHandles.add(map);
+    public void addPartitionedTableHandle(PartitionedTableHandle map) {
+        partitionedTableHandles.add(map);
     }
 
     @Override
-    public Set<TableMapHandle> getTableMapHandles() {
-        return tableMapHandles;
+    public Set<PartitionedTableHandle> getPartitionedTableHandles() {
+        return partitionedTableHandles;
     }
 
     @Override
     public void addSwappableTable(SwappableTable st) {
         swappableTables.add(st);
-        addTableMapHandle(st.getTableMapHandle());
+        addPartitionedTableHandle(st.getPartitionedTableHandle());
     }
 
     @Override

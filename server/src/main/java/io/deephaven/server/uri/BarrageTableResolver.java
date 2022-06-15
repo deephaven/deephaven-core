@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.uri;
 
 import io.deephaven.client.impl.*;
@@ -221,8 +224,9 @@ public final class BarrageTableResolver implements UriResolver {
     public Table snapshot(DeephavenTarget target, TableSpec table, BarrageSnapshotOptions options)
             throws TableHandleException, InterruptedException {
         final BarrageSession session = session(target);
-        final BarrageSnapshot snap = session.snapshot(table, options);
-        return snap.entireTable();
+        try (final BarrageSnapshot snap = session.snapshot(table, options)) {
+            return snap.entireTable();
+        }
     }
 
     /**
@@ -270,8 +274,9 @@ public final class BarrageTableResolver implements UriResolver {
             BitSet columns, boolean reverseViewport)
             throws TableHandleException, InterruptedException {
         final BarrageSession session = session(target);
-        final BarrageSnapshot snap = session.snapshot(table, options);
-        return snap.partialTable(viewport, columns, reverseViewport);
+        try (final BarrageSnapshot snap = session.snapshot(table, options)) {
+            return snap.partialTable(viewport, columns, reverseViewport);
+        }
     }
 
 
@@ -281,9 +286,14 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     private BarrageSession newSession(DeephavenTarget target) {
-        return newSession(ChannelHelper.channelBuilder(target)
+        return newSession(ClientConfig.builder()
+                .target(target)
                 .maxInboundMessageSize(MAX_INBOUND_MESSAGE_SIZE)
                 .build());
+    }
+
+    private BarrageSession newSession(ClientConfig config) {
+        return newSession(ChannelHelper.channel(config));
     }
 
     private BarrageSession newSession(ManagedChannel channel) {

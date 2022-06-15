@@ -1,6 +1,10 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.util.jpy;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.jpy.JpyConfig;
 import io.deephaven.jpy.JpyConfigExt;
@@ -18,27 +22,27 @@ import java.util.concurrent.TimeoutException;
  * A guarded initialization via {@link JpyConfigExt#startPython()}
  */
 public class JpyInit {
+    private static final Logger log = LoggerFactory.getLogger(JpyInit.class);
 
     /**
      * First, checks {@link Configuration#getInstance()} for any explicit jpy properties. If none are set, it will
      * source the configuration from {@link JpyConfigFromSubprocess#fromSubprocess(Duration)}.
      *
-     * @param log the log
      * @throws IOException if an IO exception occurs
      * @throws InterruptedException if the current thread is interrupted
      * @throws TimeoutException if the command times out
      */
-    public static void init(Logger log) throws IOException, InterruptedException, TimeoutException {
+    public static void init() throws IOException, InterruptedException, TimeoutException {
         final JpyConfig explicitConfig = new JpyConfigLoader(Configuration.getInstance()).asJpyConfig();
         if (!explicitConfig.isEmpty()) {
-            init(log, new JpyConfigExt(explicitConfig));
+            init(new JpyConfigExt(explicitConfig));
             return;
         }
         final JpyConfigSource fromSubprocess = JpyConfigFromSubprocess.fromSubprocess(Duration.ofSeconds(10));
-        init(log, new JpyConfigExt(fromSubprocess.asJpyConfig()));
+        init(new JpyConfigExt(fromSubprocess.asJpyConfig()));
     }
 
-    public static synchronized void init(Logger log, JpyConfigExt jpyConfig) {
+    private static synchronized void init(JpyConfigExt jpyConfig) {
         if (PyLibInitializer.isPyLibInitialized()) {
             log.warn().append("Skipping initialization of Jpy, already initialized").endl();
             log.warn().append("Using Python Installation ").append(System.getProperty("jpy.pythonLib", "(unknown)"))

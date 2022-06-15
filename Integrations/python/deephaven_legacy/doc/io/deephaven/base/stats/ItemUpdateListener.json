@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.stats.ItemUpdateListener",
- "methods": {
-  "handleItemUpdated": ":param item: io.deephaven.base.stats.Item\n:param now: long\n:param appNow: long\n:param intervalIndex: int\n:param intervalMillis: long\n:param intervalName: java.lang.String"
- },
- "path": "io.deephaven.base.stats.ItemUpdateListener",
- "typeName": "interface"
-}

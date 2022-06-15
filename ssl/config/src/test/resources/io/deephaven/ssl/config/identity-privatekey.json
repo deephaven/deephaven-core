@@ -1,0 +1,7 @@
+{
+  "identity": {
+    "type": "privatekey",
+    "certChainPath": "ca.crt",
+    "privateKeyPath": "key.pem"
+  }
+}

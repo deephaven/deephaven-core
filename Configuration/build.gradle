@@ -4,7 +4,10 @@ plugins {
 
 dependencies {
     compile project(':Base'), project(':DataStructures'), project(':IO'), project(':log-factory'), depCommonsLang3
-    testCompile fileTree(dir: "${rootDir}/test-libs", include: ['*.jar'])
+    testCompile 'junit:junit:4.13.2'
+    testCompile 'org.jmock:jmock-junit4:2.12.0'
+    testCompile 'org.jmock:jmock-imposters:2.12.0'
+
     Classpaths.inheritAutoService(project)
 
     testCompile project(path: ':Base', configuration: 'tests')

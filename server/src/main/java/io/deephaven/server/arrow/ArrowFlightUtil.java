@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.arrow;
 
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -22,6 +25,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
@@ -52,10 +56,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayDeque;
-import java.util.BitSet;
-import java.util.Iterator;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
@@ -81,6 +82,7 @@ public class ArrowFlightUtil {
 
         private BarrageTable resultTable;
         private SessionState.ExportBuilder<Table> resultExportBuilder;
+        private Flight.FlightDescriptor flightDescriptor;
 
         private ChunkType[] columnChunkTypes;
         private int[] columnConversionFactors;
@@ -111,14 +113,18 @@ public class ArrowFlightUtil {
             GrpcUtil.rpcWrapper(log, observer, () -> {
                 final BarrageProtoUtil.MessageInfo mi = BarrageProtoUtil.parseProtoMessage(request);
                 if (mi.descriptor != null) {
-                    if (resultExportBuilder != null) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Only one descriptor definition allowed");
+                    if (flightDescriptor != null) {
+                        if (!flightDescriptor.equals(mi.descriptor)) {
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "additional flight descriptor sent does not match original descriptor");
+                        }
+                    } else {
+                        flightDescriptor = mi.descriptor;
+                        resultExportBuilder = ticketRouter
+                                .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
+                                .onError(observer);
+                        manage(resultExportBuilder.getExport());
                     }
-                    resultExportBuilder = ticketRouter
-                            .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
-                            .onError(observer);
-                    manage(resultExportBuilder.getExport());
                 }
 
                 if (mi.app_metadata != null
@@ -173,16 +179,17 @@ public class ArrowFlightUtil {
                 for (int ci = 0; ci < numColumns; ++ci) {
                     final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
                     msg.addColumnData[ci] = acd;
+                    msg.addColumnData[ci].data = new ArrayList<>();
                     final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
                     try {
-                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
+                        acd.data.add(ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
                                 columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
-                                bufferInfoIter, mi.inputStream, null, 0, 0);
+                                bufferInfoIter, mi.inputStream, null, 0, 0));
                     } catch (final IOException unexpected) {
                         throw new UncheckedDeephavenException(unexpected);
                     }
 
-                    if (acd.data.size() != numRowsAdded) {
+                    if (acd.data.get(0).size() != numRowsAdded) {
                         throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                                 "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
                     }
@@ -484,11 +491,18 @@ public class ArrowFlightUtil {
                     final SessionState.ExportObject<BaseTable> parent =
                             ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "ticket");
 
+                    final BarragePerformanceLog.SnapshotMetricsHelper metrics =
+                            new BarragePerformanceLog.SnapshotMetricsHelper();
+
+                    final long queueStartTm = System.nanoTime();
                     session.nonExport()
                             .require(parent)
                             .onError(listener)
                             .submit(() -> {
+                                metrics.queueNanos = System.nanoTime() - queueStartTm;
                                 final BaseTable table = parent.get();
+                                metrics.tableId = Integer.toHexString(System.identityHashCode(table));
+                                metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
                                 // Send Schema wrapped in Message
                                 final FlatBufferBuilder builder = new FlatBufferBuilder();
@@ -519,6 +533,7 @@ public class ArrowFlightUtil {
                                 final boolean reverseViewport = snapshotRequest.reverseViewport();
 
                                 // get ourselves some data (reversing viewport as instructed)
+                                final long snapshotStartTm = System.nanoTime();
                                 final BarrageMessage msg;
                                 if (reverseViewport) {
                                     msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
@@ -527,12 +542,11 @@ public class ArrowFlightUtil {
                                     msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
                                             columns, viewport, null);
                                 }
+                                metrics.snapshotNanos = System.nanoTime() - snapshotStartTm;
                                 msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
 
                                 // translate the viewport to keyspace and make the call
-                                try (final BarrageStreamGenerator bsg =
-                                        new BarrageStreamGenerator(msg, (bytes, nanos) -> {
-                                        });
+                                try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, metrics);
                                         final RowSet keySpaceViewport =
                                                 hasViewport
                                                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
@@ -696,7 +710,7 @@ public class ArrowFlightUtil {
             }
 
             @Override
-            public void close() {
+            public synchronized void close() {
                 if (onExportResolvedContinuation != null) {
                     onExportResolvedContinuation.cancel();
                     onExportResolvedContinuation = null;

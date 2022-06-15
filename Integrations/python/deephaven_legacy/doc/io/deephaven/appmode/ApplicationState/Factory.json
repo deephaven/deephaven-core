@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.appmode.ApplicationState$Factory",
- "methods": {
-  "create": ":param appStateListener: io.deephaven.appmode.ApplicationState.Listener\n:return: io.deephaven.appmode.ApplicationState"
- },
- "path": "io.deephaven.appmode.ApplicationState.Factory",
- "typeName": "interface"
-}

@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.modelfarm.util;
 
 import io.deephaven.base.verify.Require;
@@ -31,7 +30,7 @@ public class ModelFarmUtils {
             final String cn = colNames[i];
             final Class ct = colTypes[i];
             Require.eqTrue(t.hasColumns(cn), "Table is missing column.  tableName=" + tableName + " columnName=" + cn);
-            final Class cta = t.getColumn(cn).getType();
+            final Class cta = t.getDefinition().getColumn(cn).getDataType();
             Require.eqTrue(cta.equals(ct), "Table column is of the wrong type.  tableName=" + tableName + " columnName="
                     + cn + " typeRequired=" + ct + " typeActual=" + cta);
         }
