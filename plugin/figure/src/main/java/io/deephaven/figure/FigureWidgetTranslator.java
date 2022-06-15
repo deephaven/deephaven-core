@@ -357,13 +357,20 @@ public class FigureWidgetTranslator {
 
                                 } else if (s instanceof CategoryTreeMapDataSeriesTableMap) {
                                     CategoryTreeMapDataSeriesTableMap series = (CategoryTreeMapDataSeriesTableMap) s;
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getCategoryCol(), catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getValueCol(), numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
+                                    clientAxes
+                                            .add(makeSourceDescriptor(series.getTableHandle(), series.getCategoryCol(),
+                                                    catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getValueCol(),
+                                            numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
 
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getParentColumn(), SourceType.PARENT, null));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getLabelColumn(), SourceType.LABEL, null));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getColorColumn(), SourceType.COLOR, null));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getHoverTextColumn(), SourceType.HOVER_TEXT, null));
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                            series.getParentColumn(), SourceType.PARENT, null));
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                            series.getLabelColumn(), SourceType.LABEL, null));
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                            series.getColorColumn(), SourceType.COLOR, null));
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                            series.getHoverTextColumn(), SourceType.HOVER_TEXT, null));
                                 } else if (s instanceof CategoryDataSeriesMap) {// bar and plot from constant data
                                     errorList.add("OpenAPI presently does not support series of type " + s.getClass());
                                 }

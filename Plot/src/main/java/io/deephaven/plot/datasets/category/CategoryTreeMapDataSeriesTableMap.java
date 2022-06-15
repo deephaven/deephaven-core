@@ -18,7 +18,8 @@ public class CategoryTreeMapDataSeriesTableMap extends AbstractTableBasedCategor
     private final String colorColumn;
     private final String hoverTextColumn;
 
-    public CategoryTreeMapDataSeriesTableMap(AxesImpl axes, int id, Comparable name, TableHandle h, String idColumn, String parentColumn, String labelColumn, String valueColumn, String colorColumn, String hoverTextColumn) {
+    public CategoryTreeMapDataSeriesTableMap(AxesImpl axes, int id, Comparable name, TableHandle h, String idColumn,
+            String parentColumn, String labelColumn, String valueColumn, String colorColumn, String hoverTextColumn) {
         super(axes, id, name, null);
         this.tableHandle = h;
         this.idColumn = idColumn;
