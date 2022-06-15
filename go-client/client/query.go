@@ -3,7 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
-	"errors"
+	"fmt"
 
 	tablepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/table"
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
@@ -34,7 +34,7 @@ func (qb QueryNode) addOp(op tableOp) QueryNode {
 	return qb.builder.curRootNode()
 }
 
-// This is (some subset of) the Query DAG.
+// This is (some subgraph of) the Query DAG.
 type queryBuilder struct {
 	uniqueId int32
 	table    *TableHandle
@@ -66,14 +66,15 @@ type batchBuilder struct {
 	grpcOps []*tablepb2.BatchTableRequest_Operation
 }
 
-// Returns the index of the node found
-func (b *batchBuilder) needsExport(opIdx int, builderId int32) (int, bool) {
+// Returns the indexes of the node found
+func (b *batchBuilder) needsExport(opIdx int, builderId int32) []int {
+	var indices []int
 	for i, node := range b.nodes {
 		if node.index == opIdx && node.builder.uniqueId == builderId {
-			return i, true
+			indices = append(indices, i)
 		}
 	}
-	return 0, false
+	return indices
 }
 
 // Returns a handle to the node's output table
@@ -100,17 +101,31 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 	}
 
 	var resultId *ticketpb2.Ticket = nil
-	if node, ok := b.needsExport(node.index, node.builder.uniqueId); ok {
+	// Duplicate nodes that still need their own tickets
+	var extraNodes []int
+	if nodes := b.needsExport(node.index, node.builder.uniqueId); len(nodes) > 0 {
 		t := b.client.newTicket()
 		resultId = &t
-		b.nodeOrder[node] = resultId
+		b.nodeOrder[nodes[0]] = resultId
+		extraNodes = nodes[1:]
 	}
 
 	grpcOp := op.makeBatchOp(resultId, childQueries)
 	b.grpcOps = append(b.grpcOps, &grpcOp)
 
-	source = &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: int32(len(b.grpcOps) - 1)}}
 	b.finishedOps[nodeKey] = int32(len(b.grpcOps)) - 1
+
+	for _, extraNode := range extraNodes {
+		sourceId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: int32(len(b.grpcOps) - 1)}}
+		t := b.client.newTicket()
+		resultId = &t
+		b.nodeOrder[extraNode] = resultId
+		req := tablepb2.FetchTableRequest{ResultId: resultId, SourceId: sourceId}
+		grpcOp := tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_FetchTable{FetchTable: &req}}
+		b.grpcOps = append(b.grpcOps, &grpcOp)
+	}
+
+	source = &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: int32(len(b.grpcOps) - 1)}}
 	return source
 }
 
@@ -130,8 +145,6 @@ func getGrpcOps(client *Client, nodes []QueryNode) ([]*tablepb2.BatchTableReques
 	return builder.grpcOps, builder.nodeOrder, nil
 }
 
-// TODO: Duplicate entries in `nodes`
-
 func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*TableHandle, error) {
 	ops, nodeOrder, err := getGrpcOps(client, nodes)
 	if err != nil {
@@ -147,10 +160,6 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*Table
 		return nil, err
 	}
 
-	if len(exportedTables) != len(nodes) {
-		return nil, errors.New("wrong number of tables in response")
-	}
-
 	var output []*TableHandle
 
 	for i, ticket := range nodeOrder {
@@ -161,7 +170,7 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*Table
 		}
 
 		if i+1 != len(output) {
-			panic("ticket didn't match")
+			panic(fmt.Sprintf("ticket didn't match %s", ticket))
 		}
 	}
 
@@ -236,7 +245,9 @@ func (op updateOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Update{Update: req}}
 }
 
-// Adds additional columns to the table, calculated based on the given formulas
+// Adds additional columns to the table, calculated based on the given formulas.
+// The new column is computed immediately and then stored in memory.
+// See https://deephaven.io/core/docs/reference/table-operations/select/update/ for comparison with other column-changing methods.
 func (qb QueryNode) Update(formulas ...string) QueryNode {
 	return qb.addOp(updateOp{child: qb, formulas: formulas})
 }
@@ -256,7 +267,9 @@ func (op lazyUpdateOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_LazyUpdate{LazyUpdate: req}}
 }
 
-// Performs a lazy-update
+// Adds additional columns to the table, calculated based on the given formulas.
+// The data in the the new columns is computed on-demand and then cached.
+// See https://deephaven.io/core/docs/reference/table-operations/select/lazy-update/ for comparison with other column-changing methods.
 func (qb QueryNode) LazyUpdate(formulas ...string) QueryNode {
 	return qb.addOp(lazyUpdateOp{child: qb, formulas: formulas})
 }
@@ -277,6 +290,8 @@ func (op viewOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.Ta
 }
 
 // Create a new table displaying only the selected columns, optionally modified by formulas
+// The data in the new columns is not stored in memory, and is recalculated from the formulas every time it is accessed.
+// See https://deephaven.io/core/docs/reference/table-operations/select/view/ for comparison with other column-changing methods.
 func (qb QueryNode) View(formulas ...string) QueryNode {
 	return qb.addOp(viewOp{child: qb, formulas: formulas})
 }
@@ -296,6 +311,9 @@ func (op updateViewOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_UpdateView{UpdateView: req}}
 }
 
+// Adds additional columns to the table, calculated based on the given formulas.
+// The data in the new columns is not stored in memory, and is recalculated from the formulas every time it is accessed.
+// See https://deephaven.io/core/docs/reference/table-operations/select/update-view/ for comparison with other column-changing methods.
 func (qb QueryNode) UpdateView(formulas ...string) QueryNode {
 	return qb.addOp(updateViewOp{child: qb, formulas: formulas})
 }
@@ -315,7 +333,9 @@ func (op selectOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Select{Select: req}}
 }
 
-// Performs a selection operation basesd on the given formulas
+// Adds additional columns to the table, calculated based on the given formulas.
+// The data in the the new columns is computed immediately and stored in memory.
+// See https://deephaven.io/core/docs/reference/table-operations/select/select/ for comparison with other column-changing methods.
 func (qb QueryNode) Select(formulas ...string) QueryNode {
 	return qb.addOp(selectOp{child: qb, formulas: formulas})
 }
@@ -472,7 +492,7 @@ func (op headOrTailByOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tab
 	}
 }
 
-// Performs a group aggregation on the given columns and then a Head request
+// Performs a group aggregation on the given columns and then a Head request.
 func (qb QueryNode) HeadBy(numRows int64, by ...string) QueryNode {
 	return qb.addOp(headOrTailByOp{child: qb, numRows: numRows, by: by, isTail: false})
 }
@@ -831,6 +851,8 @@ func (qb QueryNode) NaturalJoin(rightTable QueryNode, on []string, joins []strin
 	return qb.addOp(op)
 }
 
+// A comparison rule for use with [QueryNode.AsOfJoin].
+// See its documentation for more details.
 const (
 	MatchRuleLessThanEqual    = iota
 	MatchRuleLessThan         = iota

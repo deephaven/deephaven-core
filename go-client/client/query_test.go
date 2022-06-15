@@ -311,6 +311,47 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, op queryOp) []arrow.Record
 	return recs
 }
 
+func TestDuplicateQuery(t *testing.T) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	if err != nil {
+		t.Fatalf("NewClient %s", err.Error())
+		return
+	}
+	defer c.Close()
+
+	query1 := c.EmptyTableQuery(10).Update("b = ii + 2")
+	query2 := query1.Update("a = ii * 3")
+
+	tables, err := c.ExecQuery(ctx, query2, query1, query2, query1)
+	if err != nil {
+		t.Errorf("ExecQuery %s", err.Error())
+		return
+	}
+
+	var records []arrow.Record
+	for _, tbl := range tables {
+		rec, err := tbl.Snapshot(ctx)
+		if err != nil {
+			t.Errorf("Snapshot %s", err.Error())
+			return
+		}
+		defer rec.Release()
+
+		records = append(records, rec)
+	}
+
+	if records[0].NumCols() != 2 || records[2].NumCols() != 2 {
+		t.Errorf("query2 had wrong size")
+	}
+
+	if records[1].NumCols() != 1 || records[3].NumCols() != 1 {
+		t.Errorf("query1 had wrong size")
+	}
+
+}
+
 func TestSortQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(2, 10, 1000), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Sort("a"), tbl.Query().SortBy(client.SortDsc("a"))}
