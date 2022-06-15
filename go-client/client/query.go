@@ -476,12 +476,12 @@ func (op headOrTailOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	}
 }
 
-// Selects only the first `numRows` rows of the table
+// Selects only the first numRows-many rows of the table
 func (qb QueryNode) Head(numRows int64) QueryNode {
 	return qb.addOp(headOrTailOp{child: qb, numRows: numRows, isTail: false})
 }
 
-// Selects only the last `numRows` rows of the table
+// Selects only the last numRows-many rows of the table
 func (qb QueryNode) Tail(numRows int64) QueryNode {
 	return qb.addOp(headOrTailOp{child: qb, numRows: numRows, isTail: true})
 }
@@ -536,7 +536,7 @@ func (op ungroupOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2
 }
 
 // Ungroups the table. The ungroup columns must be arrays.
-// `nullFill` indicates whether or not missing cells may be filled with null, default is true
+// nullFill indicates whether or not missing cells may be filled with null, default is true
 func (qb QueryNode) Ungroup(cols []string, nullFill bool) QueryNode {
 	return qb.addOp(ungroupOp{child: qb, colNames: cols, nullFill: nullFill})
 }
@@ -626,7 +626,7 @@ func (qb QueryNode) MaxBy(by ...string) QueryNode {
 }
 
 // Performs a count-by aggregation on the table.
-// The count of each group is stored in a new column named after the `resultCol` argument.
+// The count of each group is stored in a new column named after the resultCol argument.
 func (qb QueryNode) CountBy(resultCol string, by ...string) QueryNode {
 	return qb.addOp(dedicatedAggOp{child: qb, colNames: by, countColumn: resultCol, kind: tablepb2.ComboAggregateRequest_COUNT})
 }
@@ -660,7 +660,7 @@ func (b *AggBuilder) addAgg(part aggPart) {
 }
 
 // Performs a count aggregation on the table.
-// The count of each group is stored in a new column named after the `col` argument.
+// The count of each group is stored in a new column named after the col argument.
 func (b *AggBuilder) Count(col string) *AggBuilder {
 	b.addAgg(aggPart{columnName: col, kind: tablepb2.ComboAggregateRequest_COUNT})
 	return b
@@ -740,7 +740,7 @@ func (b *AggBuilder) Variance(cols ...string) *AggBuilder {
 	return b
 }
 
-// Performs a weighted average on the table. `weightCol` is used as the weights.
+// Performs a weighted average on the table. weightCol is used as the weights.
 func (b *AggBuilder) WeightedAvg(weightCol string, cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, columnName: weightCol, kind: tablepb2.ComboAggregateRequest_WEIGHTED_AVG})
 	return b
@@ -819,16 +819,16 @@ func (op joinOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.Ta
 
 // Performs a cross-join with this table as the left table.
 //
-// `on` is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
+// matchOn is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
 //
-// `joins` is the columns to add from the right table.
+// joins is the columns to add from the right table.
 //
-// `reserveBits` is the number of bits of key-space to initially reserve per group, default is 10.
-func (qb QueryNode) Join(rightTable QueryNode, on []string, joins []string, reserveBits int32) QueryNode {
+// reserveBits is the number of bits of key-space to initially reserve per group, default is 10.
+func (qb QueryNode) Join(rightTable QueryNode, matchOn []string, joins []string, reserveBits int32) QueryNode {
 	op := joinOp{
 		leftTable:      qb,
 		rightTable:     rightTable,
-		columnsToMatch: on,
+		columnsToMatch: matchOn,
 		columnsToAdd:   joins,
 		reserveBits:    reserveBits,
 		kind:           joinOpCross,
@@ -838,14 +838,14 @@ func (qb QueryNode) Join(rightTable QueryNode, on []string, joins []string, rese
 
 // Performs an exact-join with this table as the left table.
 //
-// `on` is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
+// matchOn is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
 //
-// `joins` is the columns to add from the right table.
-func (qb QueryNode) ExactJoin(rightTable QueryNode, on []string, joins []string) QueryNode {
+// joins is the columns to add from the right table.
+func (qb QueryNode) ExactJoin(rightTable QueryNode, matchOn []string, joins []string) QueryNode {
 	op := joinOp{
 		leftTable:      qb,
 		rightTable:     rightTable,
-		columnsToMatch: on,
+		columnsToMatch: matchOn,
 		columnsToAdd:   joins,
 		kind:           joinOpExact,
 	}
@@ -854,21 +854,21 @@ func (qb QueryNode) ExactJoin(rightTable QueryNode, on []string, joins []string)
 
 // Performs a natural-join with this table as the left table.
 //
-// `on` is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
+// on is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
 //
-// `joins` is the columns to add from the right table.
-func (qb QueryNode) NaturalJoin(rightTable QueryNode, on []string, joins []string) QueryNode {
+// joins is the columns to add from the right table.
+func (qb QueryNode) NaturalJoin(rightTable QueryNode, matchOn []string, joins []string) QueryNode {
 	op := joinOp{
 		leftTable:      qb,
 		rightTable:     rightTable,
-		columnsToMatch: on,
+		columnsToMatch: matchOn,
 		columnsToAdd:   joins,
 		kind:           joinOpNatural,
 	}
 	return qb.addOp(op)
 }
 
-// A comparison rule for use with [QueryNode.AsOfJoin].
+// A comparison rule for use with AsOfJoin.
 // See its documentation for more details.
 const (
 	MatchRuleLessThanEqual    = iota
@@ -915,16 +915,16 @@ func (op asOfJoinOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb
 
 // Performs an as-of-join with this table as the left table.
 //
-// `on` is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
+// matchColumns is the columns to match, which can be a column name or an equals expression (e.g. "colA = colB").
 //
-// `joins` is the columns to add from the right table.
+// joins is the columns to add from the right table.
 //
-// `matchRule` is the match rule for the join, default is MatchRuleLessThanEqual normally, or MatchRuleGreaterThanEqual or a reverse-as-of-join
-func (qb QueryNode) AsOfJoin(rightTable QueryNode, on []string, joins []string, matchRule int) QueryNode {
+// matchRule is the match rule for the join, default is MatchRuleLessThanEqual normally, or MatchRuleGreaterThanEqual for a reverse-as-of-join
+func (qb QueryNode) AsOfJoin(rightTable QueryNode, matchColumns []string, joins []string, matchRule int) QueryNode {
 	op := asOfJoinOp{
 		leftTable:      qb,
 		rightTable:     rightTable,
-		columnsToMatch: on,
+		columnsToMatch: matchColumns,
 		columnsToAdd:   joins,
 		matchRule:      matchRule,
 	}

@@ -1,3 +1,11 @@
+// This package allows you to interface with a Deephaven server over a network connection using Go.
+// It can upload, manipulate, and download tables, among other features.
+// Typically, usage goes like this:
+//  1. Create a Client struct
+//  2. Use the Client to upload, open, or create a table.
+//  3. Use the returned TableHandle to perform a query or do other table operations.
+//  4. Use the Snapshot method on tables to download the data when finished.
+// See the provided examples in the examples/ folder or the individual code documentation for more.
 package client
 
 import (
@@ -42,7 +50,7 @@ type Client struct {
 // Starts a connection to a Deephaven server.
 // scriptLanguage can be either "python" or "groovy", and must match the language used on the server. Python is the default.
 //
-// The client should be closed using `Close()` after it is done being used.
+// The client should be closed using Close() after it is done being used.
 //
 // Note that the provided context is saved and used to send keepalive messages.
 func NewClient(ctx context.Context, host string, port string, scriptLanguage string) (*Client, error) {
@@ -85,8 +93,8 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 type FetchOption int
 
 const (
-	FetchOnce      FetchOption = iota
-	FetchRepeating FetchOption = iota
+	FetchOnce      FetchOption = iota // Fetches the list of tables once and then returns.
+	FetchRepeating FetchOption = iota // Starts up a background thread to continually update the list of tables as changes occur.
 )
 
 // Fetches the list of tables from the server.
