@@ -1294,9 +1294,13 @@ class Table(JObjectWrapper):
 
 
 class PartitionedTable(JObjectWrapper):
-    """A partitioned table is a table containing subtables, known as constituent tables.
-    The table underlying the partitioned table contains one column containing constituent tables plus (optional) key columns.
+    """A partitioned table is a table containing tables, known as constituent tables.  
     Each constituent table has the same schema.
+
+    The partitioned table contains:
+    1. one column containing constituent tables
+    2. key columns (optional)
+    3. non-key columns (optional)
 
     Key values can be used to retrieve constituent tables from the partitioned table and 
     can be used to perform operations with other like-keyed partitioned tables.
@@ -1319,7 +1323,7 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def table(self) -> Table:
-        """The underlying Table containing (optional) key columns plus a column of constituent tables."""
+        """The underlying partitioned table."""
         if self._table is None:
             self._table = Table(j_table=self.j_partitioned_table.table())
         return self._table
@@ -1358,15 +1362,14 @@ class PartitionedTable(JObjectWrapper):
     def constituent_changes_permitted(self) -> bool:
         """Can the constituents of the underlying partitioned table change?  Specifically, can the values of the constituent column change?
 
-        If constituent changes are not permitted, the  underlying partitioned table:
+        If constituent changes are not permitted, the underlying partitioned table:
         1. has no adds
         2. has no removes
         3. has no shifts
         4. has no modifies that include the constituent column  
         
-        Note, this is unrelated to whether the constituent tables are refreshing, or whether the underlying partitioned
-        table is refreshing. Also note that the underlying partitioned table must be refreshing if it contains
-        any refreshing constituents.
+        Note, it is possible for constituent changes to not be permitted even if constituent tables are refreshing or if the underlying partitioned
+        table is refreshing. Also note that the underlying partitioned table must be refreshing if it contains any refreshing constituents.
         """
         if self._constituent_changes_permitted is None:
             self._constituent_changes_permitted = self.j_partitioned_table.constituentChangesPermitted()
@@ -1414,7 +1417,8 @@ class PartitionedTable(JObjectWrapper):
 
     def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTable:
-        """The sort method creates a new partitioned table where the rows are ordered based values in a specified set of columns.
+        """The sort method creates a new partitioned table where the rows are ordered based on values in a specified set of columns.
+        Sort can not use the constituent column.
         
          Args:
              order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
