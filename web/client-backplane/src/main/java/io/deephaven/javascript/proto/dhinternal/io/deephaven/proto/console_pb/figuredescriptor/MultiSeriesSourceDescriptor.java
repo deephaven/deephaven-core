@@ -30,7 +30,7 @@ public class MultiSeriesSourceDescriptor {
         String getColumnName();
 
         @JsProperty
-        double getTableMapId();
+        double getPartitionedTableId();
 
         @JsProperty
         double getType();
@@ -42,7 +42,7 @@ public class MultiSeriesSourceDescriptor {
         void setColumnName(String columnName);
 
         @JsProperty
-        void setTableMapId(double tableMapId);
+        void setPartitionedTableId(double partitionedTableId);
 
         @JsProperty
         void setType(double type);
@@ -62,7 +62,7 @@ public class MultiSeriesSourceDescriptor {
         String getColumnName();
 
         @JsProperty
-        double getTableMapId();
+        double getPartitionedTableId();
 
         @JsProperty
         double getType();
@@ -74,7 +74,7 @@ public class MultiSeriesSourceDescriptor {
         void setColumnName(String columnName);
 
         @JsProperty
-        void setTableMapId(double tableMapId);
+        void setPartitionedTableId(double partitionedTableId);
 
         @JsProperty
         void setType(double type);
@@ -95,7 +95,7 @@ public class MultiSeriesSourceDescriptor {
 
     public native String getColumnName();
 
-    public native int getTableMapId();
+    public native int getPartitionedTableId();
 
     public native int getType();
 
@@ -105,7 +105,7 @@ public class MultiSeriesSourceDescriptor {
 
     public native void setColumnName(String value);
 
-    public native void setTableMapId(int value);
+    public native void setPartitionedTableId(int value);
 
     public native void setType(int value);
 
