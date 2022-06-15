@@ -45,7 +45,8 @@ The respective servers can be started up with development certificates and mTLS 
 Note: it is not possible to start with mTLS, but not certificates.
 
 The jetty server will be accessible via https at [https://localhost:8443/ide/](https://localhost:8443/ide/). You'll need
-to import the client.p12 into your browser for mTLS to pass the proper identity information to the server.
+to import the client.p12 into your browser for mTLS to pass the proper identity information to the server. The
+configuration here uses the password `secret`.
 
 From the java client examples, the mTLS configuration can be referenced via:
 
