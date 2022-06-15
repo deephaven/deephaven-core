@@ -81,23 +81,11 @@ func (b *batchBuilder) needsExport(opIdx int, builderId int32) []int {
 func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 	var source *tablepb2.TableReference
 
-	if node.index == -1 {
-		return &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}
-	}
-
 	// If the op is already in the list, we don't need to do it again.
 	nodeKey := opKey{index: node.index, builderId: node.builder.uniqueId}
 	if prevIdx, skip := b.finishedOps[nodeKey]; skip {
 		// So just use the output of the existing occurence.
 		return &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: prevIdx}}
-	}
-
-	op := node.builder.ops[node.index]
-
-	var childQueries []*tablepb2.TableReference = nil
-	for _, child := range op.childQueries() {
-		childRef := b.addGrpcOps(child)
-		childQueries = append(childQueries, childRef)
 	}
 
 	var resultId *ticketpb2.Ticket = nil
@@ -107,13 +95,38 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 		t := b.client.newTicket()
 		resultId = &t
 		b.nodeOrder[nodes[0]] = resultId
+
 		extraNodes = nodes[1:]
+
+		if node.index == -1 {
+			// Even this node needs its own FetchTable request, because it's empty.
+			sourceId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}
+			t := b.client.newTicket()
+			resultId = &t
+			b.nodeOrder[nodes[0]] = resultId
+			req := tablepb2.FetchTableRequest{ResultId: resultId, SourceId: sourceId}
+			grpcOp := tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_FetchTable{FetchTable: &req}}
+			b.grpcOps = append(b.grpcOps, &grpcOp)
+		}
+	} else if node.index == -1 {
+		// An unexported node can just re-use the existing ticket since we don't have to worry about aliasing.
+		return &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}
 	}
 
-	grpcOp := op.makeBatchOp(resultId, childQueries)
-	b.grpcOps = append(b.grpcOps, &grpcOp)
+	if node.index != -1 {
+		op := node.builder.ops[node.index]
 
-	b.finishedOps[nodeKey] = int32(len(b.grpcOps)) - 1
+		var childQueries []*tablepb2.TableReference = nil
+		for _, child := range op.childQueries() {
+			childRef := b.addGrpcOps(child)
+			childQueries = append(childQueries, childRef)
+		}
+
+		grpcOp := op.makeBatchOp(resultId, childQueries)
+		b.grpcOps = append(b.grpcOps, &grpcOp)
+
+		b.finishedOps[nodeKey] = int32(len(b.grpcOps)) - 1
+	}
 
 	for _, extraNode := range extraNodes {
 		sourceId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: int32(len(b.grpcOps) - 1)}}

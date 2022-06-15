@@ -349,7 +349,17 @@ func TestDuplicateQuery(t *testing.T) {
 	if records[1].NumCols() != 1 || records[3].NumCols() != 1 {
 		t.Errorf("query1 had wrong size")
 	}
+}
 
+func TestNoopQuery(t *testing.T) {
+	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		return []client.QueryNode{tbl.Query()}
+	})
+	defer results[0].Release()
+
+	if results[0].NumCols() != 2 || results[0].NumRows() != 30 {
+		t.Errorf("result had wrong size")
+	}
 }
 
 func TestSortQuery(t *testing.T) {
