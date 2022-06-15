@@ -159,6 +159,10 @@ func getGrpcOps(client *Client, nodes []QueryNode) ([]*tablepb2.BatchTableReques
 }
 
 func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*TableHandle, error) {
+	if len(nodes) == 0 {
+		return nil, nil
+	}
+
 	ops, nodeOrder, err := getGrpcOps(client, nodes)
 	if err != nil {
 		return nil, err

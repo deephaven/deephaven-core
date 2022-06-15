@@ -351,6 +351,12 @@ func TestDuplicateQuery(t *testing.T) {
 	}
 }
 
+func TestEmptyQuery(t *testing.T) {
+	doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		return []client.QueryNode{}
+	})
+}
+
 func TestNoopQuery(t *testing.T) {
 	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query()}
