@@ -32,7 +32,7 @@ $ go run .
 
 Running the program without arguments will list the available tests, and then one can be selected like this:
 ```
-$ go run . 
+$ go run . ExampleQuery
 ```
 
 The source code is available in the `examples/` directory.
