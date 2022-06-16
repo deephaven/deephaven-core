@@ -1126,6 +1126,7 @@ public interface TableWithDefaults extends Table {
      * provided before applying the operation.
      * </p>
      *
+     * @param control the {@Link UpdateByControl control} to use when updating the table.
      * @param operations the operations to apply to the table.
      * @param byColumns the columns to group by before applying.
      * @return a table with the same index, with the specified operations applied to each group defined by the

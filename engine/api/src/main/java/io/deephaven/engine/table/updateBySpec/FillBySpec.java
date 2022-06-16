@@ -1,19 +1,18 @@
 package io.deephaven.engine.table.updateBySpec;
 
+import io.deephaven.annotations.SimpleStyle;
+import org.immutables.value.Value.Immutable;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@link UpdateBySpec} for performing a forward fill of the specified columns.
  */
+
+@Immutable
+@SimpleStyle
 public class FillBySpec implements UpdateBySpec {
     public static FillBySpec of() {
-        return new FillBySpec();
-    }
-
-    @NotNull
-    @Override
-    public String describe() {
-        return "ForwardFill";
+        return ImmutableFillBySpec.of();
     }
 
     @Override
@@ -22,8 +21,7 @@ public class FillBySpec implements UpdateBySpec {
     }
 
     @Override
-    public <V extends Visitor> V walk(final @NotNull V v) {
-        v.visit(this);
-        return v;
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

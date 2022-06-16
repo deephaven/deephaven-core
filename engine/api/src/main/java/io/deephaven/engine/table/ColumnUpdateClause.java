@@ -1,30 +1,20 @@
 package io.deephaven.engine.table;
 
+import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.updateBySpec.UpdateBySpec;
-import org.jetbrains.annotations.NotNull;
+import org.immutables.value.Value.Immutable;
 
-public class ColumnUpdateClause implements UpdateByClause {
-    private final UpdateBySpec spec;
-    @NotNull
-    private final String[] columns;
+import java.util.List;
 
-    ColumnUpdateClause(@NotNull final UpdateBySpec spec, @NotNull final String... columns) {
-        this.spec = spec;
-        this.columns = columns;
-    }
+@Immutable
+@BuildableStyle
+public abstract class ColumnUpdateClause implements UpdateByClause {
+    public abstract UpdateBySpec spec();
 
-    public UpdateBySpec getSpec() {
-        return spec;
-    }
-
-    @NotNull
-    public String[] getColumns() {
-        return columns;
-    }
+    public abstract List<String> columns();
 
     @Override
-    public <V extends Visitor> V walk(@NotNull V v) {
-        v.visit(this);
-        return v;
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

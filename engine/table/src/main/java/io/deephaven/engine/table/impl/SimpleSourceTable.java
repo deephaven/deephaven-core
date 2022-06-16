@@ -70,7 +70,7 @@ public class SimpleSourceTable extends SourceTable {
     public Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<UpdateByClause> ops,
             @NotNull final MatchPair... byColumns) {
-        return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
                 () -> UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control));
     }
 }

@@ -127,11 +127,11 @@ public class BucketedUpdateBy extends UpdateBy {
         BucketedContext(@NotNull final TableUpdate upstream,
                 @NotNull final ModifiedColumnSet keyModifiedColumnSet,
                 @Nullable final ModifiedColumnSet[] inputModifiedColumnSets) {
-            final int updateSize = UpdateSizeCalculator.chunkSize(upstream, control.getChunkCapacity());
+            final int updateSize = UpdateSizeCalculator.chunkSize(upstream, control.chunkCapacity());
 
             this.inputChunkPopulated = new boolean[operators.length];
             this.keysModified = upstream.modifiedColumnSet().containsAny(keyModifiedColumnSet);
-            this.chunkSize = UpdateSizeCalculator.chunkSize(updateSize, upstream.shifted(), control.getChunkCapacity());
+            this.chunkSize = UpdateSizeCalculator.chunkSize(updateSize, upstream.shifted(), control.chunkCapacity());
             this.opAffected = new boolean[operators.length];
             // noinspection unchecked
             this.fillContexts = new SizedSafeCloseable[operators.length];
@@ -721,7 +721,7 @@ public class BucketedUpdateBy extends UpdateBy {
             }
 
             try (final RowSequence.Iterator okIt = modifiedBucketIndex.getRowSequenceIterator()) {
-                final int newChunkSize = (int) Math.min(control.getChunkCapacity(), modifiedBucketIndex.size());
+                final int newChunkSize = (int) Math.min(control.chunkCapacity(), modifiedBucketIndex.size());
                 setChunkSize(newChunkSize);
                 initializeFor(modifiedBucketIndex, UpdateType.Reprocess);
 
@@ -956,7 +956,7 @@ public class BucketedUpdateBy extends UpdateBy {
         final WritableChunk<Values>[] postWorkingChunks;
 
         GroupedContext(final TableUpdate upstream) {
-            this.chunkSize = Math.min((int) source.size(), control.getChunkCapacity());
+            this.chunkSize = Math.min((int) source.size(), control.chunkCapacity());
             this.inputChunkPopulated = new boolean[operators.length];
             this.fillContexts = new ChunkSource.FillContext[operators.length];
             this.opContext = new UpdateByOperator.UpdateContext[operators.length];
@@ -1068,19 +1068,19 @@ public class BucketedUpdateBy extends UpdateBy {
 
         if (source.isRefreshing() && !source.isAddOnly()) {
             final int hashTableSize = control.initialHashTableSize(source);
-            slotTracker = new UpdateBySlotTracker(control.getChunkCapacity());
+            slotTracker = new UpdateBySlotTracker(control.chunkCapacity());
             this.hashTable = new IncrementalUpdateByStateManager(keySources,
                     hashTableSize,
-                    control.getMaximumLoadFactor(),
-                    control.getTargetLoadFactor());
+                    control.maximumLoadFactor(),
+                    control.targetLoadFactor());
         } else {
             slotTracker = null;
             if (!useGrouping) {
                 final int hashTableSize = control.initialHashTableSize(source);
                 this.hashTable = new AddOnlyUpdateByStateManager(keySources,
                         hashTableSize,
-                        control.getMaximumLoadFactor(),
-                        control.getTargetLoadFactor());
+                        control.maximumLoadFactor(),
+                        control.targetLoadFactor());
             }
         }
     }

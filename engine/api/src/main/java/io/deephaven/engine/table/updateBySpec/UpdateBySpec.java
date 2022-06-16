@@ -8,14 +8,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface UpdateBySpec {
     /**
-     * Get a description of the operation requested.
-     * 
-     * @return a description of the operation
-     */
-    @NotNull
-    String describe();
-
-    /**
      * Determine if this spec can be applied to the specified type
      *
      * @param inputType
@@ -24,18 +16,18 @@ public interface UpdateBySpec {
     boolean applicableTo(@NotNull final Class<?> inputType);
 
     // region Visitor
-    <V extends Visitor> V walk(final @NotNull V v);
+    <T> T walk(Visitor<T> visitor);
 
-    interface Visitor {
-        void visit(EmaSpec ema);
+    interface Visitor<T> {
+        T visit(EmaSpec ema);
 
-        void visit(FillBySpec f);
+        T visit(FillBySpec f);
 
-        void visit(CumSumSpec c);
+        T visit(CumSumSpec c);
 
-        void visit(CumMinMaxSpec m);
+        T visit(CumMinMaxSpec m);
 
-        void visit(CumProdSpec p);
+        T visit(CumProdSpec p);
     }
     // endregion
 }

@@ -76,7 +76,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
             result.t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         }
 
-        final EmaControl skipControl = EmaControl.get()
+        final EmaControl skipControl = EmaControl.builder()
                 .onNullValue(BadDataBehavior.Skip)
                 .onNanValue(BadDataBehavior.Skip).build();
 

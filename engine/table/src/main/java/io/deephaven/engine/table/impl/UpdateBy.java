@@ -86,7 +86,7 @@ public abstract class UpdateBy {
         if (control.useRedirection()) {
             if (!source.isRefreshing()) {
                 if (!source.isFlat() && SparseConstants.sparseStructureExceedsOverhead(source.getRowSet(),
-                        control.getMaxStaticSparseMemoryOverhead())) {
+                        control.maxStaticSparseMemoryOverhead())) {
                     redirectionIndex = new InverseRowRedirectionImpl(source.getRowSet());
                 }
             } else {

@@ -1,16 +1,21 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.updateby.hashing.IncrementalUpdateByStateManager;
+import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Default;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.MathContext;
 
 /**
- * An interface to control the behavior of an {@link Table#updateBy}
+ * An interface to control the behavior of an {@link TableWithDefaults#updateBy}
  */
+@Immutable
+@BuildableStyle
 public interface UpdateByControl {
     int DEFAULT_CHUNK_CAPACITY =
             Configuration.getInstance().getIntegerWithDefault("UpdateByControl.chunkCapacity", 4096);
@@ -19,13 +24,18 @@ public interface UpdateByControl {
     double DEFAULT_MAXIMUM_STATIC_SPARSE_MEMORY_OVERHEAD =
             Configuration.getInstance().getDoubleWithDefault("UpdateByControl.maximumStaticMemoryOverhead", 1.1);
 
-    UpdateByControl DEFAULT = new UpdateByControl() {};
+    static ImmutableUpdateByControl.Builder builder() {
+        return ImmutableUpdateByControl.builder();
+    }
+
+    UpdateByControl DEFAULT = ImmutableUpdateByControl.builder().build();
 
     /**
      * If redirections should be used for output sources instead of sparse array sources.
      *
      * @return true if redirections should be used.
      */
+    @Default
     default boolean useRedirection() {
         return DEFAULT_USE_REDIRECTION;
     }
@@ -35,7 +45,8 @@ public interface UpdateByControl {
      *
      * @return the maximum chunk capacity.
      */
-    default int getChunkCapacity() {
+    @Default
+    default int chunkCapacity() {
         return DEFAULT_CHUNK_CAPACITY;
     }
 
@@ -44,7 +55,8 @@ public interface UpdateByControl {
      * 
      * @return the maximum fractional memory overhead.
      */
-    default double getMaxStaticSparseMemoryOverhead() {
+    @Default
+    default double maxStaticSparseMemoryOverhead() {
         return DEFAULT_MAXIMUM_STATIC_SPARSE_MEMORY_OVERHEAD;
     }
 
@@ -54,6 +66,7 @@ public interface UpdateByControl {
      * @param source the input table
      * @return the initial hash table size
      */
+    @Default
     default int initialHashTableSize(@NotNull final Table source) {
         return IncrementalUpdateByStateManager.MINIMUM_INITIAL_HASH_SIZE;
     }
@@ -63,7 +76,8 @@ public interface UpdateByControl {
      * 
      * @return the maximum load factor
      */
-    default double getMaximumLoadFactor() {
+    @Default
+    default double maximumLoadFactor() {
         return IncrementalUpdateByStateManager.DEFAULT_MAX_LOAD_FACTOR;
     }
 
@@ -72,7 +86,8 @@ public interface UpdateByControl {
      * 
      * @return the target load factor
      */
-    default double getTargetLoadFactor() {
+    @Default
+    default double targetLoadFactor() {
         return IncrementalUpdateByStateManager.DEFAULT_MAX_LOAD_FACTOR;
     }
 
@@ -83,10 +98,12 @@ public interface UpdateByControl {
      * @param keySources the ke sources
      * @return true if the operation should use groupings.
      */
+    @Default
     default boolean considerGrouping(@NotNull final Table source, @NotNull final ColumnSource<?>[] keySources) {
         return !source.isRefreshing() && keySources.length == 1;
     }
 
+    @Default
     default MathContext getDefaultMathContext() {
         return MathContext.DECIMAL64;
     }

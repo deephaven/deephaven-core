@@ -41,7 +41,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     class EmaContext extends Context {
         BigDecimal alpha = BigDecimal.valueOf(Math.exp(-1 / timeScaleUnits));
         BigDecimal oneMinusAlpha =
-                timeRecorder == null ? BigDecimal.ONE.subtract(alpha, control.bigValueContext) : null;
+                timeRecorder == null ? BigDecimal.ONE.subtract(alpha, control.bigValueContext()) : null;
         long lastStamp = NULL_LONG;
 
         EmaContext(final int chunkSize) {
@@ -288,17 +288,17 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             final boolean isNullTime) {
         boolean doReset = false;
         if (isNull) {
-            if (control.onNullValue == BadDataBehavior.Throw) {
+            if (control.onNullValue() == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered invalid data during EMA processing");
             }
-            doReset = control.onNullValue == BadDataBehavior.Reset;
+            doReset = control.onNullValue() == BadDataBehavior.Reset;
         }
 
         if (isNullTime) {
-            if (control.onNullTime == BadDataBehavior.Throw) {
+            if (control.onNullTime() == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered null timestamp during EMA processing");
             }
-            doReset = control.onNullTime == BadDataBehavior.Reset;
+            doReset = control.onNullTime() == BadDataBehavior.Reset;
         }
 
         if (doReset) {
@@ -310,15 +310,15 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     void handleBadTime(@NotNull final EmaContext ctx, final long dt) {
         boolean doReset = false;
         if (dt == 0) {
-            if (control.onZeroDeltaTime == BadDataBehavior.Throw) {
+            if (control.onZeroDeltaTime() == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered zero delta time during EMA processing");
             }
-            doReset = control.onZeroDeltaTime == BadDataBehavior.Reset;
+            doReset = control.onZeroDeltaTime() == BadDataBehavior.Reset;
         } else if (dt < 0) {
-            if (control.onNegativeDeltaTime == BadDataBehavior.Throw) {
+            if (control.onNegativeDeltaTime() == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered negative delta time during EMA processing");
             }
-            doReset = control.onNegativeDeltaTime == BadDataBehavior.Reset;
+            doReset = control.onNegativeDeltaTime() == BadDataBehavior.Reset;
         }
 
         if (doReset) {

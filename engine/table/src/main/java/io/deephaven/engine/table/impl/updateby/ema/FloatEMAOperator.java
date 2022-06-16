@@ -122,6 +122,6 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
 
         // Note that we don't care about Reset because in that case the current EMA at this key would be null
         // and the superclass will do the right thing.
-        return !Float.isNaN(value) || control.onNanValue != BadDataBehavior.Skip;
+        return !Float.isNaN(value) || control.onNanValue() != BadDataBehavior.Skip;
     }
 }

@@ -59,15 +59,15 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
      *        measured in integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
      *        in ticks, otherwise it is measured in nanoseconds.
-     * @param redirectionIndex
+     * @param rowRedirection the row redirection to use for the EMA
      */
     public BasePrimitiveEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @NotNull final EmaControl control,
             @Nullable final LongRecordingUpdateByOperator timeRecorder,
             final long timeScaleUnits,
-            @Nullable final RowRedirection redirectionIndex) {
-        super(pair, affectingColumns, redirectionIndex);
+            @Nullable final RowRedirection rowRedirection) {
+        super(pair, affectingColumns, rowRedirection);
         this.control = control;
         this.timeRecorder = timeRecorder;
         this.timeScaleUnits = timeScaleUnits;
@@ -288,25 +288,25 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             final boolean isNullTime) {
         boolean doReset = false;
         if (isNull) {
-            if (control.onNullValue == BadDataBehavior.Throw) {
+            if (control.onNullValue() == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered null value during EMA processing");
             }
-            doReset = control.onNullValue == BadDataBehavior.Reset;
+            doReset = control.onNullValue() == BadDataBehavior.Reset;
         } else if (isNan) {
-            if (control.onNanValue == BadDataBehavior.Throw) {
+            if (control.onNanValue() == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered NaN value during EMA processing");
-            } else if (control.onNanValue == BadDataBehavior.Poison) {
+            } else if (control.onNanValue() == BadDataBehavior.Poison) {
                 ctx.curVal = Double.NaN;
             } else {
-                doReset = control.onNanValue == BadDataBehavior.Reset;
+                doReset = control.onNanValue() == BadDataBehavior.Reset;
             }
         }
 
         if (isNullTime) {
-            if (control.onNullTime == BadDataBehavior.Throw) {
+            if (control.onNullTime() == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered null timestamp during EMA processing");
             }
-            doReset = control.onNullTime == BadDataBehavior.Reset;
+            doReset = control.onNullTime() == BadDataBehavior.Reset;
         }
 
         if (doReset) {
@@ -318,15 +318,15 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     void handleBadTime(@NotNull final EmaContext ctx, final long dt) {
         boolean doReset = false;
         if (dt == 0) {
-            if (control.onZeroDeltaTime == BadDataBehavior.Throw) {
+            if (control.onZeroDeltaTime() == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered zero delta time during EMA processing");
             }
-            doReset = control.onZeroDeltaTime == BadDataBehavior.Reset;
+            doReset = control.onZeroDeltaTime() == BadDataBehavior.Reset;
         } else if (dt < 0) {
-            if (control.onNegativeDeltaTime == BadDataBehavior.Throw) {
+            if (control.onNegativeDeltaTime() == BadDataBehavior.Throw) {
                 throw new TableDataException("Encountered negative delta time during EMA processing");
             }
-            doReset = control.onNegativeDeltaTime == BadDataBehavior.Reset;
+            doReset = control.onNegativeDeltaTime() == BadDataBehavior.Reset;
         }
 
         if (doReset) {

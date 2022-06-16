@@ -1,20 +1,18 @@
 package io.deephaven.engine.table.updateBySpec;
 
+import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.util.type.TypeUtils;
+import org.immutables.value.Value.Immutable;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@link UpdateBySpec} for performing a Cumulative Product of the specified columns.
  */
+@Immutable
+@SimpleStyle
 public class CumProdSpec implements UpdateBySpec {
     public static CumProdSpec of() {
-        return new CumProdSpec();
-    }
-
-    @NotNull
-    @Override
-    public String describe() {
-        return "CumProd";
+        return ImmutableCumProdSpec.of();
     }
 
     @Override
@@ -23,8 +21,7 @@ public class CumProdSpec implements UpdateBySpec {
     }
 
     @Override
-    public <V extends Visitor> V walk(@NotNull V v) {
-        v.visit(this);
-        return v;
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

@@ -33,7 +33,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
      * @param control the control object.
      * @return the result table
      */
-    @SuppressWarnings("rawtypes")
     public static Table compute(@NotNull final String description,
             @NotNull final QueryTable source,
             @NotNull final UpdateByOperator[] ops,
@@ -133,9 +132,9 @@ class ZeroKeyUpdateBy extends UpdateBy {
         UpdateContext(@NotNull final TableUpdate upstream,
                 @Nullable final ModifiedColumnSet[] inputModifiedColumnSets,
                 final boolean isInitializeStep) {
-            final int updateSize = UpdateSizeCalculator.chunkSize(upstream, control.getChunkCapacity());
+            final int updateSize = UpdateSizeCalculator.chunkSize(upstream, control.chunkCapacity());
 
-            this.chunkSize = UpdateSizeCalculator.chunkSize(updateSize, upstream.shifted(), control.getChunkCapacity());
+            this.chunkSize = UpdateSizeCalculator.chunkSize(updateSize, upstream.shifted(), control.chunkCapacity());
             this.opAffected = new boolean[operators.length];
             // noinspection unchecked
             this.fillContexts = new SizedSafeCloseable[operators.length];
@@ -413,7 +412,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
             final RowSet sourceRowSet = source.getRowSet();
             try (final RowSet indexToReprocess =
                     sourceRowSet.subSetByKeyRange(smallestModifiedKey, sourceRowSet.lastRowKey())) {
-                final int newChunkSize = (int) Math.min(control.getChunkCapacity(), indexToReprocess.size());
+                final int newChunkSize = (int) Math.min(control.chunkCapacity(), indexToReprocess.size());
                 setChunkSize(newChunkSize);
 
                 final long keyBefore;

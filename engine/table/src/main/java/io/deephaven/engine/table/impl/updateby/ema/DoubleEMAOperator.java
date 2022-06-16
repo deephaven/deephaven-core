@@ -127,6 +127,6 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
 
         // Note that we don't care about Reset because in that case the current EMA at this key would be null
         // and the superclass will do the right thing.
-        return !Double.isNaN(value) || control.onNanValue != BadDataBehavior.Skip;
+        return !Double.isNaN(value) || control.onNanValue() != BadDataBehavior.Skip;
     }
 }

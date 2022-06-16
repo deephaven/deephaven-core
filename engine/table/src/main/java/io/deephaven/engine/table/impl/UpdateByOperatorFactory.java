@@ -54,7 +54,7 @@ public class UpdateByOperatorFactory {
         return v.ops;
     }
 
-    static MatchPair[] parseMatchPairs(String[] columns) {
+    static MatchPair[] parseMatchPairs(final List<String> columns) {
         if (columns == null)
             return MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY;
         return MatchPairFactory.getExpressions(columns);
@@ -90,9 +90,9 @@ public class UpdateByOperatorFactory {
     static MatchPair[] createOneToOneMatchPairs(final @NotNull Table table,
             final MatchPair[] groupByColumns,
             @NotNull final UpdateBySpec spec) {
-        final Set<ColumnName> usedGroupColumns = groupByColumns.length == 0 ? Collections.emptySet()
+        final Set<String> usedGroupColumns = groupByColumns.length == 0 ? Collections.emptySet()
                 : Arrays.stream(groupByColumns)
-                        .map(MatchPair::right).collect(Collectors.toSet());
+                        .map(MatchPair::rightColumn).collect(Collectors.toSet());
         return table.getDefinition().getColumnStream()
                 .filter(c -> !usedGroupColumns.contains(c.getName()) && spec.applicableTo(c.getDataType()))
                 .map(c -> new MatchPair(c.getName(), c.getName()))
@@ -105,25 +105,25 @@ public class UpdateByOperatorFactory {
         return d.descriptionBuilder.toString();
     }
 
-    private static class Describer implements UpdateByClause.Visitor {
+    private static class Describer implements UpdateByClause.Visitor<Void> {
         final StringBuilder descriptionBuilder = new StringBuilder();
-        String columnStr;
 
         @Override
-        public void visit(ColumnUpdateClause clause) {
-            final MatchPair[] pairs = parseMatchPairs(clause.getColumns());
+        public Void visit(ColumnUpdateClause clause) {
+            final MatchPair[] pairs = parseMatchPairs(clause.columns());
+            final String columnStr;
             if (pairs.length == 0) {
                 columnStr = "[All]";
             } else {
                 columnStr = MatchPair.matchString(pairs);
             }
 
-            descriptionBuilder.append(clause.getSpec().describe()).append("(").append(columnStr).append("), ");
-            columnStr = null;
+            descriptionBuilder.append(clause.spec().toString()).append("(").append(columnStr).append("), ");
+            return null;
         }
     }
 
-    private class OperationVisitor implements UpdateBySpec.Visitor, UpdateByClause.Visitor {
+    private class OperationVisitor implements UpdateBySpec.Visitor<Void>, UpdateByClause.Visitor<Void> {
         private final List<UpdateByOperator> ops = new ArrayList<>();
         private MatchPair[] pairs;
 
@@ -139,16 +139,17 @@ public class UpdateByOperatorFactory {
         }
 
         @Override
-        public void visit(@NotNull final ColumnUpdateClause clause) {
-            final UpdateBySpec spec = clause.getSpec();
-            pairs = createColumnsToAddIfMissing(source, parseMatchPairs(clause.getColumns()), spec, groupByColumns);
+        public Void visit(@NotNull final ColumnUpdateClause clause) {
+            final UpdateBySpec spec = clause.spec();
+            pairs = createColumnsToAddIfMissing(source, parseMatchPairs(clause.columns()), spec, groupByColumns);
             spec.walk(this);
             pairs = null;
+            return null;
         }
 
         @Override
-        public void visit(@NotNull final EmaSpec ema) {
-            final String timestampCol = ema.getTimestampCol();
+        public Void visit(@NotNull final EmaSpec ema) {
+            final String timestampCol = ema.timestampCol();
             final LongRecordingUpdateByOperator timeStampRecorder;
             final boolean isTimeBased = !StringUtils.isNullOrEmpty(timestampCol);
 
@@ -160,40 +161,45 @@ public class UpdateByOperatorFactory {
             }
 
             Arrays.stream(pairs)
-                    .filter(p -> !isTimeBased || !p.right().equals(timestampCol))
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
                     .map(fc -> makeEmaOperator(fc,
                             source,
                             timeStampRecorder,
                             ema))
                     .forEach(ops::add);
+            return null;
         }
 
         @Override
-        public void visit(@NotNull final FillBySpec f) {
+        public Void visit(@NotNull final FillBySpec f) {
             Arrays.stream(pairs)
                     .map(fc -> makeForwardFillOperator(fc, source))
                     .forEach(ops::add);
+            return null;
         }
 
         @Override
-        public void visit(@NotNull final CumSumSpec c) {
+        public Void visit(@NotNull final CumSumSpec c) {
             Arrays.stream(pairs)
                     .map(fc -> makeCumSumOperator(fc, source))
                     .forEach(ops::add);
+            return null;
         }
 
         @Override
-        public void visit(CumMinMaxSpec m) {
+        public Void visit(CumMinMaxSpec m) {
             Arrays.stream(pairs)
                     .map(fc -> makeCumMinMaxOperator(fc, source, m.isMax()))
                     .forEach(ops::add);
+            return null;
         }
 
         @Override
-        public void visit(CumProdSpec p) {
+        public Void visit(CumProdSpec p) {
             Arrays.stream(pairs)
                     .map(fc -> makeCumProdOperator(fc, source))
                     .forEach(ops::add);
+            return null;
         }
 
         @SuppressWarnings("unchecked")
@@ -209,33 +215,33 @@ public class UpdateByOperatorFactory {
             if (recorder == null) {
                 affectingColumns = new String[] {pair.rightColumn};
             } else {
-                affectingColumns = new String[] {ema.getTimestampCol(), pair.rightColumn};
+                affectingColumns = new String[] {ema.timestampCol(), pair.rightColumn};
             }
 
             if (csType == byte.class || csType == Byte.class) {
-                return new ByteEMAOperator(pair, affectingColumns, ema.getControl(), recorder, ema.getTimeScaleUnits(),
+                return new ByteEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
                         columnSource, redirectionRowSet);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortEMAOperator(pair, affectingColumns, ema.getControl(), recorder, ema.getTimeScaleUnits(),
+                return new ShortEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
                         columnSource, redirectionRowSet);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntEMAOperator(pair, affectingColumns, ema.getControl(), recorder, ema.getTimeScaleUnits(),
+                return new IntEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
                         columnSource, redirectionRowSet);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongEMAOperator(pair, affectingColumns, ema.getControl(), recorder, ema.getTimeScaleUnits(),
+                return new LongEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
                         columnSource, redirectionRowSet);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatEMAOperator(pair, affectingColumns, ema.getControl(), recorder, ema.getTimeScaleUnits(),
+                return new FloatEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
                         columnSource, redirectionRowSet);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleEMAOperator(pair, affectingColumns, ema.getControl(), recorder,
-                        ema.getTimeScaleUnits(), columnSource, redirectionRowSet);
+                return new DoubleEMAOperator(pair, affectingColumns, ema.control(), recorder,
+                        ema.timeScaleUnits(), columnSource, redirectionRowSet);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalEMAOperator(pair, affectingColumns, ema.getControl(), recorder,
-                        ema.getTimeScaleUnits(), columnSource, redirectionRowSet);
+                return new BigDecimalEMAOperator(pair, affectingColumns, ema.control(), recorder,
+                        ema.timeScaleUnits(), columnSource, redirectionRowSet);
             } else if (csType == BigInteger.class) {
-                return new BigIntegerEMAOperator(pair, affectingColumns, ema.getControl(), recorder,
-                        ema.getTimeScaleUnits(), columnSource, redirectionRowSet);
+                return new BigIntegerEMAOperator(pair, affectingColumns, ema.control(), recorder,
+                        ema.timeScaleUnits(), columnSource, redirectionRowSet);
             }
 
             throw new IllegalArgumentException("Can not perform EMA on type " + csType);

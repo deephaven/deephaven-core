@@ -1,5 +1,8 @@
 package io.deephaven.engine.table;
 
+import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Default;
+import io.deephaven.annotations.BuildableStyle;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.MathContext;
@@ -21,39 +24,24 @@ import java.util.Collection;
  * <li>BigDecimal / BigInteger MathContext - Decimal 128</li>
  * </ul>
  */
-public class EmaControl {
-    public final BadDataBehavior onNullValue;
-    public final BadDataBehavior onNanValue;
-    public final BadDataBehavior onNullTime;
-    public final BadDataBehavior onZeroDeltaTime;
-    public final BadDataBehavior onNegativeDeltaTime;
-    public final MathContext bigValueContext;
-
+@Immutable
+@BuildableStyle
+public abstract class EmaControl {
     @NotNull
-    public static Builder get() {
-        return new Builder();
+    public static ImmutableEmaControl.Builder builder() {
+        return ImmutableEmaControl.builder();
     }
 
-    private EmaControl(@NotNull final BadDataBehavior onNullValue,
-            @NotNull final BadDataBehavior onNanValue,
-            @NotNull final BadDataBehavior onNullTime,
-            BadDataBehavior onZeroDeltaTime, BadDataBehavior onNegativeDeltaTime,
-            @NotNull final MathContext bigValueContext) {
-        this.onNullValue = onNullValue;
-        this.onNanValue = onNanValue;
-        this.onNullTime = onNullTime;
-        this.onZeroDeltaTime = onZeroDeltaTime;
-        this.onNegativeDeltaTime = onNegativeDeltaTime;
-        this.bigValueContext = bigValueContext;
-    }
+    public static EmaControl DEFAULT = ImmutableEmaControl.builder().build();
 
     /**
      * Get the behavior for when null values are encountered.
      * 
      * @return the behavior for null values.
      */
-    public BadDataBehavior getOnNullValue() {
-        return onNullValue;
+    @Default
+    public BadDataBehavior onNullValue() {
+        return BadDataBehavior.Skip;
     }
 
     /**
@@ -61,8 +49,9 @@ public class EmaControl {
      * 
      * @return the behavior for NaN values
      */
-    public BadDataBehavior getOnNanValue() {
-        return onNanValue;
+    @Default
+    public BadDataBehavior onNanValue() {
+        return BadDataBehavior.Skip;
     }
 
     /**
@@ -70,8 +59,9 @@ public class EmaControl {
      * 
      * @return the behavior for null timestamps.
      */
-    public BadDataBehavior getOnNullTime() {
-        return onNullTime;
+    @Default
+    public BadDataBehavior onNullTime() {
+        return BadDataBehavior.Skip;
     }
 
     /**
@@ -79,8 +69,9 @@ public class EmaControl {
      * 
      * @return the behavior for when dt is negative
      */
-    public BadDataBehavior getOnNegativeDeltaTime() {
-        return onNegativeDeltaTime;
+    @Default
+    public BadDataBehavior onNegativeDeltaTime() {
+        return BadDataBehavior.Throw;
     }
 
     /**
@@ -88,8 +79,9 @@ public class EmaControl {
      * 
      * @return the behavior for when dt is zero
      */
-    public BadDataBehavior getOnZeroDeltaTime() {
-        return onZeroDeltaTime;
+    @Default
+    public BadDataBehavior onZeroDeltaTime() {
+        return BadDataBehavior.Skip;
     }
 
     /**
@@ -98,112 +90,24 @@ public class EmaControl {
      * 
      * @return the {@link MathContext}
      */
-    public MathContext getBigValueContext() {
-        return bigValueContext;
+    @Default
+    public MathContext bigValueContext() {
+        return MathContext.DECIMAL128;
     }
 
-    @Override
-    public String toString() {
-        return "EmaControl{" +
-                "onNullValue=" + onNullValue +
-                ", onNanValue=" + onNanValue +
-                ", bigValueContext=" + bigValueContext +
-                '}';
-    }
+    public interface Builder {
+        Builder onNullValue(BadDataBehavior badDataBehavior);
 
-    @SuppressWarnings("unused")
-    public static class Builder {
-        private BadDataBehavior onNullValue = BadDataBehavior.Skip;
-        private BadDataBehavior onNanValue = BadDataBehavior.Skip;
-        private BadDataBehavior onNullTime = BadDataBehavior.Skip;
-        private BadDataBehavior onZeroDeltaTime = BadDataBehavior.Skip;
-        private BadDataBehavior onNegativeDeltaTime = BadDataBehavior.Throw;
-        private MathContext bigValueContext = MathContext.DECIMAL128;
+        Builder onNanValue(BadDataBehavior badDataBehavior);
 
-        /**
-         * Set the behavior for when null samples are encountered. Defaults to {@link BadDataBehavior#Skip}.
-         *
-         * @param behavior the desired behavior
-         * @return this builder
-         */
-        @NotNull
-        public Builder onNullValue(@NotNull final BadDataBehavior behavior) {
-            this.onNullValue = behavior;
-            return this;
-        }
+        Builder onNullTime(BadDataBehavior badDataBehavior);
 
-        /**
-         * Set the behavior for when NaN samples are encountered. Defaults to {@link BadDataBehavior#Skip}.
-         *
-         * @param behavior the desired behavior
-         * @return this builder
-         */
-        @NotNull
-        public Builder onNanValue(@NotNull final BadDataBehavior behavior) {
-            this.onNanValue = behavior;
-            return this;
-        }
+        Builder onNegativeDeltaTime(BadDataBehavior badDataBehavior);
 
-        /**
-         * Set the behavior for when null timestamps are encountered. Defaults to {@link BadDataBehavior#Skip}.
-         *
-         * @param behavior the desired behavior
-         * @return this builder
-         */
-        @NotNull
-        public Builder onNullTime(@NotNull final BadDataBehavior behavior) {
-            this.onNullTime = behavior;
-            return this;
-        }
+        Builder onZeroDeltaTime(BadDataBehavior badDataBehavior);
 
-        /**
-         * Set the behavior for when zero sample-to-sample times are encountered. Defaults to
-         * {@link BadDataBehavior#Skip}.
-         *
-         * @param behavior the desired behavior
-         * @return this builder
-         */
-        @NotNull
-        public Builder onZeroDeltaTime(@NotNull final BadDataBehavior behavior) {
-            this.onZeroDeltaTime = behavior;
-            return this;
-        }
+        Builder bigValueContext(MathContext context);
 
-        /**
-         * Set the behavior for when negative sample-to-sample times are encountered. Defaults to
-         * {@link BadDataBehavior#Throw}.
-         *
-         * @param behavior the desired behavior
-         * @return this builder
-         */
-        @NotNull
-        public Builder onNegativeDeltaTime(@NotNull final BadDataBehavior behavior) {
-            this.onNegativeDeltaTime = behavior;
-            return this;
-        }
-
-        /**
-         * Set the {@link MathContext} to use for processing {@link java.math.BigDecimal} and
-         * {@link java.math.BigInteger} types. Defaults to {@link MathContext#DECIMAL128}.
-         *
-         * @param bigValueContext the desired behavior
-         * @return this builder
-         */
-        @NotNull
-        public Builder bigValueContext(@NotNull final MathContext bigValueContext) {
-            this.bigValueContext = bigValueContext;
-            return this;
-        }
-
-        /**
-         * Construct an {@link EmaControl} from this builder.
-         * 
-         * @return
-         */
-        @NotNull
-        public EmaControl build() {
-            return new EmaControl(onNullValue, onNanValue, onNullTime, onZeroDeltaTime, onNegativeDeltaTime,
-                    bigValueContext);
-        }
+        EmaControl build();
     }
 }

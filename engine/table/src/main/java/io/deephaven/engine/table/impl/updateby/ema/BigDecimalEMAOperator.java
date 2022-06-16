@@ -56,9 +56,9 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                 if (ctx.curVal == null) {
                     ctx.curVal = input;
                 } else {
-                    ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContext)
-                            .add(input.multiply(ctx.oneMinusAlpha, control.bigValueContext),
-                                    control.bigValueContext);
+                    ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContext())
+                            .add(input.multiply(ctx.oneMinusAlpha, control.bigValueContext()),
+                                    control.bigValueContext());
                 }
             }
 
@@ -89,11 +89,11 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                         handleBadTime(ctx, dt);
                     } else {
                         ctx.alpha = BigDecimal.valueOf(Math.exp(-dt / timeScaleUnits));
-                        ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContext)
+                        ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContext())
                                 .add(input.multiply(
-                                        BigDecimal.ONE.subtract(ctx.alpha, control.bigValueContext),
-                                        control.bigValueContext),
-                                        control.bigValueContext);
+                                        BigDecimal.ONE.subtract(ctx.alpha, control.bigValueContext()),
+                                        control.bigValueContext()),
+                                        control.bigValueContext());
                         ctx.lastStamp = timestamp;
                     }
                 }

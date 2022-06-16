@@ -87,7 +87,7 @@ public class DeferredViewTable extends RedefinableTable {
             result = applyDeferredViews(result);
             result = result.where(tableAndRemainingFilters.remainingFilters);
             copyAttributes(result, CopyAttributeOperation.Coalesce);
-            setCoalesced((BaseTable) result);
+            setCoalesced(result);
             return result;
         }
 
@@ -109,7 +109,7 @@ public class DeferredViewTable extends RedefinableTable {
         }
         if (whereFilters.length == 0) {
             copyAttributes(localResult, CopyAttributeOperation.Coalesce);
-            setCoalesced((BaseTable) localResult);
+            setCoalesced(localResult);
         }
         return localResult;
     }
@@ -215,7 +215,7 @@ public class DeferredViewTable extends RedefinableTable {
             result = applyDeferredViews(result);
         }
         copyAttributes(result, CopyAttributeOperation.Coalesce);
-        return (BaseTable) result;
+        return result;
     }
 
     @Override
@@ -270,7 +270,7 @@ public class DeferredViewTable extends RedefinableTable {
     public Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<UpdateByClause> ops,
             @NotNull final MatchPair... byColumns) {
-        return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
                 () -> UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control));
     }
 

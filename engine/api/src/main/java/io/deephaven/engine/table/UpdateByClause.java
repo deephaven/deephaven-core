@@ -1,5 +1,6 @@
 package io.deephaven.engine.table;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.engine.table.updateBySpec.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,7 +20,7 @@ public interface UpdateByClause {
      * @return a {@link ColumnUpdateClause} that will be used to construct operations for each column
      */
     static ColumnUpdateClause of(@NotNull final UpdateBySpec spec, final String... columns) {
-        return new ColumnUpdateClause(spec, columns);
+        return ImmutableColumnUpdateClause.builder().spec(spec).addColumns(columns).build();
     }
 
     // region Specs
@@ -135,6 +136,28 @@ public interface UpdateByClause {
         return of(EmaSpec.ofTicks(control, timeScaleTicks), columns);
     }
 
+
+    /**
+     * Create an Exponential Moving Average of the specified columns, using ticks as the decay unit. Uses the default
+     * EmaControl settings.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-1 / timeScaleTicks)
+     *     ema_next = a * ema_last + (1 - a) * value
+     * </pre>
+     *
+     * @param timeScaleTicks the decay rate (tau) in ticks
+     * @param columns the columns to apply the EMA to.
+     * @return a new {@link UpdateByClause} for performing an EMA with
+     *         {@link Table#updateBy(UpdateByControl, Collection, MatchPair...)}
+     */
+    static UpdateByClause ema(final long timeScaleTicks, final String... columns) {
+        return ema(timeScaleTicks, EmaControl.DEFAULT, columns);
+    }
+
     /**
      * <p>
      * Create an Exponential Moving Average of the specified columns, using time as the decay unit.
@@ -184,11 +207,34 @@ public interface UpdateByClause {
             @NotNull final EmaControl control, final String... columns) {
         return of(EmaSpec.ofTime(control, timestampColumn, timeScaleNanos), columns);
     }
+
+    /**
+     * Create an Exponential Moving Average of the specified columns, using time as the decay unit. Uses the default
+     * EmaControl settings.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-dt / timeScaleNanos)
+     *     ema_next = a * ema_last + (1 - a) * value
+     * </pre>
+     *
+     * @param timestampColumn the column in the source table to use for timestamps
+     * @param timeScaleNanos the decay rate (tau) in nanoseconds
+     * @param columns the columns to apply the EMA to.
+     * @return a new {@link UpdateByClause} for performing an EMA with
+     *         {@link Table#updateBy(UpdateByControl, Collection, MatchPair...)}
+     */
+    static UpdateByClause ema(@NotNull final String timestampColumn, final long timeScaleNanos,
+            final String... columns) {
+        return of(EmaSpec.ofTime(EmaControl.DEFAULT, timestampColumn, timeScaleNanos), columns);
+    }
     // endregion
 
-    <V extends Visitor> V walk(final @NotNull V v);
+    <T> T walk(Visitor<T> visitor);
 
-    interface Visitor {
-        void visit(ColumnUpdateClause clause);
+    interface Visitor<T> {
+        T visit(ColumnUpdateClause clause);
     }
 }
