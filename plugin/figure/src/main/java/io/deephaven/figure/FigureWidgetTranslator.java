@@ -687,6 +687,7 @@ public class FigureWidgetTranslator {
 
         source.setColumnName(columnName);
         source.setTableId(tablePositionMap.get(tableHandle));
+        source.setPartitionedTableId(-1);
         source.setAxisId(axis.getId());
         source.setType(sourceType);
 
@@ -699,6 +700,7 @@ public class FigureWidgetTranslator {
 
         source.setAxisId(axis.getId());
         source.setType(sourceType);
+        source.setTableId(-1);
 
         if (swappableTable instanceof SwappableTableOneClickAbstract) {
             SwappableTableOneClickAbstract oneClick = (SwappableTableOneClickAbstract) swappableTable;
@@ -725,6 +727,7 @@ public class FigureWidgetTranslator {
 
             source.setColumnName(columnHandler.getColumnName());
             source.setTableId(tablePositionMap.get(columnHandler.getTableHandle()));
+            source.setPartitionedTableId(-1);
         } else if (data instanceof IndexableNumericDataSwappableTable) {
             IndexableNumericDataSwappableTable swappableTable = (IndexableNumericDataSwappableTable) data;
             if (swappableTable.getSwappableTable() instanceof SwappableTableOneClickAbstract) {
@@ -739,6 +742,7 @@ public class FigureWidgetTranslator {
                 source.setColumnName(swappableTable.getColumn());
                 source.setColumnType(swappableTable.getSwappableTable().getTableDefinition()
                         .getColumn(swappableTable.getColumn()).getDataType().getCanonicalName());
+                source.setTableId(-1);
                 source.setPartitionedTableId(partitionedTablePositionMap.get(oneClick.getPartitionedTableHandle()));
                 source.setOneClick(makeOneClick(oneClick));
             } else {
