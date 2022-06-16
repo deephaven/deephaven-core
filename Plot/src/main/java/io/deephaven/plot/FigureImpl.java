@@ -4877,7 +4877,7 @@ public class FigureImpl implements io.deephaven.plot.Figure {
             MultiSeries result = ((MultiSeries) series).seriesNamingFunction( namingFunction);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesNamingFunction( java.util.function.Function<java.lang.Object[], java.lang.String> namingFunction )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesNamingFunction( java.util.function.Function<java.lang.Object, java.lang.String> namingFunction )'", figure);
         }
     }
 
