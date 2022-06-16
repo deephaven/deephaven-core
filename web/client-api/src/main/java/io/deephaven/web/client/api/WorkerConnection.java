@@ -1343,8 +1343,8 @@ public class WorkerConnection {
                                     }
                                     return;
                                 } else if (deferredDeltaUpdates != null) {
-                                    assert updates.getRemoved().isEmpty() :
-                                            "Stream table received two consecutive remove rowsets";
+                                    assert updates.getRemoved().isEmpty()
+                                            : "Stream table received two consecutive remove rowsets";
                                     updates.setRemoved(deferredDeltaUpdates.getRemoved());
                                     deferredDeltaUpdates = null;
                                 }
