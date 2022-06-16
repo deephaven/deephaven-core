@@ -13,16 +13,16 @@ import jsinterop.annotations.JsOverlay;
 @FunctionalInterface
 public interface JsConsumer<T> {
     @JsOverlay
-    JsConsumer<?> DO_NOTHING = ignore -> {
-    };
-
-    @JsOverlay
     static <T> JsConsumer<T> doNothing() {
         // noinspection unchecked
-        return (JsConsumer<T>) DO_NOTHING;
+        return (JsConsumer<T>) ConsumerHelper.DO_NOTHING;
     }
 
 
     @SuppressWarnings("unusable-by-js")
     void apply(T value);
+}
+class ConsumerHelper {
+    static JsConsumer<?> DO_NOTHING = ignore -> {
+    };
 }

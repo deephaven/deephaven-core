@@ -24,7 +24,7 @@ public class SeriesDataSource {
         if (sourceDescriptor.getTableId() != -1) {
             columnType =
                     tables.get(sourceDescriptor.getTableId()).findColumn(sourceDescriptor.getColumnName()).getType();
-        } else if (sourceDescriptor.getTableMapId() != -1) {
+        } else if (sourceDescriptor.getPartitionedTableId() != -1) {
             columnType = sourceDescriptor.getColumnType();
         } else {
             throw new SeriesDataSourceException(this, "No table available for source");

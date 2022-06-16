@@ -51,7 +51,6 @@ public class JsSeries {
                 }
             } else {
                 assert dataSource.hasOneClick();
-                assert dataSource.getOneClick().equals(oneClick.getDescriptor());
             }
         }
         JsObject.freeze(sources);

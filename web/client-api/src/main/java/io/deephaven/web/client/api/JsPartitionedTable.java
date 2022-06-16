@@ -24,7 +24,7 @@ import io.deephaven.web.shared.fu.JsConsumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import jsinterop.base.Any;
+import jsinterop.base.Js;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,7 +52,7 @@ public class JsPartitionedTable extends HasEventHandling {
      * extra wrapper object. Since columns are consistent with a PartitionedTable, we will not worry about "foo" vs
      * ["foo"] as being different entries.
      */
-    private final Map<JsArray<Any>, JsLazy<Promise<ClientTableState>>> tables = new HashMap<>();
+    private final Map<List<Object>, JsLazy<Promise<ClientTableState>>> tables = new HashMap<>();
 
 
     @JsIgnore
@@ -106,15 +106,15 @@ public class JsPartitionedTable extends HasEventHandling {
         RangeSet added = eventData.getAdded().getRange();
         added.indexIterator().forEachRemaining((long index) -> {
             // extract the key to use
-            JsArray<Any> key = eventData.getColumns().map((c, p1, p2) -> eventData.getData(index, c));
-            populateLazyTable(key);
+            JsArray<Object> key = eventData.getColumns().map((c, p1, p2) -> eventData.getData(index, c));
+            populateLazyTable(key.asList());
             CustomEventInit init = CustomEventInit.create();
             init.setDetail(key);
             fireEvent(EVENT_KEYADDED, init);
         });
     }
 
-    private void populateLazyTable(JsArray<Any> key) {
+    private void populateLazyTable(List<Object> key) {
         tables.put(key, JsLazy.of(() -> {
             // If we've entered this lambda, the JsLazy is being used, so we need to go ahead and get the tablehandle
             final ClientTableState entry = connection.newState((c, cts, metadata) -> {
@@ -122,8 +122,7 @@ public class JsPartitionedTable extends HasEventHandling {
                 connection.newTable(
                         descriptor.getKeyColumnNamesList().asArray(new String[0]),
                         keyColumnTypes.toArray(new String[0]),
-                        key.map((p0, p1, p2) -> JsArray.of((Object) p0).asArray(new Object[0]))
-                                .asArray(new Object[0][]),
+                        key.stream().map(item -> new Object[] { item }).toArray(Object[][]::new),
                         null,
                         this)
                         .then(table -> {
@@ -158,10 +157,10 @@ public class JsPartitionedTable extends HasEventHandling {
         if (!JsArray.isArray(key)) {
             key = JsArray.of(key);
         }
+        List<Object> keyList = Js.<JsArray<Object>>uncheckedCast(key).asList();
         // Every caller gets a fresh table instance, and when all are closed, the CTS will be released.
         // See #populateLazyTable for how that is tracked.
-        // noinspection SuspiciousMethodCalls - we know it is an array, see above
-        final JsLazy<Promise<ClientTableState>> entry = tables.get(key);
+        final JsLazy<Promise<ClientTableState>> entry = tables.get(keyList);
         if (entry == null) {
             // key doesn't even exist, just hand back a null table
             return Promise.resolve((JsTable) null);
@@ -182,7 +181,7 @@ public class JsPartitionedTable extends HasEventHandling {
 
     public JsSet<Object> getKeys() {
         if (keys.getColumns().length == 1) {
-            return new JsSet<>(tables.keySet().stream().map(arr -> arr.getAt(0)).toArray());
+            return new JsSet<>(tables.keySet().stream().map(list -> list.get(0)).toArray());
         }
         return new JsSet<>(tables.keySet().toArray());
     }

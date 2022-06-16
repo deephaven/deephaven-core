@@ -10,7 +10,6 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.OneClickDescriptor;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
-import io.deephaven.web.client.api.TableMap;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
@@ -60,7 +59,7 @@ public class OneClick {
         JsPropertyMap<Object>[] fakeColumns = new JsPropertyMap[oneClick.getColumnsList().length];
         for (int i = 0; i < fakeColumns.length; i++) {
             fakeColumns[i] = JsPropertyMap.of("name", oneClick.getColumnsList().getAt(i), "type",
-                    oneClick.getColumnsList().getAt(i));
+                    oneClick.getColumnTypesList().getAt(i));
         }
         return fakeColumns;
     }
