@@ -15,13 +15,24 @@ func main() {
 		"--go-grpc_out=.", "--go-grpc_opt=module=github.com/deephaven/deephaven-core/go-client",
 		"--experimental_allow_proto3_optional",
 		"-I../proto/proto-backplane-grpc/src/main/proto",
-		"deephaven/proto/application.proto",
-		"deephaven/proto/console.proto",
-		"deephaven/proto/inputtable.proto",
-		"deephaven/proto/object.proto",
-		"deephaven/proto/session.proto",
-		"deephaven/proto/table.proto",
-		"deephaven/proto/ticket.proto",
+	}
+
+	files := []string{
+		"application",
+		"inputtable",
+		"object",
+		"session",
+		"table",
+		"ticket",
+	}
+
+	for _, file := range files {
+		fileName := "deephaven/proto/" + file + ".proto"
+		modPathPair := fileName + "=github.com/deephaven/deephaven-core/go-client/internal/proto/" + file
+		goOpt := "--go_opt=M" + modPathPair
+		goGrpcOpt := "--go-grpc_opt=M" + modPathPair
+
+		args = append(args, fileName, goOpt, goGrpcOpt)
 	}
 
 	cmd := exec.Command("protoc", args...)
