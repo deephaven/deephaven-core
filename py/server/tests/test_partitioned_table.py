@@ -4,10 +4,16 @@
 
 import unittest
 
+from deephaven.table import Table
+
 from deephaven.filters import Filter
 
 from deephaven import read_csv, DHError, new_table
 from tests.testbase import BaseTestCase
+
+
+def transform_func(t: Table) -> Table:
+    return t.update("f = a + b")
 
 
 class PartitionedTableTestCase(BaseTestCase):
@@ -92,6 +98,10 @@ class PartitionedTableTestCase(BaseTestCase):
     def test_constituents(self):
         constituent_tables = self.partitioned_table.constituent_tables
         self.assertGreater(len(constituent_tables), 0)
+
+    def test_transform(self):
+        pt = self.partitioned_table.transform(transform_func)
+        self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
 
 if __name__ == '__main__':

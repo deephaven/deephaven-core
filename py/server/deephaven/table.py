@@ -8,7 +8,7 @@ Deephaven refreshing and static data."""
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Union, Sequence, List, Any, Optional
+from typing import Union, Sequence, List, Any, Optional, Callable
 
 import jpy
 
@@ -17,7 +17,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
-from deephaven.jcompat import j_array_list, to_sequence
+from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
@@ -1451,3 +1451,21 @@ class PartitionedTable(JObjectWrapper):
     def constituent_tables(self) -> List[Table]:
         """Returns all the current constituent tables."""
         return list(map(Table, self.j_partitioned_table.constituents()))
+
+    def transform(self, func: Callable[[Table], Table]) -> PartitionedTable:
+        """Applies the provided function to all constituent tables and produce a new PartitionedTable.
+
+        Args:
+            func (Callable[[Table], Table]: a function which takes a Table as input and returns another Table
+
+        Returns:
+            a PartitionedTable
+
+        Raises:
+            DHError
+        """
+        try:
+            j_pt = self.j_partitioned_table.transform(j_unary_operator(func, dtypes.PyObject))
+            return PartitionedTable(j_partitioned_table=j_pt)
+        except Exception as e:
+            raise DHError(e, "failed to transform the PartitionedTable.") from e
