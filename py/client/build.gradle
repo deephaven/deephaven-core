@@ -59,7 +59,8 @@ def stopDeephavenGrpcApi = tasks.register('stopDeephavenGrpcApi', DockerRemoveCo
 //        // ignore, container might not exist
 //    }
 }
-tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyClient') {
+
+def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
     copyIn {
         from('pydeephaven') {
             into 'project/pydeephaven'
@@ -88,4 +89,8 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
-})
+}
+
+tasks.named('check').configure {
+    dependsOn testPyClient
+}

@@ -1,3 +1,5 @@
+import de.esoco.gwt.gradle.task.GwtCompileTask
+
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
@@ -37,4 +39,6 @@ artifacts {
     }
 }
 
-project.tasks.getByName('quick').dependsOn project.tasks.withType(de.esoco.gwt.gradle.task.GwtCompileTask)
+project.tasks.named('quick').configure {
+    dependsOn project.tasks.withType(GwtCompileTask)
+}

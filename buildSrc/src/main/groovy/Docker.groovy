@@ -524,9 +524,10 @@ class Docker {
                 }
             }
         }
-        project.tasks.findByName('clean').dependsOn removeImage
-
-        return makeImage;
+        project.tasks.named('clean').configure {
+            it.dependsOn removeImage
+        }
+        return makeImage
     }
 
     static TaskProvider<? extends Task> buildPyWheel(Project project, String taskName, String imgName, String sourcePath) {

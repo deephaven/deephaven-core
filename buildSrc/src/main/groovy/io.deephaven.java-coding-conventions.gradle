@@ -8,4 +8,6 @@ spotless {
     }
 }
 
-project.tasks.getByName('quick').dependsOn project.tasks.getByName('spotlessCheck')
+project.tasks.named('quick').configure {
+    dependsOn project.tasks.named('spotlessCheck')
+}

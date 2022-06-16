@@ -133,13 +133,12 @@ Closure composeConfig = { task ->
 
 def pyTest = runInDocker('test-py-deephaven', '../py/server', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)
 def pyTestIntegration = runInDocker('test-py-deephaven-integration', '../py/server', ['/bin/bash', '-c', 'PYTHONPATH=/python integration-tests/run-tests.sh'], composeConfig)
-
-pyTest.configure({
+pyTest.configure {
     onlyIf { TestTools.shouldRunTests(project) }
-})
-tasks.getByName('check').dependsOn(pyTest)
-
-pyTestIntegration.configure({
+}
+pyTestIntegration.configure {
     onlyIf { TestTools.shouldRunTests(project) }
-})
-tasks.getByName('check').dependsOn(pyTestIntegration)
+}
+project.tasks.named('check').configure {
+    dependsOn pyTest, pyTestIntegration
+}

@@ -1,6 +1,4 @@
-import org.gradle.api.JavaVersion
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.reporting.Report
@@ -33,7 +31,7 @@ class TestTools {
     static Test addEngineSerialTest(Project project) {
         def allowParallel = allowParallel(project)
         // testSerial: non-parallel, not a engine test, isolated
-        return TestTools.addEngineTest(project, 'Serial', allowParallel, false, true)
+        return addEngineTest(project, 'Serial', allowParallel, false, true)
     }
 
     static Test addEngineParallelTest(Project project) {
@@ -43,13 +41,13 @@ class TestTools {
 
         // The Parallel tests are now by default functionally equivalent to the Serial test logic
         // TODO (deephaven-core#643): Fix "leaking" parallel tests
-        return TestTools.addEngineTest(project, 'Parallel', allowParallel, false, !allowParallel)
+        return addEngineTest(project, 'Parallel', allowParallel, false, !allowParallel)
     }
 
     static Test addEngineOutOfBandTest(Project project) {
         def allowParallel = allowParallel(project)
         // testOutOfBand: non-parallel, not a engine test, not isolated
-        return TestTools.addEngineTest(project, 'OutOfBand', allowParallel, false, false)
+        return addEngineTest(project, 'OutOfBand', allowParallel, false, false)
     }
 
     static Test addEngineTest(
@@ -59,17 +57,19 @@ class TestTools {
         boolean passwordEnabled = false,
         boolean isolated = false
     ) {
-        Test mainTest = project.tasks.getByName('test') as Test
-        Test t = project.tasks.create("test$type", Test)
-
-        mainTest.useJUnit {
-            JUnitOptions opts ->
-                opts.excludeCategories 'io.deephaven.test.types.ParallelTest',
-                        'io.deephaven.test.types.SerialTest',
-                        'io.deephaven.test.types.OutOfBandTest'
-                // TODO: keep this list uptodate when adding new test types.
-                // This is a list of types excluded from basic test task.
+        project.tasks.named('test', Test).configure {
+            useJUnit {
+                JUnitOptions opts ->
+                    opts.excludeCategories 'io.deephaven.test.types.ParallelTest',
+                            'io.deephaven.test.types.SerialTest',
+                            'io.deephaven.test.types.OutOfBandTest'
+                    // TODO: keep this list uptodate when adding new test types.
+                    // This is a list of types excluded from basic test task.
+            }
         }
+
+        // TODO: make lazy
+        Test t = project.tasks.create("test$type", Test)
         t.useJUnit {
             JUnitOptions opts ->
                 opts.includeCategories "io.deephaven.test.types.${type}Test"
@@ -81,7 +81,7 @@ class TestTools {
 
 By default only runs in CI; to run locally:
 `CI=true ./gradlew test` or `./gradlew $t.name`"""
-            dependsOn project.tasks.findByName('testClasses')
+            dependsOn project.tasks.named('testClasses')
 
             if (parallel) {
                 if (project.hasProperty('maxParallelForks')) {
@@ -162,16 +162,18 @@ By default only runs in CI; to run locally:
                 (project['jacocoTestReport'] as JacocoReport).with {
                     reports {
                         JacocoReportsContainer c ->
-                        c.xml.enabled = true
-                        c.csv.enabled = true
-                        c.html.enabled = true
+                            c.xml.enabled = true
+                            c.csv.enabled = true
+                            c.html.enabled = true
                     }
                 }
             }
-
         }
-        if (project.findProperty('jacoco.enabled') == "true") {
-            project.tasks.findByName('jacocoTestReport').mustRunAfter(t)
+
+        if (project.findProperty('jacoco.enabled') == 'true') {
+            project.tasks.named('jacocoTestReport').configure {
+                mustRunAfter t
+            }
         }
 
         return t

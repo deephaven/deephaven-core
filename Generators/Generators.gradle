@@ -38,8 +38,9 @@ def workspace = "$rootDir/tmp/workspace"
 def workDir = "$rootDir/.."
 String devRoot = rootDir.absolutePath
 
-task groovyStaticImportGenerator(type: JavaExec, dependsOn: 'classes') {
+def groovyStaticImportGenerator = project.tasks.register('groovyStaticImportGenerator', JavaExec) {
     description 'Run GroovyStaticImportGenerator'
+    dependsOn project.tasks.named('classes')
 
     main = 'io.deephaven.libs.GroovyStaticImportGenerator'
     args devRoot, 'false'
@@ -47,19 +48,20 @@ task groovyStaticImportGenerator(type: JavaExec, dependsOn: 'classes') {
     workingDir = workDir
 }
 
-task groovyStaticImportGeneratorAssert(type: JavaExec, dependsOn: 'classes') {
+def groovyStaticImportGeneratorAssert = project.tasks.register('groovyStaticImportGeneratorAssert', JavaExec) {
     description 'Run GroovyStaticImportGenerator to assert that the generated code has not changed'
+    dependsOn project.tasks.named('classes')
 
     main = 'io.deephaven.libs.GroovyStaticImportGenerator'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
     onlyIf { System.getenv('NO_ASSERT') != 'true' }
-
 }
 
-task generateAxesPlotMethods(type: JavaExec, dependsOn: 'classes') {
+def generateAxesPlotMethods = project.tasks.register('generateAxesPlotMethods', JavaExec) {
     description 'Run GenerateAxesPlotMethods'
+    dependsOn project.tasks.named('classes')
 
     main = 'io.deephaven.plot.util.GenerateAxesPlotMethods'
     args devRoot, 'false'
@@ -70,8 +72,9 @@ task generateAxesPlotMethods(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
-task generateAxesPlotMethodsAssert(type: JavaExec, dependsOn: 'classes') {
+def generateAxesPlotMethodsAssert = project.tasks.register('generateAxesPlotMethodsAssert', JavaExec) {
     description 'Run GenerateAxesPlotMethods to assert that the generated code has not changed'
+    dependsOn project.tasks.named('classes')
 
     main = 'io.deephaven.plot.util.GenerateAxesPlotMethods'
     args devRoot, 'true'
@@ -83,8 +86,9 @@ task generateAxesPlotMethodsAssert(type: JavaExec, dependsOn: 'classes') {
     onlyIf { System.getenv('NO_ASSERT') != 'true' }
 }
 
-task generateMultiSeries(type: JavaExec, dependsOn: 'classes') {
+def generateMultiSeries = project.tasks.register('generateMultiSeries', JavaExec) {
     description 'Run GenerateMultiSeries'
+    dependsOn project.tasks.named('classes')
 
     main = 'io.deephaven.plot.util.GenerateMultiSeries'
     args devRoot, 'false'
@@ -95,8 +99,9 @@ task generateMultiSeries(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
-task generateMultiSeriesAssert(type: JavaExec, dependsOn: 'classes') {
+def generateMultiSeriesAssert = project.tasks.register('generateMultiSeriesAssert', JavaExec) {
     description 'Run GenerateMultiSeries to assert that the generated code has not changed'
+    dependsOn project.tasks.named('classes')
 
     main = 'io.deephaven.plot.util.GenerateMultiSeries'
     args devRoot, 'true'
@@ -108,9 +113,9 @@ task generateMultiSeriesAssert(type: JavaExec, dependsOn: 'classes') {
     onlyIf { System.getenv('NO_ASSERT') != 'true' }
 }
 
-task generateFigureImmutable(type: JavaExec, dependsOn: 'classes') {
+def generateFigureImmutable = project.tasks.register('generateFigureImmutable', JavaExec) {
     description 'Run GenerateFigureImmutable'
-    dependsOn generateAxesPlotMethods, generateMultiSeries
+    dependsOn generateAxesPlotMethods, generateMultiSeries, project.tasks.named('classes')
 
     main = 'io.deephaven.plot.util.GenerateFigureImmutable'
     args devRoot, 'false'
@@ -121,9 +126,9 @@ task generateFigureImmutable(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
-task generateFigureImmutableAssert(type: JavaExec, dependsOn: 'classes') {
+def generateFigureImmutableAssert = project.tasks.register('generateFigureImmutableAssert', JavaExec) {
     description 'Run GenerateFigureImmutable to assert that the generated code has not changed'
-    dependsOn generateAxesPlotMethodsAssert, generateMultiSeriesAssert
+    dependsOn generateAxesPlotMethodsAssert, generateMultiSeriesAssert, project.tasks.named('classes')
 
     main = 'io.deephaven.plot.util.GenerateFigureImmutable'
     args devRoot, 'true'
@@ -135,9 +140,9 @@ task generateFigureImmutableAssert(type: JavaExec, dependsOn: 'classes') {
     onlyIf { System.getenv('NO_ASSERT') != 'true' }
 }
 
-task generatePlottingConvenience(type: JavaExec, dependsOn: 'classes') {
+def generatePlottingConvenience = project.tasks.register('generatePlottingConvenience', JavaExec) {
     description 'Run GeneratePlottingConvenience'
-    dependsOn generateFigureImmutable
+    dependsOn generateFigureImmutable, project.tasks.named('classes')
 
     main = 'io.deephaven.plot.util.GeneratePlottingConvenience'
     args devRoot
@@ -148,9 +153,9 @@ task generatePlottingConvenience(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
-task generatePlottingConvenienceAssert(type: JavaExec, dependsOn: 'classes') {
+def generatePlottingConvenienceAssert = project.tasks.register('generatePlottingConvenienceAssert', JavaExec) {
     description 'Run GeneratePlottingConvenience to assert that the generated code has not changed'
-    dependsOn generateFigureImmutableAssert
+    dependsOn generateFigureImmutableAssert, project.tasks.named('classes')
 
     main = 'io.deephaven.plot.util.GeneratePlottingConvenience'
     args devRoot, 'true'
@@ -161,9 +166,9 @@ task generatePlottingConvenienceAssert(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
-task generatePythonFigureWrapper(type: JavaExec, dependsOn: 'classes') {
+def generatePythonFigureWrapper = project.tasks.register('generatePythonFigureWrapper', JavaExec) {
     description 'Run GeneratePythonFigureWrapper'
-    dependsOn generatePlottingConvenience
+    dependsOn generatePlottingConvenience, generateFigureImmutable, project.tasks.named('classes')
 
     main = 'io.deephaven.plot.util.GeneratePyV2FigureAPI'
     args devRoot, 'false'
@@ -172,12 +177,11 @@ task generatePythonFigureWrapper(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'workspace', workspace
     systemProperty 'devroot', devRoot
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
-    dependsOn ':Generators:generateFigureImmutable'
 }
 
-task generatePythonFigureWrapperAssert(type: JavaExec, dependsOn: 'classes') {
+def generatePythonFigureWrapperAssert = project.tasks.register('generatePythonFigureWrapperAssert', JavaExec) {
     description 'Run GeneratePythonFigureWrapper'
-    dependsOn generatePlottingConvenienceAssert
+    dependsOn generatePlottingConvenienceAssert, project.tasks.named('classes')
 
     main = 'io.deephaven.plot.util.GeneratePyV2FigureAPI'
     args devRoot, 'true'
@@ -188,31 +192,32 @@ task generatePythonFigureWrapperAssert(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
-tasks.register 'generateAllPython', {
-    Task t -> t.dependsOn ':Generators:generatePythonFigureWrapper'
+tasks.register('generateAllPython') {
+    dependsOn generatePythonFigureWrapper
 }
 
-
-tasks.register 'generateAllPythonAssert', {
-    Task t -> t.dependsOn ':Generators:generatePythonFigureWrapperAssert'
+tasks.register('generateAllPythonAssert') {
+    dependsOn generatePythonFigureWrapperAssert
 }
 
-tasks.register 'generateAll', {
-    Task t -> t.dependsOn  ':Generators:groovyStaticImportGenerator',
-                           ':Generators:generateAxesPlotMethods',
-                           ':Generators:generateMultiSeries',
-                           ':Generators:generateFigureImmutable',
-                           ':Generators:generatePlottingConvenience',
-                           ':Generators:generateAllPython'
+tasks.register('generateAll') {
+    dependsOn groovyStaticImportGenerator,
+            generateAxesPlotMethods,
+            generateMultiSeries,
+            generateFigureImmutable,
+            generatePlottingConvenience,
+            generateAllPython
 
-    t.group = '~Deephaven'
-    t.description = 'Runs all code generators'
+    group = '~Deephaven'
+    description = 'Runs all code generators'
 }
 
-project.tasks.getByName('quick').dependsOn groovyStaticImportGeneratorAssert,
-        generateAxesPlotMethodsAssert,
-        generateMultiSeriesAssert,
-        generateFigureImmutableAssert,
-        generatePlottingConvenienceAssert,
-        generateAllPythonAssert,
-        generatePythonFigureWrapperAssert
+project.tasks.named('quick').configure {
+    dependsOn groovyStaticImportGeneratorAssert,
+            generateAxesPlotMethodsAssert,
+            generateMultiSeriesAssert,
+            generateFigureImmutableAssert,
+            generatePlottingConvenienceAssert,
+            generateAllPythonAssert,
+            generatePythonFigureWrapperAssert
+}

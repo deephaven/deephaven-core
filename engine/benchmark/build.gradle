@@ -43,7 +43,7 @@ spotless {
     }
 }
 
-task jmhRun(type: JavaExec)  {
+project.tasks.register('jmhRun', JavaExec)  {
     new File("$rootDir/tmp/workspace").mkdirs()
     new File("$rootDir/tmp/logs").mkdirs()
     workingDir "$rootDir/tmp/workspace"
@@ -64,7 +64,7 @@ task jmhRun(type: JavaExec)  {
 }
 
 def createJmhTask = {
-    taskName, cliArgs, jvmAddArgs=[], heapSize='8g' -> tasks.create(taskName, JavaExec, { JavaExec task ->
+    taskName, cliArgs, jvmAddArgs=[], heapSize='8g' -> tasks.register(taskName, JavaExec) { JavaExec task ->
         new File("$rootDir/tmp/workspace").mkdirs()
         new File("$rootDir/tmp/logs").mkdirs()
 
@@ -88,7 +88,7 @@ def createJmhTask = {
         task.args cliArgs
 
         return
-    })
+    }
 }
 
 createJmhTask('jmhRunSort', 'SortBenchmark')
@@ -101,7 +101,7 @@ createJmhTask('jmhRunBy', 'ByBenchmark')
 createJmhTask('jmhRunRowSetGetFind', 'RowSetGetFindBench', ['-DMetricsManager.enabled=true'])
 
 def createDeephavenTestExecTask = {
-    taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
+    taskName, mainClass -> tasks.register(taskName, JavaExec) { JavaExec task ->
         new File("$rootDir/tmp/workspace").mkdirs()
         new File("$rootDir/tmp/logs").mkdirs()
 
@@ -117,7 +117,7 @@ def createDeephavenTestExecTask = {
                 '-Djava.awt.headless=true'
 
         return
-    })
+    }
 }
 
 createDeephavenTestExecTask('sortKernelBenchmark', 'io.deephaven.benchmark.engine.sort.timsort.SortKernelBenchmark')

@@ -43,7 +43,7 @@ def gradleWrapper = tasks.register("dockerGradleInit", Wrapper.class) { wrapper 
   wrapper.gradleVersion '7.2'
 }
 
-tasks.getByName('check').dependsOn Docker.registerDockerTask(project, 'test-in-docker') {
+def testInDocker = Docker.registerDockerTask(project, 'test-in-docker') {
   copyIn {
     dependsOn gradleWrapper
     from ("${buildDir}/template-project") {
@@ -78,4 +78,8 @@ tasks.getByName('check').dependsOn Docker.registerDockerTask(project, 'test-in-d
   copyOut {
     into "${buildDir}/test-results/test-in-docker"
   }
+}
+
+tasks.named('check').configure {
+  dependsOn testInDocker
 }
