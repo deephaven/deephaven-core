@@ -100,10 +100,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     private boolean hasInputTable;
 
-    // if this is a stream table, defer remove-only updates to avoid flashing updates
-    private RangeSet deferredDeltaRemoves;
-    private boolean isStreamTable;
-
     private final List<JsRunnable> onClosed;
 
     private double size = ClientTableState.SIZE_UNINITIALIZED;
@@ -136,7 +132,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         this.subscriptionId = nextSubscriptionId++;
         this.workerConnection = table.workerConnection;
         this.hasInputTable = table.hasInputTable;
-        this.isStreamTable = table.isStreamTable;
         this.currentState = table.currentState;
         this.lastVisibleState = table.lastVisibleState;
         this.size = table.size;
@@ -215,11 +210,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     @JsProperty(name = "hasInputTable")
     public boolean hasInputTable() {
         return hasInputTable;
-    }
-
-    @JsMethod
-    public boolean isStreamTable() {
-        return isStreamTable;
     }
 
     @JsMethod
@@ -1230,20 +1220,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 nonViewportSub.handleDelta(updates);
                 return;
             }
-            if (isStreamTable) {
-                // stream tables remove all rows from the previous step, if there are no adds this step then defer
-                // removal until new data arrives -- this makes stream tables GUI friendly
-                if (updates.getAdded().isEmpty() && !updates.getRemoved().isEmpty()) {
-                    assert deferredDeltaRemoves == null : "Stream table received two consecutive remove rowsets";
-                    deferredDeltaRemoves = updates.getRemoved();
-                    return;
-                }
-                if (updates.getRemoved().isEmpty() && deferredDeltaRemoves != null) {
-                    assert updates.getRemoved().isEmpty() : "Stream table received two consecutive remove rowsets";
-                    updates.setRemoved(deferredDeltaRemoves);
-                    deferredDeltaRemoves = null;
-                }
-            }
             final ViewportData vpd = currentViewportData;
             if (vpd == null) {
                 // if the current viewport data is null, we're waiting on an initial snapshot to arrive for a different
@@ -1383,7 +1359,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             if (state == currentState) {
                 lastVisibleState = state;
                 hasInputTable = s.getTableDef().getAttributes().isInputTable();
-                isStreamTable = s.getTableDef().getAttributes().isStreamTable();
 
                 // defer the size change so that is there is a viewport sub also waiting for onRunning, it gets it first
                 LazyPromise.runLater(() -> {

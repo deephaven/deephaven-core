@@ -46,7 +46,7 @@ public class TableAttributesDefinition {
     }
 
     public boolean isStreamTable() {
-        return map.getOrDefault(STREAM_TABLE_ATTRIBUTE, "").equals("true");
+        return "true".equals(map.get(STREAM_TABLE_ATTRIBUTE));
     }
 
     public RollupDefinition getRollupDefinition() {
