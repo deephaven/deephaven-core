@@ -122,7 +122,7 @@ public class JsPartitionedTable extends HasEventHandling {
                 connection.newTable(
                         descriptor.getKeyColumnNamesList().asArray(new String[0]),
                         keyColumnTypes.toArray(new String[0]),
-                        key.stream().map(item -> new Object[] { item }).toArray(Object[][]::new),
+                        key.stream().map(item -> new Object[] {item}).toArray(Object[][]::new),
                         null,
                         this)
                         .then(table -> {

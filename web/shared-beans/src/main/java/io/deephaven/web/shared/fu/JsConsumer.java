@@ -22,6 +22,8 @@ public interface JsConsumer<T> {
     @SuppressWarnings("unusable-by-js")
     void apply(T value);
 }
+
+
 class ConsumerHelper {
     static JsConsumer<?> DO_NOTHING = ignore -> {
     };
