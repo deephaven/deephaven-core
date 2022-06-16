@@ -6,7 +6,9 @@ package io.deephaven.server.runner;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.server.config.ServerConfig;
+import io.deephaven.ssl.config.SSLConfig;
 
+import javax.annotation.Nullable;
 import javax.inject.Named;
 
 @Module
@@ -34,5 +36,11 @@ public class DeephavenApiConfigModule {
     @Named("grpc.maxInboundMessageSize")
     public static int providesMaxInboundMessageSize(ServerConfig config) {
         return config.maxInboundMessageSize();
+    }
+
+    @Provides
+    @Nullable
+    public static SSLConfig providesSSLConfig(ServerConfig config) {
+        return config.ssl().orElse(null);
     }
 }

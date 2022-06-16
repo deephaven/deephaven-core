@@ -12,6 +12,8 @@ import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
+import io.deephaven.ssl.config.Identity;
+import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.uri.ApplicationUri;
 import io.deephaven.uri.DeephavenTarget;
 import io.deephaven.uri.DeephavenUri;
@@ -24,6 +26,7 @@ import io.deephaven.uri.resolver.UriResolversInstance;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.net.URI;
@@ -71,14 +74,18 @@ public final class BarrageTableResolver implements UriResolver {
 
     private final BufferAllocator allocator;
 
+    private final SSLConfig sslConfig;
+
     private final Map<DeephavenTarget, BarrageSession> sessions;
 
     @Inject
     public BarrageTableResolver(
-            BarrageSessionFactoryBuilder builder, ScheduledExecutorService executor, BufferAllocator allocator) {
+            BarrageSessionFactoryBuilder builder, ScheduledExecutorService executor, BufferAllocator allocator,
+            @Nullable SSLConfig sslConfig) {
         this.builder = Objects.requireNonNull(builder);
         this.executor = Objects.requireNonNull(executor);
         this.allocator = Objects.requireNonNull(allocator);
+        this.sslConfig = sslConfig;
         this.sessions = new ConcurrentHashMap<>();
     }
 
@@ -286,10 +293,13 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     private BarrageSession newSession(DeephavenTarget target) {
-        return newSession(ClientConfig.builder()
+        ClientConfig.Builder builder = ClientConfig.builder()
                 .target(target)
-                .maxInboundMessageSize(MAX_INBOUND_MESSAGE_SIZE)
-                .build());
+                .maxInboundMessageSize(MAX_INBOUND_MESSAGE_SIZE);
+        if (sslConfig != null) {
+            builder.ssl(sslConfig);
+        }
+        return newSession(builder.build());
     }
 
     private BarrageSession newSession(ClientConfig config) {

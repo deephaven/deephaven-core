@@ -5,6 +5,7 @@ package io.deephaven.ssl.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.deephaven.annotations.BuildableStyle;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
@@ -69,12 +70,9 @@ public abstract class SSLConfig {
     public abstract Optional<Ciphers> ciphers();
 
     /**
-     * Client authentication. Defaults to {@link ClientAuth#NONE NONE}.
+     * The optional client authentication.
      */
-    @Default
-    public ClientAuth clientAuthentication() {
-        return ClientAuth.NONE;
-    }
+    public abstract Optional<ClientAuth> clientAuthentication();
 
     public final SSLConfig orTrust(Trust defaultTrust) {
         if (trust().isPresent()) {
@@ -113,5 +111,17 @@ public abstract class SSLConfig {
         Builder clientAuthentication(ClientAuth clientAuthentication);
 
         SSLConfig build();
+    }
+
+    @Value.Check
+    final void checkMutualTLS() {
+        if (clientAuthentication().orElse(ClientAuth.NONE) != ClientAuth.NONE) {
+            if (!trust().isPresent()) {
+                throw new IllegalArgumentException("Trust material must be present when requesting mutual TLS");
+            }
+            if (!identity().isPresent()) {
+                throw new IllegalArgumentException("Identity material must be present when requesting mutual TLS");
+            }
+        }
     }
 }

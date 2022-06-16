@@ -9,13 +9,9 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.io.logger.LogBufferInterceptor;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.ssl.config.Identity;
-import io.deephaven.ssl.config.IdentityPrivateKey;
-import io.deephaven.ssl.config.SSLConfig;
+import io.deephaven.ssl.config.*;
 import io.deephaven.ssl.config.SSLConfig.Builder;
 import io.deephaven.ssl.config.SSLConfig.ClientAuth;
-import io.deephaven.ssl.config.Trust;
-import io.deephaven.ssl.config.TrustCertificates;
 import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -32,6 +28,7 @@ public class Main {
     public static final String SSL_IDENTITY_PRIVATE_KEY_PATH = "ssl.identity.privateKeyPath";
     public static final String SSL_TRUST_TYPE = "ssl.trust.type";
     public static final String SSL_TRUST_PATH = "ssl.trust.path";
+    public static final String SSL_CLIENT_AUTH = "ssl.clientAuthentication";
     public static final String PRIVATEKEY = "privatekey";
     public static final String CERTS = "certs";
 
@@ -97,25 +94,22 @@ public class Main {
 
     /**
      * Parses the configuration properties {@value SSL_IDENTITY_TYPE}, {@value SSL_IDENTITY_CERT_CHAIN_PATH},
-     * {@value SSL_IDENTITY_PRIVATE_KEY_PATH}, {@value SSL_TRUST_TYPE}, and {@value SSL_TRUST_PATH}. Currently, the only
-     * valid identity type is {@value PRIVATEKEY}, and the only valid trust type is {@value CERTS}.
+     * {@value SSL_IDENTITY_PRIVATE_KEY_PATH}, {@value SSL_TRUST_TYPE}, {@value SSL_TRUST_PATH}, and
+     * {@value SSL_CLIENT_AUTH}. Currently, the only valid identity type is {@value PRIVATEKEY}, and the only valid
+     * trust type is {@value CERTS}. If trust material is present, {@link TrustJdk} will also be added, and
+     * {@link ClientAuth#NEEDED} will be selected unless explicitly set.
      *
      * @param config the config
      * @return the optional SSL config
      */
     public static Optional<SSLConfig> parseSSLConfig(Configuration config) {
         final Optional<Identity> identity = parseIdentityConfig(config);
-        final Optional<Trust> trust = parseTrustConfig(config);
-        if (identity.isEmpty() && trust.isPresent()) {
-            throw new IllegalArgumentException("Can't configure mTLS without server identity");
+        if (identity.isEmpty()) {
+            return Optional.empty();
         }
-        final Builder builder = SSLConfig.builder();
-        identity.ifPresent(builder::identity);
-        trust.ifPresent(builder::trust);
-        // Note: it should be valid to configure ClientAuth.WANTED and mTLS - in which case, users who don't present
-        // an mTLS identity can still get access with unauthenticated privileges. But this limited configuration does
-        // not support that right now.
-        trust.ifPresent(t -> builder.clientAuthentication(ClientAuth.NEEDED));
+        final Builder builder = SSLConfig.builder().identity(identity.get());
+        parseTrustConfig(config).ifPresent(
+                t -> builder.trust(t).clientAuthentication(parseClientAuth(config).orElse(ClientAuth.NEEDED)));
         return Optional.of(builder.build());
     }
 
@@ -150,6 +144,14 @@ public class Main {
         if (trustPath == null) {
             throw new IllegalArgumentException(String.format("Must specify `%s`", SSL_TRUST_PATH));
         }
-        return Optional.of(TrustCertificates.of(trustPath));
+        return Optional.of(TrustList.of(TrustJdk.of(), TrustCertificates.of(trustPath)));
+    }
+
+    private static Optional<ClientAuth> parseClientAuth(Configuration config) {
+        final String clientAuth = config.getStringWithDefault(SSL_CLIENT_AUTH, null);
+        if (clientAuth == null) {
+            return Optional.empty();
+        }
+        return Optional.of(ClientAuth.valueOf(clientAuth));
     }
 }

@@ -6,6 +6,7 @@ package io.deephaven.server.runner;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
+import io.deephaven.ssl.config.SSLConfig;
 import io.grpc.BindableService;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.ManagedChannelBuilder;
@@ -18,6 +19,7 @@ import io.grpc.ServerInterceptor;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.InputStream;
@@ -54,6 +56,12 @@ public class ServerBuilderInProcessModule {
     @Provides
     static ManagedChannelBuilder<?> channelBuilder(@Named("serverName") String serverName) {
         return InProcessChannelBuilder.forName(serverName);
+    }
+
+    @Provides
+    @Nullable
+    static SSLConfig providesSSLConfig() {
+        return null;
     }
 
     /**
