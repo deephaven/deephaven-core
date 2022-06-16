@@ -34,17 +34,17 @@ public class UpdateByOperatorFactory {
     private final TableWithDefaults source;
     private final MatchPair[] groupByColumns;
     @Nullable
-    private final WritableRowRedirection redirectionRowSet;
+    private final WritableRowRedirection rowRedirection;
     @NotNull
     private final UpdateByControl control;
 
     public UpdateByOperatorFactory(@NotNull final TableWithDefaults source,
             @NotNull final MatchPair[] groupByColumns,
-            @Nullable final WritableRowRedirection redirectionIndex,
+            @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
         this.source = source;
         this.groupByColumns = groupByColumns;
-        this.redirectionRowSet = redirectionIndex;
+        this.rowRedirection = rowRedirection;
         this.control = control;
     }
 
@@ -220,28 +220,28 @@ public class UpdateByOperatorFactory {
 
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
-                        columnSource, redirectionRowSet);
+                        columnSource, rowRedirection);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
-                        columnSource, redirectionRowSet);
+                        columnSource, rowRedirection);
             } else if (csType == int.class || csType == Integer.class) {
                 return new IntEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
-                        columnSource, redirectionRowSet);
+                        columnSource, rowRedirection);
             } else if (csType == long.class || csType == Long.class) {
                 return new LongEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
-                        columnSource, redirectionRowSet);
+                        columnSource, rowRedirection);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
-                        columnSource, redirectionRowSet);
+                        columnSource, rowRedirection);
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleEMAOperator(pair, affectingColumns, ema.control(), recorder,
-                        ema.timeScaleUnits(), columnSource, redirectionRowSet);
+                        ema.timeScaleUnits(), columnSource, rowRedirection);
             } else if (csType == BigDecimal.class) {
                 return new BigDecimalEMAOperator(pair, affectingColumns, ema.control(), recorder,
-                        ema.timeScaleUnits(), columnSource, redirectionRowSet);
+                        ema.timeScaleUnits(), columnSource, rowRedirection);
             } else if (csType == BigInteger.class) {
                 return new BigIntegerEMAOperator(pair, affectingColumns, ema.control(), recorder,
-                        ema.timeScaleUnits(), columnSource, redirectionRowSet);
+                        ema.timeScaleUnits(), columnSource, rowRedirection);
             }
 
             throw new IllegalArgumentException("Can not perform EMA on type " + csType);
@@ -267,21 +267,21 @@ public class UpdateByOperatorFactory {
         private UpdateByOperator makeCumProdOperator(MatchPair fc, TableWithDefaults source) {
             final Class<?> csType = source.getColumnSource(fc.rightColumn).getType();
             if (csType == byte.class || csType == Byte.class) {
-                return new ByteCumProdOperator(fc, redirectionRowSet);
+                return new ByteCumProdOperator(fc, rowRedirection);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortCumProdOperator(fc, redirectionRowSet);
+                return new ShortCumProdOperator(fc, rowRedirection);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntCumProdOperator(fc, redirectionRowSet);
+                return new IntCumProdOperator(fc, rowRedirection);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongCumProdOperator(fc, redirectionRowSet);
+                return new LongCumProdOperator(fc, rowRedirection);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatCumProdOperator(fc, redirectionRowSet);
+                return new FloatCumProdOperator(fc, rowRedirection);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleCumProdOperator(fc, redirectionRowSet);
+                return new DoubleCumProdOperator(fc, rowRedirection);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalCumProdOperator(fc, redirectionRowSet, control.getDefaultMathContext());
+                return new BigDecimalCumProdOperator(fc, rowRedirection, control.getDefaultMathContext());
             } else if (csType == BigInteger.class) {
-                return new BigIntegerCumProdOperator(fc, redirectionRowSet);
+                return new BigIntegerCumProdOperator(fc, rowRedirection);
             }
 
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
@@ -291,20 +291,20 @@ public class UpdateByOperatorFactory {
             final ColumnSource<?> columnSource = source.getColumnSource(fc.rightColumn);
             final Class<?> csType = columnSource.getType();
             if (csType == byte.class || csType == Byte.class) {
-                return new ByteCumMinMaxOperator(fc, isMax, redirectionRowSet);
+                return new ByteCumMinMaxOperator(fc, isMax, rowRedirection);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortCumMinMaxOperator(fc, isMax, redirectionRowSet);
+                return new ShortCumMinMaxOperator(fc, isMax, rowRedirection);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntCumMinMaxOperator(fc, isMax, redirectionRowSet);
+                return new IntCumMinMaxOperator(fc, isMax, rowRedirection);
             } else if (csType == long.class || csType == Long.class || isTimeType(csType)) {
-                return new LongCumMinMaxOperator(fc, isMax, redirectionRowSet, csType);
+                return new LongCumMinMaxOperator(fc, isMax, rowRedirection, csType);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatCumMinMaxOperator(fc, isMax, redirectionRowSet);
+                return new FloatCumMinMaxOperator(fc, isMax, rowRedirection);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleCumMinMaxOperator(fc, isMax, redirectionRowSet);
+                return new DoubleCumMinMaxOperator(fc, isMax, rowRedirection);
             } else if (Comparable.class.isAssignableFrom(csType)) {
                 // noinspection unchecked,rawtypes
-                return new ComparableCumMinMaxOperator(csType, fc, isMax, redirectionRowSet);
+                return new ComparableCumMinMaxOperator(csType, fc, isMax, rowRedirection);
             }
 
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
@@ -313,23 +313,23 @@ public class UpdateByOperatorFactory {
         private UpdateByOperator makeCumSumOperator(MatchPair fc, TableWithDefaults source) {
             final Class<?> csType = source.getColumnSource(fc.rightColumn).getType();
             if (csType == Boolean.class || csType == boolean.class) {
-                return new ByteCumSumOperator(fc, redirectionRowSet, NULL_BOOLEAN_AS_BYTE);
+                return new ByteCumSumOperator(fc, rowRedirection, NULL_BOOLEAN_AS_BYTE);
             } else if (csType == byte.class || csType == Byte.class) {
-                return new ByteCumSumOperator(fc, redirectionRowSet, NULL_BYTE);
+                return new ByteCumSumOperator(fc, rowRedirection, NULL_BYTE);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortCumSumOperator(fc, redirectionRowSet);
+                return new ShortCumSumOperator(fc, rowRedirection);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntCumSumOperator(fc, redirectionRowSet);
+                return new IntCumSumOperator(fc, rowRedirection);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongCumSumOperator(fc, redirectionRowSet);
+                return new LongCumSumOperator(fc, rowRedirection);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatCumSumOperator(fc, redirectionRowSet);
+                return new FloatCumSumOperator(fc, rowRedirection);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleCumSumOperator(fc, redirectionRowSet);
+                return new DoubleCumSumOperator(fc, rowRedirection);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalCumSumOperator(fc, redirectionRowSet, control.getDefaultMathContext());
+                return new BigDecimalCumSumOperator(fc, rowRedirection, control.getDefaultMathContext());
             } else if (csType == BigInteger.class) {
-                return new BigIntegerCumSumOperator(fc, redirectionRowSet);
+                return new BigIntegerCumSumOperator(fc, rowRedirection);
             }
 
             throw new IllegalArgumentException("Can not perform Cumulative Sum on type " + csType);
@@ -339,23 +339,23 @@ public class UpdateByOperatorFactory {
             final ColumnSource<?> columnSource = source.getColumnSource(fc.rightColumn);
             final Class<?> csType = columnSource.getType();
             if (csType == char.class || csType == Character.class) {
-                return new CharFillByOperator(fc, redirectionRowSet);
+                return new CharFillByOperator(fc, rowRedirection);
             } else if (csType == byte.class || csType == Byte.class) {
-                return new ByteFillByOperator(fc, redirectionRowSet);
+                return new ByteFillByOperator(fc, rowRedirection);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortFillByOperator(fc, redirectionRowSet);
+                return new ShortFillByOperator(fc, rowRedirection);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntFillByOperator(fc, redirectionRowSet);
+                return new IntFillByOperator(fc, rowRedirection);
             } else if (csType == long.class || csType == Long.class || isTimeType(csType)) {
-                return new LongFillByOperator(fc, redirectionRowSet, csType);
+                return new LongFillByOperator(fc, rowRedirection, csType);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatFillByOperator(fc, redirectionRowSet);
+                return new FloatFillByOperator(fc, rowRedirection);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleFillByOperator(fc, redirectionRowSet);
+                return new DoubleFillByOperator(fc, rowRedirection);
             } else if (csType == boolean.class || csType == Boolean.class) {
-                return new BooleanFillByOperator(fc, redirectionRowSet);
+                return new BooleanFillByOperator(fc, rowRedirection);
             } else {
-                return new ObjectFillByOperator<>(fc, redirectionRowSet, csType);
+                return new ObjectFillByOperator<>(fc, rowRedirection, csType);
             }
         }
     }

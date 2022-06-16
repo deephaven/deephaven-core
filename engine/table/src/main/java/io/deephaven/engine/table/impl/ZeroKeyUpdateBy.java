@@ -29,7 +29,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
      * @param source the source table
      * @param ops the operations to perform
      * @param resultSources the result sources
-     * @param redirectionRowSet the {@link io.deephaven.engine.table.impl.util.RowRedirection}, if one is used.
+     * @param rowRedirection the {@link io.deephaven.engine.table.impl.util.RowRedirection}, if one is used.
      * @param control the control object.
      * @return the result table
      */
@@ -37,15 +37,15 @@ class ZeroKeyUpdateBy extends UpdateBy {
             @NotNull final QueryTable source,
             @NotNull final UpdateByOperator[] ops,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-            @Nullable final WritableRowRedirection redirectionRowSet,
+            @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
         final QueryTable result = new QueryTable(source.getRowSet(), resultSources);
-        final ZeroKeyUpdateBy updateBy = new ZeroKeyUpdateBy(ops, source, redirectionRowSet, control);
+        final ZeroKeyUpdateBy updateBy = new ZeroKeyUpdateBy(ops, source, rowRedirection, control);
         updateBy.doInitialAdditions();
 
         if (source.isRefreshing()) {
-            if (redirectionRowSet != null) {
-                redirectionRowSet.startTrackingPrevValues();
+            if (rowRedirection != null) {
+                rowRedirection.startTrackingPrevValues();
             }
             Arrays.stream(ops).forEach(UpdateByOperator::startTrackingPrev);
             final ZeroKeyUpdateByListener listener = updateBy.newListener(description, result);
@@ -58,9 +58,9 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
     protected ZeroKeyUpdateBy(@NotNull final UpdateByOperator[] operators,
             @NotNull final QueryTable source,
-            @Nullable final WritableRowRedirection redirectionRowSet,
+            @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
-        super(operators, source, redirectionRowSet, control);
+        super(operators, source, rowRedirection, control);
     }
 
     ZeroKeyUpdateByListener newListener(@NotNull final String description, @NotNull final QueryTable result) {
@@ -75,7 +75,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 ModifiedColumnSet.ALL);
         try (final UpdateContext ctx = new UpdateContext(fakeUpdate, null, true)) {
             ctx.setAllAffected();
-            if (redirectionRowSet != null && source.isRefreshing()) {
+            if (rowRedirection != null && source.isRefreshing()) {
                 processUpdateForRedirection(fakeUpdate);
             }
             ctx.doUpdate(source.getRowSet(), source.getRowSet(), UpdateType.Add);
@@ -429,7 +429,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
                 // We will not mess with shifts if we are using a redirection because we'll have applied the shift
                 // to the redirection index already by now.
-                if (redirectionRowSet == null && shifted.nonempty()) {
+                if (rowRedirection == null && shifted.nonempty()) {
                     try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
                         shifted.apply((begin, end, delta) -> {
                             try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
@@ -529,7 +529,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
         @Override
         public void onUpdate(TableUpdate upstream) {
             try (final UpdateContext ctx = new UpdateContext(upstream, inputModifiedColumnSets, false)) {
-                if (redirectionRowSet != null) {
+                if (rowRedirection != null) {
                     processUpdateForRedirection(upstream);
                 }
 

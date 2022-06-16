@@ -12,8 +12,8 @@ public final class ComparableCumMinMaxOperator<T extends Comparable<T>> extends 
     public ComparableCumMinMaxOperator(final Class<T> colType,
             @NotNull final MatchPair inputPair,
             final boolean isMax,
-            @Nullable final RowRedirection redirectionIndex) {
-        super(colType, inputPair, new String[] {inputPair.rightColumn}, redirectionIndex);
+            @Nullable final RowRedirection rowRedirection) {
+        super(colType, inputPair, new String[] {inputPair.rightColumn}, rowRedirection);
         this.isMax = isMax;
     }
 

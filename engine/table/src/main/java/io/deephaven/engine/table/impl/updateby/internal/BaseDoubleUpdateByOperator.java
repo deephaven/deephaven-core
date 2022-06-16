@@ -92,13 +92,13 @@ public abstract class BaseDoubleUpdateByOperator implements UpdateByOperator {
      */
     public BaseDoubleUpdateByOperator(@NotNull final MatchPair pair,
                                      @NotNull final String[] affectingColumns,
-                                     @Nullable final RowRedirection redirectionRowSet) {
+                                     @Nullable final RowRedirection rowRedirection) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
-        this.isRedirected = redirectionRowSet != null;
-        if(redirectionRowSet != null) {
+        this.isRedirected = rowRedirection != null;
+        if(rowRedirection != null) {
             this.maybeInnerSource = new DoubleArraySource();
-            this.outputSource = new WritableRedirectedColumnSource(redirectionRowSet, maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             this.outputSource = new DoubleSparseArraySource();

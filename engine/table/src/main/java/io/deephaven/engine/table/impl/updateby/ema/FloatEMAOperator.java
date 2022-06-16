@@ -35,11 +35,11 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
                             @Nullable final LongRecordingUpdateByOperator timeRecorder,
                             final long timeScaleUnits,
                             @NotNull final ColumnSource<Float> valueSource,
-                            @Nullable final RowRedirection redirectionIndex
+                            @Nullable final RowRedirection rowRedirection
                             // region extra-constructor-args
                             // endregion extra-constructor-args
                             ) {
-        super(pair, affectingColumns, control, timeRecorder, timeScaleUnits, redirectionIndex);
+        super(pair, affectingColumns, control, timeRecorder, timeScaleUnits, rowRedirection);
         this.valueSource = valueSource;
         // region constructor
         // endregion constructor

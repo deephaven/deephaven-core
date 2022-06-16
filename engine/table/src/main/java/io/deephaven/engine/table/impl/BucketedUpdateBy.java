@@ -1024,7 +1024,7 @@ public class BucketedUpdateBy extends UpdateBy {
      * @param source the source table
      * @param ops the operations to perform
      * @param resultSources the result sources
-     * @param redirectionIndex the redirection index, if one was used.
+     * @param rowRedirection the redirection index, if one was used.
      * @param keySources the sources for key columns.
      * @param byColumns the grouping column pairs
      * @return the result table
@@ -1034,19 +1034,19 @@ public class BucketedUpdateBy extends UpdateBy {
             @NotNull final QueryTable source,
             @NotNull final UpdateByOperator[] ops,
             @NotNull final Map<String, ColumnSource<?>> resultSources,
-            @Nullable final WritableRowRedirection redirectionIndex,
+            @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final ColumnSource<?>[] keySources,
             @NotNull final MatchPair[] byColumns,
             @NotNull final UpdateByControl control) {
         final QueryTable result = new QueryTable(source.getRowSet(), resultSources);
         final boolean useGrouping = JoinControl.useGrouping(source, keySources);
         final BucketedUpdateBy updateBy =
-                new BucketedUpdateBy(ops, source, keySources, useGrouping, redirectionIndex, control);
+                new BucketedUpdateBy(ops, source, keySources, useGrouping, rowRedirection, control);
         updateBy.doInitialAdditions(useGrouping, byColumns);
 
         if (source.isRefreshing()) {
-            if (redirectionIndex != null) {
-                redirectionIndex.startTrackingPrevValues();
+            if (rowRedirection != null) {
+                rowRedirection.startTrackingPrevValues();
             }
             Arrays.stream(ops).forEach(UpdateByOperator::startTrackingPrev);
             final InstrumentedTableUpdateListener listener = updateBy.newListener(description, result, byColumns);
@@ -1061,9 +1061,9 @@ public class BucketedUpdateBy extends UpdateBy {
             @NotNull final QueryTable source,
             @NotNull final ColumnSource<?>[] keySources,
             final boolean useGrouping,
-            @Nullable final WritableRowRedirection redirectionIndex,
+            @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
-        super(operators, source, redirectionIndex, control);
+        super(operators, source, rowRedirection, control);
         this.keySources = keySources;
 
         if (source.isRefreshing() && !source.isAddOnly()) {
@@ -1126,7 +1126,7 @@ public class BucketedUpdateBy extends UpdateBy {
                 ctx.setAllAffected();
                 ctx.initializeFor(source.getRowSet(), UpdateType.Add);
 
-                if (redirectionRowSet != null && source.isRefreshing()) {
+                if (rowRedirection != null && source.isRefreshing()) {
                     processUpdateForRedirection(initialUpdate);
                 }
 
@@ -1222,7 +1222,7 @@ public class BucketedUpdateBy extends UpdateBy {
         public void onUpdate(@NotNull final TableUpdate upstream) {
             try (final BucketedContext ctx =
                     new BucketedContext(upstream, keyModifiedColumnSet, inputModifiedColumnSets)) {
-                if (redirectionRowSet != null) {
+                if (rowRedirection != null) {
                     processUpdateForRedirection(upstream);
                 }
 
@@ -1307,7 +1307,7 @@ public class BucketedUpdateBy extends UpdateBy {
                 // state, we don't have to worry about shifts messing with our indices. We don't want to do this
                 // as a bucket because the shifts have to apply to the output column source, and we'd rather not
                 // iterate the shift O(nBuckets * nOps) times, to do it bucket by bucket.
-                if (redirectionRowSet == null) {
+                if (rowRedirection == null) {
                     ctx.applyShiftsToOutput(upstream.shifted());
                 }
 

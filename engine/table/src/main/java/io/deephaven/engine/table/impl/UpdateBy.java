@@ -30,7 +30,7 @@ public abstract class UpdateBy {
     protected final UpdateByOperator[] operators;
     protected final QueryTable source;
     @Nullable
-    protected final WritableRowRedirection redirectionRowSet;
+    protected final WritableRowRedirection rowRedirection;
     protected final WritableRowSet freeRows;
     protected long maxInnerIndex;
 
@@ -38,7 +38,7 @@ public abstract class UpdateBy {
 
     protected UpdateBy(@NotNull final UpdateByOperator[] operators,
             @NotNull final QueryTable source,
-            @Nullable final WritableRowRedirection redirectionIndex, UpdateByControl control) {
+            @Nullable final WritableRowRedirection rowRedirection, UpdateByControl control) {
         this.control = control;
         if (operators.length == 0) {
             throw new IllegalArgumentException("At least one operator must be specified");
@@ -62,8 +62,8 @@ public abstract class UpdateBy {
                 inputSourceSlots[opIdx] = maybeExistingSlot;
             }
         }
-        this.redirectionRowSet = redirectionIndex;
-        this.freeRows = redirectionIndex == null ? null : RowSetFactory.empty();
+        this.rowRedirection = rowRedirection;
+        this.freeRows = rowRedirection == null ? null : RowSetFactory.empty();
     }
 
     // region UpdateBy implementation
@@ -82,21 +82,21 @@ public abstract class UpdateBy {
             @NotNull final MatchPair[] byColumns,
             @NotNull final UpdateByControl control) {
 
-        WritableRowRedirection redirectionIndex = null;
+        WritableRowRedirection rowRedirection = null;
         if (control.useRedirection()) {
             if (!source.isRefreshing()) {
                 if (!source.isFlat() && SparseConstants.sparseStructureExceedsOverhead(source.getRowSet(),
                         control.maxStaticSparseMemoryOverhead())) {
-                    redirectionIndex = new InverseRowRedirectionImpl(source.getRowSet());
+                    rowRedirection = new InverseRowRedirectionImpl(source.getRowSet());
                 }
             } else {
                 final JoinControl.RedirectionType type = JoinControl.getRedirectionType(source, 4.0, true);
                 switch (type) {
                     case Sparse:
-                        redirectionIndex = new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
+                        rowRedirection = new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
                         break;
                     case Hash:
-                        redirectionIndex = WritableRowRedirection.FACTORY.createRowRedirection(source.intSize());
+                        rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(source.intSize());
                         break;
 
                     default:
@@ -106,7 +106,7 @@ public abstract class UpdateBy {
         }
 
         final UpdateByOperatorFactory updateByOperatorFactory =
-                new UpdateByOperatorFactory(source, byColumns, redirectionIndex, control);
+                new UpdateByOperatorFactory(source, byColumns, rowRedirection, control);
         final Collection<UpdateByOperator> ops = updateByOperatorFactory.getOperators(clauses);
 
         final StringBuilder descriptionBuilder = new StringBuilder("updateBy(ops={")
@@ -139,7 +139,7 @@ public abstract class UpdateBy {
                     source,
                     opArr,
                     resultSources,
-                    redirectionIndex,
+                    rowRedirection,
                     control);
         }
 
@@ -162,7 +162,7 @@ public abstract class UpdateBy {
                 source,
                 opArr,
                 resultSources,
-                redirectionIndex,
+                rowRedirection,
                 keySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
                 byColumns,
                 control);
@@ -171,7 +171,7 @@ public abstract class UpdateBy {
     protected void processUpdateForRedirection(@NotNull final TableUpdate upstream) {
         if (upstream.removed().isNonempty()) {
             final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
-            upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(redirectionRowSet.remove(key)));
+            upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(rowRedirection.remove(key)));
             freeRows.insert(freeBuilder.build());
         }
 
@@ -207,7 +207,7 @@ public abstract class UpdateBy {
             upstream.added().forAllRowKeys(outerKey -> {
                 final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
                 lastAllocated.setValue(innerKey);
-                redirectionRowSet.put(outerKey, innerKey);
+                rowRedirection.put(outerKey, innerKey);
             });
             freeRows.removeRange(0, lastAllocated.longValue());
         }
@@ -215,9 +215,9 @@ public abstract class UpdateBy {
 
     private boolean shiftRedirectedKey(@NotNull final RowSet.SearchIterator iterator, final long delta,
             final long key) {
-        final long inner = redirectionRowSet.remove(key);
+        final long inner = rowRedirection.remove(key);
         if (inner != NULL_ROW_KEY) {
-            redirectionRowSet.put(key + delta, inner);
+            rowRedirection.put(key + delta, inner);
         }
         return !iterator.hasNext();
     }

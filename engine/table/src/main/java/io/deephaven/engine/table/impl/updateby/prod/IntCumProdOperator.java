@@ -23,11 +23,11 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 public class IntCumProdOperator extends BaseLongUpdateByOperator {
 
     public IntCumProdOperator(final @NotNull MatchPair inputPair,
-                                @Nullable final RowRedirection redirectionIndex
+                                @Nullable final RowRedirection rowRedirection
                                 // region extra-constructor-args
                                 // endregion extra-constructor-args
     ) {
-        super(inputPair, new String[]{ inputPair.rightColumn }, redirectionIndex);
+        super(inputPair, new String[]{ inputPair.rightColumn }, rowRedirection);
         // region constructor
         // endregion constructor
     }

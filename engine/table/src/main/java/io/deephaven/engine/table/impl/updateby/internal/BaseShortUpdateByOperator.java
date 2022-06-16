@@ -85,22 +85,22 @@ public abstract class BaseShortUpdateByOperator implements UpdateByOperator {
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param redirectionRowSet the {@link RowRedirection} if one is used
+     * @param rowRedirection the {@link RowRedirection} if one is used
      */
     public BaseShortUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection redirectionRowSet
+                                    @Nullable final RowRedirection rowRedirection
                                     // region extra-constructor-args
                                     // endregion extra-constructor-args
                                     ) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
-        this.isRedirected = redirectionRowSet != null;
-        if(redirectionRowSet != null) {
+        this.isRedirected = rowRedirection != null;
+        if(rowRedirection != null) {
             // region create-dense
             this.maybeInnerSource = new ShortArraySource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(redirectionRowSet, maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse

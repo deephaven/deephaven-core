@@ -32,12 +32,12 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
     // endregion extra-fields
 
     public LongFillByOperator(@NotNull final MatchPair fillPair,
-                              @Nullable final RowRedirection redirectionRowSet
+                              @Nullable final RowRedirection rowRedirection
                               // region extra-constructor-args
                               ,@NotNull final Class<?> type
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, redirectionRowSet);
+        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection);
         // region constructor
         this.type = type;
         // endregion constructor

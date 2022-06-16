@@ -35,12 +35,12 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
 
     public LongCumMinMaxOperator(@NotNull final MatchPair inputPair,
                                   final boolean isMax,
-                                  @Nullable final RowRedirection redirectionIndex
+                                  @Nullable final RowRedirection rowRedirection
                                   // region extra-constructor-args
                               ,@NotNull final Class<?> type
                                   // endregion extra-constructor-args
                                   ) {
-        super(inputPair, new String[] { inputPair.rightColumn }, redirectionIndex);
+        super(inputPair, new String[] { inputPair.rightColumn }, rowRedirection);
         this.isMax = isMax;
         // region constructor
         this.type = type;

@@ -11,8 +11,8 @@ import java.math.BigInteger;
 public final class BigIntegerCumSumOperator extends BaseObjectBinaryOperator<BigInteger> {
 
     public BigIntegerCumSumOperator(@NotNull final MatchPair inputPair,
-                                    @Nullable final RowRedirection redirectionIndex) {
-        super(BigInteger.class, inputPair, new String[] { inputPair.rightColumn }, redirectionIndex);
+                                    @Nullable final RowRedirection rowRedirection) {
+        super(BigInteger.class, inputPair, new String[] { inputPair.rightColumn }, rowRedirection);
     }
 
     @Override

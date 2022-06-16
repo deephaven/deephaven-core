@@ -24,11 +24,11 @@ public class DoubleFillByOperator extends BaseDoubleUpdateByOperator {
     // endregion extra-fields
 
     public DoubleFillByOperator(@NotNull final MatchPair fillPair,
-                              @Nullable final RowRedirection redirectionRowSet
+                              @Nullable final RowRedirection rowRedirection
                               // region extra-constructor-args
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, redirectionRowSet);
+        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection);
         // region constructor
         // endregion constructor
     }

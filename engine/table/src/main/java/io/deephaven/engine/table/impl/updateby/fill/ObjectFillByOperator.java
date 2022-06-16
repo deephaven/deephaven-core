@@ -23,12 +23,12 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
     // endregion extra-fields
 
     public ObjectFillByOperator(@NotNull final MatchPair fillPair,
-                              @Nullable final RowRedirection redirectionRowSet
+                              @Nullable final RowRedirection rowRedirection
                               // region extra-constructor-args
                                       , final Class<T> colType
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, redirectionRowSet, colType);
+        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, colType);
         // region constructor
         // endregion constructor
     }

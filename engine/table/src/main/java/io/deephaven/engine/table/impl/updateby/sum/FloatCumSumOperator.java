@@ -17,11 +17,11 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 public class FloatCumSumOperator extends BaseFloatUpdateByOperator {
 
     public FloatCumSumOperator(@NotNull final MatchPair pair,
-                               @Nullable final RowRedirection redirectionIndex
+                               @Nullable final RowRedirection rowRedirection
                                // region extra-constructor-args
                                // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, redirectionIndex);
+        super(pair, new String[] { pair.rightColumn }, rowRedirection);
         // region constructor
         // endregion constructor
     }

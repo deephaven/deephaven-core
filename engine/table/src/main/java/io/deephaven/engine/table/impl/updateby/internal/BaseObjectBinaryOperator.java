@@ -15,8 +15,8 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
     public BaseObjectBinaryOperator(@NotNull final Class<T> type,
                                     @NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection redirectionIndex) {
-        super(pair, affectingColumns, redirectionIndex, type);
+                                    @Nullable final RowRedirection rowRedirection) {
+        super(pair, affectingColumns, rowRedirection, type);
     }
 
     protected abstract T doOperation(T bucketCurVal, T chunkCurVal);

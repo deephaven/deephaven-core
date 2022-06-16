@@ -24,11 +24,11 @@ public class FloatFillByOperator extends BaseFloatUpdateByOperator {
     // endregion extra-fields
 
     public FloatFillByOperator(@NotNull final MatchPair fillPair,
-                              @Nullable final RowRedirection redirectionRowSet
+                              @Nullable final RowRedirection rowRedirection
                               // region extra-constructor-args
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, redirectionRowSet);
+        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection);
         // region constructor
         // endregion constructor
     }
