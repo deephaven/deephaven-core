@@ -137,7 +137,7 @@ func (its *inputTableStub) addTable(ctx context.Context, inputTable *TableHandle
 }
 
 // Delets the rows with the given keys from this table.
-// Columns that were not specified as keyColumns are ignored.
+// The provided table must consist only of columns that were specified as key columns in the input table.
 // This will automatically update all tables derived from this one.
 func (th *KeyBackedInputTable) DeleteTable(ctx context.Context, toDelete *TableHandle) error {
 	if th.client.Closed() {
