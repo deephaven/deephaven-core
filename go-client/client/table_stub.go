@@ -35,6 +35,17 @@ func newTableStub(client *Client) (tableStub, error) {
 	return tableStub{client: client, stub: stub}, nil
 }
 
+func (ts *tableStub) createInputTable(ctx context.Context, req *tablepb2.CreateInputTableRequest) (*TableHandle, error) {
+	ctx = ts.client.withToken(ctx)
+
+	resp, err := ts.stub.CreateInputTable(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseCreationResponse(ts.client, resp)
+}
+
 func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableRequest_Operation) ([]*TableHandle, error) {
 	ctx = ts.client.withToken(ctx)
 

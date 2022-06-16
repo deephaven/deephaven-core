@@ -24,6 +24,7 @@ func main() {
 		"session",
 		"table",
 		"ticket",
+		"inputtable",
 	}
 
 	for _, file := range files {

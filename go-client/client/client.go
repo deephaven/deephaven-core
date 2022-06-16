@@ -41,6 +41,7 @@ type Client struct {
 	flightStub
 	tableStub
 	appStub
+	inputTableStub
 
 	nextTicket int32
 
@@ -85,6 +86,8 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 		client.Close()
 		return nil, err
 	}
+
+	client.inputTableStub = newInputTableStub(client)
 
 	client.appStub = newAppStub(client)
 

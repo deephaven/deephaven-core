@@ -14,6 +14,7 @@ var exampleMap = map[string]func(){
 	"ExampleRunScript":   examples.ExampleRunScript,
 	"ExampleImportTable": examples.ExampleImportTable,
 	"ExampleQuery":       examples.ExampleQuery,
+	"ExampleInputTable":  examples.ExampleInputTable,
 }
 
 func printUsage() {
