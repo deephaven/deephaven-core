@@ -51,11 +51,11 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
     private final transient java.util.function.Function<Object, String> DEFAULT_NAMING_FUNCTION = key -> {
         final String keyString;
         if (key instanceof Object[]) {
-            Object[] arr = (Object[]) key;
-            if (arr.length == 1) {
-                keyString = Objects.toString(arr[0]);
+            final Object[] keyArray = (Object[]) key;
+            if (keyArray.length == 1) {
+                keyString = Objects.toString(keyArray[0]);
             } else {
-                keyString = Arrays.toString(arr);
+                keyString = Arrays.toString(keyArray);
             }
         } else {
             keyString = Objects.toString(key);
@@ -165,38 +165,33 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
     private void applyNamingFunction(final java.util.function.Function<Object, String> namingFunction) {
         ArgumentValidations.assertNotNull(namingFunction, "namingFunction", getPlotInfo());
-        seriesNameColumnName =
-                seriesNameColumnName == null ? ColumnNameConstants.SERIES_NAME + this.hashCode() : seriesNameColumnName;
-        applyFunction(namingFunction, seriesNameColumnName);
+        seriesNameColumnName = seriesNameColumnName == null
+                ? ColumnNameConstants.SERIES_NAME + this.hashCode()
+                : seriesNameColumnName;
+        final String functionInput = byColumns.length > 1
+                ? "new Object[] {" + String.join(", ", byColumns) + "}"
+                : byColumns[0];
+        applyFunction(namingFunction, seriesNameColumnName, functionInput, String.class);
     }
 
     /**
-     * Applies the {@code function} to the given input of the underlying table to create a new column
+     * Applies the {@code function} to the {@code byColumns} of the underlying table to create a new column named
      * {@code columnName}.
+     *
+     * @param function The function to apply
+     * @param columnName The column name to create
+     * @param functionInput The formula string to use for gathering input to {@code function}
+     * @param resultClass The expected result type of {@code function}
      */
-    protected void applyFunction(final java.util.function.Function<Object, String> function, final String columnName) {
-        final String functionInput;
-        if (byColumns.length > 1) {
-            functionInput = String.join(",", byColumns);
-        } else {
-            functionInput = byColumns[0];
-        }
-
-        applyFunction(function, columnName, functionInput, String.class);
-    }
-
-    /**
-     * Applies the {@code function} to the byColumns of the underlying table to create a new column {@code columnName}.
-     */
-    protected <T, R> void applyFunction(final java.util.function.Function<? super T, ? extends R> function, final String columnName,
-            final String functionInput, final Class<R> resultClass) {
+    protected <T, R> void applyFunction(final java.util.function.Function<? super T, ? extends R> function,
+                                        final String columnName, final String functionInput, final Class<R> resultClass) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";
         final Map<String, Object> params = new HashMap<>();
         params.put(queryFunction, function);
 
-        final String update = columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction + ".apply("
-                + functionInput + ")";
+        final String update = columnName + " = (" + resultClass.getSimpleName() + ") "
+                + queryFunction + ".apply(" + functionInput + ")";
 
         applyTransform(columnName, update, new Class[] {resultClass}, params, true);
     }
