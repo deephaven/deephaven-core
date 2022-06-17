@@ -400,15 +400,6 @@ public class ParquetTableWriter {
             } else if (Vector.class.isAssignableFrom(column.getDataType())) {
                 columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.Vector);
                 usedColumnInfo = true;
-            } else if (column.getDataType() == BigInteger.class) {
-                // We MUST add details about the BigInteger codec to the tableInfo, otherwise we if we read the column
-                // back, we will end up reading it as BigDecimal.
-                columnInfoBuilder.codec(CodecInfo.builder()
-                        .codecName(BigIntegerParquetBytesCodec.class.getName())
-                        .dataType(BigInteger.class.getName())
-                        .build());
-
-                usedColumnInfo = true;
             }
 
             if (usedColumnInfo) {
@@ -838,9 +829,6 @@ public class ParquetTableWriter {
             final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                     precisionAndScale.precision, precisionAndScale.scale, -1);
             return new CodecTransfer<>(bigDecimalColumnSource, codec, targetSize);
-        } else if (BigInteger.class.equals(columnType)) {
-            return new CodecTransfer<>((ColumnSource<BigInteger>) columnSource, new BigIntegerParquetBytesCodec(-1),
-                    targetSize);
         }
 
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
