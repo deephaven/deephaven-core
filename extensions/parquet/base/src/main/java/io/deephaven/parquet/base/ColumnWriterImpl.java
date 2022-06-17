@@ -119,7 +119,7 @@ public class ColumnWriterImpl implements ColumnWriter {
 
         encodingStatsBuilder.addDictEncoding(org.apache.parquet.column.Encoding.PLAIN);
 
-        //noinspection rawtypes
+        // noinspection rawtypes
         final BulkWriter dictionaryWriter = getWriter(column.getPrimitiveType());
 
         // noinspection unchecked
@@ -397,16 +397,16 @@ public class ColumnWriterImpl implements ColumnWriter {
     public void close() {
         owner.releaseWriter(this,
                 ColumnChunkMetaData.get(ColumnPath.get(column.getPath()),
-                column.getPrimitiveType(),
-                compressor.getCodecName(),
-                encodingStatsBuilder.build(),
-                encodings,
-                Statistics.createStats(column.getPrimitiveType()),
-                firstDataPageOffset,
-                dictionaryOffset,
-                totalValueCount,
-                compressedLength,
-                uncompressedLength));
+                        column.getPrimitiveType(),
+                        compressor.getCodecName(),
+                        encodingStatsBuilder.build(),
+                        encodings,
+                        Statistics.createStats(column.getPrimitiveType()),
+                        firstDataPageOffset,
+                        dictionaryOffset,
+                        totalValueCount,
+                        compressedLength,
+                        uncompressedLength));
     }
 
     public ColumnDescriptor getColumn() {

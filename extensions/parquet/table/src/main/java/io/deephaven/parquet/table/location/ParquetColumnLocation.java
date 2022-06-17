@@ -765,7 +765,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                     final int encodedSizeInBytes =
                             (typeName == PrimitiveType.PrimitiveTypeName.BINARY) ? -1 : type.getTypeLength();
 
-                    if(BigDecimal.class.equals(componentType)) {
+                    if (BigDecimal.class.equals(componentType)) {
                         return Optional.of(
                                 ToObjectPage.create(
                                         BigDecimal.class,
@@ -773,7 +773,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                                                 decimalLogicalType.getPrecision(), decimalLogicalType.getScale(),
                                                 encodedSizeInBytes),
                                         columnChunkReader.getDictionarySupplier()));
-                    } else if(BigInteger.class.equals(componentType)) {
+                    } else if (BigInteger.class.equals(componentType)) {
                         return Optional.of(
                                 ToObjectPage.create(
                                         BigInteger.class,

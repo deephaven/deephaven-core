@@ -89,14 +89,18 @@ public class ParquetTableWriter {
     }
 
     /**
-     * Classes that implement this interface are responsible for converting data from individual DH columns
-     * into buffers to be written out to the Parquet file.
+     * Classes that implement this interface are responsible for converting data from individual DH columns into buffers
+     * to be written out to the Parquet file.
+     * 
      * @param <B>
      */
     interface TransferObject<B> extends SafeCloseable {
         void propagateChunkData();
+
         B getBuffer();
+
         int rowCount();
+
         void fetchData(RowSequence rs);
     }
 
@@ -144,9 +148,9 @@ public class ParquetTableWriter {
      * @param groupingColumns the grouping columns (if any)
      */
     public static void write(@NotNull final Table t,
-                             @NotNull final String path,
-                             @NotNull final Map<String, String> incomingMeta,
-                             final String... groupingColumns) throws SchemaMappingException, IOException {
+            @NotNull final String path,
+            @NotNull final Map<String, String> incomingMeta,
+            final String... groupingColumns) throws SchemaMappingException, IOException {
         write(t, path, incomingMeta, defaultGroupingFileName(path), groupingColumns);
     }
 
@@ -201,7 +205,8 @@ public class ParquetTableWriter {
                     try {
                         // noinspection ResultOfMethodCallIgnored
                         new File(cleanupPath).delete();
-                    } catch (Exception ignored) { }
+                    } catch (Exception ignored) {
+                    }
                 }
             }
             throw e;
@@ -328,11 +333,13 @@ public class ParquetTableWriter {
 
         Table transformed = table;
         if (!viewColumnsTransform.isEmpty()) {
-            transformed = transformed.view(viewColumnsTransform.toArray((SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY)));
+            transformed =
+                    transformed.view(viewColumnsTransform.toArray((SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY)));
         }
 
         if (!updateViewColumnsTransform.isEmpty()) {
-            transformed = transformed.updateView(updateViewColumnsTransform.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+            transformed = transformed
+                    .updateView(updateViewColumnsTransform.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
         }
         return transformed;
     }
@@ -393,7 +400,7 @@ public class ParquetTableWriter {
             } else if (Vector.class.isAssignableFrom(column.getDataType())) {
                 columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.Vector);
                 usedColumnInfo = true;
-            } else if(column.getDataType() == BigInteger.class) {
+            } else if (column.getDataType() == BigInteger.class) {
                 // We MUST add details about the BigInteger codec to the tableInfo, otherwise we if we read the column
                 // back, we will end up reading it as BigDecimal.
                 columnInfoBuilder.codec(CodecInfo.builder()
@@ -448,7 +455,8 @@ public class ParquetTableWriter {
             lengthRowSet = tableRowSet;
 
             // These two lists are parallel, where each element represents a single page.
-            // The valueSizeChuk contains the number of items (the sum of the array sizes for each containing row) contained
+            // The valueSizeChuk contains the number of items (the sum of the array sizes for each containing row)
+            // contained
             // within the page.
             final TIntArrayList rawItemCountPerPage = new TIntArrayList();
 
@@ -462,7 +470,7 @@ public class ParquetTableWriter {
             // This is the count of rows in the original table as we process them
             int originalRowsInPage = 0;
             try (final ChunkSource.GetContext context = lengthSource.makeGetContext(LOCAL_CHUNK_SIZE);
-                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+                    final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
                 while (it.hasMore()) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(LOCAL_CHUNK_SIZE);
                     // noinspection unchecked
@@ -470,9 +478,11 @@ public class ParquetTableWriter {
                     for (int chunkPos = 0; chunkPos < lengthChunk.size(); chunkPos++) {
                         final int curLength = lengthChunk.get(chunkPos);
                         if (curLength != NULL_INT) {
-                            // If this array puts us past the target number of items within a page then we'll record the current
+                            // If this array puts us past the target number of items within a page then we'll record the
+                            // current
                             // values into the page lists above and restart our counts.
-                            if ((totalItemsInPage + curLength > targetRowsPerPage) || (originalRowsInPage + 1 > targetRowsPerPage)) {
+                            if ((totalItemsInPage + curLength > targetRowsPerPage)
+                                    || (originalRowsInPage + 1 > targetRowsPerPage)) {
                                 // This escape hatch covers when a single array is larger than the target rows per page.
                                 // In that case' we will increase the target rows to this new value.
                                 if (totalItemsInPage > targetRowsPerPage) {
@@ -538,7 +548,7 @@ public class ParquetTableWriter {
             columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource(columnSource);
         }
 
-        try(final ColumnWriter columnWriter = rowGroupWriter.addColumn(
+        try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(
                 writeInstructions.getParquetColumnNameFromColumnNameOrDefault(name))) {
             boolean usedDictionary = false;
             if (supportsDictionary(columnSource.getType())) {
@@ -552,8 +562,7 @@ public class ParquetTableWriter {
                         rowStepGetter,
                         valuesStepGetter,
                         pageCount,
-                        columnWriter
-                );
+                        columnWriter);
             }
 
             if (!usedDictionary) {
@@ -576,19 +585,19 @@ public class ParquetTableWriter {
     }
 
     private static <DATA_TYPE> void encodePlain(Map<String, Map<CacheTags, Object>> computedCache,
-                                                TrackingRowSet tableRowSet,
-                                                ColumnDefinition<DATA_TYPE> columnDefinition,
-                                                ParquetInstructions writeInstructions,
-                                                RowSet rowSet,
-                                                ColumnSource<DATA_TYPE> columnSource,
-                                                ColumnSource<?> lengthSource,
-                                                RowSet lengthRowSet,
-                                                LongSupplier rowStepGetter,
-                                                LongSupplier valuesStepGetter,
-                                                int targetRowsPerPage,
-                                                int pageCount,
-                                                Class<DATA_TYPE> columnType,
-                                                ColumnWriter columnWriter) throws IOException {
+            TrackingRowSet tableRowSet,
+            ColumnDefinition<DATA_TYPE> columnDefinition,
+            ParquetInstructions writeInstructions,
+            RowSet rowSet,
+            ColumnSource<DATA_TYPE> columnSource,
+            ColumnSource<?> lengthSource,
+            RowSet lengthRowSet,
+            LongSupplier rowStepGetter,
+            LongSupplier valuesStepGetter,
+            int targetRowsPerPage,
+            int pageCount,
+            Class<DATA_TYPE> columnType,
+            ColumnWriter columnWriter) throws IOException {
         try (final TransferObject<?> transferObject = getDestinationBuffer(computedCache,
                 tableRowSet,
                 columnSource,
@@ -599,9 +608,11 @@ public class ParquetTableWriter {
             final boolean supportNulls = supportNulls(columnType);
             final Object bufferToWrite = transferObject.getBuffer();
             final Object nullValue = getNullValue(columnType);
-            try (final RowSequence.Iterator lengthIndexIt = lengthRowSet != null ? lengthRowSet.getRowSequenceIterator() : null;
-                 final ChunkSource.GetContext lengthSourceContext = lengthSource != null ? lengthSource.makeGetContext(targetRowsPerPage) : null;
-                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+            try (final RowSequence.Iterator lengthIndexIt =
+                    lengthRowSet != null ? lengthRowSet.getRowSequenceIterator() : null;
+                    final ChunkSource.GetContext lengthSourceContext =
+                            lengthSource != null ? lengthSource.makeGetContext(targetRowsPerPage) : null;
+                    final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
                 final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetRowsPerPage) : null;
                 for (int step = 0; step < pageCount; ++step) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
@@ -628,19 +639,19 @@ public class ParquetTableWriter {
     }
 
     private static <DATA_TYPE> boolean tryEncodeDictionary(final ColumnDefinition<DATA_TYPE> columnDefinition,
-                                                           final ParquetInstructions writeInstructions,
-                                                           final RowSet rowSet,
-                                                           final ColumnSource<DATA_TYPE> columnSource,
-                                                           final ColumnSource<?> lengthSource,
-                                                           final RowSet lengthRowSet,
-                                                           final int targetRowsPerPage,
-                                                           final LongSupplier rowStepGetter,
-                                                           final LongSupplier valuesStepGetter,
-                                                           final int pageCount,
-                                                           final ColumnWriter columnWriter) throws IOException {
-        // Note: We only support strings as dictionary pages.  Knowing that, we can make some assumptions about chunk
-        //       types and avoid a bunch of lambda and virtual method invocations.  If we decide to support more, than
-        //       these assumptions will need to be revisited.
+            final ParquetInstructions writeInstructions,
+            final RowSet rowSet,
+            final ColumnSource<DATA_TYPE> columnSource,
+            final ColumnSource<?> lengthSource,
+            final RowSet lengthRowSet,
+            final int targetRowsPerPage,
+            final LongSupplier rowStepGetter,
+            final LongSupplier valuesStepGetter,
+            final int pageCount,
+            final ColumnWriter columnWriter) throws IOException {
+        // Note: We only support strings as dictionary pages. Knowing that, we can make some assumptions about chunk
+        // types and avoid a bunch of lambda and virtual method invocations. If we decide to support more, than
+        // these assumptions will need to be revisited.
         Assert.eqTrue(supportsDictionary(columnSource.getType()), "ColumnSource supports dictionary");
 
         final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
@@ -649,27 +660,30 @@ public class ParquetTableWriter {
             final List<IntBuffer> pageBuffers = new ArrayList<>();
             Binary[] encodedKeys = new Binary[Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)];
 
-            final TObjectIntHashMap<String> keyToPos = new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+            final TObjectIntHashMap<String> keyToPos =
+                    new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
             int keyCount = 0;
             boolean hasNulls = false;
             try (final ChunkSource.GetContext context = columnSource.makeGetContext(targetRowsPerPage);
-                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+                    final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
                 for (int curPage = 0; curPage < pageCount; curPage++) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
                     // noinspection unchecked
-                    final ObjectChunk<String, Values> chunk = (ObjectChunk<String, Values>) columnSource.getChunk(context, rs);
+                    final ObjectChunk<String, Values> chunk =
+                            (ObjectChunk<String, Values>) columnSource.getChunk(context, rs);
                     final IntBuffer posInDictionary = IntBuffer.allocate((int) rs.size());
                     for (int vi = 0; vi < chunk.size(); ++vi) {
                         final String key = chunk.get(vi);
                         int dictionaryPos = keyToPos.get(key);
-                        if(dictionaryPos == keyToPos.getNoEntryValue()) {
+                        if (dictionaryPos == keyToPos.getNoEntryValue()) {
                             if (key == null) {
                                 hasNulls = true;
                                 dictionaryPos = QueryConstants.NULL_INT;
                             } else {
                                 if (keyCount == encodedKeys.length) {
                                     if (keyCount >= maxKeys) {
-                                        throw new DictionarySizeExceededException("Dictionary maximum size exceeded for " + columnDefinition.getName());
+                                        throw new DictionarySizeExceededException(
+                                                "Dictionary maximum size exceeded for " + columnDefinition.getName());
                                     }
 
                                     encodedKeys = Arrays.copyOf(encodedKeys, (int) Math.min(keyCount * 2L, maxKeys));
@@ -690,7 +704,7 @@ public class ParquetTableWriter {
             if (lengthSource != null) {
                 arraySizeBuffers = new ArrayList<>();
                 try (final ChunkSource.GetContext context = lengthSource.makeGetContext(targetRowsPerPage);
-                     final RowSequence.Iterator it = lengthRowSet.getRowSequenceIterator()) {
+                        final RowSequence.Iterator it = lengthRowSet.getRowSequenceIterator()) {
                     while (it.hasMore()) {
                         final RowSequence rs = it.getNextRowSequenceWithLength(rowStepGetter.getAsLong());
                         // noinspection unchecked
@@ -824,8 +838,9 @@ public class ParquetTableWriter {
             final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                     precisionAndScale.precision, precisionAndScale.scale, -1);
             return new CodecTransfer<>(bigDecimalColumnSource, codec, targetSize);
-        } else if(BigInteger.class.equals(columnType)) {
-            return new CodecTransfer<>((ColumnSource<BigInteger>)columnSource, new BigIntegerParquetBytesCodec(-1), targetSize);
+        } else if (BigInteger.class.equals(columnType)) {
+            return new CodecTransfer<>((ColumnSource<BigInteger>) columnSource, new BigIntegerParquetBytesCodec(-1),
+                    targetSize);
         }
 
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);

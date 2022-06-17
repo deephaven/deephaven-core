@@ -26,7 +26,8 @@ public class TestSymbolTableSource {
 
     @Before
     public final void setUp() throws IOException {
-        final Path rootPath = Files.createTempDirectory(Paths.get(Configuration.getInstance().getWorkspacePath()), "TestSymbolTables-");
+        final Path rootPath = Files.createTempDirectory(Paths.get(Configuration.getInstance().getWorkspacePath()),
+                "TestSymbolTables-");
         dataDirectory = rootPath.toFile();
     }
 
@@ -39,18 +40,18 @@ public class TestSymbolTableSource {
     }
 
     /**
-     * Test that the db can mix partitions that contain symbol tables with those that do not, regardless of
-     * what the TableDefinition claims it has.
+     * Test that the db can mix partitions that contain symbol tables with those that do not, regardless of what the
+     * TableDefinition claims it has.
      */
     @Test
     public void testWriteAndReadSymbols() {
         final Table t = TableTools.emptyTable(10).update("TheBestColumn=`S`+k");
         final File toWrite = new File(dataDirectory, "table.parquet");
-        ParquetTools.writeTable(t, toWrite,  t.getDefinition());
+        ParquetTools.writeTable(t, toWrite, t.getDefinition());
 
         // Make sure we have the expected symbol table (or not)
         final Table readBack = ParquetTools.readTable(toWrite);
-        //noinspection unchecked
+        // noinspection unchecked
         SymbolTableSource<String> source = (SymbolTableSource) readBack.getColumnSource("TheBestColumn");
         assertTrue(source.hasSymbolTable(readBack.getRowSet()));
     }
