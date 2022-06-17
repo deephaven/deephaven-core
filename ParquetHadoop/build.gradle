@@ -12,9 +12,9 @@ sourceSets {
 }
 
 dependencies {
-    api('org.apache.parquet:parquet-hadoop:1.12.0')
+    api('org.apache.parquet:parquet-hadoop:1.12.3')
 
-    api('org.apache.hadoop:hadoop-common:3.3.2') {
+    api('org.apache.hadoop:hadoop-common:3.3.3') {
         // do not take any dependencies of this project,
         // we just want a few classes (Configuration, Path) for
         // simplified prototyping work, and api compatibility.

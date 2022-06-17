@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.compress;
 
+import com.google.common.io.ByteStreams;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.compress.CodecPool;
@@ -16,7 +17,6 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,7 +33,7 @@ public class DeephavenCodecFactory {
     private static final Set<String> DEFAULT_CODECS = Set.of(
             // Use the aircompressor codec for snappy by default - this is implemented in Java, rather than using
             // the native xerial implementation.
-            "io.airlift.compress.snappy.SnappyCodec");
+            "org.apache.parquet.hadoop.codec.SnappyCodec");
     private static final List<Class<?>> CODECS = io.deephaven.configuration.Configuration.getInstance()
             .getStringSetFromPropertyWithDefault("DeephavenCodecFactory.codecs", DEFAULT_CODECS).stream()
             .map((String className) -> {
@@ -103,7 +103,7 @@ public class DeephavenCodecFactory {
             try {
                 // Note that we don't close this, we assume the caller will close their input stream when ready,
                 // and this won't need to be closed.
-                InputStream buffered = IOUtils.buffer(inputStream, compressedSize);
+                InputStream buffered = ByteStreams.limit(IOUtils.buffer(inputStream), compressedSize);
                 CompressionInputStream decompressed = compressionCodec.createInputStream(buffered, decompressor);
                 return BytesInput.copy(BytesInput.from(decompressed, uncompressedSize));
             } finally {
