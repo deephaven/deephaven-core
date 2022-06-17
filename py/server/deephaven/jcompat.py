@@ -82,22 +82,6 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 
-def j_unary_operator(func: Callable[[T], T], dtype: DType) -> jpy.JType:
-    """Constructs a Java 'Function<PyObject, Object>' implementation from a Python callable or an object with an
-     'apply' method that accepts a single argument.
-
-    Args:
-        func (Callable): a Python callable or an object with an 'apply' method that accepts a single argument
-        dtype (DType): the return type of 'func'
-
-    Returns:
-        io.deephaven.integrations.python.PythonFunction instance
-    """
-    return jpy.get_type("io.deephaven.integrations.python.PythonUnaryOperator")(
-        func, dtype.qst_type.clazz()
-    )
-
-
 def j_function(func: Callable[[T], R], dtype: DType) -> jpy.JType:
     """Constructs a Java 'Function<PyObject, Object>' implementation from a Python callable or an object with an
      'apply' method that accepts a single argument.
@@ -110,6 +94,38 @@ def j_function(func: Callable[[T], R], dtype: DType) -> jpy.JType:
         io.deephaven.integrations.python.PythonFunction instance
     """
     return jpy.get_type("io.deephaven.integrations.python.PythonFunction")(
+        func, dtype.qst_type.clazz()
+    )
+
+
+def j_unary_operator(func: Callable[[T], T], dtype: DType) -> jpy.JType:
+    """Constructs a Java 'Function<PyObject, Object>' implementation from a Python callable or an object with an
+     'apply' method that accepts a single argument.
+
+    Args:
+        func (Callable): a Python callable or an object with an 'apply' method that accepts a single argument
+        dtype (DType): the return type of 'func'
+
+    Returns:
+        io.deephaven.integrations.python.PythonFunction instance
+    """
+    return jpy.get_type("io.deephaven.integrations.python.PythonFunction$PythonUnaryOperator")(
+        func, dtype.qst_type.clazz()
+    )
+
+
+def j_binary_operator(func: Callable[[T, T], T], dtype: DType) -> jpy.JType:
+    """Constructs a Java 'Function<PyObject, PyObject, Object>' implementation from a Python callable or an object with an
+     'apply' method that accepts a single argument.
+
+    Args:
+        func (Callable): a Python callable or an object with an 'apply' method that accepts two arguments
+        dtype (DType): the return type of 'func'
+
+    Returns:
+        io.deephaven.integrations.python.PythonFunction instance
+    """
+    return jpy.get_type("io.deephaven.integrations.python.PythonBiFunction$PythonBinaryOperator")(
         func, dtype.qst_type.clazz()
     )
 
