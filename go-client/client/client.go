@@ -109,6 +109,7 @@ const (
 // Fetches the list of tables from the server.
 // This allows the client to see the list of named global tables on the server,
 // and thus allows it to open them using OpenTables.
+// Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
 func (client *Client) FetchTables(ctx context.Context, opt FetchOption) error {
 	if client.Closed() {
 		return ErrClosedClient
