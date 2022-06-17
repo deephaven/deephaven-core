@@ -9,6 +9,7 @@ import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.EncodingStats;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.apache.parquet.format.*;
@@ -58,6 +59,8 @@ public class ColumnWriterImpl implements ColumnWriter {
     private long totalValueCount;
     private DictionaryPageHeader dictionaryPage;
     private final OffsetIndexBuilder offsetIndexBuilder;
+
+    private final EncodingStats.Builder encodingStatsBuilder = new EncodingStats.Builder();;
 
     ColumnWriterImpl(
             final RowGroupWriterImpl owner,
@@ -111,9 +114,14 @@ public class ColumnWriterImpl implements ColumnWriter {
     @Override
     public void addDictionaryPage(final Object dictionaryValues, final int valuesCount) throws IOException {
         if (pageCount > 0) {
-            throw new RuntimeException("Attempting to add dictionary past the first page");
+            throw new IllegalStateException("Attempting to add dictionary past the first page");
         }
-        BulkWriter dictionaryWriter = getWriter(column.getPrimitiveType());
+
+        encodingStatsBuilder.addDictEncoding(org.apache.parquet.column.Encoding.PLAIN);
+
+        //noinspection rawtypes
+        final BulkWriter dictionaryWriter = getWriter(column.getPrimitiveType());
+
         // noinspection unchecked
         dictionaryWriter.writeBulk(dictionaryValues, valuesCount);
         dictionaryOffset = writeChannel.position();
@@ -176,7 +184,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     @Override
     public void addPage(final Object pageData, final Object nullValues, final int valuesCount) throws IOException {
         if (dlEncoder == null) {
-            throw new RuntimeException("Null values not supported");
+            throw new IllegalStateException("Null values not supported");
         }
         initWriter();
         // noinspection unchecked
@@ -191,10 +199,10 @@ public class ColumnWriterImpl implements ColumnWriter {
             final int nonNullValueCount,
             final Object nullValue) throws IOException {
         if (dlEncoder == null) {
-            throw new RuntimeException("Null values not supported");
+            throw new IllegalStateException("Null values not supported");
         }
         if (rlEncoder == null) {
-            throw new RuntimeException("Repeating values not supported");
+            throw new IllegalStateException("Repeating values not supported");
         }
         initWriter();
         // noinspection unchecked
@@ -324,7 +332,8 @@ public class ColumnWriterImpl implements ColumnWriter {
 
         writeChannel.write(compressedBytes.toByteBuffer());
         offsetIndexBuilder.add((int) (writeChannel.position() - initialOffset), valueCount);
-
+        encodings.add(valuesEncoding);
+        encodingStatsBuilder.addDataEncoding(valuesEncoding);
     }
 
     private void writeDataPageV1Header(
@@ -387,10 +396,17 @@ public class ColumnWriterImpl implements ColumnWriter {
     @Override
     public void close() {
         owner.releaseWriter(this,
-                ColumnChunkMetaData.get(ColumnPath.get(column.getPath()), column.getPrimitiveType(),
-                        compressor.getCodecName(),
-                        null, encodings, Statistics.createStats(column.getPrimitiveType()), firstDataPageOffset,
-                        dictionaryOffset, totalValueCount, compressedLength, uncompressedLength));
+                ColumnChunkMetaData.get(ColumnPath.get(column.getPath()),
+                column.getPrimitiveType(),
+                compressor.getCodecName(),
+                encodingStatsBuilder.build(),
+                encodings,
+                Statistics.createStats(column.getPrimitiveType()),
+                firstDataPageOffset,
+                dictionaryOffset,
+                totalValueCount,
+                compressedLength,
+                uncompressedLength));
     }
 
     public ColumnDescriptor getColumn() {

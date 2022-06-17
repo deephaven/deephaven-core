@@ -3,12 +3,13 @@
  */
 package io.deephaven.parquet.table;
 
-import io.deephaven.engine.table.impl.CodecLookup;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -21,13 +22,13 @@ import org.apache.parquet.schema.Types;
 import org.apache.parquet.schema.Types.PrimitiveBuilder;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.util.BigDecimalUtils.PrecisionAndScale;
-import static io.deephaven.engine.util.BigDecimalUtils.computePrecisionAndScale;
-
 import java.io.Externalizable;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Supplier;
+
+import static io.deephaven.engine.util.BigDecimalUtils.PrecisionAndScale;
+import static io.deephaven.engine.util.BigDecimalUtils.computePrecisionAndScale;
 
 /**
  * Contains the necessary information to convert a Deephaven table into a Parquet table. Both the schema translation,
@@ -106,7 +107,7 @@ class TypeInfos {
     static PrecisionAndScale getPrecisionAndScale(
             final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
             final String columnName,
-            final TrackingRowSet rowSet,
+            final RowSet rowSet,
             Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
         return (PrecisionAndScale) computedCache
                 .computeIfAbsent(columnName, unusedColumnName -> new HashMap<>())
@@ -117,7 +118,7 @@ class TypeInfos {
     static TypeInfo bigDecimalTypeInfo(
             final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
             @NotNull final ColumnDefinition<?> column,
-            final TrackingRowSet rowSet,
+            final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap) {
         final String columnName = column.getName();
         // noinspection unchecked
@@ -144,7 +145,7 @@ class TypeInfos {
     static TypeInfo getTypeInfo(
             final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
             @NotNull final ColumnDefinition<?> column,
-            final TrackingRowSet rowSet,
+            final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             @NotNull final ParquetInstructions instructions) {
         final Class<?> dataType = column.getDataType();

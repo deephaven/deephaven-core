@@ -10,14 +10,12 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.parquet.table.*;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.AbstractColumnLocation;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.parquet.table.pagestore.PageCache;
-import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.ParquetSchemaReader;
-import io.deephaven.parquet.table.ParquetTableWriter;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
@@ -39,7 +37,6 @@ import io.deephaven.parquet.base.RowGroupReader;
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.table.pagestore.topage.*;
 import io.deephaven.parquet.table.region.*;
-import io.deephaven.parquet.table.BigDecimalParquetBytesCodec;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
@@ -51,6 +48,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongFunction;
@@ -764,19 +762,24 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                             componentType, decimalLogicalType.getPrecision(), decimalLogicalType.getScale()));
                 case FIXED_LEN_BYTE_ARRAY:
                 case BINARY:
-                    if (!BigDecimal.class.equals(componentType)) {
-                        throw new IllegalArgumentException(
-                                "The native type for a BigDecimal column is " + componentType.getCanonicalName());
-                    }
                     final int encodedSizeInBytes =
                             (typeName == PrimitiveType.PrimitiveTypeName.BINARY) ? -1 : type.getTypeLength();
-                    return Optional.of(
-                            ToObjectPage.create(
-                                    BigDecimal.class,
-                                    new BigDecimalParquetBytesCodec(
-                                            decimalLogicalType.getPrecision(), decimalLogicalType.getScale(),
-                                            encodedSizeInBytes),
-                                    columnChunkReader.getDictionarySupplier()));
+
+                    if(BigDecimal.class.equals(componentType)) {
+                        return Optional.of(
+                                ToObjectPage.create(
+                                        BigDecimal.class,
+                                        new BigDecimalParquetBytesCodec(
+                                                decimalLogicalType.getPrecision(), decimalLogicalType.getScale(),
+                                                encodedSizeInBytes),
+                                        columnChunkReader.getDictionarySupplier()));
+                    } else if(BigInteger.class.equals(componentType)) {
+                        return Optional.of(
+                                ToObjectPage.create(
+                                        BigInteger.class,
+                                        new BigIntegerParquetBytesCodec(encodedSizeInBytes),
+                                        columnChunkReader.getDictionarySupplier()));
+                    }
                 default:
                     return Optional.empty();
             }
