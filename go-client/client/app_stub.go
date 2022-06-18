@@ -23,8 +23,11 @@ func newAppStub(client *Client) appStub {
 
 type changeHandler func(update *apppb2.FieldsChangeUpdate)
 
-// Note that the provided context is saved and used to continue reading the stream
-func (as *appStub) listFields(ctx context.Context, handler changeHandler) error {
+// Note that the provided context is saved and used to continue reading the stream,
+// so any timeouts or cancellations that have been set for it will affect the listFields stream.
+// A thread that continues reading the listFields request and updating the client's tables will start in the background
+// if FetchRepeating is specified.
+func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, handler changeHandler) error {
 	as.cancelListLoop()
 
 	ctx, cancel := context.WithCancel(as.client.withToken(ctx))
@@ -42,14 +45,20 @@ func (as *appStub) listFields(ctx context.Context, handler changeHandler) error 
 		return err
 	}
 
-	as.client.handleFieldChanges(resp)
+	handler(resp)
 
 	as.cancelFunc = cancel
 
-	lister := fieldLister{stream: fieldStream, handler: handler}
-	go lister.listLoop()
+	if fetchOption == FetchRepeating {
+		lister := fieldLister{stream: fieldStream, handler: handler}
+		go lister.listLoop()
 
-	return nil
+		return nil
+	} else {
+		as.cancelListLoop()
+
+		return nil
+	}
 }
 
 func (as *appStub) isListing() bool {

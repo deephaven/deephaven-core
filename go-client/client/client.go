@@ -115,18 +115,9 @@ func (client *Client) FetchTables(ctx context.Context, opt FetchOption) error {
 		return ErrClosedClient
 	}
 
-	err := client.listFields(ctx, func(update *applicationpb2.FieldsChangeUpdate) {
+	return client.listFields(ctx, opt, func(update *applicationpb2.FieldsChangeUpdate) {
 		client.handleFieldChanges(update)
 	})
-	if err != nil {
-		return err
-	}
-
-	if opt == FetchOnce {
-		client.appStub.cancelFunc()
-	}
-
-	return nil
 }
 
 // Returns a list of the (global) tables that can be opened with OpenTable.
