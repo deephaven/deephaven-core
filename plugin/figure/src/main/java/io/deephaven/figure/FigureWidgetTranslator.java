@@ -761,6 +761,9 @@ public class FigureWidgetTranslator {
     }
 
     private String toCssColorString(io.deephaven.gui.color.Paint color) {
+        if (color == null) {
+            return null;
+        }
         if (!(color instanceof io.deephaven.gui.color.Color)) {
             errorList.add("OpenAPI does not presently support paint of type " + color);
             return null;
