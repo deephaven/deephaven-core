@@ -67,11 +67,13 @@ func ExampleImportTable() {
 	sortedTable, err := table.Sort(ctx, "Close")
 	if err != nil {
 		fmt.Println("error when sorting:", err.Error())
+		return
 	}
 	defer sortedTable.Release(ctx)
 	filteredTable, err := sortedTable.Where(ctx, "Vol >= 20000")
 	if err != nil {
 		fmt.Println("error when filtering:", err.Error())
+		return
 	}
 	defer filteredTable.Release(ctx)
 
@@ -79,6 +81,7 @@ func ExampleImportTable() {
 	filteredRecord, err := filteredTable.Snapshot(ctx)
 	if err != nil {
 		fmt.Println("error when filtering:", err.Error())
+		return
 	}
 	defer filteredRecord.Release()
 

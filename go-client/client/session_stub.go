@@ -155,10 +155,6 @@ func (hs *sessionStub) getToken() []byte {
 }
 
 func (hs *sessionStub) release(ctx context.Context, ticket *ticketpb2.Ticket) error {
-	if hs.client.Closed() {
-		return ErrClosedClient
-	}
-
 	ctx = hs.client.withToken(ctx)
 
 	req := sessionpb2.ReleaseRequest{Id: ticket}

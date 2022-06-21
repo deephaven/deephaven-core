@@ -113,10 +113,6 @@ const (
 // and thus allows it to open them using OpenTables.
 // Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
 func (client *Client) FetchTables(ctx context.Context, opt FetchOption) error {
-	if client.Closed() {
-		return ErrClosedClient
-	}
-
 	return client.listFields(ctx, opt, func(update *applicationpb2.FieldsChangeUpdate) {
 		client.handleFieldChanges(update)
 	})
@@ -143,6 +139,7 @@ func (client *Client) ListOpenableTables() []string {
 func (client *Client) newTicketNum() int32 {
 	nextTicket := atomic.AddInt32(&client.nextTicket, 1)
 	if nextTicket <= 0 {
+		// If you ever see this panic... what are you doing?
 		panic("out of tickets")
 	}
 
@@ -175,10 +172,6 @@ func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 //
 // This may return a QueryError if the query is invalid.
 func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]*TableHandle, error) {
-	if client.Closed() {
-		return nil, ErrClosedClient
-	}
-
 	return execQuery(client, ctx, nodes)
 }
 
@@ -203,11 +196,11 @@ func (client *Client) withToken(ctx context.Context) context.Context {
 func (client *Client) RunScript(context context.Context, script string) error {
 	// This has to shadow the consoleStub method in order to handle the listfields loop
 
-	if client.Closed() {
-		return ErrClosedClient
-	}
-
-	restartLoop := client.appStub.isListing()
+	// We have to cancel the loop while a script runs, because otherwise
+	// we will get duplicate responses for the same new tables.
+	// (We will get a response from RunScript and a response from FetchTables).
+	// The fetch loop gets restarted once the RunScript is done.
+	restartLoop := client.appStub.isFetching()
 	client.appStub.cancelFetchLoop()
 
 	if restartLoop {
@@ -218,12 +211,17 @@ func (client *Client) RunScript(context context.Context, script string) error {
 	err := client.consoleStub.RunScript(context, script)
 	if err != nil {
 		if restartLoop {
-			client.FetchTables(context, FetchRepeating) // At least try to restart this
+			// If we were fetching tables before we called RunScript,
+			// we should try to make sure the loop is restored.
+			// No error handling here since we're already handling another error...
+			client.FetchTables(context, FetchRepeating)
 		}
 		return err
 	}
 
 	if restartLoop {
+		// If we were fetching tables before we called RunScript,
+		// we should try to make sure the loop is restored.
 		err = client.FetchTables(context, FetchRepeating)
 		if err != nil {
 			return err

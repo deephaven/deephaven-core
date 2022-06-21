@@ -84,10 +84,6 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 
 // Opens a globally-scoped table with the given name on the server.
 func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, error) {
-	if ts.client.Closed() {
-		return nil, ErrClosedClient
-	}
-
 	ctx = ts.client.withToken(ctx)
 
 	fieldId := fieldId{appId: "scope", fieldName: name}
@@ -118,10 +114,6 @@ func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
 //
 // The table will have zero columns and the specified number of rows.
 func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandle, error) {
-	if ts.client.Closed() {
-		return nil, ErrClosedClient
-	}
-
 	ctx = ts.client.withToken(ctx)
 
 	result := ts.client.newTicket()
@@ -154,10 +146,6 @@ func (ts *tableStub) TimeTableQuery(period int64, startTime *int64) QueryNode {
 // The period is in nanoseconds and represents the interval between adding new rows to the table.
 // The startTime is in nanoseconds since epoch and defaults to the current time when it is nil.
 func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int64) (*TableHandle, error) {
-	if ts.client.Closed() {
-		return nil, ErrClosedClient
-	}
-
 	ctx = ts.client.withToken(ctx)
 
 	result := ts.client.newTicket()
@@ -199,10 +187,6 @@ func parseCreationResponse(client *Client, resp *tablepb2.ExportedTableCreationR
 }
 
 func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols []string) (*TableHandle, error) {
-	if ts.client.Closed() {
-		return nil, ErrClosedClient
-	}
-
 	ctx = ts.client.withToken(ctx)
 
 	result := ts.client.newTicket()
@@ -221,10 +205,6 @@ func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols [
 type selectOrUpdateOp func(tablepb2.TableServiceClient, context.Context, *tablepb2.SelectOrUpdateRequest, ...grpc.CallOption) (*tablepb2.ExportedTableCreationResponse, error)
 
 func (ts *tableStub) doSelectOrUpdate(ctx context.Context, table *TableHandle, formulas []string, op selectOrUpdateOp) (*TableHandle, error) {
-	if ts.client.Closed() {
-		return nil, ErrClosedClient
-	}
-
 	ctx = ts.client.withToken(ctx)
 
 	result := ts.client.newTicket()
@@ -260,10 +240,6 @@ func (ts *tableStub) selectTbl(ctx context.Context, table *TableHandle, formulas
 }
 
 func (ts *tableStub) makeRequest(ctx context.Context, table *TableHandle, op reqOp) (*TableHandle, error) {
-	if ts.client.Closed() {
-		return nil, ErrClosedClient
-	}
-
 	ctx = ts.client.withToken(ctx)
 
 	result := ts.client.newTicket()
@@ -424,10 +400,6 @@ func (ts *tableStub) aggBy(ctx context.Context, table *TableHandle, aggs *AggBui
 }
 
 func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHandle) (*TableHandle, error) {
-	if ts.client.Closed() {
-		return nil, ErrClosedClient
-	}
-
 	ctx = ts.client.withToken(ctx)
 
 	resultId := ts.client.newTicket()

@@ -44,8 +44,8 @@ func (th *TableHandle) Snapshot(ctx context.Context) (arrow.Record, error) {
 	return th.client.snapshotRecord(ctx, th.ticket)
 }
 
-// Creates a new query based on this table. Table operations can be performed on query nodes,
-//
+// Creates a new query based on this table. Table operations can be performed on query nodes to create new nodes.
+// A list of query nodes can then be passed to client.ExecQuery() to execute the entire query as a single call.
 func (th *TableHandle) Query() QueryNode {
 	qb := newQueryBuilder(th.client, th)
 	return qb.curRootNode()

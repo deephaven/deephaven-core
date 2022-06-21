@@ -63,7 +63,7 @@ func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, hand
 	}
 }
 
-func (as *appStub) isListing() bool {
+func (as *appStub) isFetching() bool {
 	return as.cancelFunc != nil
 }
 
