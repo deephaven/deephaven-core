@@ -3,9 +3,8 @@ package io.deephaven.engine.table.updateBySpec;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.EmaControl;
 import io.deephaven.util.type.TypeUtils;
-import org.immutables.value.Value.Check;
-import org.immutables.value.Value.Parameter;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -14,42 +13,6 @@ import org.jetbrains.annotations.NotNull;
 @Immutable
 @BuildableStyle
 public abstract class EmaSpec implements UpdateBySpec {
-    // TimeScale is used internally to manage timed vs. tick EMA information
-    public static class TimeScale {
-        private final String timestampCol;
-        private final long timescaleUnits;
-
-        private TimeScale(String timestampCol, long timescaleUnits) {
-            this.timestampCol = timestampCol;
-            this.timescaleUnits = timescaleUnits;
-        }
-
-        public static TimeScale ofTime(@NotNull final String timestampCol, long timeScaleNanos) {
-            return new TimeScale(timestampCol, timeScaleNanos);
-        }
-
-        public static TimeScale ofTicks(long tickWindow) {
-            return new TimeScale(null, tickWindow);
-        }
-
-        public boolean isTimeBased() {
-            return timestampCol != null;
-        }
-
-        public String timestampCol() {
-            return timestampCol;
-        }
-
-        /**
-         * This returns the timescale units (ticks or nanos)
-         *
-         * @return the timescale units (ticks or nanos)
-         */
-        public long timescaleUnits() {
-            return timescaleUnits;
-        }
-    }
-
     public static EmaSpec ofTime(@NotNull final EmaControl control,
                                  @NotNull final String timestampCol,
                                  long timeScaleNanos) {
@@ -94,12 +57,5 @@ public abstract class EmaSpec implements UpdateBySpec {
     @Override
     public final <T> T walk(Visitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    @Check
-    final void checkTimeStampColSet() {
-        if (timeScale().timestampCol() != null && timeScale().timestampCol().isEmpty()) {
-            throw new IllegalArgumentException("timeScale().timestampCol() must not be an empty string");
-        }
     }
 }
