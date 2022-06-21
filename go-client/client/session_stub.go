@@ -104,6 +104,7 @@ func (ref *refresher) refresh() error {
 	return nil
 }
 
+// sessionStub wraps gRPC calls from session.proto, which includes the session/keepalive handling.
 type sessionStub struct {
 	client *Client
 	stub   sessionpb2.SessionServiceClient
@@ -115,7 +116,6 @@ type sessionStub struct {
 }
 
 // Performs the first handshake to get a client token.
-//
 func newSessionStub(ctx context.Context, client *Client) (sessionStub, error) {
 	stub := sessionpb2.NewSessionServiceClient(client.grpcChannel)
 

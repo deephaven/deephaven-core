@@ -12,6 +12,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 
 	applicationpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/application"
 	consolepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/console"
@@ -43,6 +44,8 @@ type Client struct {
 	appStub
 	inputTableStub
 
+	// A simple counter that increments every time a new ticket is needed.
+	// Must be accessed atomically.
 	nextTicket int32
 
 	tablesLock sync.Mutex
@@ -122,6 +125,7 @@ func (client *Client) FetchTables(ctx context.Context, opt FetchOption) error {
 
 // Returns a list of the (global) tables that can be opened with OpenTable.
 // This can be updated using FetchTables.
+// This function is thread-safe.
 func (client *Client) ListOpenableTables() []string {
 	client.tablesLock.Lock()
 	defer client.tablesLock.Unlock()
@@ -135,22 +139,27 @@ func (client *Client) ListOpenableTables() []string {
 	return result
 }
 
+// Returns a new ticket number that this client has not used before.
+// This function is thread-safe.
 func (client *Client) newTicketNum() int32 {
-	client.nextTicket += 1
-	if client.nextTicket <= 0 {
-		// TODO:
+	nextTicket := atomic.AddInt32(&client.nextTicket, 1)
+	if nextTicket <= 0 {
 		panic("out of tickets")
 	}
 
-	return client.nextTicket
+	return nextTicket
 }
 
+// Returns a new ticket that this client has not used before.
+// This function is thread-safe.
 func (client *Client) newTicket() ticketpb2.Ticket {
 	id := client.newTicketNum()
 
 	return client.makeTicket(id)
 }
 
+// Turns a  ticket ID into a ticket.
+// This function is thread-safe.
 func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 	bytes := []byte{'e', byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
 
@@ -206,7 +215,9 @@ func (client *Client) RunScript(context context.Context, script string) error {
 
 	err := client.consoleStub.RunScript(context, script)
 	if err != nil {
-		client.FetchTables(context, FetchRepeating) // At least try to restart this
+		if restartLoop {
+			client.FetchTables(context, FetchRepeating) // At least try to restart this
+		}
 		return err
 	}
 
