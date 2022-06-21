@@ -10,13 +10,13 @@ import org.jetbrains.annotations.NotNull;
 
 @Immutable
 @SimpleStyle
-public class FillBySpec implements UpdateBySpec {
+public abstract class FillBySpec implements UpdateBySpec {
     public static FillBySpec of() {
         return ImmutableFillBySpec.of();
     }
 
     @Override
-    public boolean applicableTo(@NotNull Class<?> inputType) {
+    public final boolean applicableTo(@NotNull Class<?> inputType) {
         return true;
     }
 

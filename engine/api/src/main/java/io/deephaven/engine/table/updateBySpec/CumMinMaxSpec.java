@@ -20,7 +20,7 @@ public abstract class CumMinMaxSpec implements UpdateBySpec {
     public abstract boolean isMax();
 
     @Override
-    public boolean applicableTo(@NotNull Class<?> inputType) {
+    public final boolean applicableTo(@NotNull Class<?> inputType) {
         return TypeUtils.isNumeric(inputType)
                 || (Comparable.class.isAssignableFrom(inputType) && inputType != Boolean.class);
     }

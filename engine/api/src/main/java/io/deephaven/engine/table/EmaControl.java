@@ -28,11 +28,11 @@ import java.util.Collection;
 @BuildableStyle
 public abstract class EmaControl {
     @NotNull
-    public static ImmutableEmaControl.Builder builder() {
+    public static Builder builder() {
         return ImmutableEmaControl.builder();
     }
 
-    public static EmaControl DEFAULT = ImmutableEmaControl.builder().build();
+    public final static EmaControl DEFAULT = ImmutableEmaControl.builder().build();
 
     /**
      * Get the behavior for when null values are encountered.

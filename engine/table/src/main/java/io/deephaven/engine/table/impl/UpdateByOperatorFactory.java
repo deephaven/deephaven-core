@@ -149,9 +149,9 @@ public class UpdateByOperatorFactory {
 
         @Override
         public Void visit(@NotNull final EmaSpec ema) {
-            final String timestampCol = ema.timestampCol();
             final LongRecordingUpdateByOperator timeStampRecorder;
-            final boolean isTimeBased = !StringUtils.isNullOrEmpty(timestampCol);
+            final boolean isTimeBased = ema.timeScale().isTimeBased();
+            final String timestampCol = ema.timeScale().timestampCol();
 
             if (isTimeBased) {
                 timeStampRecorder = makeLongRecordingOperator(source, timestampCol);
@@ -215,33 +215,36 @@ public class UpdateByOperatorFactory {
             if (recorder == null) {
                 affectingColumns = new String[] {pair.rightColumn};
             } else {
-                affectingColumns = new String[] {ema.timestampCol(), pair.rightColumn};
+                affectingColumns = new String[] {ema.timeScale().timestampCol(), pair.rightColumn};
             }
 
+            // use the correct units from the EmaSpec (depending on was Time or Tick based)
+            final long timeScaleUnits = ema.timeScale().timescaleUnits();
+
             if (csType == byte.class || csType == Byte.class) {
-                return new ByteEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
+                return new ByteEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
+                return new ShortEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
+                return new IntEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
+                return new LongEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatEMAOperator(pair, affectingColumns, ema.control(), recorder, ema.timeScaleUnits(),
+                return new FloatEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleEMAOperator(pair, affectingColumns, ema.control(), recorder,
-                        ema.timeScaleUnits(), columnSource, rowRedirection);
+                        timeScaleUnits, columnSource, rowRedirection);
             } else if (csType == BigDecimal.class) {
                 return new BigDecimalEMAOperator(pair, affectingColumns, ema.control(), recorder,
-                        ema.timeScaleUnits(), columnSource, rowRedirection);
+                        timeScaleUnits, columnSource, rowRedirection);
             } else if (csType == BigInteger.class) {
                 return new BigIntegerEMAOperator(pair, affectingColumns, ema.control(), recorder,
-                        ema.timeScaleUnits(), columnSource, rowRedirection);
+                        timeScaleUnits, columnSource, rowRedirection);
             }
 
             throw new IllegalArgumentException("Can not perform EMA on type " + csType);

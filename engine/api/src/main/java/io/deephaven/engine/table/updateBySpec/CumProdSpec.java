@@ -10,13 +10,13 @@ import org.jetbrains.annotations.NotNull;
  */
 @Immutable
 @SimpleStyle
-public class CumProdSpec implements UpdateBySpec {
+public abstract class CumProdSpec implements UpdateBySpec {
     public static CumProdSpec of() {
         return ImmutableCumProdSpec.of();
     }
 
     @Override
-    public boolean applicableTo(@NotNull Class<?> inputType) {
+    public final boolean applicableTo(@NotNull Class<?> inputType) {
         return TypeUtils.isNumeric(inputType);
     }
 

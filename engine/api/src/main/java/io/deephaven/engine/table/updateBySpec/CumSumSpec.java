@@ -16,7 +16,7 @@ public class CumSumSpec implements UpdateBySpec {
     }
 
     @Override
-    public boolean applicableTo(@NotNull Class<?> inputType) {
+    public final boolean applicableTo(@NotNull Class<?> inputType) {
         return TypeUtils.isNumeric(inputType) || inputType == boolean.class || inputType == Boolean.class;
     }
 
