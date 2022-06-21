@@ -17,7 +17,7 @@ def random_character():
 def random_boolean():
     return random.choice([True, False])
 
-table = time_table("00:00:01").update(formulas=["Number = (int)(byte)random_int()", "Character = (String)random_character()", "Boolean = (boolean)random_boolean()"])
+table = time_table("00:00:01").update(formulas=["Number = (int)random_int()", "Character = (String)random_character()", "Boolean = (boolean)random_boolean()"])
 ```
 
 Let's wrap `time_table` with a method and parameterize the time intervals and start times. This will allow us to reuse it throughout the notebooks.

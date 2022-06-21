@@ -34,7 +34,7 @@ def create_random_table(time_interval, start_time=None):
     else:
         table = time_table(period=time_interval, start_time=start_time)
 
-    return table.update(formulas=["Number = (int)(byte)random_int()", "Character = (String)random_character()", "Boolean = (boolean)random_boolean()"])
+    return table.update(formulas=["Number = (int)random_int()", "Character = (String)random_character()", "Boolean = (boolean)random_boolean()"])
 
 from deephaven.time import now, to_nanos, minus
 
