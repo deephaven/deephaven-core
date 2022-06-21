@@ -18,6 +18,7 @@ func assert(cond bool, msg string) {
 type tableOp interface {
 	childQueries() []QueryNode
 
+	// Once a tableOp's children have been processed and a result ticket allocated, it can be turned into an actual batch operation.
 	makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation
 }
 

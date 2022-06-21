@@ -2,6 +2,8 @@
 // It can upload, manipulate, and download tables, among other features.
 // First, use client.NewClient to connect to the server, then the Client can be used to perform operations.
 // See the provided examples in the examples/ folder or the individual code documentation for more.
+// Client and TableHandle methods are thread-safe unless otherwise specified.
+// QueryNode methods, however, are not thread-safe.
 package client
 
 import (
@@ -31,6 +33,13 @@ type fieldId struct {
 // It can be used to run scripts, create new tables, execute queries, etc.
 // Check the various methods of Client to learn more.
 type Client struct {
+	// Guards client-wide state. This means specifically:
+	// - Is a FetchTables request running?
+	// - Is the client closed?
+	// Other functionality does not need a lock, since the gRPC interface is already thread-safe,
+	// the tables array has its own lock, and the session token also has its own lock.
+	lock sync.Mutex
+
 	grpcChannel *grpc.ClientConn
 
 	sessionStub
@@ -105,7 +114,7 @@ type FetchOption int
 
 const (
 	FetchOnce      FetchOption = iota // Fetches the list of tables once and then returns.
-	FetchRepeating FetchOption = iota // Starts up a background thread to continually update the list of tables as changes occur.
+	FetchRepeating                    // Starts up a background goroutine to continually update the list of tables as changes occur.
 )
 
 // Fetches the list of tables from the server.
@@ -113,14 +122,27 @@ const (
 // and thus allows it to open them using OpenTables.
 // Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
 func (client *Client) FetchTables(ctx context.Context, opt FetchOption) error {
+	// Guards the listFields state.
+	client.lock.Lock()
+	defer client.lock.Unlock()
+
+	return client.fetchTablesWhileLocked(ctx, opt)
+}
+
+// Like FetchTables, but assumes the client lock is already held.
+func (client *Client) fetchTablesWhileLocked(ctx context.Context, opt FetchOption) error {
 	return client.listFields(ctx, opt, func(update *applicationpb2.FieldsChangeUpdate) {
 		client.handleFieldChanges(update)
 	})
 }
 
 // Returns a list of the (global) tables that can be opened with OpenTable.
-// This can be updated using FetchTables.
-// This function is thread-safe.
+// Tables that are created by other clients or in the web UI are not listed here automatically.
+// Tables that are created in scripts run by this client, however, are immediately available,
+// and will be added to/removed from the list as soon as the script finishes.
+// FetchTables can be used to update the list to reflect what tables are currently available
+// from other clients or the web UI.
+// Calling FetchTables with a FetchRepeating argument will continually update this list in the background.
 func (client *Client) ListOpenableTables() []string {
 	client.tablesLock.Lock()
 	defer client.tablesLock.Unlock()
@@ -178,6 +200,9 @@ func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]*Tab
 // Closes the connection to the server and frees any associated resources.
 // Once this method is called, the client and any TableHandles from it cannot be used.
 func (client *Client) Close() {
+	client.lock.Lock()
+	defer client.lock.Unlock()
+
 	client.sessionStub.Close()
 	client.appStub.Close()
 	if client.grpcChannel != nil {
@@ -196,6 +221,11 @@ func (client *Client) withToken(ctx context.Context) context.Context {
 func (client *Client) RunScript(context context.Context, script string) error {
 	// This has to shadow the consoleStub method in order to handle the listfields loop
 
+	// This makes sure no other FetchTables calls start in the middle,
+	// and also protects the client.tables array.
+	client.lock.Lock()
+	defer client.lock.Unlock()
+
 	// We have to cancel the loop while a script runs, because otherwise
 	// we will get duplicate responses for the same new tables.
 	// (We will get a response from RunScript and a response from FetchTables).
@@ -204,7 +234,9 @@ func (client *Client) RunScript(context context.Context, script string) error {
 	client.appStub.cancelFetchLoop()
 
 	if restartLoop {
-		// Clear out the table list to avoid any duplicate entries
+		// Clear out the table list to avoid any duplicate entries.
+		// It is okay to access client.tables without a lock, because we have already
+		// cancelled the fetch loop and acquired a client lock, so there are no concurrent accesses.
 		client.tables = make(map[fieldId]*TableHandle)
 	}
 
@@ -214,7 +246,7 @@ func (client *Client) RunScript(context context.Context, script string) error {
 			// If we were fetching tables before we called RunScript,
 			// we should try to make sure the loop is restored.
 			// No error handling here since we're already handling another error...
-			client.FetchTables(context, FetchRepeating)
+			client.fetchTablesWhileLocked(context, FetchRepeating)
 		}
 		return err
 	}
@@ -222,7 +254,7 @@ func (client *Client) RunScript(context context.Context, script string) error {
 	if restartLoop {
 		// If we were fetching tables before we called RunScript,
 		// we should try to make sure the loop is restored.
-		err = client.FetchTables(context, FetchRepeating)
+		err = client.fetchTablesWhileLocked(context, FetchRepeating)
 		if err != nil {
 			return err
 		}
