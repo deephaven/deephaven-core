@@ -1,3 +1,4 @@
+//go:generate go run generate.go
 //go:build ignore
 // +build ignore
 

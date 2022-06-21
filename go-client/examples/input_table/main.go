@@ -1,4 +1,4 @@
-package examples
+package main
 
 import (
 	"context"
@@ -6,12 +6,13 @@ import (
 
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/deephaven/deephaven-core/go-client/client"
+	"github.com/deephaven/deephaven-core/go-client/examples/common"
 )
 
 // This example shows how to use Input Tables.
 // Though Deephaven has direct support for streaming data through Apache Kafka,
 // Input Tables make are a generic interface for streaming data from any source.
-func ExampleInputTable() {
+func main() {
 	ctx := context.Background()
 
 	cl, err := client.NewClient(ctx, "localhost", "10000", "python")
@@ -50,7 +51,7 @@ func ExampleInputTable() {
 	defer outputTable.Release(ctx)
 
 	// Now, let's get some new data to add to the table.
-	newDataRec := GetExampleRecord()
+	newDataRec := common.GetExampleRecord()
 	defer newDataRec.Release()
 	newDataTable, err := cl.ImportTable(ctx, newDataRec)
 	if err != nil {

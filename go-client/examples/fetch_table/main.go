@@ -1,4 +1,4 @@
-package examples
+package main
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 // Typically, you don't have to worry about this,
 // but if you want to access tables from previous sessions or from the web UI,
 // you will need to do a table fetch.
-func ExampleFetchTable() {
+func main() {
 	ctx := context.Background()
 	cl, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {

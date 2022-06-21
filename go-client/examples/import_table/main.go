@@ -1,42 +1,17 @@
-package examples
+package main
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/deephaven/deephaven-core/go-client/client"
-
-	"github.com/apache/arrow/go/v8/arrow"
-	"github.com/apache/arrow/go/v8/arrow/array"
-	"github.com/apache/arrow/go/v8/arrow/memory"
+	"github.com/deephaven/deephaven-core/go-client/examples/common"
 )
-
-func GetExampleRecord() arrow.Record {
-	pool := memory.NewGoAllocator()
-
-	schema := arrow.NewSchema(
-		[]arrow.Field{
-			{Name: "Ticker", Type: arrow.BinaryTypes.String},
-			{Name: "Close", Type: arrow.PrimitiveTypes.Float32},
-			{Name: "Vol", Type: arrow.PrimitiveTypes.Int32},
-		},
-		nil,
-	)
-
-	b := array.NewRecordBuilder(pool, schema)
-	defer b.Release()
-
-	b.Field(0).(*array.StringBuilder).AppendValues([]string{"XRX", "XYZZY", "IBM", "GME", "AAPL", "ZNGA", "T"}, nil)
-	b.Field(1).(*array.Float32Builder).AppendValues([]float32{53.8, 88.5, 38.7, 453, 26.7, 544.9, 13.4}, nil)
-	b.Field(2).(*array.Int32Builder).AppendValues([]int32{87000, 6060842, 138000, 138000000, 19000, 48300, 1500}, nil)
-
-	return b.NewRecord()
-}
 
 // This example shows off the ability to upload tables to the Deephaven server,
 // perform some operations on them,
 // and then download them to access the modified data.
-func ExampleImportTable() {
+func main() {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
@@ -48,7 +23,7 @@ func ExampleImportTable() {
 	defer cl.Close()
 
 	// First, we need some Record we want to upload.
-	sampleRecord := GetExampleRecord()
+	sampleRecord := common.GetExampleRecord()
 	defer sampleRecord.Release()
 
 	fmt.Println("Data Before:")

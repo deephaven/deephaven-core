@@ -22,20 +22,20 @@ Tests assume the server is on localhost:10000 by default, but can be configured 
 
 ## Examples
 
-This project also includes a binary containing some examples.
+This project also includes a several example binaries.
 Examples assume the server is running on localhost:10000.
-The binary can be built using `go build` (the output is `./go-client`),
-but it can also be run more directly by running the following command:
+An example can be run using the following command:
 ```
-$ go run .
+$ go run ./examples/import_table
 ```
+Other valid paths for examples are
+- `./examples/query`
+- `./examples/fetch_table`
+- `./examples/import_table`
+- `./examples/input_table`
+- `./examples/run_script`
 
-Running the program without arguments will list the available tests, and then one can be selected like this:
-```
-$ go run . ExampleQuery
-```
-
-The source code is available in the `examples/` directory.
+The source code is available in the directory for each example.
 
 ## Viewing Docs
 

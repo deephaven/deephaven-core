@@ -1,4 +1,4 @@
-package examples
+package main
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 
 // This example shows off how you can run a server-side script directly via the client,
 // which can manipulate existing tables or create new ones.
-func ExampleRunScript() {
+func main() {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 

@@ -1,17 +1,18 @@
-package examples
+package main
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/deephaven/deephaven-core/go-client/client"
+	"github.com/deephaven/deephaven-core/go-client/examples/common"
 )
 
 // This example shows how to use the powerful query system,
 // which allows you to perform an arbitrary number of table operations in a single request.
 // It can even create new tables as part of a query,
 // and the interface is more convenient than doing each of the table operations serially.
-func ExampleQuery() {
+func main() {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
@@ -23,7 +24,7 @@ func ExampleQuery() {
 	defer cl.Close()
 
 	// Let's get some example data to play with.
-	sampleRecord := GetExampleRecord()
+	sampleRecord := common.GetExampleRecord()
 	defer sampleRecord.Release()
 
 	fmt.Println("Data Before:")
