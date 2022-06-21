@@ -9,11 +9,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Wraps gRPC calls for application.proto.
 type appStub struct {
 	client *Client
 
 	stub apppb2.ApplicationServiceClient
 
+	// Only present when doing a FetchRepeating call in the background.
+	// Calling this function will cancel the FetchRepeating call.
 	cancelFunc context.CancelFunc
 }
 
@@ -28,7 +31,7 @@ type changeHandler func(update *apppb2.FieldsChangeUpdate)
 // A thread that continues reading the listFields request and updating the client's tables will start in the background
 // if FetchRepeating is specified.
 func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, handler changeHandler) error {
-	as.cancelListLoop()
+	as.cancelFetchLoop()
 
 	ctx, cancel := context.WithCancel(as.client.withToken(ctx))
 
@@ -50,12 +53,11 @@ func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, hand
 	as.cancelFunc = cancel
 
 	if fetchOption == FetchRepeating {
-		lister := fieldLister{stream: fieldStream, handler: handler}
-		go lister.listLoop()
+		go fetchTablesLoop(fieldStream, handler)
 
 		return nil
 	} else {
-		as.cancelListLoop()
+		as.cancelFetchLoop()
 
 		return nil
 	}
@@ -65,7 +67,7 @@ func (as *appStub) isListing() bool {
 	return as.cancelFunc != nil
 }
 
-func (as *appStub) cancelListLoop() {
+func (as *appStub) cancelFetchLoop() {
 	if as.cancelFunc != nil {
 		as.cancelFunc()
 		as.cancelFunc = nil
@@ -73,17 +75,12 @@ func (as *appStub) cancelListLoop() {
 }
 
 func (as *appStub) Close() {
-	as.cancelListLoop()
+	as.cancelFetchLoop()
 }
 
-type fieldLister struct {
-	stream  apppb2.ApplicationService_ListFieldsClient
-	handler changeHandler
-}
-
-func (fl *fieldLister) listLoop() {
+func fetchTablesLoop(stream apppb2.ApplicationService_ListFieldsClient, handler changeHandler) {
 	for {
-		resp, err := fl.stream.Recv()
+		resp, err := stream.Recv()
 		if err != nil {
 			if status, ok := status.FromError(err); ok && status.Code() == codes.Canceled {
 				break
@@ -92,6 +89,6 @@ func (fl *fieldLister) listLoop() {
 			return
 		}
 
-		fl.handler(resp)
+		handler(resp)
 	}
 }

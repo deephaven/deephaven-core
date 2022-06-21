@@ -1,10 +1,6 @@
 // This package allows you to interface with a Deephaven server over a network connection using Go.
 // It can upload, manipulate, and download tables, among other features.
-// Typically, usage goes like this:
-//  1. Create a Client struct
-//  2. Use the Client to upload, open, or create a table.
-//  3. Use the returned TableHandle to perform a query or do other table operations.
-//  4. Use the Snapshot method on tables to download the data when finished.
+// First, use client.NewClient to connect to the server, then the Client can be used to perform operations.
 // See the provided examples in the examples/ folder or the individual code documentation for more.
 package client
 
@@ -23,7 +19,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// Returned as an error when trying to perform a network operation on a client that's been closed.
+// Returned as an error when trying to perform a network operation on a client that has been closed.
 var ErrClosedClient = errors.New("client is closed")
 
 type fieldId struct {
@@ -53,6 +49,7 @@ type Client struct {
 }
 
 // Starts a connection to a Deephaven server.
+//
 // scriptLanguage can be either "python" or "groovy", and must match the language used on the server. Python is the default.
 //
 // The client should be closed using Close() after it is done being used.
@@ -102,6 +99,8 @@ func (client *Client) Closed() bool {
 	return client.grpcChannel == nil
 }
 
+// Specifies the kind of fetch to be done when using FetchTables.
+// See the docs for FetchOnce, FetchRepeating, and FetchTables for more information.
 type FetchOption int
 
 const (
@@ -166,10 +165,13 @@ func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 	return ticketpb2.Ticket{Ticket: bytes}
 }
 
-// Sends an entire query over to the server all at once and returns the resulting tables.
+// Executes a query on the server and returns the resulting tables.
 //
-// If this function completes successfully, the number of tables returned will always match the
-// number of query nodes passed.
+// If this function completes successfully,
+// the number of tables returned will always match the number of query nodes passed.
+// The first table in the returned list corresponds to the first node argument,
+// the second table in the returned list corresponds to the second node argument,
+// etc.
 //
 // This may return a QueryError if the query is invalid.
 func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]*TableHandle, error) {
@@ -193,10 +195,10 @@ func (client *Client) Close() {
 
 // This is thread-safe
 func (client *Client) withToken(ctx context.Context) context.Context {
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("deephaven_session_id", string(client.getToken())))
+	return metadata.NewOutgoingContext(ctx, metadata.Pairs("deephaven_session_id", string(client.getToken())))
 }
 
-// Directly uploads and executes a script on the deephaven server.
+// Executes a script on the deephaven server.
 // The script language depends on the scriptLanguage argument passed when creating the client.
 func (client *Client) RunScript(context context.Context, script string) error {
 	// This has to shadow the consoleStub method in order to handle the listfields loop
@@ -206,7 +208,7 @@ func (client *Client) RunScript(context context.Context, script string) error {
 	}
 
 	restartLoop := client.appStub.isListing()
-	client.appStub.cancelListLoop()
+	client.appStub.cancelFetchLoop()
 
 	if restartLoop {
 		// Clear out the table list to avoid any duplicate entries
