@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.widget.plot;
 
 import io.deephaven.web.client.api.JsTable;

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.lang.completion;
 
 import io.deephaven.engine.table.ColumnDefinition;
@@ -199,7 +202,7 @@ public class ChunkerCompleter implements CompletionHandler {
      * Due to this unfortunate complexity, we are doing this in a post-processing phase (here), so that individual
      * completion provider logic only has to handle "replace text X with Y", and we'll figure out the correct
      * incantation to keep monaco happy here.
-     * 
+     *
      * @param parsed The parsed document (bag of state related to the source document).
      * @param res A set of CompletionItem to fixup.
      * @param node The original node we started the search from (for ~O(1) token searching)
@@ -1000,9 +1003,16 @@ public class ChunkerCompleter implements CompletionHandler {
 
     private Optional<Class<?>> resolveScopeType(
             CompletionRequest request, List<IsScope> scope) {
+        return resolveScopeType(request, scope, new HashSet<>());
+    }
+
+    private Optional<Class<?>> resolveScopeType(
+            CompletionRequest request, List<IsScope> scope, Set<List<IsScope>> alreadyVisited) {
         if (scope == null || scope.isEmpty()) {
             return Optional.empty();
         }
+        alreadyVisited.add(scope);
+
         IsScope o = scope.get(0);
 
         final Class<?> type = variables.getVariableType(o.getName());
@@ -1026,8 +1036,8 @@ public class ChunkerCompleter implements CompletionHandler {
             // This is pretty hacky, but our only use case here is looking for table loads, so...
             if (assignment.getValue() instanceof IsScope) {
                 final List<IsScope> subscope = ((IsScope) assignment.getValue()).asScopeList();
-                if (!subscope.equals(scope)) {
-                    result = resolveScopeType(request, subscope);
+                if (alreadyVisited.add(subscope)) {
+                    result = resolveScopeType(request, subscope, alreadyVisited);
                     if (result.isPresent()) {
                         return result;
                     }

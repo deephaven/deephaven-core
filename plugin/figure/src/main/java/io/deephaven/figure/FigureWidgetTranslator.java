@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.figure;
 
 import io.deephaven.api.Selectable;
@@ -758,6 +761,9 @@ public class FigureWidgetTranslator {
     }
 
     private String toCssColorString(io.deephaven.gui.color.Paint color) {
+        if (color == null) {
+            return null;
+        }
         if (!(color instanceof io.deephaven.gui.color.Color)) {
             errorList.add("OpenAPI does not presently support paint of type " + color);
             return null;

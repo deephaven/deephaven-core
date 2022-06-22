@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+/**
  * The "query syntax tree", or QST, provides a declarative structure around queries.
  *
  * @see io.deephaven.qst.table.TableSpec

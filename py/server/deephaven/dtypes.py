@@ -1,16 +1,18 @@
 #
-#   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ This module defines the data types supported by the Deephaven engine.
 
 Each data type is represented by a DType class which supports creating arrays of the same type and more.
 """
 from __future__ import annotations
 
-from typing import Any, Sequence, Callable, Dict, Type
+from typing import Any, Sequence, Callable, Dict, Type, Union
 
 import jpy
 import numpy as np
+import pandas as pd
 
 from deephaven import DHError
 
@@ -168,7 +170,7 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
 
 
 def from_jtype(j_class: Any) -> DType:
-    """ look up a DType that matches the java type, if not found, create a DType for it. """
+    """ looks up a DType that matches the java type, if not found, creates a DType for it. """
     if not j_class:
         return None
 
@@ -180,8 +182,18 @@ def from_jtype(j_class: Any) -> DType:
         return dtype
 
 
-def from_np_dtype(np_dtype: np.dtype) -> DType:
-    """ Look up a DType that matches the numpy.dtype, if not found, return PyObject. """
+def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -> DType:
+    """ Looks up a DType that matches the provided numpy dtype or Pandas's nullable equivalent; if not found,
+    returns PyObject. """
+
+    if isinstance(np_dtype, pd.api.extensions.ExtensionDtype):
+        # check if it is a Pandas nullable numeric types such as pd.Float64Dtype/Int32Dtype/BooleanDtype etc.
+        if hasattr(np_dtype, "numpy_dtype"):
+            np_dtype = np_dtype.numpy_dtype
+        elif isinstance(np_dtype, pd.StringDtype):
+            return string
+        else:
+            return PyObject
 
     if np_dtype.kind in {'U', 'S'}:
         return string

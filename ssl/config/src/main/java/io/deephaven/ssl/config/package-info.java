@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+/**
  * SSL configuration can range from relatively straightforward to relatively complex. In an effort to provide a common
  * configuration layer among multiple server and client implementations, {@link io.deephaven.ssl.config.SSLConfig} is
  * (hopefully) easier to use than the Java native SSL configuration layers, while also providing deserialization from

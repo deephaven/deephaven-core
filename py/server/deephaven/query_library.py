@@ -1,6 +1,7 @@
 #
-#     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """This module allows users to import Java classes or packages into the query library for the Deephaven query engine.
 These classes or packages can then be used in Deephaven queries. """
 from typing import List

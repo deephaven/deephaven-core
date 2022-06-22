@@ -1,13 +1,13 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.lang.shared.lsp;
-
-import jsinterop.annotations.JsType;
 
 /**
  * A collection of int constants used for diagnostic messages.
  *
  *
  */
-@JsType(namespace = "dh.lsp")
 public interface DiagnosticCode {
 
     int MALFORMED = 1_000;

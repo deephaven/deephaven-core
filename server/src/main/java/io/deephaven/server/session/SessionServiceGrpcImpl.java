@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.server.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
@@ -154,18 +153,6 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             if (export == null) {
                 responseObserver.onError(GrpcUtil.statusRuntimeException(Code.UNAVAILABLE, "Export not yet defined"));
                 return;
-            }
-
-            // noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized (export) {
-                final ExportNotification.State currState = export.getState();
-                if (currState != ExportNotification.State.PENDING
-                        && currState != ExportNotification.State.QUEUED
-                        && currState != ExportNotification.State.EXPORTED) {
-                    responseObserver.onError(
-                            GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Ticket already in state: " + currState));
-                    return;
-                }
             }
 
             export.cancel();

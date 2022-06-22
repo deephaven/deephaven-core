@@ -4,6 +4,4 @@ plugins {
 
 apply from: "$rootDir/gradle/web-common.gradle"
 
-GwtTools.gwtLib project
-
 // Contains all general purpose utilities used across all open-api modules.

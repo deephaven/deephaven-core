@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.shared.fu;
 
 import jsinterop.annotations.JsFunction;
@@ -7,9 +10,8 @@ import jsinterop.annotations.JsFunction;
  */
 @JsFunction
 @FunctionalInterface
-public interface JsBiConsumerUnsafe<T1, T2, E extends Throwable> {
+public interface JsBiConsumer<T1, T2> {
 
     @SuppressWarnings("unusable-by-js")
-    void apply(T1 one, T2 two) throws E;
-
+    void apply(T1 one, T2 two);
 }

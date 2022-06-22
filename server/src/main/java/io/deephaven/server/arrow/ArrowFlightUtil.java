@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.arrow;
 
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -45,9 +48,9 @@ import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.validation.constraints.NotNull;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;

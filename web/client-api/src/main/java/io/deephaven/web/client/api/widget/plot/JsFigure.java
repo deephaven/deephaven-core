@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
@@ -654,9 +657,15 @@ public class JsFigure extends HasEventHandling {
                     JsTable table = new JsTable(connection, cts);
                     // never attempt a reconnect, since we might have a different figure schema entirely
                     table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
-                    tables[tables.length] = table;
                     return Promise.resolve(table);
                 });
+                return null;
+            });
+
+            Promise.all(promises).then((allTables) -> {
+                for (int ii = 0; ii < allTables.length; ++ii) {
+                    tables[ii] = (JsTable) allTables[ii];
+                }
                 return null;
             });
 

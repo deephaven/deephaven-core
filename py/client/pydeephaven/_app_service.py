@@ -1,6 +1,7 @@
 #
-#  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import application_pb2_grpc, application_pb2
 

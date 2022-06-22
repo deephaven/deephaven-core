@@ -1,6 +1,7 @@
 #
-#  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ Demo how to merge tables in Deephaven."""
 import pandas as pd
 

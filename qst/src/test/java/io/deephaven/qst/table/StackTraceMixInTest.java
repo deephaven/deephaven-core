@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
@@ -43,7 +46,7 @@ public class StackTraceMixInTest {
         assertThat(mixin.elements()[2].getClassName())
                 .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
         assertThat(mixin.elements()[2].getMethodName()).isEqualTo("example1");
-        assertThat(mixin.elements()[2].getLineNumber()).isEqualTo(15);
+        assertThat(mixin.elements()[2].getLineNumber()).isEqualTo(18);
     }
 
     @Test
@@ -54,7 +57,7 @@ public class StackTraceMixInTest {
         assertThat(mixin.elements()[2].getClassName())
                 .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
         assertThat(mixin.elements()[2].getMethodName()).isEqualTo("example2");
-        assertThat(mixin.elements()[2].getLineNumber()).isEqualTo(19);
+        assertThat(mixin.elements()[2].getLineNumber()).isEqualTo(22);
     }
 
     @Test
@@ -65,7 +68,7 @@ public class StackTraceMixInTest {
         assertThat(mixin.elements()[2].getClassName())
                 .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
         assertThat(mixin.elements()[2].getMethodName()).isEqualTo("example3");
-        assertThat(mixin.elements()[2].getLineNumber()).isEqualTo(26);
+        assertThat(mixin.elements()[2].getLineNumber()).isEqualTo(29);
     }
 
     @Test
@@ -74,6 +77,6 @@ public class StackTraceMixInTest {
         assertThat(mixin.elements()[1].getClassName())
                 .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
         assertThat(mixin.elements()[1].getMethodName()).isEqualTo("example4");
-        assertThat(mixin.elements()[1].getLineNumber()).isEqualTo(33);
+        assertThat(mixin.elements()[1].getLineNumber()).isEqualTo(36);
     }
 }

@@ -1,7 +1,11 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.shared.fu;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 @FunctionalInterface
 public interface MappedIterable<T> extends Iterable<T> {
@@ -70,7 +74,7 @@ public interface MappedIterable<T> extends Iterable<T> {
         };
     }
 
-    default boolean anyMatch(JsPredicate<T> test) {
+    default boolean anyMatch(Predicate<T> test) {
         for (T t : this) {
             if (test.test(t)) {
                 return true;
@@ -79,7 +83,7 @@ public interface MappedIterable<T> extends Iterable<T> {
         return false;
     }
 
-    default boolean noneMatch(JsPredicate<T> test) {
+    default boolean noneMatch(Predicate<T> test) {
         for (T t : this) {
             if (test.test(t)) {
                 return false;
@@ -88,7 +92,7 @@ public interface MappedIterable<T> extends Iterable<T> {
         return true;
     }
 
-    default boolean allMatch(JsPredicate<T> test) {
+    default boolean allMatch(Predicate<T> test) {
         for (T t : this) {
             if (!test.test(t)) {
                 return false;

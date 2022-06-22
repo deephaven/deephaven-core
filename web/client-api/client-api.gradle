@@ -7,7 +7,6 @@ apply from: "$rootDir/gradle/web-client.gradle"
 dependencies {
     compile project(':web-shared-beans')
     compile project(':web-client-backplane')
-    compile project(':open-api-shared-ide')
 
     compile 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 }

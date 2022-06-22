@@ -1,3 +1,7 @@
+#
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+#
+
 # Implementation utilities for io.deephaven.engine.util.PythonDeephavenSession
 from jpy import JType
 
