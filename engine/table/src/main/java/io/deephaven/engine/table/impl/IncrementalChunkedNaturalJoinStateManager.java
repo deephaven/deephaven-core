@@ -166,6 +166,8 @@ class IncrementalChunkedNaturalJoinStateManager
     private final LongArraySource overflowModifiedTrackerCookieSource;
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     IncrementalChunkedNaturalJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
                                               // region constructor arguments

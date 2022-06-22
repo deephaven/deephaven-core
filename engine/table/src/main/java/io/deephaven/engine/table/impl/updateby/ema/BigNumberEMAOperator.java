@@ -58,7 +58,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
      * @param timeRecorder an optional recorder for a timestamp column. If this is null, it will be assumed time is
      *        measured in integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
-     *                       in ticks, otherwise it is measured in nanoseconds
+     *        in ticks, otherwise it is measured in nanoseconds
      * @param valueSource the input column source. Used when determining reset positions for reprocessing
      */
     public BigNumberEMAOperator(@NotNull final MatchPair pair,

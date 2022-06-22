@@ -24,6 +24,9 @@ public interface UpdateByControl {
     double DEFAULT_MAXIMUM_STATIC_SPARSE_MEMORY_OVERHEAD =
             Configuration.getInstance().getDoubleWithDefault("UpdateByControl.maximumStaticMemoryOverhead", 1.1);
 
+    double DEFAULT_MAX_LOAD_FACTOR = 0.75;
+    double DEFAULT_TARGET_LOAD_FACTOR = 0.70;
+
     static ImmutableUpdateByControl.Builder builder() {
         return ImmutableUpdateByControl.builder();
     }
@@ -78,7 +81,7 @@ public interface UpdateByControl {
      */
     @Default
     default double maximumLoadFactor() {
-        return IncrementalUpdateByStateManager.DEFAULT_MAX_LOAD_FACTOR;
+        return DEFAULT_MAX_LOAD_FACTOR;
     }
 
     /**
@@ -88,7 +91,7 @@ public interface UpdateByControl {
      */
     @Default
     default double targetLoadFactor() {
-        return IncrementalUpdateByStateManager.DEFAULT_MAX_LOAD_FACTOR;
+        return DEFAULT_MAX_LOAD_FACTOR;
     }
 
     /**

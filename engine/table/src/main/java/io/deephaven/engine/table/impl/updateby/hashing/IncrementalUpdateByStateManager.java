@@ -3,33 +3,26 @@
  */
 package io.deephaven.engine.table.impl.updateby.hashing;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.HashCodes;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.hashing.*;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Context;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.impl.HashTableAnnotations;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.IntegerArraySource;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
 // @StateChunkIdentityName@ from \QIntChunk\E
+import io.deephaven.chunk.util.hashing.IntChunkEquals;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
-
+import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.engine.table.impl.util.*;
 
 // mixin rehash
 import java.util.Arrays;
@@ -40,15 +33,17 @@ import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 // endmixin rehash
 
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 // region extra imports
 import io.deephaven.engine.table.impl.by.HashTableColumnSource;
 import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.engine.table.impl.HashTableAnnotations;
 // endregion extra imports
 
+import static io.deephaven.util.SafeCloseable.closeArray;
 
 // region class visibility
 public
@@ -65,8 +60,8 @@ class IncrementalUpdateByStateManager
     // endregion constants
 
     // mixin rehash
-    public static final double DEFAULT_MAX_LOAD_FACTOR = 0.75;
-    public static final double DEFAULT_TARGET_LOAD_FACTOR = 0.70;
+    static final double DEFAULT_MAX_LOAD_FACTOR = 0.75;
+    static final double DEFAULT_TARGET_LOAD_FACTOR = 0.70;
     // endmixin rehash
 
     // region preamble variables
@@ -133,7 +128,7 @@ class IncrementalUpdateByStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right Index
+    // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QIntegerArraySource\E
     private final IntegerArraySource overflowStateSource
@@ -166,7 +161,7 @@ class IncrementalUpdateByStateManager
                                     // region constructor arguments
             , double maximumLoadFactor
             , double targetLoadFactor
-                                    // endregion constructor arguments
+                                              // endregion constructor arguments
     ) {
         // region super
         // endregion super
@@ -190,9 +185,10 @@ class IncrementalUpdateByStateManager
 
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             // the sources that we will use to store our hash table
-            keySources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(tableSize, tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
+            keySources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(tableSize, tableKeySources[ii].getType());
             keyChunkTypes[ii] = tableKeySources[ii].getChunkType();
-            overflowKeySources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(CHUNK_SIZE, tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
+
+            overflowKeySources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(CHUNK_SIZE, tableKeySources[ii].getType());
 
             chunkHashers[ii] = ChunkHasher.makeHasher(keyChunkTypes[ii]);
             chunkEquals[ii] = ChunkEquals.makeEqual(keyChunkTypes[ii]);
@@ -429,13 +425,13 @@ class IncrementalUpdateByStateManager
             // endmixin rehash
             overflowFillContext.close();
             overflowOverflowFillContext.close();
-            SafeCloseable.closeArray(workingFillContexts);
-            SafeCloseable.closeArray(overflowContexts);
-            SafeCloseable.closeArray(buildContexts);
+            closeArray(workingFillContexts);
+            closeArray(overflowContexts);
+            closeArray(buildContexts);
 
             hashChunk.close();
             tableLocationsChunk.close();
-            SafeCloseable.closeArray(writeThroughChunks);
+            closeArray(writeThroughChunks);
 
             sourcePositions.close();
             destinationLocationPositionInWriteThrough.close();
@@ -448,8 +444,8 @@ class IncrementalUpdateByStateManager
             chunkPositionsToCheckForEquality.close();
             overflowLocationForEqualityCheck.close();
             workingStateEntries.close();
-            SafeCloseable.closeArray(workingKeyChunks);
-            SafeCloseable.closeArray(overflowKeyChunks);
+            closeArray(workingKeyChunks);
+            closeArray(overflowKeyChunks);
             chunkPositionsForFetches.close();
             chunkPositionsToInsertInOverflow.close();
             tableLocationsToInsertInOverflow.close();
@@ -469,7 +465,7 @@ class IncrementalUpdateByStateManager
 
     }
 
-    BuildContext makeBuildContext(ColumnSource<?>[] buildSources,
+    public BuildContext makeBuildContext(ColumnSource<?>[] buildSources,
                                   long maxSize
                                   // region makeBuildContext args
                                   // endregion makeBuildContext args
@@ -493,7 +489,7 @@ class IncrementalUpdateByStateManager
         outputPositions.setSize(buildIndex.intSize());
         // endregion build start
 
-        try (final RowSequence.Iterator okIt = buildIndex.getRowSequenceIterator();
+        try (final RowSequence.Iterator rsIt = buildIndex.getRowSequenceIterator();
              // region build initialization try
              // endregion build initialization try
         ) {
@@ -506,11 +502,11 @@ class IncrementalUpdateByStateManager
             //noinspection unchecked
             final Chunk<Values> [] sourceKeyChunks = new Chunk[buildSources.length];
 
-            while (okIt.hasMore()) {
+            while (rsIt.hasMore()) {
                 // we reset early to avoid carrying around state for old RowSequence which can't be reused.
                 bc.resetSharedContexts();
 
-                final RowSequence chunkOk = okIt.getNextRowSequenceWithLength(bc.chunkSize);
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
 
                 getKeyChunks(buildSources, bc.buildContexts, sourceKeyChunks, chunkOk);
                 hashKeyChunks(bc.hashChunk, sourceKeyChunks);
@@ -1016,11 +1012,11 @@ class IncrementalUpdateByStateManager
         }
     }
 
-    public void setTargetLoadFactor(final double targetLoadFactor) {
+    void setTargetLoadFactor(final double targetLoadFactor) {
         this.targetLoadFactor = targetLoadFactor;
     }
 
-    public void setMaximumLoadFactor(final double maximumLoadFactor) {
+    void setMaximumLoadFactor(final double maximumLoadFactor) {
         this.maximumLoadFactor = maximumLoadFactor;
     }
 
@@ -1172,16 +1168,16 @@ class IncrementalUpdateByStateManager
         }
     }
 
-    private void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts, Chunk<? extends Values>[] chunks, RowSequence orderedKeys) {
+    private void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts, Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
         for (int ii = 0; ii < chunks.length; ++ii) {
-            chunks[ii] = sources[ii].getChunk(contexts[ii], orderedKeys);
+            chunks[ii] = sources[ii].getChunk(contexts[ii], rowSequence);
         }
     }
 
     // mixin prev
-    private void getPrevKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts, Chunk<? extends Values>[] chunks, RowSequence orderedKeys) {
+    private void getPrevKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts, Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
         for (int ii = 0; ii < chunks.length; ++ii) {
-            chunks[ii] = sources[ii].getPrevChunk(contexts[ii], orderedKeys);
+            chunks[ii] = sources[ii].getPrevChunk(contexts[ii], rowSequence);
         }
     }
     // endmixin prev
@@ -1316,9 +1312,9 @@ class IncrementalUpdateByStateManager
             stateSourceFillContext.close();
             overflowFillContext.close();
             overflowOverflowFillContext.close();
-            SafeCloseable.closeArray(workingFillContexts);
-            SafeCloseable.closeArray(overflowContexts);
-            SafeCloseable.closeArray(probeContexts);
+            closeArray(workingFillContexts);
+            closeArray(overflowContexts);
+            closeArray(probeContexts);
             hashChunk.close();
             tableLocationsChunk.close();
             workingStateEntries.close();
@@ -1327,7 +1323,7 @@ class IncrementalUpdateByStateManager
             overflowLocations.close();
             chunkPositionsForFetches.close();
             equalValues.close();
-            SafeCloseable.closeArray(workingKeyChunks);
+            closeArray(workingKeyChunks);
             closeSharedContexts();
             // region probe context close
             // endregion probe context close
@@ -1335,7 +1331,7 @@ class IncrementalUpdateByStateManager
         }
     }
 
-    ProbeContext makeProbeContext(ColumnSource<?>[] probeSources,
+    public ProbeContext makeProbeContext(ColumnSource<?>[] probeSources,
                                   long maxSize
                                 // region makeProbeContext args
                                   // endregion makeProbeContext args
@@ -1361,7 +1357,7 @@ class IncrementalUpdateByStateManager
         // endregion probe start
         long hashSlotOffset = 0;
 
-        try (final RowSequence.Iterator okIt = probeIndex.getRowSequenceIterator();
+        try (final RowSequence.Iterator rsIt = probeIndex.getRowSequenceIterator();
              // region probe additional try resources
              // endregion probe additional try resources
             ) {
@@ -1371,10 +1367,10 @@ class IncrementalUpdateByStateManager
             // region probe initialization
             // endregion probe initialization
 
-            while (okIt.hasMore()) {
+            while (rsIt.hasMore()) {
                 // we reset shared contexts early to avoid carrying around state that can't be reused.
                 pc.resetSharedContexts();
-                final RowSequence chunkOk = okIt.getNextRowSequenceWithLength(pc.chunkSize);
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
                 final int chunkSize = chunkOk.intSize();
 
                 // region probe loop initialization

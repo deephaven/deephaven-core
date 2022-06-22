@@ -177,6 +177,8 @@ class RightIncrementalChunkedAsOfJoinStateManager
     private int nextCookie;
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     RightIncrementalChunkedAsOfJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
                                                 // region constructor arguments

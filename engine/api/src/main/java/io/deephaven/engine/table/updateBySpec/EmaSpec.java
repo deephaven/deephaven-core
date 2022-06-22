@@ -14,8 +14,8 @@ import org.jetbrains.annotations.NotNull;
 @BuildableStyle
 public abstract class EmaSpec implements UpdateBySpec {
     public static EmaSpec ofTime(@NotNull final EmaControl control,
-                                 @NotNull final String timestampCol,
-                                 long timeScaleNanos) {
+            @NotNull final String timestampCol,
+            long timeScaleNanos) {
         return ImmutableEmaSpec.builder()
                 .control(control)
                 .timeScale(TimeScale.ofTime(timestampCol, timeScaleNanos))

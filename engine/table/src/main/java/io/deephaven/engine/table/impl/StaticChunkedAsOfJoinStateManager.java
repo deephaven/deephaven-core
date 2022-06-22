@@ -167,6 +167,8 @@ class StaticChunkedAsOfJoinStateManager
     private final ObjectArraySource<Object> overflowRightRowSetSource;
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     StaticChunkedAsOfJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
             // region constructor arguments
