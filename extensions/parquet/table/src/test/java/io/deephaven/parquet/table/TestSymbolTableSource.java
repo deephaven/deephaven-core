@@ -41,8 +41,8 @@ public class TestSymbolTableSource {
     }
 
     /**
-     * Verify that a parquet writing encodes a simple low-cardinality String column using a dictionary,
-     * and that we can correctly read this back via the `SymbolTableSource` interface.
+     * Verify that a parquet writing encodes a simple low-cardinality String column using a dictionary, and that we can
+     * correctly read this back via the `SymbolTableSource` interface.
      */
     @Test
     public void testWriteAndReadSymbols() {

@@ -249,7 +249,7 @@ public class ParquetTableWriter {
             @NotNull final String path,
             @NotNull final Map<String, String> tableMeta,
             @NotNull final TableInfo.Builder tableInfoBuilder) throws SchemaMappingException, IOException {
-        try(final SafeCloseable ignored = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Table t = pretransformTable(table, definition);
             final TrackingRowSet tableRowSet = t.getRowSet();
             final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
@@ -266,9 +266,9 @@ public class ParquetTableWriter {
     }
 
     /**
-     * Writes a table in parquet format under a given path.  This method should only be invoked when wrapped in a
-     * try-with-resources using a new {@link LivenessScopeStack#open() LivenessScope} to ensure that the various
-     * derived tables created are properly cleaned up.
+     * Writes a table in parquet format under a given path. This method should only be invoked when wrapped in a
+     * try-with-resources using a new {@link LivenessScopeStack#open() LivenessScope} to ensure that the various derived
+     * tables created are properly cleaned up.
      *
      * @param table The table to write
      * @param definition The table definition
@@ -465,9 +465,9 @@ public class ParquetTableWriter {
                         if (curLength != NULL_INT) {
                             // If this array puts us past the target number of items within a page then we'll record the
                             // current values into the page lists above and restart our counts.
-                            if ( ((totalItemsInPage + curLength > targetRowsPerPage) ||
-                                  (originalRowsInPage + 1 > targetRowsPerPage)     ) &&
-                                  (totalItemsInPage > 0 || originalRowsInPage > 0)) {
+                            if (((totalItemsInPage + curLength > targetRowsPerPage) ||
+                                    (originalRowsInPage + 1 > targetRowsPerPage)) &&
+                                    (totalItemsInPage > 0 || originalRowsInPage > 0)) {
                                 // Record the current item count and original row count into the parallel page arrays.
                                 rawItemCountPerPage.add(totalItemsInPage);
                                 originalRowsPerPage.add(originalRowsInPage);
@@ -527,8 +527,7 @@ public class ParquetTableWriter {
                         rowStepGetter,
                         valuesStepGetter,
                         targetRowsPerPage,
-                        pageCount
-                );
+                        pageCount);
             }
 
             if (!usedDictionary) {
@@ -544,8 +543,7 @@ public class ParquetTableWriter {
                         valuesStepGetter,
                         computedCache,
                         targetRowsPerPage,
-                        pageCount
-                );
+                        pageCount);
             }
         }
     }
@@ -575,9 +573,9 @@ public class ParquetTableWriter {
             final Object nullValue = getNullValue(columnType);
             try (final RowSequence.Iterator lengthIndexIt =
                     lengthSource != null ? originalRowSet.getRowSequenceIterator() : null;
-                final ChunkSource.GetContext lengthSourceContext =
-                        lengthSource != null ? lengthSource.makeGetContext(targetRowsPerPage) : null;
-                final RowSequence.Iterator it = dataRowSet.getRowSequenceIterator()) {
+                    final ChunkSource.GetContext lengthSourceContext =
+                            lengthSource != null ? lengthSource.makeGetContext(targetRowsPerPage) : null;
+                    final RowSequence.Iterator it = dataRowSet.getRowSequenceIterator()) {
 
                 final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetRowsPerPage) : null;
                 for (int step = 0; step < pageCount; ++step) {
@@ -605,16 +603,16 @@ public class ParquetTableWriter {
     }
 
     private static <DATA_TYPE> boolean tryEncodeDictionary(@NotNull final ParquetInstructions writeInstructions,
-           @NotNull final RowSet originalRowSet,
-           @NotNull final RowSet dataRowSet,
-           @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-           @NotNull final ColumnWriter columnWriter,
-           @NotNull final ColumnSource<DATA_TYPE> dataSource,
-           @Nullable final ColumnSource<?> lengthSource,
-           @NotNull final LongSupplier rowStepGetter,
-           @NotNull final LongSupplier valuesStepGetter,
-           final int targetRowsPerPage,
-           final int pageCount) throws IOException {
+            @NotNull final RowSet originalRowSet,
+            @NotNull final RowSet dataRowSet,
+            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
+            @NotNull final ColumnWriter columnWriter,
+            @NotNull final ColumnSource<DATA_TYPE> dataSource,
+            @Nullable final ColumnSource<?> lengthSource,
+            @NotNull final LongSupplier rowStepGetter,
+            @NotNull final LongSupplier valuesStepGetter,
+            final int targetRowsPerPage,
+            final int pageCount) throws IOException {
         // Note: We only support strings as dictionary pages. Knowing that, we can make some assumptions about chunk
         // types and avoid a bunch of lambda and virtual method invocations. If we decide to support more, than
         // these assumptions will need to be revisited.
