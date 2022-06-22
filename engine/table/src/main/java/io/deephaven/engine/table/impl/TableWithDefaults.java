@@ -1134,7 +1134,26 @@ public interface TableWithDefaults extends Table {
      */
     @ConcurrentMethod
     Table updateBy(@NotNull final UpdateByControl control, @NotNull final Collection<UpdateByClause> operations,
-            final MatchPair... byColumns);
+            final Collection<? extends Selectable> byColumns);
+
+    /**
+     * <p>
+     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
+     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows. This operation will group the table by the specified set of keys if
+     * provided before applying the operation.
+     * </p>
+     *
+     * @param control the {@Link UpdateByControl control} to use when updating the table.
+     * @param operations the operations to apply to the table.
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    default Table updateBy(@NotNull final UpdateByControl control,
+            @NotNull final Collection<UpdateByClause> operations) {
+        return updateBy(control, operations, Collections.emptyList());
+    }
 
     /**
      * <p>
@@ -1151,7 +1170,25 @@ public interface TableWithDefaults extends Table {
      */
     @ConcurrentMethod
     default Table updateBy(@NotNull final Collection<UpdateByClause> operations, final String... byColumns) {
-        return updateBy(UpdateByControl.DEFAULT, operations, MatchPairFactory.getExpressions(byColumns));
+        return updateBy(UpdateByControl.DEFAULT, operations, Selectable.from(byColumns));
+    }
+
+    /**
+     * <p>
+     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
+     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows.This operation will group the table by the specified set of keys if
+     * provided
+     * </p>
+     *
+     * @param operations the operations to apply to the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    default Table updateBy(@NotNull final Collection<UpdateByClause> operations, final Selectable... byColumns) {
+        return updateBy(UpdateByControl.DEFAULT, operations, List.of(byColumns));
     }
 
     /**
@@ -1166,23 +1203,7 @@ public interface TableWithDefaults extends Table {
      */
     @ConcurrentMethod
     default Table updateBy(@NotNull final Collection<UpdateByClause> operations) {
-        return updateBy(UpdateByControl.DEFAULT, operations, MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
-    }
-
-    /**
-     * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified row based
-     * operation to it. This operation will additionally group the table by a set of keys before applying the operation.
-     * </p>
-     *
-     * @param operation the operation to apply to the table.
-     * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
-     *         {@code byColumns}
-     */
-    @ConcurrentMethod
-    default Table updateBy(@NotNull final UpdateByClause operation, final MatchPair... byColumns) {
-        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), byColumns);
+        return updateBy(UpdateByControl.DEFAULT, operations, Collections.emptyList());
     }
 
     /**
@@ -1198,8 +1219,23 @@ public interface TableWithDefaults extends Table {
      */
     @ConcurrentMethod
     default Table updateBy(@NotNull final UpdateByClause operation, final String... byColumns) {
-        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation),
-                MatchPairFactory.getExpressions(byColumns));
+        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), Selectable.from(byColumns));
+    }
+
+    /**
+     * <p>
+     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified row based
+     * operation to it. This operation will additionally group the table by a set of keys before applying the operation.
+     * </p>
+     *
+     * @param operation the operation to apply to the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    default Table updateBy(@NotNull final UpdateByClause operation, final Selectable... byColumns) {
+        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), List.of(byColumns));
     }
 
     /**
@@ -1213,8 +1249,7 @@ public interface TableWithDefaults extends Table {
      */
     @ConcurrentMethod
     default Table updateBy(@NotNull final UpdateByClause operation) {
-        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
+        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), Collections.emptyList());
     }
 
 

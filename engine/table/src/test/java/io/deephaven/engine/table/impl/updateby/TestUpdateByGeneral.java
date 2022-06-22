@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.BadDataBehavior;
 import io.deephaven.engine.table.EmaControl;
 import io.deephaven.engine.table.Table;
@@ -8,9 +9,7 @@ import io.deephaven.engine.table.impl.EvalNugget;
 import io.deephaven.engine.table.impl.TableWithDefaults;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.table.impl.UpdateByControl;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.test.types.ParallelTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -114,7 +113,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                         }
 
                         return bucketed
-                                ? base.updateBy(control, clauses, MatchPairFactory.getExpression("Sym"))
+                                ? base.updateBy(control, clauses, Selectable.from("Sym"))
                                 : base.updateBy(control, clauses);
                     }
                 },

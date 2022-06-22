@@ -484,7 +484,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     @ConcurrentMethod
     public Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<UpdateByClause> ops,
-            @NotNull final MatchPair... byColumns) {
+            @NotNull final Collection<? extends Selectable> byColumns) {
         return UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control);
     }
 

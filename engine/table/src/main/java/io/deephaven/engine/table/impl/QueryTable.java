@@ -3024,7 +3024,7 @@ public class QueryTable extends BaseTable {
     @Override
     public Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<UpdateByClause> ops,
-            @NotNull final MatchPair... byColumns) {
+            @NotNull final Collection<? extends Selectable> byColumns) {
         return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
                 () -> UpdateBy.updateBy(this, ops, byColumns, control));
     }

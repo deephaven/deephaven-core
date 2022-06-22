@@ -1,6 +1,8 @@
 package io.deephaven.engine.table.impl;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.Strings;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -22,7 +24,7 @@ import java.util.*;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 /**
- * The core of the {@link TableWithDefaults#updateBy(UpdateByControl, Collection, MatchPair...)} operation.
+ * The core of the {@link TableWithDefaults#updateBy(UpdateByControl, Collection, Collection)} operation.
  */
 public abstract class UpdateBy {
     protected final ChunkSource.WithPrev<Values>[] inputSources;
@@ -79,7 +81,7 @@ public abstract class UpdateBy {
      */
     public static Table updateBy(@NotNull final QueryTable source,
             @NotNull final Collection<UpdateByClause> clauses,
-            @NotNull final MatchPair[] byColumns,
+            @NotNull final Collection<? extends Selectable> byColumns,
             @NotNull final UpdateByControl control) {
 
         WritableRowRedirection rowRedirection = null;
@@ -105,8 +107,13 @@ public abstract class UpdateBy {
             }
         }
 
+        // generate a MatchPair array for use by the existing algorithm
+        MatchPair[] pairs = byColumns.stream()
+                .map(s -> new MatchPair(s.newColumn().name(), Strings.of(s.expression())))
+                .toArray(MatchPair[]::new);
+
         final UpdateByOperatorFactory updateByOperatorFactory =
-                new UpdateByOperatorFactory(source, byColumns, rowRedirection, control);
+                new UpdateByOperatorFactory(source, pairs, rowRedirection, control);
         final Collection<UpdateByOperator> ops = updateByOperatorFactory.getOperators(clauses);
 
         final StringBuilder descriptionBuilder = new StringBuilder("updateBy(ops={")
@@ -132,7 +139,7 @@ public abstract class UpdateBy {
         resultSources.putAll(opResultSources);
 
         final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
-        if (byColumns.length == 0) {
+        if (pairs.length == 0) {
             descriptionBuilder.append(")");
             return ZeroKeyUpdateBy.compute(
                     descriptionBuilder.toString(),
@@ -143,9 +150,9 @@ public abstract class UpdateBy {
                     control);
         }
 
-        descriptionBuilder.append(", byColumns={").append(MatchPair.matchString(byColumns)).append("})");
-        final List<ColumnSource<?>> keySources = new ArrayList<>(byColumns.length);
-        for (final MatchPair byColumn : byColumns) {
+        descriptionBuilder.append(", pairs={").append(MatchPair.matchString(pairs)).append("})");
+        final List<ColumnSource<?>> keySources = new ArrayList<>(pairs.length);
+        for (final MatchPair byColumn : pairs) {
             if (!source.hasColumns(byColumn.rightColumn)) {
                 problems.add(byColumn.rightColumn);
                 continue;
@@ -164,7 +171,7 @@ public abstract class UpdateBy {
                 resultSources,
                 rowRedirection,
                 keySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
-                byColumns,
+                pairs,
                 control);
     }
 
