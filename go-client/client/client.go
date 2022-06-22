@@ -212,8 +212,12 @@ func (client *Client) Close() {
 }
 
 // This is thread-safe
-func (client *Client) withToken(ctx context.Context) context.Context {
-	return metadata.NewOutgoingContext(ctx, metadata.Pairs("deephaven_session_id", string(client.getToken())))
+func (client *Client) withToken(ctx context.Context) (context.Context, error) {
+	tok, err := client.getToken()
+	if err != nil {
+		return nil, err
+	}
+	return metadata.NewOutgoingContext(ctx, metadata.Pairs("deephaven_session_id", string(tok))), nil
 }
 
 // Executes a script on the deephaven server.

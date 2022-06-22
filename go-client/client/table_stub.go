@@ -36,7 +36,10 @@ func newTableStub(client *Client) (tableStub, error) {
 }
 
 func (ts *tableStub) createInputTable(ctx context.Context, req *tablepb2.CreateInputTableRequest) (*TableHandle, error) {
-	ctx = ts.client.withToken(ctx)
+	ctx, err := ts.client.withToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	resp, err := ts.stub.CreateInputTable(ctx, req)
 	if err != nil {
@@ -47,7 +50,10 @@ func (ts *tableStub) createInputTable(ctx context.Context, req *tablepb2.CreateI
 }
 
 func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableRequest_Operation) ([]*TableHandle, error) {
-	ctx = ts.client.withToken(ctx)
+	ctx, err := ts.client.withToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	req := tablepb2.BatchTableRequest{Ops: ops}
 	resp, err := ts.stub.Batch(ctx, &req)
@@ -84,7 +90,10 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 
 // Opens a globally-scoped table with the given name on the server.
 func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, error) {
-	ctx = ts.client.withToken(ctx)
+	ctx, err := ts.client.withToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	fieldId := fieldId{appId: "scope", fieldName: name}
 	if tbl, ok := ts.client.tables[fieldId]; ok {
@@ -114,7 +123,10 @@ func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
 //
 // The table will have zero columns and the specified number of rows.
 func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandle, error) {
-	ctx = ts.client.withToken(ctx)
+	ctx, err := ts.client.withToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	result := ts.client.newTicket()
 
@@ -146,7 +158,10 @@ func (ts *tableStub) TimeTableQuery(period int64, startTime *int64) QueryNode {
 // The period is in nanoseconds and represents the interval between adding new rows to the table.
 // The startTime is in nanoseconds since epoch and defaults to the current time when it is nil.
 func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int64) (*TableHandle, error) {
-	ctx = ts.client.withToken(ctx)
+	ctx, err := ts.client.withToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	result := ts.client.newTicket()
 
@@ -187,7 +202,10 @@ func parseCreationResponse(client *Client, resp *tablepb2.ExportedTableCreationR
 }
 
 func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols []string) (*TableHandle, error) {
-	ctx = ts.client.withToken(ctx)
+	ctx, err := ts.client.withToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	result := ts.client.newTicket()
 
@@ -205,7 +223,10 @@ func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols [
 type selectOrUpdateOp func(tablepb2.TableServiceClient, context.Context, *tablepb2.SelectOrUpdateRequest, ...grpc.CallOption) (*tablepb2.ExportedTableCreationResponse, error)
 
 func (ts *tableStub) doSelectOrUpdate(ctx context.Context, table *TableHandle, formulas []string, op selectOrUpdateOp) (*TableHandle, error) {
-	ctx = ts.client.withToken(ctx)
+	ctx, err := ts.client.withToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	result := ts.client.newTicket()
 	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}
@@ -240,7 +261,10 @@ func (ts *tableStub) selectTbl(ctx context.Context, table *TableHandle, formulas
 }
 
 func (ts *tableStub) makeRequest(ctx context.Context, table *TableHandle, op reqOp) (*TableHandle, error) {
-	ctx = ts.client.withToken(ctx)
+	ctx, err := ts.client.withToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	result := ts.client.newTicket()
 	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}
@@ -400,7 +424,10 @@ func (ts *tableStub) aggBy(ctx context.Context, table *TableHandle, aggs *AggBui
 }
 
 func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHandle) (*TableHandle, error) {
-	ctx = ts.client.withToken(ctx)
+	ctx, err := ts.client.withToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	resultId := ts.client.newTicket()
 

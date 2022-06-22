@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -13,8 +12,33 @@ import (
 )
 
 type tokenResp struct {
+	Lock  sync.Mutex
 	Token []byte
 	Error error
+}
+
+func (tk *tokenResp) getToken() ([]byte, error) {
+	tk.Lock.Lock()
+	defer tk.Lock.Unlock()
+	if tk.Error != nil {
+		return nil, tk.Error
+	} else {
+		token := make([]byte, len(tk.Token))
+		copy(token, tk.Token)
+		return token, nil
+	}
+}
+
+func (tk *tokenResp) setToken(tok []byte) {
+	tk.Lock.Lock()
+	tk.Token = tok
+	tk.Lock.Unlock()
+}
+
+func (tk *tokenResp) setError(err error) {
+	tk.Lock.Lock()
+	tk.Error = err
+	tk.Lock.Unlock()
 }
 
 // Stores the current client token and sends periodic keepalive messages
@@ -22,8 +46,7 @@ type refresher struct {
 	ctx         context.Context
 	sessionStub sessionpb2.SessionServiceClient
 
-	tokenMutex *sync.Mutex
-	token      *tokenResp
+	token *tokenResp
 
 	cancelCh chan struct{}
 
@@ -44,7 +67,7 @@ func (ref *refresher) refreshLoop() {
 	}
 }
 
-func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceClient, tokenMutex *sync.Mutex, token *tokenResp, cancelCh chan struct{}) error {
+func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceClient, token *tokenResp, cancelCh chan struct{}) error {
 	handshakeReq := &sessionpb2.HandshakeRequest{AuthProtocol: 1, Payload: [](byte)("hello godeephaven")}
 	handshakeResp, err := sessionStub.NewSession(ctx, handshakeReq)
 	if err != nil {
@@ -53,11 +76,7 @@ func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceCl
 
 	ctx = metadata.NewOutgoingContext(context.Background(), metadata.Pairs("deephaven_session_id", string(handshakeResp.SessionToken)))
 
-	{
-		tokenMutex.Lock()
-		token.Token = handshakeResp.SessionToken
-		tokenMutex.Unlock()
-	}
+	token.setToken(handshakeResp.SessionToken)
 
 	timeoutMillis := handshakeResp.TokenExpirationDelayMillis / 2
 
@@ -65,8 +84,7 @@ func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceCl
 		ctx:         ctx,
 		sessionStub: sessionStub,
 
-		tokenMutex: tokenMutex,
-		token:      token,
+		token: token,
 
 		cancelCh: cancelCh,
 
@@ -79,24 +97,19 @@ func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceCl
 }
 
 func (ref *refresher) refresh() error {
-	ref.tokenMutex.Lock()
-	oldToken := make([]byte, len(ref.token.Token))
-	copy(oldToken, ref.token.Token)
-	ref.tokenMutex.Unlock()
+	oldToken, err := ref.token.getToken()
+	if err != nil {
+		return err
+	}
 
 	handshakeReq := &sessionpb2.HandshakeRequest{AuthProtocol: 0, Payload: oldToken}
 	handshakeResp, err := ref.sessionStub.RefreshSessionToken(ref.ctx, handshakeReq)
 
 	if err != nil {
-		ref.tokenMutex.Lock()
-		ref.token.Error = err
-		ref.tokenMutex.Unlock()
-		fmt.Println("failed to refresh token: ", err)
+		ref.token.setError(err)
 		return err
 	} else {
-		ref.tokenMutex.Lock()
-		ref.token.Token = handshakeResp.SessionToken
-		ref.tokenMutex.Unlock()
+		ref.token.setToken(handshakeResp.SessionToken)
 	}
 
 	ref.timeoutMillis = handshakeResp.TokenExpirationDelayMillis / 2
@@ -109,8 +122,7 @@ type sessionStub struct {
 	client *Client
 	stub   sessionpb2.SessionServiceClient
 
-	tokenMutex *sync.Mutex
-	token      *tokenResp
+	token *tokenResp
 
 	cancelCh chan struct{}
 }
@@ -121,10 +133,9 @@ func newSessionStub(ctx context.Context, client *Client) (sessionStub, error) {
 
 	cancelCh := make(chan struct{})
 
-	tokenMutex := &sync.Mutex{}
 	tokenResp := &tokenResp{}
 
-	err := startRefresher(ctx, stub, tokenMutex, tokenResp, cancelCh)
+	err := startRefresher(ctx, stub, tokenResp, cancelCh)
 	if err != nil {
 		return sessionStub{}, err
 	}
@@ -133,8 +144,7 @@ func newSessionStub(ctx context.Context, client *Client) (sessionStub, error) {
 		client: client,
 		stub:   stub,
 
-		tokenMutex: tokenMutex,
-		token:      tokenResp,
+		token: tokenResp,
 
 		cancelCh: cancelCh,
 	}
@@ -142,23 +152,18 @@ func newSessionStub(ctx context.Context, client *Client) (sessionStub, error) {
 	return hs, nil
 }
 
-func (hs *sessionStub) getToken() []byte {
-	hs.tokenMutex.Lock()
-	if hs.token.Error != nil {
-		panic("TODO: Error in refreshing token")
-	}
-	token := make([]byte, len(hs.token.Token))
-	copy(token, hs.token.Token)
-	hs.tokenMutex.Unlock()
-
-	return token
+func (hs *sessionStub) getToken() ([]byte, error) {
+	return hs.token.getToken()
 }
 
 func (hs *sessionStub) release(ctx context.Context, ticket *ticketpb2.Ticket) error {
-	ctx = hs.client.withToken(ctx)
+	ctx, err := hs.client.withToken(ctx)
+	if err != nil {
+		return err
+	}
 
 	req := sessionpb2.ReleaseRequest{Id: ticket}
-	_, err := hs.stub.Release(ctx, &req)
+	_, err = hs.stub.Release(ctx, &req)
 	if err != nil {
 		return err
 	}

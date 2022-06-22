@@ -31,9 +31,14 @@ type changeHandler func(update *apppb2.FieldsChangeUpdate)
 // A thread that continues reading the listFields request and updating the client's tables will start in the background
 // if FetchRepeating is specified.
 func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, handler changeHandler) error {
-	as.cancelFetchLoop()
+	ctx, err := as.client.withToken(ctx)
+	if err != nil {
+		return err
+	}
 
-	ctx, cancel := context.WithCancel(as.client.withToken(ctx))
+	ctx, cancel := context.WithCancel(ctx)
+
+	as.cancelFetchLoop()
 
 	req := apppb2.ListFieldsRequest{}
 	fieldStream, err := as.stub.ListFields(ctx, &req)

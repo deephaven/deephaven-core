@@ -16,7 +16,10 @@ type consoleStub struct {
 }
 
 func newConsoleStub(ctx context.Context, client *Client, sessionType string) (consoleStub, error) {
-	ctx = client.withToken(ctx)
+	ctx, err := client.withToken(ctx)
+	if err != nil {
+		return consoleStub{}, err
+	}
 
 	stub := consolepb2.NewConsoleServiceClient(client.grpcChannel)
 
@@ -35,10 +38,13 @@ func newConsoleStub(ctx context.Context, client *Client, sessionType string) (co
 
 // Binds a table reference to a given name so that it can be referenced by other clients or the web UI.
 func (console *consoleStub) BindToVariable(ctx context.Context, name string, table *TableHandle) error {
-	ctx = console.client.withToken(ctx)
+	ctx, err := console.client.withToken(ctx)
+	if err != nil {
+		return err
+	}
 
 	req := consolepb2.BindTableToVariableRequest{ConsoleId: console.consoleId, VariableName: name, TableId: table.ticket}
-	_, err := console.stub.BindTableToVariable(ctx, &req)
+	_, err = console.stub.BindTableToVariable(ctx, &req)
 	if err != nil {
 		return err
 	}
@@ -49,7 +55,10 @@ func (console *consoleStub) BindToVariable(ctx context.Context, name string, tab
 // Directly uploads and executes a script on the deephaven server.
 // The script language depends on the scriptLanguage argument passed when creating the client.
 func (console *consoleStub) RunScript(ctx context.Context, script string) error {
-	ctx = console.client.withToken(ctx)
+	ctx, err := console.client.withToken(ctx)
+	if err != nil {
+		return err
+	}
 
 	req := consolepb2.ExecuteCommandRequest{ConsoleId: console.consoleId, Code: script}
 	resp, err := console.stub.ExecuteCommand(ctx, &req)

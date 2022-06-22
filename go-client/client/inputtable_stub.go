@@ -117,10 +117,13 @@ func (th *KeyBackedInputTable) AddTable(ctx context.Context, toAdd *TableHandle)
 }
 
 func (its *inputTableStub) addTable(ctx context.Context, inputTable *TableHandle, toAdd *TableHandle) error {
-	ctx = its.client.withToken(ctx)
+	ctx, err := its.client.withToken(ctx)
+	if err != nil {
+		return err
+	}
 
 	req := inputtablepb2.AddTableRequest{InputTable: inputTable.ticket, TableToAdd: toAdd.ticket}
-	_, err := its.stub.AddTableToInputTable(ctx, &req)
+	_, err = its.stub.AddTableToInputTable(ctx, &req)
 	if err != nil {
 		return nil
 	}
@@ -136,10 +139,13 @@ func (th *KeyBackedInputTable) DeleteTable(ctx context.Context, toDelete *TableH
 }
 
 func (its *inputTableStub) deleteTable(ctx context.Context, inputTable *TableHandle, toRemove *TableHandle) error {
-	ctx = its.client.withToken(ctx)
+	ctx, err := its.client.withToken(ctx)
+	if err != nil {
+		return err
+	}
 
 	req := inputtablepb2.DeleteTableRequest{InputTable: inputTable.ticket, TableToRemove: toRemove.ticket}
-	_, err := its.stub.DeleteTableFromInputTable(ctx, &req)
+	_, err = its.stub.DeleteTableFromInputTable(ctx, &req)
 	if err != nil {
 		return nil
 	}
