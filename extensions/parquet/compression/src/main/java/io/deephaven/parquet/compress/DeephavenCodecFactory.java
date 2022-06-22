@@ -31,8 +31,9 @@ public class DeephavenCodecFactory {
 
     // Default codecs to list in the configuration rather than rely on the classloader
     private static final Set<String> DEFAULT_CODECS = Set.of(
-            // Use the aircompressor codec for snappy by default - this is implemented in Java, rather than using
-            // the native xerial implementation.
+            // Manually specify the "parquet" codec rather than the ServiceLoader-selected snappy codec, which is
+            // apparently incompatible with other parquet files which use snappy. This codec does use platform-specific
+            // implementations, but has native implementations for the platforms we support today.
             "org.apache.parquet.hadoop.codec.SnappyCodec");
     private static final List<Class<?>> CODECS = io.deephaven.configuration.Configuration.getInstance()
             .getStringSetFromPropertyWithDefault("DeephavenCodecFactory.codecs", DEFAULT_CODECS).stream()
