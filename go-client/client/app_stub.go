@@ -33,6 +33,7 @@ type changeHandler func(update *apppb2.FieldsChangeUpdate)
 // so any timeouts or cancellations that have been set for it will affect the listFields stream.
 // A thread that continues reading the listFields request and updating the client's tables will start in the background
 // if FetchRepeating is specified.
+// The client lock should be held when calling this function.
 func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, handler changeHandler) error {
 	ctx, err := as.client.withToken(ctx)
 	if err != nil {
@@ -71,10 +72,15 @@ func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, hand
 	}
 }
 
+// Returns true if an existing FetchTables loop is running.
+// The client lock should be held when calling this function.
 func (as *appStub) isFetching() bool {
 	return as.cancelFunc != nil
 }
 
+// Cancels an existing FetchTables loop, if one exists.
+// If one exists, this will block until the loop has finished writing any results that are in-progress.
+// The client lock should be held when calling this function.
 func (as *appStub) cancelFetchLoop() {
 	if as.cancelFunc != nil {
 		as.cancelFunc()
@@ -87,6 +93,9 @@ func (as *appStub) cancelFetchLoop() {
 	}
 }
 
+// Closes the app stub and frees any associated resources.
+// The app stub should not be used after calling this function.
+// The client lock should be held when calling this function.
 func (as *appStub) Close() {
 	as.cancelFetchLoop()
 }

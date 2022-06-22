@@ -49,6 +49,7 @@ func (ts *tableStub) createInputTable(ctx context.Context, req *tablepb2.CreateI
 	return parseCreationResponse(ts.client, resp)
 }
 
+// Executes a batch (query) request on the server and returns the resulting tables.
 func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableRequest_Operation) ([]*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
+// Wraps gRPC calls for console.proto.
 type consoleStub struct {
 	client *Client
 

@@ -19,6 +19,7 @@ type KeyBackedInputTable struct {
 	TableHandle
 }
 
+// Wraps gRPC calls for inputtable.proto.
 type inputTableStub struct {
 	client *Client
 

@@ -17,6 +17,7 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
+// Wraps Arrow Flight gRPC calls.
 type flightStub struct {
 	client *Client
 
@@ -37,6 +38,7 @@ func newFlightStub(client *Client, host string, port string) (flightStub, error)
 	return flightStub{client: client, stub: stub}, nil
 }
 
+// Downloads the data currently in the provided table and returns it as an arrow Record.
 func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (arrow.Record, error) {
 	ctx, err := fs.client.withToken(ctx)
 	if err != nil {
