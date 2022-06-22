@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sync"
 
 	tablepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/table"
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
@@ -31,15 +32,20 @@ type QueryNode struct {
 }
 
 func (qb QueryNode) addOp(op tableOp) QueryNode {
+	qb.builder.opLock.Lock()
 	qb.builder.ops = append(qb.builder.ops, op)
-	return qb.builder.curRootNode()
+	result := qb.builder.curRootNode()
+	qb.builder.opLock.Unlock()
+	return result
 }
 
 // This is (some subgraph of) the Query DAG.
 type queryBuilder struct {
 	uniqueId int32
-	table    *TableHandle
-	ops      []tableOp
+	table    *TableHandle // This can be nil if the first operation creates a new table, e.g. EmptyTableQuery
+
+	opLock sync.Mutex
+	ops    []tableOp
 }
 
 func (qb *queryBuilder) curRootNode() QueryNode {
@@ -150,6 +156,18 @@ func getGrpcOps(client *Client, nodes []QueryNode) ([]*tablepb2.BatchTableReques
 		nodeOrder:   make([]*ticketpb2.Ticket, len(nodes)),
 		finishedOps: make(map[opKey]int32),
 		grpcOps:     nil,
+	}
+
+	// Lock all of the builders because even though we can only
+	// append to the operation list, the reassignment used in the
+	// append isn't actually atomic, so it could race with this goroutine.
+	locked := make(map[int32]struct{})
+	for _, node := range nodes {
+		if _, ok := locked[node.builder.uniqueId]; !ok {
+			locked[node.builder.uniqueId] = struct{}{}
+			node.builder.opLock.Lock()
+			defer node.builder.opLock.Unlock()
+		}
 	}
 
 	for _, node := range nodes {
@@ -956,6 +974,5 @@ func (qb QueryNode) Merge(sortBy string, others ...QueryNode) QueryNode {
 	children[0] = qb
 	copy(children[1:], others)
 
-	qb.builder.ops = append(qb.builder.ops, mergeOp{children: children, sortBy: sortBy})
-	return qb.builder.curRootNode()
+	return qb.addOp(mergeOp{children: children, sortBy: sortBy})
 }

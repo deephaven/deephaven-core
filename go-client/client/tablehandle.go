@@ -52,10 +52,13 @@ func (th *TableHandle) Query() QueryNode {
 }
 
 // Releases this table handle's resources on the server. The TableHandle is no longer usable after Release is called.
+// Ensure that no other methods (including ones in other goroutines) are using this TableHandle.
 func (th *TableHandle) Release(ctx context.Context) error {
 	if th.client != nil {
 		err := th.client.release(ctx, th.ticket)
 		if err != nil {
+			// This is logged because most of the time this method is used with defer,
+			// which will discard the error value.
 			log.Println("unable to release table:", err.Error())
 			return err
 		}

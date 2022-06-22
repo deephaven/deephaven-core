@@ -2,8 +2,7 @@
 // It can upload, manipulate, and download tables, among other features.
 // First, use client.NewClient to connect to the server, then the Client can be used to perform operations.
 // See the provided examples in the examples/ folder or the individual code documentation for more.
-// Client and TableHandle methods are thread-safe unless otherwise specified.
-// QueryNode methods, however, are not thread-safe.
+// All methods are thread-safe unless otherwise specified.
 package client
 
 import (
