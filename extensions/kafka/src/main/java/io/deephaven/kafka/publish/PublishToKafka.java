@@ -257,7 +257,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
             try (final SafeCloseable ignored = guard) {
                 if (isStream) {
-                    //noinspection resource
+                    // noinspection resource
                     Assert.assertion(upstream.modified().isEmpty(), "upstream.modified.empty()");
                     // We always ignore removes on streams, and expect no modifies or shifts
                     publishMessages(upstream.added(), false, true, guard);
@@ -267,7 +267,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
                 // Regular table, either keyless, add-only, or aggregated
                 publishMessages(upstream.removed(), true, false, guard);
                 if (valuesModified.containsAny(upstream.modifiedColumnSet())) {
-                    //noinspection resource
+                    // noinspection resource
                     try (final RowSet addedAndModified = upstream.added().union(upstream.modified())) {
                         publishMessages(addedAndModified, false, true, guard);
                     }
