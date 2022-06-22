@@ -48,7 +48,7 @@ type refresher struct {
 
 	token *tokenResp
 
-	cancelCh chan struct{}
+	cancelCh <-chan struct{}
 
 	timeoutMillis int64
 }
@@ -124,7 +124,7 @@ type sessionStub struct {
 
 	token *tokenResp
 
-	cancelCh chan struct{}
+	cancelCh chan<- struct{}
 }
 
 // Performs the first handshake to get a client token.

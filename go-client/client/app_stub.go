@@ -18,6 +18,9 @@ type appStub struct {
 	// Only present when doing a FetchRepeating call in the background.
 	// Calling this function will cancel the FetchRepeating call.
 	cancelFunc context.CancelFunc
+	// Only present when doing a FetchRepeating call in the background.
+	// listFields must wait for this channel to close, so it knows that the call has stopped.
+	cancelAck <-chan struct{}
 }
 
 func newAppStub(client *Client) appStub {
@@ -58,12 +61,12 @@ func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, hand
 	as.cancelFunc = cancel
 
 	if fetchOption == FetchRepeating {
-		go fetchTablesLoop(fieldStream, handler)
-
+		cancelAck := make(chan struct{})
+		as.cancelAck = cancelAck
+		go fetchTablesLoop(fieldStream, handler, cancelAck)
 		return nil
 	} else {
 		as.cancelFetchLoop()
-
 		return nil
 	}
 }
@@ -77,17 +80,23 @@ func (as *appStub) cancelFetchLoop() {
 		as.cancelFunc()
 		as.cancelFunc = nil
 	}
+
+	if as.cancelAck != nil {
+		<-as.cancelAck
+		as.cancelAck = nil
+	}
 }
 
 func (as *appStub) Close() {
 	as.cancelFetchLoop()
 }
 
-func fetchTablesLoop(stream apppb2.ApplicationService_ListFieldsClient, handler changeHandler) {
+func fetchTablesLoop(stream apppb2.ApplicationService_ListFieldsClient, handler changeHandler, cancelAck chan<- struct{}) {
 	for {
 		resp, err := stream.Recv()
 		if err != nil {
 			if status, ok := status.FromError(err); ok && status.Code() == codes.Canceled {
+				close(cancelAck)
 				break
 			}
 			fmt.Println("failed to list fields: ", err)
