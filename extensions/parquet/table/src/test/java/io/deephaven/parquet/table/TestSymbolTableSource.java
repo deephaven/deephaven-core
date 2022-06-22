@@ -1,12 +1,13 @@
-package io.deephaven.engine.table.impl.sources.regioned;
+package io.deephaven.parquet.table;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
-import io.deephaven.parquet.table.ParquetTools;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -16,10 +17,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.Assert.assertTrue;
+import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
 
 /**
- * Unit tests for {@link SymbolTableSource}.
+ * Unit tests for Parquet symbol tables
  */
 public class TestSymbolTableSource {
     private File dataDirectory;
@@ -40,12 +41,12 @@ public class TestSymbolTableSource {
     }
 
     /**
-     * Test that the db can mix partitions that contain symbol tables with those that do not, regardless of what the
-     * TableDefinition claims it has.
+     * Verify that a parquet writing encodes a simple low-cardinality String column using a dictionary,
+     * and that we can correctly read this back via the `SymbolTableSource` interface.
      */
     @Test
     public void testWriteAndReadSymbols() {
-        final Table t = TableTools.emptyTable(10).update("TheBestColumn=`S`+k");
+        final Table t = TableTools.emptyTable(100).update("TheBestColumn=`S`+ (k % 10)", "Sentinel=k");
         final File toWrite = new File(dataDirectory, "table.parquet");
         ParquetTools.writeTable(t, toWrite, t.getDefinition());
 
@@ -53,6 +54,11 @@ public class TestSymbolTableSource {
         final Table readBack = ParquetTools.readTable(toWrite);
         // noinspection unchecked
         SymbolTableSource<String> source = (SymbolTableSource) readBack.getColumnSource("TheBestColumn");
-        assertTrue(source.hasSymbolTable(readBack.getRowSet()));
+        Assert.assertTrue(source.hasSymbolTable(readBack.getRowSet()));
+
+        final Table expected = TableTools.emptyTable(10).update("ID=k", "Symbol=`S` + k");
+        final Table syms = source.getStaticSymbolTable(t.getRowSet(), false);
+
+        assertTableEquals(expected, syms);
     }
 }

@@ -4,7 +4,6 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.CodecLookup;
@@ -105,10 +104,10 @@ class TypeInfos {
     }
 
     static PrecisionAndScale getPrecisionAndScale(
-            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
-            final String columnName,
-            final RowSet rowSet,
-            Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
+            @NotNull final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+            @NotNull final String columnName,
+            @NotNull final RowSet rowSet,
+            @NotNull Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
         return (PrecisionAndScale) computedCache
                 .computeIfAbsent(columnName, unusedColumnName -> new HashMap<>())
                 .computeIfAbsent(ParquetTableWriter.CacheTags.DECIMAL_ARGS,
