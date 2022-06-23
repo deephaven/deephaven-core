@@ -18,7 +18,7 @@ import static io.deephaven.integrations.python.PythonUtils.pyApplyFunc;
  * @param <U> input argument class
  */
 @ScriptApi
-public class PythonBiFunction<T, U> implements BiFunction<T, U, Object> {
+public class PythonBiFunction<T, U, R> implements BiFunction<T, U, R> {
     private final PyObject pyCallable;
     private final Class classOut;
 
@@ -27,35 +27,33 @@ public class PythonBiFunction<T, U> implements BiFunction<T, U, Object> {
      *
      * @param pyCallable the python object providing the function - must either be callable or have an `apply` attribute
      *        which is callable.
-     * @param classOut the specific java class to interpret the return for the method. Note that this is probably only
-     *        really useful if `classOut` is one of String, double, float, long, int, short, byte, or boolean.
-     *        Otherwise, the return element will likely just remain PyObject, and not be particularly usable inside
-     *        Java.
+     * @param classOut the specific java class to interpret the return for the method. This can be one of String,
+     *        double, float, long, int, short, byte, or boolean; or in the case of Python wrapper objects, PyObject,
+     *        such objects then can be unwrapped to be used inside Java.
      */
-    public PythonBiFunction(final PyObject pyCallable, final Class classOut) {
+    public PythonBiFunction(final PyObject pyCallable, final Class<R> classOut) {
         this.pyCallable = pyApplyFunc(pyCallable);
         this.classOut = classOut;
     }
 
     @Override
-    public Object apply(T t, U u) {
+    public R apply(T t, U u) {
         PyObject wrapped = PythonObjectWrapper.wrap(t);
         PyObject wrappedOther = PythonObjectWrapper.wrap(u);
         PyObject out = pyCallable.call("__call__", wrapped, wrappedOther);
-        return PythonValueGetter.getValue(out, classOut);
+        return (R) PythonValueGetter.getValue(out, classOut);
     }
 
 
-    public static class PythonBinaryOperator extends PythonBiFunction implements BinaryOperator {
+    public static class PythonBinaryOperator<T> extends PythonBiFunction<T, T, T> implements BinaryOperator<T> {
         /**
          * Creates a {@link PythonBinaryOperator} which calls a Python function.
          *
          * @param pyCallable the python object providing the function - must either be callable or have an `apply`
          *        attribute which is callable.
-         * @param classOut the specific java class to interpret the return for the method. Note that this is probably
-         *        only really useful if `classOut` is one of String, double, float, long, int, short, byte, or boolean.
-         *        Otherwise, the return element will likely just remain PyObject, and not be particularly usable inside
-         *        Java.
+         * @param classOut the specific java class to interpret the return for the method. This can be one of String,
+         *        double, float, long, int, short, byte, or boolean; or in the case of Python wrapper objects, PyObject,
+         *        such objects then can be unwrapped to be used inside Java.
          */
         public PythonBinaryOperator(PyObject pyCallable, Class classOut) {
             super(pyCallable, classOut);

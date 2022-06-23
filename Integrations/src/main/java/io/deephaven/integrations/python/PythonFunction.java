@@ -17,7 +17,7 @@ import static io.deephaven.integrations.python.PythonUtils.pyApplyFunc;
  * @param <T> input argument class
  */
 @ScriptApi
-public class PythonFunction<T> implements Function<T, Object> {
+public class PythonFunction<T, R> implements Function<T, R> {
     private final PyObject pyCallable;
     private final Class classOut;
 
@@ -26,12 +26,11 @@ public class PythonFunction<T> implements Function<T, Object> {
      *
      * @param pyCallable the python object providing the function - must either be callable or have an `apply` attribute
      *        which is callable.
-     * @param classOut the specific java class to interpret the return for the method. Note that this is probably only
-     *        really useful if `classOut` is one of String, double, float, long, int, short, byte, or boolean.
-     *        Otherwise, the return element will likely just remain PyObject, and not be particularly usable inside
-     *        Java.
+     * @param classOut the specific java class to interpret the return for the method. This can be one of String,
+     *        double, float, long, int, short, byte, or boolean; or in the case of Python wrapper objects, PyObject,
+     *        such objects then can be unwrapped to be used inside Java.
      */
-    public PythonFunction(final PyObject pyCallable, final Class classOut) {
+    public PythonFunction(final PyObject pyCallable, final Class<R> classOut) {
 
         this.pyCallable = pyApplyFunc(pyCallable);
         this.classOut = classOut;
@@ -39,23 +38,22 @@ public class PythonFunction<T> implements Function<T, Object> {
     }
 
     @Override
-    public Object apply(T t) {
+    public R apply(T t) {
         PyObject wrapped = PythonObjectWrapper.wrap(t);
         PyObject out = pyCallable.call("__call__", wrapped);
-        return PythonValueGetter.getValue(out, classOut);
+        return (R) PythonValueGetter.getValue(out, classOut);
     }
 
-    public static class PythonUnaryOperator extends PythonFunction implements UnaryOperator {
+    public static class PythonUnaryOperator<T> extends PythonFunction<T, T> implements UnaryOperator<T> {
 
         /**
          * Creates a {@link UnaryOperator} which calls a Python function.
          *
          * @param pyCallable the python object providing the function - must either be callable or have an `apply`
          *        attribute which is callable.
-         * @param classOut the specific java class to interpret the return for the method. Note that this is probably
-         *        only really useful if `classOut` is one of String, double, float, long, int, short, byte, or boolean.
-         *        Otherwise, the return element will likely just remain PyObject, and not be particularly usable inside
-         *        Java.
+         * @param classOut the specific java class to interpret the return for the method. This can be one of String,
+         *        double, float, long, int, short, byte, or boolean; or in the case of Python wrapper objects, PyObject,
+         *        such objects then can be unwrapped to be used inside Java.
          */
         public PythonUnaryOperator(PyObject pyCallable, Class classOut) {
             super(pyCallable, classOut);

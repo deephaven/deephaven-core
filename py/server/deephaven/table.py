@@ -1453,7 +1453,9 @@ class PartitionedTable(JObjectWrapper):
         return list(map(Table, self.j_partitioned_table.constituents()))
 
     def transform(self, func: Callable[[Table], Table]) -> PartitionedTable:
-        """Apply the provided function to all constituent Tables and produce a new PartitionedTable with the results as its constituents, with the same data for all other columns in the underlying partitioned Table. Note that if the Table underlying this PartitionedTable changes, a corresponding change will propagate to the result.
+        """Apply the provided function to all constituent Tables and produce a new PartitionedTable with the results
+        as its constituents, with the same data for all other columns in the underlying partitioned Table. Note that
+        if the Table underlying this PartitionedTable changes, a corresponding change will propagate to the result.
 
         Args:
             func (Callable[[Table], Table]: a function which takes a Table as input and returns a new Table
@@ -1471,7 +1473,11 @@ class PartitionedTable(JObjectWrapper):
             raise DHError(e, "failed to transform the PartitionedTable.") from e
 
     def partitioned_transform(self, other: PartitionedTable, func: Callable[[Table, Table], Table]) -> PartitionedTable:
-        """Join the underlying partitioned Tables from this PartitionedTable and other on the key columns, then apply the provided function to all pairs of constituent Tables with the same keys in order to produce a new PartitionedTable with the results as its constituents, with the same data for all other columns in the underlying partitioned Table from this. Note that if the Tables underlying this PartitionedTable or other change, a corresponding change will propagate to the result.
+        """Join the underlying partitioned Tables from this PartitionedTable and other on the key columns, then apply
+        the provided function to all pairs of constituent Tables with the same keys in order to produce a new
+        PartitionedTable with the results as its constituents, with the same data for all other columns in the
+        underlying partitioned Table from this. Note that if the Tables underlying this PartitionedTable or other
+        change, a corresponding change will propagate to the result.
 
         Args:
             other (PartitionedTable): the other Partitioned table whose constituent tables will be passed in as the 2nd
