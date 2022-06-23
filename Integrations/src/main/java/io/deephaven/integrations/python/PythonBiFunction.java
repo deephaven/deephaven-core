@@ -55,7 +55,7 @@ public class PythonBiFunction<T, U, R> implements BiFunction<T, U, R> {
          *        double, float, long, int, short, byte, or boolean; or in the case of Python wrapper objects, PyObject,
          *        such objects then can be unwrapped to be used inside Java.
          */
-        public PythonBinaryOperator(PyObject pyCallable, Class classOut) {
+        public PythonBinaryOperator(PyObject pyCallable, Class<T> classOut) {
             super(pyCallable, classOut);
         }
     }
