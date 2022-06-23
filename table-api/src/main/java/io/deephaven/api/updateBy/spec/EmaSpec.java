@@ -30,8 +30,8 @@ public abstract class EmaSpec implements UpdateBySpec {
     }
 
     public static EmaSpec ofTime(final EmaControl control,
-                                 final String timestampCol,
-                                 Duration emaDuration) {
+            final String timestampCol,
+            Duration emaDuration) {
         return ImmutableEmaSpec.builder()
                 .control(control)
                 .timeScale(TimeScale.ofTime(timestampCol, emaDuration))
