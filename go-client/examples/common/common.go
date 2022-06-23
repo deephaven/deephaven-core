@@ -6,6 +6,7 @@ import (
 	"github.com/apache/arrow/go/v8/arrow/memory"
 )
 
+// GetExampleRecord returns an Arrow record that contains some arbitrary data for use as an example.
 func GetExampleRecord() arrow.Record {
 	pool := memory.NewGoAllocator()
 

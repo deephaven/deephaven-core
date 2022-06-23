@@ -17,6 +17,9 @@ func main() {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
+	// When starting a client connection, note that the client script language "python"
+	// must match the language the server was started with,
+	// even if we aren't using any scripts.
 	cl, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {
 		fmt.Println("error when connecting to localhost port 10000:", err.Error())
@@ -24,7 +27,7 @@ func main() {
 	}
 	defer cl.Close()
 
-	// First, let's get some example data to manipulate.
+	// First, let's create some example data to manipulate.
 	sampleRecord := common.GetExampleRecord()
 	// Note that Arrow records must eventually be released.
 	defer sampleRecord.Release()

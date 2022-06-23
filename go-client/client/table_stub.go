@@ -23,10 +23,11 @@ func (err QueryError) Error() string {
 	return "query error: " + err.Msg
 }
 
+// A tableStub wraps table.proto gRPC requests.
 type tableStub struct {
 	client *Client
 
-	stub tablepb2.TableServiceClient
+	stub tablepb2.TableServiceClient // The stub for the table gRPC requests.
 }
 
 func newTableStub(client *Client) (tableStub, error) {
@@ -35,6 +36,8 @@ func newTableStub(client *Client) (tableStub, error) {
 	return tableStub{client: client, stub: stub}, nil
 }
 
+// createInputTable simply wraps the CreateInputTable gRPC call and returns the resulting table.
+// See inputTableStub for more details on how it is used.
 func (ts *tableStub) createInputTable(ctx context.Context, req *tablepb2.CreateInputTableRequest) (*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
@@ -183,6 +186,7 @@ func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int
 	return parseCreationResponse(ts.client, resp)
 }
 
+// parseCreationResponse turns a gRPC table creation response, which is returned by most table gRPC methods, into a usable TableHandle.
 func parseCreationResponse(client *Client, resp *tablepb2.ExportedTableCreationResponse) (*TableHandle, error) {
 	if !resp.Success {
 		return nil, errors.New("server error: `" + resp.GetErrorInfo() + "`")
@@ -202,6 +206,7 @@ func parseCreationResponse(client *Client, resp *tablepb2.ExportedTableCreationR
 	return newTableHandle(client, respTicket, schema, resp.Size, resp.IsStatic), nil
 }
 
+// dropColumns is a wrapper around the DropColumns gRPC request.
 func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols []string) (*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
@@ -221,8 +226,10 @@ func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols [
 	return parseCreationResponse(ts.client, resp)
 }
 
+// selectOrUpdateOp is just a way to refer to one of the Update, View, UpdateView, Select, or LazyUpdate methods on the table stub.
 type selectOrUpdateOp func(tablepb2.TableServiceClient, context.Context, *tablepb2.SelectOrUpdateRequest, ...grpc.CallOption) (*tablepb2.ExportedTableCreationResponse, error)
 
+// doSelectOrUpdate wraps Update, View, UpdateView, Select, and LazyUpdate gRPC requests.
 func (ts *tableStub) doSelectOrUpdate(ctx context.Context, table *TableHandle, formulas []string, op selectOrUpdateOp) (*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
@@ -261,6 +268,8 @@ func (ts *tableStub) selectTbl(ctx context.Context, table *TableHandle, formulas
 	return ts.doSelectOrUpdate(ctx, table, formulas, tablepb2.TableServiceClient.Select)
 }
 
+// makeRequest is a convenience function to perform all the boilerplate required to actually make a gRPC request.
+// The op argument should simply create a request given the result and source ID and call the appropriate gRPC method.
 func (ts *tableStub) makeRequest(ctx context.Context, table *TableHandle, op reqOp) (*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
@@ -286,6 +295,7 @@ type tblResp = *tablepb2.ExportedTableCreationResponse
 
 type reqOp func(ctx ctxt, resultId ticketRef, sourceId tblRef) (tblResp, error)
 
+// selectDistinct is a wrapper around the SelectDistinct gRPC operation.
 func (ts *tableStub) selectDistinct(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx ctxt, resultId ticketRef, sourceId tblRef) (tblResp, error) {
 		req := tablepb2.SelectDistinctRequest{ResultId: resultId, SourceId: sourceId, ColumnNames: formulas}
@@ -293,6 +303,7 @@ func (ts *tableStub) selectDistinct(ctx context.Context, table *TableHandle, for
 	})
 }
 
+// sortBy is a wrapper around the Sort gRPC operation.
 func (ts *tableStub) sortBy(ctx context.Context, table *TableHandle, cols []SortColumn) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx ctxt, resultId ticketRef, sourceId tblRef) (tblResp, error) {
 		var sorts []*tablepb2.SortDescriptor
@@ -313,6 +324,7 @@ func (ts *tableStub) sortBy(ctx context.Context, table *TableHandle, cols []Sort
 	})
 }
 
+// where is a wrapper around the UnstructuredFilter gRPC operation.
 func (ts *tableStub) where(ctx context.Context, table *TableHandle, filters []string) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx ctxt, resultId ticketRef, sourceId tblRef) (tblResp, error) {
 		req := tablepb2.UnstructuredFilterTableRequest{ResultId: resultId, SourceId: sourceId, Filters: filters}
@@ -320,6 +332,7 @@ func (ts *tableStub) where(ctx context.Context, table *TableHandle, filters []st
 	})
 }
 
+// headOrTail is a wrapper around the Head and Tail gRPC operations (the isHead argument selects which one it is).
 func (ts *tableStub) headOrTail(ctx context.Context, table *TableHandle, numRows int64, isHead bool) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx ctxt, resultId ticketRef, sourceId tblRef) (tblResp, error) {
 		req := tablepb2.HeadOrTailRequest{ResultId: resultId, SourceId: sourceId, NumRows: numRows}
@@ -331,6 +344,7 @@ func (ts *tableStub) headOrTail(ctx context.Context, table *TableHandle, numRows
 	})
 }
 
+// naturalJoin is a wrapper around the naturalJoin gRPC operation.
 func (ts *tableStub) naturalJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
 	return ts.makeRequest(ctx, leftTable, func(ctx ctxt, resultId ticketRef, leftId tblRef) (tblResp, error) {
 		rightId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: rightTable.ticket}}
@@ -339,6 +353,7 @@ func (ts *tableStub) naturalJoin(ctx context.Context, leftTable *TableHandle, ri
 	})
 }
 
+// crossJoin is a wrapper around the crossJoin gRPC operation.
 func (ts *tableStub) crossJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string, reserveBits int32) (*TableHandle, error) {
 	return ts.makeRequest(ctx, leftTable, func(ctx ctxt, resultId ticketRef, leftId tblRef) (tblResp, error) {
 		rightId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: rightTable.ticket}}
@@ -347,6 +362,7 @@ func (ts *tableStub) crossJoin(ctx context.Context, leftTable *TableHandle, righ
 	})
 }
 
+// exactJoin is a wrapper around the exactJoin gRPC operation.
 func (ts *tableStub) exactJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
 	return ts.makeRequest(ctx, leftTable, func(ctx ctxt, resultId ticketRef, leftId tblRef) (tblResp, error) {
 		rightId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: rightTable.ticket}}
@@ -355,7 +371,8 @@ func (ts *tableStub) exactJoin(ctx context.Context, leftTable *TableHandle, righ
 	})
 }
 
-func (ts *tableStub) asOfJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string, matchRule int) (*TableHandle, error) {
+// asOfJoin is a wrapper around the asOfJoin gRPC operation.
+func (ts *tableStub) asOfJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string, matchRule MatchRule) (*TableHandle, error) {
 	return ts.makeRequest(ctx, leftTable, func(ctx ctxt, resultId ticketRef, leftId tblRef) (tblResp, error) {
 		rightId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: rightTable.ticket}}
 		var asOfMatchRule tablepb2.AsOfJoinTablesRequest_MatchRule
@@ -377,6 +394,7 @@ func (ts *tableStub) asOfJoin(ctx context.Context, leftTable *TableHandle, right
 	})
 }
 
+// headOrTailBy is a wrapper around the HeadBy and TailBy gRPC operations (which one it is can be selected using isHead).
 func (ts *tableStub) headOrTailBy(ctx context.Context, table *TableHandle, numRows int64, by []string, isHead bool) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx ctxt, resultId ticketRef, sourceId tblRef) (tblResp, error) {
 		req := tablepb2.HeadOrTailByRequest{ResultId: resultId, SourceId: sourceId, NumRows: numRows, GroupByColumnSpecs: by}
@@ -388,6 +406,7 @@ func (ts *tableStub) headOrTailBy(ctx context.Context, table *TableHandle, numRo
 	})
 }
 
+// dedicatedAggOp is actually a convenience method to perform the ComboAggregate gRPC operation with only a single aggregation.
 func (ts *tableStub) dedicatedAggOp(ctx context.Context, table *TableHandle, by []string, countColumn string, kind tablepb2.ComboAggregateRequest_AggType) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx ctxt, resultId ticketRef, sourceId tblRef) (tblResp, error) {
 		var agg tablepb2.ComboAggregateRequest_Aggregate
@@ -404,6 +423,7 @@ func (ts *tableStub) dedicatedAggOp(ctx context.Context, table *TableHandle, by 
 	})
 }
 
+// ungroup is a wrapper around the Ungroup gRPC method.
 func (ts *tableStub) ungroup(ctx context.Context, table *TableHandle, cols []string, nullFill bool) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx ctxt, resultId ticketRef, sourceId tblRef) (tblResp, error) {
 		req := tablepb2.UngroupRequest{ResultId: resultId, SourceId: sourceId, NullFill: nullFill, ColumnsToUngroup: cols}
@@ -411,6 +431,7 @@ func (ts *tableStub) ungroup(ctx context.Context, table *TableHandle, cols []str
 	})
 }
 
+// aggBy is a wrapper around the ComboAggregate gRPC request.
 func (ts *tableStub) aggBy(ctx context.Context, table *TableHandle, aggs *AggBuilder, by []string) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx ctxt, resultId ticketRef, sourceId tblRef) (tblResp, error) {
 		var reqAggs []*tablepb2.ComboAggregateRequest_Aggregate
@@ -424,6 +445,7 @@ func (ts *tableStub) aggBy(ctx context.Context, table *TableHandle, aggs *AggBui
 	})
 }
 
+// merge is a wrapper around the MergeTables gRPC request.
 func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHandle) (*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {

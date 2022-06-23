@@ -13,6 +13,7 @@ import (
 type appStub struct {
 	client *Client
 
+	// The stub for application.proto gRPC requests.
 	stub apppb2.ApplicationServiceClient
 
 	// Only present when doing a FetchRepeating call in the background.
@@ -100,6 +101,10 @@ func (as *appStub) Close() {
 	as.cancelFetchLoop()
 }
 
+// fetchTablesLoop runs a loop that will check for new changes to fields.
+// When a new change occurs, it will pass the change to the given handler.
+// When the context for the stream gets canceled, the loop will halt
+// and close the cancelAck channel to signal that it is finished.
 func fetchTablesLoop(stream apppb2.ApplicationService_ListFieldsClient, handler changeHandler, cancelAck chan<- struct{}) {
 	for {
 		resp, err := stream.Recv()

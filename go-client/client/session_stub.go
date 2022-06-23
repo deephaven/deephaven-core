@@ -11,12 +11,14 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+// tokenResp thread-safely protects the current session token (or an error in getting the session token).
 type tokenResp struct {
 	Lock  sync.Mutex
 	Token []byte
 	Error error
 }
 
+// getToken thread-safely returns the current token, or an error if an error has occurred at some point.
 func (tk *tokenResp) getToken() ([]byte, error) {
 	tk.Lock.Lock()
 	defer tk.Lock.Unlock()
@@ -29,30 +31,34 @@ func (tk *tokenResp) getToken() ([]byte, error) {
 	}
 }
 
+// setToken thread-safely sets the session token to a new value.
 func (tk *tokenResp) setToken(tok []byte) {
 	tk.Lock.Lock()
 	tk.Token = tok
 	tk.Lock.Unlock()
 }
 
+// setError thread-safely sets an error value for the session token.
 func (tk *tokenResp) setError(err error) {
 	tk.Lock.Lock()
 	tk.Error = err
 	tk.Lock.Unlock()
 }
 
-// Stores the current client token and sends periodic keepalive messages
+// A refresher stores the current client token and sends periodic keepalive messages to refresh the client token.
 type refresher struct {
 	ctx         context.Context
 	sessionStub sessionpb2.SessionServiceClient
 
-	token *tokenResp
+	token *tokenResp // the actual client token, which gets periodically updated.
 
-	cancelCh <-chan struct{}
+	cancelCh <-chan struct{} // if this channel closes, the refresher should stop.
 
-	timeoutMillis int64
+	timeoutMillis int64 // time (in milliseconds) before the token should be refreshed again.
 }
 
+// refreshLoop is an endless loop that will update the token when necessary.
+// It can be canceled by closing the cancelCh channel.
 func (ref *refresher) refreshLoop() {
 	for {
 		select {
@@ -67,7 +73,8 @@ func (ref *refresher) refreshLoop() {
 	}
 }
 
-func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceClient, token *tokenResp, cancelCh chan struct{}) error {
+// startRefresher begins a background goroutine that will update the passed token whenever it would time out.
+func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceClient, token *tokenResp, cancelCh <-chan struct{}) error {
 	handshakeReq := &sessionpb2.HandshakeRequest{AuthProtocol: 1, Payload: [](byte)("hello godeephaven")}
 	handshakeResp, err := sessionStub.NewSession(ctx, handshakeReq)
 	if err != nil {
@@ -96,6 +103,8 @@ func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceCl
 	return nil
 }
 
+// refresh is what actually refreshes the client token. It makes a RefreshSessionToken request,
+// and then updates the token struct.
 func (ref *refresher) refresh() error {
 	oldToken, err := ref.token.getToken()
 	if err != nil {
@@ -122,9 +131,9 @@ type sessionStub struct {
 	client *Client
 	stub   sessionpb2.SessionServiceClient
 
-	token *tokenResp
+	token *tokenResp // the client token, which is also shared with a refresher.
 
-	cancelCh chan<- struct{}
+	cancelCh chan<- struct{} // closing this channel will stop the refresher.
 }
 
 // Performs the first handshake to get a client token.
@@ -156,6 +165,7 @@ func (hs *sessionStub) getToken() ([]byte, error) {
 	return hs.token.getToken()
 }
 
+// release releases a table ticket to free its resources on the server.
 func (hs *sessionStub) release(ctx context.Context, ticket *ticketpb2.Ticket) error {
 	ctx, err := hs.client.withToken(ctx)
 	if err != nil {
@@ -170,6 +180,9 @@ func (hs *sessionStub) release(ctx context.Context, ticket *ticketpb2.Ticket) er
 	return nil
 }
 
+// Close closes the session stub and frees any associated resources.
+// The session stub should not be used after calling this function.
+// The client lock should be held when calling this function.
 func (hs *sessionStub) Close() {
 	if hs.cancelCh != nil {
 		close(hs.cancelCh)

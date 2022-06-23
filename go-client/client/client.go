@@ -8,6 +8,7 @@ package client
 import (
 	"context"
 	"errors"
+	"log"
 	"sync"
 	"sync/atomic"
 
@@ -55,8 +56,8 @@ type Client struct {
 	// Must be accessed atomically.
 	nextTicket int32
 
-	tablesLock sync.Mutex
-	tables     map[fieldId]*TableHandle
+	tablesLock sync.Mutex               // Guards the tables map.
+	tables     map[fieldId]*TableHandle // A map of tables that can be opened using OpenTable
 }
 
 // NewClient starts a connection to a Deephaven server.
@@ -122,7 +123,7 @@ const (
 
 // FetchTables fetches the list of tables from the server.
 // This allows the client to see the list of named global tables on the server,
-// and thus allows it to open them using OpenTables.
+// and thus allows it to open them using OpenTable.
 // Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
 func (client *Client) FetchTables(ctx context.Context, opt FetchOption) error {
 	// Guards the listFields state.
@@ -202,7 +203,7 @@ func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]*Tab
 
 // Close closes the connection to the server and frees any associated resources.
 // Once this method is called, the client and any TableHandles from it cannot be used.
-func (client *Client) Close() {
+func (client *Client) Close() error {
 	client.lock.Lock()
 	defer client.lock.Unlock()
 
@@ -212,10 +213,17 @@ func (client *Client) Close() {
 		client.grpcChannel.Close()
 		client.grpcChannel = nil
 	}
+	// This is logged because most of the time this method is used with defer,
+	// which will discard the error value.
+	err := client.flightStub.Close()
+	if err != nil {
+		log.Println("unable to close client:", err.Error())
+	}
+	return err
 }
 
 // withToken attaches the current session token to a context as metadata.
-// This is thread-safe
+// This is thread-safe.
 func (client *Client) withToken(ctx context.Context) (context.Context, error) {
 	tok, err := client.getToken()
 	if err != nil {

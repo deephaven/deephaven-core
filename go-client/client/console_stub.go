@@ -11,11 +11,13 @@ import (
 type consoleStub struct {
 	client *Client
 
-	stub consolepb2.ConsoleServiceClient
+	stub consolepb2.ConsoleServiceClient // The stub for console.proto gRPC requests.
 
-	consoleId *ticketpb2.Ticket
+	consoleId *ticketpb2.Ticket // A consoleId assigned to this client by the server.
 }
 
+// newConsoleStub creates a console stub and starts a console for use with scripts.
+// sessionType determines what language the scripts will use. It can be either "python" or "groovy" and must match the server language.
 func newConsoleStub(ctx context.Context, client *Client, sessionType string) (consoleStub, error) {
 	ctx, err := client.withToken(ctx)
 	if err != nil {

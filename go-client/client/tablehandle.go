@@ -12,13 +12,13 @@ import (
 
 // A TableHandle is a reference to a table stored on the deephaven server.
 //
-// It should be eventually released using Release once it is no longer needed.
+// It should be eventually released using `Release()` once it is no longer needed.
 type TableHandle struct {
 	client   *Client
-	ticket   *ticketpb2.Ticket
-	schema   *arrow.Schema
-	size     int64
-	isStatic bool
+	ticket   *ticketpb2.Ticket // The ticket this table can be referred to by.
+	schema   *arrow.Schema     // The schema (i.e. name, type, and metadata) for this table's columns.
+	size     int64             // The number of rows that this table has.
+	isStatic bool              // False if this table is dynamic, like a streaming table or a time table.
 }
 
 func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Schema, size int64, isStatic bool) *TableHandle {
@@ -31,15 +31,14 @@ func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Sche
 	}
 }
 
-// IsStatic returns true if this table does not change over time.
-// This will be false for things like streaming tables or timetables.
+// IsStatic returns false for dynamic tables, like streaming tables or timetables.
 func (th *TableHandle) IsStatic() bool {
 	return th.isStatic
 }
 
-// Snapshot downloads the current state of the table on the server and returns it as a Record.
+// Snapshot downloads the current state of the table from the server and returns it as a Record.
 //
-// If a Record is returned successfully, it must be freed later with `record.Release()`
+// If a Record is returned successfully, it must be freed later with `record.Release()`.
 func (th *TableHandle) Snapshot(ctx context.Context) (arrow.Record, error) {
 	return th.client.snapshotRecord(ctx, th.ticket)
 }
@@ -210,7 +209,7 @@ func (th *TableHandle) ExactJoin(ctx context.Context, rightTable *TableHandle, o
 // joins is the columns to add from the right table.
 //
 // matchRule is the match rule for the join, default is MatchRuleLessThanEqual normally, or MatchRuleGreaterThanEqual for a reverse-as-of-join
-func (th *TableHandle) AsOfJoin(ctx context.Context, rightTable *TableHandle, on []string, joins []string, matchRule int) (*TableHandle, error) {
+func (th *TableHandle) AsOfJoin(ctx context.Context, rightTable *TableHandle, on []string, joins []string, matchRule MatchRule) (*TableHandle, error) {
 	return th.client.asOfJoin(ctx, th, rightTable, on, joins, matchRule)
 }
 

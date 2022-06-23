@@ -29,7 +29,7 @@ type KeyBackedInputTable struct {
 type inputTableStub struct {
 	client *Client
 
-	stub inputtablepb2.InputTableServiceClient
+	stub inputtablepb2.InputTableServiceClient // The stub for performing inputtable gRPC requests.
 }
 
 func newInputTableStub(client *Client) inputTableStub {
@@ -38,6 +38,8 @@ func newInputTableStub(client *Client) inputTableStub {
 
 type inputTableKind = tablepb2.CreateInputTableRequest_InputTableKind
 
+// makeInputTableRequestFromSchema is just a shorthand method to construct a CreateInputTableRequest,
+// since it's a very verbose process.
 func makeInputTableRequestFromSchema(kind *inputTableKind, resultId *ticketpb2.Ticket, schema *arrow.Schema) *tablepb2.CreateInputTableRequest {
 	pool := memory.NewGoAllocator()
 	schemaBytes := flight.SerializeSchema(schema, pool)
@@ -46,6 +48,8 @@ func makeInputTableRequestFromSchema(kind *inputTableKind, resultId *ticketpb2.T
 	return &tablepb2.CreateInputTableRequest{ResultId: resultId, Definition: def, Kind: kind}
 }
 
+// makeInputTableRequestFromSchema is just a shorthand method to construct a CreateInputTableRequest,
+// since it's a very verbose process.
 func makeInputTableRequestFromTable(kind *inputTableKind, resultId *ticketpb2.Ticket, table *TableHandle) *tablepb2.CreateInputTableRequest {
 	def := &tablepb2.CreateInputTableRequest_SourceTableId{SourceTableId: &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}}
 	return &tablepb2.CreateInputTableRequest{ResultId: resultId, Definition: def, Kind: kind}
@@ -123,6 +127,8 @@ func (th *KeyBackedInputTable) AddTable(ctx context.Context, toAdd *TableHandle)
 	return th.client.inputTableStub.addTable(ctx, &th.TableHandle, toAdd)
 }
 
+// addTable makes the AddTableToInputTable gRPC request.
+// See the docs for AddTable on each kind of table for details.
 func (its *inputTableStub) addTable(ctx context.Context, inputTable *TableHandle, toAdd *TableHandle) error {
 	ctx, err := its.client.withToken(ctx)
 	if err != nil {
@@ -145,6 +151,8 @@ func (th *KeyBackedInputTable) DeleteTable(ctx context.Context, toDelete *TableH
 	return th.client.inputTableStub.deleteTable(ctx, &th.TableHandle, toDelete)
 }
 
+// deleteTable makes the DeleteTableFromInputTable gRPC request.
+// See the docs for DeleteTable for details.
 func (its *inputTableStub) deleteTable(ctx context.Context, inputTable *TableHandle, toRemove *TableHandle) error {
 	ctx, err := its.client.withToken(ctx)
 	if err != nil {

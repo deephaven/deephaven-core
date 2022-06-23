@@ -21,7 +21,7 @@ import (
 type flightStub struct {
 	client *Client
 
-	stub flight.FlightServiceClient
+	stub flight.Client // The stub for performing Arrow Flight gRPC requests.
 }
 
 func newFlightStub(client *Client, host string, port string) (flightStub, error) {
@@ -116,4 +116,18 @@ func (fs *flightStub) ImportTable(ctx context.Context, rec arrow.Record) (*Table
 	schema := rec.Schema()
 
 	return newTableHandle(fs.client, &ticket, schema, rec.NumRows(), true), nil
+}
+
+// Close closes the flight stub and frees any associated resources.
+// The flight stub should not be used after calling this function.
+// The client lock should be held when calling this function.
+func (fs *flightStub) Close() error {
+	if fs.stub != nil {
+		err := fs.stub.Close()
+		if err != nil {
+			return err
+		}
+		fs.stub = nil
+	}
+	return nil
 }

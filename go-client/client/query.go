@@ -10,6 +10,8 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
+// assert is used to report violated invariants that could only possibly occur as a result of a bad algorithm.
+// There should be absolutely no way for a user or network/disk/etc problem to ever cause an assert to fail.
 func assert(cond bool, msg string) {
 	if !cond {
 		panic(msg)
@@ -17,9 +19,12 @@ func assert(cond bool, msg string) {
 }
 
 type tableOp interface {
+	// childQueries returns the nodes that this operation depends on.
+	// The children must be processed first before we can process this operation.
 	childQueries() []QueryNode
 
-	// Once a tableOp's children have been processed and a result ticket allocated, it can be turned into an actual batch operation.
+	// makeBatchOp turns a table operation struct into an actual gRPC request operation.
+	// The children argument must be the returned table handles from processing each of the childQueries.
 	makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation
 }
 
@@ -31,6 +36,7 @@ type QueryNode struct {
 	builder *queryBuilder
 }
 
+// addOp appends a new operation to the node's underlying builder, and returns a new node referring to the operation.
 func (qb QueryNode) addOp(op tableOp) QueryNode {
 	qb.builder.opLock.Lock()
 	qb.builder.ops = append(qb.builder.ops, op)
@@ -59,9 +65,15 @@ type opKey struct {
 	builderId int32
 }
 
+// batchBuilder is used to progressively create an entire batch operation.
+// It keeps track of
 type batchBuilder struct {
 	client *Client
-	nodes  []QueryNode
+
+	// The list of nodes that were actually requested as part of a query.
+	// This list is kept because we need to specifically export these nodes
+	// so that the user can get a TableHandle to them.
+	nodes []QueryNode
 
 	// The response is returned in an arbitrary order.
 	// So, we have to keep track of what ticket each table gets, so we can unshuffle them.
@@ -71,6 +83,8 @@ type batchBuilder struct {
 	// The value is the index into the full operation list of the op's result.
 	finishedOps map[opKey]int32
 
+	// This is a list of all of the operations currently in the batch.
+	// This is what will actually end up in the gRPC request.
 	grpcOps []*tablepb2.BatchTableRequest_Operation
 }
 
@@ -121,6 +135,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 		return &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}
 	}
 
+	// Now we actually process the node and turn it (and its children) into gRPC operations.
 	if node.index != -1 {
 		op := node.builder.ops[node.index]
 
@@ -136,6 +151,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 		b.finishedOps[nodeKey] = int32(len(b.grpcOps)) - 1
 	}
 
+	// If this node gets exported multiple times, we need to handle that.
 	for _, extraNode := range extraNodes {
 		sourceId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: int32(len(b.grpcOps) - 1)}}
 		t := b.client.newTicket()
@@ -150,6 +166,9 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 	return source
 }
 
+// getGrpcOps turns a set of query nodes into a sequence of batch operations.
+// It also returns the tickets that each query node will be referenced by,
+// so that we can match up the nodes and the tables once the request finishes.
 func getGrpcOps(client *Client, nodes []QueryNode) ([]*tablepb2.BatchTableRequest_Operation, []*ticketpb2.Ticket, error) {
 	builder := batchBuilder{
 		client:      client,
@@ -178,6 +197,8 @@ func getGrpcOps(client *Client, nodes []QueryNode) ([]*tablepb2.BatchTableReques
 	return builder.grpcOps, builder.nodeOrder, nil
 }
 
+// execQuery performs the Batch gRPC operation, which performs several table operations in a single request.
+// It then wraps the returned tables in TableHandles and returns them in the same order as in nodes.
 func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*TableHandle, error) {
 	if len(nodes) == 0 {
 		return nil, nil
@@ -197,8 +218,10 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*Table
 		return nil, err
 	}
 
+	// The tables are returned in arbitrary order,
+	// so we have to match the tickets in nodeOrder with the ticket for each table
+	// in order to determine which one is which and unshuffle them.
 	var output []*TableHandle
-
 	for i, ticket := range nodeOrder {
 		for _, tbl := range exportedTables {
 			if bytes.Equal(tbl.ticket.GetTicket(), ticket.GetTicket()) {
@@ -218,6 +241,7 @@ func newQueryBuilder(client *Client, table *TableHandle) queryBuilder {
 	return queryBuilder{uniqueId: client.newTicketNum(), table: table}
 }
 
+// emptyTableOp is created by EmptyTableQuery().
 type emptyTableOp struct {
 	numRows int64
 }
@@ -232,6 +256,7 @@ func (op emptyTableOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_EmptyTable{EmptyTable: req}}
 }
 
+// timeTableOp is created by TimeTableQuery().
 type timeTableOp struct {
 	period    int64
 	startTime int64
@@ -668,12 +693,14 @@ func (qb QueryNode) Count(col string) QueryNode {
 	return qb.addOp(dedicatedAggOp{child: qb, countColumn: col, kind: tablepb2.ComboAggregateRequest_COUNT})
 }
 
+// aggPart is a single part of an aggregation, created by the methods on AggBuilder.
 type aggPart struct {
-	matchPairs []string
-	columnName string
-	percentile float64
-	avgMedian  bool
-	kind       tablepb2.ComboAggregateRequest_AggType
+	matchPairs []string // usually the columns on which the operation is performed.
+	columnName string   // only used for Count and WeightedAvg.
+	percentile float64  // only used for Percentile.
+	avgMedian  bool     // not actually used, but here in case more aggregation operations are added.
+	// whether this is a sum, avg, median, etc.
+	kind tablepb2.ComboAggregateRequest_AggType
 }
 
 // AggBuilder is the main way to construct aggregations with multiple parts in them.
@@ -821,19 +848,23 @@ func (qb QueryNode) AggBy(agg *AggBuilder, columnsToGroupBy ...string) QueryNode
 	return qb.addOp(aggByOp{child: qb, colNames: columnsToGroupBy, aggs: aggs})
 }
 
+// joinOpKind specifies whether a joinOp is a cross join, natural join, or exact join.
+type joinOpKind int
+
 const (
-	joinOpCross   = iota
-	joinOpNatural = iota
-	joinOpExact   = iota
+	joinOpCross joinOpKind = iota
+	joinOpNatural
+	joinOpExact
 )
 
+// joinOp can be either a cross join, natural join, or exact join. This is determined by the kind field.
 type joinOp struct {
 	leftTable      QueryNode
 	rightTable     QueryNode
 	columnsToMatch []string
 	columnsToAdd   []string
-	reserveBits    int32
-	kind           int
+	reserveBits    int32 // only used if kind is joinOpCross
+	kind           joinOpKind
 }
 
 func (op joinOp) childQueries() []QueryNode {
@@ -933,11 +964,13 @@ func (qb QueryNode) NaturalJoin(rightTable QueryNode, matchOn []string, joins []
 
 // A comparison rule for use with AsOfJoin.
 // See its documentation for more details.
+type MatchRule int
+
 const (
-	MatchRuleLessThanEqual    = iota
-	MatchRuleLessThan         = iota
-	MatchRuleGreaterThanEqual = iota
-	MatchRuleGreaterThan      = iota
+	MatchRuleLessThanEqual MatchRule = iota // Less-than-or-equal, the default for an as-of join.
+	MatchRuleLessThan
+	MatchRuleGreaterThanEqual // Greater-than-or-equal, the default for a reverse as-of join.
+	MatchRuleGreaterThan
 )
 
 type asOfJoinOp struct {
@@ -945,7 +978,7 @@ type asOfJoinOp struct {
 	rightTable     QueryNode
 	columnsToMatch []string
 	columnsToAdd   []string
-	matchRule      int
+	matchRule      MatchRule
 }
 
 func (op asOfJoinOp) childQueries() []QueryNode {
@@ -994,7 +1027,7 @@ func (op asOfJoinOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb
 // joins is the columns to add from the right table.
 //
 // matchRule is the match rule for the join, default is MatchRuleLessThanEqual normally, or MatchRuleGreaterThanEqual for a reverse-as-of-join
-func (qb QueryNode) AsOfJoin(rightTable QueryNode, matchColumns []string, joins []string, matchRule int) QueryNode {
+func (qb QueryNode) AsOfJoin(rightTable QueryNode, matchColumns []string, joins []string, matchRule MatchRule) QueryNode {
 	op := asOfJoinOp{
 		leftTable:      qb,
 		rightTable:     rightTable,
