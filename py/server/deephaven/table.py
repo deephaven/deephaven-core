@@ -8,7 +8,7 @@ Deephaven refreshing and static data."""
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Union, Sequence, List, Any, Optional
+from typing import Union, Sequence, List, Any, Optional, Callable
 
 import jpy
 
@@ -17,7 +17,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
-from deephaven.jcompat import j_array_list, to_sequence
+from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
@@ -1474,3 +1474,49 @@ class PartitionedTable(JObjectWrapper):
     def constituent_tables(self) -> List[Table]:
         """Returns all the current constituent tables."""
         return list(map(Table, self.j_partitioned_table.constituents()))
+
+    def transform(self, func: Callable[[Table], Table]) -> PartitionedTable:
+        """Apply the provided function to all constituent Tables and produce a new PartitionedTable with the results
+        as its constituents, with the same data for all other columns in the underlying partitioned Table. Note that
+        if the Table underlying this PartitionedTable changes, a corresponding change will propagate to the result.
+
+        Args:
+            func (Callable[[Table], Table]: a function which takes a Table as input and returns a new Table
+
+        Returns:
+            a PartitionedTable
+
+        Raises:
+            DHError
+        """
+        try:
+            j_operator = j_unary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
+            j_pt = self.j_partitioned_table.transform(j_operator)
+            return PartitionedTable(j_partitioned_table=j_pt)
+        except Exception as e:
+            raise DHError(e, "failed to transform the PartitionedTable.") from e
+
+    def partitioned_transform(self, other: PartitionedTable, func: Callable[[Table, Table], Table]) -> PartitionedTable:
+        """Join the underlying partitioned Tables from this PartitionedTable and other on the key columns, then apply
+        the provided function to all pairs of constituent Tables with the same keys in order to produce a new
+        PartitionedTable with the results as its constituents, with the same data for all other columns in the
+        underlying partitioned Table from this. Note that if the Tables underlying this PartitionedTable or other
+        change, a corresponding change will propagate to the result.
+
+        Args:
+            other (PartitionedTable): the other Partitioned table whose constituent tables will be passed in as the 2nd
+                argument to the provided function
+            func (Callable[[Table, Table], Table]: a function which takes two Tables as input and returns a new Table
+
+        Returns:
+            a PartitionedTable
+
+        Raises:
+            DHError
+        """
+        try:
+            j_operator = j_binary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
+            j_pt = self.j_partitioned_table.partitionedTransform(other.j_partitioned_table, j_operator)
+            return PartitionedTable(j_partitioned_table=j_pt)
+        except Exception as e:
+            raise DHError(e, "failed to transform the PartitionedTable with another PartitionedTable.") from e
