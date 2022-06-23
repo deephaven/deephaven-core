@@ -433,7 +433,8 @@ public class ParquetTableWriter {
         if (columnSource.getComponentType() != null
                 && !CodecLookup.explicitCodecPresent(writeInstructions.getCodecName(columnDefinition.getName()))
                 && !CodecLookup.codecRequired(columnDefinition)) {
-            int targetRowsPerPage = maxValuesPerPage = maxOriginalRowsPerPage = getTargetRowsPerPage(columnSource.getComponentType());
+            int targetRowsPerPage =
+                    maxValuesPerPage = maxOriginalRowsPerPage = getTargetRowsPerPage(columnSource.getComponentType());
             final HashMap<String, ColumnSource<?>> columns = new HashMap<>();
             columns.put("array", columnSource);
             final Table lengthsTable = new QueryTable(tableRowSet, columns);
@@ -500,7 +501,8 @@ public class ParquetTableWriter {
             rowSet = ungroupedArrays.getRowSet();
             columnSource = ungroupedArrays.getColumnSource("array");
         } else {
-            final int finalTargetSize = maxValuesPerPage = maxOriginalRowsPerPage = getTargetRowsPerPage(columnSource.getType());
+            final int finalTargetSize =
+                    maxValuesPerPage = maxOriginalRowsPerPage = getTargetRowsPerPage(columnSource.getType());
             rowStepGetter = valuesStepGetter = () -> finalTargetSize;
             pageCount = (int) (rowSet.size() / finalTargetSize + ((rowSet.size() % finalTargetSize) == 0 ? 0 : 1));
         }
