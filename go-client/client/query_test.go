@@ -9,22 +9,22 @@ import (
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/apache/arrow/go/v8/arrow/array"
 	"github.com/deephaven/deephaven-core/go-client/client"
-	"github.com/deephaven/deephaven-core/go-client/internal/test_setup"
+	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
 func TestDagQuery(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
-	rec := test_setup.ExampleRecord()
+	rec := test_tools.ExampleRecord()
 	defer rec.Release()
 
 	// Close (float32), Vol (int32), Ticker (string)
 	exTable, err := c.ImportTable(ctx, rec)
-	test_setup.CheckError(t, "ImportTable", err)
+	test_tools.CheckError(t, "ImportTable", err)
 	defer exTable.Release(ctx)
 
 	// Close (float32), Vol (int32), TickerLen (int)
@@ -45,7 +45,7 @@ func TestDagQuery(t *testing.T) {
 	finalQuery := otherQuery.Merge("", exCloseLenQuery)
 
 	tables, err := c.ExecQuery(ctx, finalQuery, otherQuery, exCloseLenQuery, exLenQuery)
-	test_setup.CheckError(t, "ExecQuery", err)
+	test_tools.CheckError(t, "ExecQuery", err)
 	if len(tables) != 4 {
 		t.Errorf("wrong number of tables")
 		return
@@ -55,13 +55,13 @@ func TestDagQuery(t *testing.T) {
 	}
 
 	finalTable, err := tables[0].Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	otherTable, err := tables[1].Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	exCloseLenTable, err := tables[2].Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	exLenTable, err := tables[3].Snapshot(ctx)
-	test_setup.CheckError(t, "Snapsnot", err)
+	test_tools.CheckError(t, "Snapsnot", err)
 
 	if finalTable.NumRows() != 5+7 || finalTable.NumCols() != 2 {
 		t.Errorf("wrong size for finalTable")
@@ -86,27 +86,27 @@ func TestDagQuery(t *testing.T) {
 func TestMergeQuery(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
 	left, err := c.EmptyTable(ctx, 10)
-	test_setup.CheckError(t, "EmptyTable", err)
+	test_tools.CheckError(t, "EmptyTable", err)
 	defer left.Release(ctx)
 
 	right, err := c.EmptyTable(ctx, 5)
-	test_setup.CheckError(t, "EmptyTable", err)
+	test_tools.CheckError(t, "EmptyTable", err)
 	defer right.Release(ctx)
 
 	tables, err := c.ExecQuery(ctx, left.Query().Merge("", right.Query()))
-	test_setup.CheckError(t, "ExecQuery", err)
+	test_tools.CheckError(t, "ExecQuery", err)
 	if len(tables) != 1 {
 		t.Errorf("wrong number of tables")
 	}
 	defer tables[0].Release(ctx)
 
 	tbl, err := tables[0].Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 
 	if tbl.NumRows() != 15 || tbl.NumCols() != 0 {
 		t.Errorf("table was wrong size")
@@ -116,8 +116,8 @@ func TestMergeQuery(t *testing.T) {
 func TestSeparateQueries(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
 	left := c.EmptyTableQuery(123)
@@ -160,7 +160,7 @@ func TestSeparateQueries(t *testing.T) {
 func TestEmptyTableQuery(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -208,13 +208,13 @@ func TestEmptyTableQuery(t *testing.T) {
 func TestUpdateDropQuery(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
 	defer c.Close()
 
-	input := test_setup.ExampleRecord()
+	input := test_tools.ExampleRecord()
 	defer input.Release()
 
 	before, err := c.ImportTable(ctx, input)
@@ -273,7 +273,7 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, op queryOp) []arrow.Record
 
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -315,7 +315,7 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, op queryOp) []arrow.Record
 func TestDuplicateQuery(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 		return
@@ -353,20 +353,20 @@ func TestDuplicateQuery(t *testing.T) {
 }
 
 func TestEmptyUpdateQuery(t *testing.T) {
-	result := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+	result := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Update()}
 	})
 	defer result[0].Release()
 }
 
 func TestEmptyQuery(t *testing.T) {
-	doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+	doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{}
 	})
 }
 
 func TestNoopQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query()}
 	})
 	defer results[0].Release()
@@ -377,7 +377,7 @@ func TestNoopQuery(t *testing.T) {
 }
 
 func TestSortQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(2, 10, 1000), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(2, 10, 1000), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Sort("a"), tbl.Query().SortBy(client.SortDsc("a"))}
 	})
 	defer results[0].Release()
@@ -399,7 +399,7 @@ func TestSortQuery(t *testing.T) {
 }
 
 func TestHeadTailQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(2, 10, 1000), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(2, 10, 1000), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Head(3), tbl.Query().Tail(4)}
 	})
 	defer results[0].Release()
@@ -417,7 +417,7 @@ func TestHeadTailQuery(t *testing.T) {
 }
 
 func TestSelectDistinctQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(2, 20, 10), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(2, 20, 10), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().SelectDistinct("a")}
 	})
 	defer results[0].Release()
@@ -429,7 +429,7 @@ func TestSelectDistinctQuery(t *testing.T) {
 }
 
 func TestComboAggQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(4, 20, 10), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(4, 20, 10), t, func(tbl *client.TableHandle) []client.QueryNode {
 		b := client.NewAggBuilder().Min("minB = b").Sum("sumC = c")
 		return []client.QueryNode{tbl.Query().AggBy(b, "a")}
 	})
@@ -442,7 +442,7 @@ func TestComboAggQuery(t *testing.T) {
 }
 
 func TestWhereQuery(t *testing.T) {
-	results := doQueryTest(test_setup.ExampleRecord(), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.ExampleRecord(), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Where("Vol % 1000 != 0")}
 	})
 	defer results[0].Release()
@@ -459,7 +459,7 @@ func TestUpdateViewSelectQuery(t *testing.T) {
 	ops := []usvOp{client.QueryNode.Update, client.QueryNode.LazyUpdate, client.QueryNode.View, client.QueryNode.UpdateView, client.QueryNode.Select}
 
 	for _, op := range ops {
-		results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 			return []client.QueryNode{op(tbl.Query(), "Sum = a + b", "b", "Foo = Sum % 2")}
 		})
 		defer results[0].Release()
@@ -472,7 +472,7 @@ func TestUpdateViewSelectQuery(t *testing.T) {
 }
 
 func TestExactJoinQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query().GroupBy("a").Update("b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]") // Make sure the key column is only unique values
 		leftTable := query.DropColumns("c", "d", "e")
 		rightTable := query.DropColumns("b", "c")
@@ -490,7 +490,7 @@ func TestExactJoinQuery(t *testing.T) {
 }
 
 func TestNaturalJoinQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query().GroupBy("a").Update("b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]") // Make sure the key column is only unique values
 		leftTable := query.DropColumns("c", "d", "e")
 		rightTable := query.DropColumns("b", "c").Head(10)
@@ -508,7 +508,7 @@ func TestNaturalJoinQuery(t *testing.T) {
 }
 
 func TestCrossJoinQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
 		leftTable := tbl.Query().DropColumns("e")
 		rightTable := tbl.Query().Where("a % 2 > 0 && b % 3 == 1").DropColumns("b", "c", "d")
 		resultTbl1 := leftTable.Join(rightTable, []string{"a"}, []string{"e"}, 10)
@@ -536,7 +536,7 @@ func TestCrossJoinQuery(t *testing.T) {
 func TestAsOfJoinQuery(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -593,7 +593,7 @@ func TestAsOfJoinQuery(t *testing.T) {
 }
 
 func TestHeadByTailByQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(3, 10, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(3, 10, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		headTbl := query.HeadBy(1, "a")
 		tailTbl := query.TailBy(1, "b")
@@ -614,7 +614,7 @@ func TestHeadByTailByQuery(t *testing.T) {
 }
 
 func TestGroupQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		oneCol := query.GroupBy("a")
 		bothCols := query.GroupBy()
@@ -635,7 +635,7 @@ func TestGroupQuery(t *testing.T) {
 }
 
 func TestUngroupQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		ungrouped := tbl.Query().GroupBy("a").Ungroup([]string{"b"}, false)
 		return []client.QueryNode{ungrouped}
 	})
@@ -649,7 +649,7 @@ func TestUngroupQuery(t *testing.T) {
 }
 
 func TestCountByQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		distinct := query.SelectDistinct("a")
 		counted := query.CountBy("Counted", "a")
@@ -665,7 +665,7 @@ func TestCountByQuery(t *testing.T) {
 }
 
 func TestCountQuery(t *testing.T) {
-	results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Count("a")}
 	})
 	defer results[0].Release()
@@ -685,7 +685,7 @@ func TestDedicatedAggQuery(t *testing.T) {
 		client.QueryNode.VarBy, client.QueryNode.MedianBy, client.QueryNode.MinBy, client.QueryNode.MaxBy, client.QueryNode.AbsSumBy}
 
 	for _, op := range ops {
-		results := doQueryTest(test_setup.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
 			return []client.QueryNode{op(tbl.Query(), "a")}
 		})
 		defer results[0].Release()

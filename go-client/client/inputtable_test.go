@@ -6,7 +6,7 @@ import (
 
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/deephaven/deephaven-core/go-client/client"
-	"github.com/deephaven/deephaven-core/go-client/internal/test_setup"
+	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
 func GetDataTableSchema() *arrow.Schema {
@@ -21,7 +21,7 @@ func GetDataTableSchema() *arrow.Schema {
 }
 
 func GetDataTableFirstRow(ctx context.Context, client *client.Client) (*client.TableHandle, error) {
-	rec := test_setup.ExampleRecord()
+	rec := test_tools.ExampleRecord()
 	defer rec.Release()
 
 	tbl, err := client.ImportTable(ctx, rec)
@@ -40,7 +40,7 @@ func GetDataTableFirstRow(ctx context.Context, client *client.Client) (*client.T
 
 // This intentionally overlaps with SecondPart
 func GetDataTableFirstPart(ctx context.Context, client *client.Client) (*client.TableHandle, error) {
-	rec := test_setup.ExampleRecord()
+	rec := test_tools.ExampleRecord()
 	defer rec.Release()
 
 	tbl, err := client.ImportTable(ctx, rec)
@@ -59,7 +59,7 @@ func GetDataTableFirstPart(ctx context.Context, client *client.Client) (*client.
 
 // This intentionally overlaps with FirstPart
 func GetDataTableSecondPart(ctx context.Context, client *client.Client) (*client.TableHandle, error) {
-	rec := test_setup.ExampleRecord()
+	rec := test_tools.ExampleRecord()
 	defer rec.Release()
 
 	tbl, err := client.ImportTable(ctx, rec)
@@ -123,16 +123,16 @@ func addNewDataToAppend(
 func TestAppendOnlyFromSchema(t *testing.T) {
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer cl.Close()
 
 	inputTable, err := cl.NewAppendOnlyInputTableFromSchema(ctx, GetDataTableSchema())
-	test_setup.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
+	test_tools.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
 	defer inputTable.Release(ctx)
 
 	before, mid, after, err := addNewDataToAppend(ctx, cl, inputTable)
-	test_setup.CheckError(t, "addNewDataToAppend", err)
+	test_tools.CheckError(t, "addNewDataToAppend", err)
 	defer before.Release()
 	defer mid.Release()
 	defer after.Release()
@@ -153,20 +153,20 @@ func TestAppendOnlyFromSchema(t *testing.T) {
 func TestAppendOnlyFromTable(t *testing.T) {
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer cl.Close()
 
 	templateTbl, err := GetDataTableFirstRow(ctx, cl)
-	test_setup.CheckError(t, "GetDataTableFirstRow", err)
+	test_tools.CheckError(t, "GetDataTableFirstRow", err)
 	defer templateTbl.Release(ctx)
 
 	inputTable, err := cl.NewAppendOnlyInputTableFromTable(ctx, templateTbl)
-	test_setup.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
+	test_tools.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
 	defer inputTable.Release(ctx)
 
 	before, mid, after, err := addNewDataToAppend(ctx, cl, inputTable)
-	test_setup.CheckError(t, "addNewDataToAppend", err)
+	test_tools.CheckError(t, "addNewDataToAppend", err)
 	defer before.Release()
 	defer mid.Release()
 	defer after.Release()
@@ -187,51 +187,51 @@ func TestAppendOnlyFromTable(t *testing.T) {
 func TestKeyBackedTable(t *testing.T) {
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer cl.Close()
 
 	inputTable, err := cl.NewKeyBackedInputTableFromSchema(ctx, GetDataTableSchema(), "Ticker")
-	test_setup.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
+	test_tools.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
 	defer inputTable.Release(ctx)
 
 	delData2, err := GetDataTableFirstRow(ctx, cl)
-	test_setup.CheckError(t, "GetDataTableFirstRow", err)
+	test_tools.CheckError(t, "GetDataTableFirstRow", err)
 	defer delData2.Release(ctx)
 	delData, err := delData2.View(ctx, "Ticker")
-	test_setup.CheckError(t, "View", err)
+	test_tools.CheckError(t, "View", err)
 	defer delData.Release(ctx)
 
 	newData1, err := GetDataTableFirstPart(ctx, cl)
-	test_setup.CheckError(t, "GetDataTableFirstPart", err)
+	test_tools.CheckError(t, "GetDataTableFirstPart", err)
 	defer newData1.Release(ctx)
 	newData2, err := GetDataTableSecondPart(ctx, cl)
-	test_setup.CheckError(t, "GetDataTableSecondPart", err)
+	test_tools.CheckError(t, "GetDataTableSecondPart", err)
 	defer newData2.Release(ctx)
 
 	outputTable, err := inputTable.Where(ctx, "Close > 30.0")
-	test_setup.CheckError(t, "Where", err)
+	test_tools.CheckError(t, "Where", err)
 	defer outputTable.Release(ctx)
 
 	err = inputTable.AddTable(ctx, newData1)
-	test_setup.CheckError(t, "AddTable", err)
+	test_tools.CheckError(t, "AddTable", err)
 
 	mid1, err := outputTable.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer mid1.Release()
 
 	err = inputTable.AddTable(ctx, newData2)
-	test_setup.CheckError(t, "AddTable", err)
+	test_tools.CheckError(t, "AddTable", err)
 
 	mid2, err := outputTable.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer mid2.Release()
 
 	err = inputTable.DeleteTable(ctx, delData)
-	test_setup.CheckError(t, "DeleteTable", err)
+	test_tools.CheckError(t, "DeleteTable", err)
 
 	after, err := outputTable.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer after.Release()
 
 	if mid1.NumCols() != 3 || mid1.NumRows() != 4 {

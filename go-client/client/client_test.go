@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/deephaven/deephaven-core/go-client/client"
-	"github.com/deephaven/deephaven-core/go-client/internal/test_setup"
+	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
 func TestConnectError(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := client.NewClient(ctx, test_setup.GetHost(), "1234", "python")
+	_, err := client.NewClient(ctx, test_tools.GetHost(), "1234", "python")
 	if err == nil {
 		t.Fatalf("client did not fail to connect")
 	}
@@ -21,7 +21,7 @@ func TestConnectError(t *testing.T) {
 func TestClosedClient(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -43,7 +43,7 @@ func TestEmptyTable(t *testing.T) {
 
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -69,7 +69,7 @@ func TestEmptyTable(t *testing.T) {
 func TestTimeTable(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -87,11 +87,11 @@ func TestTimeTable(t *testing.T) {
 }
 
 func TestTableUpload(t *testing.T) {
-	r := test_setup.ExampleRecord()
+	r := test_tools.ExampleRecord()
 	defer r.Release()
 
 	ctx := context.Background()
-	s, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	s, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -139,22 +139,22 @@ func contains(slice []string, elem string) bool {
 func TestFieldSyncOnce(t *testing.T) {
 	ctx := context.Background()
 
-	client1, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer client1.Close()
 
 	err = client1.RunScript(ctx,
 		`
 gotesttable = None
 `)
-	test_setup.CheckError(t, "RunScript", err)
+	test_tools.CheckError(t, "RunScript", err)
 
-	client2, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer client2.Close()
 
 	err = client2.FetchTables(ctx, client.FetchOnce)
-	test_setup.CheckError(t, "FetchTables", err)
+	test_tools.CheckError(t, "FetchTables", err)
 
 	if contains(client2.ListOpenableTables(), "gotesttable") {
 		t.Errorf("test table should not exist")
@@ -166,10 +166,10 @@ gotesttable = None
 from deephaven import empty_table
 gotesttable = empty_table(10)
 `)
-	test_setup.CheckError(t, "RunScript", err)
+	test_tools.CheckError(t, "RunScript", err)
 
 	err = client2.FetchTables(ctx, client.FetchOnce)
-	test_setup.CheckError(t, "FetchTables", err)
+	test_tools.CheckError(t, "FetchTables", err)
 
 	if !contains(client2.ListOpenableTables(), "gotesttable") {
 		t.Errorf("test table should exist")
@@ -180,29 +180,29 @@ gotesttable = empty_table(10)
 func TestFieldSyncRepeating(t *testing.T) {
 	ctx := context.Background()
 
-	client1, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer client1.Close()
 
 	err = client1.RunScript(ctx,
 		`
 gotesttable1 = None
 `)
-	test_setup.CheckError(t, "RunScript", err)
+	test_tools.CheckError(t, "RunScript", err)
 
-	client2, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer client2.Close()
 
 	err = client2.FetchTables(ctx, client.FetchRepeating)
-	test_setup.CheckError(t, "FetchTables", err)
+	test_tools.CheckError(t, "FetchTables", err)
 
 	err = client1.RunScript(ctx,
 		`
 from deephaven import empty_table
 gotesttable1 = empty_table(10)
 `)
-	test_setup.CheckError(t, "RunScript", err)
+	test_tools.CheckError(t, "RunScript", err)
 
 	timer := time.After(time.Second)
 	for {
@@ -219,14 +219,14 @@ gotesttable1 = empty_table(10)
 	}
 
 	err = client2.RunScript(ctx, "print('hi')")
-	test_setup.CheckError(t, "RunScript", err)
+	test_tools.CheckError(t, "RunScript", err)
 
 	client1.RunScript(ctx,
 		`
 from deephaven import empty_table
 gotesttable2 = empty_table(20)
 `)
-	test_setup.CheckError(t, "RunScript", err)
+	test_tools.CheckError(t, "RunScript", err)
 
 	timer = time.After(time.Second)
 	for {
@@ -243,6 +243,6 @@ gotesttable2 = empty_table(20)
 	}
 
 	tbl, err := client2.OpenTable(ctx, "gotesttable1")
-	test_setup.CheckError(t, "OpenTable", err)
+	test_tools.CheckError(t, "OpenTable", err)
 	defer tbl.Release(ctx)
 }

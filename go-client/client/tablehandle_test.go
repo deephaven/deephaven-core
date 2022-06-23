@@ -9,7 +9,7 @@ import (
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/apache/arrow/go/v8/arrow/array"
 	"github.com/deephaven/deephaven-core/go-client/client"
-	"github.com/deephaven/deephaven-core/go-client/internal/test_setup"
+	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
 type unaryTableOp func(context.Context, *client.TableHandle) (*client.TableHandle, error)
@@ -17,7 +17,7 @@ type unaryTableOp func(context.Context, *client.TableHandle) (*client.TableHandl
 func applyTableOp(input arrow.Record, t *testing.T, op unaryTableOp) arrow.Record {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -47,7 +47,7 @@ func applyTableOp(input arrow.Record, t *testing.T, op unaryTableOp) arrow.Recor
 }
 
 func TestDropColumns(t *testing.T) {
-	result := applyTableOp(test_setup.ExampleRecord(), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result := applyTableOp(test_tools.ExampleRecord(), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.DropColumns(ctx, "Ticker", "Vol")
 	})
 	defer result.Release()
@@ -72,7 +72,7 @@ func TestUpdateViewSelect(t *testing.T) {
 	}
 
 	for _, op := range ops {
-		result := applyTableOp(test_setup.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+		result := applyTableOp(test_tools.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 			return op(before, ctx, "Sum = a + b", "b", "Foo = Sum % 2")
 		})
 		defer result.Release()
@@ -85,7 +85,7 @@ func TestUpdateViewSelect(t *testing.T) {
 }
 
 func TestSelectDistinct(t *testing.T) {
-	result := applyTableOp(test_setup.RandomRecord(2, 20, 10), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result := applyTableOp(test_tools.RandomRecord(2, 20, 10), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.SelectDistinct(ctx, "a")
 	})
 	defer result.Release()
@@ -97,7 +97,7 @@ func TestSelectDistinct(t *testing.T) {
 }
 
 func TestWhere(t *testing.T) {
-	result := applyTableOp(test_setup.ExampleRecord(), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result := applyTableOp(test_tools.ExampleRecord(), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.Where(ctx, "Vol % 1000 != 0")
 	})
 	defer result.Release()
@@ -109,7 +109,7 @@ func TestWhere(t *testing.T) {
 }
 
 func TestSort(t *testing.T) {
-	asc := applyTableOp(test_setup.RandomRecord(2, 10, 1000), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	asc := applyTableOp(test_tools.RandomRecord(2, 10, 1000), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.Sort(ctx, "a")
 	})
 	defer asc.Release()
@@ -119,7 +119,7 @@ func TestSort(t *testing.T) {
 		return
 	}
 
-	dsc := applyTableOp(test_setup.RandomRecord(2, 10, 1000), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	dsc := applyTableOp(test_tools.RandomRecord(2, 10, 1000), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.SortBy(ctx, client.SortDsc("a"))
 	})
 	defer dsc.Release()
@@ -131,7 +131,7 @@ func TestSort(t *testing.T) {
 }
 
 func TestHeadTail(t *testing.T) {
-	result := applyTableOp(test_setup.RandomRecord(2, 10, 1000), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result := applyTableOp(test_tools.RandomRecord(2, 10, 1000), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.Head(ctx, 3)
 	})
 	if result.NumRows() != 3 {
@@ -140,7 +140,7 @@ func TestHeadTail(t *testing.T) {
 	}
 	result.Release()
 
-	result = applyTableOp(test_setup.RandomRecord(2, 10, 1000), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result = applyTableOp(test_tools.RandomRecord(2, 10, 1000), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.Tail(ctx, 6)
 	})
 	if result.NumRows() != 6 {
@@ -150,7 +150,7 @@ func TestHeadTail(t *testing.T) {
 }
 
 func TestComboAgg(t *testing.T) {
-	result := applyTableOp(test_setup.RandomRecord(4, 30, 10), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result := applyTableOp(test_tools.RandomRecord(4, 30, 10), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		b := client.NewAggBuilder().Min("minB = b").Sum("sumC = c")
 		return before.AggBy(ctx, b, "a")
 	})
@@ -163,7 +163,7 @@ func TestComboAgg(t *testing.T) {
 }
 
 func TestMerge(t *testing.T) {
-	result := applyTableOp(test_setup.RandomRecord(2, 30, 10), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result := applyTableOp(test_tools.RandomRecord(2, 30, 10), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		head, err := before.Head(ctx, 5)
 		if err != nil {
 			return nil, err
@@ -182,43 +182,43 @@ func TestMerge(t *testing.T) {
 func TestExactJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
-	rec := test_setup.RandomRecord(5, 100, 50)
+	rec := test_tools.RandomRecord(5, 100, 50)
 	defer rec.Release()
 
 	recTbl, err := c.ImportTable(ctx, rec)
-	test_setup.CheckError(t, "ImportTable", err)
+	test_tools.CheckError(t, "ImportTable", err)
 	defer recTbl.Release(ctx)
 
 	tmp1, err := recTbl.GroupBy(ctx, "a")
-	test_setup.CheckError(t, "GroupBy", err)
+	test_tools.CheckError(t, "GroupBy", err)
 	defer tmp1.Release(ctx)
 
 	base, err := tmp1.Update(ctx, "b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]")
-	test_setup.CheckError(t, "Update", err)
+	test_tools.CheckError(t, "Update", err)
 	defer base.Release(ctx)
 
 	leftTbl, err := base.DropColumns(ctx, "c", "d", "e")
-	test_setup.CheckError(t, "DropColumns", err)
+	test_tools.CheckError(t, "DropColumns", err)
 	defer leftTbl.Release(ctx)
 
 	rightTbl, err := base.DropColumns(ctx, "b", "c")
-	test_setup.CheckError(t, "DropColumns", err)
+	test_tools.CheckError(t, "DropColumns", err)
 	defer rightTbl.Release(ctx)
 
 	resultTbl, err := leftTbl.ExactJoin(ctx, rightTbl, []string{"a"}, []string{"d", "e"})
-	test_setup.CheckError(t, "ExactJoin", err)
+	test_tools.CheckError(t, "ExactJoin", err)
 	defer resultTbl.Release(ctx)
 
 	leftRec, err := leftTbl.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer leftRec.Release()
 
 	resultRec, err := resultTbl.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer resultRec.Release()
 
 	if resultRec.NumCols() != 4 || resultRec.NumRows() != leftRec.NumRows() {
@@ -230,43 +230,43 @@ func TestExactJoin(t *testing.T) {
 func TestNaturalJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
-	rec := test_setup.RandomRecord(5, 100, 50)
+	rec := test_tools.RandomRecord(5, 100, 50)
 	defer rec.Release()
 
 	recTbl, err := c.ImportTable(ctx, rec)
-	test_setup.CheckError(t, "ImportTable", err)
+	test_tools.CheckError(t, "ImportTable", err)
 	defer recTbl.Release(ctx)
 
 	tmp1, err := recTbl.GroupBy(ctx, "a")
-	test_setup.CheckError(t, "GroupBy", err)
+	test_tools.CheckError(t, "GroupBy", err)
 	defer tmp1.Release(ctx)
 
 	base, err := tmp1.Update(ctx, "b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]")
-	test_setup.CheckError(t, "Update", err)
+	test_tools.CheckError(t, "Update", err)
 	defer base.Release(ctx)
 
 	leftTbl, err := base.DropColumns(ctx, "c", "d", "e")
-	test_setup.CheckError(t, "DropColumns", err)
+	test_tools.CheckError(t, "DropColumns", err)
 	defer leftTbl.Release(ctx)
 
 	rightTbl, err := base.DropColumns(ctx, "b", "c")
-	test_setup.CheckError(t, "DropColumns", err)
+	test_tools.CheckError(t, "DropColumns", err)
 	defer rightTbl.Release(ctx)
 
 	resultTbl, err := leftTbl.NaturalJoin(ctx, rightTbl, []string{"a"}, []string{"d", "e"})
-	test_setup.CheckError(t, "NaturalJoin", err)
+	test_tools.CheckError(t, "NaturalJoin", err)
 	defer resultTbl.Release(ctx)
 
 	leftRec, err := leftTbl.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer leftRec.Release()
 
 	resultRec, err := resultTbl.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer resultRec.Release()
 
 	if resultRec.NumCols() != 4 || resultRec.NumRows() != leftRec.NumRows() {
@@ -278,47 +278,47 @@ func TestNaturalJoin(t *testing.T) {
 func TestCrossJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
-	test_setup.CheckError(t, "NewClient", err)
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
-	rec := test_setup.RandomRecord(5, 100, 50)
+	rec := test_tools.RandomRecord(5, 100, 50)
 	defer rec.Release()
 
 	recTbl, err := c.ImportTable(ctx, rec)
-	test_setup.CheckError(t, "ImportTable", err)
+	test_tools.CheckError(t, "ImportTable", err)
 	defer recTbl.Release(ctx)
 
 	leftTbl, err := recTbl.DropColumns(ctx, "e")
-	test_setup.CheckError(t, "DropColumns", err)
+	test_tools.CheckError(t, "DropColumns", err)
 	defer leftTbl.Release(ctx)
 
 	tmp1, err := recTbl.Where(ctx, "a % 2 > 0 && b % 3 == 1")
-	test_setup.CheckError(t, "Where", err)
+	test_tools.CheckError(t, "Where", err)
 	defer tmp1.Release(ctx)
 
 	rightTbl, err := tmp1.DropColumns(ctx, "b", "c", "d")
-	test_setup.CheckError(t, "DropColumns", err)
+	test_tools.CheckError(t, "DropColumns", err)
 	defer rightTbl.Release(ctx)
 
 	resultTbl1, err := leftTbl.Join(ctx, rightTbl, []string{"a"}, []string{"e"}, 10)
-	test_setup.CheckError(t, "Join", err)
+	test_tools.CheckError(t, "Join", err)
 	defer resultTbl1.Release(ctx)
 
 	resultTbl2, err := leftTbl.Join(ctx, rightTbl, nil, []string{"e"}, 10)
-	test_setup.CheckError(t, "Join", err)
+	test_tools.CheckError(t, "Join", err)
 	defer resultTbl2.Release(ctx)
 
 	leftRec, err := leftTbl.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer leftRec.Release()
 
 	resultRec1, err := resultTbl1.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer resultRec1.Release()
 
 	resultRec2, err := resultTbl2.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer resultRec2.Release()
 
 	if resultRec1.NumRows() >= leftRec.NumRows() {
@@ -335,7 +335,7 @@ func TestCrossJoin(t *testing.T) {
 func TestAsOfJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_setup.GetHost(), test_setup.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -344,39 +344,39 @@ func TestAsOfJoin(t *testing.T) {
 	startTime := time.Now().UnixNano() - 2_000_000_000
 
 	tmp1, err := c.TimeTable(ctx, 100000, &startTime)
-	test_setup.CheckError(t, "TimeTable", err)
+	test_tools.CheckError(t, "TimeTable", err)
 	defer tmp1.Release(ctx)
 
 	tt1, err := tmp1.Update(ctx, "Col1 = i")
-	test_setup.CheckError(t, "Update", err)
+	test_tools.CheckError(t, "Update", err)
 	defer tt1.Release(ctx)
 
 	tmp2, err := c.TimeTable(ctx, 200000, &startTime)
-	test_setup.CheckError(t, "TimeTable", err)
+	test_tools.CheckError(t, "TimeTable", err)
 	defer tmp2.Release(ctx)
 
 	tt2, err := tmp2.Update(ctx, "Col1 = i")
-	test_setup.CheckError(t, "Update", err)
+	test_tools.CheckError(t, "Update", err)
 	defer tt2.Release(ctx)
 
 	normalTbl, err := tt1.AsOfJoin(ctx, tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleLessThanEqual)
-	test_setup.CheckError(t, "AsOfJoin", err)
+	test_tools.CheckError(t, "AsOfJoin", err)
 	defer normalTbl.Release(ctx)
 
 	reverseTbl, err := tt1.AsOfJoin(ctx, tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleGreaterThanEqual)
-	test_setup.CheckError(t, "AsOfJoin", err)
+	test_tools.CheckError(t, "AsOfJoin", err)
 	defer reverseTbl.Release(ctx)
 
 	ttRec, err := tt1.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer ttRec.Release()
 
 	normalRec, err := normalTbl.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer normalRec.Release()
 
 	reverseRec, err := reverseTbl.Snapshot(ctx)
-	test_setup.CheckError(t, "Snapshot", err)
+	test_tools.CheckError(t, "Snapshot", err)
 	defer reverseRec.Release()
 
 	if normalRec.NumRows() == 0 || normalRec.NumRows() > ttRec.NumRows() {
@@ -391,7 +391,7 @@ func TestAsOfJoin(t *testing.T) {
 }
 
 func TestHeadByTailBy(t *testing.T) {
-	result := applyTableOp(test_setup.RandomRecord(3, 10, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result := applyTableOp(test_tools.RandomRecord(3, 10, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.HeadBy(ctx, 1, "a")
 	})
 	if result.NumRows() > 5 {
@@ -400,7 +400,7 @@ func TestHeadByTailBy(t *testing.T) {
 	}
 	result.Release()
 
-	result = applyTableOp(test_setup.RandomRecord(3, 10, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result = applyTableOp(test_tools.RandomRecord(3, 10, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.TailBy(ctx, 1, "a")
 	})
 	if result.NumRows() > 5 {
@@ -410,7 +410,7 @@ func TestHeadByTailBy(t *testing.T) {
 }
 
 func TestGroup(t *testing.T) {
-	result := applyTableOp(test_setup.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result := applyTableOp(test_tools.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.GroupBy(ctx, "a")
 	})
 	if result.NumRows() > 5 {
@@ -419,7 +419,7 @@ func TestGroup(t *testing.T) {
 	}
 	result.Release()
 
-	result = applyTableOp(test_setup.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result = applyTableOp(test_tools.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.GroupBy(ctx, "a")
 	})
 	if result.NumRows() > 25 {
@@ -430,7 +430,7 @@ func TestGroup(t *testing.T) {
 }
 
 func TestUngroup(t *testing.T) {
-	result := applyTableOp(test_setup.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	result := applyTableOp(test_tools.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		tbl, err := before.GroupBy(ctx, "a")
 		if err != nil {
 			return nil, err
@@ -446,7 +446,7 @@ func TestUngroup(t *testing.T) {
 }
 
 func TestCountBy(t *testing.T) {
-	rec := test_setup.RandomRecord(2, 30, 5)
+	rec := test_tools.RandomRecord(2, 30, 5)
 	rec.Retain()
 
 	distinct := applyTableOp(rec, t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
@@ -467,7 +467,7 @@ func TestCountBy(t *testing.T) {
 }
 
 func TestCount(t *testing.T) {
-	count := applyTableOp(test_setup.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+	count := applyTableOp(test_tools.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.Count(ctx, "b")
 	})
 	defer count.Release()
@@ -489,7 +489,7 @@ func TestDedicatedAgg(t *testing.T) {
 	}
 
 	for _, op := range ops {
-		result := applyTableOp(test_setup.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+		result := applyTableOp(test_tools.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 			return op(before, ctx, "a")
 		})
 		defer result.Release()
