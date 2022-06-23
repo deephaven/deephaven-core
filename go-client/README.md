@@ -18,22 +18,20 @@ To run tests, simply run the following command from this folder.
 $ go test -v ./...
 ```
 All tests should pass within 10 seconds.
-Tests assume the server is on localhost:10000 by default, but can be configured by setting the DH_HOST and DH_PORT environment variables.
+Tests assume the server is on `localhost:10000` by default, but can be configured by setting the `DH_HOST` and `DH_PORT` environment variables.
 
 ## Examples
 
 This project also includes a several example binaries.
-Examples assume the server is running on localhost:10000.
-An example can be run using the following command:
-```
+Examples assume the server is running on `localhost:10000`.
+An example can be run using one of the following commands:
+```bash
+$ go run ./examples/basic_query
+$ go run ./examples/fetch_table
 $ go run ./examples/import_table
+$ go run ./examples/input_table
+$ go run ./examples/run_script
 ```
-Other valid paths for examples are
-- `./examples/query`
-- `./examples/fetch_table`
-- `./examples/import_table`
-- `./examples/input_table`
-- `./examples/run_script`
 
 The source code is available in the directory for each example.
 
@@ -45,5 +43,5 @@ $ go get -v golang.org/x/tools/cmd/godoc  # Installation, only needs to be done 
 $ godoc
 ```
 
-This will start up a web server (by default on localhost:6060) that can be opened in a browser.
+This will start up a web server (by default on [`http://localhost:6060`](http://localhost:6060)) that can be opened in a browser.
 Use Ctrl-F to search for `go-client`. Behind the link will be the docs for the entire project.
