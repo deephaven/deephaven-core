@@ -8,12 +8,12 @@ apply from: "$rootDir/gradle/web-common.gradle"
 Classpaths.inheritCommonsText(project)
 dependencies {
 
-    compile project(':open-api-shared-ide'),
-            project(':open-api-lang-parser')
-
-    compile project(':engine-table'),
-            project(':engine-function'),
-            project(':IO')
+    implementation project(':proto:proto-backplane-grpc')
+    implementation project(':open-api-shared-ide')
+    implementation project(':open-api-lang-parser')
+    implementation project(':engine-table')
+    implementation project(':engine-function')
+    implementation project(':IO')
 
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
 
@@ -26,7 +26,7 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'engine-table')
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')
-    testRuntimeOnly(project(':Numerics'))
+    testRuntimeOnly project(':Numerics')
     // intellij can be dumb and leave out our resources directory (sometimes)...
     // Do not cargo-cult this unless you have similar issues
     testRuntimeOnly files('build/resources/main')

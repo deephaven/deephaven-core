@@ -10,10 +10,10 @@ plugins {
 apply from: "$rootDir/gradle/web-common.gradle"
 
 dependencies {
-    compile project(':open-api-shared-ide')
-    compile project(':open-api-shared-fu')
-    compile project(':log-factory')
-    compile project(':proto:proto-backplane-grpc')
+    implementation project(':log-factory')
+    implementation project(':proto:proto-backplane-grpc')
+    implementation project(':open-api-shared-ide')
+    implementation project(':open-api-shared-fu')
 }
 Classpaths.inheritJsInterop project, 'jsinterop-annotations'
 Classpaths.inheritJavaParser project

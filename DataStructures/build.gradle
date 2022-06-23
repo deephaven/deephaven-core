@@ -3,5 +3,6 @@ plugins {
 }
 
 dependencies {
-    compile project(':Base')
+    implementation depAnnotations
+    implementation project(':Base')
 }

@@ -3,11 +3,16 @@ plugins {
 }
 
 dependencies {
-    compile project(':Base'), project(':SevenZip'), depCommonsCodec
-    testImplementation project(path: ':Base', configuration: 'tests'),
-            'junit:junit:4.13.2',
-            'org.jmock:jmock-junit4:2.12.0',
-            'org.jmock:jmock-imposters:2.12.0'
+    implementation depAnnotations
+    implementation depCommonsCodec
+    implementation depCommonsCompress
+    implementation project(':Base')
+    implementation project(':SevenZip')
+
+    testImplementation project(path: ':Base', configuration: 'tests')
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.jmock:jmock-junit4:2.12.0'
+    testImplementation 'org.jmock:jmock-imposters:2.12.0'
 }
 
 sourceSets {

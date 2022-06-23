@@ -4,20 +4,21 @@ plugins {
 }
 
 dependencies {
-    implementation project(':engine-table')
-    implementation project(':extensions-csv')
-    implementation project(':extensions-parquet-table')
-    implementation project(':extensions-jdbc')
-    implementation project(':Util');
+    implementation project(':engine-table'),
+            project(':extensions-csv'),
+            project(':extensions-parquet-table'),
+            project(':extensions-jdbc'),
+            project(':Util')
 
     api(project(':java-client-barrage-dagger')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
     implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
 
-    implementation project(':proto:proto-backplane-grpc-flight')
-    implementation project(':open-api-lang-tools')
-    implementation project(':log-factory')
+    implementation project(':log-factory'),
+            project(':open-api-lang-tools'),
+            project(':open-api-lang-parser'),
+            project(':proto:proto-backplane-grpc-flight')
     Classpaths.inheritSlf4j(project, 'jul-to-slf4j', 'implementation')
     api(project(':application-mode')) {
         because 'downstream dagger compile, see deephaven-core#1722'

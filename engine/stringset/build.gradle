@@ -7,4 +7,7 @@ description 'Engine StringSet: Data structure support for efficient storage of s
 
 dependencies {
     api project(':DataStructures')
+
+    implementation depAnnotations
+    implementation project(':Base')
 }

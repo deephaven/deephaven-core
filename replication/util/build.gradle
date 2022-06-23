@@ -6,8 +6,9 @@ plugins {
 description 'Replication Tools: Utilities for source code generation and replication'
 
 dependencies {
-    implementation project(':Base'),
-            'commons-io:commons-io:2.6'
+    implementation depAnnotations
+    implementation 'commons-io:commons-io:2.6'
+    implementation project(':Base')
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 }
