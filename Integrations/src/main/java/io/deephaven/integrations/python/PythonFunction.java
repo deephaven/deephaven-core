@@ -16,6 +16,7 @@ import static io.deephaven.integrations.python.PythonUtils.pyApplyFunc;
  * 
  * @param <T> input argument class
  */
+@SuppressWarnings("unused")
 @ScriptApi
 public class PythonFunction<T, R> implements Function<T, R> {
     private final PyObject pyCallable;
