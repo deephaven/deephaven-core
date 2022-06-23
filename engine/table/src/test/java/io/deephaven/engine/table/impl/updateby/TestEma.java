@@ -228,14 +228,16 @@ public class TestEma extends BaseUpdateByTest {
                 () -> table.updateBy(UpdateByClause.Ema(
                         EmaControl.builder()
                                 .onNegativeDeltaTime(BadDataBehavior.Skip)
-                                .onZeroDeltaTime(BadDataBehavior.Throw).build(), "ts", 100)),
+                                .onZeroDeltaTime(BadDataBehavior.Throw).build(),
+                        "ts", 100)),
                 "Encountered zero delta time during EMA processing");
 
         assertThrows(TableDataException.class,
                 () -> table.updateBy(UpdateByClause.Ema(
                         EmaControl.builder()
                                 .onNegativeDeltaTime(BadDataBehavior.Skip)
-                                .onNullTime(BadDataBehavior.Throw).build(), "ts", 100)),
+                                .onNullTime(BadDataBehavior.Throw).build(),
+                        "ts", 100)),
                 "Encountered null timestamp during EMA processing");
     }
 

@@ -98,7 +98,8 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                                 UpdateByClause.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
                                 UpdateByClause.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
                                 UpdateByClause.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
-                                UpdateByClause.CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
+                                UpdateByClause
+                                        .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
 
                         final UpdateByControl control;
                         if (redirected) {

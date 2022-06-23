@@ -97,7 +97,8 @@ public interface UpdateByClause {
     }
 
     /**
-     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using ticks as the decay unit. Uses the default EmaControl settings.
+     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using ticks as the decay
+     * unit. Uses the default EmaControl settings.
      * <p>
      * The formula used is
      * </p>
@@ -116,7 +117,8 @@ public interface UpdateByClause {
     }
 
     /**
-     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using ticks as the decay unit.
+     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using ticks as the decay
+     * unit.
      * <p>
      * The formula used is
      * </p>
@@ -137,7 +139,8 @@ public interface UpdateByClause {
     }
 
     /**
-     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using time as the decay unit. Uses the default EmaControl settings.
+     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using time as the decay
+     * unit. Uses the default EmaControl settings.
      * <p>
      * The formula used is
      * </p>
@@ -157,7 +160,8 @@ public interface UpdateByClause {
     }
 
     /**
-     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using time as the decay unit.
+     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using time as the decay
+     * unit.
      * <p>
      * The formula used is
      * </p>
@@ -179,7 +183,8 @@ public interface UpdateByClause {
     }
 
     /**
-     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using time as the decay unit. Uses the default EmaControl settings.
+     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using time as the decay
+     * unit. Uses the default EmaControl settings.
      * <p>
      * The formula used is
      * </p>
@@ -199,7 +204,8 @@ public interface UpdateByClause {
     }
 
     /**
-     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using time as the decay unit.
+     * Create an {@link EmaSpec exponential moving average} for the supplied column name pairs, using time as the decay
+     * unit.
      * <p>
      * The formula used is
      * </p>

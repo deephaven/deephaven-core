@@ -38,7 +38,7 @@ public interface UpdateBySpec {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    default ColumnUpdateClause clause(String... pairs){
+    default ColumnUpdateClause clause(String... pairs) {
         Pair[] arr = Arrays.stream(pairs)
                 .map(Pair::parse)
                 .toArray(Pair[]::new);
@@ -52,7 +52,7 @@ public interface UpdateBySpec {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    default ColumnUpdateClause clause(Pair... pairs){
+    default ColumnUpdateClause clause(Pair... pairs) {
         if (pairs.length == 1) {
             return clause(pairs[0]);
         }
