@@ -41,7 +41,7 @@ public class PythonBiFunction<T, U, R> implements BiFunction<T, U, R> {
         PyObject wrapped = PythonObjectWrapper.wrap(t);
         PyObject wrappedOther = PythonObjectWrapper.wrap(u);
         PyObject out = pyCallable.call("__call__", wrapped, wrappedOther);
-        return (R) PythonValueGetter.getValue(out, classOut);
+        return PythonValueGetter.getValue(out, classOut);
     }
 
 
