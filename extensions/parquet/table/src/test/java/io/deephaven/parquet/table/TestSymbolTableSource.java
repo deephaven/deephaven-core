@@ -42,7 +42,7 @@ public class TestSymbolTableSource {
 
     /**
      * Verify that a parquet writing encodes a simple low-cardinality String column using a dictionary, and that we can
-     * correctly read this back via the `SymbolTableSource` interface.
+     * correctly read this back via the {@link SymbolTableSource} interface.
      */
     @Test
     public void testWriteAndReadSymbols() {
@@ -52,8 +52,7 @@ public class TestSymbolTableSource {
 
         // Make sure we have the expected symbol table (or not)
         final Table readBack = ParquetTools.readTable(toWrite);
-        // noinspection unchecked
-        SymbolTableSource<String> source = (SymbolTableSource) readBack.getColumnSource("TheBestColumn");
+        final SymbolTableSource<String> source = (SymbolTableSource<String>) readBack.getColumnSource("TheBestColumn", String.class);
         Assert.assertTrue(source.hasSymbolTable(readBack.getRowSet()));
 
         final Table expected = TableTools.emptyTable(10).update("ID=k", "Symbol=`S` + k");

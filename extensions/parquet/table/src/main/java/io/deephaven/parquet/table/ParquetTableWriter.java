@@ -427,12 +427,12 @@ public class ParquetTableWriter {
         LongSupplier rowStepGetter;
         LongSupplier valuesStepGetter;
 
-        int targetRowsPerPage;
+        int maxRowsPerPage;
         int pageCount;
         if (columnSource.getComponentType() != null
                 && !CodecLookup.explicitCodecPresent(writeInstructions.getCodecName(columnDefinition.getName()))
                 && !CodecLookup.codecRequired(columnDefinition)) {
-            targetRowsPerPage = getTargetRowsPerPage(columnSource.getComponentType());
+            int targetRowsPerPage = maxRowsPerPage = getTargetRowsPerPage(columnSource.getComponentType());
             final HashMap<String, ColumnSource<?>> columns = new HashMap<>();
             columns.put("array", columnSource);
             final Table lengthsTable = new QueryTable(tableRowSet, columns);
@@ -471,6 +471,7 @@ public class ParquetTableWriter {
                                 // Record the current item count and original row count into the parallel page arrays.
                                 rawItemCountPerPage.add(totalItemsInPage);
                                 originalRowsPerPage.add(originalRowsInPage);
+                                maxRowsPerPage = Math.max(totalItemsInPage, maxRowsPerPage);
 
                                 // Reset the counts to compute these values for the next page.
                                 originalRowsInPage = 0;
@@ -497,8 +498,7 @@ public class ParquetTableWriter {
             rowSet = ungroupedArrays.getRowSet();
             columnSource = ungroupedArrays.getColumnSource("array");
         } else {
-            targetRowsPerPage = getTargetRowsPerPage(columnSource.getType());
-            final int finalTargetSize = targetRowsPerPage;
+            final int finalTargetSize = maxRowsPerPage = getTargetRowsPerPage(columnSource.getType());
             rowStepGetter = valuesStepGetter = () -> finalTargetSize;
             pageCount = (int) (rowSet.size() / finalTargetSize + ((rowSet.size() % finalTargetSize) == 0 ? 0 : 1));
         }
@@ -516,7 +516,7 @@ public class ParquetTableWriter {
         try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(
                 writeInstructions.getParquetColumnNameFromColumnNameOrDefault(name))) {
             boolean usedDictionary = false;
-            if (supportsDictionary(columnSource.getType())) {
+            if (columnSource.getType() == String.class) {
                 usedDictionary = tryEncodeDictionary(writeInstructions,
                         tableRowSet,
                         rowSet,
@@ -526,7 +526,7 @@ public class ParquetTableWriter {
                         lengthSource,
                         rowStepGetter,
                         valuesStepGetter,
-                        targetRowsPerPage,
+                        maxRowsPerPage,
                         pageCount);
             }
 
@@ -542,7 +542,7 @@ public class ParquetTableWriter {
                         rowStepGetter,
                         valuesStepGetter,
                         computedCache,
-                        targetRowsPerPage,
+                        maxRowsPerPage,
                         pageCount);
             }
         }
@@ -559,13 +559,13 @@ public class ParquetTableWriter {
             @NotNull final LongSupplier rowStepGetter,
             @NotNull final LongSupplier valuesStepGetter,
             @NotNull final Map<String, Map<CacheTags, Object>> computedCache,
-            final int targetRowsPerPage,
+            final int maxRowsPerPage,
             final int pageCount) throws IOException {
         try (final TransferObject<?> transferObject = getDestinationBuffer(computedCache,
                 originalRowSet,
                 dataSource,
                 columnDefinition,
-                targetRowsPerPage,
+                maxRowsPerPage,
                 columnType,
                 writeInstructions)) {
             final boolean supportNulls = supportNulls(columnType);
@@ -574,10 +574,10 @@ public class ParquetTableWriter {
             try (final RowSequence.Iterator lengthIndexIt =
                     lengthSource != null ? originalRowSet.getRowSequenceIterator() : null;
                     final ChunkSource.GetContext lengthSourceContext =
-                            lengthSource != null ? lengthSource.makeGetContext(targetRowsPerPage) : null;
+                            lengthSource != null ? lengthSource.makeGetContext(maxRowsPerPage) : null;
                     final RowSequence.Iterator it = dataRowSet.getRowSequenceIterator()) {
 
-                final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetRowsPerPage) : null;
+                final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(maxRowsPerPage) : null;
                 for (int step = 0; step < pageCount; ++step) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
                     transferObject.fetchData(rs);
@@ -611,12 +611,12 @@ public class ParquetTableWriter {
             @Nullable final ColumnSource<?> lengthSource,
             @NotNull final LongSupplier rowStepGetter,
             @NotNull final LongSupplier valuesStepGetter,
-            final int targetRowsPerPage,
+            final int maxRowsPerPage,
             final int pageCount) throws IOException {
         // Note: We only support strings as dictionary pages. Knowing that, we can make some assumptions about chunk
         // types and avoid a bunch of lambda and virtual method invocations. If we decide to support more, than
         // these assumptions will need to be revisited.
-        Assert.eqTrue(supportsDictionary(dataSource.getType()), "ColumnSource supports dictionary");
+        Assert.eq(dataSource.getType(), "dataSource.getType()", String.class, "ColumnSource supports dictionary");
 
         final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
         final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
@@ -625,11 +625,13 @@ public class ParquetTableWriter {
             Binary[] encodedKeys = new Binary[Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)];
 
             final TObjectIntHashMap<String> keyToPos =
-                    new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+                    new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY,
+                            Constants.DEFAULT_LOAD_FACTOR,
+                            QueryConstants.NULL_INT);
             int keyCount = 0;
             boolean hasNulls = false;
-            try (final ChunkSource.GetContext context = dataSource.makeGetContext(targetRowsPerPage);
-                    final RowSequence.Iterator it = dataRowSet.getRowSequenceIterator()) {
+            try (final ChunkSource.GetContext context = dataSource.makeGetContext(maxRowsPerPage);
+                 final RowSequence.Iterator it = dataRowSet.getRowSequenceIterator()) {
                 for (int curPage = 0; curPage < pageCount; curPage++) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
                     final ObjectChunk<String, ? extends Values> chunk =
@@ -641,7 +643,6 @@ public class ParquetTableWriter {
                         if (dictionaryPos == keyToPos.getNoEntryValue()) {
                             if (key == null) {
                                 hasNulls = true;
-                                dictionaryPos = QueryConstants.NULL_INT;
                             } else {
                                 if (keyCount == encodedKeys.length) {
                                     if (keyCount >= maxKeys) {
@@ -666,7 +667,7 @@ public class ParquetTableWriter {
             List<IntBuffer> arraySizeBuffers = null;
             if (lengthSource != null) {
                 arraySizeBuffers = new ArrayList<>();
-                try (final ChunkSource.GetContext context = lengthSource.makeGetContext(targetRowsPerPage);
+                try (final ChunkSource.GetContext context = lengthSource.makeGetContext(maxRowsPerPage);
                         final RowSequence.Iterator it = originalRowSet.getRowSequenceIterator()) {
                     while (it.hasMore()) {
                         final RowSequence rs = it.getNextRowSequenceWithLength(rowStepGetter.getAsLong());
@@ -697,10 +698,6 @@ public class ParquetTableWriter {
         } catch (final DictionarySizeExceededException ignored) {
             return false;
         }
-    }
-
-    private static boolean supportsDictionary(@NotNull final Class<?> dataType) {
-        return dataType == String.class;
     }
 
     private static Object getNullValue(@NotNull final Class<?> columnType) {
