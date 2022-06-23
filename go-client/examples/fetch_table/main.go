@@ -11,21 +11,24 @@ import (
 // but if you want to access tables from previous sessions or from the web UI,
 // you will need to do a table fetch.
 func main() {
+	// A context is used to set timeouts and deadlines for requests or cancel requests.
+	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
+
 	cl, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {
 		fmt.Println("error when connecting to localhost port 10000:", err.Error())
 		return
 	}
 
-	// Let's make a table...
+	// First, let's make a table.
 	tbl, err := cl.EmptyTable(ctx, 10)
 	if err != nil {
 		fmt.Println("error when making table:", err.Error())
 		return
 	}
 
-	// ...and bind it to a variable, so that it sticks around after the client closes.
+	// We can bind the table to a variable, so that it doesn't disappear when the client closes.
 	err = cl.BindToVariable(ctx, "my_table", tbl)
 	if err != nil {
 		fmt.Println("error when binding table:", err.Error())

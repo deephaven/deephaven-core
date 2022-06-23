@@ -12,6 +12,7 @@ import (
 // perform some operations on them,
 // and then download them to access the modified data.
 func main() {
+	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
@@ -22,23 +23,27 @@ func main() {
 	}
 	defer cl.Close()
 
-	// First, we need some Record we want to upload.
+	// First, we need some Arrow record we want to upload.
 	sampleRecord := common.GetExampleRecord()
+	// Note that Arrow records should be eventually released.
 	defer sampleRecord.Release()
 
 	fmt.Println("Data Before:")
 	fmt.Println(sampleRecord)
 
-	// Then, we can simply upload it to the Deephaven server.
+	// Now we upload the record so that we can manipulate its data using the server.
+	// We get back a TableHandle, which is a reference to a table on the server.
 	table, err := cl.ImportTable(ctx, sampleRecord)
 	if err != nil {
 		fmt.Println("error when importing table:", err.Error())
 		return
 	}
+	// Any tables you create should be eventually released.
 	defer table.Release(ctx)
 
-	// Now we can do a bunch of operations on it, if we like...
+	// Now we can do a bunch of operations on the table we imported, if we like...
 
+	// Note that table operations return new tables; they don't modify old tables.
 	sortedTable, err := table.Sort(ctx, "Close")
 	if err != nil {
 		fmt.Println("error when sorting:", err.Error())
@@ -52,7 +57,7 @@ func main() {
 	}
 	defer filteredTable.Release(ctx)
 
-	// And if we want to see the data we can snapshot it to get a Record back.
+	// Ff we want to see the data we sorted and filtered, we can snapshot the table to get a Record back.
 	filteredRecord, err := filteredTable.Snapshot(ctx)
 	if err != nil {
 		fmt.Println("error when filtering:", err.Error())

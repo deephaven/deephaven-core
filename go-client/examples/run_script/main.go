@@ -8,13 +8,15 @@ import (
 	"github.com/deephaven/deephaven-core/go-client/client"
 )
 
-// This example shows off how you can run a server-side script directly via the client,
-// which can manipulate existing tables or create new ones.
+// This example shows how you can run a server-side script directly via the client
+// and how you can use the script results in the client.
 func main() {
+	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
-	// Note the choice of python as the script language here ("groovy" is the other option).
+	// Let's start a client connection using python as the script language ("groovy" is the other option).
+	// Note that the client language must match the language the server was started with.
 	cl, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {
 		fmt.Println("error when connecting to localhost port 10000:", err.Error())
@@ -22,25 +24,25 @@ func main() {
 	}
 	defer cl.Close()
 
-	// First, let's create a new TimeTable with a 100ms period, starting a second ago
+	// First, let's create a new TimeTable, starting one second ago, that gets a new row every 100 ms.
 	startTime := time.Now().UnixNano() - int64(time.Second)
 	timeTable, err := cl.TimeTable(ctx, 100_000_000, &startTime)
 	if err != nil {
 		fmt.Println("error when creating new time table:", err.Error())
 		return
 	}
-	// Note that any tables you get a reference to must be released!
+	// Any tables you create should be eventually released.
 	defer timeTable.Release(ctx)
 
-	// Next, let's bind it to a variable so we can use it in the script.
-	// This also makes it visible to other clients or to the web UI.
+	// Next, let's bind the table to a variable so we can use it in the script.
+	// This also makes the table visible to other clients or to the web UI.
 	err = cl.BindToVariable(ctx, "my_example_table", timeTable)
 	if err != nil {
 		fmt.Println("error when binding table to variable:", err.Error())
 		return
 	}
 
-	// Now, let's do some arbitrary operations on it...
+	// Now, let's run a script to do some arbitrary operations on my_example_table...
 	err = cl.RunScript(ctx,
 		`
 from deephaven.time import upper_bin
@@ -51,21 +53,24 @@ example_table_2 = my_example_table.update(["UpperBinned = upperBin(Timestamp, SE
 		return
 	}
 
-	// Now, we can open it to use locally.
-	exampleTable, err := cl.OpenTable(ctx, "example_table_2")
+	// Now, we can open example_table_2 to use locally.
+	exampleTable2, err := cl.OpenTable(ctx, "example_table_2")
 	if err != nil {
 		fmt.Println("error when opening table:", err.Error())
 		return
 	}
 	// Don't forget to release it!
-	defer exampleTable.Release(ctx)
+	defer exampleTable2.Release(ctx)
 
-	// And if we want to see what data is currently in it, we can take a snapshot.
-	exampleSnapshot, err := exampleTable.Snapshot(ctx)
+	// And if we want to see what data is currently in example_table_2, we can take a snapshot.
+	exampleSnapshot, err := exampleTable2.Snapshot(ctx)
 	if err != nil {
 		fmt.Println("error when snapshotting table:", err.Error())
+		return
 	}
+	// Arrow records must also be released when not used anymore.
 	defer exampleSnapshot.Release()
-	fmt.Println("Got table!")
+
+	fmt.Println("Got table snapshot!")
 	fmt.Println(exampleSnapshot)
 }

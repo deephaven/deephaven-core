@@ -13,6 +13,7 @@ import (
 // It can even create new tables as part of a query,
 // and the interface is more convenient than doing each of the table operations serially.
 func main() {
+	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
@@ -23,51 +24,57 @@ func main() {
 	}
 	defer cl.Close()
 
-	// Let's get some example data to play with.
+	// First, let's get some example data to manipulate.
 	sampleRecord := common.GetExampleRecord()
+	// Note that Arrow records must eventually be released.
 	defer sampleRecord.Release()
 
 	fmt.Println("Data Before:")
 	fmt.Println(sampleRecord)
 
-	// We do need to upload the table data normally, without using a query.
+	// Now we upload the record so that we can manipulate its data using the server.
+	// We get back a TableHandle, which is a reference to a table on the server.
 	baseTable, err := cl.ImportTable(ctx, sampleRecord)
 	if err != nil {
 		fmt.Println("error when uploading table:", err.Error())
 		return
 	}
+	// Table handles should be released when they are no longer needed.
 	defer baseTable.Release(ctx)
 
-	// And now the fun begins.
+	// Now, let's start building a query.
+	// Maybe I don't like companies whose names are too long or too short, so let's filter in only the ones in the middle.
+	// Note that we use baseTable.Query() to start building a new query from an existing table handle.
+	// The Query() method returns a QueryNode.
+	midStocks := baseTable.Query().
+		Where("Ticker.length() == 3 || Ticker.length() == 3")
+
+	// We can use the query system to create completely new tables too.
 	// Let's make a table whose columns are powers of ten.
+	// Again, EmptyTableQuery() returns a QueryNode.
 	powTenTable := cl.
 		EmptyTableQuery(10).
 		Update("Magnitude = (int)pow(10, ii)")
 
-	// Maybe I don't like companies whose names are too long or too short, so let's filter in only the ones in the middle.
-	// Note that we use baseTable.Query() to start building a new query from an existing handle.
-	midStocks := baseTable.Query().
-		Where("Ticker.length() == 3 || Ticker.length() == 3")
-
 	// What if I want to bin the companies according to the magnitude of the Vol column?
-	// As-Of joins aren't just for timestamps--let's use them for this, too.
-	// Note that we're combining completely unrelated tables and it will still make only a single query request!
+	// Query methods can take other query nodes as arguments to build up arbitrarily complicated requests,
+	// so we can perform an as-of join between two query nodes just fine.
 	magStocks := midStocks.
 		AsOfJoin(powTenTable, []string{"Vol = Magnitude"}, nil, client.MatchRuleLessThanEqual)
 
-	// And now, we can execute all of these operations using only a single request.
+	// And now, we can execute the entire query we have built using only a single request.
 	// Note that we can retrieve multiple tables from anywhere in the query.
 	tables, err := cl.ExecQuery(ctx, midStocks, magStocks)
 	if err != nil {
 		fmt.Println("error when executing query:", err.Error())
 		return
 	}
+	// The order of the tables in the returned list is the same as the order they were passed as arguments.
 	midTable, magTable := tables[0], tables[1]
 	defer midTable.Release(ctx)
 	defer magTable.Release(ctx)
 
-	// Now, we can just snapshot our tables as normal if we want to see the data.
-
+	// Now, if we want to see the data in each of our tables, we can take a snapshot.
 	midRecord, err := midTable.Snapshot(ctx)
 	if err != nil {
 		fmt.Println("error when snapshotting:", err.Error())
