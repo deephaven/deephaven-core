@@ -631,7 +631,7 @@ public class ParquetTableWriter {
             int keyCount = 0;
             boolean hasNulls = false;
             try (final ChunkSource.GetContext context = dataSource.makeGetContext(maxRowsPerPage);
-                 final RowSequence.Iterator it = dataRowSet.getRowSequenceIterator()) {
+                    final RowSequence.Iterator it = dataRowSet.getRowSequenceIterator()) {
                 for (int curPage = 0; curPage < pageCount; curPage++) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
                     final ObjectChunk<String, ? extends Values> chunk =

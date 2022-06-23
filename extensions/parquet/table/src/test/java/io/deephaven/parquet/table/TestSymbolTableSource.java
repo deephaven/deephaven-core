@@ -52,7 +52,8 @@ public class TestSymbolTableSource {
 
         // Make sure we have the expected symbol table (or not)
         final Table readBack = ParquetTools.readTable(toWrite);
-        final SymbolTableSource<String> source = (SymbolTableSource<String>) readBack.getColumnSource("TheBestColumn", String.class);
+        final SymbolTableSource<String> source =
+                (SymbolTableSource<String>) readBack.getColumnSource("TheBestColumn", String.class);
         Assert.assertTrue(source.hasSymbolTable(readBack.getRowSet()));
 
         final Table expected = TableTools.emptyTable(10).update("ID=k", "Symbol=`S` + k");
