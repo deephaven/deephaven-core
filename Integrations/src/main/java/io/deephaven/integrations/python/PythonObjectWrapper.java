@@ -32,6 +32,7 @@ public class PythonObjectWrapper {
      * @return A {@link PyObject} instance representing the Python wrapper object.
      */
     public static PyObject wrap(Object t) {
+        //noinspection ConstantConditions
         return PY_WRAPPER_MODULE.call("wrap_j_object", t);
     }
 }
