@@ -1453,7 +1453,7 @@ class PartitionedTable(JObjectWrapper):
         return list(map(Table, self.j_partitioned_table.constituents()))
 
     def transform(self, func: Callable[[Table], Table]) -> PartitionedTable:
-        """Applies the provided function to all constituent tables and produce a new PartitionedTable.
+        """Apply the provided function to all constituent Tables and produce a new PartitionedTable with the results as its constituents, with the same data for all other columns in the underlying partitioned Table. Note that if the Table underlying this PartitionedTable changes, a corresponding change will propagate to the result.
 
         Args:
             func (Callable[[Table], Table]: a function which takes a Table as input and returns a new Table
