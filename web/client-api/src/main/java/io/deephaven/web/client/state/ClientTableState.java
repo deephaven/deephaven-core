@@ -357,20 +357,29 @@ public final class ClientTableState extends TableConfig {
         }
         this.size = size;
 
+        JsConsumer<JsTable> doSetSize = table -> {
+            long localSize = size;
+            final ActiveTableBinding binding = getActiveBinding(table);
+            if (binding != null && table.isStreamTable()) {
+                localSize = Math.min(size, binding.getRows().size());
+            }
+            table.setSize(localSize);
+        };
+
         if (isRunning()) {
             if (log) {
                 JsLog.debug("CTS immediate size update ", this.size, " actives: ", active);
             }
-            forActiveTables(table -> table.setSize(size));
+            forActiveTables(doSetSize);
         } else {
             if (queuedSize == null) {
                 JsLog.debug("Queuing size changed until RUNNING STATE; ", size);
                 onRunning(self -> {
                     JsLog.debug("Firing queued size change event (", queuedSize, ")");
                     forActiveTables(table -> {
-                        table.setSize(queuedSize);
+                        doSetSize.apply(table);
+                        queuedSize = null;
                     });
-                    queuedSize = null;
                 }, JsRunnable.doNothing());
             }
             queuedSize = (double) size;
@@ -1075,6 +1084,7 @@ public final class ClientTableState extends TableConfig {
 
         TableAttributesDefinition attributes = new TableAttributesDefinition(
                 keyValuePairs("deephaven:attribute.", schema.customMetadataLength(), schema::customMetadata),
+                keyValuePairs("deephaven:attribute_type.", schema.customMetadataLength(), schema::customMetadata),
                 keyValuePairs("deephaven:unsent.attribute.", schema.customMetadataLength(), schema::customMetadata)
                         .keySet());
         setTableDef(new InitialTableDefinition()

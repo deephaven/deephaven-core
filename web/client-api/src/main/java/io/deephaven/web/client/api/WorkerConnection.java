@@ -1324,14 +1324,35 @@ public class WorkerConnection {
                     }
 
                     private DeltaUpdatesBuilder nextDeltaUpdates;
+                    private DeltaUpdates deferredDeltaUpdates;
 
                     private void appendAndMaybeFlush(RecordBatch header, ByteBuffer body) {
                         // using existing barrageUpdate, append to the current snapshot/delta
                         assert nextDeltaUpdates != null;
                         boolean shouldFlush = nextDeltaUpdates.appendRecordBatch(header, body);
                         if (shouldFlush) {
-                            incrementalUpdates(state.getHandle(), nextDeltaUpdates.build());
+                            DeltaUpdates updates = nextDeltaUpdates.build();
                             nextDeltaUpdates = null;
+
+                            if (state.getTableDef().getAttributes().isStreamTable()) {
+                                // stream tables remove all rows from the previous step, if there are no adds this step
+                                // then defer removal until new data arrives -- this makes stream tables GUI friendly
+                                if (updates.getAdded().isEmpty()) {
+                                    if (deferredDeltaUpdates != null) {
+                                        final RangeSet removed = deferredDeltaUpdates.getRemoved();
+                                        updates.getRemoved().rangeIterator().forEachRemaining(removed::addRange);
+                                    } else {
+                                        deferredDeltaUpdates = updates;
+                                    }
+                                    return;
+                                } else if (deferredDeltaUpdates != null) {
+                                    assert updates.getRemoved().isEmpty()
+                                            : "Stream table received two consecutive remove rowsets";
+                                    updates.setRemoved(deferredDeltaUpdates.getRemoved());
+                                    deferredDeltaUpdates = null;
+                                }
+                            }
+                            incrementalUpdates(state.getHandle(), updates);
                         }
                     }
 
