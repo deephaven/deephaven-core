@@ -5,8 +5,8 @@ package io.deephaven.client.impl;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.qst.table.TableSpec;
 
 import java.util.BitSet;
@@ -43,7 +43,7 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      *
      * @return true when all rows for the subscribed table are available, false otherwise
      */
-    public boolean isCompleted();
+    boolean isCompleted();
 
     /**
      * Request a full subscription of the data and populate a {@link BarrageTable} with the incrementally updating data
