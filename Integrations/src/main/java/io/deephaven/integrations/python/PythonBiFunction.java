@@ -17,6 +17,7 @@ import static io.deephaven.integrations.python.PythonUtils.pyApplyFunc;
  * @param <T> input argument class
  * @param <U> input argument class
  */
+@SuppressWarnings("unused")
 @ScriptApi
 public class PythonBiFunction<T, U, R> implements BiFunction<T, U, R> {
     private final PyObject pyCallable;
