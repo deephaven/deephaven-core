@@ -1,3 +1,4 @@
+// Miscellaneous helpful functions to make testing easier with less boilerplate.
 package test_tools
 
 import (
@@ -11,6 +12,8 @@ import (
 	"github.com/apache/arrow/go/v8/arrow/memory"
 )
 
+// ExampleRecord creates an arrow Record with some arbitrary data, used for testing.
+// The returned Record should be released when it is not needed anymore.
 func ExampleRecord() arrow.Record {
 	pool := memory.NewGoAllocator()
 
@@ -33,6 +36,8 @@ func ExampleRecord() arrow.Record {
 	return b.NewRecord()
 }
 
+// RandomRecord creates an arrow record with random int32 values.
+// It will have the specified number of rows and columns, each entry will be in the range [0, maxNum).
 func RandomRecord(numCols int, numRows int, maxNum int) arrow.Record {
 	pool := memory.NewGoAllocator()
 
@@ -59,12 +64,15 @@ func RandomRecord(numCols int, numRows int, maxNum int) arrow.Record {
 	return b.NewRecord()
 }
 
+// CheckError prints the passed error and message and fails the test if the given error is not nil.
 func CheckError(t *testing.T, msg string, err error) {
 	if err != nil {
 		t.Fatalf("%s error %s", msg, err.Error())
 	}
 }
 
+// GetHost returns the host to connect to for the tests.
+// By default it is localhost, but can be overriden by setting the DH_HOST environment variable.
 func GetHost() string {
 	host := os.Getenv("DH_HOST")
 	if host == "" {
@@ -74,6 +82,8 @@ func GetHost() string {
 	}
 }
 
+// GetPort returns the port to connect to for the tests.
+// By default it is 10000, but can be overriden by setting the DH_PORT environment variable.
 func GetPort() string {
 	port := os.Getenv("DH_PORT")
 	if port == "" {
