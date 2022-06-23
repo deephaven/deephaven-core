@@ -55,7 +55,7 @@ public class PythonFunction<T, R> implements Function<T, R> {
          *        double, float, long, int, short, byte, or boolean; or in the case of Python wrapper objects, PyObject,
          *        such objects then can be unwrapped to be used inside Java.
          */
-        public PythonUnaryOperator(PyObject pyCallable, Class classOut) {
+        public PythonUnaryOperator(PyObject pyCallable, Class<T> classOut) {
             super(pyCallable, classOut);
         }
     }
