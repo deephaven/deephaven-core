@@ -26,11 +26,10 @@ public class PythonBiFunction<T, U, R> implements BiFunction<T, U, R> {
     /**
      * Creates a {@link BiFunction} which calls a Python function.
      *
-     * @param pyCallable the python object providing the function - must either be callable or have an `apply` attribute
-     *        which is callable.
-     * @param classOut the specific java class to interpret the return for the method. This can be one of String,
-     *        double, float, long, int, short, byte, or boolean; or in the case of Python wrapper objects, PyObject,
-     *        such objects then can be unwrapped to be used inside Java.
+     * @param pyCallable The python object providing the function - must either be callable or have an {@code apply}
+     *        attribute which is callable.
+     * @param classOut The specific Java class expected to be returned by the {@link #apply(Object, Object)} method.
+     *        This should be the result of converting or unwrapping the output of {@code pyCallable}.
      */
     public PythonBiFunction(final PyObject pyCallable, final Class<R> classOut) {
         this.pyCallable = pyApplyFunc(pyCallable);
@@ -50,11 +49,10 @@ public class PythonBiFunction<T, U, R> implements BiFunction<T, U, R> {
         /**
          * Creates a {@link PythonBinaryOperator} which calls a Python function.
          *
-         * @param pyCallable the python object providing the function - must either be callable or have an `apply`
-         *        attribute which is callable.
-         * @param classOut the specific java class to interpret the return for the method. This can be one of String,
-         *        double, float, long, int, short, byte, or boolean; or in the case of Python wrapper objects, PyObject,
-         *        such objects then can be unwrapped to be used inside Java.
+         * @param pyCallable The python object providing the function - must either be callable or have an
+         *        {@code apply} attribute which is callable.
+         * @param classOut The specific Java class expected to be returned by the {@link #apply(Object, Object)} method.
+         *        This should be the result of converting or unwrapping the output of {@code pyCallable}.
          */
         public PythonBinaryOperator(PyObject pyCallable, Class<T> classOut) {
             super(pyCallable, classOut);
