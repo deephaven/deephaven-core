@@ -4,7 +4,7 @@ import org.jpy.PyModule;
 import org.jpy.PyObject;
 
 public class PythonObjectWrapper {
-    static PyModule pyWrapperModule = PyModule.importModule("deephaven._wrapper");
+    private static final PyModule PY_WRAPPER_MODULE = PyModule.importModule("deephaven._wrapper");
 
     static PyObject unwrap(PyObject t) {
         return pyWrapperModule.call("unwrap", t);
