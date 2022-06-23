@@ -2,12 +2,10 @@ package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.UpdateByClause;
+import io.deephaven.api.updateBy.UpdateByClause;
 import io.deephaven.engine.table.impl.EvalNugget;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TstUtils;
-import io.deephaven.engine.table.impl.util.CumulativeUtil;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.function.Numeric;
 import io.deephaven.test.types.OutOfBandTest;
@@ -31,10 +29,10 @@ public class TestCumMinMax extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, false, false, false, 0x2134BCFA).t;
 
         final Table result = t.updateBy(UpdateByClause.of(
-                UpdateByClause.min("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",
+                UpdateByClause.CumMin("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",
                         "longColMin=longCol", "floatColMin=floatCol", "doubleColMin=doubleCol",
                         "bigIntColMin=bigIntCol", "bigDecimalColMin=bigDecimalCol"),
-                UpdateByClause.max("byteColMax=byteCol", "shortColMax=shortCol", "intColMax=intCol",
+                UpdateByClause.CumMax("byteColMax=byteCol", "shortColMax=shortCol", "intColMax=intCol",
                         "longColMax=longCol", "floatColMax=floatCol", "doubleColMax=doubleCol",
                         "bigIntColMax=bigIntCol", "bigDecimalColMax=bigDecimalCol")));
         for (String col : t.getDefinition().getColumnNamesArray()) {
@@ -64,10 +62,10 @@ public class TestCumMinMax extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, true, grouped, false, 0xACDB4321).t;
 
         final Table result = t.updateBy(UpdateByClause.of(
-                UpdateByClause.min("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",
+                UpdateByClause.CumMin("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",
                         "longColMin=longCol", "floatColMin=floatCol", "doubleColMin=doubleCol",
                         "bigIntColMin=bigIntCol", "bigDecimalColMin=bigDecimalCol"),
-                UpdateByClause.max("byteColMax=byteCol", "shortColMax=shortCol", "intColMax=intCol",
+                UpdateByClause.CumMax("byteColMax=byteCol", "shortColMax=shortCol", "intColMax=intCol",
                         "longColMax=longCol", "floatColMax=floatCol", "doubleColMax=doubleCol",
                         "bigIntColMax=bigIntCol", "bigDecimalColMax=bigDecimalCol")),
                 "Sym");
@@ -123,15 +121,15 @@ public class TestCumMinMax extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return bucketed ? t.updateBy(UpdateByClause.min(), "Sym")
-                                : t.updateBy(UpdateByClause.min());
+                        return bucketed ? t.updateBy(UpdateByClause.CumMin(), "Sym")
+                                : t.updateBy(UpdateByClause.CumMin());
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return bucketed ? t.updateBy(UpdateByClause.max(), "Sym")
-                                : t.updateBy(UpdateByClause.max());
+                        return bucketed ? t.updateBy(UpdateByClause.CumMax(), "Sym")
+                                : t.updateBy(UpdateByClause.CumMax());
                     }
                 }
         };

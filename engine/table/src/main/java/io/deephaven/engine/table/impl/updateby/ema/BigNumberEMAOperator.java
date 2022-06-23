@@ -1,5 +1,7 @@
 package io.deephaven.engine.table.impl.updateby.ema;
 
+import io.deephaven.api.updateBy.BadDataBehavior;
+import io.deephaven.api.updateBy.EmaControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;

@@ -4,7 +4,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.EmaControl;
+import io.deephaven.api.updateBy.EmaControl;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;

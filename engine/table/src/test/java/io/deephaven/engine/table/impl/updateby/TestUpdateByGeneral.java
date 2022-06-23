@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.Selectable;
-import io.deephaven.engine.table.BadDataBehavior;
-import io.deephaven.engine.table.EmaControl;
+import io.deephaven.api.updateBy.BadDataBehavior;
+import io.deephaven.api.updateBy.EmaControl;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.UpdateByClause;
+import io.deephaven.api.updateBy.UpdateByClause;
 import io.deephaven.engine.table.impl.EvalNugget;
 import io.deephaven.engine.table.impl.TableWithDefaults;
 import io.deephaven.engine.table.impl.TstUtils;
@@ -92,13 +92,13 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
 
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
                         final Collection<UpdateByClause> clauses = UpdateByClause.of(
-                                UpdateByClause.fill(),
-                                UpdateByClause.ema("ts", 10 * MINUTE, skipControl,
+                                UpdateByClause.Fill(),
+                                UpdateByClause.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
-                                UpdateByClause.sum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
-                                UpdateByClause.min(makeOpColNames(columnNamesArray, "_min", "boolCol")),
-                                UpdateByClause.max(makeOpColNames(columnNamesArray, "_max", "boolCol")),
-                                UpdateByClause.prod(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
+                                UpdateByClause.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
+                                UpdateByClause.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
+                                UpdateByClause.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
+                                UpdateByClause.CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
 
                         final UpdateByControl control;
                         if (redirected) {

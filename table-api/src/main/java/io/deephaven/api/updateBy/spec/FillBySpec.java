@@ -1,8 +1,7 @@
-package io.deephaven.engine.table.updateBySpec;
+package io.deephaven.api.updateBy.spec;
 
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@link UpdateBySpec} for performing a forward fill of the specified columns.
@@ -16,7 +15,7 @@ public abstract class FillBySpec implements UpdateBySpec {
     }
 
     @Override
-    public final boolean applicableTo(@NotNull Class<?> inputType) {
+    public final boolean applicableTo(Class<?> inputType) {
         return true;
     }
 

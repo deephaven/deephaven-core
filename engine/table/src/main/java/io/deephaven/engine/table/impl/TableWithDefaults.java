@@ -7,6 +7,7 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.updateBy.UpdateByClause;
 import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -1250,7 +1251,6 @@ public interface TableWithDefaults extends Table {
     default Table updateBy(@NotNull final UpdateByClause operation) {
         return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), Collections.emptyList());
     }
-
 
     // -----------------------------------------------------------------------------------------------------------------
     // Sort Operations

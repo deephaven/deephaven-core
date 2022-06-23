@@ -1,8 +1,12 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.api.agg.Pair;
+import io.deephaven.api.updateBy.ColumnUpdateClause;
+import io.deephaven.api.updateBy.UpdateByClause;
+import io.deephaven.api.updateBy.spec.*;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
@@ -10,8 +14,6 @@ import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
-import io.deephaven.engine.table.updateBySpec.*;
-import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -54,10 +56,12 @@ public class UpdateByOperatorFactory {
         return v.ops;
     }
 
-    static MatchPair[] parseMatchPairs(final List<String> columns) {
+    static MatchPair[] parseMatchPairs(final List<Pair> columns) {
         if (columns == null)
             return MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY;
-        return MatchPairFactory.getExpressions(columns);
+        return columns.stream()
+                .map(MatchPair::of)
+                .toArray(MatchPair[]::new);
     }
 
     /**

@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.BadDataBehavior;
-import io.deephaven.engine.table.EmaControl;
+import io.deephaven.api.updateBy.BadDataBehavior;
+import io.deephaven.api.updateBy.EmaControl;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.UpdateByClause;
+import io.deephaven.api.updateBy.UpdateByClause;
 import io.deephaven.engine.table.impl.EvalNugget;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableWithDefaults;
@@ -97,48 +97,48 @@ public class TestEma extends BaseUpdateByTest {
 
     @Test
     public void testThrowBehaviors() {
-        final EmaControl.Builder throwControl = EmaControl.builder()
-                .onNullValue(BadDataBehavior.Throw);
+        final EmaControl throwControl = EmaControl.builder()
+                .onNullValue(BadDataBehavior.Throw).build();
 
         final TableWithDefaults bytes = testTable(RowSetFactory.flat(4).toTracking(),
                 byteCol("col", (byte) 0, (byte) 1, NULL_BYTE, (byte) 3));
 
         assertThrows(TableDataException.class,
-                () -> bytes.updateBy(UpdateByClause.ema(10, throwControl)));
+                () -> bytes.updateBy(UpdateByClause.Ema(throwControl, 10)));
 
 
         assertThrows(TableDataException.class,
-                () -> bytes.updateBy(UpdateByClause.ema(10, throwControl)));
+                () -> bytes.updateBy(UpdateByClause.Ema(throwControl, 10)));
 
         TableWithDefaults shorts = testTable(RowSetFactory.flat(4).toTracking(),
                 shortCol("col", (short) 0, (short) 1, NULL_SHORT, (short) 3));
 
         assertThrows(TableDataException.class,
-                () -> shorts.updateBy(UpdateByClause.ema(10, throwControl)));
+                () -> shorts.updateBy(UpdateByClause.Ema(throwControl, 10)));
 
         TableWithDefaults ints = testTable(RowSetFactory.flat(4).toTracking(),
                 intCol("col", 0, 1, NULL_INT, 3));
 
         assertThrows(TableDataException.class,
-                () -> ints.updateBy(UpdateByClause.ema(10, throwControl)));
+                () -> ints.updateBy(UpdateByClause.Ema(throwControl, 10)));
 
         TableWithDefaults longs = testTable(RowSetFactory.flat(4).toTracking(),
                 longCol("col", 0, 1, NULL_LONG, 3));
 
         assertThrows(TableDataException.class,
-                () -> longs.updateBy(UpdateByClause.ema(10, throwControl)));
+                () -> longs.updateBy(UpdateByClause.Ema(throwControl, 10)));
 
         TableWithDefaults floats = testTable(RowSetFactory.flat(4).toTracking(),
                 floatCol("col", 0, 1, NULL_FLOAT, Float.NaN));
 
         assertThrows(TableDataException.class,
                 () -> floats.updateBy(
-                        UpdateByClause.ema(10, EmaControl.builder().onNullValue(BadDataBehavior.Throw).build())),
+                        UpdateByClause.Ema(EmaControl.builder().onNullValue(BadDataBehavior.Throw).build(), 10)),
                 "Encountered null value during EMA processing");
 
         assertThrows(TableDataException.class,
                 () -> floats.updateBy(
-                        UpdateByClause.ema(10, EmaControl.builder().onNanValue(BadDataBehavior.Throw).build())),
+                        UpdateByClause.Ema(EmaControl.builder().onNanValue(BadDataBehavior.Throw).build(), 10)),
                 "Encountered NaN value during EMA processing");
 
         TableWithDefaults doubles = testTable(RowSetFactory.flat(4).toTracking(),
@@ -146,12 +146,12 @@ public class TestEma extends BaseUpdateByTest {
 
         assertThrows(TableDataException.class,
                 () -> doubles.updateBy(
-                        UpdateByClause.ema(10, EmaControl.builder().onNullValue(BadDataBehavior.Throw).build())),
+                        UpdateByClause.Ema(EmaControl.builder().onNullValue(BadDataBehavior.Throw).build(), 10)),
                 "Encountered null value during EMA processing");
 
         assertThrows(TableDataException.class,
                 () -> doubles.updateBy(
-                        UpdateByClause.ema(10, EmaControl.builder().onNanValue(BadDataBehavior.Throw).build())),
+                        UpdateByClause.Ema(EmaControl.builder().onNanValue(BadDataBehavior.Throw).build(), 10)),
                 "Encountered NaN value during EMA processing");
 
 
@@ -159,13 +159,13 @@ public class TestEma extends BaseUpdateByTest {
                 col("col", BigInteger.valueOf(0), BigInteger.valueOf(1), null, BigInteger.valueOf(3)));
 
         assertThrows(TableDataException.class,
-                () -> bi.updateBy(UpdateByClause.ema(10, throwControl)));
+                () -> bi.updateBy(UpdateByClause.Ema(throwControl, 10)));
 
         TableWithDefaults bd = testTable(RowSetFactory.flat(4).toTracking(),
                 col("col", BigDecimal.valueOf(0), BigDecimal.valueOf(1), null, BigDecimal.valueOf(3)));
 
         assertThrows(TableDataException.class,
-                () -> bd.updateBy(UpdateByClause.ema(10, throwControl)));
+                () -> bd.updateBy(UpdateByClause.Ema(throwControl, 10)));
     }
 
     @Test
@@ -220,22 +220,22 @@ public class TestEma extends BaseUpdateByTest {
 
     private void testThrowsInternal(TableWithDefaults table) {
         assertThrows(TableDataException.class,
-                () -> table.updateBy(UpdateByClause.ema("ts", 100,
-                        EmaControl.builder())),
+                () -> table.updateBy(UpdateByClause.Ema(
+                        EmaControl.builder().build(), "ts", 100)),
                 "Encountered negative delta time during EMA processing");
 
         assertThrows(TableDataException.class,
-                () -> table.updateBy(UpdateByClause.ema("ts", 100,
+                () -> table.updateBy(UpdateByClause.Ema(
                         EmaControl.builder()
                                 .onNegativeDeltaTime(BadDataBehavior.Skip)
-                                .onZeroDeltaTime(BadDataBehavior.Throw))),
+                                .onZeroDeltaTime(BadDataBehavior.Throw).build(), "ts", 100)),
                 "Encountered zero delta time during EMA processing");
 
         assertThrows(TableDataException.class,
-                () -> table.updateBy(UpdateByClause.ema("ts", 100,
+                () -> table.updateBy(UpdateByClause.Ema(
                         EmaControl.builder()
                                 .onNegativeDeltaTime(BadDataBehavior.Skip)
-                                .onNullTime(BadDataBehavior.Throw))),
+                                .onNullTime(BadDataBehavior.Throw).build(), "ts", 100)),
                 "Encountered null timestamp during EMA processing");
     }
 
@@ -285,12 +285,12 @@ public class TestEma extends BaseUpdateByTest {
                 .build();
 
         TableWithDefaults input = testTable(RowSetFactory.flat(3).toTracking(), doubleCol("col", 0, Double.NaN, 1));
-        Table result = input.updateBy(UpdateByClause.ema(100, resetControl));
+        Table result = input.updateBy(UpdateByClause.Ema(resetControl, 100));
         expected = testTable(RowSetFactory.flat(3).toTracking(), doubleCol("col", 0, NULL_DOUBLE, 1));
         assertTableEquals(expected, result);
 
         input = testTable(RowSetFactory.flat(3).toTracking(), floatCol("col", 0, Float.NaN, 1));
-        result = input.updateBy(UpdateByClause.ema(100, resetControl));
+        result = input.updateBy(UpdateByClause.Ema(resetControl, 100));
         expected = testTable(RowSetFactory.flat(3).toTracking(), doubleCol("col", 0, NULL_DOUBLE, 1));
         assertTableEquals(expected, result);
     }
@@ -302,7 +302,7 @@ public class TestEma extends BaseUpdateByTest {
                 .build();
 
         TableWithDefaults input = testTable(RowSetFactory.flat(6).toTracking(), ts, col);
-        final Table result = input.updateBy(UpdateByClause.ema("ts", 1_000_000_000, resetControl));
+        final Table result = input.updateBy(UpdateByClause.Ema(resetControl, "ts", 1_000_000_000));
         assertTableEquals(expected, result);
     }
 
@@ -318,9 +318,9 @@ public class TestEma extends BaseUpdateByTest {
                 doubleCol("col", 0, Double.NaN, NULL_DOUBLE, Double.NaN, Double.NaN));
         TableWithDefaults input = testTable(RowSetFactory.flat(5).toTracking(),
                 doubleCol("col", 0, Double.NaN, NULL_DOUBLE, Double.NaN, 4));
-        assertTableEquals(expected, input.updateBy(UpdateByClause.ema(10, nanCtl)));
+        assertTableEquals(expected, input.updateBy(UpdateByClause.Ema(nanCtl, 10)));
         input = testTable(RowSetFactory.flat(5).toTracking(), floatCol("col", 0, Float.NaN, NULL_FLOAT, Float.NaN, 4));
-        assertTableEquals(expected, input.updateBy(UpdateByClause.ema(10, nanCtl)));
+        assertTableEquals(expected, input.updateBy(UpdateByClause.Ema(nanCtl, 10)));
 
         final ColumnHolder ts = col("ts",
                 convertDateTime("2022-03-11T09:30:00.000 NY"),
@@ -334,12 +334,12 @@ public class TestEma extends BaseUpdateByTest {
                 doubleCol("col", 0, Double.NaN, NULL_DOUBLE, Double.NaN, Double.NaN, NULL_DOUBLE));
         input = testTable(RowSetFactory.flat(6).toTracking(), ts,
                 doubleCol("col", 0, Double.NaN, 2, Double.NaN, 4, 5));
-        Table result = input.updateBy(UpdateByClause.ema("ts", 10, nanCtl));
+        Table result = input.updateBy(UpdateByClause.Ema(nanCtl, "ts", 10));
         assertTableEquals(expected, result);
 
         input = testTable(RowSetFactory.flat(6).toTracking(), ts,
                 floatCol("col", 0, Float.NaN, 2, Float.NaN, 4, 5));
-        assertTableEquals(expected, input.updateBy(UpdateByClause.ema("ts", 10, nanCtl)));
+        assertTableEquals(expected, input.updateBy(UpdateByClause.Ema(nanCtl, "ts", 10)));
     }
 
     // endregion
@@ -391,16 +391,16 @@ public class TestEma extends BaseUpdateByTest {
                     @Override
                     protected Table e() {
                         return bucketed
-                                ? tickResult.t.updateBy(UpdateByClause.ema(100, skipControl), "Sym")
-                                : tickResult.t.updateBy(UpdateByClause.ema(100, skipControl));
+                                ? tickResult.t.updateBy(UpdateByClause.Ema(skipControl, 100), "Sym")
+                                : tickResult.t.updateBy(UpdateByClause.Ema(skipControl, 100));
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
                         return bucketed
-                                ? tickResult.t.updateBy(UpdateByClause.ema(100, resetControl), "Sym")
-                                : tickResult.t.updateBy(UpdateByClause.ema(100, resetControl));
+                                ? tickResult.t.updateBy(UpdateByClause.Ema(resetControl, 100), "Sym")
+                                : tickResult.t.updateBy(UpdateByClause.Ema(resetControl, 100));
                     }
                 }
         };
@@ -414,8 +414,8 @@ public class TestEma extends BaseUpdateByTest {
                             base = (TableWithDefaults) base.sort("ts");
                         }
                         return bucketed
-                                ? base.updateBy(UpdateByClause.ema("ts", 10 * MINUTE, skipControl), "Sym")
-                                : base.updateBy(UpdateByClause.ema("ts", 10 * MINUTE, skipControl));
+                                ? base.updateBy(UpdateByClause.Ema(skipControl, "ts", 10 * MINUTE), "Sym")
+                                : base.updateBy(UpdateByClause.Ema(skipControl, "ts", 10 * MINUTE));
                     }
                 },
                 new EvalNugget() {
@@ -426,8 +426,8 @@ public class TestEma extends BaseUpdateByTest {
                             base = (TableWithDefaults) base.sort("ts");
                         }
                         return bucketed
-                                ? base.updateBy(UpdateByClause.ema("ts", 10 * MINUTE, resetControl), "Sym")
-                                : base.updateBy(UpdateByClause.ema("ts", 10 * MINUTE, resetControl));
+                                ? base.updateBy(UpdateByClause.Ema(resetControl, "ts", 10 * MINUTE), "Sym")
+                                : base.updateBy(UpdateByClause.Ema(resetControl, "ts", 10 * MINUTE));
                     }
                 }
         };
@@ -501,9 +501,9 @@ public class TestEma extends BaseUpdateByTest {
 
         final UpdateByClause emaClause;
         if (useTicks) {
-            emaClause = UpdateByClause.ema(scale, control);
+            emaClause = UpdateByClause.Ema(control, scale);
         } else {
-            emaClause = UpdateByClause.ema(tsCol, scale, control);
+            emaClause = UpdateByClause.Ema(control, tsCol, scale);
         }
 
         final Table result = source.updateBy(emaClause, groups)

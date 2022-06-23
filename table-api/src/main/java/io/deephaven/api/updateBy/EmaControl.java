@@ -1,16 +1,15 @@
-package io.deephaven.engine.table;
+package io.deephaven.api.updateBy;
 
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Default;
 import io.deephaven.annotations.BuildableStyle;
-import org.jetbrains.annotations.NotNull;
 
 import java.math.MathContext;
 import java.util.Collection;
 
 /**
  * <p>
- * Control parameters for performing EMAs with {@link Table#updateBy(Collection, String...)}
+ * Control parameters for performing EMAs with Table#updateBy()
  * </p>
  * <p>
  * Defaults are as follows
@@ -27,7 +26,6 @@ import java.util.Collection;
 @Immutable
 @BuildableStyle
 public abstract class EmaControl {
-    @NotNull
     public static Builder builder() {
         return ImmutableEmaControl.builder();
     }

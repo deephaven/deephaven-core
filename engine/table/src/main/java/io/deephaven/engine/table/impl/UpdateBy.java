@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.Strings;
+import io.deephaven.api.updateBy.UpdateByClause;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;

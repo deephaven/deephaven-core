@@ -1,10 +1,12 @@
-package io.deephaven.engine.table.updateBySpec;
+package io.deephaven.api.updateBy.spec;
 
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
-import org.jetbrains.annotations.Nullable;
+
+import javax.annotation.Nullable;
+import java.time.Duration;
 
 @Immutable
 @SimpleStyle
@@ -18,6 +20,10 @@ public abstract class TimeScale {
 
     public static TimeScale ofTime(final String timestampCol, long timeScaleNanos) {
         return ImmutableTimeScale.of(timestampCol, timeScaleNanos);
+    }
+
+    public static TimeScale ofTime(final String timestampCol, Duration duration) {
+        return ImmutableTimeScale.of(timestampCol, duration.toNanos());
     }
 
     public static TimeScale ofTicks(long tickWindow) {
@@ -34,5 +40,4 @@ public abstract class TimeScale {
             throw new IllegalArgumentException("TimeScale.timestampCol() must not be an empty string");
         }
     }
-
 }

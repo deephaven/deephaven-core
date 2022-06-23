@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.UpdateByClause;
+import io.deephaven.api.updateBy.UpdateByClause;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.function.Numeric;
@@ -35,7 +35,7 @@ public class TestCumSum extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, false, false, false, 0x31313131).t;
         t.setRefreshing(false);
 
-        final Table summed = t.updateBy(UpdateByClause.sum());
+        final Table summed = t.updateBy(UpdateByClause.CumSum());
         for (String col : t.getDefinition().getColumnNamesArray()) {
             assertWithCumSum(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
                     summed.getColumn(col).getType());
@@ -62,9 +62,9 @@ public class TestCumSum extends BaseUpdateByTest {
                 longCol("IntValSum", 1, 3, NULL_LONG, 3));
 
         final Table r = t.updateBy(UpdateByClause.of(
-                UpdateByClause.sum("ByteValSum=ByteVal"),
-                UpdateByClause.sum("ShortValSum=ShortVal"),
-                UpdateByClause.sum("IntValSum=IntVal")), "Sym");
+                UpdateByClause.CumSum("ByteValSum=ByteVal"),
+                UpdateByClause.CumSum("ShortValSum=ShortVal"),
+                UpdateByClause.CumSum("IntValSum=IntVal")), "Sym");
 
         assertTableEquals(expected, r);
     }
@@ -82,7 +82,7 @@ public class TestCumSum extends BaseUpdateByTest {
     private void doTestStaticBucketed(boolean grouped) {
         final QueryTable t = createTestTable(100000, true, grouped, false, 0x31313131).t;
 
-        final Table summed = t.updateBy(UpdateByClause.sum("byteCol", "shortCol", "intCol", "longCol", "floatCol",
+        final Table summed = t.updateBy(UpdateByClause.CumSum("byteCol", "shortCol", "intCol", "longCol", "floatCol",
                 "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
 
@@ -124,8 +124,8 @@ public class TestCumSum extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return bucketed ? t.updateBy(UpdateByClause.sum(), "Sym")
-                                : t.updateBy(UpdateByClause.sum());
+                        return bucketed ? t.updateBy(UpdateByClause.CumSum(), "Sym")
+                                : t.updateBy(UpdateByClause.CumSum());
                     }
                 }
         };
@@ -146,7 +146,7 @@ public class TestCumSum extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByClause.sum());
+                        return t.updateBy(UpdateByClause.CumSum());
                     }
                 }
         };
@@ -168,7 +168,7 @@ public class TestCumSum extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByClause.sum(), "Sym");
+                        return t.updateBy(UpdateByClause.CumSum(), "Sym");
                     }
                 }
         };

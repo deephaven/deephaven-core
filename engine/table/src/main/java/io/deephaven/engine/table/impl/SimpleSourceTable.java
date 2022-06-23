@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.UpdateByClause;
+import io.deephaven.api.updateBy.UpdateByClause;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
