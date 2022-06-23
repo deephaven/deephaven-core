@@ -19,7 +19,7 @@ import static io.deephaven.integrations.python.PythonUtils.pyApplyFunc;
 @ScriptApi
 public class PythonFunction<T, R> implements Function<T, R> {
     private final PyObject pyCallable;
-    private final Class classOut;
+    private final Class<R> classOut;
 
     /**
      * Creates a {@link Function} which calls a Python function.
