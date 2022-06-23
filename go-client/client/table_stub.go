@@ -14,7 +14,7 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
-// May be returned by ExecQuery as the result of an invalid query.
+// A QueryError be returned by ExecQuery as the result of an invalid query.
 type QueryError struct {
 	Msg string
 }
@@ -49,7 +49,7 @@ func (ts *tableStub) createInputTable(ctx context.Context, req *tablepb2.CreateI
 	return parseCreationResponse(ts.client, resp)
 }
 
-// Executes a batch (query) request on the server and returns the resulting tables.
+// batch executes a batch (query) request on the server and returns the resulting tables.
 func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableRequest_Operation) ([]*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
@@ -89,7 +89,7 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 	return exportedTables, nil
 }
 
-// Opens a globally-scoped table with the given name on the server.
+// OpenTable opens a globally-scoped table with the given name on the server.
 func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
@@ -113,14 +113,14 @@ func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, 
 	}
 }
 
-// Like `EmptyTable`, except it can be used as part of a query.
+// EmptyTableQuery is like EmptyTable, except it can be used as part of a query.
 func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
 	qb := newQueryBuilder(ts.client, nil)
 	qb.ops = append(qb.ops, emptyTableOp{numRows: numRows})
 	return qb.curRootNode()
 }
 
-// Creates a new empty table in the global scope.
+// EmptyTable creates a new empty table in the global scope.
 //
 // The table will have zero columns and the specified number of rows.
 func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandle, error) {
@@ -140,7 +140,7 @@ func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandl
 	return parseCreationResponse(ts.client, resp)
 }
 
-// Like `TimeTable`, except it can be used as part of a query.
+// TimeTableQuery is like TimeTable, except it can be used as part of a query.
 func (ts *tableStub) TimeTableQuery(period int64, startTime *int64) QueryNode {
 	var realStartTime int64
 	if startTime == nil {
@@ -155,7 +155,7 @@ func (ts *tableStub) TimeTableQuery(period int64, startTime *int64) QueryNode {
 	return qb.curRootNode()
 }
 
-// Creates a ticking time table in the global scope.
+// TimeTable creates a ticking time table in the global scope.
 // The period is in nanoseconds and represents the interval between adding new rows to the table.
 // The startTime is in nanoseconds since epoch and defaults to the current time when it is nil.
 func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int64) (*TableHandle, error) {

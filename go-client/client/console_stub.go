@@ -7,7 +7,7 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
-// Wraps gRPC calls for console.proto.
+// consoleStub wraps gRPC calls for console.proto.
 type consoleStub struct {
 	client *Client
 
@@ -37,7 +37,7 @@ func newConsoleStub(ctx context.Context, client *Client, sessionType string) (co
 	return consoleStub{client: client, stub: stub, consoleId: consoleId}, nil
 }
 
-// Binds a table reference to a given name so that it can be referenced by other clients or the web UI.
+// BindToVariable binds a table reference to a given name so that it can be referenced by other clients or the web UI.
 func (console *consoleStub) BindToVariable(ctx context.Context, name string, table *TableHandle) error {
 	ctx, err := console.client.withToken(ctx)
 	if err != nil {
@@ -53,7 +53,7 @@ func (console *consoleStub) BindToVariable(ctx context.Context, name string, tab
 	return nil
 }
 
-// Directly uploads and executes a script on the deephaven server.
+// RunScript directly uploads and executes a script on the deephaven server.
 // The script language depends on the scriptLanguage argument passed when creating the client.
 func (console *consoleStub) RunScript(ctx context.Context, script string) error {
 	ctx, err := console.client.withToken(ctx)

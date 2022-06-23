@@ -72,13 +72,13 @@ func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, hand
 	}
 }
 
-// Returns true if an existing FetchTables loop is running.
+// isFetching returns true if an existing FetchTables loop is running.
 // The client lock should be held when calling this function.
 func (as *appStub) isFetching() bool {
 	return as.cancelFunc != nil
 }
 
-// Cancels an existing FetchTables loop, if one exists.
+// cancelFetchLoop cancels an existing FetchTables loop, if one exists.
 // If one exists, this will block until the loop has finished writing any results that are in-progress.
 // The client lock should be held when calling this function.
 func (as *appStub) cancelFetchLoop() {
@@ -93,7 +93,7 @@ func (as *appStub) cancelFetchLoop() {
 	}
 }
 
-// Closes the app stub and frees any associated resources.
+// Close closes the app stub and frees any associated resources.
 // The app stub should not be used after calling this function.
 // The client lock should be held when calling this function.
 func (as *appStub) Close() {

@@ -11,15 +11,21 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
+// AppendOnlyInputTable is a handle to an append-only input table on the server.
+// The only difference between this handle and a normal table handle is the ability
+// to add data to it using AddTable.
 type AppendOnlyInputTable struct {
 	TableHandle
 }
 
+// KeyBackedInputTable is a handle to a key-backed input table on the server.
+// The only difference between this handle and a normal table handle is the ability
+// to add and remove data to and from it using AddTable and DeleteTable.
 type KeyBackedInputTable struct {
 	TableHandle
 }
 
-// Wraps gRPC calls for inputtable.proto.
+// inputTableStub wraps gRPC calls for inputtable.proto.
 type inputTableStub struct {
 	client *Client
 
@@ -45,7 +51,7 @@ func makeInputTableRequestFromTable(kind *inputTableKind, resultId *ticketpb2.Ti
 	return &tablepb2.CreateInputTableRequest{ResultId: resultId, Definition: def, Kind: kind}
 }
 
-// Creates a new append-only input table with columns according to the provided schema.
+// NewAppendOnlyInputTableFromSchema creates a new append-only input table with columns according to the provided schema.
 func (its *inputTableStub) NewAppendOnlyInputTableFromSchema(ctx context.Context, schema *arrow.Schema) (*AppendOnlyInputTable, error) {
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_{
 		InMemoryAppendOnly: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly{},
@@ -59,7 +65,7 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromSchema(ctx context.Context
 	return &AppendOnlyInputTable{TableHandle: *table}, nil
 }
 
-// Creates a new append-only input table with the same columns as the provided table.
+// NewAppendOnlyInputTableFromTable creates a new append-only input table with the same columns as the provided table.
 func (its *inputTableStub) NewAppendOnlyInputTableFromTable(ctx context.Context, table *TableHandle) (*AppendOnlyInputTable, error) {
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_{
 		InMemoryAppendOnly: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly{},
@@ -73,7 +79,7 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromTable(ctx context.Context,
 	return &AppendOnlyInputTable{TableHandle: *table}, nil
 }
 
-// Creates a new key-backed input table with columns according to the provided schema.
+// NewKeyBackedInputTableFromSchema creates a new key-backed input table with columns according to the provided schema.
 // The columns to use as the keys are specified by keyColumns.
 func (its *inputTableStub) NewKeyBackedInputTableFromSchema(ctx context.Context, schema *arrow.Schema, keyColumns ...string) (*KeyBackedInputTable, error) {
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_{
@@ -88,7 +94,7 @@ func (its *inputTableStub) NewKeyBackedInputTableFromSchema(ctx context.Context,
 	return &KeyBackedInputTable{TableHandle: *table}, nil
 }
 
-// Creates a new key-backed input table with the same columns as the provided table.
+// NewKeyBackedInputTableFromTable creates a new key-backed input table with the same columns as the provided table.
 // The columns to use as the keys are specified by keyColumns.
 func (its *inputTableStub) NewKeyBackedInputTableFromTable(ctx context.Context, table *TableHandle, keyColumns ...string) (*KeyBackedInputTable, error) {
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_{
@@ -103,13 +109,13 @@ func (its *inputTableStub) NewKeyBackedInputTableFromTable(ctx context.Context, 
 	return &KeyBackedInputTable{TableHandle: *table}, nil
 }
 
-// Appends data from the given table to the end of this table.
+// AddTable appends data from the given table to the end of this table.
 // This will automatically update all tables derived from this one.
 func (th *AppendOnlyInputTable) AddTable(ctx context.Context, toAdd *TableHandle) error {
 	return th.client.inputTableStub.addTable(ctx, &th.TableHandle, toAdd)
 }
 
-// Merges the keys from the given table into this table.
+// AddTable merges the keys from the given table into this table.
 // If a key does not exist in the current table, the entire row is added,
 // otherwise the new data row replaces the existing key.
 // This will automatically update all tables derived from this one.
@@ -132,7 +138,7 @@ func (its *inputTableStub) addTable(ctx context.Context, inputTable *TableHandle
 	return nil
 }
 
-// Delets the rows with the given keys from this table.
+// DeleteTable deletes the rows with the given keys from this table.
 // The provided table must consist only of columns that were specified as key columns in the input table.
 // This will automatically update all tables derived from this one.
 func (th *KeyBackedInputTable) DeleteTable(ctx context.Context, toDelete *TableHandle) error {

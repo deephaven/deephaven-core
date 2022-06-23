@@ -23,9 +23,12 @@ import (
 // Returned as an error when trying to perform a network operation on a client that has been closed.
 var ErrClosedClient = errors.New("client is closed")
 
+// A fieldId is a unique identifier for a field on the server,
+// where a "field" could be e.g. a table or a plot.
+// Currently only tables are kept track of.
 type fieldId struct {
-	appId     string
-	fieldName string
+	appId     string // appId is the application scope for the field. For the global scope this is "scope".
+	fieldName string // fieldName is the name of the field.
 }
 
 // Maintains a connection to a Deephaven server.
@@ -56,7 +59,7 @@ type Client struct {
 	tables     map[fieldId]*TableHandle
 }
 
-// Starts a connection to a Deephaven server.
+// NewClient starts a connection to a Deephaven server.
 //
 // scriptLanguage can be either "python" or "groovy", and must match the language used on the server. Python is the default.
 //
@@ -103,21 +106,21 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 	return client, nil
 }
 
-// Checks if the client is closed, i.e. it can no longer perform operations on the server.
+// Closed checks if the client is closed, i.e. it can no longer perform operations on the server.
 func (client *Client) Closed() bool {
 	return client.grpcChannel == nil
 }
 
-// Specifies the kind of fetch to be done when using FetchTables.
+// FetchOption specifies the kind of fetch to be done when using FetchTables.
 // See the docs for FetchOnce, FetchRepeating, and FetchTables for more information.
 type FetchOption int
 
 const (
-	FetchOnce      FetchOption = iota // Fetches the list of tables once and then returns.
-	FetchRepeating                    // Starts up a background goroutine to continually update the list of tables as changes occur.
+	FetchOnce      FetchOption = iota // FetchOnce fetches the list of tables once and then returns.
+	FetchRepeating                    // FetchRepeating starts up a background goroutine to continually update the list of tables as changes occur.
 )
 
-// Fetches the list of tables from the server.
+// FetchTables fetches the list of tables from the server.
 // This allows the client to see the list of named global tables on the server,
 // and thus allows it to open them using OpenTables.
 // Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
@@ -129,14 +132,14 @@ func (client *Client) FetchTables(ctx context.Context, opt FetchOption) error {
 	return client.fetchTablesWhileLocked(ctx, opt)
 }
 
-// Like FetchTables, but assumes the client lock is already held.
+// fetchTablesWhileLocked is Like FetchTables, but assumes the client lock is already held.
 func (client *Client) fetchTablesWhileLocked(ctx context.Context, opt FetchOption) error {
 	return client.listFields(ctx, opt, func(update *applicationpb2.FieldsChangeUpdate) {
 		client.handleFieldChanges(update)
 	})
 }
 
-// Returns a list of the (global) tables that can be opened with OpenTable.
+// ListOpenableTables returns a list of the (global) tables that can be opened with OpenTable.
 // Tables that are created by other clients or in the web UI are not listed here automatically.
 // Tables that are created in scripts run by this client, however, are immediately available,
 // and will be added to/removed from the list as soon as the script finishes.
@@ -156,7 +159,7 @@ func (client *Client) ListOpenableTables() []string {
 	return result
 }
 
-// Returns a new ticket number that this client has not used before.
+// newTicketNum returns a new ticket number that this client has not used before.
 // This function is thread-safe.
 func (client *Client) newTicketNum() int32 {
 	nextTicket := atomic.AddInt32(&client.nextTicket, 1)
@@ -168,7 +171,7 @@ func (client *Client) newTicketNum() int32 {
 	return nextTicket
 }
 
-// Returns a new ticket that this client has not used before.
+// newTicket returns a new ticket that this client has not used before.
 // This function is thread-safe.
 func (client *Client) newTicket() ticketpb2.Ticket {
 	id := client.newTicketNum()
@@ -176,7 +179,7 @@ func (client *Client) newTicket() ticketpb2.Ticket {
 	return client.makeTicket(id)
 }
 
-// Turns a  ticket ID into a ticket.
+// makeTicket turns a ticket ID into a ticket.
 // This function is thread-safe.
 func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 	bytes := []byte{'e', byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
@@ -184,7 +187,7 @@ func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 	return ticketpb2.Ticket{Ticket: bytes}
 }
 
-// Executes a query on the server and returns the resulting tables.
+// ExecQuery executes a query on the server and returns the resulting tables.
 //
 // If this function completes successfully,
 // the number of tables returned will always match the number of query nodes passed.
@@ -197,7 +200,7 @@ func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]*Tab
 	return execQuery(client, ctx, nodes)
 }
 
-// Closes the connection to the server and frees any associated resources.
+// Close closes the connection to the server and frees any associated resources.
 // Once this method is called, the client and any TableHandles from it cannot be used.
 func (client *Client) Close() {
 	client.lock.Lock()
@@ -211,6 +214,7 @@ func (client *Client) Close() {
 	}
 }
 
+// withToken attaches the current session token to a context as metadata.
 // This is thread-safe
 func (client *Client) withToken(ctx context.Context) (context.Context, error) {
 	tok, err := client.getToken()
@@ -220,7 +224,7 @@ func (client *Client) withToken(ctx context.Context) (context.Context, error) {
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs("deephaven_session_id", string(tok))), nil
 }
 
-// Executes a script on the deephaven server.
+// RunScript executes a script on the deephaven server.
 // The script language depends on the scriptLanguage argument passed when creating the client.
 func (client *Client) RunScript(context context.Context, script string) error {
 	// This has to shadow the consoleStub method in order to handle the listfields loop
