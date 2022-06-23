@@ -427,12 +427,13 @@ public class ParquetTableWriter {
         LongSupplier rowStepGetter;
         LongSupplier valuesStepGetter;
 
-        int maxRowsPerPage;
+        int maxValuesPerPage;
+        int maxOriginalRowsPerPage;
         int pageCount;
         if (columnSource.getComponentType() != null
                 && !CodecLookup.explicitCodecPresent(writeInstructions.getCodecName(columnDefinition.getName()))
                 && !CodecLookup.codecRequired(columnDefinition)) {
-            int targetRowsPerPage = maxRowsPerPage = getTargetRowsPerPage(columnSource.getComponentType());
+            int targetRowsPerPage = maxValuesPerPage = maxOriginalRowsPerPage = getTargetRowsPerPage(columnSource.getComponentType());
             final HashMap<String, ColumnSource<?>> columns = new HashMap<>();
             columns.put("array", columnSource);
             final Table lengthsTable = new QueryTable(tableRowSet, columns);
@@ -471,7 +472,8 @@ public class ParquetTableWriter {
                                 // Record the current item count and original row count into the parallel page arrays.
                                 rawItemCountPerPage.add(totalItemsInPage);
                                 originalRowsPerPage.add(originalRowsInPage);
-                                maxRowsPerPage = Math.max(totalItemsInPage, maxRowsPerPage);
+                                maxValuesPerPage = Math.max(totalItemsInPage, maxValuesPerPage);
+                                maxOriginalRowsPerPage = Math.max(originalRowsInPage, maxOriginalRowsPerPage);
 
                                 // Reset the counts to compute these values for the next page.
                                 originalRowsInPage = 0;
@@ -498,7 +500,7 @@ public class ParquetTableWriter {
             rowSet = ungroupedArrays.getRowSet();
             columnSource = ungroupedArrays.getColumnSource("array");
         } else {
-            final int finalTargetSize = maxRowsPerPage = getTargetRowsPerPage(columnSource.getType());
+            final int finalTargetSize = maxValuesPerPage = maxOriginalRowsPerPage = getTargetRowsPerPage(columnSource.getType());
             rowStepGetter = valuesStepGetter = () -> finalTargetSize;
             pageCount = (int) (rowSet.size() / finalTargetSize + ((rowSet.size() % finalTargetSize) == 0 ? 0 : 1));
         }
@@ -526,7 +528,8 @@ public class ParquetTableWriter {
                         lengthSource,
                         rowStepGetter,
                         valuesStepGetter,
-                        maxRowsPerPage,
+                        maxValuesPerPage,
+                        maxOriginalRowsPerPage,
                         pageCount);
             }
 
@@ -542,7 +545,8 @@ public class ParquetTableWriter {
                         rowStepGetter,
                         valuesStepGetter,
                         computedCache,
-                        maxRowsPerPage,
+                        maxValuesPerPage,
+                        maxOriginalRowsPerPage,
                         pageCount);
             }
         }
@@ -559,13 +563,14 @@ public class ParquetTableWriter {
             @NotNull final LongSupplier rowStepGetter,
             @NotNull final LongSupplier valuesStepGetter,
             @NotNull final Map<String, Map<CacheTags, Object>> computedCache,
-            final int maxRowsPerPage,
+            final int maxValuesPerPage,
+            final int maxOriginalRowsPerPage,
             final int pageCount) throws IOException {
         try (final TransferObject<?> transferObject = getDestinationBuffer(computedCache,
                 originalRowSet,
                 dataSource,
                 columnDefinition,
-                maxRowsPerPage,
+                maxValuesPerPage,
                 columnType,
                 writeInstructions)) {
             final boolean supportNulls = supportNulls(columnType);
@@ -574,10 +579,10 @@ public class ParquetTableWriter {
             try (final RowSequence.Iterator lengthIndexIt =
                     lengthSource != null ? originalRowSet.getRowSequenceIterator() : null;
                     final ChunkSource.GetContext lengthSourceContext =
-                            lengthSource != null ? lengthSource.makeGetContext(maxRowsPerPage) : null;
+                            lengthSource != null ? lengthSource.makeGetContext(maxOriginalRowsPerPage) : null;
                     final RowSequence.Iterator it = dataRowSet.getRowSequenceIterator()) {
 
-                final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(maxRowsPerPage) : null;
+                final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(maxValuesPerPage) : null;
                 for (int step = 0; step < pageCount; ++step) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
                     transferObject.fetchData(rs);
@@ -612,6 +617,7 @@ public class ParquetTableWriter {
             @NotNull final LongSupplier rowStepGetter,
             @NotNull final LongSupplier valuesStepGetter,
             final int maxRowsPerPage,
+            final int maxOriginalRowsPerPage,
             final int pageCount) throws IOException {
         // Note: We only support strings as dictionary pages. Knowing that, we can make some assumptions about chunk
         // types and avoid a bunch of lambda and virtual method invocations. If we decide to support more, than
@@ -667,7 +673,7 @@ public class ParquetTableWriter {
             List<IntBuffer> arraySizeBuffers = null;
             if (lengthSource != null) {
                 arraySizeBuffers = new ArrayList<>();
-                try (final ChunkSource.GetContext context = lengthSource.makeGetContext(maxRowsPerPage);
+                try (final ChunkSource.GetContext context = lengthSource.makeGetContext(maxOriginalRowsPerPage);
                         final RowSequence.Iterator it = originalRowSet.getRowSequenceIterator()) {
                     while (it.hasMore()) {
                         final RowSequence rs = it.getNextRowSequenceWithLength(rowStepGetter.getAsLong());
