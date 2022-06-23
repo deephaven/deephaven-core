@@ -68,27 +68,30 @@ public class PythonValueGetter {
         return valueIn.getBooleanValue();
     }
 
-    static Object getValue(PyObject pyObject, Class classOut) {
+    static <R> R getValue(PyObject pyObject, Class<R> classOut) {
+        final Object result;
         // Note: Potentially important types omitted -simply because handling from python is not super clear:
         // Character/char, BigInteger, BigDecimal
         if (CharSequence.class.isAssignableFrom(classOut)) {
-            return getString(pyObject);
+            result = getString(pyObject);
         } else if (classOut.equals(Double.class) || classOut.equals(double.class)) {
-            return getDouble(pyObject);
+            result = getDouble(pyObject);
         } else if (classOut.equals(Float.class) || classOut.equals(float.class)) {
-            return getFloat(pyObject);
+            result = getFloat(pyObject);
         } else if (classOut.equals(Long.class) || classOut.equals(long.class)) {
-            return getLong(pyObject);
+            result = getLong(pyObject);
         } else if (classOut.equals(Integer.class) || classOut.equals(int.class)) {
-            return getInt(pyObject);
+            result = getInt(pyObject);
         } else if (classOut.equals(Short.class) || classOut.equals(short.class)) {
-            return getShort(pyObject);
+            result = getShort(pyObject);
         } else if (classOut.equals(Byte.class) || classOut.equals(byte.class)) {
-            return getByte(pyObject);
+            result = getByte(pyObject);
         } else if (classOut.equals(Boolean.class) || classOut.equals(boolean.class)) {
-            return getBoolean(pyObject);
+            result = getBoolean(pyObject);
         } else {
-            return getObject(pyObject);
+            result = getObject(pyObject);
         }
+        //noinspection unchecked
+        return (R) result;
     }
 }
