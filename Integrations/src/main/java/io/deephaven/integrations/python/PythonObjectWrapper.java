@@ -20,7 +20,7 @@ public class PythonObjectWrapper {
      * @return The wrapped Java object.
      */
     public static Object unwrap(PyObject t) {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         return PY_WRAPPER_MODULE.call("unwrap", t).getObjectValue();
     }
 
@@ -32,7 +32,7 @@ public class PythonObjectWrapper {
      * @return A {@link PyObject} instance representing the Python wrapper object.
      */
     public static PyObject wrap(Object t) {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         return PY_WRAPPER_MODULE.call("wrap_j_object", t);
     }
 }

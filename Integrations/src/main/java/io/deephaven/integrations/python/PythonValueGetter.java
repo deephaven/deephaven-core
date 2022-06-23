@@ -4,7 +4,7 @@ import io.deephaven.util.QueryConstants;
 import org.jpy.PyObject;
 
 /**
- * This helper class implements safe methods which returns a value of a specified Java type from a {@link PyObject}
+ * This helper class implements safe methods which return a value of a specified Java type from a {@link PyObject}
  * instance. In particular, if the instance is a Deephaven Python wrapper object, it will be unwrapped to reveal the
  * Java object.
  */

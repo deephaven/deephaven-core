@@ -49,8 +49,8 @@ public class PythonBiFunction<T, U, R> implements BiFunction<T, U, R> {
         /**
          * Creates a {@link PythonBinaryOperator} which calls a Python function.
          *
-         * @param pyCallable The python object providing the function - must either be callable or have an
-         *        {@code apply} attribute which is callable.
+         * @param pyCallable The python object providing the function - must either be callable or have an {@code apply}
+         *        attribute which is callable.
          * @param classOut The specific Java class expected to be returned by the {@link #apply(Object, Object)} method.
          *        This should be the result of converting or unwrapping the output of {@code pyCallable}.
          */

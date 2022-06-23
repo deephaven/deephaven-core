@@ -1467,7 +1467,8 @@ class PartitionedTable(JObjectWrapper):
             DHError
         """
         try:
-            j_pt = self.j_partitioned_table.transform(j_unary_operator(func, dtypes.from_jtype(Table.j_object_type)))
+            j_operator = j_unary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
+            j_pt = self.j_partitioned_table.transform(j_operator)
             return PartitionedTable(j_partitioned_table=j_pt)
         except Exception as e:
             raise DHError(e, "failed to transform the PartitionedTable.") from e
@@ -1491,7 +1492,8 @@ class PartitionedTable(JObjectWrapper):
             DHError
         """
         try:
-            j_pt = self.j_partitioned_table.partitionedTransform(other.j_partitioned_table, j_binary_operator(func, dtypes.from_jtype(Table.j_object_type)))
+            j_operator = j_binary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
+            j_pt = self.j_partitioned_table.partitionedTransform(other.j_partitioned_table, j_operator)
             return PartitionedTable(j_partitioned_table=j_pt)
         except Exception as e:
             raise DHError(e, "failed to transform the PartitionedTable with another PartitionedTable.") from e
