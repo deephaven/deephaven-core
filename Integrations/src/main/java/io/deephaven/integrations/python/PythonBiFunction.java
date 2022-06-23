@@ -20,7 +20,7 @@ import static io.deephaven.integrations.python.PythonUtils.pyApplyFunc;
 @ScriptApi
 public class PythonBiFunction<T, U, R> implements BiFunction<T, U, R> {
     private final PyObject pyCallable;
-    private final Class classOut;
+    private final Class<R> classOut;
 
     /**
      * Creates a {@link BiFunction} which calls a Python function.
