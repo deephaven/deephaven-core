@@ -1,6 +1,0 @@
-build
-*.o
-*.so
-mypy
-
-

@@ -18,6 +18,5 @@ wheel {
 
 dependencies {
     classpath project(path: ':py-embedded-server-java-runtime', targetConfiguration: 'fullClasspath')
-    pythonWheel project(path: ':deephaven-jpy', targetConfiguration: 'pythonWheel')
     pythonWheel project(':py-server')
 }

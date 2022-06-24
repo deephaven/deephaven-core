@@ -26,6 +26,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.util.stream.Collectors;
 
 public class EmbeddedServer {
     @Singleton
@@ -77,7 +78,8 @@ public class EmbeddedServer {
     public void start() throws Exception {
         server.run();
         checkGlobals(scriptSession.get(), null);
-        System.out.println("Server started on port " + server.server().getPort());
+        System.out.println("Server started on: "
+                + server.server().describeSockets().stream().collect(Collectors.joining(",", "[", "]")));
     }
 
     private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {

@@ -1,6 +1,12 @@
 repositories {
     mavenCentral()
-
+    // Uncomment the following if doing local development work that depends on SNAPSHOTs
+//    maven {
+//        url "https://s01.oss.sonatype.org/content/repositories/snapshots"
+//        mavenContent {
+//            snapshotsOnly()
+//        }
+//    }
     maven {
         url 'https://jitpack.io'
         content {

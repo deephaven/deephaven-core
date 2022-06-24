@@ -4,7 +4,6 @@ plugins {
   id 'idea'
 }
 
-evaluationDependsOn ':deephaven-jpy'
 evaluationDependsOn ':docker-runtime-base'
 
 sourceSets {
@@ -49,7 +48,6 @@ configurations {
 
 dependencies {
   // todo: consider running tests where JPY is *not* on the classpath, which is a completely acceptable use case
-  testCompile project(':deephaven-jpy')
   testCompile project(':deephaven-jpy-ext')
   javaToPythonCompile sourceSets.test.output
   pythonToJavaCompile sourceSets.test.output

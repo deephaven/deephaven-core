@@ -6,9 +6,10 @@ deephaven-plugin==0.2.0
 dill==0.3.5.1
 google-auth==2.8.0
 google-auth-oauthlib==0.4.6
-grpcio==1.46.3
+grpcio==1.47.0
 idna==3.3
 importlib-metadata==4.11.4
+jpy==0.11.0
 llvmlite==0.38.1
 Markdown==3.3.7
 numba==0.55.2

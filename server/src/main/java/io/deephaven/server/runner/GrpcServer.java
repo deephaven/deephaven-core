@@ -6,7 +6,9 @@ package io.deephaven.server.runner;
 import io.grpc.Server;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * This interface handles the lifecycle of Netty and Jetty servers in a unified way, while still supporting the use
@@ -54,6 +56,13 @@ public interface GrpcServer {
      */
     int getPort();
 
+    /**
+     * A description of each socket.
+     *
+     * @return a description of each socket
+     */
+    List<String> describeSockets();
+
     static GrpcServer of(Server server) {
         return new GrpcServer() {
 
@@ -86,6 +95,11 @@ public interface GrpcServer {
             @Override
             public int getPort() {
                 return server.getPort();
+            }
+
+            @Override
+            public List<String> describeSockets() {
+                return server.getListenSockets().stream().map(Object::toString).collect(Collectors.toList());
             }
         };
     }

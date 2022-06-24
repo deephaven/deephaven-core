@@ -38,7 +38,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
 
@@ -131,6 +134,11 @@ public class JettyBackedGrpcServer implements GrpcServer {
     @Override
     public int getPort() {
         return ((ServerConnector) jetty.getConnectors()[0]).getLocalPort();
+    }
+
+    @Override
+    public List<String> describeSockets() {
+        return Stream.of(jetty.getConnectors()).map(Object::toString).collect(Collectors.toList());
     }
 
     private static ServerConnector createConnector(Server server, ServerConfig config) {
