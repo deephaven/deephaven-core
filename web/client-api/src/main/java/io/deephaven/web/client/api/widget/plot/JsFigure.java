@@ -148,11 +148,15 @@ public class JsFigure extends HasEventHandling {
 
             for (int i = 0; i < tables.length; i++) {
                 JsTable table = tables[i];
-                registerTableWithId(table, Js.cast(JsArray.of((double) i)));
+                if (table != null) {
+                    registerTableWithId(table, Js.cast(JsArray.of((double) i)));
+                }
             }
             for (int i = 0; i < tableMaps.length; i++) {
                 JsPartitionedTable partitionedTable = tableMaps[i];
-                registerTableMapWithId(partitionedTable, Js.cast(JsArray.of((double) i)));
+                if (partitionedTable != null) {
+                    registerTableMapWithId(partitionedTable, Js.cast(JsArray.of((double) i)));
+                }
             }
             Arrays.stream(charts)
                     .flatMap(c -> Arrays.stream(c.getSeries()))
@@ -491,7 +495,7 @@ public class JsFigure extends HasEventHandling {
     public void enqueueSubscriptionCheck() {
         if (!subCheckEnqueued) {
             for (JsTable table : tables) {
-                if (table.isClosed()) {
+                if (table != null && table.isClosed()) {
                     throw new IllegalStateException("Cannot subscribe, at least one table is disconnected");
                 }
             }
@@ -530,7 +534,7 @@ public class JsFigure extends HasEventHandling {
         }
 
         if (tables != null) {
-            Arrays.stream(tables).filter(jsTable -> !jsTable.isClosed()).forEach(JsTable::close);
+            Arrays.stream(tables).filter(t -> t != null && !t.isClosed()).forEach(JsTable::close);
         }
         if (tableMaps != null) {
             Arrays.stream(tableMaps).forEach(JsPartitionedTable::close);
@@ -545,14 +549,16 @@ public class JsFigure extends HasEventHandling {
     }
 
     private void registerTableWithId(JsTable table, JsArray<Double> plotTableHandles) {
+        assert table != null;
         for (int j = 0; j < plotTableHandles.length; j++) {
             plotHandlesToTables.put((int) (double) plotTableHandles.getAt(j), table);
         }
     }
 
-    private void registerTableMapWithId(JsPartitionedTable table, JsArray<Double> plotTableHandles) {
+    private void registerTableMapWithId(JsPartitionedTable partitionedTable, JsArray<Double> plotTableHandles) {
+        assert partitionedTable != null;
         for (int j = 0; j < plotTableHandles.length; j++) {
-            plotHandlesToTableMaps.put((int) (double) plotTableHandles.getAt(j), table);
+            plotHandlesToTableMaps.put((int) (double) plotTableHandles.getAt(j), partitionedTable);
         }
     }
 
