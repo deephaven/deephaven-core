@@ -2,6 +2,7 @@ if __name__ != '__main__':
   quit()
 
 import jpyutil
+jpyutil.preload_jvm_dll()
 import jpy
 
 print(jpy.has_jvm())

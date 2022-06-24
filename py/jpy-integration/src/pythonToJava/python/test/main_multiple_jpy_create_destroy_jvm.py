@@ -1,3 +1,6 @@
+import jpyutil
+jpyutil.preload_jvm_dll()
+
 import unittest
 import jpy
 

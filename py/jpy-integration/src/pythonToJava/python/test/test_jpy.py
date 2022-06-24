@@ -1,5 +1,7 @@
-import unittest
 import jpyutil
+jpyutil.preload_jvm_dll()
+
+import unittest
 import jpy
 
 def some_function(x):
