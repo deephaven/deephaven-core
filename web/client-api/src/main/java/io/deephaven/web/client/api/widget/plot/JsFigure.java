@@ -12,6 +12,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.fi
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsPartitionedTable;
@@ -653,11 +654,15 @@ public class JsFigure extends HasEventHandling {
 
             Promise<?>[] promises = new Promise[response.getTypedExportIdList().length];
 
-            response.getTypedExportIdList().forEach((ticket, index, array) -> {
+            int nextTableIndex = 0;
+            int nextPartitionedTableIndex = 0;
+            for (int i = 0; i < response.getTypedExportIdList().length; i++) {
+                TypedTicket ticket = response.getTypedExportIdList().getAt(i);
                 if (ticket.getType().equals("Table")) {
                     // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
                     // reconnect in this way without refetching the entire figure anyway.
-                    promises[index] = Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
+                    int tableIndex = nextTableIndex++;
+                    promises[i] = Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
                         connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
                                 connection.metadata(),
                                 c::apply);
@@ -666,25 +671,27 @@ public class JsFigure extends HasEventHandling {
                         JsTable table = new JsTable(connection, cts);
                         // never attempt a reconnect, since we might have a different figure schema entirely
                         table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
-                        tables[index] = table;
+                        tables[tableIndex] = table;
                         return Promise.resolve(table);
                     });
-                    return null;
-                }
+                } else if (ticket.getType().equals("PartitionedTable")) {
 
-                promises[index] = Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
-                    FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-                    partitionedTableRequest.setSourceId(ticket);
-                    connection.objectServiceClient().fetchObject(partitionedTableRequest, connection.metadata(),
-                            c::apply);
-                }).then(object -> {
-                    JsPartitionedTable partitionedTable = new JsPartitionedTable(connection, new JsWidget(connection,
-                            callback -> callback.handleResponse(null, object, ticket.getTicket())));
-                    tableMaps[index] = partitionedTable;
-                    return partitionedTable.refetch();
-                });
-                return null;
-            });
+                    int partitionedTableIndex = nextPartitionedTableIndex++;
+                    promises[i] = Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
+                        FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+                        partitionedTableRequest.setSourceId(ticket);
+                        connection.objectServiceClient().fetchObject(partitionedTableRequest, connection.metadata(),
+                                c::apply);
+                    }).then(object -> {
+                        JsPartitionedTable partitionedTable = new JsPartitionedTable(connection, new JsWidget(connection,
+                                callback -> callback.handleResponse(null, object, ticket.getTicket())));
+                        tableMaps[partitionedTableIndex] = partitionedTable;
+                        return partitionedTable.refetch();
+                    });
+                } else {
+                    throw new IllegalStateException("Ticket type not recognized in a Figure: " + ticket.getType());
+                }
+            }
 
             return Promise.all(promises)
                     .then(ignore -> {
