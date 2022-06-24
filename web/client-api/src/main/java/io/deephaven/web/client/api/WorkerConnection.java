@@ -191,8 +191,6 @@ public class WorkerConnection {
     private final Map<ClientTableState, BiDiStream<FlightData, FlightData>> subscriptionStreams = new HashMap<>();
     private ResponseStreamWrapper<ExportedTableUpdateMessage> exportNotifications;
 
-    private Map<TableMapHandle, TableMap> tableMaps = new HashMap<>();
-
     private JsSet<JsFigure> figures = new JsSet<>();
 
     private List<LogItem> pastLogs = new ArrayList<>();
@@ -313,7 +311,6 @@ public class WorkerConnection {
 
                     reviver.revive(metadata, hasActiveSubs);
 
-                    tableMaps.forEach((handle, tableMap) -> tableMap.refetch());
                     figures.forEach((p0, p1, p2) -> p0.refetch());
 
                     info.connected();
@@ -561,14 +558,6 @@ public class WorkerConnection {
     // @Override
     public void onClose(int code, String message) {
         // notify all active tables, tablemaps, and figures that the connection is closed
-        tableMaps.values().forEach(tableMap -> {
-            try {
-                tableMap.fireEvent(TableMap.EVENT_DISCONNECT);
-                tableMap.suppressEvents();
-            } catch (Exception e) {
-                JsLog.warn("Error in firing TableMap.EVENT_DISCONNECT event", e);
-            }
-        });
         figures.forEach((p0, p1, p2) -> {
             try {
                 p0.fireEvent(JsFigure.EVENT_DISCONNECT);
@@ -694,7 +683,12 @@ public class WorkerConnection {
         } else if (JsVariableChanges.PANDAS.equals(definition.getType())) {
             return getWidget(definition)
                     .then(widget -> widget.getExportedObjects()[0].fetch());
+        } else if (JsVariableChanges.PARTITIONEDTABLE.equals(definition.getType())) {
+            return getPartitionedTable(definition);
         } else {
+            if (JsVariableChanges.TABLEMAP.equals(definition.getType())) {
+                JsLog.warn("TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
+            }
             return getWidget(definition);
         }
     }
@@ -784,14 +778,9 @@ public class WorkerConnection {
         }
     }
 
-    public Promise<TableMap> getTableMap(String tableMapName) {
+    public Promise<JsPartitionedTable> getPartitionedTable(JsVariableDefinition varDef) {
         return whenServerReady("get a tablemap")
-                .then(server -> Promise.resolve(new TableMap(this, tableMapName))
-                        .then(TableMap::refetch));
-    }
-
-    public void registerTableMap(TableMapHandle handle, TableMap tableMap) {
-        tableMaps.put(handle, tableMap);
+                .then(server -> new JsPartitionedTable(this, new JsWidget(this, c -> fetchObject(varDef, c))).refetch());
     }
 
     public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
@@ -1063,31 +1052,6 @@ public class WorkerConnection {
             }
         }
         return null;
-    }
-
-    // @Override
-    public void tableMapStringKeyAdded(TableMapHandle handle, String key) {
-        tableMapKeyAdded(handle, key);
-    }
-
-    // @Override
-    public void tableMapStringArrayKeyAdded(TableMapHandle handle, String[] key) {
-        tableMapKeyAdded(handle, key);
-    }
-
-    private void tableMapKeyAdded(TableMapHandle handle, Object key) {
-        TableMap tableMap = tableMaps.get(handle);
-        if (tableMap != null) {
-            tableMap.notifyKeyAdded(key);
-        }
-    }
-
-    public void releaseTableMap(TableMap tableMap, TableMapHandle tableMapHandle) {
-        // server.releaseTableMap(tableMapHandle);
-        LazyPromise.runLater(() -> {
-            TableMap removed = tableMaps.remove(tableMapHandle);
-            assert removed == tableMap;
-        });
     }
 
     private TableTicket newHandle() {

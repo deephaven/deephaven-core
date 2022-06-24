@@ -8,7 +8,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.fi
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
-import io.deephaven.web.client.api.TableMap;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;

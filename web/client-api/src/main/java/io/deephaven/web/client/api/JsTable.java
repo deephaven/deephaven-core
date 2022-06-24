@@ -9,6 +9,9 @@ import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
@@ -17,6 +20,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunC
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.batch.RequestBatcher;
@@ -32,6 +37,7 @@ import io.deephaven.web.client.api.subscription.ViewportRow;
 import io.deephaven.web.client.api.tree.JsRollupConfig;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.tree.JsTreeTableConfig;
+import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsData;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
@@ -929,12 +935,12 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
-    public Promise<TableMap> byExternal(Object keys, @JsOptional Boolean dropKeys) {
+    public Promise<JsPartitionedTable> byExternal(Object keys, @JsOptional Boolean dropKeys) {
         return partitionBy(keys, dropKeys);
     }
 
     @JsMethod
-    public Promise<TableMap> partitionBy(Object keys, @JsOptional Boolean dropKeys) {
+    public Promise<JsPartitionedTable> partitionBy(Object keys, @JsOptional Boolean dropKeys) {
         final String[] actualKeys;
         if (keys instanceof String) {
             actualKeys = new String[] {(String) keys};
@@ -943,14 +949,36 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         } else {
             throw new IllegalArgumentException("Can't use keys argument as either a string or array of strings");
         }
-        // we don't validate that the keys are non-empty, since that is allowed, but ensure they are all columns
+        // We don't validate that the keys are non-empty, since that is allowed, but ensure they are all columns
         findColumns(actualKeys);
 
-        return new TableMap(workerConnection, c -> {
-            // workerConnection.getServer().partitionBy(state().getHandle(), dropKeys == null ? false : dropKeys,
-            // actualKeys, c);
-            throw new UnsupportedOperationException("partitionBy");
-        }).refetch();
+        // Start the partitionBy on the server - we want to get the error from here, but we'll race the fetch against this
+        // to avoid an extra round-trip
+        Ticket partitionedTableTicket = workerConnection.getConfig().newTicket();
+        Promise<PartitionByResponse> partitionByPromise = Callbacks.<PartitionByResponse, Object>grpcUnaryPromise(c -> {
+            PartitionByRequest partitionBy = new PartitionByRequest();
+            partitionBy.setTableId(state().getHandle().makeTicket());
+            partitionBy.setResultId(partitionedTableTicket);
+            partitionBy.setKeyColumnNamesList(actualKeys);
+            if (dropKeys != null) {
+                partitionBy.setDropKeys(dropKeys);
+            }
+            workerConnection.partitionedTableServiceClient().partitionBy(partitionBy, workerConnection.metadata(), c::apply);
+        });
+        // construct the partitioned table around the ticket created above
+        Promise<JsPartitionedTable> fetchPromise = new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, c -> {
+            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+            partitionedTableRequest.setSourceId(new TypedTicket());
+            partitionedTableRequest.getSourceId().setType("PartitionedTable");
+            partitionedTableRequest.getSourceId().setTicket(partitionedTableTicket);
+            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest, workerConnection.metadata(), (fail, success) -> {
+                c.handleResponse(fail, success, partitionedTableTicket);
+            });
+        })).refetch();
+
+        // Ensure that the partition failure propagates first, but the result of the fetch will be returned - both
+        // are running concurrently.
+        return partitionByPromise.then(ignore -> fetchPromise);
     }
 
     // TODO: #697: Column statistic support
