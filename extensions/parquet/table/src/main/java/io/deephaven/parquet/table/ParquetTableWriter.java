@@ -433,7 +433,7 @@ public class ParquetTableWriter {
         if (columnSource.getComponentType() != null
                 && !CodecLookup.explicitCodecPresent(writeInstructions.getCodecName(columnDefinition.getName()))
                 && !CodecLookup.codecRequired(columnDefinition)) {
-            int targetRowsPerPage =
+            final int targetRowsPerPage =
                     maxValuesPerPage = maxOriginalRowsPerPage = getTargetRowsPerPage(columnSource.getComponentType());
             final HashMap<String, ColumnSource<?>> columns = new HashMap<>();
             columns.put("array", columnSource);
@@ -584,16 +584,15 @@ public class ParquetTableWriter {
                             lengthSource != null ? lengthSource.makeGetContext(maxOriginalRowsPerPage) : null;
                     final RowSequence.Iterator it = dataRowSet.getRowSequenceIterator()) {
 
-                final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(maxValuesPerPage) : null;
+                final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(maxOriginalRowsPerPage) : null;
                 for (int step = 0; step < pageCount; ++step) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
                     transferObject.fetchData(rs);
                     transferObject.propagateChunkData();
                     if (lengthIndexIt != null) {
-                        // noinspection unchecked
-                        final IntChunk<Values> lenChunk = (IntChunk<Values>) lengthSource.getChunk(
+                        final IntChunk<? extends Values> lenChunk = lengthSource.getChunk(
                                 lengthSourceContext,
-                                lengthIndexIt.getNextRowSequenceWithLength(rowStepGetter.getAsLong()));
+                                lengthIndexIt.getNextRowSequenceWithLength(rowStepGetter.getAsLong())).asIntChunk();
                         lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                         repeatCount.limit(lenChunk.size());
                         columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(),
@@ -644,7 +643,7 @@ public class ParquetTableWriter {
                     final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.getAsLong());
                     final ObjectChunk<String, ? extends Values> chunk =
                             dataSource.getChunk(context, rs).asObjectChunk();
-                    final IntBuffer posInDictionary = IntBuffer.allocate((int) rs.size());
+                    final IntBuffer posInDictionary = IntBuffer.allocate(rs.intSize());
                     for (int vi = 0; vi < chunk.size(); ++vi) {
                         final String key = chunk.get(vi);
                         int dictionaryPos = keyToPos.get(key);
@@ -679,8 +678,7 @@ public class ParquetTableWriter {
                         final RowSequence.Iterator it = originalRowSet.getRowSequenceIterator()) {
                     while (it.hasMore()) {
                         final RowSequence rs = it.getNextRowSequenceWithLength(rowStepGetter.getAsLong());
-                        // noinspection unchecked
-                        final IntChunk<Values> chunk = (IntChunk<Values>) lengthSource.getChunk(context, rs);
+                        final IntChunk<? extends Values> chunk = lengthSource.getChunk(context, rs).asIntChunk();
                         final IntBuffer newBuffer = IntBuffer.allocate(chunk.size());
                         chunk.copyToTypedBuffer(0, newBuffer, 0, chunk.size());
                         newBuffer.limit(chunk.size());
