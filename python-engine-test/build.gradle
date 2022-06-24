@@ -15,6 +15,7 @@ test {
 }
 
 dependencies {
+  compile project(':Integrations')
   testCompile project(':CompilerTools'),
           project(':engine-table'),
           TestTools.projectDependency(project, 'engine-table')
