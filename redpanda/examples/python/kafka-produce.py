@@ -15,6 +15,9 @@
 # You can use "brew install librdkafka" if the pip3 command fails
 # with an error like "librdkafka/rdkafka.h' file not found"
 # as found at confluentinc/confluent-kafka-python#166.
+# You may also need the following (be sure to substitute the right version of librdkafka):
+# export C_INCLUDE_PATH=/opt/homebrew/Cellar/librdkafka/1.9.0/include
+# export LIBRARY_PATH=/opt/homebrew/Cellar/librdkafka/1.9.0/lib
 #
 # Examples of use for DH testing together with web UI.
 #

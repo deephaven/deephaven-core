@@ -40,8 +40,6 @@ class Classpaths {
     static final String JETTY_GROUP = 'org.eclipse.jetty'
     static final String JETTY_VERSION = '9.4.20.v20190813'
 
-    static final String JGIT_VERSION = '5.8.1.202007141445-r'
-
     static final String JS_INTEROP_GROUP = 'com.google.jsinterop'
     static final String JS_INTEROP_VERSION = '2.0.0'
 

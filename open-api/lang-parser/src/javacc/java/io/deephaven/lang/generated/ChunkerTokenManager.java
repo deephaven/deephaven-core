@@ -7,7 +7,6 @@ import io.deephaven.lang.api.ChunkerInvokable;
 import io.deephaven.lang.api.IsScope;
 import io.deephaven.lang.api.ParseState;
 import io.deephaven.lang.api.ParseCancelled;
-import io.deephaven.lang.meta.Messenger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;

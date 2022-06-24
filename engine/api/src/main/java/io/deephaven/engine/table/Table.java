@@ -115,7 +115,6 @@ public interface Table extends
     // Attributes
     // -----------------------------------------------------------------------------------------------------------------
 
-    String DO_NOT_MAKE_REMOTE_ATTRIBUTE = "DoNotMakeRemote";
     String INPUT_TABLE_ATTRIBUTE = "InputTable";
     String KEY_COLUMNS_ATTRIBUTE = "keyColumns";
     String UNIQUE_KEYS_ATTRIBUTE = "uniqueKeys";

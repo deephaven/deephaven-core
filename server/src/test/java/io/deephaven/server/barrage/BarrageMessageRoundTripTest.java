@@ -9,8 +9,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.ChunkType;
-import io.deephaven.client.impl.BarrageSubscriptionImpl;
+import io.deephaven.client.impl.BarrageSubscriptionImpl.BarrageDataMarshaller;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -36,7 +35,6 @@ import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageStreamReader;
-import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.server.util.TestControlledScheduler;
@@ -196,7 +194,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
                     .useDeephavenNulls(useDeephavenNulls)
                     .build();
-            final BarrageMarshaller marshaller = new BarrageMarshaller(
+            final BarrageDataMarshaller marshaller = new BarrageDataMarshaller(
                     options, barrageTable.getWireChunkTypes(), barrageTable.getWireTypes(),
                     barrageTable.getWireComponentTypes(),
                     new BarrageStreamReader(barrageTable.getDeserializationTmConsumer()));
@@ -1327,10 +1325,10 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     public static class DummyObserver implements StreamObserver<BarrageStreamGenerator.View> {
         volatile boolean completed = false;
 
-        private final BarrageMarshaller marshaller;
+        private final BarrageDataMarshaller marshaller;
         private final Queue<BarrageMessage> receivedCommands;
 
-        DummyObserver(final BarrageMarshaller marshaller, final Queue<BarrageMessage> receivedCommands) {
+        DummyObserver(final BarrageDataMarshaller marshaller, final Queue<BarrageMessage> receivedCommands) {
             this.marshaller = marshaller;
             this.receivedCommands = receivedCommands;
         }
@@ -1366,17 +1364,6 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         @Override
         public void onCompleted() {
             completed = true;
-        }
-    }
-
-    private static class BarrageMarshaller
-            extends BarrageSubscriptionImpl.BarrageDataMarshaller {
-        public BarrageMarshaller(final BarrageSubscriptionOptions options,
-                final ChunkType[] columnChunkTypes,
-                final Class<?>[] columnTypes,
-                final Class<?>[] componentTypes,
-                final StreamReader streamReader) {
-            super(options, columnChunkTypes, columnTypes, componentTypes, streamReader);
         }
     }
 }
