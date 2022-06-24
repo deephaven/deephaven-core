@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.util;
+package io.deephaven.integrations.python;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
@@ -10,8 +10,8 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.PythonDeephavenSession.PythonSnapshot;
-import io.deephaven.engine.util.jpy.JpyInit;
+import io.deephaven.engine.util.*;
+import io.deephaven.integrations.python.PythonDeephavenSession.PythonSnapshot;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
@@ -22,24 +22,15 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jpy.KeyError;
-import org.jpy.PyDictWrapper;
-import org.jpy.PyInputMode;
+import org.jpy.*;
 import org.jpy.PyLib.CallableKind;
-import org.jpy.PyModule;
-import org.jpy.PyObject;
 
 import java.io.Closeable;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeoutException;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -279,12 +270,9 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                     // ignore
                 }
             } else {
-                if (!(newValue instanceof PyObject)) {
-                    PyObject newWrappedValue = pyWrapperModule.call("wrap_j_object", newValue);
-                    globals.setItem(name, newWrappedValue);
-                } else {
-                    globals.setItem(name, newValue);
-                }
+                if (!(newValue instanceof PyObject))
+                    newValue = PythonObjectWrapper.wrap(newValue);
+                globals.setItem(name, newValue);
             }
             try (PythonSnapshot toSnapshot = takeSnapshot()) {
                 applyDiff(fromSnapshot, toSnapshot, null);

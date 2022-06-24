@@ -107,7 +107,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
     }
 
-    interface Snapshot extends SafeCloseable {
+    public interface Snapshot extends SafeCloseable {
 
     }
 
