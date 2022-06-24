@@ -47,7 +47,7 @@ public class ColumnWriterImpl implements ColumnWriter {
 
 
     private BulkWriter bulkWriter;
-    private final int pageSize;
+    private int pageSize;
     private final ByteBufferAllocator allocator;
     private final RunLengthBitPackingHybridEncoder dlEncoder;
     private final RunLengthBitPackingHybridEncoder rlEncoder;
@@ -60,26 +60,26 @@ public class ColumnWriterImpl implements ColumnWriter {
     private DictionaryPageHeader dictionaryPage;
     private final OffsetIndexBuilder offsetIndexBuilder;
 
-    private final EncodingStats.Builder encodingStatsBuilder = new EncodingStats.Builder();;
+    private final EncodingStats.Builder encodingStatsBuilder = new EncodingStats.Builder();
 
     ColumnWriterImpl(
             final RowGroupWriterImpl owner,
             final SeekableByteChannel writeChannel,
             final ColumnDescriptor column,
             final Compressor compressor,
-            final int pageSize,
+            final int targetPageSize,
             final ByteBufferAllocator allocator) {
         this.writeChannel = writeChannel;
         this.column = column;
         this.compressor = compressor;
-        this.pageSize = pageSize;
+        this.pageSize = targetPageSize;
         this.allocator = allocator;
         dlEncoder = column.getMaxDefinitionLevel() == 0 ? null
                 : new RunLengthBitPackingHybridEncoder(
-                        getWidthFromMaxInt(column.getMaxDefinitionLevel()), MIN_SLAB_SIZE, pageSize, allocator);
+                        getWidthFromMaxInt(column.getMaxDefinitionLevel()), MIN_SLAB_SIZE, targetPageSize, allocator);
         rlEncoder = column.getMaxRepetitionLevel() == 0 ? null
                 : new RunLengthBitPackingHybridEncoder(
-                        getWidthFromMaxInt(column.getMaxRepetitionLevel()), MIN_SLAB_SIZE, pageSize, allocator);
+                        getWidthFromMaxInt(column.getMaxRepetitionLevel()), MIN_SLAB_SIZE, targetPageSize, allocator);
         this.owner = owner;
         offsetIndexBuilder = OffsetIndexBuilder.getBuilder();
     }
@@ -160,7 +160,8 @@ public class ColumnWriterImpl implements ColumnWriter {
     private BulkWriter getWriter(final PrimitiveType primitiveType) {
         switch (primitiveType.getPrimitiveTypeName()) {
             case INT96:
-                return new PlainFixedLenChunkedWriter(pageSize, 12, allocator);
+                throw new IllegalStateException("Int96 is deprecated (by Apache) we should never ever write it.");
+                //return new PlainFixedLenChunkedWriter(pageSize, 12, allocator);
             case FIXED_LEN_BYTE_ARRAY:
                 return new PlainFixedLenChunkedWriter(pageSize, column.getPrimitiveType().getTypeLength(), allocator);
             case INT32:

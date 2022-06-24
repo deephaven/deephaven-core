@@ -1,41 +1,46 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PlainIntChunkedWriter and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
+import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
+
+// Duplicate for Replication
 import java.nio.IntBuffer;
 
 /**
  * Plain encoding except for booleans
  */
-public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuffer, Number> {
+public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuffer, Double> {
     private final ByteBufferAllocator allocator;
     private final int originalLimit;
 
     private final DoubleBuffer targetBuffer;
     private final ByteBuffer innerBuffer;
 
-    PlainDoubleChunkedWriter(int pageSize, ByteBufferAllocator allocator) {
-        innerBuffer = allocator.allocate(pageSize);
-        innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        originalLimit = innerBuffer.limit();
+    PlainDoubleChunkedWriter(final int pageSize, @NotNull final ByteBufferAllocator allocator) {
+        this.innerBuffer = allocator.allocate(pageSize);
+        this.innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        this.originalLimit = innerBuffer.limit();
         this.allocator = allocator;
-        targetBuffer = innerBuffer.asDoubleBuffer();
+        this.targetBuffer = innerBuffer.asDoubleBuffer();
         targetBuffer.mark();
         innerBuffer.mark();
     }
@@ -47,7 +52,7 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
 
     @Override
     public long getBufferedSize() {
-        return targetBuffer.remaining() * Double.BYTES;
+        return (long) targetBuffer.remaining() * Double.BYTES;
     }
 
     @Override
@@ -90,33 +95,38 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
     }
 
     @Override
-    public void writeBulk(DoubleBuffer bulkValues, int rowCount) {
+    public void writeBulk(@NotNull DoubleBuffer bulkValues, int rowCount) {
         targetBuffer.put(bulkValues);
     }
 
+    @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(DoubleBuffer bulkValues, Number nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
-        double nullDouble = nullValue.doubleValue();
+    public WriteResult writeBulkFilterNulls(@NotNull final DoubleBuffer bulkValues,
+                                            @Nullable final Double nullValue,
+                                            @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
+                                            final int rowCount) throws IOException {
         while (bulkValues.hasRemaining()) {
-            double next = bulkValues.get();
-            if (next != nullDouble) {
+            final double next = bulkValues.get();
+            if (next != QueryConstants.NULL_DOUBLE) {
                 writeDouble(next);
-                dlEncoder.writeInt(1);
+                dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
-                dlEncoder.writeInt(0);
+                dlEncoder.writeInt(DL_ITEM_NULL);
             }
         }
         return new WriteResult(rowCount);
     }
 
+    @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(DoubleBuffer bulkValues, Number nullValue, int rowCount) {
-        double nullDouble = nullValue.doubleValue();
+    public WriteResult writeBulkFilterNulls(@NotNull final DoubleBuffer bulkValues,
+                                            @Nullable final Double nullValue,
+                                            final int rowCount) {
         int i = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
-            double next = bulkValues.get();
-            if (next != nullDouble) {
+            final double next = bulkValues.get();
+            if (next != QueryConstants.NULL_DOUBLE) {
                 writeDouble(next);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);

@@ -7,6 +7,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -19,6 +20,7 @@ import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.vector.LongVectorDirect;
 import junit.framework.TestCase;
 import org.junit.*;
 
@@ -31,7 +33,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.LongStream;
 
+import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.*;
 
 /**
@@ -193,13 +197,13 @@ public class TestParquetTools {
         final Table resultDefault = ParquetTools.readTable(pathFile);
         TableTools.show(table1);
         TableTools.show(resultDefault);
-        TstUtils.assertTableEquals(table1.view("X=StringKeys", "Y=GroupedInts"), resultDefault);
+        assertTableEquals(table1.view("X=StringKeys", "Y=GroupedInts"), resultDefault);
         resultDefault.close();
 
         final Table resultRenamed = ParquetTools.readTable(pathFile, instructions);
         TableTools.show(table1);
         TableTools.show(resultRenamed);
-        TstUtils.assertTableEquals(table1, resultRenamed);
+        assertTableEquals(table1, resultRenamed);
         resultRenamed.close();
     }
 
@@ -246,7 +250,7 @@ public class TestParquetTools {
         ParquetTools.writeTables(new Table[] {TableTools.emptyTable(10_000L)}, nullTable.getDefinition(),
                 new File[] {dest});
         final Table result = ParquetTools.readTable(dest);
-        TstUtils.assertTableEquals(nullTable, result);
+        assertTableEquals(nullTable, result);
         result.close();
     }
 
@@ -359,6 +363,24 @@ public class TestParquetTools {
                 table1.updateView("Date=`2021-07-20`", "Num=100"),
                 table1.updateView("Date=`2021-07-20`", "Num=200"),
                 table1.updateView("Date=`2021-07-21`", "Num=300")).moveColumnsUp("Date", "Num");
-        TstUtils.assertTableEquals(expected, result);
+        assertTableEquals(expected, result);
+    }
+
+    @Test
+    public void testBigArrays() {
+        try {
+            QueryLibrary.importClass(LongVectorDirect.class);
+            QueryLibrary.importClass(LongStream.class);
+            final Table stuff = emptyTable(10)
+                    .update("Doobles = new LongVectorDirect(LongStream.range(0, (int)(500_000/(k+1))).toArray())");
+
+            final File f2w = new File(testRoot, "bigArray.parquet");
+            ParquetTools.writeTable(stuff, f2w);
+
+            final Table readBack = ParquetTools.readTable(f2w);
+            assertTableEquals(stuff, readBack);
+        } finally {
+            QueryLibrary.resetLibrary();
+        }
     }
 }

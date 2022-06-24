@@ -8,6 +8,8 @@ import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,15 +95,16 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, Int
     }
 
     @Override
-    public void writeBulk(IntBuffer bulkValues, int rowCount) {
+    public void writeBulk(@NotNull IntBuffer bulkValues, int rowCount) {
 
         for (int i = 0; i < rowCount; i++) {
             writeInteger(bulkValues.get());
         }
     }
 
+    @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(IntBuffer bulkValues, Integer nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
+    public WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues, @Nullable Integer nullValue, @NotNull RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
         int nullInt = nullValue;
         while (bulkValues.hasRemaining()) {
             int next = bulkValues.get();
@@ -116,7 +119,7 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, Int
     }
 
     @Override
-    public WriteResult writeBulkFilterNulls(IntBuffer bulkValues, Integer nullValue, int rowCount) {
+    public @NotNull WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues, @Nullable Integer nullValue, int rowCount) {
         int nullInt = nullValue;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         int i = 0;

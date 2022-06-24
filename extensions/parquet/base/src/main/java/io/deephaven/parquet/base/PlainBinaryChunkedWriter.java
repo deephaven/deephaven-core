@@ -9,6 +9,8 @@ import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.apache.parquet.io.api.Binary;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -92,16 +94,17 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
     }
 
     @Override
-    public void writeBulk(Binary[] bulkValues, int rowCount) {
+    public void writeBulk(@NotNull Binary[] bulkValues, int rowCount) {
         for (int i = 0; i < rowCount; i++) {
             writeBytes(bulkValues[i]);
         }
     }
 
+    @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(Binary[] bulkValues, Binary nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
+    public WriteResult writeBulkFilterNulls(@NotNull Binary[] bulkValues, @Nullable Binary nullValue, @NotNull RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
         for (int i = 0; i < rowCount; i++) {
-            if (!Objects.equals(bulkValues[i], nullValue)) {
+            if (bulkValues[i] != null) {
                 writeBytes(bulkValues[i]);
                 dlEncoder.writeInt(1);
             } else {
@@ -112,10 +115,10 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
     }
 
     @Override
-    public WriteResult writeBulkFilterNulls(Binary[] bulkValues, Binary nullValue, int nonNullLeafCount) {
+    public @NotNull WriteResult writeBulkFilterNulls(@NotNull Binary[] bulkValues, @Nullable Binary nullValue, int nonNullLeafCount) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         for (int i = 0; i < nonNullLeafCount; i++) {
-            if (!Objects.equals(bulkValues[i], nullValue)) {
+            if (bulkValues[i] != null) {
                 writeBytes(bulkValues[i]);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
