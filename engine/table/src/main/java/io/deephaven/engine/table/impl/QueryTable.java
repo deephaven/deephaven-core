@@ -597,8 +597,7 @@ public class QueryTable extends BaseTable {
             }
         }
         final List<ColumnName> groupByList = Arrays.asList(groupByColumns);
-        final List<ColumnName> tableColumns =
-                definition.getColumnNames().stream().map(ColumnName::of).collect(Collectors.toList());
+        final List<ColumnName> tableColumns = definition.getTypedColumnNames();
         final Optional<Aggregation> agg = AggregateAllByTable.singleAggregation(spec, groupByList, tableColumns);
         if (agg.isEmpty()) {
             throw new IllegalArgumentException(
@@ -608,7 +607,8 @@ public class QueryTable extends BaseTable {
         final List<? extends Aggregation> aggs = List.of(agg.get());
         final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, groupByList);
         return tableToUse.memoizeResult(aggKey, () -> {
-            final QueryTable result = tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), groupByList);
+            final QueryTable result =
+tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, groupByList);
             spec.walk(new AggAllByCopyAttributes(this, result));
             return result;
         });
@@ -625,16 +625,10 @@ public class QueryTable extends BaseTable {
                     "aggBy must have at least one aggregation, none specified. groupByColumns="
                             + toString(groupByColumns));
         }
-        if (preserveEmpty) {
-            throw new UnsupportedOperationException("aggBy: preserveEmpty support is not yet implemented");
-        }
-        if (initialGroups != null) {
-            throw new UnsupportedOperationException("aggBy: initialGroups support is not yet implemented");
-        }
         final List<? extends Aggregation> optimized = AggregationOptimizer.of(aggregations);
         final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, groupByColumns);
-        final Table aggregationTable =
-                memoizeResult(aggKey, () -> aggNoMemo(AggregationProcessor.forAggregation(optimized), groupByColumns));
+        final Table aggregationTable = memoizeResult(aggKey, () ->                 aggNoMemo(
+                        AggregationProcessor.forAggregation(optimized), preserveEmpty, initialGroups, groupByColumns));
 
         final List<ColumnName> optimizedOrder = AggregationPairs.outputsOf(optimized).collect(Collectors.toList());
         final List<ColumnName> userOrder = AggregationPairs.outputsOf(aggregations).collect(Collectors.toList());
@@ -648,12 +642,16 @@ public class QueryTable extends BaseTable {
         return aggregationTable.view(resultOrder);
     }
 
-    private QueryTable aggNoMemo(@NotNull final AggregationContextFactory aggregationContextFactory,
+    private QueryTable aggNoMemo(
+            @NotNull final AggregationContextFactory aggregationContextFactory,
+            final boolean preserveEmpty,
+            @Nullable final Table initialGroups,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final String description = "aggregation(" + aggregationContextFactory
                 + ", " + groupByColumns + ")";
         return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),
-                () -> ChunkedOperatorAggregationHelper.aggregation(aggregationContextFactory, this, groupByColumns));
+                () -> ChunkedOperatorAggregationHelper.aggregation(
+                        aggregationContextFactory, this, preserveEmpty, initialGroups, groupByColumns));
     }
 
     private static UnsupportedOperationException streamUnsupported(@NotNull final String operationName) {
@@ -2865,7 +2863,7 @@ public class QueryTable extends BaseTable {
                     final MemoizedOperationKey aggKey =
                             MemoizedOperationKey.aggBy(Collections.emptyList(), columnNames);
                     return memoizeResult(aggKey,
-                            () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), columnNames));
+                            () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), false, null, columnNames));
                 });
     }
 

@@ -124,7 +124,7 @@ public class QueryTableAggregationTest {
             final Table aggregatedInput = ChunkedOperatorAggregationHelper.aggregation(
                     aggregationControl == null ? AggregationControl.DEFAULT : aggregationControl,
                     makeGroupByACF(adjustedInput, keyColumns),
-                    (QueryTable) adjustedInput, ColumnName.from(keyColumns));
+                    (QueryTable) adjustedInput, false, null, ColumnName.from(keyColumns));
             actualKeys = keyColumns.length == 0
                     ? aggregatedInput.dropColumns(aggregatedInput.getDefinition().getColumnNamesArray())
                     : aggregatedInput.view(keyColumns);
@@ -236,10 +236,11 @@ public class QueryTableAggregationTest {
         public final Table get() {
             if (firstTime.compareAndSet(true, false)) {
                 return ChunkedOperatorAggregationHelper
-                        .aggregation(control, acf, input, ColumnName.from(columns)).sort(columns);
+                        .aggregation(control, acf, input, false, null, ColumnName.from(columns)).sort(columns);
             }
             return ChunkedOperatorAggregationHelper
-                    .aggregation(control, acf, (QueryTable) input.silent(), ColumnName.from(columns)).sort(columns);
+                    .aggregation(control, acf, (QueryTable) input.silent(), false, null, ColumnName.from(columns))
+                    .sort(columns);
         }
     }
 
