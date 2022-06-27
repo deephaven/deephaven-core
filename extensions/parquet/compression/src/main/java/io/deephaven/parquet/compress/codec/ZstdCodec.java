@@ -17,15 +17,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Provides an alternative codec name of "ZSTD" instead of the superclass's "ZSTANDARD". These streams
- * are also modified to use the "no finalizer" variant of the underlying streams, so that GC picking up
- * the streams doesn't close the underlying file.
+ * Provides an alternative codec name of "ZSTD" instead of the superclass's "ZSTANDARD". These streams are also modified
+ * to use the "no finalizer" variant of the underlying streams, so that GC picking up the streams doesn't close the
+ * underlying file.
  */
 public class ZstdCodec extends ZstandardCodec {
     @Override
     public CompressionInputStream createInputStream(InputStream stream) throws IOException {
         BufferPool pool;
-        if (getConf().getBoolean(PARQUET_COMPRESS_ZSTD_BUFFERPOOL_ENABLED, DEFAULT_PARQUET_COMPRESS_ZSTD_BUFFERPOOL_ENABLED)) {
+        if (getConf().getBoolean(PARQUET_COMPRESS_ZSTD_BUFFERPOOL_ENABLED,
+                DEFAULT_PARQUET_COMPRESS_ZSTD_BUFFERPOOL_ENABLED)) {
             pool = RecyclingBufferPool.INSTANCE;
         } else {
             pool = NoPool.INSTANCE;
@@ -36,7 +37,8 @@ public class ZstdCodec extends ZstandardCodec {
     @Override
     public CompressionOutputStream createOutputStream(OutputStream stream) throws IOException {
         BufferPool pool;
-        if (getConf().getBoolean(PARQUET_COMPRESS_ZSTD_BUFFERPOOL_ENABLED, DEFAULT_PARQUET_COMPRESS_ZSTD_BUFFERPOOL_ENABLED)) {
+        if (getConf().getBoolean(PARQUET_COMPRESS_ZSTD_BUFFERPOOL_ENABLED,
+                DEFAULT_PARQUET_COMPRESS_ZSTD_BUFFERPOOL_ENABLED)) {
             pool = RecyclingBufferPool.INSTANCE;
         } else {
             pool = NoPool.INSTANCE;

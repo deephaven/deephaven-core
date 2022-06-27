@@ -33,11 +33,11 @@ public class ZstdCompressorStream extends CompressionOutputStream {
     }
 
     public void finish() throws IOException {
-        //no-opt, doesn't apply to ZSTD
+        // no-op, doesn't apply to ZSTD
     }
 
     public void resetState() throws IOException {
-        // no-opt, doesn't apply to ZSTD
+        // no-op, doesn't apply to ZSTD
     }
 
     @Override

@@ -30,7 +30,7 @@ public class ZstdDecompressorStream extends CompressionInputStream {
     }
 
     public void resetState() throws IOException {
-        // no-opt, doesn't apply to ZSTD
+        // no-op, doesn't apply to ZSTD
     }
 
     @Override
