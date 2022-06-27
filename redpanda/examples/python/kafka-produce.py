@@ -68,6 +68,19 @@
 # You should see one row of data as per above showing up in the UI.
 #
 #
+# == Example (4)  Simple double value via value spec
+#
+# From web UI do:
+#
+#    > from deephaven import dtypes as dh
+#    > t4 = kc.consume({'bootstrap.servers' : 'redpanda:29092'}, 'prices', key_spec=kc.simple_spec('Symbol', dh.string), value_spec=kc.simple_spec('Price', dh.double), table_type=TableType.append())
+#
+# Run this script on the host (not on a docker image) to produce one row:
+#
+#    $ python3 kafka-produce.py prices 0 'str:MSFT' 'double:100.123'
+#
+#
+
 
 from confluent_kafka import Producer
 
