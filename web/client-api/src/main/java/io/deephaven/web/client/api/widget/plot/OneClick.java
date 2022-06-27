@@ -142,7 +142,7 @@ public class OneClick {
     }
 
     private Promise<JsTable> doFetchTable(Object[] keys) {
-        if (keys == null) {
+        if (keys == null || keys.length == 0) {
             return tableMap.getMergedTable();
         } else if (keys.length == 1) {
             return tableMap.getTable(keys[0]);
