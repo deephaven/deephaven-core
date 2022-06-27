@@ -148,7 +148,6 @@ public class JsPartitionedTable extends HasEventHandling {
         }));
     }
 
-
     public Promise<JsTable> getTable(Object key) {
         // Wrap non-arrays in an array so we are consistent with how we track keys
         if (!JsArray.isArray(key)) {

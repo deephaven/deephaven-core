@@ -192,8 +192,8 @@ public class OneClick {
                 } else {
                     // Subscribe to this key and wait for it...
                     currentTable = table;
-                    jsFigure.enqueueSubscriptionCheck();
                 }
+                jsFigure.enqueueSubscriptionCheck();
             }
             return null;
         });
