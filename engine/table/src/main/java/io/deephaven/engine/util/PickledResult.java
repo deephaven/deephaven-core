@@ -8,7 +8,6 @@ import java.io.Serializable;
 /**
  * Pickled result for a Python fetch.
  */
-@Deprecated
 public class PickledResult implements Serializable {
     private String pickled;
     private String pythonVersion; // version of python used to perform pickle

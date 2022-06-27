@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
  * remote Python session should execute queries which interact wtih this class. The script sessions that run for
  * PersistentQueries or consoles are handled separately by the {@link PythonDeephavenSession}.
  */
-@Deprecated
 public enum WorkerPythonEnvironment {
     DEFAULT;
 
