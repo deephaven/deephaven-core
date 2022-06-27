@@ -62,16 +62,16 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromSchema(ctx context.Context
 	}}
 	resultId := its.client.newTicket()
 	req := makeInputTableRequestFromSchema(&kind, &resultId, schema)
-	table, err := its.client.tableStub.createInputTable(ctx, req)
+	newTable, err := its.client.tableStub.createInputTable(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return &AppendOnlyInputTable{TableHandle: *table}, nil
+	return &AppendOnlyInputTable{TableHandle: *newTable}, nil
 }
 
 // NewAppendOnlyInputTableFromTable creates a new append-only input table with the same columns as the provided table.
 func (its *inputTableStub) NewAppendOnlyInputTableFromTable(ctx context.Context, table *TableHandle) (*AppendOnlyInputTable, error) {
-	if its.client == nil || table.client == nil {
+	if table.client == nil {
 		return nil, ErrInvalidTableHandle
 	}
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_{
@@ -79,11 +79,11 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromTable(ctx context.Context,
 	}}
 	resultId := its.client.newTicket()
 	req := makeInputTableRequestFromTable(&kind, &resultId, table)
-	table, err := its.client.tableStub.createInputTable(ctx, req)
+	newTable, err := its.client.tableStub.createInputTable(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return &AppendOnlyInputTable{TableHandle: *table}, nil
+	return &AppendOnlyInputTable{TableHandle: *newTable}, nil
 }
 
 // NewKeyBackedInputTableFromSchema creates a new key-backed input table with columns according to the provided schema.
@@ -94,17 +94,17 @@ func (its *inputTableStub) NewKeyBackedInputTableFromSchema(ctx context.Context,
 	}}
 	resultId := its.client.newTicket()
 	req := makeInputTableRequestFromSchema(&kind, &resultId, schema)
-	table, err := its.client.tableStub.createInputTable(ctx, req)
+	newTable, err := its.client.tableStub.createInputTable(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return &KeyBackedInputTable{TableHandle: *table}, nil
+	return &KeyBackedInputTable{TableHandle: *newTable}, nil
 }
 
 // NewKeyBackedInputTableFromTable creates a new key-backed input table with the same columns as the provided table.
 // The columns to use as the keys are specified by keyColumns.
 func (its *inputTableStub) NewKeyBackedInputTableFromTable(ctx context.Context, table *TableHandle, keyColumns ...string) (*KeyBackedInputTable, error) {
-	if its.client == nil || table.client == nil {
+	if table.client == nil {
 		return nil, ErrInvalidTableHandle
 	}
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_{
@@ -112,11 +112,11 @@ func (its *inputTableStub) NewKeyBackedInputTableFromTable(ctx context.Context, 
 	}}
 	resultId := its.client.newTicket()
 	req := makeInputTableRequestFromTable(&kind, &resultId, table)
-	table, err := its.client.tableStub.createInputTable(ctx, req)
+	newTable, err := its.client.tableStub.createInputTable(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return &KeyBackedInputTable{TableHandle: *table}, nil
+	return &KeyBackedInputTable{TableHandle: *newTable}, nil
 }
 
 // AddTable appends data from the given table to the end of this table.
