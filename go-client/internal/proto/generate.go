@@ -1,6 +1,4 @@
-//go:generate go run generate.go
 //go:build ignore
-// +build ignore
 
 package main
 
@@ -12,10 +10,10 @@ import (
 
 func main() {
 	args := []string{
-		"--go_out=.", "--go_opt=module=github.com/deephaven/deephaven-core/go-client",
-		"--go-grpc_out=.", "--go-grpc_opt=module=github.com/deephaven/deephaven-core/go-client",
+		"--go_out=../..", "--go_opt=module=github.com/deephaven/deephaven-core/go-client",
+		"--go-grpc_out=../..", "--go-grpc_opt=module=github.com/deephaven/deephaven-core/go-client",
 		"--experimental_allow_proto3_optional",
-		"-I../proto/proto-backplane-grpc/src/main/proto",
+		"-I../../../proto/proto-backplane-grpc/src/main/proto",
 	}
 
 	files := []string{
@@ -39,20 +37,29 @@ func main() {
 
 	cmd := exec.Command("protoc", args...)
 
-	p, err := cmd.StderrPipe()
+	po, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Fatal("Couldn't get stderr", err.Error())
+		log.Fatal("couldn't get stdout", err.Error())
+	}
+
+	pe, err := cmd.StderrPipe()
+	if err != nil {
+		log.Fatal("couldn't get stderr", err.Error())
 	}
 
 	if err = cmd.Start(); err != nil {
 		log.Fatal(err)
 	}
 
-	out, _ := io.ReadAll(p)
+	outOut, _ := io.ReadAll(po)
+	outErr, _ := io.ReadAll(pe)
 
 	if err := cmd.Wait(); err != nil {
-		log.Printf("%s\n", out)
+		log.Printf("%s\n", outOut)
+		log.Printf("%s\n", outErr)
 
 		log.Fatal("Error when running protoc:", err.Error())
 	}
+
+	log.Printf("Successfully generated proto files\n")
 }
