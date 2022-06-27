@@ -122,6 +122,9 @@ func (its *inputTableStub) NewKeyBackedInputTableFromTable(ctx context.Context, 
 // AddTable appends data from the given table to the end of this table.
 // This will automatically update all tables derived from this one.
 func (th *AppendOnlyInputTable) AddTable(ctx context.Context, toAdd *TableHandle) error {
+	if th.client == nil || toAdd.client == nil {
+		return ErrInvalidTableHandle
+	}
 	return th.client.inputTableStub.addTable(ctx, &th.TableHandle, toAdd)
 }
 
@@ -130,16 +133,15 @@ func (th *AppendOnlyInputTable) AddTable(ctx context.Context, toAdd *TableHandle
 // otherwise the new data row replaces the existing key.
 // This will automatically update all tables derived from this one.
 func (th *KeyBackedInputTable) AddTable(ctx context.Context, toAdd *TableHandle) error {
+	if th.client == nil || toAdd.client == nil {
+		return ErrInvalidTableHandle
+	}
 	return th.client.inputTableStub.addTable(ctx, &th.TableHandle, toAdd)
 }
 
 // addTable makes the AddTableToInputTable gRPC request.
 // See the docs for AddTable on each kind of table for details.
 func (its *inputTableStub) addTable(ctx context.Context, inputTable *TableHandle, toAdd *TableHandle) error {
-	if inputTable.client == nil || toAdd.client == nil {
-		return ErrInvalidTableHandle
-	}
-
 	ctx, err := its.client.withToken(ctx)
 	if err != nil {
 		return err
@@ -158,16 +160,15 @@ func (its *inputTableStub) addTable(ctx context.Context, inputTable *TableHandle
 // The provided table must consist only of columns that were specified as key columns in the input table.
 // This will automatically update all tables derived from this one.
 func (th *KeyBackedInputTable) DeleteTable(ctx context.Context, toDelete *TableHandle) error {
+	if th.client == nil || toDelete.client == nil {
+		return ErrInvalidTableHandle
+	}
 	return th.client.inputTableStub.deleteTable(ctx, &th.TableHandle, toDelete)
 }
 
 // deleteTable makes the DeleteTableFromInputTable gRPC request.
 // See the docs for DeleteTable for details.
 func (its *inputTableStub) deleteTable(ctx context.Context, inputTable *TableHandle, toRemove *TableHandle) error {
-	if inputTable.client == nil || toRemove.client == nil {
-		return ErrInvalidTableHandle
-	}
-
 	ctx, err := its.client.withToken(ctx)
 	if err != nil {
 		return err
