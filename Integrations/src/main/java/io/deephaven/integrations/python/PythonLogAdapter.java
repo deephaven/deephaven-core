@@ -1,7 +1,9 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.util;
+package io.deephaven.integrations.python;
+
+import io.deephaven.engine.util.PythonEvaluator;
 
 import java.io.PrintStream;
 
@@ -10,7 +12,7 @@ import java.io.PrintStream;
  * the Python session's output, rather than having it all go to the system stdout/stderr streams, which are not
  * accessible to the console.
  */
-class PythonLogAdapter {
+public class PythonLogAdapter {
     private final PrintStream out;
 
     private PythonLogAdapter(PrintStream out) {
@@ -54,7 +56,7 @@ class PythonLogAdapter {
      *
      * @param pythonHolder the PythonHolder object which we will insert our adapters into
      */
-    static void interceptOutputStreams(PythonEvaluator pythonHolder) {
+    public static void interceptOutputStreams(PythonEvaluator pythonHolder) {
         pythonHolder.set("_stdout", new PythonLogAdapter(System.out));
         pythonHolder.set("_stderr", new PythonLogAdapter(System.err));
         pythonHolder.evalStatement("import sys");

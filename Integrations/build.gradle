@@ -15,6 +15,7 @@ configurations {
 dependencies {
 
     compile project(':engine-table')
+    compile project(':plugin')
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
     testRuntime project(':configs'),
