@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import importlib
 import inspect
-# a set of all the directly initializable wrapper classes
 import pkgutil
 import sys
 from abc import ABC, abstractmethod
