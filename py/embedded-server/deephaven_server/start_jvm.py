@@ -4,7 +4,8 @@
 
 import os
 import re
-from glob import glob
+import itertools
+from glob import iglob
 import jpyutil
 import importlib.resources
 
@@ -41,7 +42,7 @@ DEFAULT_JVM_ARGS = [
 
     # Disable JIT in certain cases
     '-XX:+UnlockDiagnosticVMOptions',
-    f"-XX:CompilerDirectivesFile={_compiler_directives()}"
+    f"-XX:CompilerDirectivesFile={_compiler_directives()}",
     # (deephaven-core#2500): Remove DisableIntrinsic for currentThread
     '-XX:DisableIntrinsic=_currentThread',
 ]
@@ -51,6 +52,7 @@ def start_jvm(
         jvm_args = DEFAULT_JVM_ARGS,
         jvm_properties = DEFAULT_JVM_PROPERTIES,
         java_home: str = os.environ.get('JAVA_HOME', None),
+        extra_classpath = [],
         propfile: str = None,
         devroot: str = '.',
         workspace: str = '.',
@@ -70,7 +72,11 @@ def start_jvm(
     # Append user-created args, allowing them to override these values
     system_properties.update(jvm_properties)
 
-    jvm_classpath = [str(jar) for jar in _jars()]
+    # Expand the classpath, so a user can resolve wildcards
+    expanded_classpath = list(itertools.chain.from_iterable(iglob(e, recursive=True) for e in extra_classpath))
+
+    # The full classpath is the classpath needed for our server + the expanded extra classpath
+    jvm_classpath = [str(jar) for jar in _jars()] + expanded_classpath
 
     # Append args that, if missing, could cause the jvm to be misconfigured for deephaven and its dependencies
     # TODO make these less required (i.e. at your own risk, remove them)
