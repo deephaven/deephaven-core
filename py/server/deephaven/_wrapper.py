@@ -18,6 +18,7 @@ from typing import Set, Union, Optional, Any
 
 import jpy
 
+# a set of all the directly initializable wrapper classes
 _di_wrapper_classes: Set[JObjectWrapper] = set()
 _has_all_wrappers_imported = False
 

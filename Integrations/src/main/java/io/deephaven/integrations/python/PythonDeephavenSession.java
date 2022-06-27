@@ -56,8 +56,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     private final PythonEvaluator evaluator;
     private final PythonScope<PyObject> scope;
 
-    private static PyModule pyWrapperModule = PyModule.importModule("deephaven._wrapper");
-
     /**
      * Create a Python ScriptSession.
      *
@@ -270,8 +268,9 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                     // ignore
                 }
             } else {
-                if (!(newValue instanceof PyObject))
+                if (!(newValue instanceof PyObject)) {
                     newValue = PythonObjectWrapper.wrap(newValue);
+                }
                 globals.setItem(name, newValue);
             }
             try (PythonSnapshot toSnapshot = takeSnapshot()) {
