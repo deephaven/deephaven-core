@@ -2,6 +2,7 @@ package client_test
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"testing"
 	"time"
@@ -498,5 +499,58 @@ func TestDedicatedAgg(t *testing.T) {
 			t.Errorf("table had wrong size %d", result.NumRows())
 			return
 		}
+	}
+}
+
+func TestZeroTable(t *testing.T) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer c.Close()
+
+	tbl1 := &client.TableHandle{}
+	tbl2, err := tbl1.Update(ctx, "foo = i")
+	if err == nil || !errors.Is(err, client.ErrInvalidTableHandle) {
+		t.Error("wrong error for updating zero table:", err.Error())
+		return
+	}
+	if tbl2 != nil {
+		t.Errorf("returned table was not nil")
+		return
+	}
+
+	err = tbl1.Release(ctx)
+	if err != nil {
+		t.Error("error when releasing zero table", err.Error())
+	}
+}
+
+func TestReleasedTable(t *testing.T) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer c.Close()
+
+	tbl1, err := c.EmptyTable(ctx, 10)
+	test_tools.CheckError(t, "EmptyTable", err)
+
+	err = tbl1.Release(ctx)
+	test_tools.CheckError(t, "Release", err)
+
+	tbl2, err := tbl1.Update(ctx, "foo = i")
+	if err == nil || !errors.Is(err, client.ErrInvalidTableHandle) {
+		t.Error("wrong error for updating released table:", err.Error())
+		return
+	}
+	if tbl2 != nil {
+		t.Errorf("returned table was not nil")
+		return
+	}
+
+	err = tbl1.Release(ctx)
+	if err != nil {
+		t.Error("error when releasing released table", err.Error())
 	}
 }

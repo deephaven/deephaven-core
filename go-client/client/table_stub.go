@@ -14,7 +14,7 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
-// A QueryError be returned by ExecQuery as the result of an invalid query.
+// A QueryError may be returned by ExecQuery as the result of an invalid query.
 type QueryError struct {
 	Msg string
 }
