@@ -71,6 +71,9 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromSchema(ctx context.Context
 
 // NewAppendOnlyInputTableFromTable creates a new append-only input table with the same columns as the provided table.
 func (its *inputTableStub) NewAppendOnlyInputTableFromTable(ctx context.Context, table *TableHandle) (*AppendOnlyInputTable, error) {
+	if its.client == nil || table.client == nil {
+		return nil, ErrInvalidTableHandle
+	}
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_{
 		InMemoryAppendOnly: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly{},
 	}}
@@ -101,6 +104,9 @@ func (its *inputTableStub) NewKeyBackedInputTableFromSchema(ctx context.Context,
 // NewKeyBackedInputTableFromTable creates a new key-backed input table with the same columns as the provided table.
 // The columns to use as the keys are specified by keyColumns.
 func (its *inputTableStub) NewKeyBackedInputTableFromTable(ctx context.Context, table *TableHandle, keyColumns ...string) (*KeyBackedInputTable, error) {
+	if its.client == nil || table.client == nil {
+		return nil, ErrInvalidTableHandle
+	}
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_{
 		InMemoryKeyBacked: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryKeyBacked{KeyColumns: keyColumns},
 	}}
@@ -130,6 +136,10 @@ func (th *KeyBackedInputTable) AddTable(ctx context.Context, toAdd *TableHandle)
 // addTable makes the AddTableToInputTable gRPC request.
 // See the docs for AddTable on each kind of table for details.
 func (its *inputTableStub) addTable(ctx context.Context, inputTable *TableHandle, toAdd *TableHandle) error {
+	if inputTable.client == nil || toAdd.client == nil {
+		return ErrInvalidTableHandle
+	}
+
 	ctx, err := its.client.withToken(ctx)
 	if err != nil {
 		return err
@@ -154,6 +164,10 @@ func (th *KeyBackedInputTable) DeleteTable(ctx context.Context, toDelete *TableH
 // deleteTable makes the DeleteTableFromInputTable gRPC request.
 // See the docs for DeleteTable for details.
 func (its *inputTableStub) deleteTable(ctx context.Context, inputTable *TableHandle, toRemove *TableHandle) error {
+	if inputTable.client == nil || toRemove.client == nil {
+		return ErrInvalidTableHandle
+	}
+
 	ctx, err := its.client.withToken(ctx)
 	if err != nil {
 		return err
