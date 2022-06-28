@@ -106,7 +106,7 @@ func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceCl
 	return nil
 }
 
-// refresh is what actually refreshes the client token. It makes a RefreshSessionToken request,
+// refresh refreshes the client token. It makes a RefreshSessionToken request,
 // and then updates the token struct.
 func (ref *refresher) refresh() error {
 	oldToken, err := ref.token.getToken()

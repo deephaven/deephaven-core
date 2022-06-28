@@ -342,7 +342,7 @@ func TestAsOfJoin(t *testing.T) {
 	}
 	defer c.Close()
 
-	startTime := time.Now().UnixNano() - 2_000_000_000
+	startTime := time.Now().Add(time.Duration(-2) * time.Second)
 
 	tmp1, err := c.TimeTable(ctx, 100000, &startTime)
 	test_tools.CheckError(t, "TimeTable", err)

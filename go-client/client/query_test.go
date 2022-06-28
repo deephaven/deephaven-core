@@ -542,7 +542,7 @@ func TestAsOfJoinQuery(t *testing.T) {
 	}
 	defer c.Close()
 
-	startTime := time.Now().UnixNano() - 2_000_000_000
+	startTime := time.Now().Add(time.Duration(-2) * time.Second)
 
 	tt1 := c.TimeTableQuery(100000, &startTime).Update("Col1 = i")
 	tt2 := c.TimeTableQuery(200000, &startTime).Update("Col1 = i")
