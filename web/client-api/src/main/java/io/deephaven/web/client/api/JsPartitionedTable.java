@@ -179,7 +179,7 @@ public class JsPartitionedTable extends HasEventHandling {
         if (subscription.getColumns().length == 1) {
             return new JsSet<>(tables.keySet().stream().map(list -> list.get(0)).toArray());
         }
-        return new JsSet<>(tables.keySet().toArray());
+        return new JsSet<>(tables.keySet().stream().map(List::toArray).toArray());
     }
 
     @JsProperty(name = "size")
