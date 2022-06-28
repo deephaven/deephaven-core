@@ -11,13 +11,6 @@ import java.time.Duration;
 @Immutable
 @SimpleStyle
 public abstract class TimeScale {
-    @Parameter
-    @Nullable
-    public abstract String timestampCol();
-
-    @Parameter
-    public abstract long timescaleUnits();
-
     public static TimeScale ofTime(final String timestampCol, long timeScaleNanos) {
         return ImmutableTimeScale.of(timestampCol, timeScaleNanos);
     }
@@ -30,8 +23,29 @@ public abstract class TimeScale {
         return ImmutableTimeScale.of(null, tickWindow);
     }
 
-    public boolean isTimeBased() {
+    @Parameter
+    @Nullable
+    public abstract String timestampCol();
+
+    @Parameter
+    public abstract long timescaleUnits();
+
+    public final boolean isTimeBased() {
         return timestampCol() != null;
+    }
+
+    public final long getDuration() {
+        if (!isTimeBased()) {
+            throw new IllegalStateException("getDuration() cannot be called on a tick-based Timescale");
+        }
+        return timescaleUnits();
+    }
+
+    public final long getTicks() {
+        if (isTimeBased()) {
+            throw new IllegalStateException("getTicks() cannot be called on a time-based Timescale");
+        }
+        return timescaleUnits();
     }
 
     @Value.Check

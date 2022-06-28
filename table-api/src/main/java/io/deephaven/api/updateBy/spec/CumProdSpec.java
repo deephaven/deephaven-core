@@ -15,12 +15,14 @@ public abstract class CumProdSpec implements UpdateBySpec {
 
     @Override
     public final boolean applicableTo(Class<?> inputType) {
-        boolean isPrimitiveNumeric = inputType.equals(double.class) || inputType.equals(float.class)
+        return
+        // is primitive numeric?
+        inputType.equals(double.class) || inputType.equals(float.class)
                 || inputType.equals(int.class) || inputType.equals(long.class) || inputType.equals(short.class)
-                || inputType.equals(byte.class);
-        boolean isBoxedNumeric = Number.class.isAssignableFrom(inputType);
+                || inputType.equals(byte.class)
 
-        return isPrimitiveNumeric || isBoxedNumeric;
+                // is boxed numeric?
+                || Number.class.isAssignableFrom(inputType);
     }
 
     @Override

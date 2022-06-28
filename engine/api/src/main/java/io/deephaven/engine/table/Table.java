@@ -1726,9 +1726,9 @@ public interface Table extends
 
     /**
      * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
-     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows.This operation will group the table by the specified set of keys if
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
+     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows. This operation will group the table by the specified set of keys if
      * provided
      * </p>
      *
@@ -1742,9 +1742,9 @@ public interface Table extends
 
     /**
      * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
-     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows.This operation will group the table by the specified set of keys if
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
+     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows. This operation will group the table by the specified set of keys if
      * provided
      * </p>
      *
@@ -1758,8 +1758,8 @@ public interface Table extends
 
     /**
      * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
-     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
+     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
      * capable of processing state between rows.
      * </p>
      *
@@ -1771,7 +1771,7 @@ public interface Table extends
 
     /**
      * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified row based
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified row based
      * operation to it. This operation will additionally group the table by a set of keys before applying the operation.
      * </p>
      *
@@ -1785,7 +1785,7 @@ public interface Table extends
 
     /**
      * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified row based
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified row based
      * operation to it. This operation will additionally group the table by a set of keys before applying the operation.
      * </p>
      *
@@ -1799,8 +1799,8 @@ public interface Table extends
 
     /**
      * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
-     * row based operation to it.
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
+     * based operation to it.
      * </p>
      *
      * @param operation the operation to apply to the table.

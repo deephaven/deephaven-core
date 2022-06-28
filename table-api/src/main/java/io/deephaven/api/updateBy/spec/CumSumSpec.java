@@ -15,13 +15,17 @@ public class CumSumSpec implements UpdateBySpec {
 
     @Override
     public final boolean applicableTo(Class<?> inputType) {
-        boolean isPrimitiveNumeric = inputType.equals(double.class) || inputType.equals(float.class)
+        return
+        // is primitive numeric?
+        inputType.equals(double.class) || inputType.equals(float.class)
                 || inputType.equals(int.class) || inputType.equals(long.class) || inputType.equals(short.class)
-                || inputType.equals(byte.class);
-        boolean isBoxedNumeric = Number.class.isAssignableFrom(inputType);
-        boolean isBoolean = inputType == boolean.class || inputType == Boolean.class;
+                || inputType.equals(byte.class)
 
-        return isPrimitiveNumeric || isBoxedNumeric || isBoolean;
+                // is boxed numeric?
+                || Number.class.isAssignableFrom(inputType)
+
+                // is boolean?
+                || inputType == boolean.class || inputType == Boolean.class;
     }
 
     @Override

@@ -101,8 +101,7 @@ public interface UpdateByControl {
      * @param keySources the ke sources
      * @return true if the operation should use groupings.
      */
-    @Default
-    default boolean considerGrouping(@NotNull final Table source, @NotNull final ColumnSource<?>[] keySources) {
+    static boolean considerGrouping(@NotNull final Table source, @NotNull final ColumnSource<?>[] keySources) {
         return !source.isRefreshing() && keySources.length == 1;
     }
 
