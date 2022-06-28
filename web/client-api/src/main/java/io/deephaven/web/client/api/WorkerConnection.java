@@ -71,6 +71,7 @@ import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
+import io.deephaven.web.client.api.grpc.MultiplexedWebsocketTransport;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.parse.JsDataHandler;
@@ -133,7 +134,7 @@ public class WorkerConnection {
         // TODO configurable, let us support this even when ssl?
         if (DomGlobal.window.location.protocol.equals("http:")) {
             useWebsockets = true;
-            Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
+            Grpc.setDefaultTransport.onInvoke(MultiplexedWebsocketTransport::new);
         } else {
             useWebsockets = false;
         }
