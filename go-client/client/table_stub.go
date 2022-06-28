@@ -31,10 +31,10 @@ type tableStub struct {
 }
 
 // newTableStub creates a new table stub that can be used to make table gRPC requests.
-func newTableStub(client *Client) (tableStub, error) {
+func newTableStub(client *Client) tableStub {
 	stub := tablepb2.NewTableServiceClient(client.grpcChannel)
 
-	return tableStub{client: client, stub: stub}, nil
+	return tableStub{client: client, stub: stub}
 }
 
 // createInputTable simply wraps the CreateInputTable gRPC call and returns the resulting table.
@@ -198,8 +198,7 @@ func parseCreationResponse(client *Client, resp *tablepb2.ExportedTableCreationR
 		return nil, errors.New("server response did not have ticket")
 	}
 
-	alloc := memory.NewGoAllocator()
-	schema, err := flight.DeserializeSchema(resp.SchemaHeader, alloc)
+	schema, err := flight.DeserializeSchema(resp.SchemaHeader, memory.DefaultAllocator)
 	if err != nil {
 		return nil, err
 	}

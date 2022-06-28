@@ -15,8 +15,6 @@ import (
 // ExampleRecord creates an arrow Record with some arbitrary data, used for testing.
 // The returned Record should be released when it is not needed anymore.
 func ExampleRecord() arrow.Record {
-	pool := memory.NewGoAllocator()
-
 	schema := arrow.NewSchema(
 		[]arrow.Field{
 			{Name: "Ticker", Type: arrow.BinaryTypes.String},
@@ -26,7 +24,7 @@ func ExampleRecord() arrow.Record {
 		nil,
 	)
 
-	b := array.NewRecordBuilder(pool, schema)
+	b := array.NewRecordBuilder(memory.DefaultAllocator, schema)
 	defer b.Release()
 
 	b.Field(0).(*array.StringBuilder).AppendValues([]string{"XRX", "XYZZY", "IBM", "GME", "AAPL", "ZNGA", "T"}, nil)
@@ -39,8 +37,6 @@ func ExampleRecord() arrow.Record {
 // RandomRecord creates an arrow record with random int32 values.
 // It will have the specified number of rows and columns, each entry will be in the range [0, maxNum).
 func RandomRecord(numCols int, numRows int, maxNum int) arrow.Record {
-	pool := memory.NewGoAllocator()
-
 	var fields []arrow.Field
 	for col := 0; col < numCols; col += 1 {
 		name := fmt.Sprintf("%c", 'a'+col)
@@ -49,7 +45,7 @@ func RandomRecord(numCols int, numRows int, maxNum int) arrow.Record {
 
 	schema := arrow.NewSchema(fields, nil)
 
-	b := array.NewRecordBuilder(pool, schema)
+	b := array.NewRecordBuilder(memory.DefaultAllocator, schema)
 	defer b.Release()
 
 	for col := 0; col < numCols; col += 1 {

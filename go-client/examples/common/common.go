@@ -8,8 +8,6 @@ import (
 
 // GetExampleRecord returns an Arrow record that contains some arbitrary data for use as an example.
 func GetExampleRecord() arrow.Record {
-	pool := memory.NewGoAllocator()
-
 	schema := arrow.NewSchema(
 		[]arrow.Field{
 			{Name: "Ticker", Type: arrow.BinaryTypes.String},
@@ -19,7 +17,7 @@ func GetExampleRecord() arrow.Record {
 		nil,
 	)
 
-	b := array.NewRecordBuilder(pool, schema)
+	b := array.NewRecordBuilder(memory.DefaultAllocator, schema)
 	defer b.Release()
 
 	b.Field(0).(*array.StringBuilder).AppendValues([]string{"XRX", "XYZZY", "IBM", "GME", "AAPL", "ZNGA", "T"}, nil)

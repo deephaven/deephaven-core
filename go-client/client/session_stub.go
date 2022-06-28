@@ -54,7 +54,7 @@ type refresher struct {
 
 	cancelCh <-chan struct{} // if this channel closes, the refresher should stop.
 
-	timeoutMillis int64 // time (in milliseconds) before the token should be refreshed again.
+	timeout time.Duration // time before the token should be refreshed again.
 }
 
 // refreshLoop is an endless loop that will update the token when necessary.
@@ -64,7 +64,7 @@ func (ref *refresher) refreshLoop() {
 		select {
 		case <-ref.cancelCh:
 			return
-		case <-time.After(time.Duration(ref.timeoutMillis) * time.Millisecond):
+		case <-time.After(ref.timeout):
 			err := ref.refresh()
 			if err != nil {
 				// refresh() stores the error in the tokenResp struct, so it can be handled
@@ -89,6 +89,7 @@ func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceCl
 	token.setToken(handshakeResp.SessionToken)
 
 	timeoutMillis := handshakeResp.TokenExpirationDelayMillis / 2
+	timeout := time.Duration(timeoutMillis) * time.Millisecond
 
 	ref := refresher{
 		ctx:         ctx,
@@ -98,7 +99,7 @@ func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceCl
 
 		cancelCh: cancelCh,
 
-		timeoutMillis: timeoutMillis,
+		timeout: timeout,
 	}
 
 	go ref.refreshLoop()
@@ -124,7 +125,8 @@ func (ref *refresher) refresh() error {
 		ref.token.setToken(handshakeResp.SessionToken)
 	}
 
-	ref.timeoutMillis = handshakeResp.TokenExpirationDelayMillis / 2
+	timeoutMillis := handshakeResp.TokenExpirationDelayMillis / 2
+	ref.timeout = time.Duration(timeoutMillis) * time.Millisecond
 
 	return nil
 }

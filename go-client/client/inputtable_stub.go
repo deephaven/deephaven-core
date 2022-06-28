@@ -41,8 +41,7 @@ type inputTableKind = tablepb2.CreateInputTableRequest_InputTableKind
 // makeInputTableRequestFromSchema is just a shorthand method to construct a CreateInputTableRequest,
 // since it's a very verbose process.
 func makeInputTableRequestFromSchema(kind *inputTableKind, resultId *ticketpb2.Ticket, schema *arrow.Schema) *tablepb2.CreateInputTableRequest {
-	pool := memory.NewGoAllocator()
-	schemaBytes := flight.SerializeSchema(schema, pool)
+	schemaBytes := flight.SerializeSchema(schema, memory.DefaultAllocator)
 
 	def := &tablepb2.CreateInputTableRequest_Schema{Schema: schemaBytes}
 	return &tablepb2.CreateInputTableRequest{ResultId: resultId, Definition: def, Kind: kind}

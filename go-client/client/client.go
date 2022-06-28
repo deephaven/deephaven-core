@@ -82,12 +82,6 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 		return nil, err
 	}
 
-	client.tableStub, err = newTableStub(client)
-	if err != nil {
-		client.Close()
-		return nil, err
-	}
-
 	client.consoleStub, err = newConsoleStub(ctx, client, scriptLanguage)
 	if err != nil {
 		client.Close()
@@ -99,6 +93,8 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 		client.Close()
 		return nil, err
 	}
+
+	client.tableStub = newTableStub(client)
 
 	client.inputTableStub = newInputTableStub(client)
 
