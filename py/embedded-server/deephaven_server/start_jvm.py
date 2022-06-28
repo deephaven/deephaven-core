@@ -2,23 +2,22 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
-import os
-import re
+import glob
 import itertools
-from glob import iglob
 import jpyutil
-import importlib.resources
+import os
+import pathlib
+
+# TODO(deephaven-core#2592): Generalize start_jvm to work with importlib.resources
 
 def _jars_path():
-    return importlib.resources.path(__package__, 'jars')
+    return pathlib.Path(__file__).parent / 'jars'
 
 def _compiler_directives():
-    with _jars_path() as jars_path:
-        return jars_path / 'dh-compiler-directives.txt'
+    return _jars_path() / 'dh-compiler-directives.txt'
 
 def _jars():
-    with _jars_path() as jars_path:
-        return jars_path.glob('*.jar')
+    return _jars_path().glob('*.jar')
 
 DEFAULT_JVM_PROPERTIES = {
     # Default to no init scripts, the built-in py init script will prevent using python stdin
@@ -73,7 +72,7 @@ def start_jvm(
     system_properties.update(jvm_properties)
 
     # Expand the classpath, so a user can resolve wildcards
-    expanded_classpath = list(itertools.chain.from_iterable(iglob(e, recursive=True) for e in extra_classpath))
+    expanded_classpath = list(itertools.chain.from_iterable(glob.iglob(e, recursive=True) for e in extra_classpath))
 
     # The full classpath is the classpath needed for our server + the expanded extra classpath
     jvm_classpath = [str(jar) for jar in _jars()] + expanded_classpath
