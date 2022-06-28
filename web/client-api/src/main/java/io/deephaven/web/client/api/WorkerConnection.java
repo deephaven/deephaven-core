@@ -687,7 +687,8 @@ public class WorkerConnection {
             return getPartitionedTable(definition);
         } else {
             if (JsVariableChanges.TABLEMAP.equals(definition.getType())) {
-                JsLog.warn("TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
+                JsLog.warn(
+                        "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
             }
             return getWidget(definition);
         }
@@ -780,7 +781,8 @@ public class WorkerConnection {
 
     public Promise<JsPartitionedTable> getPartitionedTable(JsVariableDefinition varDef) {
         return whenServerReady("get a tablemap")
-                .then(server -> new JsPartitionedTable(this, new JsWidget(this, c -> fetchObject(varDef, c))).refetch());
+                .then(server -> new JsPartitionedTable(this, new JsWidget(this, c -> fetchObject(varDef, c)))
+                        .refetch());
     }
 
     public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {

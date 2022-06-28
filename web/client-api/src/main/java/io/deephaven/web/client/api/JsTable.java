@@ -952,7 +952,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         // We don't validate that the keys are non-empty, since that is allowed, but ensure they are all columns
         findColumns(actualKeys);
 
-        // Start the partitionBy on the server - we want to get the error from here, but we'll race the fetch against this
+        // Start the partitionBy on the server - we want to get the error from here, but we'll race the fetch against
+        // this
         // to avoid an extra round-trip
         Ticket partitionedTableTicket = workerConnection.getConfig().newTicket();
         Promise<PartitionByResponse> partitionByPromise = Callbacks.<PartitionByResponse, Object>grpcUnaryPromise(c -> {
@@ -963,18 +964,21 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             if (dropKeys != null) {
                 partitionBy.setDropKeys(dropKeys);
             }
-            workerConnection.partitionedTableServiceClient().partitionBy(partitionBy, workerConnection.metadata(), c::apply);
+            workerConnection.partitionedTableServiceClient().partitionBy(partitionBy, workerConnection.metadata(),
+                    c::apply);
         });
         // construct the partitioned table around the ticket created above
-        Promise<JsPartitionedTable> fetchPromise = new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, c -> {
-            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-            partitionedTableRequest.setSourceId(new TypedTicket());
-            partitionedTableRequest.getSourceId().setType("PartitionedTable");
-            partitionedTableRequest.getSourceId().setTicket(partitionedTableTicket);
-            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest, workerConnection.metadata(), (fail, success) -> {
-                c.handleResponse(fail, success, partitionedTableTicket);
-            });
-        })).refetch();
+        Promise<JsPartitionedTable> fetchPromise =
+                new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, c -> {
+                    FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+                    partitionedTableRequest.setSourceId(new TypedTicket());
+                    partitionedTableRequest.getSourceId().setType("PartitionedTable");
+                    partitionedTableRequest.getSourceId().setTicket(partitionedTableTicket);
+                    workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
+                            workerConnection.metadata(), (fail, success) -> {
+                                c.handleResponse(fail, success, partitionedTableTicket);
+                            });
+                })).refetch();
 
         // Ensure that the partition failure propagates first, but the result of the fetch will be returned - both
         // are running concurrently.

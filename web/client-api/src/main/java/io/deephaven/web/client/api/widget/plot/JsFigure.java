@@ -683,8 +683,9 @@ public class JsFigure extends HasEventHandling {
                         connection.objectServiceClient().fetchObject(partitionedTableRequest, connection.metadata(),
                                 c::apply);
                     }).then(object -> {
-                        JsPartitionedTable partitionedTable = new JsPartitionedTable(connection, new JsWidget(connection,
-                                callback -> callback.handleResponse(null, object, ticket.getTicket())));
+                        JsPartitionedTable partitionedTable =
+                                new JsPartitionedTable(connection, new JsWidget(connection,
+                                        callback -> callback.handleResponse(null, object, ticket.getTicket())));
                         tableMaps[partitionedTableIndex] = partitionedTable;
                         return partitionedTable.refetch();
                     });
