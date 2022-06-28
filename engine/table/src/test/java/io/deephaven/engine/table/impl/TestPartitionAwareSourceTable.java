@@ -620,7 +620,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         checking(new org.jmock.Expectations() {
             {
                 oneOf(locationProvider).subscribe(with(any(TableLocationSubscriptionBuffer.class)));
-                //noinspection resource
+                // noinspection resource
                 oneOf(columnSourceManager).refresh();
                 will(returnValue(RowSetFactory.empty()));
                 allowing(columnSourceManager).getColumnSources();
