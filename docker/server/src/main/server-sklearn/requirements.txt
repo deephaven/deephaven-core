@@ -2,6 +2,7 @@ deephaven-plugin==0.2.0
 dill==0.3.5.1
 importlib-metadata==4.11.4
 joblib==1.1.0
+jpy==0.11.0
 llvmlite==0.38.1
 numba==0.55.2
 numpy==1.21.6

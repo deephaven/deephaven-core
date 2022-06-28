@@ -1,5 +1,5 @@
+import jpyutil
 import unittest
-import jpy
 
 
 class TestMultipleJpy(unittest.TestCase):
@@ -14,6 +14,8 @@ class TestMultipleJpy(unittest.TestCase):
   # THIS TEST CURRENTLY FAILS!
   @unittest.skip("IDS-4102")
   def test_multiple_jpy_create_destroy_jvm(self):
+    jpyutil.preload_jvm_dll()
+    import jpy
     self.assertFalse(jpy.has_jvm())
     jpy.create_jvm([])
     self.assertTrue(jpy.has_jvm())

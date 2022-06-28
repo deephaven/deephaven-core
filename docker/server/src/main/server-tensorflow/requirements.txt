@@ -10,10 +10,11 @@ gast==0.4.0
 google-auth==2.8.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
-grpcio==1.46.3
+grpcio==1.47.0
 h5py==3.7.0
 idna==3.3
 importlib-metadata==4.11.4
+jpy==0.11.0
 keras==2.7.0
 Keras-Preprocessing==1.1.2
 libclang==14.0.1

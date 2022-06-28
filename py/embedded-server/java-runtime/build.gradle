@@ -21,6 +21,10 @@ dependencies {
     runtimeOnly project(':logback-print-stream-globals')
     runtimeOnly project(':logback-logbuffer')
     Classpaths.inheritLogbackClassic(project)
+
+    if (!hasProperty('excludeHotspotImpl')) {
+        runtimeOnly project(':hotspot-impl')
+    }
 }
 
 // making a dir here isn't optimal, but without it we need to make py-embedded-server be a java and a python

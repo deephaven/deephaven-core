@@ -27,7 +27,6 @@ dependencies {
             project(':TableLogger'),
             project(':engine-stringset'),
             project(':engine-base'),
-            project(':deephaven-jpy'),
             project(':deephaven-jpy-ext'),
             project(':hotspot')
 
