@@ -67,13 +67,16 @@ func (ref *refresher) refreshLoop() {
 		case <-time.After(time.Duration(ref.timeoutMillis) * time.Millisecond):
 			err := ref.refresh()
 			if err != nil {
+				// refresh() stores the error in the tokenResp struct, so it can be handled
+				// appropriately by all the client methods that need a token.
+				// Thus, we can discard it here.
 				return
 			}
 		}
 	}
 }
 
-// startRefresher begins a background goroutine that will update the passed token whenever it would time out.
+// startRefresher begins a background goroutine that continually refreshes the passed token so that it does not time out.
 func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceClient, token *tokenResp, cancelCh <-chan struct{}) error {
 	handshakeReq := &sessionpb2.HandshakeRequest{AuthProtocol: 1, Payload: [](byte)("hello godeephaven")}
 	handshakeResp, err := sessionStub.NewSession(ctx, handshakeReq)
@@ -161,6 +164,8 @@ func newSessionStub(ctx context.Context, client *Client) (sessionStub, error) {
 	return hs, nil
 }
 
+// getToken returns the current session token in a thread-safe way.
+// It may return an error if there has been an error at some point in the past while refreshing the token.
 func (hs *sessionStub) getToken() ([]byte, error) {
 	return hs.token.getToken()
 }

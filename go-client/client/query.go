@@ -48,7 +48,7 @@ func (qb QueryNode) addOp(op tableOp) QueryNode {
 // queryBuilder is (some subgraph of) the Query DAG.
 type queryBuilder struct {
 	uniqueId int32
-	table    *TableHandle // This can be nil if the first operation creates a new table, e.g. EmptyTableQuery
+	table    *TableHandle // This can be nil if the first operation creates a new table, e.g. client.EmptyTableQuery
 
 	opLock sync.Mutex
 	ops    []tableOp
@@ -241,7 +241,7 @@ func newQueryBuilder(client *Client, table *TableHandle) queryBuilder {
 	return queryBuilder{uniqueId: client.newTicketNum(), table: table}
 }
 
-// emptyTableOp is created by EmptyTableQuery().
+// emptyTableOp is created by client.EmptyTableQuery().
 type emptyTableOp struct {
 	numRows int64
 }
@@ -256,7 +256,7 @@ func (op emptyTableOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_EmptyTable{EmptyTable: req}}
 }
 
-// timeTableOp is created by TimeTableQuery().
+// timeTableOp is created by client.TimeTableQuery().
 type timeTableOp struct {
 	period    int64
 	startTime int64

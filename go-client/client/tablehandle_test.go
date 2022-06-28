@@ -391,7 +391,7 @@ func TestAsOfJoin(t *testing.T) {
 	}
 }
 
-func TestHeadByTailBy(t *testing.T) {
+func TestHeadBy(t *testing.T) {
 	result := applyTableOp(test_tools.RandomRecord(3, 10, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.HeadBy(ctx, 1, "a")
 	})
@@ -400,8 +400,10 @@ func TestHeadByTailBy(t *testing.T) {
 		return
 	}
 	result.Release()
+}
 
-	result = applyTableOp(test_tools.RandomRecord(3, 10, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+func TestTailBy(t *testing.T) {
+	result := applyTableOp(test_tools.RandomRecord(3, 10, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.TailBy(ctx, 1, "a")
 	})
 	if result.NumRows() > 5 {
@@ -410,7 +412,7 @@ func TestHeadByTailBy(t *testing.T) {
 	result.Release()
 }
 
-func TestGroup(t *testing.T) {
+func TestGroupBy(t *testing.T) {
 	result := applyTableOp(test_tools.RandomRecord(2, 30, 5), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
 		return before.GroupBy(ctx, "a")
 	})

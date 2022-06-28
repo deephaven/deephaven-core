@@ -38,7 +38,7 @@ func newFlightStub(client *Client, host string, port string) (flightStub, error)
 	return flightStub{client: client, stub: stub}, nil
 }
 
-// snapshotRecord downloads the data currently in the provided table and returns it as an arrow Record.
+// snapshotRecord downloads the data currently in the provided table and returns it as an Arrow Record.
 func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (arrow.Record, error) {
 	ctx, err := fs.client.withToken(ctx)
 	if err != nil {

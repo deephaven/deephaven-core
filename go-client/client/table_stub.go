@@ -30,6 +30,7 @@ type tableStub struct {
 	stub tablepb2.TableServiceClient // The stub for the table gRPC requests.
 }
 
+// newTableStub creates a new table stub that can be used to make table gRPC requests.
 func newTableStub(client *Client) (tableStub, error) {
 	stub := tablepb2.NewTableServiceClient(client.grpcChannel)
 
@@ -159,8 +160,8 @@ func (ts *tableStub) TimeTableQuery(period int64, startTime *int64) QueryNode {
 }
 
 // TimeTable creates a ticking time table in the global scope.
-// The period is in nanoseconds and represents the interval between adding new rows to the table.
-// The startTime is in nanoseconds since epoch and defaults to the current time when it is nil.
+// The period is the number of nanoseconds between adding new rows to the table.
+// The startTime is the time of the first row in the table in nanoseconds since the epoch. It defaults to the current time when it is nil.
 func (ts *tableStub) TimeTable(ctx context.Context, period int64, startTime *int64) (*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
@@ -248,22 +249,27 @@ func (ts *tableStub) doSelectOrUpdate(ctx context.Context, table *TableHandle, f
 	return parseCreationResponse(ts.client, resp)
 }
 
+// update wraps the Update gRPC request.
 func (ts *tableStub) update(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	return ts.doSelectOrUpdate(ctx, table, formulas, tablepb2.TableServiceClient.Update)
 }
 
+// lazyUpdadte wraps the LazyUpdate gRPC request.
 func (ts *tableStub) lazyUpdate(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	return ts.doSelectOrUpdate(ctx, table, formulas, tablepb2.TableServiceClient.LazyUpdate)
 }
 
+// updateView wraps the UpdateView gRPC request.
 func (ts *tableStub) updateView(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	return ts.doSelectOrUpdate(ctx, table, formulas, tablepb2.TableServiceClient.UpdateView)
 }
 
+// view wraps the View gRPC request.
 func (ts *tableStub) view(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	return ts.doSelectOrUpdate(ctx, table, formulas, tablepb2.TableServiceClient.View)
 }
 
+// selectTbl wraps the Select gRPC request
 func (ts *tableStub) selectTbl(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	return ts.doSelectOrUpdate(ctx, table, formulas, tablepb2.TableServiceClient.Select)
 }
@@ -293,6 +299,7 @@ type ticketRef = *ticketpb2.Ticket
 type tblRef = *tablepb2.TableReference
 type tblResp = *tablepb2.ExportedTableCreationResponse
 
+// A reqOp is a function that should perform a gRPC request.
 type reqOp func(ctx ctxt, resultId ticketRef, sourceId tblRef) (tblResp, error)
 
 // selectDistinct is a wrapper around the SelectDistinct gRPC operation.

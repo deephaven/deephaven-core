@@ -17,10 +17,10 @@ var ErrInvalidTableHandle = errors.New("tried to use a zero-value or released ta
 
 // A TableHandle is a reference to a table stored on the deephaven server.
 //
-// It should be eventually released using `Release()` once it is no longer needed on the client.
+// It should eventually be released using Release() once it is no longer needed on the client.
 // Releasing a table handle does not affect table handles derived from it.
 //
-// All TableHandle methods (with the exception of `Release()`) are goroutine-safe.
+// All TableHandle methods (with the exception of Release) are goroutine-safe.
 //
 // A TableHandle's zero value is an invalid table that cannot be used (it may be released, though, which is a no-op).
 type TableHandle struct {
@@ -41,14 +41,14 @@ func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Sche
 	}
 }
 
-// IsStatic returns false for dynamic tables, like streaming tables or timetables.
+// IsStatic returns false for dynamic tables, like streaming tables or time tables.
 func (th *TableHandle) IsStatic() bool {
 	return th.isStatic
 }
 
-// Snapshot downloads the current state of the table from the server and returns it as a Record.
+// Snapshot downloads the current state of the table from the server and returns it as an Arrow Record.
 //
-// If a Record is returned successfully, it must be freed later with `record.Release()`.
+// If a Record is returned successfully, it must be freed later with arrow.record.Release().
 func (th *TableHandle) Snapshot(ctx context.Context) (arrow.Record, error) {
 	if th.client == nil {
 		return nil, ErrInvalidTableHandle
