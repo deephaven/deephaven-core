@@ -198,6 +198,6 @@ public abstract class ColumnHeader<T1> implements TableHeader.Buildable {
 
     @Check
     void checkName() {
-        NameValidator.isValidColumnName(name());
+        NameValidator.validateColumnName(name());
     }
 }
