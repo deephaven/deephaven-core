@@ -12,7 +12,7 @@ import (
 func TestConnectError(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := client.NewClient(ctx, test_tools.GetHost(), "1234", "python")
+	_, err := client.NewClient(ctx, "foobar", "1234", "python")
 	if err == nil {
 		t.Fatalf("client did not fail to connect")
 	}
@@ -35,6 +35,15 @@ func TestClosedClient(t *testing.T) {
 
 	// Multiple times should be OK
 	c.Close()
+}
+
+func TestMismatchedScript(t *testing.T) {
+	ctx := context.Background()
+
+	_, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "groovy")
+	if err == nil {
+		t.Fatalf("client did not fail to connect")
+	}
 }
 
 func TestEmptyTable(t *testing.T) {

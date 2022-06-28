@@ -17,9 +17,9 @@ func main() {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
-	// When starting a client connection, note that the client script language "python"
+	// When starting a client connection, the client script language
 	// must match the language the server was started with,
-	// even if we aren't using any scripts.
+	// even if the client does not execute any scripts.
 	cl, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {
 		fmt.Println("error when connecting to localhost port 10000:", err.Error())
@@ -35,7 +35,7 @@ func main() {
 	fmt.Println("Data Before:")
 	fmt.Println(sampleRecord)
 
-	// Now we upload the record so that we can manipulate its data using the server.
+	// Now we upload the record as a table on the server.
 	// We get back a TableHandle, which is a reference to a table on the server.
 	baseTable, err := cl.ImportTable(ctx, sampleRecord)
 	if err != nil {
@@ -46,9 +46,7 @@ func main() {
 	defer baseTable.Release(ctx)
 
 	// Now, let's start building a query.
-	// Maybe I don't like companies whose names are too long or too short, so let's filter in only the ones in the middle.
-	// Note that we use baseTable.Query() to start building a new query from an existing table handle.
-	// The Query() method returns a QueryNode.
+	// Maybe I don't like companies whose names are too long or too short, so let's keep only the ones in the middle.
 	midStocks := baseTable.Query().
 		Where("Ticker.length() == 3 || Ticker.length() == 3")
 
@@ -65,19 +63,18 @@ func main() {
 	magStocks := midStocks.
 		AsOfJoin(powTenTable, []string{"Vol = Magnitude"}, nil, client.MatchRuleLessThanEqual)
 
-	// And now, we can execute the entire query we have built using only a single request.
-	// Note that we can retrieve multiple tables from anywhere in the query.
+	// And now, we can execute the queries we have built.
 	tables, err := cl.ExecQuery(ctx, midStocks, magStocks)
 	if err != nil {
 		fmt.Println("error when executing query:", err.Error())
 		return
 	}
-	// The order of the tables in the returned list is the same as the order they were passed as arguments.
+	// The order of the tables in the returned list is the same as the order of the queries passed as arguments.
 	midTable, magTable := tables[0], tables[1]
 	defer midTable.Release(ctx)
 	defer magTable.Release(ctx)
 
-	// Now, if we want to see the data in each of our tables, we can take a snapshot.
+	// Now, if we want to see the data in each of our tables, we can take snapshots.
 	midRecord, err := midTable.Snapshot(ctx)
 	if err != nil {
 		fmt.Println("error when snapshotting:", err.Error())

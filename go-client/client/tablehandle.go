@@ -77,7 +77,7 @@ func (th *TableHandle) Query() QueryNode {
 }
 
 // Release releases this table handle's resources on the server. The TableHandle is no longer usable after Release is called.
-// Ensure that no other methods (including ones in other goroutines) are using this TableHandle.
+// This method is NOT goroutine-safe if other goroutines have references to this TableHandle.
 func (th *TableHandle) Release(ctx context.Context) error {
 	if th.client != nil {
 		err := th.client.release(ctx, th.ticket)

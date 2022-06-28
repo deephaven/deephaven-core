@@ -21,12 +21,11 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// Returned as an error when trying to perform a network operation on a client that has been closed.
+// ErrClosedClient is returned as an error when trying to perform a network operation on a client that has been closed.
 var ErrClosedClient = errors.New("client is closed")
 
 // A fieldId is a unique identifier for a field on the server,
 // where a "field" could be e.g. a table or a plot.
-// Currently only tables are kept track of.
 type fieldId struct {
 	appId     string // appId is the application scope for the field. For the global scope this is "scope".
 	fieldName string // fieldName is the name of the field.
@@ -157,7 +156,6 @@ func (client *Client) ListOpenableTables() []string {
 }
 
 // newTicketNum returns a new ticket number that this client has not used before.
-// This function is thread-safe.
 func (client *Client) newTicketNum() int32 {
 	nextTicket := atomic.AddInt32(&client.nextTicket, 1)
 	if nextTicket <= 0 {
@@ -169,7 +167,6 @@ func (client *Client) newTicketNum() int32 {
 }
 
 // newTicket returns a new ticket that this client has not used before.
-// This function is thread-safe.
 func (client *Client) newTicket() ticketpb2.Ticket {
 	id := client.newTicketNum()
 
@@ -177,7 +174,6 @@ func (client *Client) newTicket() ticketpb2.Ticket {
 }
 
 // makeTicket turns a ticket ID into a ticket.
-// This function is thread-safe.
 func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 	bytes := []byte{'e', byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
 
@@ -219,7 +215,6 @@ func (client *Client) Close() error {
 }
 
 // withToken attaches the current session token to a context as metadata.
-// This is thread-safe.
 func (client *Client) withToken(ctx context.Context) (context.Context, error) {
 	tok, err := client.getToken()
 	if err != nil {
@@ -275,12 +270,14 @@ func (client *Client) RunScript(context context.Context, script string) error {
 	return nil
 }
 
-// This is thread-safe
+// handleScriptChanges updates the list of fields the client currently knows about
+// according to changes made by a script.
 func (client *Client) handleScriptChanges(resp *consolepb2.ExecuteCommandResponse) {
 	client.handleFieldChanges(resp.Changes)
 }
 
-// This is thread-safe
+// handleFieldChanges updates the list of fields the client currently knows about
+// according to changes made elsewhere (e.g. from fields changed from a script response or from a ListFields request).
 func (client *Client) handleFieldChanges(resp *applicationpb2.FieldsChangeUpdate) {
 	client.tablesLock.Lock()
 	defer client.tablesLock.Unlock()

@@ -11,14 +11,14 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// tokenResp thread-safely protects the current session token (or an error in getting the session token).
+// tokenResp protects the current session token (or an error in getting the session token).
 type tokenResp struct {
 	Lock  sync.Mutex
 	Token []byte
 	Error error
 }
 
-// getToken thread-safely returns the current token, or an error if an error has occurred at some point.
+// getToken returns the current token, or an error if an error has occurred at some point.
 func (tk *tokenResp) getToken() ([]byte, error) {
 	tk.Lock.Lock()
 	defer tk.Lock.Unlock()
@@ -31,14 +31,14 @@ func (tk *tokenResp) getToken() ([]byte, error) {
 	}
 }
 
-// setToken thread-safely sets the session token to a new value.
+// setToken sets the session token to a new value.
 func (tk *tokenResp) setToken(tok []byte) {
 	tk.Lock.Lock()
 	tk.Token = tok
 	tk.Lock.Unlock()
 }
 
-// setError thread-safely sets an error value for the session token.
+// setError sets an error value for the session token.
 func (tk *tokenResp) setError(err error) {
 	tk.Lock.Lock()
 	tk.Error = err
@@ -166,7 +166,7 @@ func newSessionStub(ctx context.Context, client *Client) (sessionStub, error) {
 	return hs, nil
 }
 
-// getToken returns the current session token in a thread-safe way.
+// getToken returns the current session token.
 // It may return an error if there has been an error at some point in the past while refreshing the token.
 func (hs *sessionStub) getToken() ([]byte, error) {
 	return hs.token.getToken()

@@ -66,7 +66,7 @@ type opKey struct {
 }
 
 // batchBuilder is used to progressively create an entire batch operation.
-// It keeps track of
+// batchBuilder methods are not thread-safe, but batchBuilders are never shared between goroutines anyways.
 type batchBuilder struct {
 	client *Client
 

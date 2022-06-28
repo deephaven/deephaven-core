@@ -22,7 +22,7 @@ Tests assume the server is on `localhost:10000` by default, but can be configure
 
 ## Examples
 
-This project also includes a several example binaries.
+This project also includes several example applications.
 Examples assume the server is running on `localhost:10000`.
 An example can be run using one of the following commands:
 ```bash

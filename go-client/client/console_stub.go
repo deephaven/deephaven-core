@@ -39,7 +39,7 @@ func newConsoleStub(ctx context.Context, client *Client, sessionType string) (co
 	return consoleStub{client: client, stub: stub, consoleId: consoleId}, nil
 }
 
-// BindToVariable binds a table reference to a given name so that it can be referenced by other clients or the web UI.
+// BindToVariable binds a table reference to a given name on the server so that it can be referenced by other clients or the web UI.
 func (console *consoleStub) BindToVariable(ctx context.Context, name string, table *TableHandle) error {
 	ctx, err := console.client.withToken(ctx)
 	if err != nil {
