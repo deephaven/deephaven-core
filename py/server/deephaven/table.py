@@ -18,6 +18,7 @@ from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
 from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator
+from deephaven.ugp import auto_locking_op
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
@@ -82,6 +83,7 @@ class Table(JObjectWrapper):
         self.j_table = j_table
         self._definition = self.j_table.getDefinition()
         self._schema = None
+        self._is_refreshing = None
 
     def __repr__(self):
         default_repr = super().__repr__()
@@ -107,7 +109,9 @@ class Table(JObjectWrapper):
     @property
     def is_refreshing(self) -> bool:
         """Whether this table is refreshing."""
-        return self.j_table.isRefreshing()
+        if self._is_refreshing is None:
+            self._is_refreshing = self.j_table.isRefreshing()
+        return self._is_refreshing
 
     @property
     def columns(self) -> List[Column]:
@@ -150,6 +154,7 @@ class Table(JObjectWrapper):
         """Returns a coalesced child table."""
         return Table(j_table=self.j_table.coalesce())
 
+    @auto_locking_op
     def snapshot(self, source_table: Table, do_init: bool = False, cols: Union[str, List[str]] = None) -> Table:
         """Produces an in-memory copy of a source table that refreshes when this table changes.
 
@@ -173,6 +178,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(message="failed to create a snapshot table.") from e
 
+    @auto_locking_op
     def snapshot_history(self, source_table: Table) -> Table:
         """Produces an in-memory history of a source table that adds a new snapshot when this table (trigger table)
         changes.
@@ -279,6 +285,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table move_columns_up operation failed.") from e
 
+    @auto_locking_op
     def rename_columns(self, cols: Union[str, Sequence[str]]) -> Table:
         """The rename_columns method creates a new table with the specified columns renamed.
 
@@ -297,6 +304,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
 
+    @auto_locking_op
     def update(self, formulas: Union[str, Sequence[str]]) -> Table:
         """The update method creates a new table containing a new, in-memory column for each formula.
 
@@ -315,6 +323,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table update operation failed.") from e
 
+    @auto_locking_op
     def lazy_update(self, formulas: Union[str, Sequence[str]]) -> Table:
         """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
 
@@ -369,6 +378,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
 
+    @auto_locking_op
     def select(self, formulas: Union[str, Sequence[str]] = None) -> Table:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
@@ -437,6 +447,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
+    @auto_locking_op
     def where_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> Table:
         """The where_in method creates a new table containing rows from the source table, where the rows match
         values in the filter table. The filter is updated whenever either table changes.
@@ -457,6 +468,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table where_in operation failed.") from e
 
+    @auto_locking_op
     def where_not_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> Table:
         """The where_not_in method creates a new table containing rows from the source table, where the rows do not
         match values in the filter table.
@@ -657,6 +669,7 @@ class Table(JObjectWrapper):
     # Table operation category: Join
     #
     # region Join
+    @auto_locking_op
     def natural_join(self, table: Table, on: Union[str, Sequence[str]],
                      joins: Union[str, Sequence[str]] = None) -> Table:
         """The natural_join method creates a new table containing all of the rows and columns of this table,
@@ -693,6 +706,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table natural_join operation failed.") from e
 
+    @auto_locking_op
     def exact_join(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
         """The exact_join method creates a new table containing all of the rows and columns of this table plus
         additional columns containing data from the right table. For columns appended to the left table (joins),
@@ -728,6 +742,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table exact_join operation failed.") from e
 
+    @auto_locking_op
     def join(self, table: Table, on: Union[str, Sequence[str]] = None,
              joins: Union[str, Sequence[str]] = None) -> Table:
         """The join method creates a new table containing rows that have matching values in both tables. Rows that
@@ -762,6 +777,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
+    @auto_locking_op
     def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
            match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> Table:
         """The aj (as-of join) method creates a new table containing all of the rows and columns of the left table,
@@ -795,6 +811,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table as-of join operation failed.") from e
 
+    @auto_locking_op
     def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
             match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> Table:
         """The reverse-as-of join method creates a new table containing all of the rows and columns of the left table,
@@ -836,6 +853,7 @@ class Table(JObjectWrapper):
     #
     # Table operation category: Aggregation
     # region Aggregation
+    @auto_locking_op
     def head_by(self, num_rows: int, by: Union[str, Sequence[str]] = None) -> Table:
         """The head_by method creates a new table containing the first number of rows for each group.
 
@@ -855,6 +873,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table head_by operation failed.") from e
 
+    @auto_locking_op
     def tail_by(self, num_rows: int, by: Union[str, Sequence[str]] = None) -> Table:
         """The tail_by method creates a new table containing the last number of rows for each group.
 
@@ -896,6 +915,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table group operation failed.") from e
 
+    @auto_locking_op
     def ungroup(self, cols: Union[str, Sequence[str]] = None) -> Table:
         """The ungroup method creates a new table in which array columns from the source table are unwrapped into
         separate rows.
