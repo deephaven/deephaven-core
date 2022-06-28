@@ -97,6 +97,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     will(returnValue(cd.getDataType()));
                     allowing(mocked).getComponentType();
                     will(returnValue(cd.getComponentType()));
+                    allowing(mocked).getChunkType();
+                    will(returnValue(ChunkType.fromElementType(cd.getDataType())));
                 }
             });
             return mocked;
@@ -611,6 +613,23 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         Arrays.sort(expectedDistinctDates);
         Arrays.sort(distinctDates);
         assertArrayEquals(expectedDistinctDates, distinctDates);
+    }
+
+    @Test
+    public void testSelectDistinctOther() {
+        checking(new org.jmock.Expectations() {
+            {
+                oneOf(locationProvider).subscribe(with(any(TableLocationSubscriptionBuffer.class)));
+                //noinspection resource
+                oneOf(columnSourceManager).refresh();
+                will(returnValue(RowSetFactory.empty()));
+                allowing(columnSourceManager).getColumnSources();
+                will(returnValue(getIncludedColumnsMap(0, 1, 2, 3, 4)));
+            }
+        });
+        final Table result =
+                SUT.selectDistinct(PARTITIONING_COLUMN_DEFINITION.getName(), INTEGER_COLUMN_DEFINITION.getName());
+        assertIndexEquals(expectedRowSet, result.getRowSet());
     }
 
     @Test
