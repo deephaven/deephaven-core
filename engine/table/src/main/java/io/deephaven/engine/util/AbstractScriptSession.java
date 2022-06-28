@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -326,45 +327,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
     }
 
-    public static class SynchronizedScriptSessionQueryScope extends ScriptSessionQueryScope {
-        public SynchronizedScriptSessionQueryScope(@NotNull final ScriptSession scriptSession) {
-            super(scriptSession);
-        }
-
-        @Override
-        public synchronized Set<String> getParamNames() {
-            return scriptSession.getVariableNames();
-        }
-
-        @Override
-        public boolean hasParamName(String name) {
-            return scriptSession.hasVariableName(name);
-        }
-
-        @Override
-        protected synchronized <T> QueryScopeParam<T> createParam(final String name)
-                throws QueryScope.MissingVariableException {
-            // noinspection unchecked
-            return new QueryScopeParam<>(name, (T) scriptSession.getVariable(name));
-        }
-
-        @Override
-        public synchronized <T> T readParamValue(final String name) throws QueryScope.MissingVariableException {
-            // noinspection unchecked
-            return (T) scriptSession.getVariable(name);
-        }
-
-        @Override
-        public synchronized <T> T readParamValue(final String name, final T defaultValue) {
-            return scriptSession.getVariable(name, defaultValue);
-        }
-
-        @Override
-        public synchronized <T> void putParam(final String name, final T value) {
-            scriptSession.setVariable(NameValidator.validateQueryParameterName(name), value);
-        }
-    }
-
     public static class UnsynchronizedScriptSessionQueryScope extends ScriptSessionQueryScope {
         public UnsynchronizedScriptSessionQueryScope(@NotNull final ScriptSession scriptSession) {
             super(scriptSession);
@@ -372,34 +334,87 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public Set<String> getParamNames() {
-            return scriptSession.getVariableNames();
+            final Set<String> result = new LinkedHashSet<>();
+            for (final String name : scriptSession.getVariableNames()) {
+                if (NameValidator.isValidQueryParameterName(name)) {
+                    result.add(name);
+                }
+            }
+            return result;
         }
 
         @Override
         public boolean hasParamName(String name) {
-            return scriptSession.hasVariableName(name);
+            return NameValidator.isValidQueryParameterName(name) && scriptSession.hasVariableName(name);
         }
 
         @Override
-        protected <T> QueryScopeParam<T> createParam(final String name) throws QueryScope.MissingVariableException {
+        protected <T> QueryScopeParam<T> createParam(final String name)
+                throws QueryScope.MissingVariableException {
+            if (!NameValidator.isValidQueryParameterName(name)) {
+                throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
+            }
             // noinspection unchecked
             return new QueryScopeParam<>(name, (T) scriptSession.getVariable(name));
         }
 
         @Override
         public <T> T readParamValue(final String name) throws QueryScope.MissingVariableException {
+            if (!NameValidator.isValidQueryParameterName(name)) {
+                throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
+            }
             // noinspection unchecked
             return (T) scriptSession.getVariable(name);
         }
 
         @Override
         public <T> T readParamValue(final String name, final T defaultValue) {
+            if (!NameValidator.isValidQueryParameterName(name)) {
+                return defaultValue;
+            }
             return scriptSession.getVariable(name, defaultValue);
         }
 
         @Override
         public <T> void putParam(final String name, final T value) {
             scriptSession.setVariable(NameValidator.validateQueryParameterName(name), value);
+        }
+    }
+
+    public static class SynchronizedScriptSessionQueryScope extends UnsynchronizedScriptSessionQueryScope {
+        public SynchronizedScriptSessionQueryScope(@NotNull final ScriptSession scriptSession) {
+            super(scriptSession);
+        }
+
+        @Override
+        public synchronized Set<String> getParamNames() {
+            return super.getParamNames();
+        }
+
+        @Override
+        public synchronized boolean hasParamName(String name) {
+            return super.hasParamName(name);
+        }
+
+        @Override
+        protected synchronized <T> QueryScopeParam<T> createParam(final String name)
+                throws QueryScope.MissingVariableException {
+            return super.createParam(name);
+        }
+
+        @Override
+        public synchronized <T> T readParamValue(final String name) throws QueryScope.MissingVariableException {
+            return super.readParamValue(name);
+        }
+
+        @Override
+        public synchronized <T> T readParamValue(final String name, final T defaultValue) {
+            return super.readParamValue(name, defaultValue);
+        }
+
+        @Override
+        public synchronized <T> void putParam(final String name, final T value) {
+            super.putParam(name, value);
         }
     }
 }
