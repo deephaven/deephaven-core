@@ -2,10 +2,6 @@ plugins {
     id 'io.deephaven.python-wheel'
 }
 
-dependencies {
-
-}
-
 wheel {
     src 'deephaven'
     src 'integration-tests'
