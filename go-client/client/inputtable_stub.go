@@ -70,7 +70,7 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromSchema(ctx context.Context
 
 // NewAppendOnlyInputTableFromTable creates a new append-only input table with the same columns as the provided table.
 func (its *inputTableStub) NewAppendOnlyInputTableFromTable(ctx context.Context, table *TableHandle) (*AppendOnlyInputTable, error) {
-	if table.client == nil {
+	if !table.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_{
@@ -103,7 +103,7 @@ func (its *inputTableStub) NewKeyBackedInputTableFromSchema(ctx context.Context,
 // NewKeyBackedInputTableFromTable creates a new key-backed input table with the same columns as the provided table.
 // The columns to use as the keys are specified by keyColumns.
 func (its *inputTableStub) NewKeyBackedInputTableFromTable(ctx context.Context, table *TableHandle, keyColumns ...string) (*KeyBackedInputTable, error) {
-	if table.client == nil {
+	if !table.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_{
@@ -121,7 +121,7 @@ func (its *inputTableStub) NewKeyBackedInputTableFromTable(ctx context.Context, 
 // AddTable appends data from the given table to the end of this table.
 // This will automatically update all tables derived from this one.
 func (th *AppendOnlyInputTable) AddTable(ctx context.Context, toAdd *TableHandle) error {
-	if th.client == nil || toAdd.client == nil {
+	if !th.IsValid() || !toAdd.IsValid() {
 		return ErrInvalidTableHandle
 	}
 	return th.client.inputTableStub.addTable(ctx, &th.TableHandle, toAdd)
@@ -132,7 +132,7 @@ func (th *AppendOnlyInputTable) AddTable(ctx context.Context, toAdd *TableHandle
 // otherwise the new data row replaces the existing key.
 // This will automatically update all tables derived from this one.
 func (th *KeyBackedInputTable) AddTable(ctx context.Context, toAdd *TableHandle) error {
-	if th.client == nil || toAdd.client == nil {
+	if !th.IsValid() || !toAdd.IsValid() {
 		return ErrInvalidTableHandle
 	}
 	return th.client.inputTableStub.addTable(ctx, &th.TableHandle, toAdd)
@@ -159,7 +159,7 @@ func (its *inputTableStub) addTable(ctx context.Context, inputTable *TableHandle
 // The provided table must consist only of columns that were specified as key columns in the input table.
 // This will automatically update all tables derived from this one.
 func (th *KeyBackedInputTable) DeleteTable(ctx context.Context, toDelete *TableHandle) error {
-	if th.client == nil || toDelete.client == nil {
+	if !th.IsValid() || !toDelete.IsValid() {
 		return ErrInvalidTableHandle
 	}
 	return th.client.inputTableStub.deleteTable(ctx, &th.TableHandle, toDelete)

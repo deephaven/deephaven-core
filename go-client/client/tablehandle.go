@@ -56,7 +56,7 @@ func (th *TableHandle) IsStatic() bool {
 //
 // If a Record is returned successfully, it must be freed later with arrow.record.Release().
 func (th *TableHandle) Snapshot(ctx context.Context) (arrow.Record, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.snapshotRecord(ctx, th.ticket)
@@ -68,7 +68,7 @@ func (th *TableHandle) Query() QueryNode {
 	// TODO: Turn this into a proper error instead of a panic.
 	// Returning an error here makes the query API significantly less ergonomic, though.
 	// Should the ExecQuery call return the error instead?
-	if th.client == nil {
+	if !th.IsValid() {
 		panic(ErrInvalidTableHandle.Error())
 	}
 
@@ -97,7 +97,7 @@ func (th *TableHandle) Release(ctx context.Context) error {
 
 // DropColumns creates a table with the same number of rows as the source table but omits any columns included in the arguments.
 func (th *TableHandle) DropColumns(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dropColumns(ctx, th, cols)
@@ -106,7 +106,7 @@ func (th *TableHandle) DropColumns(ctx context.Context, cols ...string) (*TableH
 // Update creates a new table containing a new, in-memory column for each argument.
 // The returned table also includes all the original columns from the source table.
 func (th *TableHandle) Update(ctx context.Context, formulas ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.update(ctx, th, formulas)
@@ -115,7 +115,7 @@ func (th *TableHandle) Update(ctx context.Context, formulas ...string) (*TableHa
 // LazyUpdate creates a new table containing a new, cached, formula column for each argument.
 // The returned table also includes all the original columns from the source table.
 func (th *TableHandle) LazyUpdate(ctx context.Context, formulas ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.lazyUpdate(ctx, th, formulas)
@@ -126,7 +126,7 @@ func (th *TableHandle) LazyUpdate(ctx context.Context, formulas ...string) (*Tab
 // Rather, a formula is stored that is used to recalculate each cell every time it is accessed.
 // The returned table also includes all the original columns from the source table.
 func (th *TableHandle) UpdateView(ctx context.Context, formulas ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.updateView(ctx, th, formulas)
@@ -136,7 +136,7 @@ func (th *TableHandle) UpdateView(ctx context.Context, formulas ...string) (*Tab
 // When using view, the data being requested is not stored in memory.
 // Rather, a formula is stored that is used to recalculate each cell every time it is accessed.
 func (th *TableHandle) View(ctx context.Context, formulas ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.view(ctx, th, formulas)
@@ -145,7 +145,7 @@ func (th *TableHandle) View(ctx context.Context, formulas ...string) (*TableHand
 // Select creates a new in-memory table that includes one column for each argument.
 // Any columns not specified in the arguments will not appear in the resulting table.
 func (th *TableHandle) Select(ctx context.Context, formulas ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.selectTbl(ctx, th, formulas)
@@ -154,7 +154,7 @@ func (th *TableHandle) Select(ctx context.Context, formulas ...string) (*TableHa
 // SelectDistinct creates a new table containing all of the unique values for a set of key columns.
 // When SelectDistinct is used on multiple columns, it looks for distinct sets of values in the selected columns.
 func (th *TableHandle) SelectDistinct(ctx context.Context, columns ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.selectDistinct(ctx, th, columns)
@@ -162,7 +162,7 @@ func (th *TableHandle) SelectDistinct(ctx context.Context, columns ...string) (*
 
 // Sort returns a new table with rows sorted in a smallest to largest order based on the listed column(s).
 func (th *TableHandle) Sort(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	var columns []SortColumn
@@ -174,7 +174,7 @@ func (th *TableHandle) Sort(ctx context.Context, cols ...string) (*TableHandle, 
 
 // Sort returns a new table with rows sorted in the order specified by the listed column(s).
 func (th *TableHandle) SortBy(ctx context.Context, cols ...SortColumn) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.sortBy(ctx, th, cols)
@@ -183,7 +183,7 @@ func (th *TableHandle) SortBy(ctx context.Context, cols ...SortColumn) (*TableHa
 // Where filters rows of data from the source table.
 // It returns a new table with only the rows meeting the filter criteria of the source table.
 func (th *TableHandle) Where(ctx context.Context, filters ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.where(ctx, th, filters)
@@ -191,7 +191,7 @@ func (th *TableHandle) Where(ctx context.Context, filters ...string) (*TableHand
 
 // Head returns a table with a specific number of rows from the beginning of the source table.
 func (th *TableHandle) Head(ctx context.Context, numRows int64) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.headOrTail(ctx, th, numRows, true)
@@ -199,7 +199,7 @@ func (th *TableHandle) Head(ctx context.Context, numRows int64) (*TableHandle, e
 
 // Tail returns a table with a specific number of rows from the end of the source table.
 func (th *TableHandle) Tail(ctx context.Context, numRows int64) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.headOrTail(ctx, th, numRows, false)
@@ -217,7 +217,7 @@ func (th *TableHandle) Tail(ctx context.Context, numRows int64) (*TableHandle, e
 //
 // joins is the columns to add from the right table.
 func (th *TableHandle) NaturalJoin(ctx context.Context, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.naturalJoin(ctx, th, rightTable, on, joins)
@@ -238,7 +238,7 @@ func (th *TableHandle) NaturalJoin(ctx context.Context, rightTable *TableHandle,
 //
 // reserveBits is the number of bits of key-space to initially reserve per group, default is 10.
 func (th *TableHandle) Join(ctx context.Context, rightTable *TableHandle, on []string, joins []string, reserveBits int32) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.crossJoin(ctx, th, rightTable, on, joins, reserveBits)
@@ -256,7 +256,7 @@ func (th *TableHandle) Join(ctx context.Context, rightTable *TableHandle, on []s
 //
 // joins is the columns to add from the right table.
 func (th *TableHandle) ExactJoin(ctx context.Context, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.exactJoin(ctx, th, rightTable, on, joins)
@@ -281,7 +281,7 @@ func (th *TableHandle) ExactJoin(ctx context.Context, rightTable *TableHandle, o
 //
 // matchRule is the match rule for the join, default is MatchRuleLessThanEqual normally, or MatchRuleGreaterThanEqual for a reverse-as-of-join
 func (th *TableHandle) AsOfJoin(ctx context.Context, rightTable *TableHandle, on []string, joins []string, matchRule MatchRule) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.asOfJoin(ctx, th, rightTable, on, joins, matchRule)
@@ -289,7 +289,7 @@ func (th *TableHandle) AsOfJoin(ctx context.Context, rightTable *TableHandle, on
 
 // HeadBy returns the first numRows rows for each group.
 func (th *TableHandle) HeadBy(ctx context.Context, numRows int64, columnsToGroupBy ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.headOrTailBy(ctx, th, numRows, columnsToGroupBy, true)
@@ -297,7 +297,7 @@ func (th *TableHandle) HeadBy(ctx context.Context, numRows int64, columnsToGroup
 
 // TailBy returns the last numRows rows for each group.
 func (th *TableHandle) TailBy(ctx context.Context, numRows int64, columnsToGroupBy ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.headOrTailBy(ctx, th, numRows, columnsToGroupBy, false)
@@ -307,7 +307,7 @@ func (th *TableHandle) TailBy(ctx context.Context, numRows int64, columnsToGroup
 // Columns not in the aggregation become array-type.
 // If no group-by columns are given, the content of each column is grouped into its own array.
 func (th *TableHandle) GroupBy(ctx context.Context, by ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, by, "", tablepb2.ComboAggregateRequest_GROUP)
@@ -317,7 +317,7 @@ func (th *TableHandle) GroupBy(ctx context.Context, by ...string) (*TableHandle,
 // Ungroup unwraps columns containing either Deephaven arrays or Java arrays.
 // nullFill indicates whether or not missing cells may be filled with null, default is true
 func (th *TableHandle) Ungroup(ctx context.Context, cols []string, nullFill bool) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.ungroup(ctx, th, cols, nullFill)
@@ -326,7 +326,7 @@ func (th *TableHandle) Ungroup(ctx context.Context, cols []string, nullFill bool
 // FirstBy returns the first row for each group.
 // If no columns are given, only the first row of the table is returned.
 func (th *TableHandle) FirstBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_FIRST)
@@ -335,7 +335,7 @@ func (th *TableHandle) FirstBy(ctx context.Context, cols ...string) (*TableHandl
 // LastBy returns the last row for each group.
 // If no columns are given, only the last row of the table is returned.
 func (th *TableHandle) LastBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_LAST)
@@ -344,7 +344,7 @@ func (th *TableHandle) LastBy(ctx context.Context, cols ...string) (*TableHandle
 // SumBy returns the total sum for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) SumBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_SUM)
@@ -353,7 +353,7 @@ func (th *TableHandle) SumBy(ctx context.Context, cols ...string) (*TableHandle,
 // AbsSumBy returns the total sum of absolute values for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) AbsSumBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_ABS_SUM)
@@ -362,7 +362,7 @@ func (th *TableHandle) AbsSumBy(ctx context.Context, cols ...string) (*TableHand
 // AvgBy returns the average (mean) of each non-key column for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) AvgBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_AVG)
@@ -371,7 +371,7 @@ func (th *TableHandle) AvgBy(ctx context.Context, cols ...string) (*TableHandle,
 // StdBy returns the standard deviation for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) StdBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_STD)
@@ -380,7 +380,7 @@ func (th *TableHandle) StdBy(ctx context.Context, cols ...string) (*TableHandle,
 // VarBy returns the variance for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) VarBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_VAR)
@@ -389,7 +389,7 @@ func (th *TableHandle) VarBy(ctx context.Context, cols ...string) (*TableHandle,
 // MedianBy returns the median value for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) MedianBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_MEDIAN)
@@ -398,7 +398,7 @@ func (th *TableHandle) MedianBy(ctx context.Context, cols ...string) (*TableHand
 // MinBy returns the minimum value for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) MinBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_MIN)
@@ -407,7 +407,7 @@ func (th *TableHandle) MinBy(ctx context.Context, cols ...string) (*TableHandle,
 // MaxBy returns the maximum value for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) MaxBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_MAX)
@@ -416,7 +416,7 @@ func (th *TableHandle) MaxBy(ctx context.Context, cols ...string) (*TableHandle,
 // CountBy returns the number of rows for each group.
 // The count of each group is stored in a new column named after the resultCol argument.
 func (th *TableHandle) CountBy(ctx context.Context, resultCol string, cols ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, cols, resultCol, tablepb2.ComboAggregateRequest_COUNT)
@@ -424,7 +424,7 @@ func (th *TableHandle) CountBy(ctx context.Context, resultCol string, cols ...st
 
 // Count counts the number of values in the specified column and returns it as a table with one row and one column.
 func (th *TableHandle) Count(ctx context.Context, col string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.dedicatedAggOp(ctx, th, nil, col, tablepb2.ComboAggregateRequest_COUNT)
@@ -433,7 +433,7 @@ func (th *TableHandle) Count(ctx context.Context, col string) (*TableHandle, err
 // AggBy applies a list of aggregations to table data.
 // See the docs on AggBuilder for details on what each of the aggregation types do.
 func (th *TableHandle) AggBy(ctx context.Context, agg *AggBuilder, by ...string) (*TableHandle, error) {
-	if th.client == nil {
+	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
 	return th.client.aggBy(ctx, th, agg, by)
@@ -455,5 +455,5 @@ func Merge(ctx context.Context, sortBy string, tables ...*TableHandle) (*TableHa
 
 	client := tables[0].client
 
-	return client.merge(ctx, sortBy, nil)
+	return client.merge(ctx, sortBy, tables)
 }
