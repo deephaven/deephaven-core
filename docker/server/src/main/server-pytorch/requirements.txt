@@ -3,12 +3,11 @@ cachetools==5.2.0
 certifi==2022.6.15
 charset-normalizer==2.0.12
 deephaven-plugin==0.2.0
-dill==0.3.5.1
 google-auth==2.8.0
 google-auth-oauthlib==0.4.6
 grpcio==1.47.0
 idna==3.3
-importlib-metadata==4.11.4
+importlib-metadata==4.12.0
 jpy==0.11.0
 llvmlite==0.38.1
 Markdown==3.3.7
@@ -32,5 +31,4 @@ torch==1.10.2
 typing_extensions==4.2.0
 urllib3==1.26.9
 Werkzeug==2.1.2
-wrapt==1.14.1
 zipp==3.8.0
