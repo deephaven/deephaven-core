@@ -57,8 +57,6 @@ public class UpdateByOperatorFactory {
     }
 
     static MatchPair[] parseMatchPairs(final List<Pair> columns) {
-        if (columns == null)
-            return MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY;
         return columns.stream()
                 .map(MatchPair::of)
                 .toArray(MatchPair[]::new);

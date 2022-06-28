@@ -8,7 +8,7 @@ import org.immutables.value.Value.Immutable;
  */
 @Immutable
 @SimpleStyle
-public class CumSumSpec implements UpdateBySpec {
+public class CumSumSpec extends UpdateBySpecBase {
     public static CumSumSpec of() {
         return ImmutableCumSumSpec.of();
     }

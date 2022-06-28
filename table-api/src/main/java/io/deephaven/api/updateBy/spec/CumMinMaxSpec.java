@@ -9,7 +9,7 @@ import org.immutables.value.Value.Parameter;
  */
 @Immutable
 @SimpleStyle
-public abstract class CumMinMaxSpec implements UpdateBySpec {
+public abstract class CumMinMaxSpec extends UpdateBySpecBase {
     public static CumMinMaxSpec of(boolean isMax) {
         return ImmutableCumMinMaxSpec.of(isMax);
     }
@@ -32,7 +32,7 @@ public abstract class CumMinMaxSpec implements UpdateBySpec {
                 || inputType == boolean.class || inputType == Boolean.class
 
                 // is comparable?
-                || Comparable.class.isAssignableFrom(inputType) && inputType != Boolean.class;
+                || (Comparable.class.isAssignableFrom(inputType) && inputType != Boolean.class);
     }
 
     @Override

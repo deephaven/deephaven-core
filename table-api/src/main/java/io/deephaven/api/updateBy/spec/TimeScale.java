@@ -34,11 +34,11 @@ public abstract class TimeScale {
         return timestampCol() != null;
     }
 
-    public final long getDuration() {
+    public final Duration getDuration() {
         if (!isTimeBased()) {
             throw new IllegalStateException("getDuration() cannot be called on a tick-based Timescale");
         }
-        return timescaleUnits();
+        return Duration.ofNanos(timescaleUnits());
     }
 
     public final long getTicks() {

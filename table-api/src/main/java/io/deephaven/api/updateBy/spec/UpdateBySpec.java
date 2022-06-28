@@ -5,6 +5,7 @@ import io.deephaven.api.updateBy.ColumnUpdateClause;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * A Specification for an updateBy operation. Implementations of this are essentially tagging classes for the underlying
@@ -20,57 +21,44 @@ public interface UpdateBySpec {
     boolean applicableTo(final Class<?> inputType);
 
     /**
-     * Build an {@link ColumnUpdateClause} for this UpdateBySpec.
+     * Build a {@link ColumnUpdateClause} for this UpdateBySpec.
      *
      * @param pair The input/output column name pair
      * @return The clause
      */
-    default ColumnUpdateClause clause(Pair pair) {
-        return ColumnUpdateClause.builder()
-                .spec(this)
-                .addColumns(pair)
-                .build();
-    }
+    ColumnUpdateClause clause(String pair);
 
     /**
-     * Build an {@link ColumnUpdateClause} clause for this UpdateBySpec.
+     * Build a {@link ColumnUpdateClause} for this UpdateBySpec.
+     *
+     * @param pair The input/output column name pair
+     * @return The clause
+     */
+    ColumnUpdateClause clause(Pair pair);
+
+    /**
+     * Build a {@link ColumnUpdateClause} clause for this UpdateBySpec.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    default ColumnUpdateClause clause(String... pairs) {
-        Pair[] arr = Arrays.stream(pairs)
-                .map(Pair::parse)
-                .toArray(Pair[]::new);
-
-        return clause(arr);
-    }
+    ColumnUpdateClause clause(String... pairs);
 
     /**
-     * Build an {@link ColumnUpdateClause} clause for this UpdateBySpec.
+     * Build a {@link ColumnUpdateClause} clause for this UpdateBySpec.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    default ColumnUpdateClause clause(Pair... pairs) {
-        if (pairs.length == 1) {
-            return clause(pairs[0]);
-        }
-        return ColumnUpdateClause.builder().spec(this).addAllColumns(Arrays.asList(pairs)).build();
-    }
+    ColumnUpdateClause clause(Pair... pairs);
 
     /**
-     * Build an {@link ColumnUpdateClause} clause for this UpdateBySpec.
+     * Build a {@link ColumnUpdateClause} clause for this UpdateBySpec.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    default ColumnUpdateClause clause(Collection<? extends Pair> pairs) {
-        if (pairs.size() == 1) {
-            return clause(pairs.iterator().next());
-        }
-        return ColumnUpdateClause.builder().spec(this).addAllColumns(pairs).build();
-    }
+    ColumnUpdateClause clause(Collection<? extends Pair> pairs);
 
     // region Visitor
     <T> T walk(Visitor<T> visitor);

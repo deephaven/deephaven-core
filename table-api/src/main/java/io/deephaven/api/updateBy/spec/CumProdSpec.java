@@ -8,7 +8,7 @@ import org.immutables.value.Value.Immutable;
  */
 @Immutable
 @SimpleStyle
-public abstract class CumProdSpec implements UpdateBySpec {
+public abstract class CumProdSpec extends UpdateBySpecBase {
     public static CumProdSpec of() {
         return ImmutableCumProdSpec.of();
     }

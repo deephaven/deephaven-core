@@ -9,7 +9,7 @@ import org.immutables.value.Value.Immutable;
 
 @Immutable
 @SimpleStyle
-public abstract class FillBySpec implements UpdateBySpec {
+public abstract class FillBySpec extends UpdateBySpecBase {
     public static FillBySpec of() {
         return ImmutableFillBySpec.of();
     }

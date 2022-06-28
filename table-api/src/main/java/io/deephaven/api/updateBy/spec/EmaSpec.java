@@ -12,7 +12,7 @@ import java.time.Duration;
  */
 @Immutable
 @BuildableStyle
-public abstract class EmaSpec implements UpdateBySpec {
+public abstract class EmaSpec extends UpdateBySpecBase {
     public static EmaSpec ofTime(final EmaControl control,
             final String timestampCol,
             long timeScaleNanos) {
