@@ -41,6 +41,12 @@ func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Sche
 	}
 }
 
+// IsValid returns true if the handle is valid, i.e. table operations can be performed on it.
+// No methods can be called on invalid TableHandles except for Release.
+func (th *TableHandle) IsValid() bool {
+	return th.client != nil
+}
+
 // IsStatic returns false for dynamic tables, like streaming tables or time tables.
 func (th *TableHandle) IsStatic() bool {
 	return th.isStatic
@@ -436,13 +442,18 @@ func (th *TableHandle) AggBy(ctx context.Context, agg *AggBuilder, by ...string)
 // Merge combines two or more tables into one aggregate table.
 // This essentially appends the tables one on top of the other.
 // If sortBy is provided, the resulting table will be sorted based on that column.
-func (th *TableHandle) Merge(ctx context.Context, sortBy string, others ...*TableHandle) (*TableHandle, error) {
-	if th.client == nil {
-		return nil, ErrInvalidTableHandle
+func Merge(ctx context.Context, sortBy string, tables ...*TableHandle) (*TableHandle, error) {
+	if len(tables) < 1 {
+		return nil, errors.New("must provide at least one table to merge")
 	}
 
-	tables := make([]*TableHandle, len(others)+1)
-	tables[0] = th
-	copy(tables[1:], others)
-	return th.client.merge(ctx, sortBy, tables)
+	for _, table := range tables {
+		if !table.IsValid() {
+			return nil, ErrInvalidTableHandle
+		}
+	}
+
+	client := tables[0].client
+
+	return client.merge(ctx, sortBy, nil)
 }

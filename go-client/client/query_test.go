@@ -121,7 +121,7 @@ func TestSeparateQueries(t *testing.T) {
 	defer c.Close()
 
 	left := c.EmptyTableQuery(123)
-	right := c.TimeTableQuery(10000000, nil)
+	right := c.TimeTableQuery(10000000, time.Now())
 
 	tables, err := c.ExecQuery(ctx, left, right)
 	if err != nil {
@@ -544,8 +544,8 @@ func TestAsOfJoinQuery(t *testing.T) {
 
 	startTime := time.Now().Add(time.Duration(-2) * time.Second)
 
-	tt1 := c.TimeTableQuery(100000, &startTime).Update("Col1 = i")
-	tt2 := c.TimeTableQuery(200000, &startTime).Update("Col1 = i")
+	tt1 := c.TimeTableQuery(100000, startTime).Update("Col1 = i")
+	tt2 := c.TimeTableQuery(200000, startTime).Update("Col1 = i")
 
 	normalTable := tt1.AsOfJoin(tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleLessThanEqual)
 	reverseTable := tt1.AsOfJoin(tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleGreaterThanEqual)

@@ -171,7 +171,7 @@ func TestMerge(t *testing.T) {
 		}
 		defer head.Release(ctx)
 
-		return before.Merge(ctx, "a", head)
+		return client.Merge(ctx, "a", before, head)
 	})
 
 	if result.NumRows() != 35 {
@@ -344,7 +344,7 @@ func TestAsOfJoin(t *testing.T) {
 
 	startTime := time.Now().Add(time.Duration(-2) * time.Second)
 
-	tmp1, err := c.TimeTable(ctx, 100000, &startTime)
+	tmp1, err := c.TimeTable(ctx, 100000, startTime)
 	test_tools.CheckError(t, "TimeTable", err)
 	defer tmp1.Release(ctx)
 
@@ -352,7 +352,7 @@ func TestAsOfJoin(t *testing.T) {
 	test_tools.CheckError(t, "Update", err)
 	defer tt1.Release(ctx)
 
-	tmp2, err := c.TimeTable(ctx, 200000, &startTime)
+	tmp2, err := c.TimeTable(ctx, 200000, startTime)
 	test_tools.CheckError(t, "TimeTable", err)
 	defer tmp2.Release(ctx)
 

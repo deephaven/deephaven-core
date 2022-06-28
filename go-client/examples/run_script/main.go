@@ -26,7 +26,7 @@ func main() {
 
 	// First, let's create a new TimeTable, starting one second ago, that gets a new row every 100 ms.
 	startTime := time.Now().Add(time.Duration(-1) * time.Second)
-	timeTable, err := cl.TimeTable(ctx, time.Duration(100)*time.Millisecond, &startTime)
+	timeTable, err := cl.TimeTable(ctx, time.Duration(100)*time.Millisecond, startTime)
 	if err != nil {
 		fmt.Println("error when creating new time table:", err.Error())
 		return

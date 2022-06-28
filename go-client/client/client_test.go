@@ -75,7 +75,7 @@ func TestTimeTable(t *testing.T) {
 	}
 	defer c.Close()
 
-	tbl, err := c.TimeTable(ctx, 10000000, nil)
+	tbl, err := c.TimeTable(ctx, 10000000, time.Now())
 	if err != nil {
 		t.Errorf("EmptyTable err %s", err.Error())
 	}

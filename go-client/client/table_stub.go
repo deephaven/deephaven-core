@@ -145,14 +145,9 @@ func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandl
 }
 
 // TimeTableQuery is like TimeTable, except it can be used as part of a query.
-func (ts *tableStub) TimeTableQuery(period time.Duration, startTime *time.Time) QueryNode {
-	var realStartTime int64
-	if startTime == nil {
-		// TODO: Same question as for TimeTable
-		realStartTime = time.Now().UnixNano()
-	} else {
-		realStartTime = startTime.UnixNano()
-	}
+func (ts *tableStub) TimeTableQuery(period time.Duration, startTime time.Time) QueryNode {
+	// TODO: Same question as for TimeTable
+	realStartTime := startTime.UnixNano()
 
 	qb := newQueryBuilder(ts.client, nil)
 	qb.ops = append(qb.ops, timeTableOp{period: period.Nanoseconds(), startTime: realStartTime})
@@ -161,8 +156,8 @@ func (ts *tableStub) TimeTableQuery(period time.Duration, startTime *time.Time) 
 
 // TimeTable creates a ticking time table in the global scope.
 // The period is time between adding new rows to the table.
-// The startTime is the time of the first row in the table. It defaults to the current time when it is nil.
-func (ts *tableStub) TimeTable(ctx context.Context, period time.Duration, startTime *time.Time) (*TableHandle, error) {
+// The startTime is the time of the first row in the table.
+func (ts *tableStub) TimeTable(ctx context.Context, period time.Duration, startTime time.Time) (*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
 		return nil, err
@@ -170,13 +165,8 @@ func (ts *tableStub) TimeTable(ctx context.Context, period time.Duration, startT
 
 	result := ts.client.newTicket()
 
-	var realStartTime int64
-	if startTime == nil {
-		// TODO: Is this affected by timezones? Does it need to be the monotonic reading?
-		realStartTime = time.Now().UnixNano()
-	} else {
-		realStartTime = startTime.UnixNano()
-	}
+	// TODO: Is this affected by timezones? Does it need to be the monotonic reading?
+	realStartTime := startTime.UnixNano()
 
 	req := tablepb2.TimeTableRequest{ResultId: &result, PeriodNanos: period.Nanoseconds(), StartTimeNanos: realStartTime}
 	resp, err := ts.stub.TimeTable(ctx, &req)
