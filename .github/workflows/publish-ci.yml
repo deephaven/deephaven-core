@@ -74,7 +74,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          password: ${{ secrets.DEEPHAVENCORE_PYPI_TOKEN }}
           packages_dir: py/server/build/wheel/
 
       - name: Publish deephaven-server to PyPi
@@ -82,5 +82,5 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          password: ${{ secrets.DEEPHAVENSERVER_PYPI_TOKEN }}
           packages_dir: py/embedded-server/build/wheel/
