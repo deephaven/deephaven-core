@@ -4,7 +4,6 @@
 """This module provides access to the Update Graph Processor(UGP)'s locks that must be acquired to perform certain
 table operations. When working with refreshing tables, UGP locks must be held in order to have a consistent view of
 the data between table operations.
-
 """
 
 import contextlib
@@ -19,9 +18,9 @@ _j_exclusive_lock = _JUpdateGraphProcessor.DEFAULT.exclusiveLock()
 _j_shared_lock = _JUpdateGraphProcessor.DEFAULT.sharedLock()
 
 auto_locking = False
-"""Whether to automatically acquire the Update Graph Processor(UGP) shared lock for a unsafe ticket table operation if
-the current thread doesn't own either the UGP shared or the UGP exclusive lock. The newly obtained lock will be released
-after the table operation finishes."""
+"""Whether to automatically acquire the Update Graph Processor(UGP) shared lock for an unsafe operation on a ticking 
+table when the current thread doesn't own either the UGP shared or the UGP exclusive lock. The newly obtained lock will 
+be released after the table operation finishes."""
 
 
 def has_exclusive_lock() -> bool:
@@ -59,8 +58,8 @@ def shared_lock():
 
 
 def exclusive_locked(f: Callable) -> Callable:
-    """A decorator that ensures that the decorated function be called under Update Graph Processor(UGP) exclusive
-    lock. The lock is release regardless what happens inside the function. """
+    """A decorator that ensures the decorated function be called under Update Graph Processor(UGP) exclusive
+    lock. The lock is release after the function returns regardless what happens inside the function."""
 
     @wraps(f)
     def do_locked(*arg, **kwargs):
@@ -71,8 +70,8 @@ def exclusive_locked(f: Callable) -> Callable:
 
 
 def shared_locked(f) -> Callable:
-    """A decorator that ensures that the decorated function be called under Update Graph Processor(UGP) shared lock.
-    The lock is release regardless what happens inside the function. """
+    """A decorator that ensures the decorated function be called under Update Graph Processor(UGP) shared lock.
+    The lock is release after the function returns regardless what happens inside the function."""
 
     @wraps(f)
     def do_locked(*arg, **kwargs):
@@ -83,6 +82,9 @@ def shared_locked(f) -> Callable:
 
 
 def auto_locking_op(f: Callable) -> Callable:
+    """A decorator for annotating unsafe Table operations. It ensures that the decorated Table operation runs under
+    the UGP shared lock when ugp.auto_locking is True, the target table is refreshing, and the current thread doesn't
+    own any UGP locks."""
     @wraps(f)
     def do_locked(*args, **kwargs):
         t = args[0] if args else kwargs['self']
