@@ -5,6 +5,9 @@ plugins {
 
 dependencies {
     api project(':server')
+    api(project(':Integrations')) {
+        because 'downstream dagger compile'
+    }
 
     Classpaths.inheritDagger(project)
     Classpaths.inheritDagger(project, /* test */ true)

@@ -1,6 +1,0 @@
-Dockerfile.svg
-.dockerignore
-build
-__pycache__
-dist
-lib

@@ -20,6 +20,11 @@ class ConsoleTestCase(BaseTestCase):
         self.session.run_script(server_script)
         self.assertIn('t2', self.session.tables)
 
+        # verify that Python variable 't' refers to an instance of the wrapper class: deephaven.table.Table
+        server_script = '''t3 = t.meta_table'''
+        self.session.run_script(server_script)
+        self.assertIn('t3', self.session.tables)
+
     def test_run_script_and_open_table(self):
         server_script = '''
 import time
@@ -34,9 +39,9 @@ def vectorized_func(x, y):
 
 table_size = 1000
 start_time = time.time()
-demo_table = empty_table(table_size) \
-    .view(["I=(int)i", "J=(int)(i * 2)"]) \
-    .view("K = vectorized_func(I, J)")
+demo_table = (empty_table(table_size) 
+    .view(["I=(int)i", "J=(int)(i * 2)"]) 
+    .view("K = vectorized_func(I, J)"))
         '''
         self.session.run_script(server_script)
         self.assertIn('demo_table', self.session.tables)

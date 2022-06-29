@@ -8,7 +8,10 @@ The primary purpose of this ABC is to enable downstream code to retrieve the wra
 """
 from __future__ import annotations
 
+import importlib
 import inspect
+import pkgutil
+import sys
 from abc import ABC, abstractmethod
 from typing import Set, Union, Optional, Any
 
@@ -16,6 +19,28 @@ import jpy
 
 # a set of all the directly initializable wrapper classes
 _di_wrapper_classes: Set[JObjectWrapper] = set()
+_has_all_wrappers_imported = False
+
+
+def _recursive_import(package_path: str) -> None:
+    """ Recursively import every module in a package. """
+
+    try:
+        pkg = importlib.import_module(package_path)
+    except ModuleNotFoundError:
+        return
+
+    mods = pkgutil.walk_packages(pkg.__path__)
+    for mod in mods:
+        mod_path = ".".join([package_path, mod.name])
+        if mod.ispkg:
+            _recursive_import(mod_path)
+        else:
+            if mod_path not in sys.modules:
+                try:
+                    importlib.import_module(mod_path)
+                except:
+                    ...
 
 
 class JObjectWrapper(ABC):
@@ -82,6 +107,13 @@ def _is_direct_initialisable(cls) -> bool:
 
 def _lookup_wrapped_class(j_obj: jpy.JType) -> Optional[type]:
     """ Returns the wrapper class for the specified Java object. """
+    # load every module in the deephaven package so that all the wrapper classes are loaded and available to wrap
+    # the Java objects returned by calling resolve()
+    global _has_all_wrappers_imported
+    if not _has_all_wrappers_imported:
+        _recursive_import(__package__.partition(".")[0])
+        _has_all_wrappers_imported = True
+
     for wc in _di_wrapper_classes:
         j_clz = wc.j_object_type
         if j_clz.jclass.isInstance(j_obj):
@@ -107,5 +139,3 @@ def unwrap(obj: Any) -> Union[jpy.JType, Any]:
         return obj.j_object
 
     return obj
-
-
