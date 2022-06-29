@@ -1740,7 +1740,8 @@ public interface Table extends
      *         {@code byColumns}
      */
     @ConcurrentMethod
-    Table updateBy(@NotNull final UpdateByControl control, @NotNull final Collection<? extends UpdateByClause> operations,
+    Table updateBy(@NotNull final UpdateByControl control,
+            @NotNull final Collection<? extends UpdateByClause> operations,
             final Collection<? extends Selectable> byColumns);
 
     /**

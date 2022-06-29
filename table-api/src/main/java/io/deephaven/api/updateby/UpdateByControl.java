@@ -12,7 +12,7 @@ import java.math.MathContext;
  */
 @Immutable
 @BuildableStyle
-public interface UpdateByControl {
+public abstract class UpdateByControl {
     static Builder builder() {
         return ImmutableUpdateByControl.builder();
     }
@@ -22,7 +22,7 @@ public interface UpdateByControl {
      *
      * @return default UpdateByControl
      */
-    static UpdateByControl defaultInstance() {
+    public static UpdateByControl defaultInstance() {
         return ImmutableUpdateByControl.builder().build();
     }
 
@@ -36,7 +36,7 @@ public interface UpdateByControl {
      * @return true if redirections should be used.
      */
     @Default
-    default boolean useRedirection() {
+    public boolean useRedirection() {
         return Boolean.getBoolean("UpdateByControl.useRedirectionOutput");
     }
 
@@ -50,14 +50,14 @@ public interface UpdateByControl {
      * @return the maximum chunk capacity.
      */
     @Default
-    default int chunkCapacity() {
+    public int chunkCapacity() {
         return Integer.getInteger("UpdateByControl.chunkCapacity", 4096);
     }
 
     /**
      * The maximum fractional memory overhead allowable for sparse redirections as a fraction (e.g. 1.1 is 10%
-     * overhead). Values less than zero disable overhead checking, and result in always using the sparse structure.
-     * A value of zero results in never using the sparse structure.
+     * overhead). Values less than zero disable overhead checking, and result in always using the sparse structure. A
+     * value of zero results in never using the sparse structure.
      *
      * <p>
      * Default is `1.1`. Can be changed with system property {@code UpdateByControl.maximumStaticMemoryOverhead} or by
@@ -66,7 +66,7 @@ public interface UpdateByControl {
      * @return the maximum fractional memory overhead.
      */
     @Default
-    default double maxStaticSparseMemoryOverhead() {
+    public double maxStaticSparseMemoryOverhead() {
         return Double.parseDouble(System.getProperty("UpdateByControl.maximumStaticMemoryOverhead", "1.1"));
     }
 
@@ -80,7 +80,7 @@ public interface UpdateByControl {
      * @return the initial hash table size
      */
     @Default
-    default int initialHashTableSize() {
+    public int initialHashTableSize() {
         return Integer.getInteger("UpdateByControl.initialHashTableSize", 4096);
     }
 
@@ -94,7 +94,7 @@ public interface UpdateByControl {
      * @return the maximum load factor
      */
     @Default
-    default double maximumLoadFactor() {
+    public double maximumLoadFactor() {
         return Double.parseDouble(System.getProperty("UpdateByControl.maximumLoadFactor", "0.75"));
     }
 
@@ -108,17 +108,17 @@ public interface UpdateByControl {
      * @return the target load factor
      */
     @Default
-    default double targetLoadFactor() {
+    public double targetLoadFactor() {
         return Double.parseDouble(System.getProperty("UpdateByControl.targetLoadFactor", "0.75"));
     }
 
     @Default
-    default MathContext getDefaultMathContext() {
+    public MathContext getDefaultMathContext() {
         return MathContext.DECIMAL64;
     }
 
     @Check
-    default void checkChunkCapacity() {
+    final void checkChunkCapacity() {
         if (chunkCapacity() <= 0) {
             throw new IllegalArgumentException(
                     "UpdateByControl.chunkCapacity() must be greater than 0");
@@ -126,7 +126,7 @@ public interface UpdateByControl {
     }
 
     @Check
-    default void checkInitialHashTableSize() {
+    final void checkInitialHashTableSize() {
         if (initialHashTableSize() <= 0) {
             throw new IllegalArgumentException(
                     "UpdateByControl.initialHashTableSize() must be greater than 0");
@@ -134,7 +134,7 @@ public interface UpdateByControl {
     }
 
     @Check
-    default void checkMaximumLoadFactor() {
+    final void checkMaximumLoadFactor() {
         if (maximumLoadFactor() <= 0.0 || maximumLoadFactor() >= 1.0) {
             throw new IllegalArgumentException(
                     "UpdateByControl.maximumLoadFactor() must be in the range (0.0 to 1.0) exclusive");
@@ -142,7 +142,7 @@ public interface UpdateByControl {
     }
 
     @Check
-    default void checkTargetLoadFactor() {
+    final void checkTargetLoadFactor() {
         if (targetLoadFactor() <= 0.0 || targetLoadFactor() >= 1.0) {
             throw new IllegalArgumentException(
                     "UpdateByControl.targetLoadFactor() must be in the range (0.0 to 1.0) exclusive");
