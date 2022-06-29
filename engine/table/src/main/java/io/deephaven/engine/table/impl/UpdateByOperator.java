@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.updateBy.UpdateByControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
@@ -177,7 +178,7 @@ public interface UpdateByOperator {
     }
 
     /**
-     * A context item for use with {@link Table#updateBy(UpdateByControl, Collection, MatchPair...)} for non-bucketed
+     * A context item for use with {@link Table#updateBy(UpdateByControl, Collection, String...)} for non-bucketed
      * updates.
      */
     interface UpdateContext extends SafeCloseable {

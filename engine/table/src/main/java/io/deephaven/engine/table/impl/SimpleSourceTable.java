@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.api.updateBy.UpdateByControl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.api.updateBy.UpdateByClause;

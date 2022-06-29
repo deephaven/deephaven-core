@@ -8,6 +8,7 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateBy.UpdateByClause;
+import io.deephaven.api.updateBy.UpdateByControl;
 import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -1118,139 +1119,9 @@ public interface TableWithDefaults extends Table {
     // UpdateBy Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    /**
-     * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
-     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows. This operation will group the table by the specified set of keys if
-     * provided before applying the operation.
-     * </p>
-     *
-     * @param control the {@Link UpdateByControl control} to use when updating the table.
-     * @param operations the operations to apply to the table.
-     * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
-     *         {@code byColumns}
-     */
     @ConcurrentMethod
     Table updateBy(@NotNull final UpdateByControl control, @NotNull final Collection<UpdateByClause> operations,
             final Collection<? extends Selectable> byColumns);
-
-    /**
-     * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
-     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows. This operation will group the table by the specified set of keys if
-     * provided before applying the operation.
-     * </p>
-     *
-     * @param control the {@Link UpdateByControl control} to use when updating the table.
-     * @param operations the operations to apply to the table.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
-     *         {@code byColumns}
-     */
-    @ConcurrentMethod
-    default Table updateBy(@NotNull final UpdateByControl control,
-            @NotNull final Collection<UpdateByClause> operations) {
-        return updateBy(control, operations, Collections.emptyList());
-    }
-
-    /**
-     * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
-     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows.This operation will group the table by the specified set of keys if
-     * provided
-     * </p>
-     *
-     * @param operations the operations to apply to the table.
-     * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
-     *         {@code byColumns}
-     */
-    @ConcurrentMethod
-    default Table updateBy(@NotNull final Collection<UpdateByClause> operations, final String... byColumns) {
-        return updateBy(UpdateByControl.DEFAULT, operations, Selectable.from(byColumns));
-    }
-
-    /**
-     * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
-     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows.This operation will group the table by the specified set of keys if
-     * provided
-     * </p>
-     *
-     * @param operations the operations to apply to the table.
-     * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
-     *         {@code byColumns}
-     */
-    @ConcurrentMethod
-    default Table updateBy(@NotNull final Collection<UpdateByClause> operations, final Selectable... byColumns) {
-        return updateBy(UpdateByControl.DEFAULT, operations, List.of(byColumns));
-    }
-
-    /**
-     * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
-     * row based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows.
-     * </p>
-     *
-     * @param operations the operations to apply to the table.
-     * @return a table with the same index, with the specified operations applied to the entire table.
-     */
-    @ConcurrentMethod
-    default Table updateBy(@NotNull final Collection<UpdateByClause> operations) {
-        return updateBy(UpdateByControl.DEFAULT, operations, Collections.emptyList());
-    }
-
-    /**
-     * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified row based
-     * operation to it. This operation will additionally group the table by a set of keys before applying the operation.
-     * </p>
-     *
-     * @param operation the operation to apply to the table.
-     * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
-     *         {@code byColumns}
-     */
-    @ConcurrentMethod
-    default Table updateBy(@NotNull final UpdateByClause operation, final String... byColumns) {
-        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), Selectable.from(byColumns));
-    }
-
-    /**
-     * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified row based
-     * operation to it. This operation will additionally group the table by a set of keys before applying the operation.
-     * </p>
-     *
-     * @param operation the operation to apply to the table.
-     * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
-     *         {@code byColumns}
-     */
-    @ConcurrentMethod
-    default Table updateBy(@NotNull final UpdateByClause operation, final Selectable... byColumns) {
-        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), List.of(byColumns));
-    }
-
-    /**
-     * <p>
-     * Create a table with the same {@link #getRowSet() rowSet} as it's parent that will perform the specified set of
-     * row based operation to it.
-     * </p>
-     *
-     * @param operation the operation to apply to the table.
-     * @return a table with the same index, with the specified operations applied to the entire table
-     */
-    @ConcurrentMethod
-    default Table updateBy(@NotNull final UpdateByClause operation) {
-        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), Collections.emptyList());
-    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Sort Operations

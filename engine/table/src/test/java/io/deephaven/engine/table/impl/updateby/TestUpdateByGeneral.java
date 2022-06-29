@@ -8,7 +8,7 @@ import io.deephaven.api.updateBy.UpdateByClause;
 import io.deephaven.engine.table.impl.EvalNugget;
 import io.deephaven.engine.table.impl.TableWithDefaults;
 import io.deephaven.engine.table.impl.TstUtils;
-import io.deephaven.engine.table.impl.UpdateByControl;
+import io.deephaven.api.updateBy.UpdateByControl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.ParallelTest;
 import org.junit.Test;

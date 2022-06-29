@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.updateBy.ColumnUpdateClause;
 import io.deephaven.api.updateBy.UpdateByClause;
+import io.deephaven.api.updateBy.UpdateByControl;
 import io.deephaven.api.updateBy.spec.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;

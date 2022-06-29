@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.updateBy.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.*;
@@ -1067,7 +1068,7 @@ public class BucketedUpdateBy extends UpdateBy {
         this.keySources = keySources;
 
         if (source.isRefreshing() && !source.isAddOnly()) {
-            final int hashTableSize = control.initialHashTableSize(source);
+            final int hashTableSize = control.initialHashTableSize();
             slotTracker = new UpdateBySlotTracker(control.chunkCapacity());
             this.hashTable = new IncrementalUpdateByStateManager(keySources,
                     hashTableSize,
@@ -1076,7 +1077,7 @@ public class BucketedUpdateBy extends UpdateBy {
         } else {
             slotTracker = null;
             if (!useGrouping) {
-                final int hashTableSize = control.initialHashTableSize(source);
+                final int hashTableSize = control.initialHashTableSize();
                 this.hashTable = new AddOnlyUpdateByStateManager(keySources,
                         hashTableSize,
                         control.maximumLoadFactor(),
