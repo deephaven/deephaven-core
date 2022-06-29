@@ -45,6 +45,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Upload Applications
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: actions/upload-artifact@v3
         with:
           name: applications
