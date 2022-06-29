@@ -12,6 +12,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.column import InputColumn
 from deephaven.dtypes import DType
 from deephaven.table import Table
+from deephaven.ugp import auto_locking_op
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -77,6 +78,7 @@ def new_table(cols: List[InputColumn]) -> Table:
         raise DHError(e, "failed to create a new time table.") from e
 
 
+@auto_locking_op
 def merge(tables: List[Table]):
     """Combines two or more tables into one aggregate table. This essentially appends the tables one on top of the
     other. Null tables are ignored.
@@ -96,6 +98,7 @@ def merge(tables: List[Table]):
         raise DHError(e, "merge tables operation failed.") from e
 
 
+@auto_locking_op
 def merge_sorted(tables: List[Table], order_by: str) -> Table:
     """Combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top
     of the other and sorts the result. Null tables are ignored. mergeSorted is more efficient than using merge
