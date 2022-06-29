@@ -1,7 +1,7 @@
-package io.deephaven.api.updateBy;
+package io.deephaven.api.updateby;
 
 import io.deephaven.api.agg.Pair;
-import io.deephaven.api.updateBy.spec.*;
+import io.deephaven.api.updateby.spec.*;
 
 import java.time.Duration;
 import java.util.Arrays;

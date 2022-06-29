@@ -1,11 +1,10 @@
-package io.deephaven.api.updateBy;
+package io.deephaven.api.updateby;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.agg.Pair;
-import io.deephaven.api.updateBy.spec.UpdateBySpec;
+import io.deephaven.api.updateby.spec.UpdateBySpec;
 import org.immutables.value.Value.Immutable;
 
-import java.math.MathContext;
 import java.util.List;
 
 @Immutable

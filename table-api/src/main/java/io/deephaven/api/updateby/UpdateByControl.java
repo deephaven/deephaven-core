@@ -1,6 +1,7 @@
-package io.deephaven.api.updateBy;
+package io.deephaven.api.updateby;
 
 import io.deephaven.annotations.BuildableStyle;
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Default;
 
@@ -16,7 +17,14 @@ public interface UpdateByControl {
         return ImmutableUpdateByControl.builder();
     }
 
-    UpdateByControl DEFAULT = ImmutableUpdateByControl.builder().build();
+    /**
+     * get an instance of UpdateByControl with the defaults from the system properties applied
+     *
+     * @return default UpdateByControl
+     */
+    static UpdateByControl defaultInstance() {
+        return ImmutableUpdateByControl.builder().build();
+    }
 
     /**
      * if redirections should be used for output sources instead of sparse array sources.
@@ -47,7 +55,9 @@ public interface UpdateByControl {
     }
 
     /**
-     * The maximum fractional memory overhead allowable for sparse redirections.
+     * The maximum fractional memory overhead allowable for sparse redirections as a fraction (e.g. 1.1 is 10%
+     * overhead). Values less than zero disable overhead checking, and result in always using the sparse structure.
+     * A value of zero results in never using the sparse structure.
      *
      * <p>
      * Default is `1.1`. Can be changed with system property {@code UpdateByControl.maximumStaticMemoryOverhead} or by
@@ -105,6 +115,38 @@ public interface UpdateByControl {
     @Default
     default MathContext getDefaultMathContext() {
         return MathContext.DECIMAL64;
+    }
+
+    @Check
+    default void checkChunkCapacity() {
+        if (chunkCapacity() <= 0) {
+            throw new IllegalArgumentException(
+                    "UpdateByControl.chunkCapacity() must be greater than 0");
+        }
+    }
+
+    @Check
+    default void checkInitialHashTableSize() {
+        if (initialHashTableSize() <= 0) {
+            throw new IllegalArgumentException(
+                    "UpdateByControl.initialHashTableSize() must be greater than 0");
+        }
+    }
+
+    @Check
+    default void checkMaximumLoadFactor() {
+        if (maximumLoadFactor() <= 0.0 || maximumLoadFactor() >= 1.0) {
+            throw new IllegalArgumentException(
+                    "UpdateByControl.maximumLoadFactor() must be in the range (0.0 to 1.0) exclusive");
+        }
+    }
+
+    @Check
+    default void checkTargetLoadFactor() {
+        if (targetLoadFactor() <= 0.0 || targetLoadFactor() >= 1.0) {
+            throw new IllegalArgumentException(
+                    "UpdateByControl.targetLoadFactor() must be in the range (0.0 to 1.0) exclusive");
+        }
     }
 
     public interface Builder {

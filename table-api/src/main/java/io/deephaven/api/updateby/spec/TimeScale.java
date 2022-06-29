@@ -1,4 +1,4 @@
-package io.deephaven.api.updateBy.spec;
+package io.deephaven.api.updateby.spec;
 
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value;

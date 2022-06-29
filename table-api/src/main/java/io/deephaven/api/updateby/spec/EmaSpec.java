@@ -1,7 +1,7 @@
-package io.deephaven.api.updateBy.spec;
+package io.deephaven.api.updateby.spec;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.api.updateBy.EmaControl;
+import io.deephaven.api.updateby.EmaControl;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 

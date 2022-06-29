@@ -1,14 +1,14 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.Selectable;
-import io.deephaven.api.updateBy.BadDataBehavior;
-import io.deephaven.api.updateBy.EmaControl;
+import io.deephaven.api.updateby.BadDataBehavior;
+import io.deephaven.api.updateby.EmaControl;
 import io.deephaven.engine.table.Table;
-import io.deephaven.api.updateBy.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByClause;
 import io.deephaven.engine.table.impl.EvalNugget;
 import io.deephaven.engine.table.impl.TableWithDefaults;
 import io.deephaven.engine.table.impl.TstUtils;
-import io.deephaven.api.updateBy.UpdateByControl;
+import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.ParallelTest;
 import org.junit.Test;
@@ -91,7 +91,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                         }
 
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
-                        final Collection<UpdateByClause> clauses = UpdateByClause.of(
+                        final Collection<? extends UpdateByClause> clauses = UpdateByClause.of(
                                 UpdateByClause.Fill(),
                                 UpdateByClause.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
@@ -110,7 +110,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                                 }
                             };
                         } else {
-                            control = UpdateByControl.DEFAULT;
+                            control = UpdateByControl.defaultInstance();
                         }
 
                         return bucketed

@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.api.updateBy.UpdateByControl;
+import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.api.updateBy.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByClause;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.function.Numeric;
@@ -289,7 +289,7 @@ public class TestCumProd extends BaseUpdateByTest {
                 result[i] = result[i - 1];
             } else if (isBD) {
                 result[i] = ((BigDecimal) result[i - 1]).multiply((BigDecimal) values[i],
-                        UpdateByControl.DEFAULT.getDefaultMathContext());
+                        UpdateByControl.defaultInstance().getDefaultMathContext());
             } else {
                 result[i] = ((BigInteger) result[i - 1]).multiply((BigInteger) values[i]);
             }

@@ -1,11 +1,10 @@
-package io.deephaven.api.updateBy;
+package io.deephaven.api.updateby;
 
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Default;
 import io.deephaven.annotations.BuildableStyle;
 
 import java.math.MathContext;
-import java.util.Collection;
 
 /**
  * <p>

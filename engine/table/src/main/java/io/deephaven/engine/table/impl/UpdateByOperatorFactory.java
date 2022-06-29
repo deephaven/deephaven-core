@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.agg.Pair;
-import io.deephaven.api.updateBy.ColumnUpdateClause;
-import io.deephaven.api.updateBy.UpdateByClause;
-import io.deephaven.api.updateBy.UpdateByControl;
-import io.deephaven.api.updateBy.spec.*;
+import io.deephaven.api.updateby.ColumnUpdateClause;
+import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.api.updateby.spec.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
@@ -51,7 +51,7 @@ public class UpdateByOperatorFactory {
         this.control = control;
     }
 
-    final Collection<UpdateByOperator> getOperators(@NotNull final Collection<UpdateByClause> specs) {
+    final Collection<UpdateByOperator> getOperators(@NotNull final Collection<? extends UpdateByClause> specs) {
         final OperationVisitor v = new OperationVisitor();
         specs.forEach(s -> s.walk(v));
         return v.ops;
@@ -102,7 +102,7 @@ public class UpdateByOperatorFactory {
                 .toArray(MatchPair[]::new);
     }
 
-    public String describe(Collection<UpdateByClause> clauses) {
+    public String describe(Collection<? extends UpdateByClause> clauses) {
         final Describer d = new Describer();
         clauses.forEach(c -> c.walk(d));
         return d.descriptionBuilder.toString();

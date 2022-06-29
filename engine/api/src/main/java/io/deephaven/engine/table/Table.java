@@ -7,8 +7,8 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateBy.UpdateByClause;
-import io.deephaven.api.updateBy.UpdateByControl;
+import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.iterators.*;
@@ -1740,7 +1740,7 @@ public interface Table extends
      *         {@code byColumns}
      */
     @ConcurrentMethod
-    Table updateBy(@NotNull final UpdateByControl control, @NotNull final Collection<UpdateByClause> operations,
+    Table updateBy(@NotNull final UpdateByControl control, @NotNull final Collection<? extends UpdateByClause> operations,
             final Collection<? extends Selectable> byColumns);
 
     /**
@@ -1757,10 +1757,8 @@ public interface Table extends
      *         {@code byColumns}
      */
     @ConcurrentMethod
-    default Table updateBy(@NotNull final UpdateByControl control,
-            @NotNull final Collection<UpdateByClause> operations) {
-        return updateBy(control, operations, Collections.emptyList());
-    }
+    Table updateBy(@NotNull final UpdateByControl control,
+            @NotNull final Collection<? extends UpdateByClause> operations);
 
     /**
      * <p>
@@ -1776,9 +1774,7 @@ public interface Table extends
      *         {@code byColumns}
      */
     @ConcurrentMethod
-    default Table updateBy(@NotNull final Collection<UpdateByClause> operations, final String... byColumns) {
-        return updateBy(UpdateByControl.DEFAULT, operations, Selectable.from(byColumns));
-    }
+    Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations, final String... byColumns);
 
     /**
      * <p>
@@ -1791,9 +1787,7 @@ public interface Table extends
      * @return a table with the same index, with the specified operations applied to the entire table.
      */
     @ConcurrentMethod
-    default Table updateBy(@NotNull final Collection<UpdateByClause> operations) {
-        return updateBy(UpdateByControl.DEFAULT, operations, Collections.emptyList());
-    }
+    Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations);
 
     /**
      * <p>
@@ -1807,9 +1801,7 @@ public interface Table extends
      *         {@code byColumns}
      */
     @ConcurrentMethod
-    default Table updateBy(@NotNull final UpdateByClause operation, final String... byColumns) {
-        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), Selectable.from(byColumns));
-    }
+    Table updateBy(@NotNull final UpdateByClause operation, final String... byColumns);
 
     /**
      * <p>
@@ -1821,9 +1813,7 @@ public interface Table extends
      * @return a table with the same index, with the specified operations applied to the entire table
      */
     @ConcurrentMethod
-    default Table updateBy(@NotNull final UpdateByClause operation) {
-        return updateBy(UpdateByControl.DEFAULT, Collections.singletonList(operation), Collections.emptyList());
-    }
+    Table updateBy(@NotNull final UpdateByClause operation);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Sort Operations

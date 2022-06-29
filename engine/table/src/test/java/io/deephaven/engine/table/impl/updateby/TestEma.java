@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.api.updateBy.BadDataBehavior;
-import io.deephaven.api.updateBy.EmaControl;
+import io.deephaven.api.updateby.BadDataBehavior;
+import io.deephaven.api.updateby.EmaControl;
 import io.deephaven.engine.table.Table;
-import io.deephaven.api.updateBy.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByClause;
 import io.deephaven.engine.table.impl.EvalNugget;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableWithDefaults;

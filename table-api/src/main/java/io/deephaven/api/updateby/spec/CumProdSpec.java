@@ -1,16 +1,16 @@
-package io.deephaven.api.updateBy.spec;
+package io.deephaven.api.updateby.spec;
 
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * A {@link UpdateBySpec} for performing a Cumulative Sum of the specified columns.
+ * A {@link UpdateBySpec} for performing a Cumulative Product of the specified columns.
  */
 @Immutable
 @SimpleStyle
-public class CumSumSpec extends UpdateBySpecBase {
-    public static CumSumSpec of() {
-        return ImmutableCumSumSpec.of();
+public abstract class CumProdSpec extends UpdateBySpecBase {
+    public static CumProdSpec of() {
+        return ImmutableCumProdSpec.of();
     }
 
     @Override
@@ -22,10 +22,7 @@ public class CumSumSpec extends UpdateBySpecBase {
                 || inputType.equals(byte.class)
 
                 // is boxed numeric?
-                || Number.class.isAssignableFrom(inputType)
-
-                // is boolean?
-                || inputType == boolean.class || inputType == Boolean.class;
+                || Number.class.isAssignableFrom(inputType);
     }
 
     @Override

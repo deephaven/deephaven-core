@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.updateBy.UpdateByControl;
+import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.*;

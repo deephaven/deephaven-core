@@ -1,11 +1,9 @@
-package io.deephaven.api.updateBy.spec;
+package io.deephaven.api.updateby.spec;
 
 import io.deephaven.api.agg.Pair;
-import io.deephaven.api.updateBy.ColumnUpdateClause;
+import io.deephaven.api.updateby.ColumnUpdateClause;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 /**
  * A Specification for an updateBy operation. Implementations of this are essentially tagging classes for the underlying

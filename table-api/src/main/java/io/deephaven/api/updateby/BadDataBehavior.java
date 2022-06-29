@@ -1,4 +1,4 @@
-package io.deephaven.api.updateBy;
+package io.deephaven.api.updateby;
 
 /**
  * Directives for how to handle {@code null} and {@code NaN} values while processing EMAs
