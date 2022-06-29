@@ -48,7 +48,7 @@ func main() {
 	// Now, let's start building a query.
 	// Maybe I don't like companies whose names are too long or too short, so let's keep only the ones in the middle.
 	midStocks := baseTable.Query().
-		Where("Ticker.length() == 3 || Ticker.length() == 3")
+		Where("Ticker.length() == 3 || Ticker.length() == 4")
 
 	// We can use the query system to create completely new tables too.
 	// Let's make a table whose columns are powers of ten.
@@ -67,6 +67,9 @@ func main() {
 	tables, err := cl.ExecQuery(ctx, midStocks, magStocks)
 	if err != nil {
 		fmt.Println("error when executing query:", err.Error())
+		if e, ok := err.(client.QueryError); ok {
+			fmt.Println(e.Details())
+		}
 		return
 	}
 	// The order of the tables in the returned list is the same as the order of the queries passed as arguments.

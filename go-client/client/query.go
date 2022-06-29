@@ -10,6 +10,106 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
+// A queryErrorPart is a single error in a QueryError.
+type queryErrorPart struct {
+	batchErrorPart
+	source QueryNode // The query node that caused this error.
+}
+
+// newQueryErrorPart wraps a single part of a batch error to create a single part of a query error.
+// The other parameters are used to attach debugging info to the error.
+// nodeTickets is a list of the tickets assigned to each exported node, returned by batch().
+// opNodes is a map from grpc op list indices to query nodes, created by newQueryError().
+// exportNodes is the list of nodes that are exported from the source query.
+func newQueryErrorPart(part batchErrorPart, nodeTickets []*ticketpb2.Ticket, opNodes map[int32]QueryNode, exportNodes []QueryNode) queryErrorPart {
+	switch tblRef := part.ResultId.Ref.(type) {
+	case *tablepb2.TableReference_Ticket:
+		if idx, ok := findTicketOutputIndex(nodeTickets, tblRef.Ticket); ok {
+			return queryErrorPart{batchErrorPart: part, source: exportNodes[idx]}
+		} else {
+			return queryErrorPart{batchErrorPart: part}
+		}
+	case *tablepb2.TableReference_BatchOffset:
+		if key, ok := opNodes[tblRef.BatchOffset]; ok {
+			return queryErrorPart{batchErrorPart: part, source: key}
+		} else {
+			return queryErrorPart{batchErrorPart: part}
+		}
+	default:
+		panic("unreachable")
+	}
+}
+
+// A QueryError may be returned by ExecQuery as the result of an invalid query.
+// The Details method will return more information about the error,
+// including a pseudo-traceback of the methods that caused it.
+type QueryError struct {
+	parts []queryErrorPart
+}
+
+// newQueryError wraps a batch error with debugging info.
+// nodeTickets is a list of the tickets assigned to each exported node, returned by batch().
+// nodeOps is a map from grpc op list indices to query nodes, returned by batch().
+// exportNodes is the list of nodes that are exported from the source query.
+func newQueryError(err batchError, nodeTickets []*ticketpb2.Ticket, nodeOps map[QueryNode]int32, exportNodes []QueryNode) QueryError {
+	opNodes := make(map[int32]QueryNode)
+	for key, idx := range nodeOps {
+		opNodes[idx] = key
+	}
+
+	var wrappedParts []queryErrorPart
+
+	for _, part := range err.parts {
+		wrappedPart := newQueryErrorPart(part, nodeTickets, opNodes, exportNodes)
+		wrappedParts = append(wrappedParts, wrappedPart)
+	}
+
+	return QueryError{parts: wrappedParts}
+}
+
+func (err QueryError) Error() string {
+	return "query error: " + err.parts[0].ServerMsg
+}
+
+// Details returns a string containing detailed information on all of the query errors that occurred.
+// This includes a pseudo-traceback of what query operations caused each error.
+func (err QueryError) Details() string {
+	details := "details:\n"
+
+	locked := make(map[*queryBuilder]struct{})
+	for _, part := range err.parts {
+		if part.source.builder != nil {
+			if _, ok := locked[part.source.builder]; !ok {
+				part.source.builder.opLock.Lock()
+				defer part.source.builder.opLock.Unlock()
+				locked[part.source.builder] = struct{}{}
+			}
+		}
+	}
+
+	// TODO: Typically the first error is the most helpful,
+	// because all the following errors are just caused by the first one.
+	// However, we want to print all the parts in case there were actually multiple distinct errors.
+	// Should we look into figuring out how to emphasize root errors?
+	for _, part := range err.parts {
+		details += fmt.Sprintf("msg: %v\n", part.ServerMsg)
+		if part.source.builder != nil {
+			builder := part.source.builder
+
+			if builder.table != nil {
+				details += fmt.Sprintf("  base table: %s\n", builder.table.ticket)
+			}
+			details += "  query operations:\n"
+			for _, op := range builder.ops[:part.source.index+1] {
+				details += fmt.Sprintf("    %s\n", op)
+			}
+		} else {
+			details += fmt.Sprintf("no source info, this is a bug (ResultId is %s)", part.batchErrorPart.ResultId)
+		}
+	}
+	return details
+}
+
 // assert is used to report violated invariants that could only possibly occur as a result of a bad algorithm.
 // There should be absolutely no way for a user or network/disk/etc problem to ever cause an assert to fail.
 func assert(cond bool, msg string) {
@@ -47,8 +147,7 @@ func (qb QueryNode) addOp(op tableOp) QueryNode {
 
 // queryBuilder is (some subgraph of) the Query DAG.
 type queryBuilder struct {
-	uniqueId int32
-	table    *TableHandle // This can be nil if the first operation creates a new table, e.g. client.EmptyTableQuery
+	table *TableHandle // This can be nil if the first operation creates a new table, e.g. client.EmptyTableQuery
 
 	opLock sync.Mutex
 	ops    []tableOp
@@ -56,13 +155,6 @@ type queryBuilder struct {
 
 func (qb *queryBuilder) curRootNode() QueryNode {
 	return QueryNode{index: len(qb.ops) - 1, builder: qb}
-}
-
-// An opKey uniquely identifies a query operation,
-// because every op can be uniquely identified by its queryBuilder ID and its index within that queryBuilder.
-type opKey struct {
-	index     int
-	builderId int32
 }
 
 // batchBuilder is used to progressively create an entire batch operation.
@@ -81,7 +173,7 @@ type batchBuilder struct {
 
 	// This map keeps track of operators that are already in the list, to avoid duplication.
 	// The value is the index into the full operation list of the op's result.
-	finishedOps map[opKey]int32
+	finishedOps map[QueryNode]int32
 
 	// This is a list of all of the operations currently in the batch.
 	// This is what will actually end up in the gRPC request.
@@ -89,10 +181,10 @@ type batchBuilder struct {
 }
 
 // needsExport returns the indexes in the export list of the node found
-func (b *batchBuilder) needsExport(opIdx int, builderId int32) []int {
+func (b *batchBuilder) needsExport(node QueryNode) []int {
 	var indices []int
-	for i, node := range b.nodes {
-		if node.index == opIdx && node.builder.uniqueId == builderId {
+	for i, n := range b.nodes {
+		if n == node {
 			indices = append(indices, i)
 		}
 	}
@@ -104,8 +196,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 	var source *tablepb2.TableReference
 
 	// If the op is already in the list, we don't need to do it again.
-	nodeKey := opKey{index: node.index, builderId: node.builder.uniqueId}
-	if prevIdx, skip := b.finishedOps[nodeKey]; skip {
+	if prevIdx, skip := b.finishedOps[node]; skip {
 		// So just use the output of the existing occurence.
 		return &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: prevIdx}}
 	}
@@ -113,7 +204,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 	var resultId *ticketpb2.Ticket = nil
 	// Duplicate nodes that still need their own tickets
 	var extraNodes []int
-	if nodes := b.needsExport(node.index, node.builder.uniqueId); len(nodes) > 0 {
+	if nodes := b.needsExport(node); len(nodes) > 0 {
 		t := b.client.newTicket()
 		resultId = &t
 		b.nodeOrder[nodes[0]] = resultId
@@ -148,7 +239,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 		grpcOp := op.makeBatchOp(resultId, childQueries)
 		b.grpcOps = append(b.grpcOps, &grpcOp)
 
-		b.finishedOps[nodeKey] = int32(len(b.grpcOps)) - 1
+		b.finishedOps[node] = int32(len(b.grpcOps)) - 1
 	}
 
 	// If this node gets exported multiple times, we need to handle that.
@@ -167,24 +258,26 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 }
 
 // getGrpcOps turns a set of query nodes into a sequence of batch operations.
-// It also returns the tickets that each query node will be referenced by,
-// so that we can match up the nodes and the tables once the request finishes.
-func getGrpcOps(client *Client, nodes []QueryNode) ([]*tablepb2.BatchTableRequest_Operation, []*ticketpb2.Ticket, error) {
+// grpcOps is a list of the raw operations that can be used in the grpc request.
+// nodeTickets are the tickets that each query node will be referenced by, where each index in nodeTickets matches the same index in the nodes argument.
+// nodeTickets is needed so that we can match up the nodes and the tables once the request finishes.
+// nodeOps is a mapping from all of the query nodes processed to the index in grpcOps that they generated.
+func getGrpcOps(client *Client, nodes []QueryNode) (grpcOps []*tablepb2.BatchTableRequest_Operation, nodeTickets []*ticketpb2.Ticket, nodeOps map[QueryNode]int32) {
 	builder := batchBuilder{
 		client:      client,
 		nodes:       nodes,
 		nodeOrder:   make([]*ticketpb2.Ticket, len(nodes)),
-		finishedOps: make(map[opKey]int32),
+		finishedOps: make(map[QueryNode]int32),
 		grpcOps:     nil,
 	}
 
 	// Lock all of the builders because even though we can only
 	// append to the operation list, the reassignment used in the
 	// append isn't actually atomic, so it could race with this goroutine.
-	locked := make(map[int32]struct{})
+	locked := make(map[*queryBuilder]struct{})
 	for _, node := range nodes {
-		if _, ok := locked[node.builder.uniqueId]; !ok {
-			locked[node.builder.uniqueId] = struct{}{}
+		if _, ok := locked[node.builder]; !ok {
+			locked[node.builder] = struct{}{}
 			node.builder.opLock.Lock()
 			defer node.builder.opLock.Unlock()
 		}
@@ -194,7 +287,34 @@ func getGrpcOps(client *Client, nodes []QueryNode) ([]*tablepb2.BatchTableReques
 		builder.addGrpcOps(node)
 	}
 
-	return builder.grpcOps, builder.nodeOrder, nil
+	grpcOps = builder.grpcOps
+	nodeTickets = builder.nodeOrder
+	nodeOps = builder.finishedOps
+
+	return
+}
+
+// findTableOutputIndex finds the index in the nodeTickets list of the output ticket.
+// If there are no matches or multiple matches, ok is false.
+func findTicketOutputIndex(nodeTickets []*ticketpb2.Ticket, tableTicket *ticketpb2.Ticket) (idx int, ok bool) {
+	foundMatch := false
+
+	for i, nodeTicket := range nodeTickets {
+		if bytes.Equal(nodeTicket.GetTicket(), tableTicket.GetTicket()) {
+			if foundMatch {
+				// Multiple matches
+				ok = false
+				return
+			} else {
+				foundMatch = true
+				idx = i
+			}
+		}
+	}
+
+	// idx was already set in the loop if found
+	ok = foundMatch
+	return
 }
 
 // execQuery performs the Batch gRPC operation, which performs several table operations in a single request.
@@ -204,17 +324,18 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*Table
 		return nil, nil
 	}
 
-	ops, nodeOrder, err := getGrpcOps(client, nodes)
-	if err != nil {
-		return nil, err
-	}
+	ops, nodeTickets, nodeOps := getGrpcOps(client, nodes)
 
-	if len(nodeOrder) != len(nodes) {
+	if len(nodeTickets) != len(nodes) {
 		panic("wrong number of entries in nodeOrder")
 	}
 
 	exportedTables, err := client.batch(ctx, ops)
 	if err != nil {
+		if err, ok := err.(batchError); ok {
+			return nil, newQueryError(err, nodeTickets, nodeOps, nodes)
+		}
+
 		return nil, err
 	}
 
@@ -222,7 +343,7 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*Table
 	// so we have to match the tickets in nodeOrder with the ticket for each table
 	// in order to determine which one is which and unshuffle them.
 	var output []*TableHandle
-	for i, ticket := range nodeOrder {
+	for i, ticket := range nodeTickets {
 		for _, tbl := range exportedTables {
 			if bytes.Equal(tbl.ticket.GetTicket(), ticket.GetTicket()) {
 				output = append(output, tbl)
@@ -238,7 +359,7 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*Table
 }
 
 func newQueryBuilder(client *Client, table *TableHandle) queryBuilder {
-	return queryBuilder{uniqueId: client.newTicketNum(), table: table}
+	return queryBuilder{table: table}
 }
 
 // emptyTableOp is created by client.EmptyTableQuery().
@@ -254,6 +375,10 @@ func (op emptyTableOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	assert(len(children) == 0, "wrong number of children for EmptyTable")
 	req := &tablepb2.EmptyTableRequest{ResultId: resultId, Size: op.numRows}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_EmptyTable{EmptyTable: req}}
+}
+
+func (op emptyTableOp) String() string {
+	return fmt.Sprintf("EmptyTable(%d)", op.numRows)
 }
 
 // timeTableOp is created by client.TimeTableQuery().
@@ -272,6 +397,10 @@ func (op timeTableOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablep
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_TimeTable{TimeTable: req}}
 }
 
+func (op timeTableOp) String() string {
+	return fmt.Sprintf("TimeTable(%d, %d)", op.period, op.startTime)
+}
+
 type dropColumnsOp struct {
 	child QueryNode
 	cols  []string
@@ -285,6 +414,10 @@ func (op dropColumnsOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tabl
 	assert(len(children) == 1, "wrong number of children for DropColumns")
 	req := &tablepb2.DropColumnsRequest{ResultId: resultId, SourceId: children[0], ColumnNames: op.cols}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_DropColumns{DropColumns: req}}
+}
+
+func (op dropColumnsOp) String() string {
+	return fmt.Sprintf("DropColumns(%#v)", op.cols)
 }
 
 // DropColumns creates a table with the same number of rows as the source table but omits any columns included in the arguments.
@@ -305,6 +438,10 @@ func (op updateOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.
 	assert(len(children) == 1, "wrong number of children for Update")
 	req := &tablepb2.SelectOrUpdateRequest{ResultId: resultId, SourceId: children[0], ColumnSpecs: op.formulas}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Update{Update: req}}
+}
+
+func (op updateOp) String() string {
+	return fmt.Sprintf("Update(%#v)", op.formulas)
 }
 
 // Update creates a new table containing a new, in-memory column for each argument.
@@ -328,6 +465,10 @@ func (op lazyUpdateOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_LazyUpdate{LazyUpdate: req}}
 }
 
+func (op lazyUpdateOp) String() string {
+	return fmt.Sprintf("LazyUpdate(%#v)", op.formulas)
+}
+
 // LazyUpdate creates a new table containing a new, cached, formula column for each argument.
 // The returned table also includes all the original columns from the source table.
 func (qb QueryNode) LazyUpdate(formulas ...string) QueryNode {
@@ -347,6 +488,10 @@ func (op viewOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.Ta
 	assert(len(children) == 1, "wrong number of children for ViewOp")
 	req := &tablepb2.SelectOrUpdateRequest{ResultId: resultId, SourceId: children[0], ColumnSpecs: op.formulas}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_View{View: req}}
+}
+
+func (op viewOp) String() string {
+	return fmt.Sprintf("View(%#v)", op.formulas)
 }
 
 // View creates a new formula table that includes one column for each argument.
@@ -369,6 +514,10 @@ func (op updateViewOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	assert(len(children) == 1, "wrong number of children for UpdateView")
 	req := &tablepb2.SelectOrUpdateRequest{ResultId: resultId, SourceId: children[0], ColumnSpecs: op.formulas}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_UpdateView{UpdateView: req}}
+}
+
+func (op updateViewOp) String() string {
+	return fmt.Sprintf("UpdateView(%#v)", op.formulas)
 }
 
 // UpdateView creates a new table containing a new, formula column for each argument.
@@ -394,6 +543,10 @@ func (op selectOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Select{Select: req}}
 }
 
+func (op selectOp) String() string {
+	return fmt.Sprintf("Select(%#v)", op.formulas)
+}
+
 // Select creates a new in-memory table that includes one column for each argument.
 // Any columns not specified in the arguments will not appear in the resulting table.
 func (qb QueryNode) Select(formulas ...string) QueryNode {
@@ -413,6 +566,10 @@ func (op selectDistinctOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*t
 	assert(len(children) == 1, "wrong number of children for SelectDistinct")
 	req := &tablepb2.SelectDistinctRequest{ResultId: resultId, SourceId: children[0], ColumnNames: op.cols}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_SelectDistinct{SelectDistinct: req}}
+}
+
+func (op selectDistinctOp) String() string {
+	return fmt.Sprintf("SelectDistinct(%#v)", op.cols)
 }
 
 // SelectDistinct creates a new table containing all of the unique values for a set of key columns.
@@ -466,6 +623,10 @@ func (op sortOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.Ta
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Sort{Sort: req}}
 }
 
+func (op sortOp) String() string {
+	return fmt.Sprintf("SortBy(%#v)", op.columns)
+}
+
 // Sort returns a new table with rows sorted in a smallest to largest order based on the listed column(s).
 func (qb QueryNode) Sort(cols ...string) QueryNode {
 	var columns []SortColumn
@@ -495,6 +656,10 @@ func (op filterOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_UnstructuredFilter{UnstructuredFilter: req}}
 }
 
+func (op filterOp) String() string {
+	return fmt.Sprintf("Where(%#v)", op.filters)
+}
+
 // Where filters rows of data from the source table.
 // It returns a new table with only the rows meeting the filter criteria of the source table.
 func (qb QueryNode) Where(filters ...string) QueryNode {
@@ -519,6 +684,14 @@ func (op headOrTailOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 		return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Tail{Tail: req}}
 	} else {
 		return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Head{Head: req}}
+	}
+}
+
+func (op headOrTailOp) String() string {
+	if op.isTail {
+		return fmt.Sprintf("Tail(%d)", op.numRows)
+	} else {
+		return fmt.Sprintf("Head(%d)", op.numRows)
 	}
 }
 
@@ -555,6 +728,14 @@ func (op headOrTailByOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tab
 	}
 }
 
+func (op headOrTailByOp) String() string {
+	if op.isTail {
+		return fmt.Sprintf("TailBy(%d, %#v)", op.numRows, op.by)
+	} else {
+		return fmt.Sprintf("HeadBy(%d, %#v)", op.numRows, op.by)
+	}
+}
+
 // HeadBy returns the first numRows rows for each group.
 func (qb QueryNode) HeadBy(numRows int64, columnsToGroupBy ...string) QueryNode {
 	return qb.addOp(headOrTailByOp{child: qb, numRows: numRows, by: columnsToGroupBy, isTail: false})
@@ -579,6 +760,10 @@ func (op ungroupOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2
 	assert(len(children) == 1, "wrong number of children for Ungroup")
 	req := &tablepb2.UngroupRequest{ResultId: resultId, SourceId: children[0], ColumnsToUngroup: op.colNames, NullFill: op.nullFill}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Ungroup{Ungroup: req}}
+}
+
+func (op ungroupOp) String() string {
+	return fmt.Sprintf("TailBy(%#v, %t)", op.colNames, op.nullFill)
 }
 
 // Ungroup ungroups column content. It is the inverse of the GroupBy method.
@@ -613,6 +798,45 @@ func (op dedicatedAggOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tab
 
 	req := &tablepb2.ComboAggregateRequest{ResultId: resultId, SourceId: children[0], Aggregates: aggs, GroupByColumns: op.colNames}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_ComboAggregate{ComboAggregate: req}}
+}
+
+func (op dedicatedAggOp) String() string {
+	switch op.kind {
+	case tablepb2.ComboAggregateRequest_SUM:
+		return fmt.Sprintf("SumBy(%#v)", op.colNames)
+	case tablepb2.ComboAggregateRequest_ABS_SUM:
+		return fmt.Sprintf("AbsSumBy(%#v)", op.colNames)
+	case tablepb2.ComboAggregateRequest_GROUP:
+		return fmt.Sprintf("GroupBy(%#v)", op.colNames)
+	case tablepb2.ComboAggregateRequest_AVG:
+		return fmt.Sprintf("AvgBy(%#v)", op.colNames)
+	case tablepb2.ComboAggregateRequest_COUNT:
+		if op.colNames != nil {
+			return fmt.Sprintf("CountBy(%s, %#v)", op.countColumn, op.colNames)
+		} else {
+			return fmt.Sprintf("Count(%s)", op.countColumn)
+		}
+	case tablepb2.ComboAggregateRequest_FIRST:
+		return fmt.Sprintf("FirstBy(%#v)", op.colNames)
+	case tablepb2.ComboAggregateRequest_LAST:
+		return fmt.Sprintf("LastBy(%#v)", op.colNames)
+	case tablepb2.ComboAggregateRequest_MIN:
+		return fmt.Sprintf("MinBy(%#v)", op.colNames)
+	case tablepb2.ComboAggregateRequest_MAX:
+		return fmt.Sprintf("MaxBy(%#v)", op.colNames)
+	case tablepb2.ComboAggregateRequest_MEDIAN:
+		return fmt.Sprintf("MedianBy(%#v)", op.colNames)
+	case tablepb2.ComboAggregateRequest_PERCENTILE:
+		panic("unreachable")
+	case tablepb2.ComboAggregateRequest_STD:
+		return fmt.Sprintf("StdBy(%#v)", op.colNames)
+	case tablepb2.ComboAggregateRequest_VAR:
+		return fmt.Sprintf("VarBy(%#v)", op.colNames)
+	case tablepb2.ComboAggregateRequest_WEIGHTED_AVG:
+		panic("unreachable")
+	default:
+		panic("unreachable")
+	}
 }
 
 // GroupBy groups column content into arrays.
@@ -840,6 +1064,10 @@ func (op aggByOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.T
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_ComboAggregate{ComboAggregate: req}}
 }
 
+func (op aggByOp) String() string {
+	return fmt.Sprintf("AggBy(/* aggregation omitted */, %#v)", op.colNames)
+}
+
 // AggBy applies a list of aggregations to table data.
 // See the docs on AggBuilder for details on what each of the aggregation types do.
 func (qb QueryNode) AggBy(agg *AggBuilder, columnsToGroupBy ...string) QueryNode {
@@ -889,6 +1117,19 @@ func (op joinOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.Ta
 		return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_ExactJoin{ExactJoin: req}}
 	default:
 		panic("invalid join kind")
+	}
+}
+
+func (op joinOp) String() string {
+	switch op.kind {
+	case joinOpCross:
+		return fmt.Sprintf("Join(/* table omitted */, %#v, %#v, %d)", op.columnsToMatch, op.columnsToAdd, op.reserveBits)
+	case joinOpNatural:
+		return fmt.Sprintf("NaturalJoin(/* table omitted */, %#v, %#v)", op.columnsToMatch, op.columnsToAdd)
+	case joinOpExact:
+		return fmt.Sprintf("ExactJoin(/* table omitted */, %#v, %#v", op.columnsToMatch, op.columnsToAdd)
+	default:
+		panic("unreachable")
 	}
 }
 
@@ -973,6 +1214,15 @@ const (
 	MatchRuleGreaterThan
 )
 
+func (mr MatchRule) String() string {
+	if mr < 0 || mr >= 4 {
+		return "invalid match rule"
+	} else {
+		names := []string{"MatchRuleLessThanEqual", "MatchRuleLessThan", "MatchRuleGreaterThanEqual", "MatchRuleGreaterThan"}
+		return names[mr]
+	}
+}
+
 type asOfJoinOp struct {
 	leftTable      QueryNode
 	rightTable     QueryNode
@@ -1007,6 +1257,10 @@ func (op asOfJoinOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb
 
 	req := &tablepb2.AsOfJoinTablesRequest{ResultId: resultId, LeftId: leftId, RightId: rightId, ColumnsToMatch: op.columnsToMatch, ColumnsToAdd: op.columnsToAdd, AsOfMatchRule: matchRule}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_AsOfJoin{AsOfJoin: req}}
+}
+
+func (op asOfJoinOp) String() string {
+	return fmt.Sprintf("AsOfJoin(/* table omitted */, %#v, %#v, %s)", op.columnsToMatch, op.columnsToAdd, op.matchRule)
 }
 
 // AsOfJoin joins data from a pair of tables - a left and right table - based upon one or more match columns.
@@ -1052,6 +1306,10 @@ func (op mergeOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.T
 
 	req := &tablepb2.MergeTablesRequest{ResultId: resultId, SourceIds: children, KeyColumn: op.sortBy}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Merge{Merge: req}}
+}
+
+func (op mergeOp) String() string {
+	return fmt.Sprintf("Merge(%s, /* tables omitted */)", op.sortBy)
 }
 
 // Merge combines two or more tables into one aggregate table.

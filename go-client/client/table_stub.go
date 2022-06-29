@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -13,15 +14,6 @@ import (
 	tablepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/table"
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
-
-// A QueryError may be returned by ExecQuery as the result of an invalid query.
-type QueryError struct {
-	Msg string
-}
-
-func (err QueryError) Error() string {
-	return "query error: " + err.Msg
-}
 
 // A tableStub wraps table.proto gRPC requests.
 type tableStub struct {
@@ -53,11 +45,28 @@ func (ts *tableStub) createInputTable(ctx context.Context, req *tablepb2.CreateI
 	return parseCreationResponse(ts.client, resp)
 }
 
+// batchErrorPart is a single error in a batchError.
+type batchErrorPart struct {
+	ServerMsg string                   // The error message returned by the server
+	ResultId  *tablepb2.TableReference // The result ID of the table which caused the error
+}
+
+// batchError is an error that might be returned by batch().
+// This is typically never displayed, and gets immediately wrapped in a QueryError.
+type batchError struct {
+	parts []batchErrorPart
+}
+
+func (err batchError) Error() string {
+	return fmt.Sprintf("batch error in %d tables", len(err.parts))
+}
+
 // batch executes a batch (query) request on the server and returns the resulting tables.
 // Only the operations which were given a non-nil result ticket (the ResultId field) will be returned as tables.
 // The tables will be returned in an arbitrary order.
 // Each table's ticket will match exactly one result ticket in one of the operations,
 // so this can be used to identify the tables and put them back in order.
+// This may return a batchError.
 func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableRequest_Operation) ([]*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
@@ -73,6 +82,8 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 
 	exportedTables := []*TableHandle{}
 
+	var errors []batchErrorPart
+
 	for {
 		created, err := resp.Recv()
 		if err == io.EOF {
@@ -82,16 +93,26 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 		}
 
 		if !created.Success {
-			return nil, QueryError{Msg: created.GetErrorInfo()}
+			part := batchErrorPart{
+				ServerMsg: created.GetErrorInfo(),
+				ResultId:  created.ResultId,
+			}
+			errors = append(errors, part)
 		}
 
-		if _, ok := created.ResultId.Ref.(*tablepb2.TableReference_Ticket); ok {
-			newTable, err := parseCreationResponse(ts.client, created)
-			if err != nil {
-				return nil, err
+		if created.Success {
+			if _, ok := created.ResultId.Ref.(*tablepb2.TableReference_Ticket); ok {
+				newTable, err := parseCreationResponse(ts.client, created)
+				if err != nil {
+					return nil, err
+				}
+				exportedTables = append(exportedTables, newTable)
 			}
-			exportedTables = append(exportedTables, newTable)
 		}
+	}
+
+	if len(errors) > 0 {
+		return nil, batchError{parts: errors}
 	}
 
 	return exportedTables, nil
