@@ -4,10 +4,31 @@
 
 import unittest
 
+from deephaven.table import Table
+
 from deephaven.filters import Filter
 
 from deephaven import read_csv, DHError, new_table
 from tests.testbase import BaseTestCase
+
+
+def transform_func(t: Table) -> Table:
+    return t.update("f = a + b")
+
+
+def partitioned_transform_func(t: Table, ot: Table) -> Table:
+    return t.natural_join(ot, on=["a", "b"], joins=["f"])
+
+
+class Transformer:
+    @staticmethod
+    def apply(t: Table) -> Table:
+        return t.update("f = a + b")
+
+
+class PartitionedTransformer:
+    def apply(self, t: Table, ot: Table) -> Table:
+        return t.natural_join(ot, on=["a", "b"], joins=["f"])
 
 
 class PartitionedTableTestCase(BaseTestCase):
@@ -92,6 +113,25 @@ class PartitionedTableTestCase(BaseTestCase):
     def test_constituents(self):
         constituent_tables = self.partitioned_table.constituent_tables
         self.assertGreater(len(constituent_tables), 0)
+
+    def test_transform(self):
+        pt = self.partitioned_table.transform(transform_func)
+        self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+
+        pt = self.partitioned_table.transform(Transformer)
+        self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+
+        with self.assertRaises(DHError) as cm:
+            pt = self.partitioned_table.transform(lambda t, t1: t.join(t1))
+        self.assertRegex(str(cm.exception), r"missing .* argument")
+
+    def test_partitioned_transform(self):
+        other_pt = self.partitioned_table.transform(transform_func)
+        pt = self.partitioned_table.partitioned_transform(other_pt, partitioned_transform_func)
+        self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+
+        pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer())
+        self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
 
 if __name__ == '__main__':

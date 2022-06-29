@@ -4,7 +4,6 @@ plugins {
   id 'idea'
 }
 
-evaluationDependsOn ':deephaven-jpy'
 evaluationDependsOn ':docker-runtime-base'
 
 sourceSets {
@@ -49,7 +48,6 @@ configurations {
 
 dependencies {
   // todo: consider running tests where JPY is *not* on the classpath, which is a completely acceptable use case
-  testCompile project(':deephaven-jpy')
   testCompile project(':deephaven-jpy-ext')
   javaToPythonCompile sourceSets.test.output
   pythonToJavaCompile sourceSets.test.output
@@ -194,7 +192,6 @@ Sync jpyConfigTask = tasks.create 'createPythonToJavaConfig', Sync, {
   rename { file -> 'jpyconfig.py' }
   doFirst {
     expand(
-            javaHome:'/opt/java/openjdk',
             jvmMaxMem:'32m',
             jvmClasspath:'/classpath:' + sourceSets.pythonToJava.runtimeClasspath.asList().collect { '/classpath/' + it.name }.join(':')
     )
@@ -223,7 +220,6 @@ Closure<TaskProvider<Task>> pyExec = { String taskName, List<String> command, bo
       runCommand '''set -eux; \\
                       pip3 install unittest-xml-reporting==3.0.4;\\
                       mkdir /out;'''
-      environmentVariable 'JDK_HOME', '/opt/java/openjdk'
       environmentVariable 'JAVA_VERSION', '1.8'
       environmentVariable 'JPY_PY_CONFIG', '/python/jpyconfig.py'
 

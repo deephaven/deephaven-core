@@ -14,7 +14,7 @@ import jpy
 import numpy
 
 from deephaven import DHError
-from deephaven._ugp import ugp_exclusive_lock, ugp_shared_lock
+from deephaven import ugp
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.jcompat import to_sequence
@@ -252,10 +252,10 @@ def _do_locked(f: Callable, lock_type="shared") -> None:
         ValueError
     """
     if lock_type == "exclusive":
-        with ugp_exclusive_lock():
+        with ugp.exclusive_lock():
             f()
     elif lock_type == "shared":
-        with ugp_shared_lock():
+        with ugp.shared_lock():
             f()
     else:
         raise ValueError(f"Unsupported lock type: lock_type={lock_type}")

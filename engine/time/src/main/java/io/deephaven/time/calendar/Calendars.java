@@ -154,9 +154,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
 
     private void addCalendar(final BusinessCalendar cal) {
         final String name = cal.name().toUpperCase();
-        try {
-            NameValidator.validateQueryParameterName(name);
-        } catch (NameValidator.InvalidNameException e) {
+        if (!NameValidator.isValidQueryParameterName(name)) {
             throw new IllegalArgumentException("Invalid name for calendar: name='" + name + "'");
         }
 
