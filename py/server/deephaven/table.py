@@ -1341,6 +1341,7 @@ class PartitionedTable(JObjectWrapper):
         self._unique_keys = None
         self._constituent_column = None
         self._constituent_changes_permitted = None
+        self._is_refreshing = None
 
     @property
     def table(self) -> Table:
@@ -1348,6 +1349,13 @@ class PartitionedTable(JObjectWrapper):
         if self._table is None:
             self._table = Table(j_table=self.j_partitioned_table.table())
         return self._table
+
+    @property
+    def is_refreshing(self) -> bool:
+        """Whether this table is refreshing."""
+        if self._is_refreshing is None:
+            self._is_refreshing = self.table.is_refreshing
+        return self._is_refreshing
 
     @property
     def key_columns(self) -> List[str]:
@@ -1358,8 +1366,9 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def unique_keys(self) -> bool:
-        """Whether the keys in the underlying table must always be unique. If keys must be unique, one can expect that
-        self.table.select_distinct(self.key_columns) and self.table.view(self.key_columns) operations always produce equivalent tables."""
+        """Whether the keys in the underlying table must always be unique. If keys must be unique, one can expect
+        that self.table.select_distinct(self.key_columns) and self.table.view(self.key_columns) operations always
+        produce equivalent tables."""
         if self._unique_keys is None:
             self._unique_keys = self.j_partitioned_table.uniqueKeys()
         return self._unique_keys
@@ -1373,7 +1382,8 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def constituent_table_columns(self) -> List[Column]:
-        """The column definitions for constituent tables.  All constituent tables in a partitioned table have the same column definitiions."""
+        """The column definitions for constituent tables.  All constituent tables in a partitioned table have the
+        same column definitions."""
         if not self._schema:
             self._schema = _td_to_columns(self.j_partitioned_table.constituentDefinition())
 
@@ -1381,7 +1391,8 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def constituent_changes_permitted(self) -> bool:
-        """Can the constituents of the underlying partitioned table change?  Specifically, can the values of the constituent column change?
+        """Can the constituents of the underlying partitioned table change?  Specifically, can the values of the
+        constituent column change?
 
         If constituent changes are not permitted, the underlying partitioned table:
         1. has no adds
@@ -1389,18 +1400,20 @@ class PartitionedTable(JObjectWrapper):
         3. has no shifts
         4. has no modifies that include the constituent column  
         
-        Note, it is possible for constituent changes to not be permitted even if constituent tables are refreshing or if the underlying partitioned
-        table is refreshing. Also note that the underlying partitioned table must be refreshing if it contains any refreshing constituents.
+        Note, it is possible for constituent changes to not be permitted even if constituent tables are refreshing or
+        if the underlying partitioned table is refreshing. Also note that the underlying partitioned table must be
+        refreshing if it contains any refreshing constituents.
         """
         if self._constituent_changes_permitted is None:
             self._constituent_changes_permitted = self.j_partitioned_table.constituentChangesPermitted()
         return self._constituent_changes_permitted
 
+    @auto_locking_op
     def merge(self) -> Table:
-        """Makes a new Table that contains all the rows from all the constituent tables.
-        In the merged result, data from a constituent table is contiguous, and data from constituent tables appears
-        in the same order the constituent table appears in the PartitionedTable.
-        Basically, merge stacks constituent tables on top of each other in the same relative order as the partitioned table. 
+        """Makes a new Table that contains all the rows from all the constituent tables. In the merged result,
+        data from a constituent table is contiguous, and data from constituent tables appears in the same order the
+        constituent table appears in the PartitionedTable. Basically, merge stacks constituent tables on top of each
+        other in the same relative order as the partitioned table.
 
         Returns:
             a Table
@@ -1438,8 +1451,8 @@ class PartitionedTable(JObjectWrapper):
 
     def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTable:
-        """The sort method creates a new partitioned table where the rows are ordered based on values in a specified set of columns.
-        Sort can not use the constituent column.
+        """The sort method creates a new partitioned table where the rows are ordered based on values in a specified
+        set of columns. Sort can not use the constituent column.
         
          Args:
              order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
@@ -1495,6 +1508,7 @@ class PartitionedTable(JObjectWrapper):
         """Returns all the current constituent tables."""
         return list(map(Table, self.j_partitioned_table.constituents()))
 
+    @auto_locking_op
     def transform(self, func: Callable[[Table], Table]) -> PartitionedTable:
         """Apply the provided function to all constituent Tables and produce a new PartitionedTable with the results
         as its constituents, with the same data for all other columns in the underlying partitioned Table. Note that
@@ -1516,6 +1530,7 @@ class PartitionedTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to transform the PartitionedTable.") from e
 
+    @auto_locking_op
     def partitioned_transform(self, other: PartitionedTable, func: Callable[[Table, Table], Table]) -> PartitionedTable:
         """Join the underlying partitioned Tables from this PartitionedTable and other on the key columns, then apply
         the provided function to all pairs of constituent Tables with the same keys in order to produce a new

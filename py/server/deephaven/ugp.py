@@ -7,10 +7,12 @@ the data between table operations.
 """
 
 import contextlib
+from collections import abc
 from functools import wraps
 from typing import Callable
 
 import jpy
+
 from deephaven import DHError
 
 _JUpdateGraphProcessor = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraphProcessor")
@@ -58,8 +60,8 @@ def shared_lock():
 
 
 def exclusive_locked(f: Callable) -> Callable:
-    """A decorator that ensures the decorated function be called under Update Graph Processor(UGP) exclusive
-    lock. The lock is release after the function returns regardless what happens inside the function."""
+    """A decorator that ensures the decorated function be called under the Update Graph Processor(UGP) exclusive
+    lock. The lock is released after the function returns regardless of what happens inside the function."""
 
     @wraps(f)
     def do_locked(*arg, **kwargs):
@@ -69,9 +71,9 @@ def exclusive_locked(f: Callable) -> Callable:
     return do_locked
 
 
-def shared_locked(f) -> Callable:
-    """A decorator that ensures the decorated function be called under Update Graph Processor(UGP) shared lock.
-    The lock is release after the function returns regardless what happens inside the function."""
+def shared_locked(f: Callable) -> Callable:
+    """A decorator that ensures the decorated function be called under the Update Graph Processor(UGP) shared lock.
+    The lock is released after the function returns regardless of what happens inside the function."""
 
     @wraps(f)
     def do_locked(*arg, **kwargs):
@@ -81,14 +83,36 @@ def shared_locked(f) -> Callable:
     return do_locked
 
 
+def _check_arg(arg):
+    if isinstance(arg, abc.Sequence):
+        for e in arg:
+            if _check_arg(e):
+                return True
+    elif getattr(arg, "is_refreshing", False):
+        return True
+
+    return False
+
+
+def _has_refreshing_tables(*args, **kwargs):
+    for arg in args:
+        if _check_arg(arg):
+            return True
+    for k, v in kwargs.items():
+        if _check_arg(v):
+            return True
+
+    return False
+
+
 def auto_locking_op(f: Callable) -> Callable:
     """A decorator for annotating unsafe Table operations. It ensures that the decorated Table operation runs under
     the UGP shared lock when ugp.auto_locking is True, the target table is refreshing, and the current thread doesn't
     own any UGP locks."""
+
     @wraps(f)
     def do_locked(*args, **kwargs):
-        t = args[0] if args else kwargs['self']
-        if (not t.is_refreshing
+        if (not _has_refreshing_tables(*args, **kwargs)
                 or not auto_locking
                 or has_shared_lock()
                 or has_exclusive_lock()):

@@ -4,10 +4,18 @@
 
 import unittest
 
-from deephaven import time_table, DHError
+from deephaven import time_table, DHError, merge, merge_sorted
 from deephaven import ugp
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
+
+
+def transform_func(t: Table) -> Table:
+    return t.update("f = X + Z")
+
+
+def partitioned_transform_func(t: Table, ot: Table) -> Table:
+    return t.natural_join(ot, on=["X", "Z"], joins=["f"])
 
 
 class UgpTestCase(BaseTestCase):
@@ -192,6 +200,55 @@ class UgpTestCase(BaseTestCase):
             with self.subTest(op=op):
                 result_table = op(test_table, num_rows=1, by=["X"])
                 self.assertLessEqual(result_table.size, test_table.size)
+
+    def test_auto_locking_partitioned_table(self):
+        with ugp.shared_lock():
+            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+        pt = test_table.partition_by(by="Y")
+
+        with self.subTest("Merge"):
+            ugp.auto_locking = False
+            with self.assertRaises(DHError) as cm:
+                t = pt.merge()
+            self.assertRegex(str(cm.exception), r"IllegalStateException")
+
+            ugp.auto_locking = True
+            t = pt.merge()
+
+        with self.subTest("Transform"):
+            ugp.auto_locking = False
+            with self.assertRaises(DHError) as cm:
+                pt1 = pt.transform(transform_func)
+            self.assertRegex(str(cm.exception), r"IllegalStateException")
+
+            ugp.auto_locking = True
+            pt1 = pt.transform(transform_func)
+
+        with self.subTest("Partitioned Transform"):
+            ugp.auto_locking = False
+            with self.assertRaises(DHError) as cm:
+                pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
+            self.assertRegex(str(cm.exception), r"IllegalStateException")
+
+            ugp.auto_locking = True
+            pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
+
+    def test_auto_locking_table_factory(self):
+        with ugp.shared_lock():
+            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table1 = time_table("00:00:00.001").update(["X=i", "Y=i%23", "Z=X*Y"])
+
+        with self.subTest("Merge"):
+            ugp.auto_locking = False
+            with self.assertRaises(DHError) as cm:
+                t = merge([test_table, test_table1])
+            self.assertRegex(str(cm.exception), r"IllegalStateException")
+
+            ugp.auto_locking = True
+            t = merge([test_table, test_table1])
+
+        with self.subTest("Merge Sorted"):
+            self.skipTest("mergeSorted does not yet support refreshing tables")
 
 
 if __name__ == "__main__":
