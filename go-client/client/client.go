@@ -125,15 +125,20 @@ func (client *Client) FetchTables(ctx context.Context, opt FetchOption) error {
 	client.lock.Lock()
 	defer client.lock.Unlock()
 
-	return client.fetchTablesWhileLocked(ctx, opt)
-}
-
-// fetchTablesWhileLocked is Like FetchTables, but assumes the client lock is already held.
-func (client *Client) fetchTablesWhileLocked(ctx context.Context, opt FetchOption) error {
-	return client.listFields(ctx, opt, func(update *applicationpb2.FieldsChangeUpdate) {
+	return client.appStub.listFields(ctx, opt, func(update *applicationpb2.FieldsChangeUpdate) {
 		client.handleFieldChanges(update)
 	})
 }
+
+// resumeFetchTables is like FetchTables, but restarts a loop that was stopped earlier.
+// The client lock must be held while calling this function.
+func (client *Client) resumeFetchTables() error {
+	return client.appStub.resumeFetchLoop(func(update *applicationpb2.FieldsChangeUpdate) {
+		client.handleFieldChanges(update)
+	})
+}
+
+// resumeFetchTablesWhileLocked is like fetchTablesWhileLocked, but assumes
 
 // ListOpenableTables returns a list of the (global) tables that can be opened with OpenTable.
 // Tables that are created by other clients or in the web UI are not listed here automatically.
@@ -253,7 +258,7 @@ func (client *Client) RunScript(context context.Context, script string) error {
 			// If we were fetching tables before we called RunScript,
 			// we should try to make sure the loop is restored.
 			// No error handling here since we're already handling another error...
-			client.fetchTablesWhileLocked(context, FetchRepeating)
+			client.resumeFetchTables()
 		}
 		return err
 	}
@@ -261,7 +266,7 @@ func (client *Client) RunScript(context context.Context, script string) error {
 	if restartLoop {
 		// If we were fetching tables before we called RunScript,
 		// we should try to make sure the loop is restored.
-		err = client.fetchTablesWhileLocked(context, FetchRepeating)
+		err = client.resumeFetchTables()
 		if err != nil {
 			return err
 		}

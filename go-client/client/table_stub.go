@@ -55,7 +55,9 @@ func (ts *tableStub) createInputTable(ctx context.Context, req *tablepb2.CreateI
 
 // batch executes a batch (query) request on the server and returns the resulting tables.
 // Only the operations which were given a non-nil result ticket (the ResultId field) will be returned as tables.
-// The tables will be returned in an arbitrary order. Each table's ticket will match exactly one result ticket in one of the operations.
+// The tables will be returned in an arbitrary order.
+// Each table's ticket will match exactly one result ticket in one of the operations,
+// so this can be used to identify the tables and put them back in order.
 func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableRequest_Operation) ([]*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {

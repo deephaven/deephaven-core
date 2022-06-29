@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apppb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/application"
@@ -16,6 +17,8 @@ type appStub struct {
 	// The stub for application.proto gRPC requests.
 	stub apppb2.ApplicationServiceClient
 
+	// Only present when a FetchRepeating call is running or has been canceled.
+	savedContext context.Context
 	// Only present when doing a FetchRepeating call in the background.
 	// Calling this function will cancel the FetchRepeating call.
 	cancelFunc context.CancelFunc
@@ -48,6 +51,10 @@ func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, hand
 		return err
 	}
 
+	// Make a copy of the context now, since it shouldn't include the cancellation function,
+	// but don't actually save it until we know the loop has started successfully.
+	ctxToBeSaved := ctx
+
 	ctx, cancel := context.WithCancel(ctx)
 
 	as.cancelFetchLoop()
@@ -71,6 +78,7 @@ func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, hand
 
 	if fetchOption == FetchRepeating {
 		cancelAck := make(chan struct{})
+		as.savedContext = ctxToBeSaved
 		as.cancelAck = cancelAck
 		go fetchTablesLoop(fieldStream, handler, cancelAck)
 		return nil
@@ -99,6 +107,20 @@ func (as *appStub) cancelFetchLoop() {
 		<-as.cancelAck
 		as.cancelAck = nil
 	}
+}
+
+// resumeFetchLoop resumes a FetchTables loop that has been canceled,
+// starting it with its original context.
+// The client lock should be held when calling this function.
+func (as *appStub) resumeFetchLoop(handler changeHandler) error {
+	if as.isFetching() {
+		return errors.New("tried to resume a fetch loop while one was already running")
+	}
+	if as.savedContext == nil {
+		return errors.New("tried to resume a fetch loop but one was never canceled")
+	}
+
+	return as.listFields(as.savedContext, FetchRepeating, handler)
 }
 
 // Close closes the app stub and frees any associated resources.
