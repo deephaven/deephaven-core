@@ -37,12 +37,28 @@ jobs:
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
           cat gradle.properties
 
-      - name: Package Applications
+      - name: Publish to Maven Local
+        if: ${{ !startsWith(github.ref, 'refs/heads/release/v') }}
         uses: burrunan/gradle-cache-action@v1
         with:
-          job-id: package-applications
-          arguments: server-netty-app:build server-jetty-app:build
+          job-id: publish-local
+          arguments: server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build publishToMavenLocal -x signMavenJavaPublication -x signMyPlatformPublication
           gradle-version: wrapper
+
+      - name: Publish
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: publish
+          # Note: even though we specify org.gradle.parallel=false in our CI gradle.properties, we want to be explicit
+          # here about no parallelism to ensure we don't create disjointed staging repositories.
+          arguments: --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build publish
+          gradle-version: wrapper
+        env:
+          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.CI_AT_DEEPHAVEN_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.CI_AT_DEEPHAVEN_PASSWORD }}
 
       - name: Upload Applications
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
@@ -53,25 +69,18 @@ jobs:
             server/jetty-app/build/distributions/
             server/netty-app/build/distributions/
 
-      - name: Publish to Maven Local
-        if: ${{ !startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: publish-local
-          arguments: publishToMavenLocal -x signMavenJavaPublication -x signMyPlatformPublication
-          gradle-version: wrapper
-
-      - name: Publish
+      - name: Publish deephaven-core to PyPi
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: burrunan/gradle-cache-action@v1
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          job-id: publish
-          # Note: even though we specify org.gradle.parallel=false in our CI gradle.properties, we want to be explicit
-          # here about no parallelism to ensure we don't create disjointed staging repositories.
-          arguments: --no-parallel publish
-          gradle-version: wrapper
-        env:
-          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.SONATYPE_USERNAME }}
-          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.SONATYPE_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.CI_AT_DEEPHAVEN_KEY }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.CI_AT_DEEPHAVEN_PASSWORD }}
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: py/server/build/wheel/
+
+      - name: Publish deephaven-server to PyPi
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: py/embedded-server/build/wheel/
