@@ -27,7 +27,7 @@ import java.io.InputStream;
 
 /**
  * Modified version of {@link org.apache.parquet.hadoop.codec.ZstdDecompressorStream} but with the no-finalizer
- * version of the output stream to avoid closing the underlying stream when GC runs.
+ * version of the input stream to avoid closing the underlying stream when GC runs.
  */
 public class ZstdDecompressorStream extends CompressionInputStream {
 
