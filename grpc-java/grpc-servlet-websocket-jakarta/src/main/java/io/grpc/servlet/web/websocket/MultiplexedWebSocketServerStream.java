@@ -43,7 +43,8 @@ import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
 @ServerEndpoint(value = "/grpc-websocket", subprotocols = "grpc-websockets-multiplex")
 public class MultiplexedWebSocketServerStream {
     private static final Logger logger = Logger.getLogger(MultiplexedWebSocketServerStream.class.getName());
-    public static final Metadata.Key<String> PATH = Metadata.Key.of("grpc-websockets-path", Metadata.ASCII_STRING_MARSHALLER);
+    public static final Metadata.Key<String> PATH =
+            Metadata.Key.of("grpc-websockets-path", Metadata.ASCII_STRING_MARSHALLER);
 
     private final ServerTransportListener transportListener;
     private final List<? extends ServerStreamTracer.Factory> streamTracerFactories;
@@ -95,7 +96,8 @@ public class MultiplexedWebSocketServerStream {
 
     @OnMessage
     public void onMessage(ByteBuffer message) throws IOException {
-        // Each message starts with an int, to indicate stream id. If that int is negative, the other end has performed a half close (and this is the final message).
+        // Each message starts with an int, to indicate stream id. If that int is negative, the other end has performed
+        // a half close (and this is the final message).
         int streamId = message.getInt();
         final boolean closed;
         if (streamId < 0) {
@@ -120,9 +122,10 @@ public class MultiplexedWebSocketServerStream {
             processHeaders(message, streamId);
             return;
         }
-//        if (stream == null) {
-//            websocketSession.close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "No stream with that ID: " + streamId));
-//        }
+        // if (stream == null) {
+        // websocketSession.close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "No stream with that ID: " +
+        // streamId));
+        // }
 
         // For every message after headers, the next byte is control flow
         byte controlFlow = message.get();

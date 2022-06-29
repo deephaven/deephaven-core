@@ -90,16 +90,16 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Set up websocket for grpc-web
         if (config.websocketsOrDefault()) {
             JakartaWebSocketServletContainerInitializer.configure(context, (servletContext, container) -> {
-//                container.addEndpoint(
-//                        ServerEndpointConfig.Builder.create(WebSocketServerStream.class, "/{service}/{method}")
-//                                .configurator(new ServerEndpointConfig.Configurator() {
-//                                    @Override
-//                                    public <T> T getEndpointInstance(Class<T> endpointClass)
-//                                            throws InstantiationException {
-//                                        return (T) filter.create(WebSocketServerStream::new);
-//                                    }
-//                                })
-//                                .build());
+                // container.addEndpoint(
+                // ServerEndpointConfig.Builder.create(WebSocketServerStream.class, "/{service}/{method}")
+                // .configurator(new ServerEndpointConfig.Configurator() {
+                // @Override
+                // public <T> T getEndpointInstance(Class<T> endpointClass)
+                // throws InstantiationException {
+                // return (T) filter.create(WebSocketServerStream::new);
+                // }
+                // })
+                // .build());
                 container.addEndpoint(
                         ServerEndpointConfig.Builder.create(MultiplexedWebSocketServerStream.class, "/grpc-websocket")
                                 .configurator(new ServerEndpointConfig.Configurator() {
