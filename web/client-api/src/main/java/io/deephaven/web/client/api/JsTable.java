@@ -25,6 +25,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Typ
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.batch.RequestBatcher;
+import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
@@ -953,8 +954,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         findColumns(actualKeys);
 
         // Start the partitionBy on the server - we want to get the error from here, but we'll race the fetch against
-        // this
-        // to avoid an extra round-trip
+        // this to avoid an extra round-trip
         Ticket partitionedTableTicket = workerConnection.getConfig().newTicket();
         Promise<PartitionByResponse> partitionByPromise = Callbacks.<PartitionByResponse, Object>grpcUnaryPromise(c -> {
             PartitionByRequest partitionBy = new PartitionByRequest();
@@ -972,7 +972,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, c -> {
                     FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
                     partitionedTableRequest.setSourceId(new TypedTicket());
-                    partitionedTableRequest.getSourceId().setType("PartitionedTable");
+                    partitionedTableRequest.getSourceId().setType(JsVariableChanges.PARTITIONEDTABLE);
                     partitionedTableRequest.getSourceId().setTicket(partitionedTableTicket);
                     workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
                             workerConnection.metadata(), (fail, success) -> {

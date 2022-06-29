@@ -28,27 +28,27 @@ public class JsMultiSeries {
     }
 
     @JsIgnore
-    public void initSources(Map<Integer, JsPartitionedTable> plotHandlesToTableMaps) {
+    public void initSources(Map<Integer, JsPartitionedTable> plotHandlesToPartitionedTables) {
         descriptor.getDataSourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getPartitionedTableId)
                 .distinct()
                 // TODO assert only one at this stage
                 .forEach(plotHandle -> {
-                    JsPartitionedTable tableMap = plotHandlesToTableMaps.get(plotHandle);
-                    tableMap.getKeys().forEach((p0, p1, p2) -> {
-                        requestTable(tableMap, p0);
+                    JsPartitionedTable partitionedTable = plotHandlesToPartitionedTables.get(plotHandle);
+                    partitionedTable.getKeys().forEach((p0, p1, p2) -> {
+                        requestTable(partitionedTable, p0);
                         return null;
                     });
-                    tableMap.addEventListener(JsPartitionedTable.EVENT_KEYADDED, event -> {
-                        requestTable(tableMap, ((CustomEvent) event).detail);
+                    partitionedTable.addEventListener(JsPartitionedTable.EVENT_KEYADDED, event -> {
+                        requestTable(partitionedTable, ((CustomEvent) event).detail);
                     });
 
                 });
     }
 
-    private void requestTable(JsPartitionedTable tableMap, Object key) {
+    private void requestTable(JsPartitionedTable partitionedTable, Object key) {
         // TODO ask the server in parallel for the series name
         String seriesName = descriptor.getName() + ": " + key;
-        tableMap.getTable(key).then(table -> {
+        partitionedTable.getTable(key).then(table -> {
             SeriesDescriptor seriesInstance = new SeriesDescriptor();
 
             seriesInstance.setName(seriesName);

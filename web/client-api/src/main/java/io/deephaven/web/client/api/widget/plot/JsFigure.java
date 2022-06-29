@@ -108,8 +108,8 @@ public class JsFigure extends HasEventHandling {
     private JsTable[] tables;
     private Map<Integer, JsTable> plotHandlesToTables;
 
-    private JsPartitionedTable[] tableMaps;
-    private Map<Integer, JsPartitionedTable> plotHandlesToTableMaps;
+    private JsPartitionedTable[] partitionedTables;
+    private Map<Integer, JsPartitionedTable> plotHandlesToPartitionedTables;
 
     private final Map<AxisDescriptor, DownsampledAxisDetails> downsampled = new HashMap<>();
 
@@ -131,7 +131,7 @@ public class JsFigure extends HasEventHandling {
     @JsIgnore
     public Promise<JsFigure> refetch() {
         plotHandlesToTables = new HashMap<>();
-        plotHandlesToTableMaps = new HashMap<>();
+        plotHandlesToPartitionedTables = new HashMap<>();
 
         return Callbacks.grpcUnaryPromise(fetch::fetch).then(response -> {
             this.descriptor = FigureDescriptor.deserializeBinary(response.getData_asU8());
@@ -144,7 +144,7 @@ public class JsFigure extends HasEventHandling {
         }).then(tableFetchData -> {
             // all tables are wired up, need to map them to the series instances
             tables = tableFetchData.tables;
-            tableMaps = tableFetchData.tableMaps;
+            partitionedTables = tableFetchData.jsPartitionedTables;
             onClose = tableFetchData.onClose;
 
             for (int i = 0; i < tables.length; i++) {
@@ -153,18 +153,18 @@ public class JsFigure extends HasEventHandling {
                     registerTableWithId(table, Js.cast(JsArray.of((double) i)));
                 }
             }
-            for (int i = 0; i < tableMaps.length; i++) {
-                JsPartitionedTable partitionedTable = tableMaps[i];
+            for (int i = 0; i < partitionedTables.length; i++) {
+                JsPartitionedTable partitionedTable = partitionedTables[i];
                 if (partitionedTable != null) {
-                    registerTableMapWithId(partitionedTable, Js.cast(JsArray.of((double) i)));
+                    registerPartitionedTableWithId(partitionedTable, Js.cast(JsArray.of((double) i)));
                 }
             }
             Arrays.stream(charts)
                     .flatMap(c -> Arrays.stream(c.getSeries()))
-                    .forEach(s -> s.initSources(plotHandlesToTables, plotHandlesToTableMaps));
+                    .forEach(s -> s.initSources(plotHandlesToTables, plotHandlesToPartitionedTables));
             Arrays.stream(charts)
                     .flatMap(c -> Arrays.stream(c.getMultiSeries()))
-                    .forEach(s -> s.initSources(plotHandlesToTableMaps));
+                    .forEach(s -> s.initSources(plotHandlesToPartitionedTables));
 
             return null;
         }).then(ignore -> {
@@ -537,8 +537,8 @@ public class JsFigure extends HasEventHandling {
         if (tables != null) {
             Arrays.stream(tables).filter(t -> t != null && !t.isClosed()).forEach(JsTable::close);
         }
-        if (tableMaps != null) {
-            Arrays.stream(tableMaps).forEach(JsPartitionedTable::close);
+        if (partitionedTables != null) {
+            Arrays.stream(partitionedTables).forEach(JsPartitionedTable::close);
         }
     }
 
@@ -556,10 +556,10 @@ public class JsFigure extends HasEventHandling {
         }
     }
 
-    private void registerTableMapWithId(JsPartitionedTable partitionedTable, JsArray<Double> plotTableHandles) {
+    private void registerPartitionedTableWithId(JsPartitionedTable partitionedTable, JsArray<Double> plotTableHandles) {
         assert partitionedTable != null;
         for (int j = 0; j < plotTableHandles.length; j++) {
-            plotHandlesToTableMaps.put((int) (double) plotTableHandles.getAt(j), partitionedTable);
+            plotHandlesToPartitionedTables.put((int) (double) plotTableHandles.getAt(j), partitionedTable);
         }
     }
 
@@ -618,21 +618,21 @@ public class JsFigure extends HasEventHandling {
     public static class FigureTableFetchData {
         private JsTable[] tables;
 
-        private JsPartitionedTable[] tableMaps;
+        private JsPartitionedTable[] jsPartitionedTables;
         private FigureClose onClose;
 
         public FigureTableFetchData(
                 JsTable[] tables,
-                JsPartitionedTable[] tableMaps) {
-            this(tables, tableMaps, null);
+                JsPartitionedTable[] jsPartitionedTables) {
+            this(tables, jsPartitionedTables, null);
         }
 
         public FigureTableFetchData(
                 JsTable[] tables,
-                JsPartitionedTable[] tableMaps,
+                JsPartitionedTable[] jsPartitionedTables,
                 FigureClose onClose) {
             this.tables = tables;
-            this.tableMaps = tableMaps;
+            this.jsPartitionedTables = jsPartitionedTables;
 
             // Called when the figure is being closed
             this.onClose = onClose;
@@ -650,7 +650,7 @@ public class JsFigure extends HasEventHandling {
         @Override
         public Promise fetch(JsFigure figure, FetchObjectResponse response) {
             JsTable[] tables = new JsTable[response.getTypedExportIdList().length];
-            JsPartitionedTable[] tableMaps = new JsPartitionedTable[response.getTypedExportIdList().length];
+            JsPartitionedTable[] partitionedTables = new JsPartitionedTable[response.getTypedExportIdList().length];
 
             Promise<?>[] promises = new Promise[response.getTypedExportIdList().length];
 
@@ -686,7 +686,7 @@ public class JsFigure extends HasEventHandling {
                         JsPartitionedTable partitionedTable =
                                 new JsPartitionedTable(connection, new JsWidget(connection,
                                         callback -> callback.handleResponse(null, object, ticket.getTicket())));
-                        tableMaps[partitionedTableIndex] = partitionedTable;
+                        partitionedTables[partitionedTableIndex] = partitionedTable;
                         return partitionedTable.refetch();
                     });
                 } else {
@@ -699,7 +699,7 @@ public class JsFigure extends HasEventHandling {
                         connection.registerFigure(figure);
 
                         return Promise.resolve(
-                                new FigureTableFetchData(tables, tableMaps, f -> this.connection.releaseFigure(f)));
+                                new FigureTableFetchData(tables, partitionedTables, f -> this.connection.releaseFigure(f)));
                     });
         }
     }

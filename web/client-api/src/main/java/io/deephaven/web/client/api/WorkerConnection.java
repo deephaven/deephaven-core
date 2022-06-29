@@ -557,7 +557,7 @@ public class WorkerConnection {
 
     // @Override
     public void onClose(int code, String message) {
-        // notify all active tables, tablemaps, and figures that the connection is closed
+        // notify all active tables and figures that the connection is closed
         figures.forEach((p0, p1, p2) -> {
             try {
                 p0.fireEvent(JsFigure.EVENT_DISCONNECT);
@@ -780,7 +780,7 @@ public class WorkerConnection {
     }
 
     public Promise<JsPartitionedTable> getPartitionedTable(JsVariableDefinition varDef) {
-        return whenServerReady("get a tablemap")
+        return whenServerReady("get a partitioned table")
                 .then(server -> new JsPartitionedTable(this, new JsWidget(this, c -> fetchObject(varDef, c)))
                         .refetch());
     }

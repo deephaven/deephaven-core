@@ -27,11 +27,6 @@ service TableService {
   rpc FetchPandasTable(FetchPandasTableRequest) returns (ExportedTableCreationResponse) {}
 
   /*
-   * Fetches a TableMap from an existing source ticket and exports it to the local session result ticket.
-   */
-  rpc FetchTableMap(FetchTableMapRequest) returns (FetchTableMapResponse) {}
-
-  /*
    * Create a table that has preview columns applied to an existing source table.
    */
   rpc ApplyPreviewColumns(ApplyPreviewColumnsRequest) returns (ExportedTableCreationResponse) {}
@@ -243,15 +238,6 @@ message ApplyPreviewColumnsRequest {
 message FetchPandasTableRequest {
   TableReference source_id = 1;
   Ticket result_id = 2;
-}
-
-message FetchTableMapRequest {
-  TableReference source_id = 1;
-  Ticket result_id = 2;
-}
-
-message FetchTableMapResponse {
-  // TODO (core#62): Implement Table Maps
 }
 
 message ExportedTableUpdatesRequest {

@@ -43,11 +43,11 @@ public class JsPartitionedTable extends HasEventHandling {
     private TableSubscription subscription;
 
     /*
-     * Represents the sorta-kinda memoized results, tables that we've already locally fetched from the tablemap, and if
-     * all references to a table are released, entries here will be replaced with unresolved instances so we don't leak
-     * server references or memory. Keys are Object[], even with one element, so that we can easily hash without an
-     * extra wrapper object. Since columns are consistent with a PartitionedTable, we will not worry about "foo" vs
-     * ["foo"] as being different entries.
+     * Represents the sorta-kinda memoized results, tables that we've already locally fetched from the partitioned
+     * table, and if all references to a table are released, entries here will be replaced with unresolved instances so
+     * we don't leak server references or memory. Keys are Object[], even with one element, so that we can easily hash
+     * without an extra wrapper object. Since columns are consistent with a PartitionedTable, we will not worry about
+     * "foo" vs ["foo"] as being different entries.
      */
     private final Map<List<Object>, JsLazy<Promise<ClientTableState>>> tables = new HashMap<>();
 
@@ -88,7 +88,7 @@ public class JsPartitionedTable extends HasEventHandling {
 
             LazyPromise<JsPartitionedTable> promise = new LazyPromise<>();
             subscription.addEventListenerOneShot(TableSubscription.EVENT_UPDATED, data -> promise.succeed(this));
-            keys.addEventListener(JsTable.EVENT_DISCONNECT, promise::fail);
+            keys.addEventListener(JsTable.EVENT_DISCONNECT, e -> promise.fail("Underlying table disconnected"));
             return promise.asPromise();
         });
     }
@@ -135,7 +135,7 @@ public class JsPartitionedTable extends HasEventHandling {
                             return null;
                         });
             },
-                    "tablemap key " + key);
+                    "partitioned table key " + key);
 
             // later, when the CTS is released, remove this "table" from the map and replace with an unresolved JsLazy
             entry.onRunning(
@@ -170,7 +170,7 @@ public class JsPartitionedTable extends HasEventHandling {
             requestMessage.setPartitionedTable(widget.getTicket());
             requestMessage.setResultId(cts.getHandle().makeTicket());
             connection.partitionedTableServiceClient().merge(requestMessage, connection.metadata(), c::apply);
-        }, "tablemap merged table")
+        }, "partitioned table merged table")
                 .refetch(this, connection.metadata())
                 .then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
     }

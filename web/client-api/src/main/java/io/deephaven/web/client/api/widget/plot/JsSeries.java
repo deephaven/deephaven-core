@@ -61,10 +61,10 @@ public class JsSeries {
      * are loaded.
      */
     @JsIgnore
-    public void initSources(Map<Integer, JsTable> tables, Map<Integer, JsPartitionedTable> tableMaps) {
+    public void initSources(Map<Integer, JsTable> tables, Map<Integer, JsPartitionedTable> partitionedTables) {
         Arrays.stream(sources).forEach(s -> s.initColumnType(tables));
         if (oneClick != null) {
-            oneClick.setTableMap(tableMaps.get(sources[0].getDescriptor().getPartitionedTableId()));
+            oneClick.setPartitionedTable(partitionedTables.get(sources[0].getDescriptor().getPartitionedTableId()));
         }
     }
 

@@ -25,7 +25,7 @@ public class OneClick {
 
     private final JsMap<String, Any> values = new JsMap<>();
 
-    private JsPartitionedTable tableMap;
+    private JsPartitionedTable partitionedTable;
 
     private Object[] currentKeys;
     private RemoverFn keyAddedListener;
@@ -37,12 +37,12 @@ public class OneClick {
         this.jsSeries = jsSeries;
     }
 
-    public void setTableMap(JsPartitionedTable tableMap) {
+    public void setPartitionedTable(JsPartitionedTable partitionedTable) {
         if (keyAddedListener != null) {
             keyAddedListener.remove();
         }
-        this.tableMap = tableMap;
-        keyAddedListener = tableMap.addEventListener(JsPartitionedTable.EVENT_KEYADDED, e -> {
+        this.partitionedTable = partitionedTable;
+        keyAddedListener = partitionedTable.addEventListener(JsPartitionedTable.EVENT_KEYADDED, e -> {
             if (currentKeys != null) {
                 // Fetch the table will only do something if the keys have actually changed
                 fetchTable();
@@ -122,7 +122,7 @@ public class OneClick {
         }
 
         // Some of the values aren't set, need to iterate through all the table map keys and select the ones that match
-        return JsArray.from(tableMap.getKeys()).filter((tableKey, index, all) -> {
+        return JsArray.from(partitionedTable.getKeys()).filter((tableKey, index, all) -> {
             if (!(tableKey instanceof String[])) {
                 return false;
             }
@@ -143,18 +143,18 @@ public class OneClick {
 
     private Promise<JsTable> doFetchTable(Object[] keys) {
         if (keys == null || keys.length == 0) {
-            return tableMap.getMergedTable();
+            return partitionedTable.getMergedTable();
         } else if (keys.length == 1) {
-            return tableMap.getTable(keys[0]);
+            return partitionedTable.getTable(keys[0]);
         } else {
             Promise<JsTable>[] promises =
-                    Arrays.stream(keys).map(key -> tableMap.getTable(key)).toArray(Promise[]::new);
+                    Arrays.stream(keys).map(key -> partitionedTable.getTable(key)).toArray(Promise[]::new);
             return Promise.all(promises)
                     .then(resolved -> {
                         JsTable[] tables =
                                 Arrays.stream(resolved).filter(table -> table != null).toArray(JsTable[]::new);
                         if (tables.length > 1) {
-                            return tables[0].getConnection().mergeTables(tables, tableMap);
+                            return tables[0].getConnection().mergeTables(tables, partitionedTable);
                         } else if (tables.length == 1) {
                             return Promise.resolve(tables[0]);
                         } else {
