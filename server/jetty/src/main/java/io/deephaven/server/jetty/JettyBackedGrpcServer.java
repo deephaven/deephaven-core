@@ -101,7 +101,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
 //                                })
 //                                .build());
                 container.addEndpoint(
-                        ServerEndpointConfig.Builder.create(MultiplexedWebSocketServerStream.class, "/{service}/{method}")
+                        ServerEndpointConfig.Builder.create(MultiplexedWebSocketServerStream.class, "/grpc-websocket")
                                 .configurator(new ServerEndpointConfig.Configurator() {
                                     @Override
                                     public <T> T getEndpointInstance(Class<T> endpointClass)

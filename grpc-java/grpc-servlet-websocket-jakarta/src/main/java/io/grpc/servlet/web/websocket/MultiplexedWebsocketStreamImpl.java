@@ -244,7 +244,7 @@ public class MultiplexedWebsocketStreamImpl extends AbstractServerStream {
             prefix.putInt(trailerLength);
             prefix.flip();
             ByteBuffer message = ByteBuffer.allocate(trailerLength + 4);
-            message.putInt(streamId);
+            message.putInt(streamId ^ (1 << 31));
             for (int i = 0; i < serializedTrailers.length; i += 2) {
                 message.put(serializedTrailers[i]);
                 message.put((byte) ':');

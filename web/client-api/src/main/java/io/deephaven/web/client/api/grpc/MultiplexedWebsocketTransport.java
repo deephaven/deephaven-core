@@ -39,8 +39,9 @@ public class MultiplexedWebsocketTransport implements Transport {
     public static class HeaderFrame implements QueuedEntry {
         private final Uint8Array headerBytes;
 
-        public HeaderFrame(BrowserHeaders metadata) {
+        public HeaderFrame(String path, BrowserHeaders metadata) {
             StringBuilder str = new StringBuilder();
+            metadata.append("grpc-websockets-path", path);
             metadata.forEach((key, value) -> {
                 str.append(key).append(": ").append(value.join(", ")).append("\r\n");
             });
@@ -77,6 +78,7 @@ public class MultiplexedWebsocketTransport implements Transport {
         @Override
         public void send(WebSocket webSocket, int streamId) {
             Uint8Array data = new Uint8Array(new double[] {0, 0, 0, 0, 1});
+            streamId = streamId ^ (1 << 31);
             new DataView(data.buffer).setInt32(0, streamId);
             webSocket.send(data);
         }
@@ -89,6 +91,7 @@ public class MultiplexedWebsocketTransport implements Transport {
     private final int streamId = nextStreamId++;
     private final List<QueuedEntry> sendQueue = new ArrayList<>();
     private final TransportOptions options;
+    private final String path;
 
     public MultiplexedWebsocketTransport(TransportOptions options) {
         this.options = options;
@@ -99,7 +102,10 @@ public class MultiplexedWebsocketTransport implements Transport {
         } else {
             urlWrapper.protocol = "wss:";
         }
+        path = urlWrapper.pathname.substring(1);
+        urlWrapper.pathname = "/grpc-websocket";
         url = urlWrapper.toString();
+
         webSocket = activeSockets.computeIfAbsent(url, u -> {
             WebSocket ws = new WebSocket(u, "grpc-websockets-multiplex");
             ws.binaryType = "arraybuffer";
@@ -125,7 +131,7 @@ public class MultiplexedWebsocketTransport implements Transport {
             // fine to send right away on the already open socket.
             webSocket.addEventListener("open", this::onOpen);
         }
-        sendOrEnqueue(new HeaderFrame(metadata));
+        sendOrEnqueue(new HeaderFrame(path, metadata));
 
         webSocket.addEventListener("close", this::onClose);
         webSocket.addEventListener("error", this::onError);
@@ -144,8 +150,19 @@ public class MultiplexedWebsocketTransport implements Transport {
     private void onMessage(Event event) {
         MessageEvent<ArrayBuffer> messageEvent = (MessageEvent<ArrayBuffer>) event;
         // read the message, make sure it is for us, if so strip the stream id and fwd it
-        if (new DataView(messageEvent.data, 0, 4).getInt32(0) == streamId) {
+        int streamId = new DataView(messageEvent.data, 0, 4).getInt32(0);
+        boolean closed;
+        if (streamId < 0) {
+            streamId = streamId ^ (1 << 31);
+            closed = true;
+        } else {
+            closed = false;
+        }
+        if (streamId == this.streamId) {
             options.getOnChunk().onInvoke(new Uint8Array(messageEvent.data, 4), false);
+            if (closed) {
+                options.getOnEnd().onInvoke(null);
+            }
         }
     }
 
@@ -162,6 +179,7 @@ public class MultiplexedWebsocketTransport implements Transport {
             QueuedEntry queuedEntry = sendQueue.get(i);
             queuedEntry.send(webSocket, streamId);
         }
+        sendQueue.clear();
     }
 
     @Override

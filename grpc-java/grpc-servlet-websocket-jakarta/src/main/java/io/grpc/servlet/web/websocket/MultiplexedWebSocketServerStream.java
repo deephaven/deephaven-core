@@ -40,9 +40,10 @@ import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
  * JSR356 websockets always handle their incoming messages in a serial manner, so we don't need to worry here about
  * runOnTransportThread while in onMessage, as we're already in the transport thread.
  */
-@ServerEndpoint(value = "/{service}/{method}", subprotocols = "grpc-websockets-multiplex")
+@ServerEndpoint(value = "/grpc-websocket", subprotocols = "grpc-websockets-multiplex")
 public class MultiplexedWebSocketServerStream {
     private static final Logger logger = Logger.getLogger(MultiplexedWebSocketServerStream.class.getName());
+    public static final Metadata.Key<String> PATH = Metadata.Key.of("grpc-websockets-path", Metadata.ASCII_STRING_MARSHALLER);
 
     private final ServerTransportListener transportListener;
     private final List<? extends ServerStreamTracer.Factory> streamTracerFactories;
@@ -56,7 +57,6 @@ public class MultiplexedWebSocketServerStream {
 
     // fields set after headers are decoded
     private final Map<Integer, MultiplexedWebsocketStreamImpl> streams = new ConcurrentHashMap<>();
-    private boolean headersProcessed = false;
     private final boolean isTextRequest = false;// not supported yet
 
     public MultiplexedWebSocketServerStream(ServerTransportListener transportListener,
@@ -116,15 +116,18 @@ public class MultiplexedWebSocketServerStream {
         }
 
         // if this is the first message on this websocket, it is the request headers
-        if (!headersProcessed) {
+        if (stream == null) {
             processHeaders(message, streamId);
-            headersProcessed = true;
             return;
         }
+//        if (stream == null) {
+//            websocketSession.close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "No stream with that ID: " + streamId));
+//        }
 
         // For every message after headers, the next byte is control flow
         byte controlFlow = message.get();
         if (controlFlow == 1) {
+            assert closed;
             // if first byte is 1, the client is finished sending
             if (message.remaining() != 0) {
                 stream.transportReportStatus(Status.fromCode(Status.Code.UNKNOWN));
@@ -135,6 +138,7 @@ public class MultiplexedWebSocketServerStream {
             stream.inboundDataReceived(ReadableBuffers.empty(), true);
             return;
         }
+        assert !closed;
 
         if (isTextRequest) {
             throw new UnsupportedOperationException("text requests not yet supported");
@@ -158,12 +162,10 @@ public class MultiplexedWebSocketServerStream {
         }
     }
 
-    private String methodName() {
-        return websocketSession.getRequestURI().getPath().substring(1);
-    }
-
     private void processHeaders(ByteBuffer headerPayload, int streamId) {
         Metadata headers = readHeaders(headerPayload);
+
+        String path = headers.get(PATH);
 
         Long timeoutNanos = headers.get(TIMEOUT_KEY);
         if (timeoutNanos == null) {
@@ -172,12 +174,12 @@ public class MultiplexedWebSocketServerStream {
         // TODO handle timeout
 
         StatsTraceContext statsTraceCtx =
-                StatsTraceContext.newServerContext(streamTracerFactories, methodName(), headers);
+                StatsTraceContext.newServerContext(streamTracerFactories, path, headers);
 
         MultiplexedWebsocketStreamImpl stream =
                 new MultiplexedWebsocketStreamImpl(statsTraceCtx, maxInboundMessageSize, websocketSession, logId,
                         attributes, streamId);
-        stream.createStream(transportListener, methodName(), headers);
+        stream.createStream(transportListener, path, headers);
         streams.put(streamId, stream);
     }
 
