@@ -28,6 +28,7 @@ import org.apache.arrow.memory.BufferAllocator;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.net.URI;
 import java.util.*;
@@ -81,11 +82,11 @@ public final class BarrageTableResolver implements UriResolver {
     @Inject
     public BarrageTableResolver(
             BarrageSessionFactoryBuilder builder, ScheduledExecutorService executor, BufferAllocator allocator,
-            @Nullable SSLConfig sslConfig) {
+            @Named("client.sslConfig") SSLConfig sslConfig) {
         this.builder = Objects.requireNonNull(builder);
         this.executor = Objects.requireNonNull(executor);
         this.allocator = Objects.requireNonNull(allocator);
-        this.sslConfig = sslConfig;
+        this.sslConfig = Objects.requireNonNull(sslConfig);
         this.sessions = new ConcurrentHashMap<>();
     }
 
@@ -293,13 +294,11 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     private BarrageSession newSession(DeephavenTarget target) {
-        ClientConfig.Builder builder = ClientConfig.builder()
+        return newSession(ClientConfig.builder()
                 .target(target)
-                .maxInboundMessageSize(MAX_INBOUND_MESSAGE_SIZE);
-        if (sslConfig != null) {
-            builder.ssl(sslConfig);
-        }
-        return newSession(builder.build());
+                .maxInboundMessageSize(MAX_INBOUND_MESSAGE_SIZE)
+                .ssl(sslConfig)
+                .build());
     }
 
     private BarrageSession newSession(ClientConfig config) {

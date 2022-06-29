@@ -74,25 +74,22 @@ public abstract class SSLConfig {
      */
     public abstract Optional<ClientAuth> clientAuthentication();
 
-    public final SSLConfig orTrust(Trust defaultTrust) {
-        if (trust().isPresent()) {
-            return this;
-        }
-        return ((ImmutableSSLConfig) this).withTrust(defaultTrust);
+    public abstract SSLConfig withTrust(Trust trust);
+
+    public abstract SSLConfig withProtocols(Protocols protocols);
+
+    public abstract SSLConfig withCiphers(Ciphers ciphers);
+
+    public final SSLConfig orTrust(Trust trust) {
+        return trust().isPresent() ? this : withTrust(trust);
     }
 
-    public final SSLConfig orProtocols(Protocols defaultProtocols) {
-        if (protocols().isPresent()) {
-            return this;
-        }
-        return ((ImmutableSSLConfig) this).withProtocols(defaultProtocols);
+    public final SSLConfig orProtocols(Protocols protocols) {
+        return protocols().isPresent() ? this : withProtocols(protocols);
     }
 
-    public final SSLConfig orCiphers(Ciphers defaultCiphers) {
-        if (ciphers().isPresent()) {
-            return this;
-        }
-        return ((ImmutableSSLConfig) this).withCiphers(defaultCiphers);
+    public final SSLConfig orCiphers(Ciphers ciphers) {
+        return ciphers().isPresent() ? this : withCiphers(ciphers);
     }
 
     public enum ClientAuth {

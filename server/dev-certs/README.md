@@ -35,11 +35,11 @@ Mutual TLS is authentication in both directions between servers and clients.
 The respective servers can be started up with development certificates and mTLS via:
 
 ```shell
-./gradlew server-netty-app:run -Pgroovy -PdevCerts -PdevMTLS
+./gradlew server-netty-app:run -Pgroovy -PdevMTLS
 ```
 
 ```shell
-./gradlew server-jetty-app:run -Pgroovy -PdevCerts -PdevMTLS
+./gradlew server-jetty-app:run -Pgroovy -PdevMTLS
 ```
 
 Note: it is not possible to start with mTLS, but not certificates.
@@ -52,7 +52,7 @@ From the java client examples, the mTLS configuration can be referenced via:
 
 ```shell
 ./gradlew java-client-session-examples:installDist
-./java-client/session-examples/build/install/java-client-session-examples/bin/<program> --target dh://localhost:8443 --ssl server/dev-certs/client-mtls.json --groovy
+./java-client/session-examples/build/install/java-client-session-examples/bin/connect-check --target dh://localhost:8443 --ssl server/dev-certs/client-mtls.json
 ```
 ## Configuration
 

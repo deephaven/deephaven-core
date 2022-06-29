@@ -96,8 +96,7 @@ public class Main {
      * Parses the configuration properties {@value SSL_IDENTITY_TYPE}, {@value SSL_IDENTITY_CERT_CHAIN_PATH},
      * {@value SSL_IDENTITY_PRIVATE_KEY_PATH}, {@value SSL_TRUST_TYPE}, {@value SSL_TRUST_PATH}, and
      * {@value SSL_CLIENT_AUTH}. Currently, the only valid identity type is {@value PRIVATEKEY}, and the only valid
-     * trust type is {@value CERTS}. If trust material is present, {@link TrustJdk} will also be added, and
-     * {@link ClientAuth#NEEDED} will be selected unless explicitly set.
+     * trust type is {@value CERTS}.
      *
      * @param config the config
      * @return the optional SSL config
@@ -108,8 +107,8 @@ public class Main {
             return Optional.empty();
         }
         final Builder builder = SSLConfig.builder().identity(identity.get());
-        parseTrustConfig(config).ifPresent(
-                t -> builder.trust(t).clientAuthentication(parseClientAuth(config).orElse(ClientAuth.NEEDED)));
+        parseTrustConfig(config).ifPresent(builder::trust);
+        parseClientAuth(config).ifPresent(builder::clientAuthentication);
         return Optional.of(builder.build());
     }
 
@@ -144,7 +143,7 @@ public class Main {
         if (trustPath == null) {
             throw new IllegalArgumentException(String.format("Must specify `%s`", SSL_TRUST_PATH));
         }
-        return Optional.of(TrustList.of(TrustJdk.of(), TrustCertificates.of(trustPath)));
+        return Optional.of(TrustCertificates.of(trustPath));
     }
 
     private static Optional<ClientAuth> parseClientAuth(Configuration config) {
