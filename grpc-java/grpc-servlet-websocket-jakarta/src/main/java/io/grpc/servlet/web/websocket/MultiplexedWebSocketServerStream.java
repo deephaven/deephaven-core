@@ -95,8 +95,15 @@ public class MultiplexedWebSocketServerStream {
 
     @OnMessage
     public void onMessage(ByteBuffer message) throws IOException {
-        // Each message starts with an int, to indicate stream id
-        final int streamId = message.getInt();
+        // Each message starts with an int, to indicate stream id. If that int is negative, the other end has performed a half close (and this is the final message).
+        int streamId = message.getInt();
+        final boolean closed;
+        if (streamId < 0) {
+            closed = true;
+            streamId = streamId ^ (1 << 31);
+        } else {
+            closed = false;
+        }
         final MultiplexedWebsocketStreamImpl stream = streams.get(streamId);
 
         if (message.remaining() == 0) {
