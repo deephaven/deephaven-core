@@ -30,10 +30,17 @@ func newAppStub(client *Client) appStub {
 
 type changeHandler func(update *apppb2.FieldsChangeUpdate)
 
+// listFields wraps the ListFields gRPC request, which streams back a list of created/updated/removed fields.
+//
+// This function blocks on the first response (which the server always returns synchronously) and immediately
+// passes it to the given handler.
+//
+// A thread that continues reading the listFields request and passing responses to the handler
+// will start in the background if FetchRepeating is specified.
+//
 // Note that the provided context is saved and used to continue reading the stream,
 // so any timeouts or cancellations that have been set for it will affect the listFields stream.
-// A thread that continues reading the listFields request and updating the client's tables will start in the background
-// if FetchRepeating is specified.
+//
 // The client lock should be held when calling this function.
 func (as *appStub) listFields(ctx context.Context, fetchOption FetchOption, handler changeHandler) error {
 	ctx, err := as.client.withToken(ctx)

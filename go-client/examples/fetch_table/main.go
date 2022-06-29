@@ -15,9 +15,9 @@ func main() {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
-	// When starting a client connection, note that the client script language "python"
+	// When starting a client connection, the client script language
 	// must match the language the server was started with,
-	// even if we aren't using any scripts.
+	// even if the client does not execute any scripts.
 	cl, err := client.NewClient(ctx, "localhost", "10000", "python")
 	if err != nil {
 		fmt.Println("error when connecting to localhost port 10000:", err.Error())

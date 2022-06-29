@@ -57,11 +57,11 @@ func main() {
 		EmptyTableQuery(10).
 		Update("Magnitude = (int)pow(10, ii)")
 
-	// What if I want to bin the companies according to the magnitude of the Vol column?
+	// What if I want to bin the companies according to the magnitude of the Volume column?
 	// Query methods can take other query nodes as arguments to build up arbitrarily complicated requests,
 	// so we can perform an as-of join between two query nodes just fine.
 	magStocks := midStocks.
-		AsOfJoin(powTenTable, []string{"Vol = Magnitude"}, nil, client.MatchRuleLessThanEqual)
+		AsOfJoin(powTenTable, []string{"Volume = Magnitude"}, nil, client.MatchRuleLessThanEqual)
 
 	// And now, we can execute the queries we have built.
 	tables, err := cl.ExecQuery(ctx, midStocks, magStocks)

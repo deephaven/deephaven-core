@@ -9,7 +9,8 @@ import (
 	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
-func GetDataTableSchema() *arrow.Schema {
+// getDataTableSchema returns the schema for an example record.
+func getDataTableSchema() *arrow.Schema {
 	return arrow.NewSchema(
 		[]arrow.Field{
 			{Name: "Ticker", Type: arrow.BinaryTypes.String},
@@ -20,7 +21,8 @@ func GetDataTableSchema() *arrow.Schema {
 	)
 }
 
-func GetDataTableFirstRow(ctx context.Context, client *client.Client) (*client.TableHandle, error) {
+// getDataTableFirstRow imports and returns the first row of an example record.
+func getDataTableFirstRow(ctx context.Context, client *client.Client) (*client.TableHandle, error) {
 	rec := test_tools.ExampleRecord()
 	defer rec.Release()
 
@@ -38,8 +40,9 @@ func GetDataTableFirstRow(ctx context.Context, client *client.Client) (*client.T
 	return firstPart, err
 }
 
-// This intentionally overlaps with SecondPart
-func GetDataTableFirstPart(ctx context.Context, client *client.Client) (*client.TableHandle, error) {
+// getDataTableSecondPart imports and returns the first five rows of an example record.
+// This intentionally overlaps with getDataTableSecondPart.
+func getDataTableFirstPart(ctx context.Context, client *client.Client) (*client.TableHandle, error) {
 	rec := test_tools.ExampleRecord()
 	defer rec.Release()
 
@@ -57,8 +60,9 @@ func GetDataTableFirstPart(ctx context.Context, client *client.Client) (*client.
 	return firstPart, err
 }
 
-// This intentionally overlaps with FirstPart
-func GetDataTableSecondPart(ctx context.Context, client *client.Client) (*client.TableHandle, error) {
+// getDataTableSecondPart imports and returns the last five rows of an example record.
+// This intentionally overlaps with getDataTableFirstPart.
+func getDataTableSecondPart(ctx context.Context, client *client.Client) (*client.TableHandle, error) {
 	rec := test_tools.ExampleRecord()
 	defer rec.Release()
 
@@ -76,15 +80,25 @@ func GetDataTableSecondPart(ctx context.Context, client *client.Client) (*client
 	return secondPart, err
 }
 
+// addNewDataToAppend gets two (overlapping) parts of an example table and
+// adds them to the provided input table. It returns records from
+// a filtered version of the input table.
+// It returns three records from the filtered table:
+// - A snapshot before any data has been added
+// - A snapshot once the first part of the data has been added
+// - A snapshot once both parts of the data has been added.
+// The parts overlap to check that an input table allows duplicate rows,
+// and the filtered table is used to check that changes to the input table
+// propogate to other tables.
 func addNewDataToAppend(
 	ctx context.Context, cl *client.Client, tbl *client.AppendOnlyInputTable,
 ) (before arrow.Record, mid arrow.Record, after arrow.Record, err error) {
-	newData1, err := GetDataTableFirstPart(ctx, cl)
+	newData1, err := getDataTableFirstPart(ctx, cl)
 	if err != nil {
 		return
 	}
 	defer newData1.Release(ctx)
-	newData2, err := GetDataTableFirstPart(ctx, cl)
+	newData2, err := getDataTableSecondPart(ctx, cl)
 	if err != nil {
 		return
 	}
@@ -127,7 +141,7 @@ func TestAppendOnlyFromSchema(t *testing.T) {
 	test_tools.CheckError(t, "NewClient", err)
 	defer cl.Close()
 
-	inputTable, err := cl.NewAppendOnlyInputTableFromSchema(ctx, GetDataTableSchema())
+	inputTable, err := cl.NewAppendOnlyInputTableFromSchema(ctx, getDataTableSchema())
 	test_tools.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
 	defer inputTable.Release(ctx)
 
@@ -145,7 +159,7 @@ func TestAppendOnlyFromSchema(t *testing.T) {
 		t.Errorf("mid had wrong size %d x %d", mid.NumCols(), mid.NumRows())
 	}
 
-	if after.NumCols() != 3 || after.NumRows() != 8 {
+	if after.NumCols() != 3 || after.NumRows() != 7 {
 		t.Errorf("after had wrong size %d x %d", after.NumCols(), after.NumRows())
 	}
 }
@@ -157,7 +171,7 @@ func TestAppendOnlyFromTable(t *testing.T) {
 	test_tools.CheckError(t, "NewClient", err)
 	defer cl.Close()
 
-	templateTbl, err := GetDataTableFirstRow(ctx, cl)
+	templateTbl, err := getDataTableFirstRow(ctx, cl)
 	test_tools.CheckError(t, "GetDataTableFirstRow", err)
 	defer templateTbl.Release(ctx)
 
@@ -179,7 +193,7 @@ func TestAppendOnlyFromTable(t *testing.T) {
 		t.Errorf("mid had wrong size %d x %d", mid.NumCols(), mid.NumRows())
 	}
 
-	if after.NumCols() != 3 || after.NumRows() != 8 {
+	if after.NumCols() != 3 || after.NumRows() != 7 {
 		t.Errorf("after had wrong size %d x %d", after.NumCols(), after.NumRows())
 	}
 }
@@ -191,21 +205,21 @@ func TestKeyBackedTable(t *testing.T) {
 	test_tools.CheckError(t, "NewClient", err)
 	defer cl.Close()
 
-	inputTable, err := cl.NewKeyBackedInputTableFromSchema(ctx, GetDataTableSchema(), "Ticker")
+	inputTable, err := cl.NewKeyBackedInputTableFromSchema(ctx, getDataTableSchema(), "Ticker")
 	test_tools.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
 	defer inputTable.Release(ctx)
 
-	delData2, err := GetDataTableFirstRow(ctx, cl)
+	delData2, err := getDataTableFirstRow(ctx, cl)
 	test_tools.CheckError(t, "GetDataTableFirstRow", err)
 	defer delData2.Release(ctx)
 	delData, err := delData2.View(ctx, "Ticker")
 	test_tools.CheckError(t, "View", err)
 	defer delData.Release(ctx)
 
-	newData1, err := GetDataTableFirstPart(ctx, cl)
+	newData1, err := getDataTableFirstPart(ctx, cl)
 	test_tools.CheckError(t, "GetDataTableFirstPart", err)
 	defer newData1.Release(ctx)
-	newData2, err := GetDataTableSecondPart(ctx, cl)
+	newData2, err := getDataTableSecondPart(ctx, cl)
 	test_tools.CheckError(t, "GetDataTableSecondPart", err)
 	defer newData2.Release(ctx)
 

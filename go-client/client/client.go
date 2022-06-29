@@ -65,8 +65,8 @@ type Client struct {
 //
 // The client should be closed using Close() after it is done being used.
 //
-// Note that the provided context is saved and used to send keepalive messages.
-// Keepalive messages are sent automatically by the client at a regular interval (~30 seconds) so that the connection can continue.
+// Keepalive messages are sent automatically by the client to the server at a regular interval (~30 seconds)
+// so that the connection remains open. The provided context is saved and used to send keepalive messages.
 func NewClient(ctx context.Context, host string, port string, scriptLanguage string) (*Client, error) {
 	grpcChannel, err := grpc.Dial(host+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
