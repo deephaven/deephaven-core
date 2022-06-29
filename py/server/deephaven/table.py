@@ -1520,8 +1520,10 @@ class PartitionedTable(JObjectWrapper):
         """Join the underlying partitioned Tables from this PartitionedTable and other on the key columns, then apply
         the provided function to all pairs of constituent Tables with the same keys in order to produce a new
         PartitionedTable with the results as its constituents, with the same data for all other columns in the
-        underlying partitioned Table from this. Note that if the Tables underlying this PartitionedTable or other
-        change, a corresponding change will propagate to the result.
+        underlying partitioned Table from this.
+
+        Note that if the Tables underlying this PartitionedTable or other change, a corresponding change will propagate
+        to the result.
 
         Args:
             other (PartitionedTable): the other Partitioned table whose constituent tables will be passed in as the 2nd
