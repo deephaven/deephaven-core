@@ -1352,7 +1352,7 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def is_refreshing(self) -> bool:
-        """Whether this table is refreshing."""
+        """Whether the underlying partitioned table is refreshing."""
         if self._is_refreshing is None:
             self._is_refreshing = self.table.is_refreshing
         return self._is_refreshing

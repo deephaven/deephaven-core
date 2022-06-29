@@ -83,10 +83,10 @@ def shared_locked(f: Callable) -> Callable:
     return do_locked
 
 
-def _check_arg(arg):
-    if isinstance(arg, abc.Sequence):
+def _is_arg_refreshing(arg):
+    if isinstance(arg, list) or isinstance(arg, tuple):
         for e in arg:
-            if _check_arg(e):
+            if _is_arg_refreshing(e):
                 return True
     elif getattr(arg, "is_refreshing", False):
         return True
@@ -96,10 +96,10 @@ def _check_arg(arg):
 
 def _has_refreshing_tables(*args, **kwargs):
     for arg in args:
-        if _check_arg(arg):
+        if _is_arg_refreshing(arg):
             return True
     for k, v in kwargs.items():
-        if _check_arg(v):
+        if _is_arg_refreshing(v):
             return True
 
     return False
