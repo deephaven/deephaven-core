@@ -37,10 +37,26 @@ jobs:
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
           cat gradle.properties
 
+      - name: Package Applications
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: package-applications
+          arguments: server-netty-app:build server-jetty-app:build
+          gradle-version: wrapper
+
+      - name: Upload Applications
+        uses: actions/upload-artifact@v3
+        with:
+          name: applications
+          path: |
+            server/jetty-app/build/distributions/
+            server/netty-app/build/distributions/
+
       - name: Publish to Maven Local
         if: ${{ !startsWith(github.ref, 'refs/heads/release/v') }}
         uses: burrunan/gradle-cache-action@v1
         with:
+          job-id: publish-local
           arguments: publishToMavenLocal -x signMavenJavaPublication -x signMyPlatformPublication
           gradle-version: wrapper
 
