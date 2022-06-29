@@ -28,9 +28,6 @@ public abstract class CumMinMaxSpec extends UpdateBySpecBase {
                 // is boxed numeric?
                 || Number.class.isAssignableFrom(inputType)
 
-                // is boolean?
-                || inputType == boolean.class || inputType == Boolean.class
-
                 // is comparable?
                 || (Comparable.class.isAssignableFrom(inputType) && inputType != Boolean.class);
     }
