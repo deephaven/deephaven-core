@@ -1775,6 +1775,23 @@ public interface Table extends
      *         {@code byColumns}
      */
     @ConcurrentMethod
+    Table updateBy(@NotNull Collection<? extends UpdateByClause> operations,
+            @NotNull Collection<? extends Selectable> byColumns);
+
+    /**
+     * <p>
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
+     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows.This operation will group the table by the specified set of keys if
+     * provided
+     * </p>
+     *
+     * @param operations the operations to apply to the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
     Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations, final String... byColumns);
 
     /**

@@ -26,6 +26,7 @@ import io.deephaven.qst.table.TableVisitorGeneric;
 import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.UpdateByTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
 import io.deephaven.qst.table.ViewTable;
@@ -181,6 +182,14 @@ public class LabelBuilder extends TableVisitorGeneric {
         sb.append("countBy(").append(countByTable.countName()).append(',');
         append(Strings::of, countByTable.groupByColumns(), sb);
         sb.append(')');
+    }
+
+    @Override
+    public void visit(UpdateByTable updateByTable) {
+        // TODO(deephaven-core#1116): Add labeling, or structuring, for qst graphviz aggregations
+        sb.append("updateBy([");
+        append(Strings::of, updateByTable.groupByColumns(), sb);
+        sb.append("],[ todo ])");
     }
 
     private void join(String name, Join j) {
