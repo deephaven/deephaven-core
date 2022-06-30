@@ -699,7 +699,8 @@ public class JsFigure extends HasEventHandling {
                         connection.registerFigure(figure);
 
                         return Promise.resolve(
-                                new FigureTableFetchData(tables, partitionedTables, f -> this.connection.releaseFigure(f)));
+                                new FigureTableFetchData(tables, partitionedTables,
+                                        f -> this.connection.releaseFigure(f)));
                     });
         }
     }
