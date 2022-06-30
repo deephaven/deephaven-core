@@ -1309,16 +1309,23 @@ func (op mergeOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.T
 }
 
 func (op mergeOp) String() string {
-	return fmt.Sprintf("Merge(%s, /* tables omitted */)", op.sortBy)
+	return fmt.Sprintf("Merge(%s, /* %d tables omitted */)", op.sortBy, len(op.children))
 }
 
-// Merge combines two or more tables into one aggregate table.
+// Merge combines two or more tables into one aggregate table as part of a query.
 // This essentially appends the tables one on top of the other.
 // If sortBy is provided, the resulting table will be sorted based on that column.
-func (qb QueryNode) Merge(sortBy string, others ...QueryNode) QueryNode {
-	children := make([]QueryNode, len(others)+1)
-	children[0] = qb
-	copy(children[1:], others)
+func MergeQuery(sortBy string, tables ...QueryNode) QueryNode {
+	if len(tables) == 0 {
+		// A merge with no tables will always error,
+		// but since we can't return an error from this method
+		// we have to let the server give us an error instead.
+		emptyNode := QueryNode{builder: &queryBuilder{}}
+		return emptyNode.addOp(mergeOp{children: tables, sortBy: sortBy})
+	}
 
-	return qb.addOp(mergeOp{children: children, sortBy: sortBy})
+	// Just pick an arbitrary node to add the operation to.
+	qb := tables[0]
+
+	return qb.addOp(mergeOp{children: tables, sortBy: sortBy})
 }

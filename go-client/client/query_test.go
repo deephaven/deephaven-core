@@ -42,7 +42,7 @@ func TestDagQuery(t *testing.T) {
 		Update("Close = (float)(ii / 3.0)", "TickerLen = (int)(ii + 1)")
 
 	// Close (float32), TickerLen (int)
-	finalQuery := otherQuery.Merge("", exCloseLenQuery)
+	finalQuery := client.MergeQuery("", otherQuery, exCloseLenQuery)
 
 	tables, err := c.ExecQuery(ctx, finalQuery, otherQuery, exCloseLenQuery, exLenQuery)
 	test_tools.CheckError(t, "ExecQuery", err)
@@ -98,7 +98,7 @@ func TestMergeQuery(t *testing.T) {
 	test_tools.CheckError(t, "EmptyTable", err)
 	defer right.Release(ctx)
 
-	tables, err := c.ExecQuery(ctx, left.Query().Merge("", right.Query()))
+	tables, err := c.ExecQuery(ctx, client.MergeQuery("", left.Query(), right.Query()))
 	test_tools.CheckError(t, "ExecQuery", err)
 	if len(tables) != 1 {
 		t.Errorf("wrong number of tables")
@@ -110,6 +110,21 @@ func TestMergeQuery(t *testing.T) {
 
 	if tbl.NumRows() != 15 || tbl.NumCols() != 0 {
 		t.Errorf("table was wrong size")
+	}
+}
+
+func TestEmptyMerge(t *testing.T) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer c.Close()
+
+	invalidMerge := client.MergeQuery("")
+
+	_, err = c.ExecQuery(ctx, invalidMerge)
+	if err == nil {
+		t.Error("empty merge did not return error")
 	}
 }
 
