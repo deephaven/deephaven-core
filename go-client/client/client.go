@@ -185,6 +185,22 @@ func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 	return ticketpb2.Ticket{Ticket: bytes}
 }
 
+// ExecSerial executes several table operations on the server and returns the resulting tables.
+//
+// This function makes a request for each table operation.
+// Consider using ExecQuery to batch all of the table operations into a single request.
+//
+// If this function completes successfully,
+// the number of tables returned will always match the number of query nodes passed.
+// The first table in the returned list corresponds to the first node argument,
+// the second table in the returned list corresponds to the second node argument,
+// etc.
+//
+// This may return a QueryError if the query is invalid.
+func (client *Client) ExecSerial(ctx context.Context, nodes ...QueryNode) ([]*TableHandle, error) {
+	return execSerial(ctx, client, nodes)
+}
+
 // ExecQuery executes a query on the server and returns the resulting tables.
 //
 // If this function completes successfully,

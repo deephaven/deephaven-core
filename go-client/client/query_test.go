@@ -12,7 +12,18 @@ import (
 	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
-func TestDagQuery(t *testing.T) {
+// execQueryOrSerial can be either (*client.Client).ExecQuery or (*client.Client).ExecSerial.
+type execQueryOrSerial func(*client.Client, context.Context, ...client.QueryNode) ([]*client.TableHandle, error)
+
+func TestDagQueryBatched(t *testing.T) {
+	dagQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestDagQuerySerial(t *testing.T) {
+	dagQuery(t, (*client.Client).ExecSerial)
+}
+
+func dagQuery(t *testing.T, exec execQueryOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -44,14 +55,11 @@ func TestDagQuery(t *testing.T) {
 	// Close (float32), TickerLen (int)
 	finalQuery := client.MergeQuery("", otherQuery, exCloseLenQuery)
 
-	tables, err := c.ExecQuery(ctx, finalQuery, otherQuery, exCloseLenQuery, exLenQuery)
+	tables, err := exec(c, ctx, finalQuery, otherQuery, exCloseLenQuery, exLenQuery)
 	test_tools.CheckError(t, "ExecQuery", err)
 	if len(tables) != 4 {
 		t.Errorf("wrong number of tables")
 		return
-	}
-	for i := 0; i < len(tables); i += 1 {
-		defer tables[i].Release(ctx)
 	}
 
 	finalTable, err := tables[0].Snapshot(ctx)
@@ -81,9 +89,22 @@ func TestDagQuery(t *testing.T) {
 		t.Errorf("wrong size for exLenTable")
 		return
 	}
+
+	for _, tbl := range tables {
+		err = tbl.Release(ctx)
+		test_tools.CheckError(t, "Release", err)
+	}
 }
 
-func TestMergeQuery(t *testing.T) {
+func TestMergeQueryBatched(t *testing.T) {
+	mergeQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestMergeQuerySerial(t *testing.T) {
+	mergeQuery(t, (*client.Client).ExecSerial)
+}
+
+func mergeQuery(t *testing.T, exec execQueryOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -98,12 +119,11 @@ func TestMergeQuery(t *testing.T) {
 	test_tools.CheckError(t, "EmptyTable", err)
 	defer right.Release(ctx)
 
-	tables, err := c.ExecQuery(ctx, client.MergeQuery("", left.Query(), right.Query()))
+	tables, err := exec(c, ctx, client.MergeQuery("", left.Query(), right.Query()))
 	test_tools.CheckError(t, "ExecQuery", err)
 	if len(tables) != 1 {
 		t.Errorf("wrong number of tables")
 	}
-	defer tables[0].Release(ctx)
 
 	tbl, err := tables[0].Snapshot(ctx)
 	test_tools.CheckError(t, "Snapshot", err)
@@ -111,9 +131,20 @@ func TestMergeQuery(t *testing.T) {
 	if tbl.NumRows() != 15 || tbl.NumCols() != 0 {
 		t.Errorf("table was wrong size")
 	}
+
+	err = tables[0].Release(ctx)
+	test_tools.CheckError(t, "Release", err)
 }
 
-func TestEmptyMerge(t *testing.T) {
+func TestEmptyMergeBatched(t *testing.T) {
+	emptyMerge(t, (*client.Client).ExecQuery)
+}
+
+func TestEmptyMergeSerial(t *testing.T) {
+	emptyMerge(t, (*client.Client).ExecSerial)
+}
+
+func emptyMerge(t *testing.T, exec execQueryOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -122,13 +153,21 @@ func TestEmptyMerge(t *testing.T) {
 
 	invalidMerge := client.MergeQuery("")
 
-	_, err = c.ExecQuery(ctx, invalidMerge)
+	_, err = exec(c, ctx, invalidMerge)
 	if err == nil {
 		t.Error("empty merge did not return error")
 	}
 }
 
-func TestSeparateQueries(t *testing.T) {
+func TestSeparateQueriesBatched(t *testing.T) {
+	separateQueries(t, (*client.Client).ExecQuery)
+}
+
+func TestSeparateQueriesSerial(t *testing.T) {
+	separateQueries(t, (*client.Client).ExecSerial)
+}
+
+func separateQueries(t *testing.T, exec execQueryOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -172,7 +211,15 @@ func TestSeparateQueries(t *testing.T) {
 	}
 }
 
-func TestEmptyTableQuery(t *testing.T) {
+func TestEmptyTableQueryBatched(t *testing.T) {
+	emptyTableQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestEmptyTableQuerySerial(t *testing.T) {
+	emptyTableQuery(t, (*client.Client).ExecSerial)
+}
+
+func emptyTableQuery(t *testing.T, exec execQueryOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -185,7 +232,7 @@ func TestEmptyTableQuery(t *testing.T) {
 
 	derived := base.Update("a = ii")
 
-	tables, err := c.ExecQuery(ctx, base, derived)
+	tables, err := exec(c, ctx, base, derived)
 	if err != nil {
 		t.Errorf("ExecQuery %s", err.Error())
 		return
@@ -194,8 +241,6 @@ func TestEmptyTableQuery(t *testing.T) {
 		t.Errorf("wrong number of tables")
 		return
 	}
-	defer tables[0].Release(ctx)
-	defer tables[1].Release(ctx)
 
 	baseTbl, err := tables[0].Snapshot(ctx)
 	if err != nil {
@@ -218,9 +263,22 @@ func TestEmptyTableQuery(t *testing.T) {
 		t.Errorf("derived table had wrong size")
 		return
 	}
+
+	for _, tbl := range tables {
+		err = tbl.Release(ctx)
+		test_tools.CheckError(t, "Release", err)
+	}
 }
 
-func TestUpdateDropQuery(t *testing.T) {
+func TestUpdateDropQueryBatched(t *testing.T) {
+	updateDropQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestUpdateDropQuerySerial(t *testing.T) {
+	updateDropQuery(t, (*client.Client).ExecSerial)
+}
+
+func updateDropQuery(t *testing.T, exec execQueryOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -242,7 +300,7 @@ func TestUpdateDropQuery(t *testing.T) {
 	updateQuery := before.Query().Update("Foo = Close * 17.0", "Bar = Vol + 1")
 	dropQuery := updateQuery.DropColumns("Bar", "Ticker")
 
-	tables, err := c.ExecQuery(ctx, updateQuery, dropQuery)
+	tables, err := exec(c, ctx, updateQuery, dropQuery)
 	if err != nil {
 		t.Errorf("ExecQuery %s", err.Error())
 		return
@@ -251,8 +309,6 @@ func TestUpdateDropQuery(t *testing.T) {
 		t.Errorf("wrong number of result tables")
 		return
 	}
-	defer tables[0].Release(ctx)
-	defer tables[1].Release(ctx)
 
 	updTbl, err := tables[0].Snapshot(ctx)
 	if err != nil {
@@ -279,55 +335,22 @@ func TestUpdateDropQuery(t *testing.T) {
 		t.Errorf("wrong columns %s %s %s", col0, col1, col2)
 		return
 	}
+
+	for _, tbl := range tables {
+		err = tbl.Release(ctx)
+		test_tools.CheckError(t, "Release", err)
+	}
 }
 
-type queryOp func(*client.TableHandle) []client.QueryNode
-
-func doQueryTest(inputRec arrow.Record, t *testing.T, op queryOp) []arrow.Record {
-	defer inputRec.Release()
-
-	ctx := context.Background()
-
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
-	if err != nil {
-		t.Fatalf("NewClient %s", err.Error())
-	}
-	defer c.Close()
-
-	input, err := c.ImportTable(ctx, inputRec)
-	if err != nil {
-		t.Errorf("ImportTable %s", err.Error())
-		return nil
-	}
-	defer input.Release(ctx)
-
-	query := op(input)
-
-	tables, err := c.ExecQuery(ctx, query...)
-	if err != nil {
-		t.Errorf("ExecQuery %s", err.Error())
-		return nil
-	}
-
-	var recs []arrow.Record
-	for _, table := range tables {
-		rec, err := table.Snapshot(ctx)
-		if err != nil {
-			t.Errorf("Snapshot %s", err.Error())
-			return nil
-		}
-		recs = append(recs, rec)
-		err = table.Release(ctx)
-		if err != nil {
-			t.Errorf("Release %s", err.Error())
-			return nil
-		}
-	}
-
-	return recs
+func TestDuplicateQueryBatched(t *testing.T) {
+	duplicateQuery(t, (*client.Client).ExecQuery)
 }
 
-func TestDuplicateQuery(t *testing.T) {
+func TestDuplicateQuerySerial(t *testing.T) {
+	duplicateQuery(t, (*client.Client).ExecSerial)
+}
+
+func duplicateQuery(t *testing.T, exec execQueryOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -340,7 +363,7 @@ func TestDuplicateQuery(t *testing.T) {
 	query1 := c.EmptyTableQuery(10).Update("b = ii + 2")
 	query2 := query1.Update("a = ii * 3")
 
-	tables, err := c.ExecQuery(ctx, query2, query1, query2, query1)
+	tables, err := exec(c, ctx, query2, query1, query2, query1)
 	if err != nil {
 		t.Errorf("ExecQuery %s", err.Error())
 		return
@@ -365,23 +388,98 @@ func TestDuplicateQuery(t *testing.T) {
 	if records[1].NumCols() != 1 || records[3].NumCols() != 1 {
 		t.Errorf("query1 had wrong size")
 	}
+
+	for _, tbl := range tables {
+		err = tbl.Release(ctx)
+		test_tools.CheckError(t, "Release", err)
+	}
 }
 
-func TestEmptyUpdateQuery(t *testing.T) {
-	result := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+type queryOp func(*client.TableHandle) []client.QueryNode
+
+func doQueryTest(inputRec arrow.Record, t *testing.T, exec execQueryOrSerial, op queryOp) []arrow.Record {
+	defer inputRec.Release()
+
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	if err != nil {
+		t.Fatalf("NewClient %s", err.Error())
+	}
+	defer c.Close()
+
+	input, err := c.ImportTable(ctx, inputRec)
+	if err != nil {
+		t.Errorf("ImportTable %s", err.Error())
+		return nil
+	}
+	defer input.Release(ctx)
+
+	query := op(input)
+
+	tables, err := exec(c, ctx, query...)
+	if err != nil {
+		t.Errorf("ExecQuery %s", err.Error())
+		return nil
+	}
+
+	var recs []arrow.Record
+	for _, table := range tables {
+		rec, err := table.Snapshot(ctx)
+		if err != nil {
+			t.Errorf("Snapshot %s", err.Error())
+			return nil
+		}
+		recs = append(recs, rec)
+		err = table.Release(ctx)
+		if err != nil {
+			t.Errorf("Release %s", err.Error())
+			return nil
+		}
+	}
+
+	return recs
+}
+
+func TestEmptyUpdateQueryBatched(t *testing.T) {
+	emptyUpdateQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestEmptyUpdateQuerySerial(t *testing.T) {
+	emptyUpdateQuery(t, (*client.Client).ExecSerial)
+}
+
+func emptyUpdateQuery(t *testing.T, exec execQueryOrSerial) {
+	result := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Update()}
 	})
 	defer result[0].Release()
 }
 
-func TestEmptyQuery(t *testing.T) {
-	doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestEmptyQueryBatched(t *testing.T) {
+	emptyQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestEmptyQuerySerial(t *testing.T) {
+	emptyQuery(t, (*client.Client).ExecSerial)
+}
+
+func emptyQuery(t *testing.T, exec execQueryOrSerial) {
+	doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{}
 	})
 }
 
-func TestNoopQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestNoopQueryBatched(t *testing.T) {
+	noopQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestNoopQuerySerial(t *testing.T) {
+	noopQuery(t, (*client.Client).ExecSerial)
+}
+
+func noopQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query()}
 	})
 	defer results[0].Release()
@@ -391,8 +489,16 @@ func TestNoopQuery(t *testing.T) {
 	}
 }
 
-func TestSortQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(2, 10, 1000), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestSortQueryBatched(t *testing.T) {
+	sortQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestSortQuerySerial(t *testing.T) {
+	sortQuery(t, (*client.Client).ExecSerial)
+}
+
+func sortQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(2, 10, 1000), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Sort("a"), tbl.Query().SortBy(client.SortDsc("a"))}
 	})
 	defer results[0].Release()
@@ -413,8 +519,16 @@ func TestSortQuery(t *testing.T) {
 	}
 }
 
-func TestHeadTailQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(2, 10, 1000), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestHeadTailQueryBatched(t *testing.T) {
+	headTailQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestHeadTailQuerySerial(t *testing.T) {
+	headTailQuery(t, (*client.Client).ExecSerial)
+}
+
+func headTailQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(2, 10, 1000), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Head(3), tbl.Query().Tail(4)}
 	})
 	defer results[0].Release()
@@ -431,8 +545,16 @@ func TestHeadTailQuery(t *testing.T) {
 	}
 }
 
-func TestSelectDistinctQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(2, 20, 10), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestSelectDistinctQueryBatched(t *testing.T) {
+	selectDistinctQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestSelectDistinctQuerySerial(t *testing.T) {
+	selectDistinctQuery(t, (*client.Client).ExecSerial)
+}
+
+func selectDistinctQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(2, 20, 10), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().SelectDistinct("a")}
 	})
 	defer results[0].Release()
@@ -443,8 +565,16 @@ func TestSelectDistinctQuery(t *testing.T) {
 	}
 }
 
-func TestComboAggQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(4, 20, 10), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestComboAggQueryBatched(t *testing.T) {
+	comboAggQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestComboAggQuerySerial(t *testing.T) {
+	comboAggQuery(t, (*client.Client).ExecSerial)
+}
+
+func comboAggQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(4, 20, 10), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		b := client.NewAggBuilder().Min("minB = b").Sum("sumC = c")
 		return []client.QueryNode{tbl.Query().AggBy(b, "a")}
 	})
@@ -456,8 +586,16 @@ func TestComboAggQuery(t *testing.T) {
 	}
 }
 
-func TestWhereQuery(t *testing.T) {
-	results := doQueryTest(test_tools.ExampleRecord(), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestWhereQueryBatched(t *testing.T) {
+	whereQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestWhereQuerySerial(t *testing.T) {
+	whereQuery(t, (*client.Client).ExecSerial)
+}
+
+func whereQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.ExampleRecord(), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Where("Vol % 1000 != 0")}
 	})
 	defer results[0].Release()
@@ -468,13 +606,21 @@ func TestWhereQuery(t *testing.T) {
 	}
 }
 
-func TestUpdateViewSelectQuery(t *testing.T) {
+func TestUpdateViewSelectQueryBatched(t *testing.T) {
+	updateViewSelectQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestUpdateViewSelectQuerySerial(t *testing.T) {
+	updateViewSelectQuery(t, (*client.Client).ExecSerial)
+}
+
+func updateViewSelectQuery(t *testing.T, exec execQueryOrSerial) {
 	type usvOp func(qb client.QueryNode, columns ...string) client.QueryNode
 
 	ops := []usvOp{client.QueryNode.Update, client.QueryNode.LazyUpdate, client.QueryNode.View, client.QueryNode.UpdateView, client.QueryNode.Select}
 
 	for _, op := range ops {
-		results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 			return []client.QueryNode{op(tbl.Query(), "Sum = a + b", "b", "Foo = Sum % 2")}
 		})
 		defer results[0].Release()
@@ -486,8 +632,16 @@ func TestUpdateViewSelectQuery(t *testing.T) {
 	}
 }
 
-func TestExactJoinQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestExactJoinQueryBatched(t *testing.T) {
+	exactJoinQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestExactJoinQuerySerial(t *testing.T) {
+	exactJoinQuery(t, (*client.Client).ExecSerial)
+}
+
+func exactJoinQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query().GroupBy("a").Update("b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]") // Make sure the key column is only unique values
 		leftTable := query.DropColumns("c", "d", "e")
 		rightTable := query.DropColumns("b", "c")
@@ -504,8 +658,16 @@ func TestExactJoinQuery(t *testing.T) {
 	}
 }
 
-func TestNaturalJoinQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestNaturalJoinQueryBatched(t *testing.T) {
+	naturalJoinQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestNaturalJoinQuerySerial(t *testing.T) {
+	naturalJoinQuery(t, (*client.Client).ExecSerial)
+}
+
+func naturalJoinQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query().GroupBy("a").Update("b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]") // Make sure the key column is only unique values
 		leftTable := query.DropColumns("c", "d", "e")
 		rightTable := query.DropColumns("b", "c").Head(10)
@@ -522,8 +684,16 @@ func TestNaturalJoinQuery(t *testing.T) {
 	}
 }
 
-func TestCrossJoinQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestCrossJoinQueryBatched(t *testing.T) {
+	crossJoinQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestCrossJoinQuerySerial(t *testing.T) {
+	crossJoinQuery(t, (*client.Client).ExecSerial)
+}
+
+func crossJoinQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		leftTable := tbl.Query().DropColumns("e")
 		rightTable := tbl.Query().Where("a % 2 > 0 && b % 3 == 1").DropColumns("b", "c", "d")
 		resultTbl1 := leftTable.Join(rightTable, []string{"a"}, []string{"e"}, 10)
@@ -607,8 +777,16 @@ func TestAsOfJoinQuery(t *testing.T) {
 	}
 }
 
-func TestHeadByTailByQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(3, 10, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestHeadByTailByQueryBatched(t *testing.T) {
+	headByTailByQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestHeadByTailByQuerySerial(t *testing.T) {
+	headByTailByQuery(t, (*client.Client).ExecSerial)
+}
+
+func headByTailByQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(3, 10, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		headTbl := query.HeadBy(1, "a")
 		tailTbl := query.TailBy(1, "b")
@@ -628,8 +806,16 @@ func TestHeadByTailByQuery(t *testing.T) {
 	}
 }
 
-func TestGroupQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestGroupQueryBatched(t *testing.T) {
+	groupQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestGroupQuerySerial(t *testing.T) {
+	groupQuery(t, (*client.Client).ExecSerial)
+}
+
+func groupQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		oneCol := query.GroupBy("a")
 		bothCols := query.GroupBy()
@@ -649,8 +835,16 @@ func TestGroupQuery(t *testing.T) {
 	}
 }
 
-func TestUngroupQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestUngroupQueryBatched(t *testing.T) {
+	ungroupQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestUngroupQuerySerial(t *testing.T) {
+	ungroupQuery(t, (*client.Client).ExecSerial)
+}
+
+func ungroupQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		ungrouped := tbl.Query().GroupBy("a").Ungroup([]string{"b"}, false)
 		return []client.QueryNode{ungrouped}
 	})
@@ -663,8 +857,16 @@ func TestUngroupQuery(t *testing.T) {
 	}
 }
 
-func TestCountByQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestCountByQueryBatched(t *testing.T) {
+	countByQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestCountByQuerySerial(t *testing.T) {
+	countByQuery(t, (*client.Client).ExecSerial)
+}
+
+func countByQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		distinct := query.SelectDistinct("a")
 		counted := query.CountBy("Counted", "a")
@@ -679,8 +881,16 @@ func TestCountByQuery(t *testing.T) {
 	}
 }
 
-func TestCountQuery(t *testing.T) {
-	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+func TestCountQueryBatched(t *testing.T) {
+	countQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestCountQuerySerial(t *testing.T) {
+	countQuery(t, (*client.Client).ExecSerial)
+}
+
+func countQuery(t *testing.T, exec execQueryOrSerial) {
+	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Count("a")}
 	})
 	defer results[0].Release()
@@ -692,7 +902,15 @@ func TestCountQuery(t *testing.T) {
 	}
 }
 
-func TestDedicatedAggQuery(t *testing.T) {
+func TestDedicatedAggQueryBatched(t *testing.T) {
+	dedicatedAggQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestDedicatedAggQuerySerial(t *testing.T) {
+	dedicatedAggQuery(t, (*client.Client).ExecSerial)
+}
+
+func dedicatedAggQuery(t *testing.T, exec execQueryOrSerial) {
 	type AggOp = func(qb client.QueryNode, by ...string) client.QueryNode
 
 	ops := []AggOp{
@@ -700,7 +918,7 @@ func TestDedicatedAggQuery(t *testing.T) {
 		client.QueryNode.VarBy, client.QueryNode.MedianBy, client.QueryNode.MinBy, client.QueryNode.MaxBy, client.QueryNode.AbsSumBy}
 
 	for _, op := range ops {
-		results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, func(tbl *client.TableHandle) []client.QueryNode {
+		results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 			return []client.QueryNode{op(tbl.Query(), "a")}
 		})
 		defer results[0].Release()

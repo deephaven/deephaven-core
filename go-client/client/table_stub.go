@@ -118,27 +118,32 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 	return exportedTables, nil
 }
 
-// OpenTable opens a globally-scoped table with the given name on the server.
-func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, error) {
+// fetchTable exports (or re-exports) a table on the server so that it can be referred to by a new ticket.
+func (ts *tableStub) fetchTable(ctx context.Context, oldTicket *ticketpb2.Ticket) (*TableHandle, error) {
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	sourceId := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: oldTicket}}
+	resultId := ts.client.newTicket()
+
+	req := tablepb2.FetchTableRequest{SourceId: &sourceId, ResultId: &resultId}
+	resp, err := ts.stub.FetchTable(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseCreationResponse(ts.client, resp)
+}
+
+// OpenTable opens a globally-scoped table with the given name on the server.
+func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, error) {
 	fieldId := fieldId{appId: "scope", fieldName: name}
 	if tbl, ok := ts.client.tables[fieldId]; ok {
-		sourceId := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: tbl.ticket}}
-		resultId := ts.client.newTicket()
-
-		req := tablepb2.FetchTableRequest{SourceId: &sourceId, ResultId: &resultId}
-		resp, err := ts.stub.FetchTable(ctx, &req)
-		if err != nil {
-			return nil, err
-		}
-
-		return parseCreationResponse(ts.client, resp)
+		return ts.fetchTable(ctx, tbl.ticket)
 	} else {
-		return nil, errors.New("no table by the name " + name + " (maybe it isn't synced?)")
+		return nil, errors.New("no table by the name " + name + " (maybe it isn't fetched?)")
 	}
 }
 
@@ -171,11 +176,8 @@ func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandl
 
 // TimeTableQuery is like TimeTable, except it can be used as part of a query.
 func (ts *tableStub) TimeTableQuery(period time.Duration, startTime time.Time) QueryNode {
-	// TODO: Same question as for TimeTable
-	realStartTime := startTime.UnixNano()
-
 	qb := newQueryBuilder(ts.client, nil)
-	qb.ops = append(qb.ops, timeTableOp{period: period.Nanoseconds(), startTime: realStartTime})
+	qb.ops = append(qb.ops, timeTableOp{period: period, startTime: startTime})
 	return qb.curRootNode()
 }
 
@@ -453,10 +455,10 @@ func (ts *tableStub) ungroup(ctx context.Context, table *TableHandle, cols []str
 }
 
 // aggBy is a wrapper around the ComboAggregate gRPC request.
-func (ts *tableStub) aggBy(ctx context.Context, table *TableHandle, aggs *AggBuilder, by []string) (*TableHandle, error) {
+func (ts *tableStub) aggBy(ctx context.Context, table *TableHandle, aggs []aggPart, by []string) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx ctxt, resultId ticketRef, sourceId tblRef) (tblResp, error) {
 		var reqAggs []*tablepb2.ComboAggregateRequest_Aggregate
-		for _, agg := range aggs.aggs {
+		for _, agg := range aggs {
 			reqAgg := tablepb2.ComboAggregateRequest_Aggregate{Type: agg.kind, ColumnName: agg.columnName, MatchPairs: agg.matchPairs, Percentile: agg.percentile, AvgMedian: agg.avgMedian}
 			reqAggs = append(reqAggs, &reqAgg)
 		}
@@ -487,4 +489,119 @@ func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHa
 	}
 
 	return parseCreationResponse(ts.client, resp)
+}
+
+type serialOpsState struct {
+	client *Client
+
+	// The list of root/exported nodes.
+	// The tables these create will eventually be returned to the user.
+	exportedNodes []QueryNode
+
+	// A map containing query nodes that have already been processed and the resulting tables.
+	finishedNodes map[QueryNode]*TableHandle
+}
+
+func (state *serialOpsState) isExported(node QueryNode) bool {
+	for _, exNode := range state.exportedNodes {
+		if node == exNode {
+			return true
+		}
+	}
+	return false
+}
+
+func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*TableHandle, error) {
+	// If this node has already been processed, just return the old result.
+	if tbl, ok := state.finishedNodes[node]; ok {
+		return tbl, nil
+	}
+
+	if node.index == -1 {
+		oldTable := node.builder.table
+
+		if state.isExported(node) {
+			// This node is exported, so in order to avoid two having TableHandles with the same ticket we need to re-export the old table.
+			newTable, err := state.client.tableStub.fetchTable(ctx, oldTable.ticket)
+			if err != nil {
+				return nil, err
+			}
+			state.finishedNodes[node] = newTable
+			return newTable, nil
+		} else {
+			// This node isn't exported, so it's okay to just reuse the existing table.
+			state.finishedNodes[node] = oldTable
+			return oldTable, nil
+		}
+	}
+
+	op := node.builder.ops[node.index]
+
+	var children []*TableHandle
+	for _, childNode := range op.childQueries() {
+		childTbl, err := state.processNode(ctx, childNode)
+		if err != nil {
+			return nil, err
+		}
+		children = append(children, childTbl)
+	}
+
+	tbl, err := op.execSerialOp(ctx, &state.client.tableStub, children)
+	if err != nil {
+		return nil, err
+	}
+
+	state.finishedNodes[node] = tbl
+	return tbl, nil
+}
+
+func execSerial(ctx context.Context, client *Client, nodes []QueryNode) ([]*TableHandle, error) {
+	state := serialOpsState{
+		client: client,
+
+		exportedNodes: nodes,
+
+		finishedNodes: make(map[QueryNode]*TableHandle),
+	}
+
+	var result []*TableHandle
+
+	exported := make(map[QueryNode]struct{})
+
+	for _, node := range nodes {
+		// If it's already been exported, we'll need to re-export it again manually.
+		if _, ok := exported[node]; ok {
+			// The node has already been exported. To avoid aliased TableHandles,
+			// we need to re-export it.
+			oldTable := state.finishedNodes[node]
+			tbl, err := client.tableStub.fetchTable(ctx, oldTable.ticket)
+			if err != nil {
+				// TODO: Wrap
+				return nil, err
+			}
+			result = append(result, tbl)
+		} else {
+			exported[node] = struct{}{}
+
+			tbl, err := state.processNode(ctx, node)
+			if err != nil {
+				// TODO: Wrap
+				return nil, err
+			}
+			result = append(result, tbl)
+		}
+	}
+
+	for node, tbl := range state.finishedNodes {
+		if !state.isExported(node) {
+			err := tbl.Release(ctx)
+			if err != nil {
+				// TODO: Wrap
+				return nil, err
+			}
+		}
+	}
+
+	assert(len(result) == len(nodes), "wrong number of tables in result")
+	return result, nil
 }

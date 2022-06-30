@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	tablepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/table"
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
@@ -126,6 +127,10 @@ type tableOp interface {
 	// makeBatchOp turns a table operation struct into an actual gRPC request operation.
 	// The children argument must be the returned table handles from processing each of the childQueries.
 	makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation
+
+	// execSerialOp performs a table operation immediately.
+	// The children argument must be the returned table handles from processing each of the childQueries.
+	execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error)
 }
 
 // A QueryNode is effectively a pointer somewhere into a query.
@@ -377,14 +382,19 @@ func (op emptyTableOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_EmptyTable{EmptyTable: req}}
 }
 
+func (op emptyTableOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 0, "wrong number of children for EmptyTable")
+	return stub.EmptyTable(ctx, op.numRows)
+}
+
 func (op emptyTableOp) String() string {
 	return fmt.Sprintf("EmptyTable(%d)", op.numRows)
 }
 
 // timeTableOp is created by client.TimeTableQuery().
 type timeTableOp struct {
-	period    int64
-	startTime int64
+	period    time.Duration
+	startTime time.Time
 }
 
 func (op timeTableOp) childQueries() []QueryNode {
@@ -393,12 +403,18 @@ func (op timeTableOp) childQueries() []QueryNode {
 
 func (op timeTableOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
 	assert(len(children) == 0, "wrong number of children for TimeTable")
-	req := &tablepb2.TimeTableRequest{ResultId: resultId, PeriodNanos: op.period, StartTimeNanos: op.startTime}
+	// TODO: Same question as for TimeTable: timezones? local time?
+	req := &tablepb2.TimeTableRequest{ResultId: resultId, PeriodNanos: op.period.Nanoseconds(), StartTimeNanos: op.startTime.UnixNano()}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_TimeTable{TimeTable: req}}
 }
 
+func (op timeTableOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 0, "wrong number of children for TimeTable")
+	return stub.TimeTable(ctx, op.period, op.startTime)
+}
+
 func (op timeTableOp) String() string {
-	return fmt.Sprintf("TimeTable(%d, %d)", op.period, op.startTime)
+	return fmt.Sprintf("TimeTable(%s, %s)", op.period, op.startTime)
 }
 
 type dropColumnsOp struct {
@@ -414,6 +430,11 @@ func (op dropColumnsOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tabl
 	assert(len(children) == 1, "wrong number of children for DropColumns")
 	req := &tablepb2.DropColumnsRequest{ResultId: resultId, SourceId: children[0], ColumnNames: op.cols}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_DropColumns{DropColumns: req}}
+}
+
+func (op dropColumnsOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for DropColumns")
+	return stub.dropColumns(ctx, children[0], op.cols)
 }
 
 func (op dropColumnsOp) String() string {
@@ -438,6 +459,11 @@ func (op updateOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.
 	assert(len(children) == 1, "wrong number of children for Update")
 	req := &tablepb2.SelectOrUpdateRequest{ResultId: resultId, SourceId: children[0], ColumnSpecs: op.formulas}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Update{Update: req}}
+}
+
+func (op updateOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for Update")
+	return stub.update(ctx, children[0], op.formulas)
 }
 
 func (op updateOp) String() string {
@@ -465,6 +491,11 @@ func (op lazyUpdateOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_LazyUpdate{LazyUpdate: req}}
 }
 
+func (op lazyUpdateOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for LazyUpdate")
+	return stub.lazyUpdate(ctx, children[0], op.formulas)
+}
+
 func (op lazyUpdateOp) String() string {
 	return fmt.Sprintf("LazyUpdate(%#v)", op.formulas)
 }
@@ -485,9 +516,14 @@ func (op viewOp) childQueries() []QueryNode {
 }
 
 func (op viewOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
-	assert(len(children) == 1, "wrong number of children for ViewOp")
+	assert(len(children) == 1, "wrong number of children for View")
 	req := &tablepb2.SelectOrUpdateRequest{ResultId: resultId, SourceId: children[0], ColumnSpecs: op.formulas}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_View{View: req}}
+}
+
+func (op viewOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for View")
+	return stub.view(ctx, children[0], op.formulas)
 }
 
 func (op viewOp) String() string {
@@ -514,6 +550,11 @@ func (op updateViewOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	assert(len(children) == 1, "wrong number of children for UpdateView")
 	req := &tablepb2.SelectOrUpdateRequest{ResultId: resultId, SourceId: children[0], ColumnSpecs: op.formulas}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_UpdateView{UpdateView: req}}
+}
+
+func (op updateViewOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for UpdateView")
+	return stub.updateView(ctx, children[0], op.formulas)
 }
 
 func (op updateViewOp) String() string {
@@ -543,6 +584,11 @@ func (op selectOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Select{Select: req}}
 }
 
+func (op selectOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for Select")
+	return stub.selectTbl(ctx, children[0], op.formulas)
+}
+
 func (op selectOp) String() string {
 	return fmt.Sprintf("Select(%#v)", op.formulas)
 }
@@ -566,6 +612,11 @@ func (op selectDistinctOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*t
 	assert(len(children) == 1, "wrong number of children for SelectDistinct")
 	req := &tablepb2.SelectDistinctRequest{ResultId: resultId, SourceId: children[0], ColumnNames: op.cols}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_SelectDistinct{SelectDistinct: req}}
+}
+
+func (op selectDistinctOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for SelectDistinct")
+	return stub.selectDistinct(ctx, children[0], op.cols)
 }
 
 func (op selectDistinctOp) String() string {
@@ -623,6 +674,11 @@ func (op sortOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.Ta
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Sort{Sort: req}}
 }
 
+func (op sortOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for Sort")
+	return stub.sortBy(ctx, children[0], op.columns)
+}
+
 func (op sortOp) String() string {
 	return fmt.Sprintf("SortBy(%#v)", op.columns)
 }
@@ -656,6 +712,11 @@ func (op filterOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_UnstructuredFilter{UnstructuredFilter: req}}
 }
 
+func (op filterOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for Filter")
+	return stub.where(ctx, children[0], op.filters)
+}
+
 func (op filterOp) String() string {
 	return fmt.Sprintf("Where(%#v)", op.filters)
 }
@@ -685,6 +746,11 @@ func (op headOrTailOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*table
 	} else {
 		return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Head{Head: req}}
 	}
+}
+
+func (op headOrTailOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for Head or Tail")
+	return stub.headOrTail(ctx, children[0], op.numRows, !op.isTail)
 }
 
 func (op headOrTailOp) String() string {
@@ -728,6 +794,11 @@ func (op headOrTailByOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tab
 	}
 }
 
+func (op headOrTailByOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for HeadBy or TailBy")
+	return stub.headOrTailBy(ctx, children[0], op.numRows, op.by, !op.isTail)
+}
+
 func (op headOrTailByOp) String() string {
 	if op.isTail {
 		return fmt.Sprintf("TailBy(%d, %#v)", op.numRows, op.by)
@@ -760,6 +831,11 @@ func (op ungroupOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2
 	assert(len(children) == 1, "wrong number of children for Ungroup")
 	req := &tablepb2.UngroupRequest{ResultId: resultId, SourceId: children[0], ColumnsToUngroup: op.colNames, NullFill: op.nullFill}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Ungroup{Ungroup: req}}
+}
+
+func (op ungroupOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for Ungroup")
+	return stub.ungroup(ctx, children[0], op.colNames, op.nullFill)
 }
 
 func (op ungroupOp) String() string {
@@ -798,6 +874,11 @@ func (op dedicatedAggOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tab
 
 	req := &tablepb2.ComboAggregateRequest{ResultId: resultId, SourceId: children[0], Aggregates: aggs, GroupByColumns: op.colNames}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_ComboAggregate{ComboAggregate: req}}
+}
+
+func (op dedicatedAggOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for dedicated aggregation")
+	return stub.dedicatedAggOp(ctx, children[0], op.colNames, op.countColumn, op.kind)
 }
 
 func (op dedicatedAggOp) String() string {
@@ -1064,6 +1145,11 @@ func (op aggByOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.T
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_ComboAggregate{ComboAggregate: req}}
 }
 
+func (op aggByOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 1, "wrong number of children for AggBy")
+	return stub.aggBy(ctx, children[0], op.aggs, op.colNames)
+}
+
 func (op aggByOp) String() string {
 	return fmt.Sprintf("AggBy(/* aggregation omitted */, %#v)", op.colNames)
 }
@@ -1115,6 +1201,24 @@ func (op joinOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.Ta
 	case joinOpExact:
 		req := &tablepb2.ExactJoinTablesRequest{ResultId: resultId, LeftId: leftId, RightId: rightId, ColumnsToMatch: op.columnsToMatch, ColumnsToAdd: op.columnsToAdd}
 		return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_ExactJoin{ExactJoin: req}}
+	default:
+		panic("invalid join kind")
+	}
+}
+
+func (op joinOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 2, "wrong number of children for CrossJoin, NaturalJoin, or ExactJoin")
+
+	leftTbl := children[0]
+	rightTbl := children[1]
+
+	switch op.kind {
+	case joinOpCross:
+		return stub.crossJoin(ctx, leftTbl, rightTbl, op.columnsToMatch, op.columnsToAdd, op.reserveBits)
+	case joinOpNatural:
+		return stub.naturalJoin(ctx, leftTbl, rightTbl, op.columnsToMatch, op.columnsToAdd)
+	case joinOpExact:
+		return stub.exactJoin(ctx, leftTbl, rightTbl, op.columnsToMatch, op.columnsToAdd)
 	default:
 		panic("invalid join kind")
 	}
@@ -1214,6 +1318,22 @@ const (
 	MatchRuleGreaterThan
 )
 
+// toGrpcMatchRule converts one of the user-friendly match rule constants to the corresponding gRPC match rule enum variants.
+func (mr MatchRule) toGrpcMatchRule() tablepb2.AsOfJoinTablesRequest_MatchRule {
+	switch mr {
+	case MatchRuleLessThanEqual:
+		return tablepb2.AsOfJoinTablesRequest_LESS_THAN_EQUAL
+	case MatchRuleLessThan:
+		return tablepb2.AsOfJoinTablesRequest_LESS_THAN
+	case MatchRuleGreaterThanEqual:
+		return tablepb2.AsOfJoinTablesRequest_GREATER_THAN_EQUAL
+	case MatchRuleGreaterThan:
+		return tablepb2.AsOfJoinTablesRequest_GREATER_THAN
+	default:
+		panic("invalid match rule")
+	}
+}
+
 func (mr MatchRule) String() string {
 	if mr < 0 || mr >= 4 {
 		return "invalid match rule"
@@ -1240,23 +1360,19 @@ func (op asOfJoinOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb
 
 	leftId := children[0]
 	rightId := children[1]
-
-	var matchRule tablepb2.AsOfJoinTablesRequest_MatchRule
-	switch op.matchRule {
-	case MatchRuleLessThanEqual:
-		matchRule = tablepb2.AsOfJoinTablesRequest_LESS_THAN_EQUAL
-	case MatchRuleLessThan:
-		matchRule = tablepb2.AsOfJoinTablesRequest_LESS_THAN
-	case MatchRuleGreaterThanEqual:
-		matchRule = tablepb2.AsOfJoinTablesRequest_GREATER_THAN_EQUAL
-	case MatchRuleGreaterThan:
-		matchRule = tablepb2.AsOfJoinTablesRequest_GREATER_THAN
-	default:
-		panic("invalid match rule")
-	}
+	matchRule := op.matchRule.toGrpcMatchRule()
 
 	req := &tablepb2.AsOfJoinTablesRequest{ResultId: resultId, LeftId: leftId, RightId: rightId, ColumnsToMatch: op.columnsToMatch, ColumnsToAdd: op.columnsToAdd, AsOfMatchRule: matchRule}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_AsOfJoin{AsOfJoin: req}}
+}
+
+func (op asOfJoinOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == 2, "wrong number of children for AsOfJoin")
+
+	leftTbl := children[0]
+	rightTbl := children[1]
+
+	return stub.asOfJoin(ctx, leftTbl, rightTbl, op.columnsToMatch, op.columnsToAdd, op.matchRule)
 }
 
 func (op asOfJoinOp) String() string {
@@ -1306,6 +1422,12 @@ func (op mergeOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.T
 
 	req := &tablepb2.MergeTablesRequest{ResultId: resultId, SourceIds: children, KeyColumn: op.sortBy}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Merge{Merge: req}}
+}
+
+func (op mergeOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
+	assert(len(children) == len(op.children), "wrong number of children for Merge")
+
+	return stub.merge(ctx, op.sortBy, children)
 }
 
 func (op mergeOp) String() string {

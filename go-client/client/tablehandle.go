@@ -436,7 +436,7 @@ func (th *TableHandle) AggBy(ctx context.Context, agg *AggBuilder, by ...string)
 	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
 	}
-	return th.client.aggBy(ctx, th, agg, by)
+	return th.client.aggBy(ctx, th, agg.aggs, by)
 }
 
 // Merge combines two or more tables into one aggregate table.
