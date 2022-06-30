@@ -188,7 +188,8 @@ func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 // ExecSerial executes several table operations on the server and returns the resulting tables.
 //
 // This function makes a request for each table operation.
-// Consider using ExecQuery to batch all of the table operations into a single request.
+// Consider using ExecQuery to batch all of the table operations into a single request,
+// which can be more efficient.
 //
 // If this function completes successfully,
 // the number of tables returned will always match the number of query nodes passed.

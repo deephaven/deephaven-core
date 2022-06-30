@@ -47,7 +47,7 @@ func (ts *tableStub) createInputTable(ctx context.Context, req *tablepb2.CreateI
 
 // batchErrorPart is a single error in a batchError.
 type batchErrorPart struct {
-	ServerMsg string                   // The error message returned by the server
+	ServerErr error                    // The raw error returned by the server
 	ResultId  *tablepb2.TableReference // The result ID of the table which caused the error
 }
 
@@ -82,7 +82,7 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 
 	exportedTables := []*TableHandle{}
 
-	var errors []batchErrorPart
+	var batchErrors []batchErrorPart
 
 	for {
 		created, err := resp.Recv()
@@ -94,10 +94,10 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 
 		if !created.Success {
 			part := batchErrorPart{
-				ServerMsg: created.GetErrorInfo(),
+				ServerErr: errors.New(created.GetErrorInfo()),
 				ResultId:  created.ResultId,
 			}
-			errors = append(errors, part)
+			batchErrors = append(batchErrors, part)
 		}
 
 		if created.Success {
@@ -111,8 +111,8 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 		}
 	}
 
-	if len(errors) > 0 {
-		return nil, batchError{parts: errors}
+	if len(batchErrors) > 0 {
+		return nil, batchError{parts: batchErrors}
 	}
 
 	return exportedTables, nil
@@ -491,6 +491,15 @@ func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHa
 	return parseCreationResponse(ts.client, resp)
 }
 
+// wrapExecSerialError wraps an error caused while executing a query serially and wraps it into a QueryError.
+// The source argument should be the node that caused the error.
+func wrapExecSerialError(inner error, source QueryNode) QueryError {
+	part := queryErrorPart{serverErr: inner, resultId: nil, source: source}
+	return QueryError{parts: []queryErrorPart{part}}
+}
+
+// serialOpsState is used to keep track of the state of a serially-executed query.
+// serialOpsState methods are not thread-safe, but serialOpsStates are never shared between goroutines anyways.
 type serialOpsState struct {
 	client *Client
 
@@ -502,6 +511,8 @@ type serialOpsState struct {
 	finishedNodes map[QueryNode]*TableHandle
 }
 
+// isExported returns true if the given node is exported,
+// i.e. if it is eventually returned to the user.
 func (state *serialOpsState) isExported(node QueryNode) bool {
 	for _, exNode := range state.exportedNodes {
 		if node == exNode {
@@ -511,6 +522,8 @@ func (state *serialOpsState) isExported(node QueryNode) bool {
 	return false
 }
 
+// processNode performs the table operations for the given node and its children and returns the resulting table.
+// This may return a QueryError.
 func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*TableHandle, error) {
 	// If this node has already been processed, just return the old result.
 	if tbl, ok := state.finishedNodes[node]; ok {
@@ -524,7 +537,7 @@ func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*
 			// This node is exported, so in order to avoid two having TableHandles with the same ticket we need to re-export the old table.
 			newTable, err := state.client.tableStub.fetchTable(ctx, oldTable.ticket)
 			if err != nil {
-				return nil, err
+				return nil, wrapExecSerialError(err, node)
 			}
 			state.finishedNodes[node] = newTable
 			return newTable, nil
@@ -541,6 +554,7 @@ func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*
 	for _, childNode := range op.childQueries() {
 		childTbl, err := state.processNode(ctx, childNode)
 		if err != nil {
+			// This error is already wrapped
 			return nil, err
 		}
 		children = append(children, childTbl)
@@ -548,24 +562,27 @@ func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*
 
 	tbl, err := op.execSerialOp(ctx, &state.client.tableStub, children)
 	if err != nil {
-		return nil, err
+		return nil, wrapExecSerialError(err, node)
 	}
 
 	state.finishedNodes[node] = tbl
 	return tbl, nil
 }
 
+// execSerial performs all of the table operations specified by the given nodes one-by-one.
+// It then wraps the returned tables in TableHandles and returns them in the same order as in nodes.
+// This may return a QueryError.
 func execSerial(ctx context.Context, client *Client, nodes []QueryNode) ([]*TableHandle, error) {
 	state := serialOpsState{
-		client: client,
-
+		client:        client,
 		exportedNodes: nodes,
-
 		finishedNodes: make(map[QueryNode]*TableHandle),
 	}
 
 	var result []*TableHandle
 
+	// We need this to keep track of what nodes' tables we've already returned,
+	// to ensure we never return the same table twice.
 	exported := make(map[QueryNode]struct{})
 
 	for _, node := range nodes {
@@ -576,8 +593,7 @@ func execSerial(ctx context.Context, client *Client, nodes []QueryNode) ([]*Tabl
 			oldTable := state.finishedNodes[node]
 			tbl, err := client.tableStub.fetchTable(ctx, oldTable.ticket)
 			if err != nil {
-				// TODO: Wrap
-				return nil, err
+				return nil, wrapExecSerialError(err, node)
 			}
 			result = append(result, tbl)
 		} else {
@@ -585,7 +601,7 @@ func execSerial(ctx context.Context, client *Client, nodes []QueryNode) ([]*Tabl
 
 			tbl, err := state.processNode(ctx, node)
 			if err != nil {
-				// TODO: Wrap
+				// This error is already wrapped
 				return nil, err
 			}
 			result = append(result, tbl)
@@ -596,8 +612,7 @@ func execSerial(ctx context.Context, client *Client, nodes []QueryNode) ([]*Tabl
 		if !state.isExported(node) {
 			err := tbl.Release(ctx)
 			if err != nil {
-				// TODO: Wrap
-				return nil, err
+				return nil, wrapExecSerialError(err, node)
 			}
 		}
 	}

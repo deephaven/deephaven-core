@@ -13,8 +13,9 @@ import (
 
 // A queryErrorPart is a single error in a QueryError.
 type queryErrorPart struct {
-	batchErrorPart
-	source QueryNode // The query node that caused this error.
+	serverErr error                    // The raw error returned by the server.
+	resultId  *tablepb2.TableReference // The result ID of the table which caused the error. Only present for errors from batch execution.
+	source    QueryNode                // The query node that caused this error.
 }
 
 // newQueryErrorPart wraps a single part of a batch error to create a single part of a query error.
@@ -26,15 +27,15 @@ func newQueryErrorPart(part batchErrorPart, nodeTickets []*ticketpb2.Ticket, opN
 	switch tblRef := part.ResultId.Ref.(type) {
 	case *tablepb2.TableReference_Ticket:
 		if idx, ok := findTicketOutputIndex(nodeTickets, tblRef.Ticket); ok {
-			return queryErrorPart{batchErrorPart: part, source: exportNodes[idx]}
+			return queryErrorPart{serverErr: part.ServerErr, resultId: part.ResultId, source: exportNodes[idx]}
 		} else {
-			return queryErrorPart{batchErrorPart: part}
+			return queryErrorPart{serverErr: part.ServerErr, resultId: part.ResultId}
 		}
 	case *tablepb2.TableReference_BatchOffset:
 		if key, ok := opNodes[tblRef.BatchOffset]; ok {
-			return queryErrorPart{batchErrorPart: part, source: key}
+			return queryErrorPart{serverErr: part.ServerErr, resultId: part.ResultId, source: key}
 		} else {
-			return queryErrorPart{batchErrorPart: part}
+			return queryErrorPart{serverErr: part.ServerErr, resultId: part.ResultId}
 		}
 	default:
 		panic("unreachable")
@@ -69,7 +70,7 @@ func newQueryError(err batchError, nodeTickets []*ticketpb2.Ticket, nodeOps map[
 }
 
 func (err QueryError) Error() string {
-	return "query error: " + err.parts[0].ServerMsg
+	return "query error: " + err.parts[0].serverErr.Error()
 }
 
 // Details returns a string containing detailed information on all of the query errors that occurred.
@@ -93,7 +94,7 @@ func (err QueryError) Details() string {
 	// However, we want to print all the parts in case there were actually multiple distinct errors.
 	// Should we look into figuring out how to emphasize root errors?
 	for _, part := range err.parts {
-		details += fmt.Sprintf("msg: %v\n", part.ServerMsg)
+		details += fmt.Sprintf("msg: %s\n", part.serverErr)
 		if part.source.builder != nil {
 			builder := part.source.builder
 
@@ -105,7 +106,7 @@ func (err QueryError) Details() string {
 				details += fmt.Sprintf("    %s\n", op)
 			}
 		} else {
-			details += fmt.Sprintf("no source info, this is a bug (ResultId is %s)", part.batchErrorPart.ResultId)
+			details += fmt.Sprintf("no source info, this is a bug (ResultId is %s)", part.resultId)
 		}
 	}
 	return details
