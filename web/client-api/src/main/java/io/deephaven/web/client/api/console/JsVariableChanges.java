@@ -15,6 +15,7 @@ public class JsVariableChanges {
     public static final String TABLE = "Table",
             TREETABLE = "TreeTable",
             TABLEMAP = "TableMap",
+            PARTITIONEDTABLE = "PartitionedTable",
             FIGURE = "Figure",
             OTHERWIDGET = "OtherWidget",
             PANDAS = "pandas.DataFrame";

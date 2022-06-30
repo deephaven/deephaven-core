@@ -73,10 +73,10 @@ public class SourceDescriptor {
         SourceDescriptor.ToObjectReturnType.OneClickFieldType getOneClick();
 
         @JsProperty
-        double getTableId();
+        double getPartitionedTableId();
 
         @JsProperty
-        double getTableMapId();
+        double getTableId();
 
         @JsProperty
         double getType();
@@ -94,10 +94,10 @@ public class SourceDescriptor {
         void setOneClick(SourceDescriptor.ToObjectReturnType.OneClickFieldType oneClick);
 
         @JsProperty
-        void setTableId(double tableId);
+        void setPartitionedTableId(double partitionedTableId);
 
         @JsProperty
-        void setTableMapId(double tableMapId);
+        void setTableId(double tableId);
 
         @JsProperty
         void setType(double type);
@@ -159,10 +159,10 @@ public class SourceDescriptor {
         SourceDescriptor.ToObjectReturnType0.OneClickFieldType getOneClick();
 
         @JsProperty
-        double getTableId();
+        double getPartitionedTableId();
 
         @JsProperty
-        double getTableMapId();
+        double getTableId();
 
         @JsProperty
         double getType();
@@ -180,10 +180,10 @@ public class SourceDescriptor {
         void setOneClick(SourceDescriptor.ToObjectReturnType0.OneClickFieldType oneClick);
 
         @JsProperty
-        void setTableId(double tableId);
+        void setPartitionedTableId(double partitionedTableId);
 
         @JsProperty
-        void setTableMapId(double tableMapId);
+        void setTableId(double tableId);
 
         @JsProperty
         void setType(double type);
@@ -209,9 +209,9 @@ public class SourceDescriptor {
 
     public native OneClickDescriptor getOneClick();
 
-    public native int getTableId();
+    public native int getPartitionedTableId();
 
-    public native int getTableMapId();
+    public native int getTableId();
 
     public native int getType();
 
@@ -229,9 +229,9 @@ public class SourceDescriptor {
 
     public native void setOneClick(OneClickDescriptor value);
 
-    public native void setTableId(int value);
+    public native void setPartitionedTableId(int value);
 
-    public native void setTableMapId(int value);
+    public native void setTableId(int value);
 
     public native void setType(int value);
 

@@ -5,20 +5,18 @@ package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
-import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
+import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
-import io.deephaven.web.client.api.TableMap;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -103,8 +101,7 @@ public class JsFigureFactory {
 
                                 return Promise.resolve(new JsFigure.FigureTableFetchData(
                                         tableCopies,
-                                        new TableMap[0],
-                                        Collections.emptyMap()));
+                                        new JsPartitionedTable[0]));
                             }).refetch();
                 });
     }
