@@ -1348,7 +1348,7 @@ class PartitionedTable(JObjectWrapper):
     @classmethod
     def from_partitioned_table(cls,
                                table: Table,
-                               key_cols: List[str] = None,
+                               key_cols: Union[str, List[str]] = None,
                                unique_keys: bool = None,
                                constituent_column: str = None,
                                constituent_table_columns: List[Column] = None,
@@ -1360,7 +1360,7 @@ class PartitionedTable(JObjectWrapper):
 
         Args:
             table (Table): the underlying partitioned table
-            key_cols (List[str]): the key column names of 'table'
+            key_cols (Union[str, List[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
             constituent_table_columns (list[Column]): the column definitions of the constituent table
@@ -1381,7 +1381,8 @@ class PartitionedTable(JObjectWrapper):
 
             if all([arg is not None for arg in none_args]):
                 table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
-                j_partitioned_table = _JPartitionedTableFactory.of(table.j_table, key_cols, unique_keys,
+                j_partitioned_table = _JPartitionedTableFactory.of(table.j_table, j_array_list(to_sequence(key_cols)),
+                                                                   unique_keys,
                                                                    constituent_column,
                                                                    table_def,
                                                                    constituent_changes_permitted)
@@ -1396,7 +1397,7 @@ class PartitionedTable(JObjectWrapper):
     def from_constituent_tables(cls,
                                 tables: List[Table],
                                 constituent_table_columns: List[Column] = None) -> PartitionedTable:
-        """Creates a PartitionedTable with a single column named 'constituent' that contains the provided constituent
+        """Creates a PartitionedTable with a single column named '__CONSTITUENT__' containing the provided constituent
         tables.
 
         Args:
@@ -1406,11 +1407,11 @@ class PartitionedTable(JObjectWrapper):
         """
         try:
             if not constituent_table_columns:
-                return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.of([t.j_table for t in tables]))
+                return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(to_sequence(tables)))
             else:
                 table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
-                return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.of(table_def,
-                                                                                         [t.j_table for t in tables]))
+                return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(table_def,
+                                                                                         to_sequence(tables)))
         except Exception as e:
             raise DHError(e, "failed to create a PartitionedTable from constituent tables.") from e
 
