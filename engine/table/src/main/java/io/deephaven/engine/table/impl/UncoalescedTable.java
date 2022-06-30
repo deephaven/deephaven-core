@@ -9,6 +9,8 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -476,6 +478,14 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     @ConcurrentMethod
     public Table treeTable(String idColumn, String parentColumn) {
         return coalesce().treeTable(idColumn, parentColumn);
+    }
+
+    @Override
+    @ConcurrentMethod
+    public Table updateBy(@NotNull final UpdateByControl control,
+            @NotNull final Collection<? extends UpdateByClause> ops,
+            @NotNull final Collection<? extends Selectable> byColumns) {
+        return UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control);
     }
 
     @Override

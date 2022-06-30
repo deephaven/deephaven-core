@@ -24,6 +24,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
@@ -42,8 +43,8 @@ public class ByteSingleValueSource extends SingleValueColumnSource<Byte> impleme
     // region Constructor
     public ByteSingleValueSource() {
         super(byte.class);
-        current = QueryConstants.NULL_BYTE;
-        prev = QueryConstants.NULL_BYTE;
+        current = NULL_BYTE;
+        prev = NULL_BYTE;
     }
     // endregion Constructor
 
@@ -76,6 +77,13 @@ public class ByteSingleValueSource extends SingleValueColumnSource<Byte> impleme
     @Override
     public final void set(long key, byte value) {
         set(value);
+    }
+
+    @Override
+    public final void setNull(long key) {
+        // region null set
+        set(NULL_BYTE);
+        // endregion null set
     }
 
     @Override

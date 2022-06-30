@@ -9,6 +9,7 @@ import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.jetbrains.annotations.NotNull;
 
 @VisibleForTesting
 public class JoinControl {
@@ -40,7 +41,7 @@ public class JoinControl {
         return IncrementalChunkedNaturalJoinStateManager.DEFAULT_TARGET_LOAD_FACTOR;
     }
 
-    boolean useGrouping(Table leftTable, ColumnSource<?>[] leftSources) {
+    static boolean useGrouping(Table leftTable, ColumnSource<?>[] leftSources) {
         return !leftTable.isRefreshing() && leftSources.length == 1
                 && RowSetIndexer.of(leftTable.getRowSet()).hasGrouping(leftSources[0]);
     }
@@ -75,14 +76,19 @@ public class JoinControl {
     }
 
     RedirectionType getRedirectionType(Table leftTable) {
-        if (leftTable.isFlat() && leftTable.size() < Integer.MAX_VALUE) {
-            if (leftTable.isRefreshing()) {
+        return getRedirectionType(leftTable, 4.0, true);
+    }
+
+    static RedirectionType getRedirectionType(final @NotNull Table table, final double maximumOverhead,
+            final boolean allowSparseRedirection) {
+        if (table.isFlat() && table.size() < Integer.MAX_VALUE) {
+            if (table.isRefreshing()) {
                 return RedirectionType.Sparse;
             } else {
                 return RedirectionType.Contiguous;
             }
-        } else if (leftTable.getRowSet().getAverageRunLengthEstimate() >= Math.min(SparseConstants.BLOCK_SIZE / 4,
-                leftTable.getRowSet().size() / 2)) {
+        } else if (allowSparseRedirection
+                && !SparseConstants.sparseStructureExceedsOverhead(table.getRowSet(), maximumOverhead)) {
             // If we are going to use at least a quarter of a sparse array block, then it is a better answer than a
             // hash table for redirection; because the hash table must store both the key and value, and then has a
             // load factor of ~50%. Additionally, the sparse array source will have much faster sets and lookups so is

@@ -13,6 +13,8 @@ import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
@@ -59,7 +61,6 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1184,33 +1185,7 @@ public class QueryTable extends BaseTable {
     }
 
     private boolean exceedsMaximumStaticSelectOverhead() {
-        if (MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD < 0) {
-            return false;
-        }
-        if (MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD == 0) {
-            return true;
-        }
-
-        final long requiredBlocks = (size() + SparseConstants.BLOCK_SIZE - 1) / SparseConstants.BLOCK_SIZE;
-        final long acceptableBlocks = (long) (MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD * (double) requiredBlocks);
-        final MutableLong lastBlock = new MutableLong(-1L);
-        final MutableLong usedBlocks = new MutableLong(0);
-        return !getRowSet().forEachRowKeyRange((s, e) -> {
-            long startBlock = s >> SparseConstants.LOG_BLOCK_SIZE;
-            final long endBlock = e >> SparseConstants.LOG_BLOCK_SIZE;
-            final long lb = lastBlock.longValue();
-            if (lb >= 0) {
-                if (startBlock == lb) {
-                    if (startBlock == endBlock) {
-                        return true;
-                    }
-                    startBlock++;
-                }
-            }
-            lastBlock.setValue(endBlock);
-            usedBlocks.add(endBlock - startBlock + 1);
-            return usedBlocks.longValue() <= acceptableBlocks;
-        });
+        return SparseConstants.sparseStructureExceedsOverhead(this.getRowSet(), MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD);
     }
 
     @Override
@@ -3045,6 +3020,14 @@ public class QueryTable extends BaseTable {
 
             return super.memoizeResult(memoKey, computeCachedOperation);
         }
+    }
+
+    @Override
+    public Table updateBy(@NotNull final UpdateByControl control,
+            @NotNull final Collection<? extends UpdateByClause> ops,
+            @NotNull final Collection<? extends Selectable> byColumns) {
+        return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
+                () -> UpdateBy.updateBy(this, ops, byColumns, control));
     }
 
     /**

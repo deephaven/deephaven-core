@@ -24,6 +24,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
@@ -42,8 +43,8 @@ public class DoubleSingleValueSource extends SingleValueColumnSource<Double> imp
     // region Constructor
     public DoubleSingleValueSource() {
         super(double.class);
-        current = QueryConstants.NULL_DOUBLE;
-        prev = QueryConstants.NULL_DOUBLE;
+        current = NULL_DOUBLE;
+        prev = NULL_DOUBLE;
     }
     // endregion Constructor
 
@@ -76,6 +77,13 @@ public class DoubleSingleValueSource extends SingleValueColumnSource<Double> imp
     @Override
     public final void set(long key, double value) {
         set(value);
+    }
+
+    @Override
+    public final void setNull(long key) {
+        // region null set
+        set(NULL_DOUBLE);
+        // endregion null set
     }
 
     @Override

@@ -100,6 +100,11 @@ public class Immutable2DIntArraySource extends AbstractDeferredGroupingColumnSou
     }
 
     @Override
+    public final void setNull(long key) {
+        data[keyToSegment(key)][keyToOffset(key)] = NULL_INT;
+    }
+
+    @Override
     public final void set(long key, int value) {
         data[keyToSegment(key)][keyToOffset(key)] = value;
     }

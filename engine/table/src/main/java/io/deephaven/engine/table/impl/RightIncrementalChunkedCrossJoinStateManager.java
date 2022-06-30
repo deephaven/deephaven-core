@@ -187,6 +187,8 @@ class RightIncrementalChunkedCrossJoinStateManager
     public static final long LEFT_MAPPING_MISSING = RowSequence.NULL_ROW_KEY;
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     RightIncrementalChunkedCrossJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
                                                  // region constructor arguments

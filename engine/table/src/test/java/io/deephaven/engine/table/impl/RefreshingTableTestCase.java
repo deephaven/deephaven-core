@@ -130,7 +130,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         }, errorsAcceptable);
     }
 
-    protected static void simulateShiftAwareStep(int targetUpdateSize, Random random, QueryTable table,
+    public static void simulateShiftAwareStep(int targetUpdateSize, Random random, QueryTable table,
             TstUtils.ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
         simulateShiftAwareStep("", targetUpdateSize, random, table, columnInfo, en);
     }

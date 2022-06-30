@@ -26,6 +26,22 @@ public class ReinterpretUtils {
     }
 
     /**
+     * Given a long column source turn it into a DateTime column source, either via reinterpretation or wrapping.
+     *
+     * @param source the source to turn into a DateTime source
+     *
+     * @return the long source
+     */
+    public static ColumnSource<DateTime> longToDateTimeSource(ColumnSource<?> source) {
+        if (source.allowsReinterpret(DateTime.class)) {
+            return source.reinterpret(DateTime.class);
+        } else {
+            // noinspection unchecked
+            return new LongAsDateTimeColumnSource((ColumnSource<Long>) source);
+        }
+    }
+
+    /**
      * Given a Boolean column source turn it into a byte column source, either via reinterpretation or wrapping.
      *
      * @param source the source to turn into a byte source

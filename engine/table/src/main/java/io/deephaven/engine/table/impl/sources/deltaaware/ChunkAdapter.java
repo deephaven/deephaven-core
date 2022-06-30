@@ -141,6 +141,11 @@ public class ChunkAdapter<T> {
         finishSet(index);
     }
 
+    final void setNull(long index) {
+        baseChunk.fillWithNullValue(0, 1);
+        finishSet(index);
+    }
+
     private void beginGet(final long index, final long deltaIndex) {
         final long whichIndex;
         final ChunkSource whichSrc;

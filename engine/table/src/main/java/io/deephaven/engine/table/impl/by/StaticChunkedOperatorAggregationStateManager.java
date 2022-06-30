@@ -155,6 +155,8 @@ class StaticChunkedOperatorAggregationStateManager
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     StaticChunkedOperatorAggregationStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
                                                  // region constructor arguments

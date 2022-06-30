@@ -83,6 +83,11 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
+    public void setNull(long key) {
+        set(key, NULL_SHORT);
+    }
+
+    @Override
     public final short getShort(long rowKey) {
         if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_SHORT;

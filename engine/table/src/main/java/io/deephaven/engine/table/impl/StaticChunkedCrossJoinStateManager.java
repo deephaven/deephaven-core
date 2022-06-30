@@ -165,6 +165,8 @@ class StaticChunkedCrossJoinStateManager
     private long maxRightGroupSize = 0;
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     StaticChunkedCrossJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
                                        // region constructor arguments
