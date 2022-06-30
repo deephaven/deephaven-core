@@ -121,7 +121,7 @@ if [ "$BUILD_ABSL" = "yes" ]; then
   echo "*** Building abseil"
   cd $SRC/abseil-cpp
   mkdir -p cmake/build && cd cmake/build
-  cmake -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${PFX}/abseil  ../..
+  cmake -DCMAKE_CXX_STANDARD=11 -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${PFX}/abseil  ../..
   make -j$NCPUS
   make install
 fi
@@ -177,6 +177,7 @@ if [ "$BUILD_ARROW" = "yes" ]; then
   echo
   echo "*** Building arrow"
   export CPATH=${PFX}/abseil/include${CPATH+:$CPATH}
+  export CPATH=${PFX}/protobuf/include${CPATH+:$CPATH}
   cd $SRC/apache-arrow-5.0.0/cpp
   mkdir -p build && cd build
   cmake -DARROW_BUILD_STATIC=ON -DARROW_FLIGHT=ON -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_DATASET=ON -DARROW_PARQUET=ON \
