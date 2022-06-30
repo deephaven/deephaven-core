@@ -69,6 +69,10 @@ func newQueryError(err batchError, nodeTickets []*ticketpb2.Ticket, nodeOps map[
 	return QueryError{parts: wrappedParts}
 }
 
+func (err QueryError) Unwrap() error {
+	return err.parts[0].serverErr
+}
+
 func (err QueryError) Error() string {
 	return "query error: " + err.parts[0].serverErr.Error()
 }
@@ -198,13 +202,13 @@ func (b *batchBuilder) needsExport(node QueryNode) []int {
 }
 
 // addGrpcOps adds any table operations needed by the node to the list, and returns a handle to the node's output table.
-func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
+func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, error) {
 	var source *tablepb2.TableReference
 
 	// If the op is already in the list, we don't need to do it again.
 	if prevIdx, skip := b.finishedOps[node]; skip {
 		// So just use the output of the existing occurence.
-		return &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: prevIdx}}
+		return &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: prevIdx}}, nil
 	}
 
 	var resultId *ticketpb2.Ticket = nil
@@ -218,6 +222,9 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 		extraNodes = nodes[1:]
 
 		if node.index == -1 {
+			if !node.builder.table.IsValid() {
+				return nil, ErrInvalidTableHandle
+			}
 			// Even this node needs its own FetchTable request, because it's empty.
 			sourceId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}
 			t := b.client.newTicket()
@@ -228,8 +235,11 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 			b.grpcOps = append(b.grpcOps, &grpcOp)
 		}
 	} else if node.index == -1 {
+		if !node.builder.table.IsValid() {
+			return nil, ErrInvalidTableHandle
+		}
 		// An unexported node can just re-use the existing ticket since we don't have to worry about aliasing.
-		return &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}
+		return &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}, nil
 	}
 
 	// Now we actually process the node and turn it (and its children) into gRPC operations.
@@ -238,7 +248,10 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 
 		var childQueries []*tablepb2.TableReference = nil
 		for _, child := range op.childQueries() {
-			childRef := b.addGrpcOps(child)
+			childRef, err := b.addGrpcOps(child)
+			if err != nil {
+				return nil, err
+			}
 			childQueries = append(childQueries, childRef)
 		}
 
@@ -260,7 +273,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 	}
 
 	source = &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: int32(len(b.grpcOps) - 1)}}
-	return source
+	return source, nil
 }
 
 // getGrpcOps turns a set of query nodes into a sequence of batch operations.
@@ -268,7 +281,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) *tablepb2.TableReference {
 // nodeTickets are the tickets that each query node will be referenced by, where each index in nodeTickets matches the same index in the nodes argument.
 // nodeTickets is needed so that we can match up the nodes and the tables once the request finishes.
 // nodeOps is a mapping from all of the query nodes processed to the index in grpcOps that they generated.
-func getGrpcOps(client *Client, nodes []QueryNode) (grpcOps []*tablepb2.BatchTableRequest_Operation, nodeTickets []*ticketpb2.Ticket, nodeOps map[QueryNode]int32) {
+func getGrpcOps(client *Client, nodes []QueryNode) (grpcOps []*tablepb2.BatchTableRequest_Operation, nodeTickets []*ticketpb2.Ticket, nodeOps map[QueryNode]int32, err error) {
 	builder := batchBuilder{
 		client:      client,
 		nodes:       nodes,
@@ -290,7 +303,10 @@ func getGrpcOps(client *Client, nodes []QueryNode) (grpcOps []*tablepb2.BatchTab
 	}
 
 	for _, node := range nodes {
-		builder.addGrpcOps(node)
+		_, err = builder.addGrpcOps(node)
+		if err != nil {
+			return
+		}
 	}
 
 	grpcOps = builder.grpcOps
@@ -330,7 +346,10 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*Table
 		return nil, nil
 	}
 
-	ops, nodeTickets, nodeOps := getGrpcOps(client, nodes)
+	ops, nodeTickets, nodeOps, err := getGrpcOps(client, nodes)
+	if err != nil {
+		return nil, err
+	}
 
 	if len(nodeTickets) != len(nodes) {
 		panic("wrong number of entries in nodeOrder")
@@ -364,7 +383,7 @@ func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*Table
 	return output, nil
 }
 
-func newQueryBuilder(client *Client, table *TableHandle) queryBuilder {
+func newQueryBuilder(table *TableHandle) queryBuilder {
 	return queryBuilder{table: table}
 }
 

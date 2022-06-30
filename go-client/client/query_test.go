@@ -2,6 +2,7 @@ package client_test
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"testing"
 	"time"
@@ -392,6 +393,42 @@ func duplicateQuery(t *testing.T, exec execQueryOrSerial) {
 	for _, tbl := range tables {
 		err = tbl.Release(ctx)
 		test_tools.CheckError(t, "Release", err)
+	}
+}
+
+func TestInvalidTableQueryBatched(t *testing.T) {
+	invalidTableQuery(t, (*client.Client).ExecQuery)
+}
+
+func TestInvalidTableQuerySerial(t *testing.T) {
+	invalidTableQuery(t, (*client.Client).ExecSerial)
+}
+
+func invalidTableQuery(t *testing.T, exec execQueryOrSerial) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	if err != nil {
+		t.Fatalf("NewClient %s", err.Error())
+		return
+	}
+	defer c.Close()
+
+	tbl := &client.TableHandle{}
+
+	node1 := tbl.Query()
+	node2 := node1.Update("a = ii * 3")
+
+	_, err = exec(c, ctx, node1)
+	if !errors.Is(err, client.ErrInvalidTableHandle) {
+		t.Errorf("query on invalid table returned wrong error %s", err)
+		return
+	}
+
+	_, err = exec(c, ctx, node2)
+	if !errors.Is(err, client.ErrInvalidTableHandle) {
+		t.Errorf("query on invalid table returned wrong error %s", err)
+		return
 	}
 }
 

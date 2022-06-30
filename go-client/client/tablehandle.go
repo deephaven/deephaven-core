@@ -65,14 +65,8 @@ func (th *TableHandle) Snapshot(ctx context.Context) (arrow.Record, error) {
 // Query creates a new query based on this table. Table operations can be performed on query nodes to create new nodes.
 // A list of query nodes can then be passed to client.ExecQuery() to execute the entire query as a single call.
 func (th *TableHandle) Query() QueryNode {
-	// TODO: Turn this into a proper error instead of a panic.
-	// Returning an error here makes the query API significantly less ergonomic, though.
-	// Should the ExecQuery call return the error instead?
-	if !th.IsValid() {
-		panic(ErrInvalidTableHandle.Error())
-	}
-
-	qb := newQueryBuilder(th.client, th)
+	// If this TableHandle is invalid, the error will occur when the query is actually used.
+	qb := newQueryBuilder(th)
 	return qb.curRootNode()
 }
 

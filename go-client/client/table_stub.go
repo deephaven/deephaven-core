@@ -119,13 +119,17 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 }
 
 // fetchTable exports (or re-exports) a table on the server so that it can be referred to by a new ticket.
-func (ts *tableStub) fetchTable(ctx context.Context, oldTicket *ticketpb2.Ticket) (*TableHandle, error) {
+func (ts *tableStub) fetchTable(ctx context.Context, oldTable *TableHandle) (*TableHandle, error) {
+	if !oldTable.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	sourceId := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: oldTicket}}
+	sourceId := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: oldTable.ticket}}
 	resultId := ts.client.newTicket()
 
 	req := tablepb2.FetchTableRequest{SourceId: &sourceId, ResultId: &resultId}
@@ -141,7 +145,7 @@ func (ts *tableStub) fetchTable(ctx context.Context, oldTicket *ticketpb2.Ticket
 func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, error) {
 	fieldId := fieldId{appId: "scope", fieldName: name}
 	if tbl, ok := ts.client.tables[fieldId]; ok {
-		return ts.fetchTable(ctx, tbl.ticket)
+		return ts.fetchTable(ctx, tbl)
 	} else {
 		return nil, errors.New("no table by the name " + name + " (maybe it isn't fetched?)")
 	}
@@ -149,7 +153,7 @@ func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, 
 
 // EmptyTableQuery is like EmptyTable, except it can be used as part of a query.
 func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
-	qb := newQueryBuilder(ts.client, nil)
+	qb := newQueryBuilder(nil)
 	qb.ops = append(qb.ops, emptyTableOp{numRows: numRows})
 	return qb.curRootNode()
 }
@@ -176,7 +180,7 @@ func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandl
 
 // TimeTableQuery is like TimeTable, except it can be used as part of a query.
 func (ts *tableStub) TimeTableQuery(period time.Duration, startTime time.Time) QueryNode {
-	qb := newQueryBuilder(ts.client, nil)
+	qb := newQueryBuilder(nil)
 	qb.ops = append(qb.ops, timeTableOp{period: period, startTime: startTime})
 	return qb.curRootNode()
 }
@@ -225,6 +229,10 @@ func parseCreationResponse(client *Client, resp *tablepb2.ExportedTableCreationR
 
 // dropColumns is a wrapper around the DropColumns gRPC request.
 func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols []string) (*TableHandle, error) {
+	if !table.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
 		return nil, err
@@ -248,6 +256,10 @@ type selectOrUpdateOp func(tablepb2.TableServiceClient, context.Context, *tablep
 
 // doSelectOrUpdate wraps Update, View, UpdateView, Select, and LazyUpdate gRPC requests.
 func (ts *tableStub) doSelectOrUpdate(ctx context.Context, table *TableHandle, formulas []string, op selectOrUpdateOp) (*TableHandle, error) {
+	if !table.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
 		return nil, err
@@ -293,6 +305,10 @@ func (ts *tableStub) selectTbl(ctx context.Context, table *TableHandle, formulas
 // makeRequest is a convenience function to perform all the boilerplate required to actually make a gRPC request.
 // The op argument should simply create a request given the result and source ID and call the appropriate gRPC method.
 func (ts *tableStub) makeRequest(ctx context.Context, table *TableHandle, op reqOp) (*TableHandle, error) {
+	if !table.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
 		return nil, err
@@ -370,6 +386,9 @@ func (ts *tableStub) headOrTail(ctx context.Context, table *TableHandle, numRows
 // naturalJoin is a wrapper around the naturalJoin gRPC operation.
 func (ts *tableStub) naturalJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
 	return ts.makeRequest(ctx, leftTable, func(ctx ctxt, resultId ticketRef, leftId tblRef) (tblResp, error) {
+		if !rightTable.IsValid() {
+			return nil, ErrInvalidTableHandle
+		}
 		rightId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: rightTable.ticket}}
 		req := tablepb2.NaturalJoinTablesRequest{ResultId: resultId, LeftId: leftId, RightId: rightId, ColumnsToMatch: on, ColumnsToAdd: joins}
 		return ts.stub.NaturalJoinTables(ctx, &req)
@@ -379,6 +398,9 @@ func (ts *tableStub) naturalJoin(ctx context.Context, leftTable *TableHandle, ri
 // crossJoin is a wrapper around the crossJoin gRPC operation.
 func (ts *tableStub) crossJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string, reserveBits int32) (*TableHandle, error) {
 	return ts.makeRequest(ctx, leftTable, func(ctx ctxt, resultId ticketRef, leftId tblRef) (tblResp, error) {
+		if !rightTable.IsValid() {
+			return nil, ErrInvalidTableHandle
+		}
 		rightId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: rightTable.ticket}}
 		req := tablepb2.CrossJoinTablesRequest{ResultId: resultId, LeftId: leftId, RightId: rightId, ColumnsToMatch: on, ColumnsToAdd: joins, ReserveBits: reserveBits}
 		return ts.stub.CrossJoinTables(ctx, &req)
@@ -388,6 +410,9 @@ func (ts *tableStub) crossJoin(ctx context.Context, leftTable *TableHandle, righ
 // exactJoin is a wrapper around the exactJoin gRPC operation.
 func (ts *tableStub) exactJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
 	return ts.makeRequest(ctx, leftTable, func(ctx ctxt, resultId ticketRef, leftId tblRef) (tblResp, error) {
+		if !rightTable.IsValid() {
+			return nil, ErrInvalidTableHandle
+		}
 		rightId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: rightTable.ticket}}
 		req := tablepb2.ExactJoinTablesRequest{ResultId: resultId, LeftId: leftId, RightId: rightId, ColumnsToMatch: on, ColumnsToAdd: joins}
 		return ts.stub.ExactJoinTables(ctx, &req)
@@ -397,6 +422,9 @@ func (ts *tableStub) exactJoin(ctx context.Context, leftTable *TableHandle, righ
 // asOfJoin is a wrapper around the asOfJoin gRPC operation.
 func (ts *tableStub) asOfJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string, matchRule MatchRule) (*TableHandle, error) {
 	return ts.makeRequest(ctx, leftTable, func(ctx ctxt, resultId ticketRef, leftId tblRef) (tblResp, error) {
+		if !rightTable.IsValid() {
+			return nil, ErrInvalidTableHandle
+		}
 		rightId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: rightTable.ticket}}
 		var asOfMatchRule tablepb2.AsOfJoinTablesRequest_MatchRule
 		switch matchRule {
@@ -470,6 +498,12 @@ func (ts *tableStub) aggBy(ctx context.Context, table *TableHandle, aggs []aggPa
 
 // merge is a wrapper around the MergeTables gRPC request.
 func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHandle) (*TableHandle, error) {
+	for _, table := range others {
+		if !table.IsValid() {
+			return nil, ErrInvalidTableHandle
+		}
+	}
+
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
 		return nil, err
@@ -535,7 +569,7 @@ func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*
 
 		if state.isExported(node) {
 			// This node is exported, so in order to avoid two having TableHandles with the same ticket we need to re-export the old table.
-			newTable, err := state.client.tableStub.fetchTable(ctx, oldTable.ticket)
+			newTable, err := state.client.tableStub.fetchTable(ctx, oldTable)
 			if err != nil {
 				return nil, wrapExecSerialError(err, node)
 			}
@@ -591,7 +625,7 @@ func execSerial(ctx context.Context, client *Client, nodes []QueryNode) ([]*Tabl
 			// The node has already been exported. To avoid aliased TableHandles,
 			// we need to re-export it.
 			oldTable := state.finishedNodes[node]
-			tbl, err := client.tableStub.fetchTable(ctx, oldTable.ticket)
+			tbl, err := client.tableStub.fetchTable(ctx, oldTable)
 			if err != nil {
 				return nil, wrapExecSerialError(err, node)
 			}
