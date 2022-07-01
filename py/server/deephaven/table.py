@@ -1409,7 +1409,7 @@ class PartitionedTable(JObjectWrapper):
         """Creates a PartitionedTable with a single column named '__CONSTITUENT__' containing the provided constituent
         tables.
 
-        The result PartitionedTable has no key columns, both its unique_keys and constituent_changes_permitted
+        The result PartitionedTable has no key columns, and both its unique_keys and constituent_changes_permitted
         properties are set to False. When constituent_table_columns isn't provided, it will be set to the column
         definitions of the first table in the provided constituent tables.
 
