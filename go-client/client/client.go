@@ -1,7 +1,8 @@
 // This package allows you to interface with a Deephaven server over a network connection using Go.
 // It can upload, manipulate, and download tables, among other features.
-// First, use client.NewClient to connect to the server, then the Client can be used to perform operations.
+// To get started, use client.NewClient to connect to the server. The Client can then be used to perform operations.
 // See the provided examples in the examples/ folder or the individual code documentation for more.
+// The Go API uses Records from the Apache Arrow package as tables,
 // All methods are thread-safe unless otherwise specified.
 package client
 

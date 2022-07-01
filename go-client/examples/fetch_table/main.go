@@ -24,7 +24,7 @@ func main() {
 		return
 	}
 
-	// First, let's make a table.
+	// First, let's make an empty table with ten rows.
 	tbl, err := cl.EmptyTable(ctx, 10)
 	if err != nil {
 		fmt.Println("error when making table:", err.Error())

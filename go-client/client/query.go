@@ -864,7 +864,7 @@ func (op ungroupOp) String() string {
 
 // Ungroup ungroups column content. It is the inverse of the GroupBy method.
 // Ungroup unwraps columns containing either Deephaven arrays or Java arrays.
-// nullFill indicates whether or not missing cells may be filled with null, default is true
+// nullFill indicates whether or not missing cells may be filled with null. Set it to true if you are unsure.
 func (qb QueryNode) Ungroup(colsToUngroupBy []string, nullFill bool) QueryNode {
 	return qb.addOp(ungroupOp{child: qb, colNames: colsToUngroupBy, nullFill: nullFill})
 }
@@ -1270,7 +1270,7 @@ func (op joinOp) String() string {
 //
 // joins is the columns to add from the right table.
 //
-// reserveBits is the number of bits of key-space to initially reserve per group, default is 10.
+// reserveBits is the number of bits of key-space to initially reserve per group. Set it to 10 if you are unsure.
 func (qb QueryNode) Join(rightTable QueryNode, matchOn []string, joins []string, reserveBits int32) QueryNode {
 	op := joinOp{
 		leftTable:      qb,
@@ -1332,9 +1332,9 @@ func (qb QueryNode) NaturalJoin(rightTable QueryNode, matchOn []string, joins []
 type MatchRule int
 
 const (
-	MatchRuleLessThanEqual MatchRule = iota // Less-than-or-equal, the default for an as-of join.
+	MatchRuleLessThanEqual MatchRule = iota // Less-than-or-equal, used for an as-of join.
 	MatchRuleLessThan
-	MatchRuleGreaterThanEqual // Greater-than-or-equal, the default for a reverse as-of join.
+	MatchRuleGreaterThanEqual // Greater-than-or-equal, used for a reverse as-of join.
 	MatchRuleGreaterThan
 )
 
@@ -1416,7 +1416,8 @@ func (op asOfJoinOp) String() string {
 //
 // joins is the columns to add from the right table.
 //
-// matchRule is the match rule for the join, default is MatchRuleLessThanEqual normally, or MatchRuleGreaterThanEqual for a reverse-as-of-join
+// matchRule is the match rule for the join.
+// Use MatchRuleLessThanEqual for a normal as-of join, or MatchRuleGreaterThanEqual for a reverse-as-of-join.
 func (qb QueryNode) AsOfJoin(rightTable QueryNode, matchColumns []string, joins []string, matchRule MatchRule) QueryNode {
 	op := asOfJoinOp{
 		leftTable:      qb,
@@ -1454,7 +1455,7 @@ func (op mergeOp) String() string {
 	return fmt.Sprintf("Merge(%s, /* %d tables omitted */)", op.sortBy, len(op.children))
 }
 
-// Merge combines two or more tables into one aggregate table as part of a query.
+// MergeQuery combines two or more tables into one table as part of a query.
 // This essentially appends the tables one on top of the other.
 // If sortBy is provided, the resulting table will be sorted based on that column.
 func MergeQuery(sortBy string, tables ...QueryNode) QueryNode {

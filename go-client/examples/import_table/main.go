@@ -60,7 +60,7 @@ func main() {
 	}
 	defer filteredTable.Release(ctx)
 
-	// Ff we want to see the data we sorted and filtered, we can snapshot the table to get a Record back.
+	// If we want to see the data we sorted and filtered, we can snapshot the table to get a Record back.
 	filteredRecord, err := filteredTable.Snapshot(ctx)
 	if err != nil {
 		fmt.Println("error when filtering:", err.Error())

@@ -230,7 +230,7 @@ func (th *TableHandle) NaturalJoin(ctx context.Context, rightTable *TableHandle,
 //
 // joins is the columns to add from the right table.
 //
-// reserveBits is the number of bits of key-space to initially reserve per group, default is 10.
+// reserveBits is the number of bits of key-space to initially reserve per group. Set it to 10 if unsure.
 func (th *TableHandle) Join(ctx context.Context, rightTable *TableHandle, on []string, joins []string, reserveBits int32) (*TableHandle, error) {
 	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
@@ -273,7 +273,8 @@ func (th *TableHandle) ExactJoin(ctx context.Context, rightTable *TableHandle, o
 //
 // joins is the columns to add from the right table.
 //
-// matchRule is the match rule for the join, default is MatchRuleLessThanEqual normally, or MatchRuleGreaterThanEqual for a reverse-as-of-join
+// matchRule is the match rule for the join.
+// Use MatchRuleLessThanEqual for a normal as-of join, or MatchRuleGreaterThanEqual for a reverse-as-of-join.
 func (th *TableHandle) AsOfJoin(ctx context.Context, rightTable *TableHandle, on []string, joins []string, matchRule MatchRule) (*TableHandle, error) {
 	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
@@ -309,7 +310,7 @@ func (th *TableHandle) GroupBy(ctx context.Context, by ...string) (*TableHandle,
 
 // Ungroup ungroups column content. It is the inverse of the GroupBy method.
 // Ungroup unwraps columns containing either Deephaven arrays or Java arrays.
-// nullFill indicates whether or not missing cells may be filled with null, default is true
+// nullFill indicates whether or not missing cells may be filled with null. Set it to true if unsure.
 func (th *TableHandle) Ungroup(ctx context.Context, cols []string, nullFill bool) (*TableHandle, error) {
 	if !th.IsValid() {
 		return nil, ErrInvalidTableHandle
@@ -433,7 +434,7 @@ func (th *TableHandle) AggBy(ctx context.Context, agg *AggBuilder, by ...string)
 	return th.client.aggBy(ctx, th, agg.aggs, by)
 }
 
-// Merge combines two or more tables into one aggregate table.
+// Merge combines two or more tables into one table.
 // This essentially appends the tables one on top of the other.
 // If sortBy is provided, the resulting table will be sorted based on that column.
 func Merge(ctx context.Context, sortBy string, tables ...*TableHandle) (*TableHandle, error) {
