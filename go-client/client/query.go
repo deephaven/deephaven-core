@@ -42,7 +42,7 @@ func newQueryErrorPart(part batchErrorPart, nodeTickets []*ticketpb2.Ticket, opN
 	}
 }
 
-// A QueryError may be returned by ExecQuery as the result of an invalid query.
+// A QueryError may be returned by ExecSerial or ExecBatch as the result of an invalid query.
 // The Details method will return more information about the error,
 // including a pseudo-traceback of the methods that caused it.
 type QueryError struct {
@@ -139,7 +139,7 @@ type tableOp interface {
 }
 
 // A QueryNode is effectively a pointer somewhere into a query.
-// Table operations can be performed on it to build up a query, which can then be executed using client.ExecQuery().
+// Table operations can be performed on it to build up a query, which can then be executed using Client.ExecSerial() or Client.ExecBatch().
 type QueryNode struct {
 	// -1 refers to the queryBuilder's base table
 	index   int
@@ -339,9 +339,9 @@ func findTicketOutputIndex(nodeTickets []*ticketpb2.Ticket, tableTicket *ticketp
 	return
 }
 
-// execQuery performs the Batch gRPC operation, which performs several table operations in a single request.
+// execBatch performs the Batch gRPC operation, which performs several table operations in a single request.
 // It then wraps the returned tables in TableHandles and returns them in the same order as in nodes.
-func execQuery(client *Client, ctx context.Context, nodes []QueryNode) ([]*TableHandle, error) {
+func execBatch(client *Client, ctx context.Context, nodes []QueryNode) ([]*TableHandle, error) {
 	if len(nodes) == 0 {
 		return nil, nil
 	}

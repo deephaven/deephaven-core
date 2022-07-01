@@ -13,18 +13,18 @@ import (
 	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
-// execQueryOrSerial can be either (*client.Client).ExecQuery or (*client.Client).ExecSerial.
-type execQueryOrSerial func(*client.Client, context.Context, ...client.QueryNode) ([]*client.TableHandle, error)
+// execBatchOrSerial can be either (*client.Client).ExecBatch or (*client.Client).ExecSerial.
+type execBatchOrSerial func(*client.Client, context.Context, ...client.QueryNode) ([]*client.TableHandle, error)
 
 func TestDagQueryBatched(t *testing.T) {
-	dagQuery(t, (*client.Client).ExecQuery)
+	dagQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestDagQuerySerial(t *testing.T) {
 	dagQuery(t, (*client.Client).ExecSerial)
 }
 
-func dagQuery(t *testing.T, exec execQueryOrSerial) {
+func dagQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -57,7 +57,7 @@ func dagQuery(t *testing.T, exec execQueryOrSerial) {
 	finalQuery := client.MergeQuery("", otherQuery, exCloseLenQuery)
 
 	tables, err := exec(c, ctx, finalQuery, otherQuery, exCloseLenQuery, exLenQuery)
-	test_tools.CheckError(t, "ExecQuery", err)
+	test_tools.CheckError(t, "ExecBatch", err)
 	if len(tables) != 4 {
 		t.Errorf("wrong number of tables")
 		return
@@ -98,14 +98,14 @@ func dagQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestMergeQueryBatched(t *testing.T) {
-	mergeQuery(t, (*client.Client).ExecQuery)
+	mergeQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestMergeQuerySerial(t *testing.T) {
 	mergeQuery(t, (*client.Client).ExecSerial)
 }
 
-func mergeQuery(t *testing.T, exec execQueryOrSerial) {
+func mergeQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -121,7 +121,7 @@ func mergeQuery(t *testing.T, exec execQueryOrSerial) {
 	defer right.Release(ctx)
 
 	tables, err := exec(c, ctx, client.MergeQuery("", left.Query(), right.Query()))
-	test_tools.CheckError(t, "ExecQuery", err)
+	test_tools.CheckError(t, "ExecBatch", err)
 	if len(tables) != 1 {
 		t.Errorf("wrong number of tables")
 	}
@@ -138,14 +138,14 @@ func mergeQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestEmptyMergeBatched(t *testing.T) {
-	emptyMerge(t, (*client.Client).ExecQuery)
+	emptyMerge(t, (*client.Client).ExecBatch)
 }
 
 func TestEmptyMergeSerial(t *testing.T) {
 	emptyMerge(t, (*client.Client).ExecSerial)
 }
 
-func emptyMerge(t *testing.T, exec execQueryOrSerial) {
+func emptyMerge(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -161,14 +161,14 @@ func emptyMerge(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestSeparateQueriesBatched(t *testing.T) {
-	separateQueries(t, (*client.Client).ExecQuery)
+	separateQueries(t, (*client.Client).ExecBatch)
 }
 
 func TestSeparateQueriesSerial(t *testing.T) {
 	separateQueries(t, (*client.Client).ExecSerial)
 }
 
-func separateQueries(t *testing.T, exec execQueryOrSerial) {
+func separateQueries(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -178,9 +178,9 @@ func separateQueries(t *testing.T, exec execQueryOrSerial) {
 	left := c.EmptyTableQuery(123)
 	right := c.TimeTableQuery(10000000, time.Now())
 
-	tables, err := c.ExecQuery(ctx, left, right)
+	tables, err := c.ExecBatch(ctx, left, right)
 	if err != nil {
-		t.Errorf("ExecQuery %s", err.Error())
+		t.Errorf("ExecBatch %s", err.Error())
 		return
 	}
 	if len(tables) != 2 {
@@ -213,14 +213,14 @@ func separateQueries(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestEmptyTableQueryBatched(t *testing.T) {
-	emptyTableQuery(t, (*client.Client).ExecQuery)
+	emptyTableQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestEmptyTableQuerySerial(t *testing.T) {
 	emptyTableQuery(t, (*client.Client).ExecSerial)
 }
 
-func emptyTableQuery(t *testing.T, exec execQueryOrSerial) {
+func emptyTableQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -235,7 +235,7 @@ func emptyTableQuery(t *testing.T, exec execQueryOrSerial) {
 
 	tables, err := exec(c, ctx, base, derived)
 	if err != nil {
-		t.Errorf("ExecQuery %s", err.Error())
+		t.Errorf("ExecBatch %s", err.Error())
 		return
 	}
 	if len(tables) != 2 {
@@ -272,14 +272,14 @@ func emptyTableQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestUpdateDropQueryBatched(t *testing.T) {
-	updateDropQuery(t, (*client.Client).ExecQuery)
+	updateDropQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestUpdateDropQuerySerial(t *testing.T) {
 	updateDropQuery(t, (*client.Client).ExecSerial)
 }
 
-func updateDropQuery(t *testing.T, exec execQueryOrSerial) {
+func updateDropQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -303,7 +303,7 @@ func updateDropQuery(t *testing.T, exec execQueryOrSerial) {
 
 	tables, err := exec(c, ctx, updateQuery, dropQuery)
 	if err != nil {
-		t.Errorf("ExecQuery %s", err.Error())
+		t.Errorf("ExecBatch %s", err.Error())
 		return
 	}
 	if len(tables) != 2 {
@@ -344,14 +344,14 @@ func updateDropQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestDuplicateQueryBatched(t *testing.T) {
-	duplicateQuery(t, (*client.Client).ExecQuery)
+	duplicateQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestDuplicateQuerySerial(t *testing.T) {
 	duplicateQuery(t, (*client.Client).ExecSerial)
 }
 
-func duplicateQuery(t *testing.T, exec execQueryOrSerial) {
+func duplicateQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -366,7 +366,7 @@ func duplicateQuery(t *testing.T, exec execQueryOrSerial) {
 
 	tables, err := exec(c, ctx, query2, query1, query2, query1)
 	if err != nil {
-		t.Errorf("ExecQuery %s", err.Error())
+		t.Errorf("ExecBatch %s", err.Error())
 		return
 	}
 
@@ -397,14 +397,14 @@ func duplicateQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestInvalidTableQueryBatched(t *testing.T) {
-	invalidTableQuery(t, (*client.Client).ExecQuery)
+	invalidTableQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestInvalidTableQuerySerial(t *testing.T) {
 	invalidTableQuery(t, (*client.Client).ExecSerial)
 }
 
-func invalidTableQuery(t *testing.T, exec execQueryOrSerial) {
+func invalidTableQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
@@ -434,7 +434,7 @@ func invalidTableQuery(t *testing.T, exec execQueryOrSerial) {
 
 type queryOp func(*client.TableHandle) []client.QueryNode
 
-func doQueryTest(inputRec arrow.Record, t *testing.T, exec execQueryOrSerial, op queryOp) []arrow.Record {
+func doQueryTest(inputRec arrow.Record, t *testing.T, exec execBatchOrSerial, op queryOp) []arrow.Record {
 	defer inputRec.Release()
 
 	ctx := context.Background()
@@ -456,7 +456,7 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, exec execQueryOrSerial, op
 
 	tables, err := exec(c, ctx, query...)
 	if err != nil {
-		t.Errorf("ExecQuery %s", err.Error())
+		t.Errorf("ExecBatch %s", err.Error())
 		return nil
 	}
 
@@ -479,14 +479,14 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, exec execQueryOrSerial, op
 }
 
 func TestEmptyUpdateQueryBatched(t *testing.T) {
-	emptyUpdateQuery(t, (*client.Client).ExecQuery)
+	emptyUpdateQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestEmptyUpdateQuerySerial(t *testing.T) {
 	emptyUpdateQuery(t, (*client.Client).ExecSerial)
 }
 
-func emptyUpdateQuery(t *testing.T, exec execQueryOrSerial) {
+func emptyUpdateQuery(t *testing.T, exec execBatchOrSerial) {
 	result := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Update()}
 	})
@@ -494,28 +494,28 @@ func emptyUpdateQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestEmptyQueryBatched(t *testing.T) {
-	emptyQuery(t, (*client.Client).ExecQuery)
+	emptyQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestEmptyQuerySerial(t *testing.T) {
 	emptyQuery(t, (*client.Client).ExecSerial)
 }
 
-func emptyQuery(t *testing.T, exec execQueryOrSerial) {
+func emptyQuery(t *testing.T, exec execBatchOrSerial) {
 	doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{}
 	})
 }
 
 func TestNoopQueryBatched(t *testing.T) {
-	noopQuery(t, (*client.Client).ExecQuery)
+	noopQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestNoopQuerySerial(t *testing.T) {
 	noopQuery(t, (*client.Client).ExecSerial)
 }
 
-func noopQuery(t *testing.T, exec execQueryOrSerial) {
+func noopQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query()}
 	})
@@ -527,14 +527,14 @@ func noopQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestSortQueryBatched(t *testing.T) {
-	sortQuery(t, (*client.Client).ExecQuery)
+	sortQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestSortQuerySerial(t *testing.T) {
 	sortQuery(t, (*client.Client).ExecSerial)
 }
 
-func sortQuery(t *testing.T, exec execQueryOrSerial) {
+func sortQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(2, 10, 1000), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Sort("a"), tbl.Query().SortBy(client.SortDsc("a"))}
 	})
@@ -557,14 +557,14 @@ func sortQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestHeadTailQueryBatched(t *testing.T) {
-	headTailQuery(t, (*client.Client).ExecQuery)
+	headTailQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestHeadTailQuerySerial(t *testing.T) {
 	headTailQuery(t, (*client.Client).ExecSerial)
 }
 
-func headTailQuery(t *testing.T, exec execQueryOrSerial) {
+func headTailQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(2, 10, 1000), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Head(3), tbl.Query().Tail(4)}
 	})
@@ -583,14 +583,14 @@ func headTailQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestSelectDistinctQueryBatched(t *testing.T) {
-	selectDistinctQuery(t, (*client.Client).ExecQuery)
+	selectDistinctQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestSelectDistinctQuerySerial(t *testing.T) {
 	selectDistinctQuery(t, (*client.Client).ExecSerial)
 }
 
-func selectDistinctQuery(t *testing.T, exec execQueryOrSerial) {
+func selectDistinctQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(2, 20, 10), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().SelectDistinct("a")}
 	})
@@ -603,14 +603,14 @@ func selectDistinctQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestComboAggQueryBatched(t *testing.T) {
-	comboAggQuery(t, (*client.Client).ExecQuery)
+	comboAggQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestComboAggQuerySerial(t *testing.T) {
 	comboAggQuery(t, (*client.Client).ExecSerial)
 }
 
-func comboAggQuery(t *testing.T, exec execQueryOrSerial) {
+func comboAggQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(4, 20, 10), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		b := client.NewAggBuilder().Min("minB = b").Sum("sumC = c")
 		return []client.QueryNode{tbl.Query().AggBy(b, "a")}
@@ -624,14 +624,14 @@ func comboAggQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestWhereQueryBatched(t *testing.T) {
-	whereQuery(t, (*client.Client).ExecQuery)
+	whereQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestWhereQuerySerial(t *testing.T) {
 	whereQuery(t, (*client.Client).ExecSerial)
 }
 
-func whereQuery(t *testing.T, exec execQueryOrSerial) {
+func whereQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.ExampleRecord(), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Where("Vol % 1000 != 0")}
 	})
@@ -644,14 +644,14 @@ func whereQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestUpdateViewSelectQueryBatched(t *testing.T) {
-	updateViewSelectQuery(t, (*client.Client).ExecQuery)
+	updateViewSelectQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestUpdateViewSelectQuerySerial(t *testing.T) {
 	updateViewSelectQuery(t, (*client.Client).ExecSerial)
 }
 
-func updateViewSelectQuery(t *testing.T, exec execQueryOrSerial) {
+func updateViewSelectQuery(t *testing.T, exec execBatchOrSerial) {
 	type usvOp func(qb client.QueryNode, columns ...string) client.QueryNode
 
 	ops := []usvOp{client.QueryNode.Update, client.QueryNode.LazyUpdate, client.QueryNode.View, client.QueryNode.UpdateView, client.QueryNode.Select}
@@ -670,14 +670,14 @@ func updateViewSelectQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestExactJoinQueryBatched(t *testing.T) {
-	exactJoinQuery(t, (*client.Client).ExecQuery)
+	exactJoinQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestExactJoinQuerySerial(t *testing.T) {
 	exactJoinQuery(t, (*client.Client).ExecSerial)
 }
 
-func exactJoinQuery(t *testing.T, exec execQueryOrSerial) {
+func exactJoinQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query().GroupBy("a").Update("b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]") // Make sure the key column is only unique values
 		leftTable := query.DropColumns("c", "d", "e")
@@ -696,14 +696,14 @@ func exactJoinQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestNaturalJoinQueryBatched(t *testing.T) {
-	naturalJoinQuery(t, (*client.Client).ExecQuery)
+	naturalJoinQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestNaturalJoinQuerySerial(t *testing.T) {
 	naturalJoinQuery(t, (*client.Client).ExecSerial)
 }
 
-func naturalJoinQuery(t *testing.T, exec execQueryOrSerial) {
+func naturalJoinQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query().GroupBy("a").Update("b = b[0]", "c = c[0]", "d = d[0]", "e = e[0]") // Make sure the key column is only unique values
 		leftTable := query.DropColumns("c", "d", "e")
@@ -722,14 +722,14 @@ func naturalJoinQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestCrossJoinQueryBatched(t *testing.T) {
-	crossJoinQuery(t, (*client.Client).ExecQuery)
+	crossJoinQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestCrossJoinQuerySerial(t *testing.T) {
 	crossJoinQuery(t, (*client.Client).ExecSerial)
 }
 
-func crossJoinQuery(t *testing.T, exec execQueryOrSerial) {
+func crossJoinQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(5, 100, 50), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		leftTable := tbl.Query().DropColumns("e")
 		rightTable := tbl.Query().Where("a % 2 > 0 && b % 3 == 1").DropColumns("b", "c", "d")
@@ -772,9 +772,9 @@ func TestAsOfJoinQuery(t *testing.T) {
 	normalTable := tt1.AsOfJoin(tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleLessThanEqual)
 	reverseTable := tt1.AsOfJoin(tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleGreaterThanEqual)
 
-	tables, err := c.ExecQuery(ctx, tt1, normalTable, reverseTable)
+	tables, err := c.ExecBatch(ctx, tt1, normalTable, reverseTable)
 	if err != nil {
-		t.Errorf("ExecQuery %s", err.Error())
+		t.Errorf("ExecBatch %s", err.Error())
 		return
 	}
 	if len(tables) != 3 {
@@ -815,14 +815,14 @@ func TestAsOfJoinQuery(t *testing.T) {
 }
 
 func TestHeadByTailByQueryBatched(t *testing.T) {
-	headByTailByQuery(t, (*client.Client).ExecQuery)
+	headByTailByQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestHeadByTailByQuerySerial(t *testing.T) {
 	headByTailByQuery(t, (*client.Client).ExecSerial)
 }
 
-func headByTailByQuery(t *testing.T, exec execQueryOrSerial) {
+func headByTailByQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(3, 10, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		headTbl := query.HeadBy(1, "a")
@@ -844,14 +844,14 @@ func headByTailByQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestGroupQueryBatched(t *testing.T) {
-	groupQuery(t, (*client.Client).ExecQuery)
+	groupQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestGroupQuerySerial(t *testing.T) {
 	groupQuery(t, (*client.Client).ExecSerial)
 }
 
-func groupQuery(t *testing.T, exec execQueryOrSerial) {
+func groupQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		oneCol := query.GroupBy("a")
@@ -873,14 +873,14 @@ func groupQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestUngroupQueryBatched(t *testing.T) {
-	ungroupQuery(t, (*client.Client).ExecQuery)
+	ungroupQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestUngroupQuerySerial(t *testing.T) {
 	ungroupQuery(t, (*client.Client).ExecSerial)
 }
 
-func ungroupQuery(t *testing.T, exec execQueryOrSerial) {
+func ungroupQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		ungrouped := tbl.Query().GroupBy("a").Ungroup([]string{"b"}, false)
 		return []client.QueryNode{ungrouped}
@@ -895,14 +895,14 @@ func ungroupQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestCountByQueryBatched(t *testing.T) {
-	countByQuery(t, (*client.Client).ExecQuery)
+	countByQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestCountByQuerySerial(t *testing.T) {
 	countByQuery(t, (*client.Client).ExecSerial)
 }
 
-func countByQuery(t *testing.T, exec execQueryOrSerial) {
+func countByQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		query := tbl.Query()
 		distinct := query.SelectDistinct("a")
@@ -919,14 +919,14 @@ func countByQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestCountQueryBatched(t *testing.T) {
-	countQuery(t, (*client.Client).ExecQuery)
+	countQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestCountQuerySerial(t *testing.T) {
 	countQuery(t, (*client.Client).ExecSerial)
 }
 
-func countQuery(t *testing.T, exec execQueryOrSerial) {
+func countQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.RandomRecord(2, 30, 5), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Count("a")}
 	})
@@ -940,14 +940,14 @@ func countQuery(t *testing.T, exec execQueryOrSerial) {
 }
 
 func TestDedicatedAggQueryBatched(t *testing.T) {
-	dedicatedAggQuery(t, (*client.Client).ExecQuery)
+	dedicatedAggQuery(t, (*client.Client).ExecBatch)
 }
 
 func TestDedicatedAggQuerySerial(t *testing.T) {
 	dedicatedAggQuery(t, (*client.Client).ExecSerial)
 }
 
-func dedicatedAggQuery(t *testing.T, exec execQueryOrSerial) {
+func dedicatedAggQuery(t *testing.T, exec execBatchOrSerial) {
 	type AggOp = func(qb client.QueryNode, by ...string) client.QueryNode
 
 	ops := []AggOp{

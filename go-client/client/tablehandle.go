@@ -63,7 +63,7 @@ func (th *TableHandle) Snapshot(ctx context.Context) (arrow.Record, error) {
 }
 
 // Query creates a new query based on this table. Table operations can be performed on query nodes to create new nodes.
-// A list of query nodes can then be passed to client.ExecQuery() to execute the entire query as a single call.
+// A list of query nodes can then be passed to client.ExecSerial() or client.ExecBatch() to get a list of tables.
 func (th *TableHandle) Query() QueryNode {
 	// If this TableHandle is invalid, the error will occur when the query is actually used.
 	qb := newQueryBuilder(th)

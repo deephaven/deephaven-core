@@ -61,7 +61,7 @@ func (err batchError) Error() string {
 	return fmt.Sprintf("batch error in %d tables", len(err.parts))
 }
 
-// batch executes a batch (query) request on the server and returns the resulting tables.
+// batch executes a Batch request on the server and returns the resulting tables.
 // Only the operations which were given a non-nil result ticket (the ResultId field) will be returned as tables.
 // The tables will be returned in an arbitrary order.
 // Each table's ticket will match exactly one result ticket in one of the operations,

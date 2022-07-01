@@ -188,7 +188,7 @@ func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
 // ExecSerial executes several table operations on the server and returns the resulting tables.
 //
 // This function makes a request for each table operation.
-// Consider using ExecQuery to batch all of the table operations into a single request,
+// Consider using ExecBatch to batch all of the table operations into a single request,
 // which can be more efficient.
 //
 // If this function completes successfully,
@@ -202,7 +202,10 @@ func (client *Client) ExecSerial(ctx context.Context, nodes ...QueryNode) ([]*Ta
 	return execSerial(ctx, client, nodes)
 }
 
-// ExecQuery executes a query on the server and returns the resulting tables.
+// ExecBatch executes a batched query on the server and returns the resulting tables.
+//
+// All of the operations in the query will be performed in a single request,
+// so ExecBatch is usually more efficient than ExecSerial.
 //
 // If this function completes successfully,
 // the number of tables returned will always match the number of query nodes passed.
@@ -211,8 +214,8 @@ func (client *Client) ExecSerial(ctx context.Context, nodes ...QueryNode) ([]*Ta
 // etc.
 //
 // This may return a QueryError if the query is invalid.
-func (client *Client) ExecQuery(ctx context.Context, nodes ...QueryNode) ([]*TableHandle, error) {
-	return execQuery(client, ctx, nodes)
+func (client *Client) ExecBatch(ctx context.Context, nodes ...QueryNode) ([]*TableHandle, error) {
+	return execBatch(client, ctx, nodes)
 }
 
 // Close closes the connection to the server and frees any associated resources.

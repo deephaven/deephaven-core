@@ -9,9 +9,9 @@ import (
 )
 
 // This example shows how to use the powerful query system,
-// which allows you to perform an arbitrary number of table operations in a single request.
-// It can even create new tables as part of a query,
-// and the interface is more convenient than doing each of the table operations serially.
+// which allows you to build up an arbitrary number of table operations into a single object.
+// Then, you can execute all of the table operations at once,
+// which simplifies error handling and can be more efficient doing the operations separately.
 func main() {
 	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.
@@ -64,7 +64,7 @@ func main() {
 		AsOfJoin(powTenTable, []string{"Volume = Magnitude"}, nil, client.MatchRuleLessThanEqual)
 
 	// And now, we can execute the queries we have built.
-	tables, err := cl.ExecQuery(ctx, midStocks, magStocks)
+	tables, err := cl.ExecBatch(ctx, midStocks, magStocks)
 	if err != nil {
 		fmt.Println("error when executing query:", err.Error())
 		if e, ok := err.(client.QueryError); ok {
