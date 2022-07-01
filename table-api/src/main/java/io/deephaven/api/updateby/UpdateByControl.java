@@ -13,7 +13,7 @@ import java.math.MathContext;
 @Immutable
 @BuildableStyle
 public abstract class UpdateByControl {
-    static Builder builder() {
+    public static Builder builder() {
         return ImmutableUpdateByControl.builder();
     }
 
@@ -23,7 +23,7 @@ public abstract class UpdateByControl {
      * @return default UpdateByControl
      */
     public static UpdateByControl defaultInstance() {
-        return ImmutableUpdateByControl.builder().build();
+        return builder().build();
     }
 
     /**
@@ -113,7 +113,7 @@ public abstract class UpdateByControl {
     }
 
     @Default
-    public MathContext getDefaultMathContext() {
+    public MathContext mathContext() {
         return MathContext.DECIMAL64;
     }
 
@@ -137,7 +137,7 @@ public abstract class UpdateByControl {
     final void checkMaximumLoadFactor() {
         if (maximumLoadFactor() <= 0.0 || maximumLoadFactor() >= 1.0) {
             throw new IllegalArgumentException(
-                    "UpdateByControl.maximumLoadFactor() must be in the range (0.0 to 1.0) exclusive");
+                    "UpdateByControl.maximumLoadFactor() must be in the range (0.0, 1.0)");
         }
     }
 
@@ -145,7 +145,7 @@ public abstract class UpdateByControl {
     final void checkTargetLoadFactor() {
         if (targetLoadFactor() <= 0.0 || targetLoadFactor() >= 1.0) {
             throw new IllegalArgumentException(
-                    "UpdateByControl.targetLoadFactor() must be in the range (0.0 to 1.0) exclusive");
+                    "UpdateByControl.targetLoadFactor() must be in the range (0.0, 1.0)");
         }
     }
 
@@ -161,6 +161,8 @@ public abstract class UpdateByControl {
         Builder maximumLoadFactor(double maximumLoadFactor);
 
         Builder targetLoadFactor(double targetLoadFactor);
+
+        Builder mathContext(MathContext mathContext);
 
         UpdateByControl build();
     }

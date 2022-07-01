@@ -521,15 +521,15 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS updateBy(UpdateByClause operation);
 
-    TOPS updateBy(UpdateByClause operation, final String... byColumns);
-
     TOPS updateBy(Collection<? extends UpdateByClause> operations);
+
+    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations);
+
+    TOPS updateBy(UpdateByClause operation, final String... byColumns);
 
     TOPS updateBy(Collection<? extends UpdateByClause> operations, final String... byColumns);
 
     TOPS updateBy(Collection<? extends UpdateByClause> operations, Collection<? extends Selectable> byColumns);
-
-    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations);
 
     TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations,
             Collection<? extends Selectable> byColumns);
