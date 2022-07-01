@@ -26,6 +26,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,7 +36,12 @@ import java.util.logging.Logger;
 import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
 
 /**
- * Each instance of this type represents a single active websocket, which maps to a single gRPC stream.
+ * Each instance of this type represents a single active websocket, which can allow several concurrent/overlapping gRPC
+ * streams. This is in contrast to the {@link WebSocketServerStream} type, which supports one websocket per gRPC stream.
+ *
+ * To achieve this, each frame starts with a 32 bit integer indicating the ID of the stream. If the MSB of that int is
+ * 1, then the request must be closed by this frame, and that MSB is set to zero to read the ID of the stream. On the
+ * initial request, an extra header is sent from the client, indicating the path to the service method, and each frame
  *
  * JSR356 websockets always handle their incoming messages in a serial manner, so we don't need to worry here about
  * runOnTransportThread while in onMessage, as we're already in the transport thread.
@@ -56,8 +62,9 @@ public class MultiplexedWebSocketServerStream {
     // assigned on open, always available
     private Session websocketSession;
 
-    // fields set after headers are decoded
-    private final Map<Integer, MultiplexedWebsocketStreamImpl> streams = new ConcurrentHashMap<>();
+    // fields set after headers are decoded. No need to be threadsafe, this will only be accessed from the transport
+    // thread.
+    private final Map<Integer, MultiplexedWebsocketStreamImpl> streams = new HashMap<>();
     private final boolean isTextRequest = false;// not supported yet
 
     public MultiplexedWebSocketServerStream(ServerTransportListener transportListener,
@@ -106,6 +113,7 @@ public class MultiplexedWebSocketServerStream {
         } else {
             closed = false;
         }
+        // may be null if this is the first request for this streamId
         final MultiplexedWebsocketStreamImpl stream = streams.get(streamId);
 
         if (message.remaining() == 0) {
@@ -122,12 +130,9 @@ public class MultiplexedWebSocketServerStream {
             processHeaders(message, streamId);
             return;
         }
-        // if (stream == null) {
-        // websocketSession.close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "No stream with that ID: " +
-        // streamId));
-        // }
 
-        // For every message after headers, the next byte is control flow
+        // For every message after headers, the next byte is control flow - this is technically already managed by
+        // "closed", but this lets us stay somewhat closer to the underlying grpc/grpc-web format.
         byte controlFlow = message.get();
         if (controlFlow == 1) {
             assert closed;
@@ -174,7 +179,7 @@ public class MultiplexedWebSocketServerStream {
         if (timeoutNanos == null) {
             timeoutNanos = 0L;
         }
-        // TODO handle timeout
+        // TODO handle timeout on a per-stream basis
 
         StatsTraceContext statsTraceCtx =
                 StatsTraceContext.newServerContext(streamTracerFactories, path, headers);

@@ -161,13 +161,10 @@ public class MultiplexedWebsocketStreamImpl extends AbstractServerStream {
             // Total up the size of the payload: 5 bytes for the prefix, and each header needs a colon delimiter, and to
             // end with \r\n
             int headerLength = Arrays.stream(serializedHeaders).mapToInt(arr -> arr.length + 2).sum();
-            ByteBuffer prefix = ByteBuffer.allocate(9);
-            prefix.putInt(streamId);
-            prefix.put((byte) 0x80);
-            prefix.putInt(headerLength);
-            prefix.flip();
-            ByteBuffer message = ByteBuffer.allocate(headerLength + 4);
+            ByteBuffer message = ByteBuffer.allocate(headerLength + 9 + 4);
             message.putInt(streamId);
+            message.put((byte) 0x80);
+            message.putInt(headerLength);
             for (int i = 0; i < serializedHeaders.length; i += 2) {
                 message.put(serializedHeaders[i]);
                 message.put((byte) ':');
@@ -178,8 +175,6 @@ public class MultiplexedWebsocketStreamImpl extends AbstractServerStream {
             }
             message.flip();
             try {
-                // send in two separate payloads
-                websocketSession.getBasicRemote().sendBinary(prefix);
                 websocketSession.getBasicRemote().sendBinary(message);
             } catch (IOException e) {
                 throw Status.fromThrowable(e).asRuntimeException();
@@ -238,13 +233,11 @@ public class MultiplexedWebsocketStreamImpl extends AbstractServerStream {
             // Total up the size of the payload: 5 bytes for the prefix, and each trailer needs a colon+space delimiter,
             // and to end with \r\n
             int trailerLength = Arrays.stream(serializedTrailers).mapToInt(arr -> arr.length + 2).sum();
-            ByteBuffer prefix = ByteBuffer.allocate(9);
-            prefix.putInt(streamId);
-            prefix.put((byte) 0x80);
-            prefix.putInt(trailerLength);
-            prefix.flip();
-            ByteBuffer message = ByteBuffer.allocate(trailerLength + 4);
+
+            ByteBuffer message = ByteBuffer.allocate(9 + trailerLength);
             message.putInt(streamId ^ (1 << 31));
+            message.put((byte) 0x80);
+            message.putInt(trailerLength);
             for (int i = 0; i < serializedTrailers.length; i += 2) {
                 message.put(serializedTrailers[i]);
                 message.put((byte) ':');
@@ -256,7 +249,6 @@ public class MultiplexedWebsocketStreamImpl extends AbstractServerStream {
             message.flip();
             try {
                 // send in two separate messages
-                websocketSession.getBasicRemote().sendBinary(prefix);
                 websocketSession.getBasicRemote().sendBinary(message);
 
                 // websocketSession.close();//don't close this, leave it up to the client, or use a timeout
