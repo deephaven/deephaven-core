@@ -72,7 +72,6 @@ jobs:
             server/netty-app/build/distributions/
 
       - name: Publish deephaven-core to PyPi
-        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
@@ -80,7 +79,6 @@ jobs:
           packages_dir: py/server/build/wheel/
 
       - name: Publish deephaven-server to PyPi
-        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__

@@ -22,7 +22,7 @@ def normalize_version(version):
     return str(packaging.version.Version(version))
 
 
-__deephaven_version__ = os.environ['DEEPHAVEN_VERSION']
+__deephaven_version__ = os.environ['DEEPHAVEN_VERSION'] + ".dev8"
 __normalized_version__ = normalize_version(__deephaven_version__)
 
 setup(
