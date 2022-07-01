@@ -201,6 +201,11 @@ class PartitionedTableTestCase(BaseTestCase):
         with self.subTest("Compatible table definition"):
             pt = PartitionedTable.from_constituent_tables([test_table, test_table1, test_table3], test_table.columns)
 
+    def test_keys(self):
+        keys_table = self.partitioned_table.keys()
+        select_distinct_table = self.test_table.select_distinct(["c", "e"])
+        self.assertEqual(keys_table.size, select_distinct_table.size)
+
 
 if __name__ == '__main__':
     unittest.main()
