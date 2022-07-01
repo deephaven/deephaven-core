@@ -649,8 +649,8 @@ public class JsFigure extends HasEventHandling {
 
         @Override
         public Promise fetch(JsFigure figure, FetchObjectResponse response) {
-            JsTable[] tables = new JsTable[response.getTypedExportIdList().length];
-            JsPartitionedTable[] partitionedTables = new JsPartitionedTable[response.getTypedExportIdList().length];
+            JsTable[] tables = new JsTable[0];
+            JsPartitionedTable[] partitionedTables = new JsPartitionedTable[0];
 
             Promise<?>[] promises = new Promise[response.getTypedExportIdList().length];
 
