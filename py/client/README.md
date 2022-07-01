@@ -35,7 +35,7 @@ $ python3 -m examples.demo_asof_join
 ```
 ## Install
 ``` shell
-$ pip3 install dist/pydeephaven-0.14.0-py3-none-any.whl
+$ pip3 install dist/pydeephaven-0.15.0-py3-none-any.whl
 ```
 ## Quick start
 

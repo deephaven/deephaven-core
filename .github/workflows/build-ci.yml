@@ -57,7 +57,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.14.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server nltk
@@ -71,7 +71,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.14.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server pytorch
@@ -85,7 +85,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.14.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server sklearn
@@ -99,7 +99,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.14.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server tensorflow
@@ -113,7 +113,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.14.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server slim
@@ -127,7 +127,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.14.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -290,7 +290,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.14.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -377,7 +377,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.14.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -440,7 +440,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.14.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
             type=ref,event=branch
 
       - name: Setup JDK 11
@@ -536,7 +536,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.14.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
             type=ref,event=branch
 
       - name: Setup JDK 11
