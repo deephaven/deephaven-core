@@ -1455,6 +1455,14 @@ class PartitionedTable(JObjectWrapper):
             self._key_columns = list(self.j_partitioned_table.keyColumnNames().toArray())
         return self._key_columns
 
+    def keys(self) -> Table:
+        """Returns a Table containing all the keys of the underlying partitioned table."""
+        if self.unique_keys:
+            return self.table.view(self.key_columns)
+        else:
+            return self.table.select_distinct(self.key_columns)
+
+
     @property
     def unique_keys(self) -> bool:
         """Whether the keys in the underlying table must always be unique. If keys must be unique, one can expect

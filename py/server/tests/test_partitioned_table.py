@@ -201,6 +201,19 @@ class PartitionedTableTestCase(BaseTestCase):
         with self.subTest("Compatible table definition"):
             pt = PartitionedTable.from_constituent_tables([test_table, test_table1, test_table3], test_table.columns)
 
+    def test_keys(self):
+        keys_table = self.partitioned_table.keys()
+        select_distinct_table = self.test_table.select_distinct(["c", "e"])
+        self.assertEqual(keys_table.size, select_distinct_table.size)
+
+        with ugp.shared_lock():
+            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+        pt = test_table.partition_by("Y")
+        self.wait_ticking_table_update(test_table, row_count=20, timeout=5)
+        keys_table = pt.keys()
+        select_distinct_table = test_table.select_distinct(["Y"])
+        self.assertEqual(keys_table.size, select_distinct_table.size)
+
 
 if __name__ == '__main__':
     unittest.main()
