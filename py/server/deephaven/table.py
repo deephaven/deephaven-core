@@ -1457,7 +1457,11 @@ class PartitionedTable(JObjectWrapper):
 
     def keys(self) -> Table:
         """Returns a Table containing all the keys of the underlying partitioned table."""
-        return self.table.select_distinct(self.key_columns)
+        if self.unique_keys:
+            return self.table.view(self.key_columns)
+        else:
+            return self.table.select_distinct(self.key_columns)
+
 
     @property
     def unique_keys(self) -> bool:
