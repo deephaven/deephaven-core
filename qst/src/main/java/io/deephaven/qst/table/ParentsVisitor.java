@@ -282,6 +282,11 @@ public class ParentsVisitor implements Visitor {
         out = single(countByTable);
     }
 
+    @Override
+    public void visit(UpdateByTable updateByTable) {
+        out = single(updateByTable);
+    }
+
     private static class Search {
 
         private final Predicate<TableSpec> excludePaths;

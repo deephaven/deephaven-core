@@ -13,17 +13,17 @@ import java.math.MathContext;
 @Immutable
 @BuildableStyle
 public abstract class UpdateByControl {
-    static Builder builder() {
+    public static Builder builder() {
         return ImmutableUpdateByControl.builder();
     }
 
     /**
-     * get an instance of UpdateByControl with the defaults from the system properties applied
+     * Get an instance of UpdateByControl with the defaults from the system properties applied.
      *
      * @return default UpdateByControl
      */
     public static UpdateByControl defaultInstance() {
-        return ImmutableUpdateByControl.builder().build();
+        return builder().build();
     }
 
     /**
@@ -31,7 +31,7 @@ public abstract class UpdateByControl {
      *
      * <p>
      * Default is `false`. Can be changed with system property {@code UpdateByControl.useRedirection} or by providing a
-     * value to {@code builder().useRedirection}
+     * value to {@link Builder#useRedirection(boolean)}.
      *
      * @return true if redirections should be used.
      */
@@ -45,7 +45,7 @@ public abstract class UpdateByControl {
      *
      * <p>
      * Default is `4096`. Can be changed with system property {@code UpdateByControl.chunkCapacity} or by providing a
-     * value to {@code builder().chunkCapacity}
+     * value to {@link Builder#chunkCapacity(int)}.
      *
      * @return the maximum chunk capacity.
      */
@@ -61,7 +61,7 @@ public abstract class UpdateByControl {
      *
      * <p>
      * Default is `1.1`. Can be changed with system property {@code UpdateByControl.maximumStaticMemoryOverhead} or by
-     * providing a value to {@code builder().maxStaticSparseMemoryOverhead}
+     * providing a value to {@link Builder#maxStaticSparseMemoryOverhead(double)}.
      *
      * @return the maximum fractional memory overhead.
      */
@@ -75,7 +75,7 @@ public abstract class UpdateByControl {
      *
      * <p>
      * Default is `4096`. Can be changed with system property {@code UpdateByControl.initialHashTableSize} or by
-     * providing a value to {@code builder().initialHashTableSize}
+     * providing a value to {@link Builder#initialHashTableSize(int)}.
      *
      * @return the initial hash table size
      */
@@ -89,7 +89,7 @@ public abstract class UpdateByControl {
      *
      * <p>
      * Default is `0.75`. Can be changed with system property {@code UpdateByControl.maximumLoadFactor} or by providing
-     * a value to {@code builder().maximumLoadFactor}
+     * a value to {@link Builder#maximumLoadFactor(double)}.
      *
      * @return the maximum load factor
      */
@@ -102,18 +102,18 @@ public abstract class UpdateByControl {
      * Get the target load factor for the hash table.
      *
      * <p>
-     * Default is `0.75`. Can be changed with system property {@code UpdateByControl.targetLoadFactor} or by providing a
-     * value to {@code builder().targetLoadFactor}
+     * Default is `0.7`. Can be changed with system property {@code UpdateByControl.targetLoadFactor} or by providing a
+     * value to {@link Builder#targetLoadFactor(double)}.
      *
      * @return the target load factor
      */
     @Default
     public double targetLoadFactor() {
-        return Double.parseDouble(System.getProperty("UpdateByControl.targetLoadFactor", "0.75"));
+        return Double.parseDouble(System.getProperty("UpdateByControl.targetLoadFactor", "0.7"));
     }
 
     @Default
-    public MathContext getDefaultMathContext() {
+    public MathContext mathContext() {
         return MathContext.DECIMAL64;
     }
 
@@ -121,31 +121,40 @@ public abstract class UpdateByControl {
     final void checkChunkCapacity() {
         if (chunkCapacity() <= 0) {
             throw new IllegalArgumentException(
-                    "UpdateByControl.chunkCapacity() must be greater than 0");
+                    String.format("UpdateByControl.chunkCapacity() must be greater than 0, is %d", chunkCapacity()));
         }
     }
 
     @Check
     final void checkInitialHashTableSize() {
         if (initialHashTableSize() <= 0) {
-            throw new IllegalArgumentException(
-                    "UpdateByControl.initialHashTableSize() must be greater than 0");
+            throw new IllegalArgumentException(String.format(
+                    "UpdateByControl.initialHashTableSize() must be greater than 0, is %d", initialHashTableSize()));
         }
     }
 
     @Check
     final void checkMaximumLoadFactor() {
-        if (maximumLoadFactor() <= 0.0 || maximumLoadFactor() >= 1.0) {
-            throw new IllegalArgumentException(
-                    "UpdateByControl.maximumLoadFactor() must be in the range (0.0 to 1.0) exclusive");
+        if (Double.isNaN(maximumLoadFactor()) || maximumLoadFactor() <= 0.0 || maximumLoadFactor() >= 1.0) {
+            throw new IllegalArgumentException(String.format(
+                    "UpdateByControl.maximumLoadFactor() must be in the range (0.0, 1.0), is %f", maximumLoadFactor()));
         }
     }
 
     @Check
     final void checkTargetLoadFactor() {
-        if (targetLoadFactor() <= 0.0 || targetLoadFactor() >= 1.0) {
-            throw new IllegalArgumentException(
-                    "UpdateByControl.targetLoadFactor() must be in the range (0.0 to 1.0) exclusive");
+        if (Double.isNaN(targetLoadFactor()) || targetLoadFactor() <= 0.0 || targetLoadFactor() >= 1.0) {
+            throw new IllegalArgumentException(String.format(
+                    "UpdateByControl.targetLoadFactor() must be in the range (0.0, 1.0), is %f", targetLoadFactor()));
+        }
+    }
+
+    @Check
+    final void checkTargetLTEMaximum() {
+        if (targetLoadFactor() > maximumLoadFactor()) {
+            throw new IllegalArgumentException(String.format(
+                    "UpdateByControl.targetLoadFactor() must be less than or equal to UpdateByControl.maximumLoadFactor(). targetLoadFactor=%f, maximumLoadFactor=%f",
+                    targetLoadFactor(), maximumLoadFactor()));
         }
     }
 
@@ -161,6 +170,8 @@ public abstract class UpdateByControl {
         Builder maximumLoadFactor(double maximumLoadFactor);
 
         Builder targetLoadFactor(double targetLoadFactor);
+
+        Builder mathContext(MathContext mathContext);
 
         UpdateByControl build();
     }

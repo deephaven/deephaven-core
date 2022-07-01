@@ -285,7 +285,7 @@ public class UpdateByOperatorFactory {
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleCumProdOperator(fc, rowRedirection);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalCumProdOperator(fc, rowRedirection, control.getDefaultMathContext());
+                return new BigDecimalCumProdOperator(fc, rowRedirection, control.mathContext());
             } else if (csType == BigInteger.class) {
                 return new BigIntegerCumProdOperator(fc, rowRedirection);
             }
@@ -333,7 +333,7 @@ public class UpdateByOperatorFactory {
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleCumSumOperator(fc, rowRedirection);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalCumSumOperator(fc, rowRedirection, control.getDefaultMathContext());
+                return new BigDecimalCumSumOperator(fc, rowRedirection, control.mathContext());
             } else if (csType == BigInteger.class) {
                 return new BigIntegerCumSumOperator(fc, rowRedirection);
             }

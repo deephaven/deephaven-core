@@ -141,4 +141,9 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     public void visit(CountByTable countByTable) {
         accept(countByTable);
     }
+
+    @Override
+    public void visit(UpdateByTable updateByTable) {
+        accept(updateByTable);
+    }
 }
