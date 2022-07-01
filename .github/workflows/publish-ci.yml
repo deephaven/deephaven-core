@@ -37,6 +37,8 @@ jobs:
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
           cat gradle.properties
 
+      # TODO(deephaven-core#2614): Improve gradle/CI assemble and publishing of artifacts
+
       - name: Publish to Maven Local
         if: ${{ !startsWith(github.ref, 'refs/heads/release/v') }}
         uses: burrunan/gradle-cache-action@v1
