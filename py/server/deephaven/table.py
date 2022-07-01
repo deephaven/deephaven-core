@@ -30,6 +30,8 @@ _JPair = jpy.get_type("io.deephaven.api.agg.Pair")
 _JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
+_JPartitionedTableFactory = jpy.get_type("io.deephaven.engine.table.PartitionedTableFactory")
+_JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
 
 class SortDirection(Enum):
@@ -1342,6 +1344,95 @@ class PartitionedTable(JObjectWrapper):
         self._constituent_column = None
         self._constituent_changes_permitted = None
         self._is_refreshing = None
+
+    @classmethod
+    def from_partitioned_table(cls,
+                               table: Table,
+                               key_cols: Union[str, List[str]] = None,
+                               unique_keys: bool = None,
+                               constituent_column: str = None,
+                               constituent_table_columns: List[Column] = None,
+                               constituent_changes_permitted: bool = None) -> PartitionedTable:
+        """Creates a PartitionedTable from the provided underlying partitioned Table.
+
+        Note: key_cols, unique_keys, constituent_column, constituent_table_columns,
+        constituent_changes_permitted must either be all None or all have values. When they are None, their values will
+        be inferred as follows:
+            key_cols: the names of all columns with a non-Table data type
+            unique_keys: False
+            constituent_column: the name of the first column with a Table data type
+            constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
+                column. Consequently the constituent column can't be empty
+            constituent_changes_permitted: the value of table.is_refreshing
+
+
+        Args:
+            table (Table): the underlying partitioned table
+            key_cols (Union[str, List[str]]): the key column name(s) of 'table'
+            unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
+            constituent_column (str): the constituent column name in 'table'
+            constituent_table_columns (list[Column]): the column definitions of the constituent table
+            constituent_changes_permitted (bool): whether the values of the constituent column can change
+
+        Returns:
+            a PartitionedTable
+
+        Raise:
+            DHError
+        """
+        none_args = [key_cols, unique_keys, constituent_column, constituent_table_columns,
+                     constituent_changes_permitted]
+
+        try:
+            if all([arg is None for arg in none_args]):
+                return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.of(table.j_table))
+
+            if all([arg is not None for arg in none_args]):
+                table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
+                j_partitioned_table = _JPartitionedTableFactory.of(table.j_table,
+                                                                   j_array_list(to_sequence(key_cols)),
+                                                                   unique_keys,
+                                                                   constituent_column,
+                                                                   table_def,
+                                                                   constituent_changes_permitted)
+                return PartitionedTable(j_partitioned_table=j_partitioned_table)
+        except Exception as e:
+            raise DHError(e, "failed to build a PartitionedTable.") from e
+
+        missing_value_args = [arg for arg in none_args if arg is None]
+        raise DHError(message=f"invalid argument values, must specify non-None values for {missing_value_args}.")
+
+    @classmethod
+    def from_constituent_tables(cls,
+                                tables: List[Table],
+                                constituent_table_columns: List[Column] = None) -> PartitionedTable:
+        """Creates a PartitionedTable with a single column named '__CONSTITUENT__' containing the provided constituent
+        tables.
+
+        The result PartitionedTable has no key columns, and both its unique_keys and constituent_changes_permitted
+        properties are set to False. When constituent_table_columns isn't provided, it will be set to the column
+        definitions of the first table in the provided constituent tables.
+
+        Args:
+            tables (List[Table]): the constituent tables
+            constituent_table_columns (List[Column]): a list of column definitions compatible with all the constituent
+                tables, default is None
+
+        Returns:
+            a PartitionedTable
+
+        Raises:
+            DHError
+        """
+        try:
+            if not constituent_table_columns:
+                return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(to_sequence(tables)))
+            else:
+                table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
+                return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(table_def,
+                                                                                               to_sequence(tables)))
+        except Exception as e:
+            raise DHError(e, "failed to create a PartitionedTable from constituent tables.") from e
 
     @property
     def table(self) -> Table:
