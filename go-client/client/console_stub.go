@@ -26,7 +26,7 @@ func newConsoleStub(ctx context.Context, client *Client, sessionType string) (co
 
 	stub := consolepb2.NewConsoleServiceClient(client.grpcChannel)
 
-	reqTicket := client.newTicket()
+	reqTicket := client.ticketMan.newTicket()
 
 	req := consolepb2.StartConsoleRequest{ResultId: &reqTicket, SessionType: sessionType}
 	resp, err := stub.StartConsole(ctx, &req)

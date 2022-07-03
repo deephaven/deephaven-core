@@ -112,7 +112,7 @@ func (fs *flightStub) ImportTable(ctx context.Context, rec arrow.Record) (*Table
 		return nil, err
 	}
 
-	ticket := fs.client.makeTicket(ticketNum)
+	ticket := fs.client.ticketMan.makeTicket(ticketNum)
 
 	schema := rec.Schema()
 

@@ -130,7 +130,7 @@ func (ts *tableStub) fetchTable(ctx context.Context, oldTable *TableHandle) (*Ta
 	}
 
 	sourceId := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: oldTable.ticket}}
-	resultId := ts.client.newTicket()
+	resultId := ts.client.ticketMan.newTicket()
 
 	req := tablepb2.FetchTableRequest{SourceId: &sourceId, ResultId: &resultId}
 	resp, err := ts.stub.FetchTable(ctx, &req)
@@ -167,7 +167,7 @@ func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandl
 		return nil, err
 	}
 
-	result := ts.client.newTicket()
+	result := ts.client.ticketMan.newTicket()
 
 	req := tablepb2.EmptyTableRequest{ResultId: &result, Size: numRows}
 	resp, err := ts.stub.EmptyTable(ctx, &req)
@@ -194,7 +194,7 @@ func (ts *tableStub) TimeTable(ctx context.Context, period time.Duration, startT
 		return nil, err
 	}
 
-	result := ts.client.newTicket()
+	result := ts.client.ticketMan.newTicket()
 
 	// TODO: Is this affected by timezones? Does it need to be the monotonic reading?
 	realStartTime := startTime.UnixNano()
@@ -238,7 +238,7 @@ func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols [
 		return nil, err
 	}
 
-	result := ts.client.newTicket()
+	result := ts.client.ticketMan.newTicket()
 
 	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}
 
@@ -265,7 +265,7 @@ func (ts *tableStub) doSelectOrUpdate(ctx context.Context, table *TableHandle, f
 		return nil, err
 	}
 
-	result := ts.client.newTicket()
+	result := ts.client.ticketMan.newTicket()
 	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}
 
 	req := tablepb2.SelectOrUpdateRequest{ResultId: &result, SourceId: &source, ColumnSpecs: formulas}
@@ -314,7 +314,7 @@ func (ts *tableStub) makeRequest(ctx context.Context, table *TableHandle, op req
 		return nil, err
 	}
 
-	result := ts.client.newTicket()
+	result := ts.client.ticketMan.newTicket()
 	source := tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: table.ticket}}
 
 	resp, err := op(ctx, &result, &source)
@@ -508,7 +508,7 @@ func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHa
 		return nil, err
 	}
 
-	resultId := ts.client.newTicket()
+	resultId := ts.client.ticketMan.newTicket()
 
 	sourceIds := make([]*tblRef, len(others))
 	for i, handle := range others {

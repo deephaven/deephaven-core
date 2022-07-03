@@ -59,7 +59,7 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromSchema(ctx context.Context
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_{
 		InMemoryAppendOnly: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly{},
 	}}
-	resultId := its.client.newTicket()
+	resultId := its.client.ticketMan.newTicket()
 	req := makeInputTableRequestFromSchema(&kind, &resultId, schema)
 	newTable, err := its.client.tableStub.createInputTable(ctx, req)
 	if err != nil {
@@ -76,7 +76,7 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromTable(ctx context.Context,
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_{
 		InMemoryAppendOnly: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryAppendOnly{},
 	}}
-	resultId := its.client.newTicket()
+	resultId := its.client.ticketMan.newTicket()
 	req := makeInputTableRequestFromTable(&kind, &resultId, table)
 	newTable, err := its.client.tableStub.createInputTable(ctx, req)
 	if err != nil {
@@ -91,7 +91,7 @@ func (its *inputTableStub) NewKeyBackedInputTableFromSchema(ctx context.Context,
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_{
 		InMemoryKeyBacked: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryKeyBacked{KeyColumns: keyColumns},
 	}}
-	resultId := its.client.newTicket()
+	resultId := its.client.ticketMan.newTicket()
 	req := makeInputTableRequestFromSchema(&kind, &resultId, schema)
 	newTable, err := its.client.tableStub.createInputTable(ctx, req)
 	if err != nil {
@@ -109,7 +109,7 @@ func (its *inputTableStub) NewKeyBackedInputTableFromTable(ctx context.Context, 
 	kind := inputTableKind{Kind: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_{
 		InMemoryKeyBacked: &tablepb2.CreateInputTableRequest_InputTableKind_InMemoryKeyBacked{KeyColumns: keyColumns},
 	}}
-	resultId := its.client.newTicket()
+	resultId := its.client.ticketMan.newTicket()
 	req := makeInputTableRequestFromTable(&kind, &resultId, table)
 	newTable, err := its.client.tableStub.createInputTable(ctx, req)
 	if err != nil {

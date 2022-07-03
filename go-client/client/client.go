@@ -50,6 +50,18 @@ func (tf *ticketFactory) nextId() int32 {
 	return nextTicket
 }
 
+// newTicket returns a new ticket that has not used before.
+func (tf *ticketFactory) newTicket() ticketpb2.Ticket {
+	id := tf.nextId()
+	return tf.makeTicket(id)
+}
+
+// makeTicket turns a ticket ID into a ticket.
+func (tf *ticketFactory) makeTicket(id int32) ticketpb2.Ticket {
+	bytes := []byte{'e', byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
+	return ticketpb2.Ticket{Ticket: bytes}
+}
+
 // Maintains a connection to a Deephaven server.
 // It can be used to run scripts, create new tables, execute queries, etc.
 // Check the various methods of Client to learn more.
@@ -175,19 +187,6 @@ func (client *Client) ListOpenableTables() []string {
 		}
 	}
 	return result
-}
-
-// newTicket returns a new ticket that this client has not used before.
-func (client *Client) newTicket() ticketpb2.Ticket {
-	id := client.ticketMan.nextId()
-	return client.makeTicket(id)
-}
-
-// makeTicket turns a ticket ID into a ticket.
-func (client *Client) makeTicket(id int32) ticketpb2.Ticket {
-	bytes := []byte{'e', byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
-
-	return ticketpb2.Ticket{Ticket: bytes}
 }
 
 // ExecSerial executes several table operations on the server and returns the resulting tables.
