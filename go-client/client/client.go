@@ -34,13 +34,13 @@ type fieldId struct {
 
 //todo doc
 //todo move to another file?
-type ticketMaster struct {
+type ticketFactory struct {
 	id int32
 }
 
 // newTicketNum returns a new ticket number that has not been used before.
-func (tm *ticketMaster) nextId() int32 {
-	nextTicket := atomic.AddInt32(&tm.id, 1)
+func (tf *ticketFactory) nextId() int32 {
+	nextTicket := atomic.AddInt32(&tf.id, 1)
 
 	if nextTicket <= 0 {
 		// If you ever see this panic... what are you doing?
@@ -70,8 +70,7 @@ type Client struct {
 	appStub
 	inputTableStub
 
-	//todo terrible name
-	tm ticketMaster
+	ticketMan ticketFactory
 
 	tablesLock sync.Mutex               // Guards the tables map.
 	tables     map[fieldId]*TableHandle // A map of tables that can be opened using OpenTable
@@ -180,7 +179,7 @@ func (client *Client) ListOpenableTables() []string {
 
 // newTicket returns a new ticket that this client has not used before.
 func (client *Client) newTicket() ticketpb2.Ticket {
-	id := client.tm.nextId()
+	id := client.ticketMan.nextId()
 	return client.makeTicket(id)
 }
 

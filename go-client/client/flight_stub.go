@@ -89,7 +89,7 @@ func (fs *flightStub) ImportTable(ctx context.Context, rec arrow.Record) (*Table
 	}
 	defer doPut.CloseSend()
 
-	ticketNum := fs.client.tm.nextId()
+	ticketNum := fs.client.ticketMan.nextId()
 
 	//todo Seems like this should be a fixed size int cast here and not a generic int
 	descr := &flight.FlightDescriptor{Type: flight.DescriptorPATH, Path: []string{"export", strconv.Itoa(int(ticketNum))}}
