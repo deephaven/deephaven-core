@@ -32,6 +32,24 @@ type fieldId struct {
 	fieldName string // fieldName is the name of the field.
 }
 
+//todo doc
+//todo move to another file?
+type ticketMaster struct {
+	id int32
+}
+
+// newTicketNum returns a new ticket number that has not been used before.
+func (tm *ticketMaster) nextId() int32 {
+	nextTicket := atomic.AddInt32(&tm.id, 1)
+
+	if nextTicket <= 0 {
+		// If you ever see this panic... what are you doing?
+		panic("out of tickets")
+	}
+
+	return nextTicket
+}
+
 // Maintains a connection to a Deephaven server.
 // It can be used to run scripts, create new tables, execute queries, etc.
 // Check the various methods of Client to learn more.
@@ -52,9 +70,8 @@ type Client struct {
 	appStub
 	inputTableStub
 
-	// A simple counter that increments every time a new ticket is needed.
-	// Must be accessed atomically.
-	nextTicket int32
+	//todo terrible name
+	tm ticketMaster
 
 	tablesLock sync.Mutex               // Guards the tables map.
 	tables     map[fieldId]*TableHandle // A map of tables that can be opened using OpenTable
@@ -161,21 +178,9 @@ func (client *Client) ListOpenableTables() []string {
 	return result
 }
 
-// newTicketNum returns a new ticket number that this client has not used before.
-func (client *Client) newTicketNum() int32 {
-	nextTicket := atomic.AddInt32(&client.nextTicket, 1)
-	if nextTicket <= 0 {
-		// If you ever see this panic... what are you doing?
-		panic("out of tickets")
-	}
-
-	return nextTicket
-}
-
 // newTicket returns a new ticket that this client has not used before.
 func (client *Client) newTicket() ticketpb2.Ticket {
-	id := client.newTicketNum()
-
+	id := client.tm.nextId()
 	return client.makeTicket(id)
 }
 
