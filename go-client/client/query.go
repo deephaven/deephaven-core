@@ -215,7 +215,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, err
 	// Duplicate nodes that still need their own tickets
 	var extraNodes []int
 	if nodes := b.needsExport(node); len(nodes) > 0 {
-		t := b.client.ticketMan.newTicket()
+		t := b.client.ticketFact.newTicket()
 		resultId = &t
 		b.nodeOrder[nodes[0]] = resultId
 
@@ -227,7 +227,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, err
 			}
 			// Even this node needs its own FetchTable request, because it's empty.
 			sourceId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}
-			t := b.client.ticketMan.newTicket()
+			t := b.client.ticketFact.newTicket()
 			resultId = &t
 			b.nodeOrder[nodes[0]] = resultId
 			req := tablepb2.FetchTableRequest{ResultId: resultId, SourceId: sourceId}
@@ -264,7 +264,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, err
 	// If this node gets exported multiple times, we need to handle that.
 	for _, extraNode := range extraNodes {
 		sourceId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: int32(len(b.grpcOps) - 1)}}
-		t := b.client.ticketMan.newTicket()
+		t := b.client.ticketFact.newTicket()
 		resultId = &t
 		b.nodeOrder[extraNode] = resultId
 		req := tablepb2.FetchTableRequest{ResultId: resultId, SourceId: sourceId}
