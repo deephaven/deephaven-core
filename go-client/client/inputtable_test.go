@@ -276,33 +276,36 @@ func TestKeyBackedTable(t *testing.T) {
 	err = inputTable.AddTable(ctx, newData1)
 	test_tools.CheckError(t, "AddTable", err)
 
-	mid1, err := outputTable.Snapshot(ctx)
-	test_tools.CheckError(t, "Snapshot", err)
-	defer mid1.Release()
+	mid1Check := func(mid1 arrow.Record) error {
+		if mid1.NumCols() != 3 || mid1.NumRows() != 4 {
+			return fmt.Errorf("mid1 had wrong size %d x %d", mid1.NumCols(), mid1.NumRows())
+		}
+		return nil
+	}
+	err = checkTable(ctx, outputTable, mid1Check, time.Second*5)
+	test_tools.CheckError(t, "checkTable", err)
 
 	err = inputTable.AddTable(ctx, newData2)
 	test_tools.CheckError(t, "AddTable", err)
 
-	mid2, err := outputTable.Snapshot(ctx)
-	test_tools.CheckError(t, "Snapshot", err)
-	defer mid2.Release()
+	mid2Check := func(mid2 arrow.Record) error {
+		if mid2.NumCols() != 3 || mid2.NumRows() != 5 {
+			return fmt.Errorf("mid2 had wrong size %d x %d", mid2.NumCols(), mid2.NumRows())
+		}
+		return nil
+	}
+	err = checkTable(ctx, outputTable, mid2Check, time.Second*5)
+	test_tools.CheckError(t, "checkTable", err)
 
 	err = inputTable.DeleteTable(ctx, delData)
 	test_tools.CheckError(t, "DeleteTable", err)
 
-	after, err := outputTable.Snapshot(ctx)
-	test_tools.CheckError(t, "Snapshot", err)
-	defer after.Release()
-
-	if mid1.NumCols() != 3 || mid1.NumRows() != 4 {
-		t.Errorf("mid1 had wrong size %d x %d", mid1.NumCols(), mid1.NumRows())
+	afterCheck := func(after arrow.Record) error {
+		if after.NumCols() != 3 || after.NumRows() != 4 {
+			return fmt.Errorf("after had wrong size %d x %d", after.NumCols(), after.NumRows())
+		}
+		return nil
 	}
-
-	if mid2.NumCols() != 3 || mid2.NumRows() != 5 {
-		t.Errorf("mid2 had wrong size %d x %d", mid2.NumCols(), mid2.NumRows())
-	}
-
-	if after.NumCols() != 3 || after.NumRows() != 4 {
-		t.Errorf("after had wrong size %d x %d", after.NumCols(), after.NumRows())
-	}
+	err = checkTable(ctx, outputTable, afterCheck, time.Second*5)
+	test_tools.CheckError(t, "checktable", err)
 }
