@@ -93,7 +93,7 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 
 // Closed checks if the client is closed, i.e. it can no longer perform operations on the server.
 func (client *Client) Closed() bool {
-	return client.grpcChannel == nil
+	return client.isClosed
 }
 
 // FetchTablesOnce fetches the list of tables from the server.
@@ -113,6 +113,8 @@ func (client *Client) FetchTablesOnce(ctx context.Context) error {
 // This allows the client to see the list of named global tables on the server,
 // and thus allows the client to open them using OpenTable.
 // Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
+// The returned error channel is guaranteed to send zero or one errors and then close,
+// however it is not specified at what time this will occur.
 func (client *Client) FetchTablesRepeating(ctx context.Context) <-chan error {
 	ctx, err := client.withToken(ctx)
 	if err != nil {
@@ -125,14 +127,12 @@ func (client *Client) FetchTablesRepeating(ctx context.Context) <-chan error {
 	return client.fieldMan.FetchTablesRepeating(ctx, client.appServiceClient)
 }
 
-//todo fix docs
 // ListOpenableTables returns a list of the (global) tables that can be opened with OpenTable.
 // Tables that are created by other clients or in the web UI are not listed here automatically.
 // Tables that are created in scripts run by this client, however, are immediately available,
 // and will be added to/removed from the list as soon as the script finishes.
-// FetchTables can be used to update the list to reflect what tables are currently available
-// from other clients or the web UI.
-// Calling FetchTables with a FetchRepeating argument will continually update this list in the background.
+// FetchTablesOnce or FetchTablesRepeating can be used to update the list
+// to reflect what tables are currently available from other clients or the web UI.
 func (client *Client) ListOpenableTables() []string {
 	return client.fieldMan.ListOpenableTables()
 }
@@ -221,6 +221,9 @@ func (client *Client) RunScript(ctx context.Context, script string) error {
 	}
 
 	f := func() (*apppb2.FieldsChangeUpdate, error) {
+		// TODO: This might fall victim to the double-responses problem if a FetchTablesRepeating
+		// request is already active.
+
 		req := consolepb2.ExecuteCommandRequest{ConsoleId: client.consoleStub.consoleId, Code: script}
 		rst, err := client.consoleStub.stub.ExecuteCommand(ctx, &req)
 		if err != nil {
