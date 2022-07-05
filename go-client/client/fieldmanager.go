@@ -45,7 +45,8 @@ type reqFMExec struct {
 }
 
 type reqFetchRepeating struct {
-	fs *fieldStream
+	fs        *fieldStream
+	chanError chan<- error
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -83,34 +84,32 @@ func (fs *fieldStream) FetchOnce() (*apppb2.FieldsChangeUpdate, error) {
 	return fs.fieldsClient.Recv()
 }
 
-func (fs *fieldStream) FetchRepeating(stream chan respFMExec) {
+func (fs *fieldStream) FetchRepeating(stream chan<- respFMExec) {
 	go func() {
 		for {
 			changes, err := fs.fieldsClient.Recv()
 			stream <- respFMExec{changes: changes, err: err}
 
 			if err != nil {
-				if status, ok := status.FromError(err); ok && status.Code() == codes.Canceled {
-					//todo log?
-					return
-				}
-				//todo how to handle err cases
-				fmt.Println("failed to list fields: ", err)
+				// The error will be handled by the fieldManagerExecutor.
+				fs.Stop()
+				return
 			}
 		}
 	}()
 }
 
 func (fs *fieldStream) Stop() {
-	fs.cancel()
+	if fs.cancel != nil {
+		fs.cancel()
+		fs.cancel = nil
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //todo doc
 type fieldManager struct {
-	client *Client
-
 	chanClose          chan<- reqClose
 	chanOpenTables     chan<- reqListOpenableTables
 	chanGetTable       chan<- reqGetTable
@@ -124,11 +123,12 @@ type fieldManagerExecutor struct {
 	//stream apppb2.ApplicationService_ListFieldsClient
 	fs *fieldStream
 
-	chanClose          <-chan reqClose
-	chanOpenTables     <-chan reqListOpenableTables
-	chanGetTable       <-chan reqGetTable
-	chanFMExec         <-chan reqFMExec
-	chanFetchRepeating <-chan reqFetchRepeating
+	chanClose               <-chan reqClose
+	chanOpenTables          <-chan reqListOpenableTables
+	chanGetTable            <-chan reqGetTable
+	chanFMExec              <-chan reqFMExec
+	chanFetchRepeating      <-chan reqFetchRepeating
+	chanFetchRepeatingError chan<- error
 }
 
 func newFieldManager(client *Client) fieldManager {
@@ -139,8 +139,6 @@ func newFieldManager(client *Client) fieldManager {
 	chanFetchRepeating := make(chan reqFetchRepeating)
 
 	fm := fieldManager{
-		client: client,
-
 		chanClose:          chanClose,
 		chanOpenTables:     chanOpenTables,
 		chanGetTable:       chanGetTable,
@@ -171,54 +169,80 @@ func newFieldManager(client *Client) fieldManager {
 func (fme *fieldManagerExecutor) loop() {
 	chanChanges := make(chan respFMExec)
 
+	defer func() {
+		if fme.fs != nil {
+			fme.fs.Stop()
+			fme.fs = nil
+		}
+
+		if fme.chanFetchRepeatingError != nil {
+			close(fme.chanFetchRepeatingError)
+			fme.chanFetchRepeatingError = nil
+		}
+	}()
+
 	for {
 		select {
 		case <-fme.chanClose:
-			//todo log
-			if fme.fs != nil {
-				fme.fs.Stop()
-			}
 			return
-		case resp := <-chanChanges:
-			err := fme.handleChangesResp(resp)
-			if err != nil {
-				return
-			}
 		case req := <-fme.chanOpenTables:
 			req.out <- fme.listOpenableTables()
 		case req := <-fme.chanGetTable:
 			tbl, ok := fme.tables[req.id]
 			req.out <- respGetTable{table: tbl, ok: ok}
-		case req := <-fme.chanFetchRepeating:
-			if fme.fs != nil {
-				fme.fs.Stop()
-			}
-
-			fme.fs = req.fs
-			fme.fs.FetchRepeating(chanChanges)
 		case req := <-fme.chanFMExec:
 			changes, err := req.f()
 			msg := respFMExec{changes: changes, err: err}
 			req.out <- msg
 
-			//chanChanges <- msg
 			err = fme.handleChangesResp(msg)
 			if err != nil {
 				return
+			}
+		case req := <-fme.chanFetchRepeating:
+			if fme.fs != nil {
+				fme.fs.Stop()
+				fme.fs = nil
+			}
+
+			if fme.chanFetchRepeatingError != nil {
+				close(fme.chanFetchRepeatingError)
+				fme.chanFetchRepeatingError = nil
+			}
+
+			fme.fs = req.fs
+			fme.chanFetchRepeatingError = req.chanError
+			// TODO: The first response is always synchronous,
+			// and it would be nice to handle it immediately.
+			// However, there might be existing responses from the previous fetch.
+			fme.fs.FetchRepeating(chanChanges)
+		case resp := <-chanChanges:
+			err := fme.handleChangesResp(resp)
+			if !isCanceledError(err) && err != nil {
+				fmt.Println("got an error:", err)
+				// TODO: What do we do?
+				fme.chanFetchRepeatingError <- err
+				close(fme.chanFetchRepeatingError)
+				fme.chanFetchRepeatingError = nil
+				fme.fs.Stop()
 			}
 		}
 	}
 }
 
+// isCanceledError returns true if the error is a gRPC Canceled error.
+func isCanceledError(err error) bool {
+	status, ok := status.FromError(err)
+	return ok && status.Code() == codes.Canceled
+}
+
 func (fm *fieldManagerExecutor) handleChangesResp(resp respFMExec) error {
 	//todo review error model here...
 	if resp.err != nil {
-		if status, ok := status.FromError(resp.err); ok && status.Code() == codes.Canceled {
-			//todo log?
-			//todo ???? what is the right error case?  log and go on?  fatal?  etc.  If cancelled, should Close be called?
-			return resp.err
-		}
-		//todo how to handle err case
+		// TODO: What should we do if this is a Canceled error?
+		// Log and go on? Fatal? Close the executor?
+
+		// TODO: How to handle this?
 		fmt.Println("failed to list fields: ", resp.err)
 		return resp.err
 	}
@@ -256,11 +280,15 @@ func (fm *fieldManagerExecutor) handleFieldChanges(changes *apppb2.FieldsChangeU
 
 //todo doc
 func (fm *fieldManager) Close() {
-	//todo fm.chanClose <- reqClose{}
 	if fm.chanClose != nil {
 		close(fm.chanClose)
-	}
 
+		fm.chanClose = nil
+		fm.chanOpenTables = nil
+		fm.chanGetTable = nil
+		fm.chanFMExec = nil
+		fm.chanFetchRepeating = nil
+	}
 }
 
 //todo doc
@@ -276,7 +304,6 @@ func (fm *fieldManagerExecutor) listOpenableTables() []string {
 	return result
 }
 
-//todo doc
 // ListOpenableTables returns a list of the (global) tables that can be opened with OpenTable.
 // Tables that are created by other clients or in the web UI are not listed here automatically.
 // Tables that are created in scripts run by this client, however, are immediately available,
@@ -290,8 +317,12 @@ func (fm *fieldManager) ListOpenableTables() []string {
 	return <-c
 }
 
-//todo doc
-func (fm *fieldManager) GetTable(id fieldId) (*TableHandle, bool) {
+// getTable returns the table with the given ID, if it is present in the local list.
+// If the table is not present, ok is returned as false.
+// The returned table handle is not exported, so TableHandle.Release should not be called on it.
+// Instead, use OpenTable or fetchTable to get an exported TableHandle that can be returned to the user.
+// See ListOpenableTables for details on how the local list can get out of sync.
+func (fm *fieldManager) getTable(id fieldId) (table *TableHandle, ok bool) {
 	req := reqGetTable{id: id, out: make(chan respGetTable)}
 	fm.chanGetTable <- req
 	rst := <-req.out
@@ -306,19 +337,40 @@ func (fm *fieldManager) ExecAndUpdate(f funcFMExec) error {
 	return resp.err
 }
 
-func (fm *fieldManager) FetchTables(ctx context.Context, appServiceClient apppb2.ApplicationServiceClient, opt FetchOption) error {
+// FetchTablesOnce fetches the list of tables from the server.
+// This allows the client to see the list of named global tables on the server,
+// and thus allows the client to open them using OpenTable.
+// Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
+// If you need to update the list of tables frequently, consider using FetchTablesRepeating instead.
+func (fm *fieldManager) FetchTablesOnce(ctx context.Context, appServiceClient apppb2.ApplicationServiceClient) error {
 	fs, err := newFieldStream(ctx, appServiceClient)
 
 	if err != nil {
 		return err
 	}
 
-	switch opt {
-	case FetchOnce:
-		return fm.ExecAndUpdate(fs.FetchOnce)
-	case FetchRepeating:
-		fm.chanFetchRepeating <- reqFetchRepeating{fs: fs}
+	result := fm.ExecAndUpdate(fs.FetchOnce)
+	fs.Stop()
+	return result
+}
+
+// FetchTablesRepeating starts up a goroutine that fetches the list of tables from the server continuously.
+// This allows the client to see the list of named global tables on the server,
+// and thus allows the client to open them using OpenTable.
+// Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
+// If you only need to update the list of tables once, consider using FetchTablesOnce instead.
+func (fm *fieldManager) FetchTablesRepeating(ctx context.Context, appServiceClient apppb2.ApplicationServiceClient) <-chan error {
+	// This channel gets a buffer size of 1 so that a goroutine can put an error on the channel
+	// and then immediately terminate, regardless of whether or not a receiver is actually listening.
+	chanError := make(chan error, 1)
+
+	fs, err := newFieldStream(ctx, appServiceClient)
+
+	if err != nil {
+		chanError <- err
+		return chanError
 	}
 
-	return nil
+	fm.chanFetchRepeating <- reqFetchRepeating{fs: fs, chanError: chanError}
+	return chanError
 }

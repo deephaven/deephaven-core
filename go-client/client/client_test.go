@@ -162,7 +162,7 @@ gotesttable = None
 	test_tools.CheckError(t, "NewClient", err)
 	defer client2.Close()
 
-	err = client2.FetchTables(ctx, client.FetchOnce)
+	err = client2.FetchTablesOnce(ctx)
 	test_tools.CheckError(t, "FetchTables", err)
 
 	if contains(client2.ListOpenableTables(), "gotesttable") {
@@ -177,12 +177,37 @@ gotesttable = empty_table(10)
 `)
 	test_tools.CheckError(t, "RunScript", err)
 
-	err = client2.FetchTables(ctx, client.FetchOnce)
+	err = client2.FetchTablesOnce(ctx)
 	test_tools.CheckError(t, "FetchTables", err)
 
 	if !contains(client2.ListOpenableTables(), "gotesttable") {
 		t.Errorf("test table should exist")
 		return
+	}
+}
+
+func TestFieldSyncRepeatingCanceled(t *testing.T) {
+	ctx := context.Background()
+
+	client, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+
+	errChan1 := client.FetchTablesRepeating(ctx)
+	test_tools.CheckError(t, "FetchTables", err)
+
+	errChan2 := client.FetchTablesRepeating(ctx)
+	test_tools.CheckError(t, "FetchTables", err)
+
+	client.Close()
+
+	err, ok := <-errChan1
+	if ok {
+		t.Error("error in first FetchTablesRepeating:", err)
+	}
+
+	err, ok = <-errChan2
+	if ok {
+		t.Error("error in second FetchTablesRepeating:", err)
 	}
 }
 
@@ -203,8 +228,13 @@ gotesttable1 = None
 	test_tools.CheckError(t, "NewClient", err)
 	defer client2.Close()
 
-	err = client2.FetchTables(ctx, client.FetchRepeating)
-	test_tools.CheckError(t, "FetchTables", err)
+	errChan := client2.FetchTablesRepeating(ctx)
+	go func() {
+		err, ok := <-errChan
+		if ok && err != nil {
+			t.Error("FetchTablesRepeating error:", err)
+		}
+	}()
 
 	err = client1.RunScript(ctx,
 		`

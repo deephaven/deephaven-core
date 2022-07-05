@@ -49,10 +49,11 @@ func main() {
 		return
 	}
 
-	// Now we have to fetch the list of tables. We use FetchOnce here because we
+	// Now we have to fetch the list of tables.
+	// We use FetchTablesOnce here rather than FetchTablesRepeating because we
 	// are going to immediately open the table afterwards and we don't care about
 	// what other changes may happen in the future.
-	err = cl.FetchTables(ctx, client.FetchOnce)
+	err = cl.FetchTablesOnce(ctx)
 	if err != nil {
 		fmt.Println("error when fetching tables:", err.Error())
 		return

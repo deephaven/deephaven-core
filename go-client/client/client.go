@@ -25,14 +25,11 @@ var ErrClosedClient = errors.New("client is closed")
 // It can be used to run scripts, create new tables, execute queries, etc.
 // Check the various methods of Client to learn more.
 type Client struct {
-	//todo docs
-	// Guards client-wide state. This means specifically:
-	// - Is a FetchTables request running?
-	// - Is the client closed?
+	// This lock guards isClosed.
 	// Other functionality does not need a lock, since the gRPC interface is already thread-safe,
 	// the tables array has its own lock, and the session token also has its own lock.
 	lock     sync.Mutex
-	isClosed bool
+	isClosed bool // True if Close has been called (i.e. the client can no longer perform operations).
 
 	grpcChannel *grpc.ClientConn
 
@@ -99,17 +96,33 @@ func (client *Client) Closed() bool {
 	return client.grpcChannel == nil
 }
 
-// FetchTables fetches the list of tables from the server.
+// FetchTablesOnce fetches the list of tables from the server.
 // This allows the client to see the list of named global tables on the server,
-// and thus allows it to open them using OpenTable.
+// and thus allows the client to open them using OpenTable.
 // Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
-func (client *Client) FetchTables(ctx context.Context, opt FetchOption) error {
+func (client *Client) FetchTablesOnce(ctx context.Context) error {
 	ctx, err := client.withToken(ctx)
 	if err != nil {
 		return err
 	}
 
-	return client.fieldMan.FetchTables(ctx, client.appServiceClient, opt)
+	return client.fieldMan.FetchTablesOnce(ctx, client.appServiceClient)
+}
+
+// FetchTablesRepeating starts up a goroutine that fetches the list of tables from the server continuously.
+// This allows the client to see the list of named global tables on the server,
+// and thus allows the client to open them using OpenTable.
+// Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
+func (client *Client) FetchTablesRepeating(ctx context.Context) <-chan error {
+	ctx, err := client.withToken(ctx)
+	if err != nil {
+		chanError := make(chan error, 1)
+		chanError <- err
+		close(chanError)
+		return chanError
+	}
+
+	return client.fieldMan.FetchTablesRepeating(ctx, client.appServiceClient)
 }
 
 //todo fix docs
@@ -210,7 +223,11 @@ func (client *Client) RunScript(ctx context.Context, script string) error {
 	f := func() (*apppb2.FieldsChangeUpdate, error) {
 		req := consolepb2.ExecuteCommandRequest{ConsoleId: client.consoleStub.consoleId, Code: script}
 		rst, err := client.consoleStub.stub.ExecuteCommand(ctx, &req)
-		return rst.Changes, err
+		if err != nil {
+			return nil, err
+		} else {
+			return rst.Changes, nil
+		}
 	}
 
 	return client.fieldMan.ExecAndUpdate(f)
