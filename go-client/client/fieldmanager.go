@@ -184,14 +184,16 @@ func (fme *fieldManagerExecutor) loop() {
 		case resp := <-chanChanges:
 			// Canceled errors are ignored,
 			// since they happen normally when stopping a request.
-			if !isCanceledError(resp.err) && resp.err != nil {
+			if isCanceledError(resp.err) {
+				break
+			}
+			if resp.err != nil {
 				fme.chanFetchRepeatingError <- resp.err
 				close(fme.chanFetchRepeatingError)
 				fme.chanFetchRepeatingError = nil
 				fme.fs.Close()
 				break
 			}
-
 			fme.handleFieldChanges(resp.changes)
 		}
 	}
