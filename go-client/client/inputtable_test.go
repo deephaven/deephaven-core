@@ -2,7 +2,9 @@ package client_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/deephaven/deephaven-core/go-client/client"
@@ -80,19 +82,48 @@ func getDataTableSecondPart(ctx context.Context, client *client.Client) (*client
 	return secondPart, err
 }
 
+// A checkerFunc returns nil if the given Record matches what it expects, otherwise it returns some error.
+type checkerFunc func(record arrow.Record) error
+
+// checkTable repeatedly snapshots a table and checks it using the provided function.
+// If the table still fails the check after the timeout has expired, this returns an error.
+func checkTable(ctx context.Context, table *client.TableHandle, checker checkerFunc, timeout time.Duration) error {
+	timeoutChannel := time.After(timeout)
+
+	var lastError error
+
+	for {
+		select {
+		case <-timeoutChannel:
+			return lastError
+		default:
+			record, snapshotErr := table.Snapshot(ctx)
+			if snapshotErr != nil {
+				return snapshotErr
+			}
+			lastError = checker(record)
+			record.Release()
+			if lastError == nil {
+				return nil
+			}
+		}
+	}
+}
+
 // addNewDataToAppend gets two (overlapping) parts of an example table and
 // adds them to the provided input table. It returns records from
 // a filtered version of the input table.
-// It returns three records from the filtered table:
+// It will check three records from the filtered table:
 // - A snapshot before any data has been added
 // - A snapshot once the first part of the data has been added
-// - A snapshot once both parts of the data has been added.
+// - A snapshot after both parts of the data has been added.
 // The parts overlap to check that an input table allows duplicate rows,
 // and the filtered table is used to check that changes to the input table
 // propogate to other tables.
 func addNewDataToAppend(
 	ctx context.Context, cl *client.Client, tbl *client.AppendOnlyInputTable,
-) (before arrow.Record, mid arrow.Record, after arrow.Record, err error) {
+	beforeCheck checkerFunc, midCheck checkerFunc, afterCheck checkerFunc,
+) (err error) {
 	newData1, err := getDataTableFirstPart(ctx, cl)
 	if err != nil {
 		return
@@ -109,7 +140,7 @@ func addNewDataToAppend(
 		return
 	}
 
-	before, err = output.Snapshot(ctx)
+	err = checkTable(ctx, output, beforeCheck, time.Second*5)
 	if err != nil {
 		return
 	}
@@ -119,7 +150,7 @@ func addNewDataToAppend(
 		return
 	}
 
-	mid, err = output.Snapshot(ctx)
+	err = checkTable(ctx, output, midCheck, time.Second*5)
 	if err != nil {
 		return
 	}
@@ -129,7 +160,10 @@ func addNewDataToAppend(
 		return
 	}
 
-	after, err = output.Snapshot(ctx)
+	err = checkTable(ctx, output, afterCheck, time.Second*5)
+	if err != nil {
+		return
+	}
 
 	return
 }
@@ -145,23 +179,29 @@ func TestAppendOnlyFromSchema(t *testing.T) {
 	test_tools.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
 	defer inputTable.Release(ctx)
 
-	before, mid, after, err := addNewDataToAppend(ctx, cl, inputTable)
+	beforeCheck := func(before arrow.Record) error {
+		if before.NumCols() != 3 || before.NumRows() != 0 {
+			return fmt.Errorf("before had wrong size %d x %d", before.NumCols(), before.NumRows())
+		}
+		return nil
+	}
+
+	midCheck := func(mid arrow.Record) error {
+		if mid.NumCols() != 3 || mid.NumRows() != 4 {
+			return fmt.Errorf("mid had wrong size %d x %d", mid.NumCols(), mid.NumRows())
+		}
+		return nil
+	}
+
+	afterCheck := func(after arrow.Record) error {
+		if after.NumCols() != 3 || after.NumRows() != 7 {
+			return fmt.Errorf("after had wrong size %d x %d", after.NumCols(), after.NumRows())
+		}
+		return nil
+	}
+
+	err = addNewDataToAppend(ctx, cl, inputTable, beforeCheck, midCheck, afterCheck)
 	test_tools.CheckError(t, "addNewDataToAppend", err)
-	defer before.Release()
-	defer mid.Release()
-	defer after.Release()
-
-	if before.NumCols() != 3 || before.NumRows() != 0 {
-		t.Errorf("before had wrong size %d x %d", before.NumCols(), before.NumRows())
-	}
-
-	if mid.NumCols() != 3 || mid.NumRows() != 4 {
-		t.Errorf("mid had wrong size %d x %d", mid.NumCols(), mid.NumRows())
-	}
-
-	if after.NumCols() != 3 || after.NumRows() != 7 {
-		t.Errorf("after had wrong size %d x %d", after.NumCols(), after.NumRows())
-	}
 }
 
 func TestAppendOnlyFromTable(t *testing.T) {
@@ -179,23 +219,29 @@ func TestAppendOnlyFromTable(t *testing.T) {
 	test_tools.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
 	defer inputTable.Release(ctx)
 
-	before, mid, after, err := addNewDataToAppend(ctx, cl, inputTable)
+	beforeCheck := func(before arrow.Record) error {
+		if before.NumCols() != 3 || before.NumRows() != 0 {
+			return fmt.Errorf("before had wrong size %d x %d", before.NumCols(), before.NumRows())
+		}
+		return nil
+	}
+
+	midCheck := func(mid arrow.Record) error {
+		if mid.NumCols() != 3 || mid.NumRows() != 4 {
+			return fmt.Errorf("mid had wrong size %d x %d", mid.NumCols(), mid.NumRows())
+		}
+		return nil
+	}
+
+	afterCheck := func(after arrow.Record) error {
+		if after.NumCols() != 3 || after.NumRows() != 7 {
+			return fmt.Errorf("after had wrong size %d x %d", after.NumCols(), after.NumRows())
+		}
+		return nil
+	}
+
+	err = addNewDataToAppend(ctx, cl, inputTable, beforeCheck, midCheck, afterCheck)
 	test_tools.CheckError(t, "addNewDataToAppend", err)
-	defer before.Release()
-	defer mid.Release()
-	defer after.Release()
-
-	if before.NumCols() != 3 || before.NumRows() != 0 {
-		t.Errorf("before had wrong size %d x %d", before.NumCols(), before.NumRows())
-	}
-
-	if mid.NumCols() != 3 || mid.NumRows() != 4 {
-		t.Errorf("mid had wrong size %d x %d", mid.NumCols(), mid.NumRows())
-	}
-
-	if after.NumCols() != 3 || after.NumRows() != 7 {
-		t.Errorf("after had wrong size %d x %d", after.NumCols(), after.NumRows())
-	}
 }
 
 func TestKeyBackedTable(t *testing.T) {
