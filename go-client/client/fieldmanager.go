@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+
 	apppb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/application"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -109,30 +110,56 @@ func (fs *fieldStream) Stop() {
 //todo doc
 type fieldManager struct {
 	client *Client
+
+	chanClose          chan<- reqClose
+	chanOpenTables     chan<- reqListOpenableTables
+	chanGetTable       chan<- reqGetTable
+	chanFMExec         chan<- reqFMExec
+	chanFetchRepeating chan<- reqFetchRepeating
+}
+
+type fieldManagerExecutor struct {
+	client *Client
 	tables map[fieldId]*TableHandle // A map of tables that can be opened using OpenTable
 	//stream apppb2.ApplicationService_ListFieldsClient
 	fs *fieldStream
 
-	chanClose          chan reqClose
-	chanOpenTables     chan reqListOpenableTables
-	chanGetTable       chan reqGetTable
-	chanFMExec         chan reqFMExec
-	chanFetchRepeating chan reqFetchRepeating
+	chanClose          <-chan reqClose
+	chanOpenTables     <-chan reqListOpenableTables
+	chanGetTable       <-chan reqGetTable
+	chanFMExec         <-chan reqFMExec
+	chanFetchRepeating <-chan reqFetchRepeating
 }
 
 func newFieldManager(client *Client) fieldManager {
+	chanClose := make(chan reqClose)
+	chanOpenTables := make(chan reqListOpenableTables)
+	chanGetTable := make(chan reqGetTable)
+	chanFMExec := make(chan reqFMExec)
+	chanFetchRepeating := make(chan reqFetchRepeating)
+
 	fm := fieldManager{
+		client: client,
+
+		chanClose:          chanClose,
+		chanOpenTables:     chanOpenTables,
+		chanGetTable:       chanGetTable,
+		chanFMExec:         chanFMExec,
+		chanFetchRepeating: chanFetchRepeating,
+	}
+
+	fme := fieldManagerExecutor{
 		client: client,
 		tables: make(map[fieldId]*TableHandle),
 
-		chanClose:          make(chan reqClose),
-		chanOpenTables:     make(chan reqListOpenableTables),
-		chanGetTable:       make(chan reqGetTable),
-		chanFMExec:         make(chan reqFMExec),
-		chanFetchRepeating: make(chan reqFetchRepeating),
+		chanClose:          chanClose,
+		chanOpenTables:     chanOpenTables,
+		chanGetTable:       chanGetTable,
+		chanFMExec:         chanFMExec,
+		chanFetchRepeating: chanFetchRepeating,
 	}
 
-	go fm.loop()
+	go fme.loop()
 
 	return fm
 }
@@ -141,53 +168,70 @@ func newFieldManager(client *Client) fieldManager {
 // When a new change occurs, it will pass the change to the given handler.
 // When the context for the stream gets canceled, the loop will halt
 // and close the cancelAck channel to signal that it is finished.
-func (fm *fieldManager) loop() {
+func (fme *fieldManagerExecutor) loop() {
 	chanChanges := make(chan respFMExec)
 
 	for {
 		select {
-		case <-fm.chanClose:
+		case <-fme.chanClose:
 			//todo log
+			if fme.fs != nil {
+				fme.fs.Stop()
+			}
 			return
 		case resp := <-chanChanges:
-			//todo review error model here...
-			if resp.err != nil {
-				if status, ok := status.FromError(resp.err); ok && status.Code() == codes.Canceled {
-					//todo log?
-					//todo ???? what is the right error case?  log and go on?  fatal?  etc.  If cancelled, should Close be called?
-					break
-				}
-				//todo how to handle err case
-				fmt.Println("failed to list fields: ", resp.err)
+			err := fme.handleChangesResp(resp)
+			if err != nil {
 				return
 			}
-
-			fm.handleFieldChanges(resp.changes)
-		case req := <-fm.chanOpenTables:
-			req.out <- fm.listOpenableTables()
-		case req := <-fm.chanGetTable:
-			tbl, ok := fm.tables[req.id]
+		case req := <-fme.chanOpenTables:
+			req.out <- fme.listOpenableTables()
+		case req := <-fme.chanGetTable:
+			tbl, ok := fme.tables[req.id]
 			req.out <- respGetTable{table: tbl, ok: ok}
-		case req := <-fm.chanFetchRepeating:
-			if fm.fs != nil {
-				fm.fs.Stop()
+		case req := <-fme.chanFetchRepeating:
+			if fme.fs != nil {
+				fme.fs.Stop()
 			}
 
-			fm.fs = req.fs
-			fm.fs.FetchRepeating(chanChanges)
-		case req := <-fm.chanFMExec:
+			fme.fs = req.fs
+			fme.fs.FetchRepeating(chanChanges)
+		case req := <-fme.chanFMExec:
 			changes, err := req.f()
 			msg := respFMExec{changes: changes, err: err}
-			chanChanges <- msg
 			req.out <- msg
+
+			//chanChanges <- msg
+			err = fme.handleChangesResp(msg)
+			if err != nil {
+				return
+			}
 		}
 	}
+}
+
+func (fm *fieldManagerExecutor) handleChangesResp(resp respFMExec) error {
+	//todo review error model here...
+	if resp.err != nil {
+		if status, ok := status.FromError(resp.err); ok && status.Code() == codes.Canceled {
+			//todo log?
+			//todo ???? what is the right error case?  log and go on?  fatal?  etc.  If cancelled, should Close be called?
+			return resp.err
+		}
+		//todo how to handle err case
+		fmt.Println("failed to list fields: ", resp.err)
+		return resp.err
+	}
+
+	fm.handleFieldChanges(resp.changes)
+
+	return nil
 }
 
 //todo clean up
 // handleFieldChanges updates the list of fields the client currently knows about
 // according to changes made elsewhere (e.g. from fields changed from a script response or from a ListFields request).
-func (fm *fieldManager) handleFieldChanges(changes *apppb2.FieldsChangeUpdate) {
+func (fm *fieldManagerExecutor) handleFieldChanges(changes *apppb2.FieldsChangeUpdate) {
 	for _, created := range changes.Created {
 		if created.TypedTicket.Type == "Table" {
 			fieldId := fieldId{appId: created.ApplicationId, fieldName: created.FieldName}
@@ -217,13 +261,10 @@ func (fm *fieldManager) Close() {
 		close(fm.chanClose)
 	}
 
-	if fm.fs != nil {
-		fm.fs.Stop()
-	}
 }
 
 //todo doc
-func (fm *fieldManager) listOpenableTables() []string {
+func (fm *fieldManagerExecutor) listOpenableTables() []string {
 	var result []string
 
 	for id := range fm.tables {

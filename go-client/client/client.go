@@ -63,6 +63,8 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 
 	client := &Client{grpcChannel: grpcChannel, isClosed: false}
 
+	client.ticketFact = newTicketFactory()
+
 	client.sessionStub, err = newSessionStub(ctx, client)
 	if err != nil {
 		client.Close()
@@ -87,7 +89,6 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 
 	client.appServiceClient = apppb2.NewApplicationServiceClient(client.grpcChannel)
 
-	client.ticketFact = newTicketFactory()
 	client.fieldMan = newFieldManager(client)
 
 	return client, nil
