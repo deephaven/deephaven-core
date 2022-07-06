@@ -817,6 +817,8 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure transform( io.deephaven.plot.axistransformations.AxisTransform transform );
 
+    @Override  Figure treeMapPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String values, java.lang.String ids, java.lang.String parents, java.lang.String labels, java.lang.String text, java.lang.String color, java.lang.String hoverText );
+
     @Override  Figure twin( );
 
     @Override  Figure twin( java.lang.String name );

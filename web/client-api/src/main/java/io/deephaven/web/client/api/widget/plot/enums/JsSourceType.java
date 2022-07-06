@@ -25,4 +25,7 @@ public class JsSourceType {
     public static final int SIZE = FigureDescriptor.SourceType.getSIZE();
     public static final int LABEL = FigureDescriptor.SourceType.getLABEL();
     public static final int COLOR = FigureDescriptor.SourceType.getCOLOR();
+    public static final int PARENT = FigureDescriptor.SourceType.getPARENT();
+    public static final int HOVER_TEXT = FigureDescriptor.SourceType.getHOVER_TEXT();
+    public static final int TEXT = FigureDescriptor.SourceType.getTEXT();
 }

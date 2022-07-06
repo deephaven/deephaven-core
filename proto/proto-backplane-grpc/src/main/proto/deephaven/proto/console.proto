@@ -232,6 +232,7 @@ message FigureDescriptor {
             CATEGORY = 3;
             XYZ = 4;
             CATEGORY_3D = 5;
+            TREEMAP = 6;
         }
         int32 colspan = 1;
         int32 rowspan = 2;
@@ -265,6 +266,7 @@ message FigureDescriptor {
         SCATTER = 8;
         STEP = 9;
         ERROR_BAR = 10;
+        TREEMAP = 11;
     }
 
     message SeriesDescriptor {
@@ -438,6 +440,9 @@ message FigureDescriptor {
         SIZE = 13;
         LABEL = 14;
         COLOR = 15;
+        PARENT = 16;
+        HOVER_TEXT = 17;
+        TEXT = 18;
     }
     message SourceDescriptor {
         string axis_id = 1;

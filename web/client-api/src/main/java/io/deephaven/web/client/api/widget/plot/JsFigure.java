@@ -442,7 +442,8 @@ public class JsFigure extends HasEventHandling {
         // ... again, loop and find x axis, this time also y cols
         for (int i = 0; i < s.getSources().length; i++) {
             SeriesDataSource source = s.getSources()[i];
-            DownsampledAxisDetails downsampledAxisDetails = downsampled.get(source.getAxis().getDescriptor());
+            DownsampledAxisDetails downsampledAxisDetails =
+                    source.getAxis() != null ? downsampled.get(source.getAxis().getDescriptor()) : null;
             if (downsampledAxisDetails == null) {
                 yCols[yCols.length] = source.getDescriptor().getColumnName();
             } else {

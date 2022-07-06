@@ -392,7 +392,8 @@ public class GeneratePlottingConvenience {
                 "errorBarY",
                 "errorBarYBy",
                 "catErrorBar",
-                "catErrorBarBy"));
+                "catErrorBarBy",
+                "treeMapPlot"));
 
         @SuppressWarnings("unchecked")
         GeneratePlottingConvenience gen = new GeneratePlottingConvenience(staticImports, imports,

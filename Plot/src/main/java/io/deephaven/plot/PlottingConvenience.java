@@ -2693,5 +2693,12 @@ public class PlottingConvenience {
         return FigureFactory.figure().plotBy( seriesName, sds, x, y, byColumns );
     }
 
+    /**
+    * See {@link io.deephaven.plot.Figure#treeMapPlot} 
+    **/
+    public static  io.deephaven.plot.Figure treeMapPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String values, java.lang.String ids, java.lang.String parents, java.lang.String labels, java.lang.String text, java.lang.String color, java.lang.String hoverText ) {
+        return FigureFactory.figure().treeMapPlot( seriesName, t, values, ids, parents, labels, text, color, hoverText );
+    }
+
 }
 
