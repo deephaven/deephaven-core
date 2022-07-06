@@ -93,6 +93,7 @@ public class MultiplexedWebSocketServerStream {
             // End the stream first.
             stream.transportReportStatus(Status.fromCode(Status.Code.UNKNOWN));
         }
+        streams.clear();
         try {
             websocketSession
                     .close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "Can't read string payloads"));
@@ -120,6 +121,7 @@ public class MultiplexedWebSocketServerStream {
             // message is empty (no control flow, no data), error
             if (stream != null) {
                 stream.transportReportStatus(Status.fromCode(Status.Code.UNKNOWN));
+                streams.remove(streamId);
             }
             websocketSession.close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "Unexpected empty message"));
             return;
@@ -139,11 +141,13 @@ public class MultiplexedWebSocketServerStream {
             // if first byte is 1, the client is finished sending
             if (message.remaining() != 0) {
                 stream.transportReportStatus(Status.fromCode(Status.Code.UNKNOWN));
+                streams.remove(streamId);
                 websocketSession.close(
                         new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "Unexpected bytes in close message"));
                 return;
             }
             stream.inboundDataReceived(ReadableBuffers.empty(), true);
+            streams.remove(streamId);
             return;
         }
         assert !closed;
@@ -161,6 +165,7 @@ public class MultiplexedWebSocketServerStream {
         for (MultiplexedWebsocketStreamImpl stream : streams.values()) {
             stream.transportReportStatus(Status.UNKNOWN);// transport failure of some kind
         }
+        streams.clear();
         // onClose will be called automatically
         if (error instanceof ClosedChannelException) {
             // ignore this for now
