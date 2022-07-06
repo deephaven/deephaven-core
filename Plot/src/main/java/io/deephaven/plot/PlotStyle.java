@@ -74,7 +74,9 @@ public enum PlotStyle {
      */
     ERROR_BAR,
 
-
+    /**
+     * A treemap plot.
+     */
     TREEMAP;
 
     /**
