@@ -20,7 +20,6 @@ public enum ChartType {
     /**
      * Open-high-low-close chart.
      */
-    @Deprecated
     OHLC,
 
     /**

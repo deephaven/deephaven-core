@@ -192,13 +192,6 @@ public interface Axes extends Serializable {
      * @return y-dimension {@link Axis}
      */
     Axis yAxis();
-//
-//    /**
-//     * Gets the {@link Axis} representing the z-axis
-//     *
-//     * @return z-dimension {@link Axis}
-//     */
-//    Axis zAxis();
 
 
     ////////////////////////// axes configuration //////////////////////////
@@ -220,14 +213,6 @@ public interface Axes extends Serializable {
      */
     Axes yFormat(final AxisFormat axisFormat);
 
-//    /**
-//     * Sets the {@link AxisFormat} of the z-{@link Axis}
-//     *
-//     * @param axisFormat format
-//     * @return this Axes
-//     */
-//    Axes zFormat(final AxisFormat axisFormat);
-
     /**
      * Sets the format pattern of the x-{@link Axis}
      *
@@ -243,14 +228,6 @@ public interface Axes extends Serializable {
      * @return this Axes
      */
     Axes yFormatPattern(final String axisFormatPattern);
-
-//    /**
-//     * Sets the format pattern of the z-{@link Axis}
-//     *
-//     * @param axisFormatPattern pattern
-//     * @return this Axes
-//     */
-//    Axes zFormatPattern(final String axisFormatPattern);
 
 
     ////////////////////////// axis colors //////////////////////////
