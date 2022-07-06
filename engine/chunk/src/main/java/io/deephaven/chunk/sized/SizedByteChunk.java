@@ -20,6 +20,12 @@ import io.deephaven.util.SafeCloseable;
 public final class SizedByteChunk<T extends Any> implements SafeCloseable {
     private WritableByteChunk<T> chunk;
 
+    public SizedByteChunk(){}
+
+    public SizedByteChunk(final int initialSize) {
+        chunk = WritableByteChunk.makeWritableChunk(initialSize);
+    }
+
     /**
      * Get the underlying chunk.
      *

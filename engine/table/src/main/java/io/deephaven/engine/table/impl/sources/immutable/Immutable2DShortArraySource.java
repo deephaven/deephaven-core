@@ -100,6 +100,11 @@ public class Immutable2DShortArraySource extends AbstractDeferredGroupingColumnS
     }
 
     @Override
+    public final void setNull(long key) {
+        data[keyToSegment(key)][keyToOffset(key)] = NULL_SHORT;
+    }
+
+    @Override
     public final void set(long key, short value) {
         data[keyToSegment(key)][keyToOffset(key)] = value;
     }

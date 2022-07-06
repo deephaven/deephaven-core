@@ -287,8 +287,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             }
         }
 
-        // if there was nothing that actually required the partition, defer the result. This is different than V1, and
-        // is actually different than the old behavior as well.
+        // if there was nothing that actually required the partition, defer the result.
         if (partitionFilters.isEmpty()) {
             DeferredViewTable deferredViewTable =
                     new DeferredViewTable(definition, description + "-withDeferredFilters",
@@ -323,7 +322,9 @@ public class PartitionAwareSourceTable extends SourceTable {
         for (SelectColumn selectColumn : selectColumns) {
             selectColumn.initDef(definition.getColumnNameMap());
             if (!isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
-                return super.selectDistinct(selectColumns);
+                // Be sure to invoke the super-class version of this method, rather than the array-based one that
+                // delegates to this method.
+                return super.selectDistinct(Arrays.asList(selectColumns));
             }
         }
         initializeAvailableLocations();

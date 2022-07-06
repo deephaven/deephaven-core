@@ -37,6 +37,11 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
     }
 
     @Override
+    public void setNull(long key) {
+        ((WritableColumnSource<T>) innerSource).setNull(rowRedirection.get(key));
+    }
+
+    @Override
     public void set(long key, T value) {
         ((WritableColumnSource<T>) innerSource).set(rowRedirection.get(key), value);
     }

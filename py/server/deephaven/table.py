@@ -8,7 +8,7 @@ Deephaven refreshing and static data."""
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Union, Sequence, List, Any, Optional
+from typing import Union, Sequence, List, Any, Optional, Callable
 
 import jpy
 
@@ -17,7 +17,8 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
-from deephaven.jcompat import j_array_list, to_sequence
+from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator
+from deephaven.ugp import auto_locking_op
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
@@ -29,6 +30,8 @@ _JPair = jpy.get_type("io.deephaven.api.agg.Pair")
 _JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
+_JPartitionedTableFactory = jpy.get_type("io.deephaven.engine.table.PartitionedTableFactory")
+_JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
 
 class SortDirection(Enum):
@@ -82,6 +85,7 @@ class Table(JObjectWrapper):
         self.j_table = j_table
         self._definition = self.j_table.getDefinition()
         self._schema = None
+        self._is_refreshing = None
 
     def __repr__(self):
         default_repr = super().__repr__()
@@ -107,7 +111,9 @@ class Table(JObjectWrapper):
     @property
     def is_refreshing(self) -> bool:
         """Whether this table is refreshing."""
-        return self.j_table.isRefreshing()
+        if self._is_refreshing is None:
+            self._is_refreshing = self.j_table.isRefreshing()
+        return self._is_refreshing
 
     @property
     def columns(self) -> List[Column]:
@@ -150,6 +156,7 @@ class Table(JObjectWrapper):
         """Returns a coalesced child table."""
         return Table(j_table=self.j_table.coalesce())
 
+    @auto_locking_op
     def snapshot(self, source_table: Table, do_init: bool = False, cols: Union[str, List[str]] = None) -> Table:
         """Produces an in-memory copy of a source table that refreshes when this table changes.
 
@@ -173,6 +180,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(message="failed to create a snapshot table.") from e
 
+    @auto_locking_op
     def snapshot_history(self, source_table: Table) -> Table:
         """Produces an in-memory history of a source table that adds a new snapshot when this table (trigger table)
         changes.
@@ -279,6 +287,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table move_columns_up operation failed.") from e
 
+    @auto_locking_op
     def rename_columns(self, cols: Union[str, Sequence[str]]) -> Table:
         """The rename_columns method creates a new table with the specified columns renamed.
 
@@ -297,6 +306,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
 
+    @auto_locking_op
     def update(self, formulas: Union[str, Sequence[str]]) -> Table:
         """The update method creates a new table containing a new, in-memory column for each formula.
 
@@ -315,6 +325,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table update operation failed.") from e
 
+    @auto_locking_op
     def lazy_update(self, formulas: Union[str, Sequence[str]]) -> Table:
         """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
 
@@ -369,6 +380,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
 
+    @auto_locking_op
     def select(self, formulas: Union[str, Sequence[str]] = None) -> Table:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
@@ -437,6 +449,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
+    @auto_locking_op
     def where_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> Table:
         """The where_in method creates a new table containing rows from the source table, where the rows match
         values in the filter table. The filter is updated whenever either table changes.
@@ -457,6 +470,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table where_in operation failed.") from e
 
+    @auto_locking_op
     def where_not_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> Table:
         """The where_not_in method creates a new table containing rows from the source table, where the rows do not
         match values in the filter table.
@@ -623,8 +637,7 @@ class Table(JObjectWrapper):
 
     def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> Table:
-        """The sort method creates a new table where (1) rows are sorted in a smallest to largest order based on the
-        order_by column(s) (2) where rows are sorted in the order defined by the order argument.
+        """The sort method creates a new table where the rows are ordered based on values in a specified set of columns.
 
         Args:
             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
@@ -658,6 +671,7 @@ class Table(JObjectWrapper):
     # Table operation category: Join
     #
     # region Join
+    @auto_locking_op
     def natural_join(self, table: Table, on: Union[str, Sequence[str]],
                      joins: Union[str, Sequence[str]] = None) -> Table:
         """The natural_join method creates a new table containing all of the rows and columns of this table,
@@ -694,6 +708,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table natural_join operation failed.") from e
 
+    @auto_locking_op
     def exact_join(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
         """The exact_join method creates a new table containing all of the rows and columns of this table plus
         additional columns containing data from the right table. For columns appended to the left table (joins),
@@ -729,6 +744,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table exact_join operation failed.") from e
 
+    @auto_locking_op
     def join(self, table: Table, on: Union[str, Sequence[str]] = None,
              joins: Union[str, Sequence[str]] = None) -> Table:
         """The join method creates a new table containing rows that have matching values in both tables. Rows that
@@ -763,6 +779,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
+    @auto_locking_op
     def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
            match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> Table:
         """The aj (as-of join) method creates a new table containing all of the rows and columns of the left table,
@@ -796,6 +813,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table as-of join operation failed.") from e
 
+    @auto_locking_op
     def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
             match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> Table:
         """The reverse-as-of join method creates a new table containing all of the rows and columns of the left table,
@@ -837,6 +855,7 @@ class Table(JObjectWrapper):
     #
     # Table operation category: Aggregation
     # region Aggregation
+    @auto_locking_op
     def head_by(self, num_rows: int, by: Union[str, Sequence[str]] = None) -> Table:
         """The head_by method creates a new table containing the first number of rows for each group.
 
@@ -856,6 +875,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table head_by operation failed.") from e
 
+    @auto_locking_op
     def tail_by(self, num_rows: int, by: Union[str, Sequence[str]] = None) -> Table:
         """The tail_by method creates a new table containing the last number of rows for each group.
 
@@ -897,6 +917,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table group operation failed.") from e
 
+    @auto_locking_op
     def ungroup(self, cols: Union[str, Sequence[str]] = None) -> Table:
         """The ungroup method creates a new table in which array columns from the source table are unwrapped into
         separate rows.
@@ -1296,9 +1317,17 @@ class Table(JObjectWrapper):
 
 
 class PartitionedTable(JObjectWrapper):
-    """A partitioned table is a table with one column containing like-defined constituent tables, optionally with
-    key columns defined to allow binary operation based transformation or joins with other like-keyed partitioned
-    tables. """
+    """A partitioned table is a table containing tables, known as constituent tables.  
+    Each constituent table has the same schema.
+
+    The partitioned table contains:
+    1. one column containing constituent tables
+    2. key columns (optional)
+    3. non-key columns (optional)
+
+    Key values can be used to retrieve constituent tables from the partitioned table and 
+    can be used to perform operations with other like-keyed partitioned tables.
+    """
 
     j_object_type = _JPartitionedTable
 
@@ -1314,13 +1343,110 @@ class PartitionedTable(JObjectWrapper):
         self._unique_keys = None
         self._constituent_column = None
         self._constituent_changes_permitted = None
+        self._is_refreshing = None
+
+    @classmethod
+    def from_partitioned_table(cls,
+                               table: Table,
+                               key_cols: Union[str, List[str]] = None,
+                               unique_keys: bool = None,
+                               constituent_column: str = None,
+                               constituent_table_columns: List[Column] = None,
+                               constituent_changes_permitted: bool = None) -> PartitionedTable:
+        """Creates a PartitionedTable from the provided underlying partitioned Table.
+
+        Note: key_cols, unique_keys, constituent_column, constituent_table_columns,
+        constituent_changes_permitted must either be all None or all have values. When they are None, their values will
+        be inferred as follows:
+            key_cols: the names of all columns with a non-Table data type
+            unique_keys: False
+            constituent_column: the name of the first column with a Table data type
+            constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
+                column. Consequently the constituent column can't be empty
+            constituent_changes_permitted: the value of table.is_refreshing
+
+
+        Args:
+            table (Table): the underlying partitioned table
+            key_cols (Union[str, List[str]]): the key column name(s) of 'table'
+            unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
+            constituent_column (str): the constituent column name in 'table'
+            constituent_table_columns (list[Column]): the column definitions of the constituent table
+            constituent_changes_permitted (bool): whether the values of the constituent column can change
+
+        Returns:
+            a PartitionedTable
+
+        Raise:
+            DHError
+        """
+        none_args = [key_cols, unique_keys, constituent_column, constituent_table_columns,
+                     constituent_changes_permitted]
+
+        try:
+            if all([arg is None for arg in none_args]):
+                return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.of(table.j_table))
+
+            if all([arg is not None for arg in none_args]):
+                table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
+                j_partitioned_table = _JPartitionedTableFactory.of(table.j_table,
+                                                                   j_array_list(to_sequence(key_cols)),
+                                                                   unique_keys,
+                                                                   constituent_column,
+                                                                   table_def,
+                                                                   constituent_changes_permitted)
+                return PartitionedTable(j_partitioned_table=j_partitioned_table)
+        except Exception as e:
+            raise DHError(e, "failed to build a PartitionedTable.") from e
+
+        missing_value_args = [arg for arg in none_args if arg is None]
+        raise DHError(message=f"invalid argument values, must specify non-None values for {missing_value_args}.")
+
+    @classmethod
+    def from_constituent_tables(cls,
+                                tables: List[Table],
+                                constituent_table_columns: List[Column] = None) -> PartitionedTable:
+        """Creates a PartitionedTable with a single column named '__CONSTITUENT__' containing the provided constituent
+        tables.
+
+        The result PartitionedTable has no key columns, and both its unique_keys and constituent_changes_permitted
+        properties are set to False. When constituent_table_columns isn't provided, it will be set to the column
+        definitions of the first table in the provided constituent tables.
+
+        Args:
+            tables (List[Table]): the constituent tables
+            constituent_table_columns (List[Column]): a list of column definitions compatible with all the constituent
+                tables, default is None
+
+        Returns:
+            a PartitionedTable
+
+        Raises:
+            DHError
+        """
+        try:
+            if not constituent_table_columns:
+                return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(to_sequence(tables)))
+            else:
+                table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
+                return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(table_def,
+                                                                                               to_sequence(tables)))
+        except Exception as e:
+            raise DHError(e, "failed to create a PartitionedTable from constituent tables.") from e
 
     @property
     def table(self) -> Table:
-        """The underlying Table."""
+        """The underlying partitioned table."""
         if self._table is None:
             self._table = Table(j_table=self.j_partitioned_table.table())
         return self._table
+
+    @property
+    def is_refreshing(self) -> bool:
+        """Whether the underlying partitioned table is refreshing."""
+        if self._is_refreshing is None:
+            self._is_refreshing = self.table.is_refreshing
+        return self._is_refreshing
 
     @property
     def key_columns(self) -> List[str]:
@@ -1329,24 +1455,34 @@ class PartitionedTable(JObjectWrapper):
             self._key_columns = list(self.j_partitioned_table.keyColumnNames().toArray())
         return self._key_columns
 
+    def keys(self) -> Table:
+        """Returns a Table containing all the keys of the underlying partitioned table."""
+        if self.unique_keys:
+            return self.table.view(self.key_columns)
+        else:
+            return self.table.select_distinct(self.key_columns)
+
+
     @property
     def unique_keys(self) -> bool:
-        """Whether the keys in the underlying table are unique. If keys are unique, one can expect that
-        select_distinct(key_column_names) and view(key_column_names) operations produce equivalent tables."""
+        """Whether the keys in the underlying table must always be unique. If keys must be unique, one can expect
+        that self.table.select_distinct(self.key_columns) and self.table.view(self.key_columns) operations always
+        produce equivalent tables."""
         if self._unique_keys is None:
             self._unique_keys = self.j_partitioned_table.uniqueKeys()
         return self._unique_keys
 
     @property
     def constituent_column(self) -> str:
-        """The constituent column name."""
+        """The name of the column containing constituent tables."""
         if self._constituent_column is None:
             self._constituent_column = self.j_partitioned_table.constituentColumnName()
         return self._constituent_column
 
     @property
     def constituent_table_columns(self) -> List[Column]:
-        """The column definitions shared by the constituent tables."""
+        """The column definitions for constituent tables.  All constituent tables in a partitioned table have the
+        same column definitions."""
         if not self._schema:
             self._schema = _td_to_columns(self.j_partitioned_table.constituentDefinition())
 
@@ -1354,19 +1490,29 @@ class PartitionedTable(JObjectWrapper):
 
     @property
     def constituent_changes_permitted(self) -> bool:
-        """Whether the constituents of the underlying partitioned table can change, specifically whether the values of
-        the constituent column can change.
+        """Can the constituents of the underlying partitioned table change?  Specifically, can the values of the
+        constituent column change?
 
-        Note, this is unrelated to whether the constituent tables are refreshing, or whether the underlying partitioned
-        table is refreshing. Also note that the underlying partitioned table must be refreshing if it contains
-        any refreshing constituents.
+        If constituent changes are not permitted, the underlying partitioned table:
+        1. has no adds
+        2. has no removes
+        3. has no shifts
+        4. has no modifies that include the constituent column  
+        
+        Note, it is possible for constituent changes to not be permitted even if constituent tables are refreshing or
+        if the underlying partitioned table is refreshing. Also note that the underlying partitioned table must be
+        refreshing if it contains any refreshing constituents.
         """
         if self._constituent_changes_permitted is None:
             self._constituent_changes_permitted = self.j_partitioned_table.constituentChangesPermitted()
         return self._constituent_changes_permitted
 
+    @auto_locking_op
     def merge(self) -> Table:
-        """Makes a new Table that contains all the rows from all the constituent tables.
+        """Makes a new Table that contains all the rows from all the constituent tables. In the merged result,
+        data from a constituent table is contiguous, and data from constituent tables appears in the same order the
+        constituent table appears in the PartitionedTable. Basically, merge stacks constituent tables on top of each
+        other in the same relative order as the partitioned table.
 
         Returns:
             a Table
@@ -1380,7 +1526,8 @@ class PartitionedTable(JObjectWrapper):
             raise DHError(e, "failed to merge all the constituent tables.")
 
     def filter(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> PartitionedTable:
-        """Makes a new PartitionedTable from the result of applying filters to the underlying partitioned table.
+        """The filter method creates a new partitioned table containing only the rows meeting the filter criteria.
+        Filters can not use the constituent column.
 
         Args:
             filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition  expression(s) or
@@ -1403,10 +1550,11 @@ class PartitionedTable(JObjectWrapper):
 
     def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTable:
-        """Makes a new PartitionedTable from sorting the underlying partitioned table.
-
+        """The sort method creates a new partitioned table where the rows are ordered based on values in a specified
+        set of columns. Sort can not use the constituent column.
+        
          Args:
-             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on, can't include the constituent column
+             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
              order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
@@ -1432,22 +1580,79 @@ class PartitionedTable(JObjectWrapper):
             raise DHError(e, "failed to sort the partitioned table.") from e
 
     def get_constituent(self, key_values: Union[Any, Sequence[Any]]) -> Optional[Table]:
-        """Gets a single constituent table by its corresponding key column values.
+        """Gets a single constituent table by its corresponding key column value(s).
+        If there are no matching rows, the result is None. If there are multiple matching rows, a DHError is thrown.
 
         Args:
             key_values (Union[Any, Sequence[Any]]): the value(s) of the key column(s)
 
         Returns:
             a Table or None
+
+        Raises:
+            DHError
         """
-        key_values = to_sequence(key_values)
-        j_table = self.j_partitioned_table.constituentFor(key_values)
-        if j_table:
-            return Table(j_table=j_table)
-        else:
-            return None
+        try:
+            key_values = to_sequence(key_values)
+            j_table = self.j_partitioned_table.constituentFor(key_values)
+            if j_table:
+                return Table(j_table=j_table)
+            else:
+                return None
+        except Exception as e:
+            raise DHError(e, "unable to get constituent table.") from e
 
     @property
     def constituent_tables(self) -> List[Table]:
         """Returns all the current constituent tables."""
         return list(map(Table, self.j_partitioned_table.constituents()))
+
+    @auto_locking_op
+    def transform(self, func: Callable[[Table], Table]) -> PartitionedTable:
+        """Apply the provided function to all constituent Tables and produce a new PartitionedTable with the results
+        as its constituents, with the same data for all other columns in the underlying partitioned Table. Note that
+        if the Table underlying this PartitionedTable changes, a corresponding change will propagate to the result.
+
+        Args:
+            func (Callable[[Table], Table]: a function which takes a Table as input and returns a new Table
+
+        Returns:
+            a PartitionedTable
+
+        Raises:
+            DHError
+        """
+        try:
+            j_operator = j_unary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
+            j_pt = self.j_partitioned_table.transform(j_operator)
+            return PartitionedTable(j_partitioned_table=j_pt)
+        except Exception as e:
+            raise DHError(e, "failed to transform the PartitionedTable.") from e
+
+    @auto_locking_op
+    def partitioned_transform(self, other: PartitionedTable, func: Callable[[Table, Table], Table]) -> PartitionedTable:
+        """Join the underlying partitioned Tables from this PartitionedTable and other on the key columns, then apply
+        the provided function to all pairs of constituent Tables with the same keys in order to produce a new
+        PartitionedTable with the results as its constituents, with the same data for all other columns in the
+        underlying partitioned Table from this.
+
+        Note that if the Tables underlying this PartitionedTable or other change, a corresponding change will propagate
+        to the result.
+
+        Args:
+            other (PartitionedTable): the other Partitioned table whose constituent tables will be passed in as the 2nd
+                argument to the provided function
+            func (Callable[[Table, Table], Table]: a function which takes two Tables as input and returns a new Table
+
+        Returns:
+            a PartitionedTable
+
+        Raises:
+            DHError
+        """
+        try:
+            j_operator = j_binary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
+            j_pt = self.j_partitioned_table.partitionedTransform(other.j_partitioned_table, j_operator)
+            return PartitionedTable(j_partitioned_table=j_pt)
+        except Exception as e:
+            raise DHError(e, "failed to transform the PartitionedTable with another PartitionedTable.") from e

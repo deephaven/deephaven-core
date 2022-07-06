@@ -34,7 +34,6 @@ import io.deephaven.lang.api.ChunkerInvokable;
 import io.deephaven.lang.api.IsScope;
 import io.deephaven.lang.api.ParseState;
 import io.deephaven.lang.api.ParseCancelled;
-import io.deephaven.lang.meta.Messenger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -53,7 +52,6 @@ public class Chunker implements/*@bgen(jjtree)*/ ChunkerTreeConstants, /*@egen*/
     private volatile ParseState current = root;
     private final Stack<ParseState> stack = new Stack<ParseState>();
     private final IdentityHashMap<Node, ParseState> states = new IdentityHashMap<Node, ParseState>();
-    private Messenger messenger;
     private ChunkerInvokable invoker;
 
     public static void main(String[] args) throws Exception {
@@ -66,21 +64,8 @@ public class Chunker implements/*@bgen(jjtree)*/ ChunkerTreeConstants, /*@egen*/
         ast.Document();
     }
 
-    public synchronized Messenger setMessenger(Messenger messenger) {
-        Messenger was = this.messenger;
-        this.messenger = messenger;
-        return was;
-    }
-
-    public synchronized Messenger getMessenger() {
-        if (this.messenger == null) {
-          this.messenger = new Messenger();
-        }
-        return messenger;
-    }
-
     void report(int code) {
-        getMessenger().report(code, this);
+        // no-op
     }
 
     void jjtreeOpenNodeScope(Node n){

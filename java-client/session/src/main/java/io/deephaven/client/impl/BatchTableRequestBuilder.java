@@ -94,6 +94,7 @@ import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeProvider.Visitor;
 import io.deephaven.qst.table.TimeProviderSystem;
 import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.UpdateByTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
 import io.deephaven.qst.table.ViewTable;
@@ -443,6 +444,11 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(CountByTable countByTable) {
             out = op(Builder::setComboAggregate, countBy(countByTable));
+        }
+
+        @Override
+        public void visit(UpdateByTable updateByTable) {
+            throw new UnsupportedOperationException("TODO(deephaven-core#2607): UpdateByTable gRPC impl");
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,

@@ -2,10 +2,6 @@ plugins {
     id 'io.deephaven.python-wheel'
 }
 
-dependencies {
-    pythonWheel project(path: ':deephaven-jpy', targetConfiguration: 'pythonWheel')
-}
-
 wheel {
     src 'deephaven'
     src 'integration-tests'

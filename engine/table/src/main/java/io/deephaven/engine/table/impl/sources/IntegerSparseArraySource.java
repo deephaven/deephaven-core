@@ -95,6 +95,26 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
         // Nothing to do here. Sparse array sources allocate on-demand and always null-fill.
     }
 
+    // region setNull
+    @Override
+    public void setNull(long key) {
+        final int [] blocks2 = blocks.getInnermostBlockByKeyOrNull(key);
+        if (blocks2 == null) {
+            return;
+        }
+        final int indexWithinBlock = (int) (key & INDEX_MASK);
+        if (blocks2[indexWithinBlock] == NULL_INT) {
+            return;
+        }
+
+        final int [] prevBlocksInner = shouldRecordPrevious(key);
+        if (prevBlocksInner != null) {
+            prevBlocksInner[indexWithinBlock] = blocks2[indexWithinBlock];
+        }
+        blocks2[indexWithinBlock] = NULL_INT;
+    }
+    // endregion setNull
+
     @Override
     public final void set(long key, int value) {
         final int block0 = (int) (key >> BLOCK0_SHIFT) & BLOCK0_MASK;

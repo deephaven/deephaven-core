@@ -16,6 +16,8 @@ import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@link byte} to {@code Boolean} values.
  */
@@ -26,6 +28,11 @@ public class WritableLongAsDateTimeColumnSource extends LongAsDateTimeColumnSour
     public WritableLongAsDateTimeColumnSource(@NotNull final WritableColumnSource<Long> alternateColumnSource) {
         super(alternateColumnSource);
         this.alternateColumnSource = alternateColumnSource;
+    }
+
+    @Override
+    public void setNull(long key) {
+        alternateColumnSource.set(key, NULL_LONG);
     }
 
     @Override

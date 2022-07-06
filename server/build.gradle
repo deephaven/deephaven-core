@@ -9,6 +9,7 @@ dependencies {
     implementation project(':extensions-parquet-table')
     implementation project(':extensions-jdbc')
     implementation project(':Util');
+    implementation project(':Integrations')
 
     api(project(':java-client-barrage-dagger')) {
         because 'downstream dagger compile, see deephaven-core#1722'
@@ -59,6 +60,7 @@ dependencies {
     }
 
     runtimeOnly project(':plugin-figure')
+    runtimeOnly project(':plugin-partitionedtable')
 
     Classpaths.inheritGrpcPlatform(project, 'api')
 
@@ -73,7 +75,7 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'engine-table'),
             TestTools.projectDependency(project, 'Util')
 
-    runtimeOnly project(':Numerics'), project(':Integrations'), project(':extensions-kafka')
+    runtimeOnly project(':Numerics'), project(':extensions-kafka')
     Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j')

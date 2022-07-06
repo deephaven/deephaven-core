@@ -74,6 +74,11 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
     }
 
     @Override
+    public void setNull(long key) {
+        set(key, NULL_CHAR);
+    }
+
+    @Override
     public final char getChar(long rowKey) {
         if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_CHAR;

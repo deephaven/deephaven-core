@@ -300,4 +300,11 @@ public class ParquetTableReadWriteTest {
     public void testParquetGzipCompressionCodec() {
         compressionCodecTestHelper("GZIP");
     }
+
+    @Test
+    public void testParquetSnappyCompressionCodec() {
+        // while Snappy is covered by other tests, this is a very fast test to quickly confirm that it works in the same
+        // way as the other similar codec tests.
+        compressionCodecTestHelper("SNAPPY");
+    }
 }

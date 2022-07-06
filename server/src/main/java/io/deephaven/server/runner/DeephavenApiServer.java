@@ -77,9 +77,8 @@ public class DeephavenApiServer {
 
 
     /**
-     * Starts the various server components, and blocks until the gRPC server has shut down. That shutdown is mediated
-     * by the ShutdownManager, and will call the gRPC server to shut it down when the process is itself shutting down.
-     * Only once that is complete will this method return.
+     * Starts the various server components, and returns without blocking. Shutdown is mediated by the ShutdownManager,
+     * who will call the gRPC server to shut it down when the process is itself shutting down.
      *
      * @throws IOException thrown in event of an error with logging, finding and running an application, and starting
      *         the gRPC service.

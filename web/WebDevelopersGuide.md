@@ -342,102 +342,6 @@ use of Promises or events.
 The Deephaven Web API provides similar functionality as the client GUI. The following documentation details the available class types, methods, properties, and events. 
 "namespace" here refers to the fact that using any of these objects requires an "dh." prefix.
 
-##### Class `Client`
-Simple client object used to connect to the Deephaven installation and interact with it.
-
-###### Constructor
-
- * `new dh.Client(websocketUrl)` - Creates a connection to the given Deephaven webserver.
- 
-###### Properties
- * `boolean connected` - Read-only. True if the client is currently connected.
- 
-###### Methods
- * `onConnected(Number= timeoutInMillis):Promise<Void>` - The returned Promise resolves when the client is connected, or 
- rejects on failure. If the optional `timeoutInMillis` is provided, the Promise will reject after the timeout has elapsed.
- Otherwise, it will wait indefinitely. 
- * `login(creds):Promise<Void>` - Currently username with password and SAML authentication with a token is supported by the server installation.
- The authentication `type` of `password` or `saml` can be specified in the credentials object.  
- The returned Promise will hold no value, and the request parameter will depend on how the installation is 
- configured to handle auth. Optionally there may be an `operateAs` key in the credentials objects, allowing the 
- authenticated user to see content as if they were another user, if they have permission to do so. Must only be called
- when the client is connected (i.e. after the `connect` event, but before `disconnect`, etc).
- * `getKnownConfigs():QueryInfo[]` - Get known Query Configs that this client is already aware of. It is possible that
- this list is empty right after connecting; ensure you are subscribed to the `configadded` and related events to get
- updates if necessary. For a simple view showing available Query Configs, you can get the known queries and subscribe to
- later changes, and then remove the event handler when the view goes away.
- * `getUserInfo():UserInfo` - Get information of the authenticated user.  
- * `addEventListener(String type, function listener):Function` - Listen for events on the main connection.  Returns a
- convenience function to remove the event listener for you.
- * `removeEventListener(String type, function listener)` - Allow for manual "normal" event handler removal.
- * `disconnect()` - Log out and disconnect from the server.
- <!-- * `getAuthConfigValues():String[configuration][value]`: Get a list of server authentication configuration values that are allowed to be seen prior to the authentication. 
- Visible authentication configuration values can be specified through `authentication.client.configuration.list` on the server configuration.   -->
- 
- 
-###### Events
- * `connect` - Indicates that the initial connection has been established.
- * `disconnect` - Indicates that the connection was lost and some messages may be delayed until reconnect.
- * `reconnect` - Indicates that the client has automatically reconnected to the server.
- * `reconnectauthfailed` - Indicates that the client's authentication has expired. Call `login(creds)` to resolve.
- * `configadded` - event.detail is the new QueryInfo (see below).
- * `configremoved` - event.detail is the deleted QueryInfo.
- * `configupdated` - event.detail is the modified QueryInfo.
- * `requestfailed` - Indicates that there was an error communicating with the server.
-
-##### Class `UserInfo`
-Provide information of the authenticated user. 
-
-##### Properties
- * `String username` - Username of the authenticated user. 
- * `String operateAs` -  The authenticated user may operate as other user and see other user's content if permitted. Same as the `username` if `operateAs` is not specified upon authentication.  
-
-##### Class `QueryInfo`
-Describes a given persistent query configuration and its status.
-
-###### Properties
- * `String serial` - Unique identifier for this configuration, intended for internal use.
- * `String scriptLanguage` - The language used to write the script that this configuration runs.
- * `String configurationType` - The type of this configuration (e.g., "Script", "ReplayScript", "JdbcImport")
- * `String name` - Human readable name identifying this configuration.
- * `VariableDefinition[] objects` - Objects that can be fetched from this query.
- * `String status` - The current status of this configuration.
- * `String[] tables` - The unique, human-readable names of all tables in this query configuration.
- * `String[] scheduling` - Describes the schedule that this query is run on, if any.
- * `boolean displayable` - Indicates if the query is displayable for the current user.
-
-###### Methods
- * `getTable(String tableName):Promise<Table>` - Load the named table, with columns and size information
- already fully populated.
- * `getTableMap(String tableMapName):Promise<TableMap>` - Load the named TableMap, with all keys that can be used to
- access underlying tables. Note that unlike tables, TableMap names are not published as part of the QueryInfo, so each 
- use of the TableMap must either follow some naming convention from an existing table, or must already know the 
- TableMap's name.
- * `getFigure(String figureName):Promise<Figure>` - Load the named Figure, including its tables and tablemaps as needed.
- * `getTreeTable(String treeTableName):Promise<TreeTable>` - Loads the named tree table or roll-up table, with column
- data populated. All nodes are collapsed by default, and size is presently not available until the viewport is first
- set.
- * `getObject(VariableDefinition def):Promise<Object>` - Loads the given object from the server, following the correct
- semantics of providing that particular object.
- * `intradayTable(String namespace, String name, String= internalPartition, boolean= live):Promise<Table>` - Creates
- and retrieves an intraday table from the given namespace and name. If provided, the "intradayPartition" parameter will
- specify which partition to read from on disk, defaults to null for "all". The "live" parameter defaults to true, and
- can be specified as false to avoid fetching a ticking table.
- * `intradayPartitions(String namespace, String name):Proise<Table>` - Get a table containing the possible intraday
- partition names for the `intradayTable` method.
- * `historicalTable(String namespace, String name):Promise<Table>` - Creates and retrieves a historical table. The
- resulting table is likely to be uncoalesced, so must be filtered at least once to have a size available. 
- * `emptyTable(Number size, Object<String, String>= columns):Promise<Table>` - Creates an empty table with the specified 
- number of rows. Optionally columns and types may be specified, but all values will be null.
- * `timeTable(Number periodNanos, DateWrapper= startTime` - Creates a new table that ticks automatically every 
- "periodNanos" nanoseconds. A start time may be provided, if so the table will be populated with the interval from the
- specified date until now.
- 
-###### Events
- * `requestfailed` - Indicates that there was an error communicating with the worker for this query configuration.
- * `disconnect` - Indicates that the connection was lost and some messages may be delayed until reconnect.
- * `reconnect` - Indicates that the worker for this query configuration has automatically reconnected to the server.
-
 ##### Class `Table`
 Provides access to data in a table. Note that several methods present
 their response through Promises. This allows the client to both avoid actually connecting to the server until necessary,
@@ -537,7 +441,7 @@ and also will permit some changes not to inform the UI right away that they have
    * "ReverseAJ"
    * "ExactJoin"
    * "LeftJoin"
- * `partitionBy(String[] keys, boolean= dropKeys):Promise<TableMap>` - Creates a new TableMap from the contents of the
+ * `partitionBy(String[] keys, boolean= dropKeys):Promise<PartitionedTable>` - Creates a new PartitionedTable from the contents of the
  current table, partitioning data based on the specified keys.
 <!--
  * `getAttributes():String[]` - returns an array listing the attributes that are set on this table, minus some of those already
@@ -743,20 +647,15 @@ This object may be pooled internally or discarded and not updated. Do not retain
  * `String formatString` - The format string to apply to the value of this cell (see https://docs.deephaven.io/latest/Content/writeQueries/formatTables.htm#Formatting_Tables).
  * `String numberFormat` - DEPRECATED - use `formatString` instead. Number format string to apply to the value in this cell (see https://docs.deephaven.io/latest/Content/writeQueries/formatTables.htm#Formatting_Tables).
 
-##### Class `TableMap`
+##### Class `PartitionedTable`
 Represents a set of Tables each corresponding to some key. The keys are available locally, but a call must be made to 
 the server to get each Table. All tables will have the same structure.
-
-The available TableMap instances are not listed in the QueryInfo object as tables are - the application must know the
-name of the TableMaps that will be available.
-
-Note: Currently, keys can only be String values.
 
 ###### Methods
  * `getKeys():String[]` - The set of all currently known keys. This is kept up to date, so getting the list after adding
  an event listener for `keyadded` will ensure no keys are missed.
  * `size():Number` - The count of known keys.
- * `close()` - Indicates that this TableMap will no longer be used, removing subcriptions to updated keys, etc. This
+ * `close()` - Indicates that this PartitionedTable will no longer be used, removing subcriptions to updated keys, etc. This
  will not affect tables in use.
  * `getTable(String):Promise<Table>` - Fetches the table with the given key.
 
@@ -1144,7 +1043,8 @@ This enum describes the name of each supported operation/aggregation type when c
 
  * `getTable(String tableName):Promise<Table>` - Load the named table, with columns and size information
  already fully populated.
- * `getFigure(String figureName):Promise<Figure>` - Load the named Figure, including its tables and tablemaps as needed.
+ * `getFigure(String figureName):Promise<Figure>` - Load the named Figure, including its tables and partitionedtables
+as needed.
  * `getTreeTable(String treeTableName):Promise<TreeTable>` - Loads the named tree table or roll-up table, with column
  data populated. All nodes are collapsed by default, and size is presently not available until the viewport is first
  set.

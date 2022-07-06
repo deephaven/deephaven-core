@@ -6,6 +6,8 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByControl;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -312,6 +314,44 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends Selectable> groupByColumns) {
         return adapt(delegate.aggBy(aggregations, groupByColumns));
+    }
+
+
+    @Override
+    public final TOPS_1 updateBy(UpdateByClause operation) {
+        return adapt(delegate.updateBy(operation));
+    }
+
+    @Override
+    public final TOPS_1 updateBy(UpdateByClause operation, String... byColumns) {
+        return adapt(delegate.updateBy(operation, byColumns));
+    }
+
+    @Override
+    public final TOPS_1 updateBy(Collection<? extends UpdateByClause> operations) {
+        return adapt(delegate.updateBy(operations));
+    }
+
+    @Override
+    public final TOPS_1 updateBy(Collection<? extends UpdateByClause> operations, String... byColumns) {
+        return adapt(delegate.updateBy(operations, byColumns));
+    }
+
+    @Override
+    public final TOPS_1 updateBy(Collection<? extends UpdateByClause> operations,
+            Collection<? extends Selectable> byColumns) {
+        return adapt(delegate.updateBy(operations, byColumns));
+    }
+
+    @Override
+    public final TOPS_1 updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations) {
+        return adapt(delegate.updateBy(control, operations));
+    }
+
+    @Override
+    public final TOPS_1 updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations,
+            Collection<? extends Selectable> byColumns) {
+        return adapt(delegate.updateBy(control, operations, byColumns));
     }
 
     @Override

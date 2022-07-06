@@ -160,6 +160,8 @@ class IncrementalChunkedOperatorAggregationStateManager
     private final WritableRowRedirection resultIndexToHashSlot = new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     IncrementalChunkedOperatorAggregationStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
                                                       // region constructor arguments

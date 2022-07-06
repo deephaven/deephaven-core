@@ -287,6 +287,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private final BaseTable parent;
     private final long updateIntervalMs;
     private volatile long lastUpdateTime = 0;
+    private volatile long lastScheduledUpdateTime = 0;
+
+    private final boolean isStreamTable;
+    private long lastStreamTableUpdateSize = 0;
 
     private final Stats stats;
 
@@ -324,14 +328,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         private final long step;
         private final long deltaColumnOffset;
         private final TableUpdate update;
-        private final RowSet recordedAdds;
+        private final WritableRowSet recordedAdds;
         private final RowSet recordedMods;
         private final BitSet subscribedColumns;
         private final BitSet modifiedColumns;
 
         private Delta(final long step, final long deltaColumnOffset,
                 final TableUpdate update,
-                final RowSet recordedAdds, final RowSet recordedMods,
+                final WritableRowSet recordedAdds, final RowSet recordedMods,
                 final BitSet subscribedColumns, final BitSet modifiedColumns) {
             this.step = step;
             this.deltaColumnOffset = deltaColumnOffset;
@@ -371,7 +375,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private List<Subscription> pendingSubscriptions = new ArrayList<>();
     private final ArrayList<Subscription> activeSubscriptions = new ArrayList<>();
 
-    private final Runnable onGetSnapshot;
+    private Runnable onGetSnapshot;
+    private boolean onGetSnapshotIsPreSnap;
 
     private final boolean parentIsRefreshing;
 
@@ -385,6 +390,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         this.scheduler = scheduler;
         this.streamGeneratorFactory = streamGeneratorFactory;
         this.parent = parent;
+        this.isStreamTable = parent.isStream();
 
         final String tableKey = BarragePerformanceLog.getKeyFor(parent);
         if (scheduler.inTestMode() || tableKey == null) {
@@ -434,6 +440,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     @VisibleForTesting
     public TableDefinition getTableDefinition() {
         return parent.getDefinition();
+    }
+
+    @VisibleForTesting
+    public void setOnGetSnapshot(Runnable onGetSnapshot, boolean isPreSnap) {
+        this.onGetSnapshot = onGetSnapshot;
+        onGetSnapshotIsPreSnap = isPreSnap;
     }
 
     /////////////////////////////////////
@@ -727,7 +739,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         final RowSet modsToRecord;
         final TrackingRowSet rowSet = parent.getRowSet();
 
-        if (numFullSubscriptions > 0) {
+        if (isStreamTable || numFullSubscriptions > 0) {
             addsToRecord = upstream.added().copy();
             modsToRecord = upstream.modified().copy();
         } else if (activeViewport != null || activeReverseViewport != null) {
@@ -762,7 +774,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         if ((activeViewport != null || activeReverseViewport != null)
                 && (upstream.added().isNonempty() || upstream.removed().isNonempty())
                 && rowSet.isNonempty()
-                && rowSet.sizePrev() > 0) {
+                && rowSet.sizePrev() > 0
+                && !isStreamTable) {
             final RowSetBuilderRandom scopedViewBuilder = RowSetFactory.builderRandom();
 
             try (final RowSet prevRowSet = rowSet.copyPrev()) {
@@ -946,11 +959,22 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     private void schedulePropagation() {
+        Assert.holdsLock(this, "schedulePropagation must hold lock!");
+
         // copy lastUpdateTime so we are not duped by the re-read
         final long localLastUpdateTime = lastUpdateTime;
         final long now = scheduler.currentTime().getMillis();
         final long msSinceLastUpdate = now - localLastUpdateTime;
-        if (msSinceLastUpdate < localLastUpdateTime) {
+        if (lastScheduledUpdateTime != 0 && lastScheduledUpdateTime > lastUpdateTime) {
+            // an already scheduled update is coming up
+            if (DEBUG) {
+                log.info().append(logPrefix)
+                        .append("Not scheduling update, because last update was ").append(localLastUpdateTime)
+                        .append(" and now is ").append(now).append(" msSinceLastUpdate=").append(msSinceLastUpdate)
+                        .append(" interval=").append(updateIntervalMs).append(" already scheduled to run at ")
+                        .append(lastScheduledUpdateTime).endl();
+            }
+        } else if (msSinceLastUpdate < localLastUpdateTime) {
             // we have updated within the period, so wait until a sufficient gap
             final long nextRunTime = localLastUpdateTime + updateIntervalMs;
             if (DEBUG) {
@@ -958,6 +982,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         .append(" next run: ")
                         .append(nextRunTime).endl();
             }
+            lastScheduledUpdateTime = nextRunTime;
             updatePropagationJob.scheduleAt(nextRunTime);
         } else {
             // we have not updated recently, so go for it right away
@@ -1169,6 +1194,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         BarrageMessage preSnapshot = null;
+        BarrageMessage streamTableFlushPreSnapshot = null;
         RowSet preSnapRowSet = null;
         BarrageMessage snapshot = null;
         BarrageMessage postSnapshot = null;
@@ -1314,7 +1340,20 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 // finally, grab the snapshot and measure elapsed time for next projections
                 long start = System.nanoTime();
-                snapshot = getSnapshot(growingSubscriptions, snapshotColumns, snapshotRowSet, reverseSnapshotRowSet);
+                if (!isStreamTable) {
+                    snapshot = getSnapshot(growingSubscriptions, snapshotColumns, snapshotRowSet,
+                            reverseSnapshotRowSet);
+                } else {
+                    // acquire an empty snapshot to properly align column subscription changes to a UGP step
+                    snapshot = getSnapshot(growingSubscriptions, snapshotColumns, RowSetFactory.empty(),
+                            RowSetFactory.empty());
+
+                    // in the event that the stream table was not empty; pretend it was
+                    if (!snapshot.rowsAdded.isEmpty()) {
+                        snapshot.rowsAdded.close();
+                        snapshot.rowsAdded = RowSetFactory.empty();
+                    }
+                }
                 long elapsed = System.nanoTime() - start;
                 recordMetric(stats -> stats.snapshot, elapsed);
 
@@ -1344,7 +1383,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 return;
             }
 
-            // finally we propagate updates
+            // prepare updates to propagate
             final long maxStep = snapshot != null ? snapshot.step : Long.MAX_VALUE;
 
             int deltaSplitIdx = pendingDeltas.size();
@@ -1364,6 +1403,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 preSnapshot = aggregateUpdatesInRange(0, deltaSplitIdx);
                 recordMetric(stats -> stats.aggregate, System.nanoTime() - startTm);
                 preSnapRowSet = propagationRowSet.copy();
+            }
+
+            if (isStreamTable && lastStreamTableUpdateSize != 0 && snapshot != null) {
+                // we must create a dummy update that removes all rows so that the empty snapshot is valid
+                streamTableFlushPreSnapshot = aggregateUpdatesInRange(-1, -1);
             }
 
             if (firstSubscription) {
@@ -1400,11 +1444,21 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             pendingDeltas.clear();
         }
 
+        // now, propagate updates
         if (preSnapshot != null) {
             final long startTm = System.nanoTime();
             propagateToSubscribers(preSnapshot, preSnapRowSet);
             recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
             preSnapRowSet.close();
+        }
+
+        if (streamTableFlushPreSnapshot != null) {
+            final long startTm = System.nanoTime();
+            try (final RowSet fakeTableRowSet = RowSetFactory.empty()) {
+                // the method expects the post-update RowSet; which is empty after the flush
+                propagateToSubscribers(streamTableFlushPreSnapshot, fakeTableRowSet);
+            }
+            recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
         }
 
         if (snapshot != null) {
@@ -1465,8 +1519,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     continue;
                 }
 
-                // There are three messages that might be sent this update:
+                // There are four messages that might be sent this update:
                 // - pre-snapshot: snapshotViewport/snapshotColumn values apply during this phase
+                // - pre-snapshot flush: rm all existing rows from a stream table to make empty snapshot valid
                 // - snapshot: here we close and clear the snapshotViewport/snapshotColumn values; officially we
                 // recognize the subscription change
                 // - post-snapshot: now we use the viewport/subscribedColumn values (these are the values the UGP
@@ -1573,14 +1628,44 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         final boolean singleDelta = endDelta - startDelta == 1;
         final BarrageMessage downstream = new BarrageMessage();
-        downstream.firstSeq = pendingDeltas.get(startDelta).step;
-        downstream.lastSeq = pendingDeltas.get(endDelta - 1).step;
+        downstream.firstSeq = startDelta < 0 ? -1 : pendingDeltas.get(startDelta).step;
+        downstream.lastSeq = endDelta < 1 ? -1 : pendingDeltas.get(endDelta - 1).step;
 
         final BitSet addColumnSet;
         final BitSet modColumnSet;
-        final Delta firstDelta = pendingDeltas.get(startDelta);
+        final Delta firstDelta;
 
-        if (singleDelta) {
+        if (isStreamTable) {
+            long numRows = 0;
+            for (int ii = startDelta; ii < endDelta; ++ii) {
+                numRows += pendingDeltas.get(ii).recordedAdds.size();
+            }
+
+            final TableUpdate update = new TableUpdateImpl(
+                    RowSetFactory.flat(numRows),
+                    RowSetFactory.flat(lastStreamTableUpdateSize),
+                    RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY,
+                    ModifiedColumnSet.EMPTY);
+
+            final boolean hasDelta = startDelta < endDelta;
+            final Delta origDelta = hasDelta ? pendingDeltas.get(startDelta) : null;
+            firstDelta = new Delta(
+                    -1,
+                    hasDelta ? origDelta.deltaColumnOffset : 0,
+                    update,
+                    update.added().copy(),
+                    RowSetFactory.empty(),
+                    hasDelta ? origDelta.subscribedColumns : new BitSet(),
+                    new BitSet());
+
+            // store our update size to remove on the next update
+            lastStreamTableUpdateSize = numRows;
+        } else {
+            firstDelta = pendingDeltas.get(startDelta);
+        }
+
+        if (singleDelta || isStreamTable) {
             // We can use this update directly with minimal effort.
             final RowSet localAdded;
             if (firstDelta.recordedAdds.isEmpty()) {
@@ -1900,7 +1985,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         propagationRowSet.insert(downstream.rowsAdded);
 
         return downstream;
-
     }
 
     // Updates provided mapping so that mapping[i] returns values.get(i) for all i in keys.
@@ -1950,8 +2034,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         boolean rebuildViewport = false;
 
         for (final Subscription subscription : subscriptions) {
+            // note: stream tables send empty snapshots - so we are always complete
             boolean isComplete = subscription.growingRemainingViewport.isEmpty()
-                    || subscription.growingRemainingViewport.firstRowKey() >= parentTableSize;
+                    || subscription.growingRemainingViewport.firstRowKey() >= parentTableSize
+                    || isStreamTable;
 
             if (isComplete) {
                 // this subscription is complete, remove it from the growing list
@@ -2132,17 +2218,21 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             final BitSet columnsToSnapshot,
             final RowSet positionsToSnapshot,
             final RowSet reversePositionsToSnapshot) {
-        if (onGetSnapshot != null) {
+        if (onGetSnapshot != null && onGetSnapshotIsPreSnap) {
             onGetSnapshot.run();
         }
 
-        // TODO: Use *this* as snapshot tick source for fail fast.
-        // TODO: Let notification-indifferent use cases skip notification test
         final SnapshotControl snapshotControl =
                 new SnapshotControl(snapshotSubscriptions);
-        return ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
+        final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
                 this, parent, columnsToSnapshot, positionsToSnapshot, reversePositionsToSnapshot,
                 snapshotControl);
+
+        if (onGetSnapshot != null && !onGetSnapshotIsPreSnap) {
+            onGetSnapshot.run();
+        }
+
+        return msg;
     }
 
     @Override

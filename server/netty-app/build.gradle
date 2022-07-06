@@ -49,6 +49,10 @@ if (hasProperty('devCerts')) {
             '-Dssl.identity.privateKeyPath=../dev-certs/key.pem']
 }
 
+if (hasProperty('debug')) {
+    extraJvmArgs += ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']
+}
+
 tasks.withType(JavaExec).configureEach {
     // This appends to the existing jvm args, so that java-open-nio still takes effect
     jvmArgs extraJvmArgs

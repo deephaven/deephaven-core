@@ -8,8 +8,7 @@ apply from: "$rootDir/gradle/web-common.gradle"
 Classpaths.inheritCommonsText(project)
 dependencies {
 
-    compile project(':open-api-shared-ide'),
-            project(':open-api-lang-parser')
+    compile project(':open-api-lang-parser')
 
     compile project(':engine-table'),
             project(':engine-function'),

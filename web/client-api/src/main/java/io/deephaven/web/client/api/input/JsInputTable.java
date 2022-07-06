@@ -87,6 +87,7 @@ public class JsInputTable {
             data[i] = columnArray;
         }
 
+        // TODO deephaven-core#2529 parallelize this
         return table.getConnection().newTable(names, types, data, userTimeZone, null)
                 .then(this::addTable);
     }

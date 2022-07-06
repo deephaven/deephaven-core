@@ -32,6 +32,7 @@ import io.deephaven.qst.table.TableSpec.Visitor;
 import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.UpdateByTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
 import io.deephaven.qst.table.ViewTable;
@@ -280,6 +281,20 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         } else {
             addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name(),
                     countByTable.groupByColumns().toArray(new Selectable[0])));
+        }
+    }
+
+    @Override
+    public void visit(UpdateByTable updateByTable) {
+        if (updateByTable.control().isPresent()) {
+            addOp(updateByTable, parentOps(updateByTable).updateBy(
+                    updateByTable.control().get(),
+                    updateByTable.operations(),
+                    updateByTable.groupByColumns()));
+        } else {
+            addOp(updateByTable, parentOps(updateByTable).updateBy(
+                    updateByTable.operations(),
+                    updateByTable.groupByColumns()));
         }
     }
 
