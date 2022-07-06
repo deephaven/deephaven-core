@@ -13,14 +13,12 @@ import io.grpc.internal.ReadableBuffers;
 import io.grpc.internal.ServerTransportListener;
 import io.grpc.internal.StatsTraceContext;
 import jakarta.websocket.CloseReason;
+import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.OnError;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
-import jakarta.websocket.server.ServerEndpoint;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +27,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,8 +43,7 @@ import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
  * JSR356 websockets always handle their incoming messages in a serial manner, so we don't need to worry here about
  * runOnTransportThread while in onMessage, as we're already in the transport thread.
  */
-@ServerEndpoint(value = "/grpc-websocket", subprotocols = "grpc-websockets-multiplex")
-public class MultiplexedWebSocketServerStream {
+public class MultiplexedWebSocketServerStream extends Endpoint {
     private static final Logger logger = Logger.getLogger(MultiplexedWebSocketServerStream.class.getName());
     public static final Metadata.Key<String> PATH =
             Metadata.Key.of("grpc-websockets-path", Metadata.ASCII_STRING_MARSHALLER);
@@ -76,9 +72,18 @@ public class MultiplexedWebSocketServerStream {
         this.attributes = attributes;
     }
 
-    @OnOpen
+    @Override
     public void onOpen(Session websocketSession, EndpointConfig config) {
         this.websocketSession = websocketSession;
+
+        websocketSession.addMessageHandler(String.class, this::onMessage);
+        websocketSession.addMessageHandler(ByteBuffer.class, message -> {
+            try {
+                onMessage(message);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
 
         // Configure defaults present in some servlet containers to avoid some confusing limits. Subclasses
         // can override this method to control those defaults on their own.
@@ -86,7 +91,6 @@ public class MultiplexedWebSocketServerStream {
         websocketSession.setMaxBinaryMessageBufferSize(Integer.MAX_VALUE);
     }
 
-    @OnMessage
     public void onMessage(String message) {
         for (MultiplexedWebsocketStreamImpl stream : streams.values()) {
             // This means the stream opened correctly, then sent a text payload, which doesn't make sense.
@@ -102,7 +106,6 @@ public class MultiplexedWebSocketServerStream {
         }
     }
 
-    @OnMessage
     public void onMessage(ByteBuffer message) throws IOException {
         // Each message starts with an int, to indicate stream id. If that int is negative, the other end has performed
         // a half close (and this is the final message).
@@ -160,8 +163,8 @@ public class MultiplexedWebSocketServerStream {
         stream.inboundDataReceived(ReadableBuffers.wrap(message), false);
     }
 
-    @OnError
-    public void onError(Throwable error) {
+    @Override
+    public void onError(Session session, Throwable error) {
         for (MultiplexedWebsocketStreamImpl stream : streams.values()) {
             stream.transportReportStatus(Status.UNKNOWN);// transport failure of some kind
         }

@@ -10,14 +10,12 @@ import io.grpc.internal.ReadableBuffers;
 import io.grpc.internal.ServerTransportListener;
 import io.grpc.internal.StatsTraceContext;
 import jakarta.websocket.CloseReason;
+import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.OnError;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
-import jakarta.websocket.server.ServerEndpoint;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
@@ -35,8 +33,7 @@ import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
  * JSR356 websockets always handle their incoming messages in a serial manner, so we don't need to worry here about
  * runOnTransportThread while in onMessage, as we're already in the transport thread.
  */
-@ServerEndpoint(value = "/{service}/{method}", subprotocols = "grpc-websockets")
-public class WebSocketServerStream {
+public class WebSocketServerStream extends Endpoint {
     private static final Logger logger = Logger.getLogger(WebSocketServerStream.class.getName());
 
     private final ServerTransportListener transportListener;
@@ -63,9 +60,18 @@ public class WebSocketServerStream {
         this.attributes = attributes;
     }
 
-    @OnOpen
+    @Override
     public void onOpen(Session websocketSession, EndpointConfig config) {
         this.websocketSession = websocketSession;
+
+        websocketSession.addMessageHandler(String.class, this::onMessage);
+        websocketSession.addMessageHandler(ByteBuffer.class, message -> {
+            try {
+                onMessage(message);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
 
         // Configure defaults present in some servlet containers to avoid some confusing limits. Subclasses
         // can override this method to control those defaults on their own.
@@ -73,7 +79,6 @@ public class WebSocketServerStream {
         websocketSession.setMaxBinaryMessageBufferSize(Integer.MAX_VALUE);
     }
 
-    @OnMessage
     public void onMessage(String message) {
         if (stream != null) {
             // This means the stream opened correctly, then sent a text payload, which doesn't make sense.
@@ -88,7 +93,6 @@ public class WebSocketServerStream {
         }
     }
 
-    @OnMessage
     public void onMessage(ByteBuffer message) throws IOException {
         if (message.remaining() == 0) {
             // message is empty (no control flow, no data), error
@@ -128,8 +132,8 @@ public class WebSocketServerStream {
         stream.inboundDataReceived(ReadableBuffers.wrap(message), false);
     }
 
-    @OnError
-    public void onError(Throwable error) {
+    @Override
+    public void onError(Session session, Throwable error) {
         stream.transportReportStatus(Status.UNKNOWN);// transport failure of some kind
         // onClose will be called automatically
         if (error instanceof ClosedChannelException) {

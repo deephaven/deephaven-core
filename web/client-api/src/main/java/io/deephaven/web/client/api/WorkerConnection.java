@@ -134,7 +134,9 @@ public class WorkerConnection {
         // TODO configurable, let us support this even when ssl?
         if (DomGlobal.window.location.protocol.equals("http:")) {
             useWebsockets = true;
-            Grpc.setDefaultTransport.onInvoke(MultiplexedWebsocketTransport::new);
+            Grpc.setDefaultTransport.onInvoke(options -> new MultiplexedWebsocketTransport(options, () -> {
+                Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
+            }));
         } else {
             useWebsockets = false;
         }

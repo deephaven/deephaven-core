@@ -10,10 +10,12 @@ import io.deephaven.ssl.config.ProtocolsIntermediate;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
+import io.grpc.servlet.web.websocket.GrpcWebsocket;
 import io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream;
 import io.grpc.servlet.web.websocket.WebSocketServerStream;
 import io.grpc.servlet.jakarta.web.GrpcWebFilter;
 import jakarta.servlet.DispatcherType;
+import jakarta.websocket.Endpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.util.JettySslUtils;
@@ -39,8 +41,13 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
 
@@ -87,29 +94,25 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
-        // Set up websocket for grpc-web
+        // Set up websockets for grpc-web - we register both in case we encounter a client using "vanilla"
+        // grpc-websocket, that can't multiplex all streams on a single socket
         if (config.websocketsOrDefault()) {
             JakartaWebSocketServletContainerInitializer.configure(context, (servletContext, container) -> {
-                // container.addEndpoint(
-                // ServerEndpointConfig.Builder.create(WebSocketServerStream.class, "/{service}/{method}")
-                // .configurator(new ServerEndpointConfig.Configurator() {
-                // @Override
-                // public <T> T getEndpointInstance(Class<T> endpointClass)
-                // throws InstantiationException {
-                // return (T) filter.create(WebSocketServerStream::new);
-                // }
-                // })
-                // .build());
-                container.addEndpoint(
-                        ServerEndpointConfig.Builder.create(MultiplexedWebSocketServerStream.class, "/grpc-websocket")
-                                .configurator(new ServerEndpointConfig.Configurator() {
-                                    @Override
-                                    public <T> T getEndpointInstance(Class<T> endpointClass)
-                                            throws InstantiationException {
-                                        return (T) filter.create(MultiplexedWebSocketServerStream::new);
-                                    }
-                                })
-                                .build());
+                Map<String, Supplier<Endpoint>> endpoints = Map.of(
+                        "grpc-websockets", () -> filter.create(WebSocketServerStream::new),
+                        "grpc-websockets-multiplex", () -> filter.create(MultiplexedWebSocketServerStream::new));
+                container.addEndpoint(ServerEndpointConfig.Builder.create(GrpcWebsocket.class, "/{service}/{method}")
+                        .configurator(new ServerEndpointConfig.Configurator() {
+                            @Override
+                            public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException {
+                                // noinspection unchecked
+                                return (T) new GrpcWebsocket(endpoints);
+                            }
+                        })
+                        .subprotocols(Arrays.asList("grpc-websockets", "grpc-websockets-multiplex"))
+                        .build()
+
+                );
             });
         }
         jetty.setHandler(context);
