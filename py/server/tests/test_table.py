@@ -6,7 +6,7 @@ import unittest
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
-    var, formula
+    var, formula, partition
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -391,6 +391,7 @@ class TableTestCase(BaseTestCase):
             group(["aggGroup=var"]),
             avg(["aggAvg=var"]),
             count_("aggCount"),
+            partition("aggPartition"),
             first(["aggFirst=var"]),
             last(["aggLast=var"]),
             max_(["aggMax=var"]),

@@ -83,6 +83,11 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
     }
 
     @Override
+    public void setNull(long key) {
+        set(key, NULL_FLOAT);
+    }
+
+    @Override
     public final float getFloat(long rowKey) {
         if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_FLOAT;

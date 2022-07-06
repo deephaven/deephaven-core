@@ -32,6 +32,9 @@ public interface ChartTypeMap {
     @JsProperty(name = "PIE")
     int getPIE();
 
+    @JsProperty(name = "TREEMAP")
+    int getTREEMAP();
+
     @JsProperty(name = "XY")
     int getXY();
 
@@ -49,6 +52,9 @@ public interface ChartTypeMap {
 
     @JsProperty(name = "PIE")
     void setPIE(int PIE);
+
+    @JsProperty(name = "TREEMAP")
+    void setTREEMAP(int TREEMAP);
 
     @JsProperty(name = "XY")
     void setXY(int XY);

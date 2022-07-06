@@ -86,6 +86,11 @@ public class ImmutableFloatArraySource extends AbstractDeferredGroupingColumnSou
     }
 
     @Override
+    public final void setNull(long key) {
+        data[(int)key] = NULL_FLOAT;
+    }
+
+    @Override
     public final void set(long key, float value) {
         data[(int)key] = value;
     }

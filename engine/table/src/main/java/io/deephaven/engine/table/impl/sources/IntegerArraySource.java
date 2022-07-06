@@ -83,6 +83,11 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
     }
 
     @Override
+    public void setNull(long key) {
+        set(key, NULL_INT);
+    }
+
+    @Override
     public final int getInt(long rowKey) {
         if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_INT;

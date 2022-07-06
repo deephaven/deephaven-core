@@ -1402,7 +1402,51 @@ public class Basic {
         return NULL_LONG;
     }
 
+    public static ${pt.primitive}[] forwardFill(${pt.primitive}... values){
+        if(values == null){
+            return null;
+        }
+
+        return forwardFill(new ${pt.dbArrayDirect}(values));
+    }
+
+    public static ${pt.primitive}[] forwardFill(${pt.dbArray} values){
+        if(values == null) {
+            return null;
+        }
+
+        final int n = values.intSize("reverse");
+        final ${pt.primitive}[] result = new ${pt.primitive}[n];
+
+        ${pt.primitive} lastGood = QueryConstants.${pt.null};
+        for(int ii = 0; ii < n; ii++) {
+            if(!isNull(values.get(ii))) {
+                lastGood = values.get(ii);
+            }
+
+            result[ii] = lastGood;
+        }
+        return result;
+    }
 
     </#if>
     </#list>
+
+    public static <T> T[] forwardFill(final T[] values) {
+        if(values == null) {
+            return null;
+        }
+
+        final T[] result = Arrays.copyOf(values, values.length);
+
+        T lastGood = null;
+        for(int ii = 0; ii < values.length; ii++) {
+            if(!isNull(values[ii])) {
+                lastGood = values[ii];
+            }
+
+            result[ii] = lastGood;
+        }
+        return result;
+    }
 }

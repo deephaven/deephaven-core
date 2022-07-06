@@ -260,7 +260,7 @@ public class ReplicateSortKernel {
                 .map(x -> x.replaceAll(
                         "static class LongIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Keys> implements SortKernel<ATTR, KEY_INDICES>",
                         "static class LongIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements AutoCloseable"))
-                .map(x -> x.replaceAll("IntChunk<KeyIndices>", "IntChunk"))
+                .map(x -> x.replaceAll("IntChunk<RowKeys>", "IntChunk"))
                 .collect(Collectors.toList());
 
         lines = applyFixup(lines, "Context", "\\s+@Override", (m) -> Collections.singletonList(""));
@@ -280,7 +280,7 @@ public class ReplicateSortKernel {
                 .map(x -> x.replaceAll(
                         "static class IntIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Keys> implements SortKernel<ATTR, KEY_INDICES>",
                         "static class IntIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements AutoCloseable"))
-                .map(x -> x.replaceAll("IntChunk<KeyIndices>", "IntChunk"))
+                .map(x -> x.replaceAll("IntChunk<RowKeys>", "IntChunk"))
                 .collect(Collectors.toList());
 
         lines = applyFixup(lines, "Context", "\\s+@Override", (m) -> Collections.singletonList(""));

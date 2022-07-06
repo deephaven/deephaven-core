@@ -95,6 +95,11 @@ public class Immutable2DCharArraySource extends AbstractDeferredGroupingColumnSo
     }
 
     @Override
+    public final void setNull(long key) {
+        data[keyToSegment(key)][keyToOffset(key)] = NULL_CHAR;
+    }
+
+    @Override
     public final void set(long key, char value) {
         data[keyToSegment(key)][keyToOffset(key)] = value;
     }

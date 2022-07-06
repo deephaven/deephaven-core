@@ -41,8 +41,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Lo
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
@@ -179,6 +179,7 @@ public class WorkerConnection {
     private BrowserFlightServiceClient browserFlightServiceClient;
     private InputTableServiceClient inputTableServiceClient;
     private ObjectServiceClient objectServiceClient;
+    private PartitionedTableServiceClient partitionedTableServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -189,8 +190,6 @@ public class WorkerConnection {
 
     private final Map<ClientTableState, BiDiStream<FlightData, FlightData>> subscriptionStreams = new HashMap<>();
     private ResponseStreamWrapper<ExportedTableUpdateMessage> exportNotifications;
-
-    private Map<TableMapHandle, TableMap> tableMaps = new HashMap<>();
 
     private JsSet<JsFigure> figures = new JsSet<>();
 
@@ -222,6 +221,8 @@ public class WorkerConnection {
         inputTableServiceClient =
                 new InputTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         objectServiceClient = new ObjectServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        partitionedTableServiceClient =
+                new PartitionedTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -310,7 +311,6 @@ public class WorkerConnection {
 
                     reviver.revive(metadata, hasActiveSubs);
 
-                    tableMaps.forEach((handle, tableMap) -> tableMap.refetch());
                     figures.forEach((p0, p1, p2) -> p0.refetch());
 
                     info.connected();
@@ -557,15 +557,7 @@ public class WorkerConnection {
 
     // @Override
     public void onClose(int code, String message) {
-        // notify all active tables, tablemaps, and figures that the connection is closed
-        tableMaps.values().forEach(tableMap -> {
-            try {
-                tableMap.fireEvent(TableMap.EVENT_DISCONNECT);
-                tableMap.suppressEvents();
-            } catch (Exception e) {
-                JsLog.warn("Error in firing TableMap.EVENT_DISCONNECT event", e);
-            }
-        });
+        // notify all active tables and figures that the connection is closed
         figures.forEach((p0, p1, p2) -> {
             try {
                 p0.fireEvent(JsFigure.EVENT_DISCONNECT);
@@ -691,7 +683,13 @@ public class WorkerConnection {
         } else if (JsVariableChanges.PANDAS.equals(definition.getType())) {
             return getWidget(definition)
                     .then(widget -> widget.getExportedObjects()[0].fetch());
+        } else if (JsVariableChanges.PARTITIONEDTABLE.equals(definition.getType())) {
+            return getPartitionedTable(definition);
         } else {
+            if (JsVariableChanges.TABLEMAP.equals(definition.getType())) {
+                JsLog.warn(
+                        "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
+            }
             return getWidget(definition);
         }
     }
@@ -781,14 +779,10 @@ public class WorkerConnection {
         }
     }
 
-    public Promise<TableMap> getTableMap(String tableMapName) {
-        return whenServerReady("get a tablemap")
-                .then(server -> Promise.resolve(new TableMap(this, tableMapName))
-                        .then(TableMap::refetch));
-    }
-
-    public void registerTableMap(TableMapHandle handle, TableMap tableMap) {
-        tableMaps.put(handle, tableMap);
+    public Promise<JsPartitionedTable> getPartitionedTable(JsVariableDefinition varDef) {
+        return whenServerReady("get a partitioned table")
+                .then(server -> new JsPartitionedTable(this, new JsWidget(this, c -> fetchObject(varDef, c)))
+                        .refetch());
     }
 
     public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
@@ -804,26 +798,23 @@ public class WorkerConnection {
             throw new IllegalArgumentException("Can't load as a figure: " + varDef.getType());
         }
         return whenServerReady("get a figure")
-                .then(server -> new JsFigure(this, c -> {
-                    FetchObjectRequest request = new FetchObjectRequest();
-                    TypedTicket typedTicket = new TypedTicket();
-                    typedTicket.setTicket(TableTicket.createTicket(varDef));
-                    typedTicket.setType(varDef.getType());
-                    request.setSourceId(typedTicket);
-                    objectServiceClient().fetchObject(request, metadata(), c::apply);
-                }).refetch());
+                .then(server -> new JsFigure(this,
+                        c -> fetchObject(varDef, (fail, success, ignore) -> c.apply(fail, success))).refetch());
+    }
+
+    private void fetchObject(JsVariableDefinition varDef, JsWidget.WidgetFetchCallback c) {
+        FetchObjectRequest request = new FetchObjectRequest();
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setTicket(TableTicket.createTicket(varDef));
+        typedTicket.setType(varDef.getType());
+        request.setSourceId(typedTicket);
+        objectServiceClient().fetchObject(request, metadata(),
+                (fail, success) -> c.handleResponse(fail, success, typedTicket.getTicket()));
     }
 
     public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
         return whenServerReady("get a widget")
-                .then(server -> Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
-                    FetchObjectRequest request = new FetchObjectRequest();
-                    TypedTicket typedTicket = new TypedTicket();
-                    typedTicket.setTicket(TableTicket.createTicket(varDef));
-                    typedTicket.setType(varDef.getType());
-                    request.setSourceId(typedTicket);
-                    objectServiceClient().fetchObject(request, metadata(), c::apply);
-                })).then(response -> Promise.resolve(new JsWidget(this, response)));
+                .then(response -> new JsWidget(this, c -> fetchObject(varDef, c)).refetch());
     }
 
     public void registerFigure(JsFigure figure) {
@@ -861,6 +852,10 @@ public class WorkerConnection {
 
     public ObjectServiceClient objectServiceClient() {
         return objectServiceClient;
+    }
+
+    public PartitionedTableServiceClient partitionedTableServiceClient() {
+        return partitionedTableServiceClient;
     }
 
     public BrowserHeaders metadata() {
@@ -1059,31 +1054,6 @@ public class WorkerConnection {
             }
         }
         return null;
-    }
-
-    // @Override
-    public void tableMapStringKeyAdded(TableMapHandle handle, String key) {
-        tableMapKeyAdded(handle, key);
-    }
-
-    // @Override
-    public void tableMapStringArrayKeyAdded(TableMapHandle handle, String[] key) {
-        tableMapKeyAdded(handle, key);
-    }
-
-    private void tableMapKeyAdded(TableMapHandle handle, Object key) {
-        TableMap tableMap = tableMaps.get(handle);
-        if (tableMap != null) {
-            tableMap.notifyKeyAdded(key);
-        }
-    }
-
-    public void releaseTableMap(TableMap tableMap, TableMapHandle tableMapHandle) {
-        // server.releaseTableMap(tableMapHandle);
-        LazyPromise.runLater(() -> {
-            TableMap removed = tableMaps.remove(tableMapHandle);
-            assert removed == tableMap;
-        });
     }
 
     private TableTicket newHandle() {
@@ -1324,14 +1294,35 @@ public class WorkerConnection {
                     }
 
                     private DeltaUpdatesBuilder nextDeltaUpdates;
+                    private DeltaUpdates deferredDeltaUpdates;
 
                     private void appendAndMaybeFlush(RecordBatch header, ByteBuffer body) {
                         // using existing barrageUpdate, append to the current snapshot/delta
                         assert nextDeltaUpdates != null;
                         boolean shouldFlush = nextDeltaUpdates.appendRecordBatch(header, body);
                         if (shouldFlush) {
-                            incrementalUpdates(state.getHandle(), nextDeltaUpdates.build());
+                            DeltaUpdates updates = nextDeltaUpdates.build();
                             nextDeltaUpdates = null;
+
+                            if (state.getTableDef().getAttributes().isStreamTable()) {
+                                // stream tables remove all rows from the previous step, if there are no adds this step
+                                // then defer removal until new data arrives -- this makes stream tables GUI friendly
+                                if (updates.getAdded().isEmpty()) {
+                                    if (deferredDeltaUpdates != null) {
+                                        final RangeSet removed = deferredDeltaUpdates.getRemoved();
+                                        updates.getRemoved().rangeIterator().forEachRemaining(removed::addRange);
+                                    } else {
+                                        deferredDeltaUpdates = updates;
+                                    }
+                                    return;
+                                } else if (deferredDeltaUpdates != null) {
+                                    assert updates.getRemoved().isEmpty()
+                                            : "Stream table received two consecutive remove rowsets";
+                                    updates.setRemoved(deferredDeltaUpdates.getRemoved());
+                                    deferredDeltaUpdates = null;
+                                }
+                            }
+                            incrementalUpdates(state.getHandle(), updates);
                         }
                     }
 

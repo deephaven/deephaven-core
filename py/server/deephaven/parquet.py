@@ -11,13 +11,12 @@ import jpy
 
 from deephaven import DHError
 from deephaven.column import Column
-from deephaven.table import Table
+from deephaven.table import Table, _JTableDefinition
 
 _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
 _JFile = jpy.get_type("java.io.File")
 _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
-_JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
 
 @dataclass

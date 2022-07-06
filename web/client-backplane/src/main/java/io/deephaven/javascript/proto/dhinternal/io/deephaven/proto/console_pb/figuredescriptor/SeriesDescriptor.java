@@ -75,10 +75,10 @@ public class SeriesDescriptor {
             SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType.OneClickFieldType getOneClick();
 
             @JsProperty
-            double getTableId();
+            double getPartitionedTableId();
 
             @JsProperty
-            double getTableMapId();
+            double getTableId();
 
             @JsProperty
             double getType();
@@ -97,10 +97,10 @@ public class SeriesDescriptor {
                     SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType.OneClickFieldType oneClick);
 
             @JsProperty
-            void setTableId(double tableId);
+            void setPartitionedTableId(double partitionedTableId);
 
             @JsProperty
-            void setTableMapId(double tableMapId);
+            void setTableId(double tableId);
 
             @JsProperty
             void setType(double type);
@@ -263,10 +263,10 @@ public class SeriesDescriptor {
             SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType.OneClickFieldType getOneClick();
 
             @JsProperty
-            double getTableId();
+            double getPartitionedTableId();
 
             @JsProperty
-            double getTableMapId();
+            double getTableId();
 
             @JsProperty
             double getType();
@@ -285,10 +285,10 @@ public class SeriesDescriptor {
                     SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType.OneClickFieldType oneClick);
 
             @JsProperty
-            void setTableId(double tableId);
+            void setPartitionedTableId(double partitionedTableId);
 
             @JsProperty
-            void setTableMapId(double tableMapId);
+            void setTableId(double tableId);
 
             @JsProperty
             void setType(double type);

@@ -85,6 +85,11 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     }
 
     @Override
+    public final void setNull(long key) {
+        data[(int)key] = null;
+    }
+
+    @Override
     public final void set(long key, Object value) {
         data[(int)key] = value;
     }

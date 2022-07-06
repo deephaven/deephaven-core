@@ -53,6 +53,9 @@ public interface SeriesPlotStyleMap {
     @JsProperty(name = "STEP")
     int getSTEP();
 
+    @JsProperty(name = "TREEMAP")
+    int getTREEMAP();
+
     @JsProperty(name = "AREA")
     void setAREA(int AREA);
 
@@ -85,4 +88,7 @@ public interface SeriesPlotStyleMap {
 
     @JsProperty(name = "STEP")
     void setSTEP(int STEP);
+
+    @JsProperty(name = "TREEMAP")
+    void setTREEMAP(int TREEMAP);
 }

@@ -1,4 +1,3 @@
-java_home = '${javaHome}'
 jvm_dll = None
 jvm_maxmem = '${jvmMaxMem}'
 jvm_classpath = ['${jvmClasspath}']

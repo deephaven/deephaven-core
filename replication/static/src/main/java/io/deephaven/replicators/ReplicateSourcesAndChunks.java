@@ -3,6 +3,7 @@
  */
 package io.deephaven.replicators;
 
+import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
@@ -50,6 +51,7 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DByteArraySource.java");
         replicateObjectImmutable2DArraySource();
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
+        replicateObjectSizedChunk();
 
         replicateChunks();
         replicateWritableChunks();
@@ -71,6 +73,18 @@ public class ReplicateSourcesAndChunks {
         charToAll("engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfillers/CharChunkFiller.java");
 
         replicateChunkColumnSource();
+    }
+
+    private static void replicateObjectSizedChunk() throws IOException {
+        String path = ReplicatePrimitiveCode
+                .charToObject("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
+        final File classFile = new File(path);
+        List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
+        lines = globalReplacements(lines,
+                "<T> the chunk's attribute", "<ATTR> the chunk's attribute",
+                "SizedObjectChunk<T extends Any>", "SizedObjectChunk<T, ATTR extends Any>",
+                "WritableObjectChunk<T>", "WritableObjectChunk<T, ATTR>");
+        FileUtils.writeLines(classFile, lines);
     }
 
     private static void fixupLongReinterpret(String longImmutableSource) throws IOException {
@@ -119,6 +133,11 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSingleValueSource.java");
         final File resultClassJavaFile = new File(resultClassJavaPath);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
+        try {
+            lines = ReplicationUtils.removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
+        } catch (Exception e) {
+            // Hey' it's fiiiiine. Don't worrrryy about it!
+        }
         lines = globalReplacements(lines,
                 "class ObjectSingleValueSource", "class ObjectSingleValueSource<T>",
                 "<Object>", "<T>",
@@ -130,6 +149,7 @@ public class ReplicateSourcesAndChunks {
                 "ColumnSource<[?] extends Object>", "ColumnSource<? extends T>",
                 "set\\(Object", "set(T",
                 "set\\(long key, Object", "set(long key, T",
+                "set\\(NULL_OBJECT", "set(null",
                 "final ObjectChunk<[?] extends Values>", "final ObjectChunk<T, ? extends Values>",
                 "unbox\\((.*)\\)", "$1");
         lines = ReplicationUtils.removeRegion(lines, "UnboxedSetter");
@@ -631,6 +651,7 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<[?] super Values>", "ObjectChunk<Boolean, ? super Values>");
         lines = simpleFixup(lines, "primitive get", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE", "getBoolean", "getByte",
                 "getPrevBoolean", "getPrevByte");
+        lines = simpleFixup(lines, "setNull", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
 
         lines = replaceRegion(lines, "copyFromTypedArray", Arrays.asList(
                 "                    for (int jj = 0; jj < length; ++jj) {",
@@ -689,12 +710,21 @@ public class ReplicateSourcesAndChunks {
                 "        return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource.ReinterpretedAsByte(this);",
                 "    }",
                 "",
-                "    private static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte> {",
+                "    public static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte> {",
                 "        private final BooleanSparseArraySource wrapped;",
                 "",
                 "        private ReinterpretedAsByte(BooleanSparseArraySource wrapped) {",
                 "            super(byte.class);",
                 "            this.wrapped = wrapped;",
+                "        }",
+                "",
+                "        public void shift(final RowSet keysToShift, final long shiftDelta) {",
+                "            this.wrapped.shift(keysToShift, shiftDelta);",
+                "        }",
+                "",
+                "        @Override",
+                "        public void startTrackingPrevValues() {",
+                "            wrapped.startTrackingPrevValues();",
                 "        }",
                 "",
                 "        @Override",
@@ -705,6 +735,11 @@ public class ReplicateSourcesAndChunks {
                 "        @Override",
                 "        public byte getPrevByte(long rowKey) {",
                 "            return wrapped.getPrevByte(rowKey);",
+                "        }",
+                "",
+                "        @Override",
+                "        public void setNull(long key) {",
+                "            wrapped.setNull(key);",
                 "        }",
                 "",
                 "        @Override",
@@ -973,7 +1008,7 @@ public class ReplicateSourcesAndChunks {
 
         lines = replaceRegion(lines, "constructor", Arrays.asList(
                 "",
-                "    ObjectSparseArraySource(Class<T> type) {",
+                "    public ObjectSparseArraySource(Class<T> type) {",
                 "        super(type);",
                 "        blocks = new ObjectOneOrN.Block0<>();",
                 "    }",

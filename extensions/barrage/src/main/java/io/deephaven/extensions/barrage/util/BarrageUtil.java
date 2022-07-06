@@ -14,6 +14,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.time.DateTime;
@@ -25,7 +27,6 @@ import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.util.type.TypeUtils;
-import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.util.Collections2;
@@ -57,8 +58,9 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 
 public class BarrageUtil {
-
     public static final long FLATBUFFER_MAGIC = 0x6E687064;
+
+    private static final Logger log = LoggerFactory.getLogger(BarrageUtil.class);
 
     // year is 4 bytes, month is 1 byte, day is 1 byte
     public static final ArrowType.FixedSizeBinary LOCAL_DATE_TYPE = new ArrowType.FixedSizeBinary(6);
@@ -76,6 +78,7 @@ public class BarrageUtil {
 
     private static final String ATTR_DH_PREFIX = "deephaven:";
     private static final String ATTR_ATTR_TAG = "attribute";
+    private static final String ATTR_ATTR_TYPE_TAG = "attribute_type";
     private static final String ATTR_TYPE_TAG = "type";
     private static final String ATTR_COMPONENT_TYPE_TAG = "componentType";
 
@@ -137,6 +140,7 @@ public class BarrageUtil {
                     val instanceof Character || val instanceof Boolean ||
                     (val instanceof String && ((String) val).length() < ATTR_STRING_LEN_CUTOFF)) {
                 putMetadata(schemaMetadata, ATTR_ATTR_TAG + "." + key, val.toString());
+                putMetadata(schemaMetadata, ATTR_ATTR_TYPE_TAG + "." + key, val.getClass().getCanonicalName());
             } else {
                 unsentAttributes.add(key);
             }
@@ -295,7 +299,7 @@ public class BarrageUtil {
         // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
         // to the expected nanos value for DateTime.
         public int[] conversionFactors;
-        public Map<String, String> attributes;
+        public Map<String, Object> attributes;
 
         public ConvertedArrowSchema(final int nCols) {
             this.nCols = nCols;
@@ -387,12 +391,65 @@ public class BarrageUtil {
         result.tableDef = TableDefinition.of(columns);
 
         result.attributes = new HashMap<>();
+
+        final HashMap<String, String> attributeTypeMap = new HashMap<>();
         tableMetadataVisitor.accept((key, value) -> {
-            final String prefix = ATTR_DH_PREFIX + ATTR_ATTR_TAG + ".";
-            if (!key.startsWith(prefix)) {
+            final String isAttributePrefix = ATTR_DH_PREFIX + ATTR_ATTR_TAG + ".";
+            final String isAttributeTypePrefix = ATTR_DH_PREFIX + ATTR_ATTR_TYPE_TAG + ".";
+            if (key.startsWith(isAttributePrefix)) {
+                result.attributes.put(key.substring(isAttributePrefix.length()), value);
+            } else if (key.startsWith(isAttributeTypePrefix)) {
+                attributeTypeMap.put(key.substring(isAttributeTypePrefix.length()), value);
+            }
+        });
+
+        attributeTypeMap.forEach((attrKey, attrType) -> {
+            if (!result.attributes.containsKey(attrKey)) {
+                // ignore if we receive a type for an unsent key (server code won't do this)
+                log.warn().append("Schema included ").append(ATTR_ATTR_TYPE_TAG).append(" tag but not a corresponding ")
+                        .append(ATTR_ATTR_TAG).append(" tag for key ").append(attrKey).append(".").endl();
                 return;
             }
-            result.attributes.put(key.substring(prefix.length()), value);
+
+            Object currValue = result.attributes.get(attrKey);
+            if (!(currValue instanceof String)) {
+                // we just inserted this as a string in the block above
+                throw new IllegalStateException();
+            }
+
+            final String stringValue = (String) currValue;
+            switch (attrType) {
+                case "java.lang.Byte":
+                    result.attributes.put(attrKey, Byte.valueOf(stringValue));
+                    break;
+                case "java.lang.Short":
+                    result.attributes.put(attrKey, Short.valueOf(stringValue));
+                    break;
+                case "java.lang.Integer":
+                    result.attributes.put(attrKey, Integer.valueOf(stringValue));
+                    break;
+                case "java.lang.Long":
+                    result.attributes.put(attrKey, Long.valueOf(stringValue));
+                    break;
+                case "java.lang.Float":
+                    result.attributes.put(attrKey, Float.valueOf(stringValue));
+                    break;
+                case "java.lang.Double":
+                    result.attributes.put(attrKey, Double.valueOf(stringValue));
+                    break;
+                case "java.lang.Character":
+                    result.attributes.put(attrKey, stringValue.isEmpty() ? (char) 0 : stringValue.charAt(0));
+                    break;
+                case "java.lang.Boolean":
+                    result.attributes.put(attrKey, Boolean.valueOf(stringValue));
+                    break;
+                case "java.lang.String":
+                    // leave as is
+                    break;
+                default:
+                    log.warn().append("Schema included unsupported ").append(ATTR_ATTR_TYPE_TAG).append(" tag of '")
+                            .append(attrType).append("' for key ").append(attrKey).append(".").endl();
+            }
         });
 
         return result;

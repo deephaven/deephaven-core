@@ -86,6 +86,11 @@ public class ImmutableShortArraySource extends AbstractDeferredGroupingColumnSou
     }
 
     @Override
+    public final void setNull(long key) {
+        data[(int)key] = NULL_SHORT;
+    }
+
+    @Override
     public final void set(long key, short value) {
         data[(int)key] = value;
     }

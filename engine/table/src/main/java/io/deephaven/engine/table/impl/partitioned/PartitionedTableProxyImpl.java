@@ -7,6 +7,8 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
@@ -660,6 +662,43 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends Selectable> groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregations, groupByColumns));
+    }
+
+    @Override
+    public PartitionedTable.Proxy updateBy(UpdateByClause operation) {
+        return basicTransform(ct -> ct.updateBy(operation));
+    }
+
+    @Override
+    public PartitionedTable.Proxy updateBy(UpdateByClause operation, String... byColumns) {
+        return basicTransform(ct -> ct.updateBy(operation, byColumns));
+    }
+
+    @Override
+    public PartitionedTable.Proxy updateBy(Collection<? extends UpdateByClause> operations) {
+        return basicTransform(ct -> ct.updateBy(operations));
+    }
+
+    @Override
+    public PartitionedTable.Proxy updateBy(Collection<? extends UpdateByClause> operations, String... byColumns) {
+        return basicTransform(ct -> ct.updateBy(operations, byColumns));
+    }
+
+    @Override
+    public PartitionedTable.Proxy updateBy(Collection<? extends UpdateByClause> operations,
+            Collection<? extends Selectable> byColumns) {
+        return basicTransform(ct -> ct.updateBy(operations, byColumns));
+    }
+
+    @Override
+    public PartitionedTable.Proxy updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations) {
+        return basicTransform(ct -> ct.updateBy(control, operations));
+    }
+
+    @Override
+    public PartitionedTable.Proxy updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations,
+            Collection<? extends Selectable> byColumns) {
+        return basicTransform(ct -> ct.updateBy(control, operations, byColumns));
     }
 
     @Override

@@ -7,6 +7,7 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 import java.util.Arrays;
 
+import static io.deephaven.base.CompareUtils.compare;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.*;
 import static io.deephaven.function.Cast.castDouble;
@@ -1409,6 +1410,64 @@ public class Numeric {
 
         return product(new ${pt.dbArrayDirect}(values));
     }
+
+
+    /**
+     * Returns the cumulative minimum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return cumulative min of non-null values.
+     */
+    public static ${pt.primitive}[] cumMin(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new ${pt.primitive}[0];
+        }
+
+        ${pt.primitive}[] result = new ${pt.primitive}[values.length];
+        result[0] = values[0];
+
+        for (int i = 1; i < values.length; i++) {
+            if (isNull(result[i - 1])) {
+                result[i] = values[i];
+            } else if (isNull(values[i])) {
+                result[i] = result[i - 1];
+            } else {
+                result[i] = (${pt.primitive})Math.min(result[i - 1],  values[i]);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns the cumulative maximum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return cumulative max of non-null values.
+     */
+    public static ${pt.primitive}[] cumMax(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new ${pt.primitive}[0];
+        }
+
+        ${pt.primitive}[] result = new ${pt.primitive}[values.length];
+        result[0] = values[0];
+
+        for (int i = 1; i < values.length; i++) {
+            result[i] = compare(result[i-1], values[i]) > 0 ? result[i-1] : values[i];
+        }
+
+        return result;
+    }
+
 
    /**
      * Returns the cumulative sum.  Null values are excluded.

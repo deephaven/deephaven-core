@@ -9,7 +9,7 @@ import unittest
 import jpy
 from deephaven import DHError
 
-from deephaven._ugp import ugp_exclusive_lock
+from deephaven.ugp import exclusive_lock
 from deephaven.table import Table
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -45,7 +45,7 @@ class BaseTestCase(unittest.TestCase):
             row_count (int): the target row count of the table
             timeout (int): the number of seconds to wait
         """
-        with ugp_exclusive_lock():
+        with exclusive_lock():
             timeout *= 10 ** 9
             while table.size < row_count and timeout > 0:
                 s_time = time.time_ns()

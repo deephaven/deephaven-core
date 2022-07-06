@@ -86,6 +86,11 @@ public class ImmutableIntArraySource extends AbstractDeferredGroupingColumnSourc
     }
 
     @Override
+    public final void setNull(long key) {
+        data[(int)key] = NULL_INT;
+    }
+
+    @Override
     public final void set(long key, int value) {
         data[(int)key] = value;
     }

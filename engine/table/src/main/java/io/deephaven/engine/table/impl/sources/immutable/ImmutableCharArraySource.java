@@ -78,6 +78,11 @@ public class ImmutableCharArraySource extends AbstractDeferredGroupingColumnSour
     }
 
     @Override
+    public final void setNull(long key) {
+        data[(int)key] = NULL_CHAR;
+    }
+
+    @Override
     public final void set(long key, char value) {
         data[(int)key] = value;
     }

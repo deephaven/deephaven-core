@@ -2731,6 +2731,12 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
+    @Override public  FigureImpl treeMapPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String values, java.lang.String ids, java.lang.String parents, java.lang.String labels, java.lang.String text, java.lang.String color, java.lang.String hoverText ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).treeMapPlot( seriesName, t, values, ids, parents, labels, text, color, hoverText);
+        return make(series);
+    }
+
     @Override public  FigureImpl twin( ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxesImpl axes = (AxesImpl) axes(fc).twin();
@@ -4870,14 +4876,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl seriesNamingFunction( java.util.function.Function<java.lang.Object[], java.lang.String> namingFunction ) {
+    @Override public  FigureImpl seriesNamingFunction( java.util.function.Function<java.lang.Object, java.lang.String> namingFunction ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
             MultiSeries result = ((MultiSeries) series).seriesNamingFunction( namingFunction);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesNamingFunction( java.util.function.Function<java.lang.Object[], java.lang.String> namingFunction )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesNamingFunction( java.util.function.Function<java.lang.Object, java.lang.String> namingFunction )'", figure);
         }
     }
 

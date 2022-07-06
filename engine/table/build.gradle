@@ -27,7 +27,6 @@ dependencies {
             project(':TableLogger'),
             project(':engine-stringset'),
             project(':engine-base'),
-            project(':deephaven-jpy'),
             project(':deephaven-jpy-ext'),
             project(':hotspot')
 
@@ -58,6 +57,7 @@ dependencies {
             TestTools.projectDependency(project, 'Util'),
             TestTools.projectDependency(project, 'engine-chunk'),
             TestTools.projectDependency(project, 'engine-rowset'),
+            TestTools.projectDependency(project, 'Numerics'),
             project(':Base'),
             project(':BenchmarkSupport'),
             project(':extensions-csv'),

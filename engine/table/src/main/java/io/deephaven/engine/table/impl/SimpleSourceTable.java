@@ -3,12 +3,18 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.Selectable;
+import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -58,5 +64,13 @@ public class SimpleSourceTable extends SourceTable {
                 new QueryTableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
         deferredViewTable.setRefreshing(isRefreshing());
         return deferredViewTable;
+    }
+
+    @Override
+    public Table updateBy(@NotNull final UpdateByControl control,
+            @NotNull final Collection<? extends UpdateByClause> ops,
+            @NotNull final Collection<? extends Selectable> byColumns) {
+        return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
+                () -> UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control));
     }
 }

@@ -1,6 +1,5 @@
-import unittest
 import jpyutil
-import jpy
+import unittest
 
 def some_function(x):
   return x * x
@@ -34,52 +33,65 @@ class TestJpy(unittest.TestCase):
 
   @classmethod
   def tearDownClass(cls):
+    import jpy
     jpy.destroy_jvm()
 
   def test_has_jvm(self):
+    import jpy
     self.assertTrue(jpy.has_jvm())
 
   def test_has_jvm_again(self):
+    import jpy
     self.assertTrue(jpy.has_jvm())
 
   def test_has_local_classes(self):
+    import jpy
     jpy.get_type('io.deephaven.jpy.integration.Empty')
 
   def test_has_local_classes_dne(self):
+    import jpy
     with self.assertRaises(ValueError):
       jpy.get_type('io.deephaven.jpy.integration.DoesNotExist')
 
   def test_has_jpy_classes(self):
+    import jpy
     jpy.get_type('org.jpy.PyLib')
 
   def test_has_gil(self):
+    import jpy
     PyLib = jpy.get_type('org.jpy.PyLib')
     self.assertFalse(PyLib.hasGil())
 
   def test_reenter_python(self):
+    import jpy
     ReenterPython = jpy.get_type('io.deephaven.jpy.integration.ReenterPython')
     self.assertEquals(42, ReenterPython.calc1Plus41InPython())
 
   def test_ping_pong_stack(self):
+    import jpy
     PingPongStack = jpy.get_type('io.deephaven.jpy.integration.PingPongStack')
     self.assertEquals('test_jpy(java,5)(python,4)(java,3)(python,2)(java,1)', PingPongStack.pingPongPython('test_jpy', 5))
     self.assertEquals('test_jpy(java,4)(python,3)(java,2)(python,1)', PingPongStack.pingPongPython('test_jpy', 4))
 
   # todo: consider running tests where JPY is *not* on the classpath, which is a completely acceptable use case
   def test_org_jpy_pylib(self):
+    import jpy
     jpy.get_type('org.jpy.PyLib')
 
   def test_pass_function_to_java(self):
+    import jpy
     PassPyObjectToJava = jpy.get_type('io/deephaven/jpy/integration/PassPyObjectToJava')
     #jpy.diag.flags = jpy.diag.F_ALL
     PassPyObjectToJava.from_python_with_love(some_function)
 
   def test_pass_function_to_java_var(self):
+    import jpy
     PassPyObjectToJava = jpy.get_type('io/deephaven/jpy/integration/PassPyObjectToJava')
     #jpy.diag.flags = jpy.diag.F_ALL
     PassPyObjectToJava.from_python_with_love_var(some_function, some_function2)
 
   def test_pass_the_context_to_java(self):
+    import jpy
     PassPyObjectToJava = jpy.get_type('io/deephaven/jpy/integration/PassPyObjectToJava')
 
     context_42 = TheContext(42)
@@ -89,11 +101,13 @@ class TestJpy(unittest.TestCase):
     self.assertEquals(104, PassPyObjectToJava.invoke_the_context_plus(context_99, 5))
 
   def test_py_object_overload_test_1(self):
+    import jpy
     PassPyObjectToJava = jpy.get_type('io/deephaven/jpy/integration/PassPyObjectToJava')
     self.assertEquals("String", PassPyObjectToJava.overload_test_1('a string'))
     self.assertEquals("PyObject", PassPyObjectToJava.overload_test_1(42))
 
   def test_numpy_array(self):
+    import jpy
     import numpy
     jpy_array = jpy.array('int', range(100))
     jpy_array_id = id(jpy_array)
@@ -113,6 +127,7 @@ class TestJpy(unittest.TestCase):
     self.assertEqual(get_refcount(mv_id), mv_refcount)
 
   def test_pyobject_unwrap(self):
+    import jpy
     class CustomClass:
       def __init__(self):
         pass
@@ -134,6 +149,7 @@ class TestJpy(unittest.TestCase):
     self.assertEqual(get_refcount(obj_id), 1)
 
   def test_pyobject_unwrap_via_array(self):
+    import jpy
     # Very similar to test_pyobject_unwrap, but we are doing the unwrapping via array
     class CustomClass:
       def __init__(self):
@@ -163,6 +179,7 @@ class TestJpy(unittest.TestCase):
 
 
   def test_pyproxy_unwrap(self):
+    import jpy
     class SomeJavaInterfaceImpl:
       def __init__(self):
         pass

@@ -104,6 +104,11 @@ public class Immutable2DLongArraySource extends AbstractDeferredGroupingColumnSo
     }
 
     @Override
+    public final void setNull(long key) {
+        data[keyToSegment(key)][keyToOffset(key)] = NULL_LONG;
+    }
+
+    @Override
     public final void set(long key, long value) {
         data[keyToSegment(key)][keyToOffset(key)] = value;
     }

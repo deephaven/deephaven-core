@@ -7,9 +7,9 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.StringKey;
-import io.deephaven.engine.util.PythonDeephavenSession;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 
 import java.io.IOException;
