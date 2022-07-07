@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * The basis for operators that participate in an updateBy operation.
  */
-public interface ChunkedUpdateByStateManager {
+public interface UpdateByStateManager {
     void add(final SafeCloseable bc,
              final RowSequence orderedKeys,
              final ColumnSource<?>[] sources,

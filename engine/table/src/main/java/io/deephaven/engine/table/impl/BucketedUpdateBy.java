@@ -38,7 +38,7 @@ public class BucketedUpdateBy extends UpdateBy {
     private final ColumnSource<?>[] keySources;
 
     /** The hash table object to store key tuples -> bucket positions */
-    private ChunkedUpdateByStateManager hashTable;
+    private UpdateByStateManager hashTable;
 
     /** A tracker object to manage indices and updates on a per-bucket basis */
     private final UpdateBySlotTracker slotTracker;
@@ -106,10 +106,10 @@ public class BucketedUpdateBy extends UpdateBy {
         /** The context to use when finding runs of values in buckets within a chunk of data */
         final SizedSafeCloseable<HashedRunFinder.HashedRunContext> findCtx;
 
-        /** The {@link ChunkedUpdateByStateManager hash table} build context */
+        /** The {@link UpdateByStateManager hash table} build context */
         final SafeCloseable bc;
 
-        /** The {@link ChunkedUpdateByStateManager hash table} probe context */
+        /** The {@link UpdateByStateManager hash table} probe context */
         SafeCloseable pc;
 
         /** The index of keys that need to be revisited during the reprocess phase. */
@@ -230,8 +230,8 @@ public class BucketedUpdateBy extends UpdateBy {
 
         /**
          * Get (and potentially create) the probe context object for use with
-         * {@link ChunkedUpdateByStateManager#remove(SafeCloseable, RowSequence, ColumnSource[], WritableIntChunk)} and
-         * {@link ChunkedUpdateByStateManager#findModifications(SafeCloseable, RowSequence, ColumnSource[], WritableIntChunk)}.
+         * {@link UpdateByStateManager#remove(SafeCloseable, RowSequence, ColumnSource[], WritableIntChunk)} and
+         * {@link UpdateByStateManager#findModifications(SafeCloseable, RowSequence, ColumnSource[], WritableIntChunk)}.
          *
          * @return an appropriate probe context.
          */
