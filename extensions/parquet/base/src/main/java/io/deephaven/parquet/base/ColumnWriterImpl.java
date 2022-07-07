@@ -47,7 +47,7 @@ public class ColumnWriterImpl implements ColumnWriter {
 
 
     private BulkWriter bulkWriter;
-    private int pageSize;
+    private final int targetPageSize;
     private final ByteBufferAllocator allocator;
     private final RunLengthBitPackingHybridEncoder dlEncoder;
     private final RunLengthBitPackingHybridEncoder rlEncoder;
@@ -72,7 +72,7 @@ public class ColumnWriterImpl implements ColumnWriter {
         this.writeChannel = writeChannel;
         this.column = column;
         this.compressor = compressor;
-        this.pageSize = targetPageSize;
+        this.targetPageSize = targetPageSize;
         this.allocator = allocator;
         dlEncoder = column.getMaxDefinitionLevel() == 0 ? null
                 : new RunLengthBitPackingHybridEncoder(
@@ -101,7 +101,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     private void initWriter() {
         if (bulkWriter == null) {
             if (hasDictionary) {
-                bulkWriter = new RleIntChunkedWriter(pageSize, allocator,
+                bulkWriter = new RleIntChunkedWriter(targetPageSize, allocator,
                         (byte) (32 - Integer.numberOfLeadingZeros(dictionaryPage.num_values)));
             } else {
                 bulkWriter = getWriter(column.getPrimitiveType());
@@ -160,22 +160,22 @@ public class ColumnWriterImpl implements ColumnWriter {
     private BulkWriter getWriter(final PrimitiveType primitiveType) {
         switch (primitiveType.getPrimitiveTypeName()) {
             case INT96:
-                throw new IllegalStateException("Int96 is deprecated (by Apache) we should never ever write it.");
-                //return new PlainFixedLenChunkedWriter(pageSize, 12, allocator);
+                return new PlainFixedLenChunkedWriter(targetPageSize, 12, allocator);
             case FIXED_LEN_BYTE_ARRAY:
-                return new PlainFixedLenChunkedWriter(pageSize, column.getPrimitiveType().getTypeLength(), allocator);
+                return new PlainFixedLenChunkedWriter(targetPageSize,
+                        column.getPrimitiveType().getTypeLength(), allocator);
             case INT32:
-                return new PlainIntChunkedWriter(pageSize, allocator);
+                return new PlainIntChunkedWriter(targetPageSize, allocator);
             case INT64:
-                return new PlainLongChunkedWriter(pageSize, allocator);
+                return new PlainLongChunkedWriter(targetPageSize, allocator);
             case FLOAT:
-                return new PlainFloatChunkedWriter(pageSize, allocator);
+                return new PlainFloatChunkedWriter(targetPageSize, allocator);
             case DOUBLE:
-                return new PlainDoubleChunkedWriter(pageSize, allocator);
+                return new PlainDoubleChunkedWriter(targetPageSize, allocator);
             case BINARY:
-                return new PlainBinaryChunkedWriter(pageSize, allocator);
+                return new PlainBinaryChunkedWriter(targetPageSize, allocator);
             case BOOLEAN:
-                return new PlainBooleanChunkedWriter(pageSize, allocator);
+                return new PlainBooleanChunkedWriter(targetPageSize, allocator);
             default:
                 throw new UnsupportedOperationException("Unknown type " + primitiveType.getPrimitiveTypeName());
         }

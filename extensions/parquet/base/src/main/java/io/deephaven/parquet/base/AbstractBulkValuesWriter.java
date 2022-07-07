@@ -115,7 +115,7 @@ public abstract class AbstractBulkValuesWriter<BUFFER_TYPE, VALUE_TYPE> extends 
 
                 valueCount++;
                 rlEncoder.writeInt(RL_FIRST_ELEM);
-                for (short i = 1; i < length; i++) {
+                for (int i = 1; i < length; i++) {
                     if (leafCount++ == nextNullOffset) {
                         nextNullOffset = nullsOffsets.hasRemaining() ? nullsOffsets.get() : Integer.MAX_VALUE;
                         dlEncoder.writeInt(DL_VECTOR_NULL_ELEMENT);

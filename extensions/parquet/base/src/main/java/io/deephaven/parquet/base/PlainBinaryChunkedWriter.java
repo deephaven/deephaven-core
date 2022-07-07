@@ -23,16 +23,14 @@ import java.util.Objects;
  */
 public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[], Binary> {
     private final ByteBufferAllocator allocator;
-    private int originalLimit;
 
     ByteBuffer innerBuffer;
 
-    public PlainBinaryChunkedWriter(int pageSize, ByteBufferAllocator allocator) {
+    public PlainBinaryChunkedWriter(final int pageSize, @NotNull final ByteBufferAllocator allocator) {
         innerBuffer = allocator.allocate(pageSize);
         innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
         this.allocator = allocator;
         innerBuffer.mark();
-        originalLimit = innerBuffer.limit();
     }
 
     @Override
@@ -45,7 +43,7 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
             allocator.release(innerBuffer);
             innerBuffer = newBuffer;
             innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
-            originalLimit = innerBuffer.limit();
+            innerBuffer.limit(innerBuffer.capacity());
         }
         innerBuffer.putInt(v.length());
         innerBuffer.put(v.toByteBuffer());
@@ -64,7 +62,7 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
     @Override
     public void reset() {
         innerBuffer.position(0);
-        innerBuffer.limit(originalLimit);
+        innerBuffer.limit(innerBuffer.capacity());
     }
 
     @Override
@@ -102,7 +100,10 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
 
     @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(@NotNull Binary[] bulkValues, @Nullable Binary nullValue, @NotNull RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
+    public WriteResult writeBulkFilterNulls(@NotNull final Binary[] bulkValues,
+                                            @Nullable final Binary nullValue,
+                                            @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
+                                            final int rowCount) throws IOException {
         for (int i = 0; i < rowCount; i++) {
             if (bulkValues[i] != null) {
                 writeBytes(bulkValues[i]);

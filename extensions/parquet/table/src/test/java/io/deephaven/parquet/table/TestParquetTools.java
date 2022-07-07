@@ -20,6 +20,7 @@ import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import junit.framework.TestCase;
 import org.junit.*;
@@ -370,9 +371,10 @@ public class TestParquetTools {
     public void testBigArrays() {
         try {
             QueryLibrary.importClass(LongVectorDirect.class);
+            QueryLibrary.importClass(LongVector.class);
             QueryLibrary.importClass(LongStream.class);
             final Table stuff = emptyTable(10)
-                    .update("Doobles = new LongVectorDirect(LongStream.range(0, (int)(500_000/(k+1))).toArray())");
+                    .update("Doobles = (LongVector)new LongVectorDirect(LongStream.range(0, (int)(500_000/(k+1))).toArray())");
 
             final File f2w = new File(testRoot, "bigArray.parquet");
             ParquetTools.writeTable(stuff, f2w);

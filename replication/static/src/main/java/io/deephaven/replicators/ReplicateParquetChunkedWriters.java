@@ -27,7 +27,14 @@ public class ReplicateParquetChunkedWriters {
                 "int i = 0;",
                 "int targetCapacity",
                 "IntBuffer nullOffsets",
-                "// Duplicate for Replication\nimport java.nio.IntBuffer;");
+                "// Duplicate for Replication\nimport java.nio.IntBuffer;",
+                "int newSize",
+                "final int currentCapacity",
+                "final int currentPosition",
+                "final int targetPageSize",
+                "int requiredCapacity",
+                "int newCapacity",
+                "int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE");
     }
 
 }

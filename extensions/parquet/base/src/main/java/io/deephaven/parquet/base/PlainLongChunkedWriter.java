@@ -3,7 +3,7 @@
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PlainIntChunkedWriter and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-/**
+/*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.parquet.base;
@@ -26,23 +26,21 @@ import java.nio.LongBuffer;
 import java.nio.IntBuffer;
 
 /**
- * Plain encoding except for booleans
+ * A writer for encoding longs in the PLAIN format
  */
 public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer, Long> {
+    private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Long.BYTES;
+
+    private final int targetPageSize;
     private final ByteBufferAllocator allocator;
-    private final int originalLimit;
 
-    private final LongBuffer targetBuffer;
-    private final ByteBuffer innerBuffer;
+    private LongBuffer targetBuffer;
+    private ByteBuffer innerBuffer;
 
-    PlainLongChunkedWriter(final int pageSize, @NotNull final ByteBufferAllocator allocator) {
-        this.innerBuffer = allocator.allocate(pageSize);
-        this.innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        this.originalLimit = innerBuffer.limit();
+
+    PlainLongChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
+        this.targetPageSize = targetPageSize;
         this.allocator = allocator;
-        this.targetBuffer = innerBuffer.asLongBuffer();
-        targetBuffer.mark();
-        innerBuffer.mark();
     }
 
     @Override
@@ -63,8 +61,8 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer,
 
     @Override
     public void reset() {
-        innerBuffer.limit(originalLimit);
         innerBuffer.reset();
+        innerBuffer.limit(innerBuffer.capacity());
         targetBuffer.reset();
     }
 
@@ -96,6 +94,7 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer,
 
     @Override
     public void writeBulk(@NotNull LongBuffer bulkValues, int rowCount) {
+        ensureCapacityFor(bulkValues);
         targetBuffer.put(bulkValues);
     }
 
@@ -105,6 +104,7 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer,
                                             @Nullable final Long nullValue,
                                             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
                                             final int rowCount) throws IOException {
+        ensureCapacityFor(bulkValues);
         while (bulkValues.hasRemaining()) {
             final long next = bulkValues.get();
             if (next != QueryConstants.NULL_LONG) {
@@ -122,6 +122,7 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer,
     public WriteResult writeBulkFilterNulls(@NotNull final LongBuffer bulkValues,
                                             @Nullable final Long nullValue,
                                             final int rowCount) {
+        ensureCapacityFor(bulkValues);
         int i = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
@@ -135,5 +136,45 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer,
             i++;
         }
         return new WriteResult(rowCount, nullOffsets);
+    }
+
+    private void ensureCapacityFor(@NotNull final LongBuffer valuesToAdd) {
+        if(!valuesToAdd.hasRemaining()) {
+            return;
+        }
+
+        final int currentCapacity = targetBuffer == null ? 0 : targetBuffer.capacity();
+        final int currentPosition = targetBuffer == null ? 0 : targetBuffer.position();
+        final int requiredCapacity = currentPosition + valuesToAdd.remaining();
+        if(requiredCapacity < currentCapacity) {
+            return;
+        }
+
+        if(requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
+            throw new IllegalStateException("Unable to write " + requiredCapacity + " values");
+        }
+
+        int newCapacity = Math.max(targetPageSize / Long.BYTES, currentCapacity * 2);
+        while(newCapacity < requiredCapacity) {
+            newCapacity = Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2);
+        }
+
+        newCapacity *= Long.BYTES;
+
+        final ByteBuffer newBuf = allocator.allocate(newCapacity);
+        newBuf.order(ByteOrder.LITTLE_ENDIAN);
+        final LongBuffer newLongBuf = newBuf.asLongBuffer();
+        newBuf.mark();
+        newLongBuf.mark();
+
+        if(this.innerBuffer != null) {
+            targetBuffer.flip();
+            newLongBuf.put(targetBuffer);
+            allocator.release(innerBuffer);
+        }
+        this.innerBuffer = newBuf;
+        this.targetBuffer = newLongBuf;
+        targetBuffer.mark();
+        innerBuffer.mark();
     }
 }

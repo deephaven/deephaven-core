@@ -66,8 +66,6 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  * API for writing DH tables in parquet format
  */
 public class ParquetTableWriter {
-
-    private static final int PAGE_SIZE = 1 << 20;
     private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
 
     public static final String METADATA_KEY = "deephaven";
@@ -407,7 +405,8 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getInstance(), PAGE_SIZE,
+        return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getInstance(),
+                writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData);
     }
@@ -433,7 +432,8 @@ public class ParquetTableWriter {
         if (columnSource.getComponentType() != null
                 && !CodecLookup.explicitCodecPresent(writeInstructions.getCodecName(columnDefinition.getName()))
                 && !CodecLookup.codecRequired(columnDefinition)) {
-            final int targetRowsPerPage = getTargetRowsPerPage(columnSource.getComponentType());
+            final int targetRowsPerPage = getTargetRowsPerPage(columnSource.getComponentType(),
+                                                               writeInstructions.getTargetPageSize());
             final HashMap<String, ColumnSource<?>> columns = new HashMap<>();
             columns.put("array", columnSource);
             final Table lengthsTable = new QueryTable(tableRowSet, columns);
@@ -488,6 +488,8 @@ public class ParquetTableWriter {
 
             // If there are any leftover, accumulate the last page.
             if (originalRowsInPage > 0) {
+                maxValuesPerPage = Math.max(totalItemsInPage, maxValuesPerPage);
+                maxOriginalRowsPerPage = Math.max(originalRowsInPage, maxOriginalRowsPerPage);
                 rawItemCountPerPage.add(totalItemsInPage);
                 originalRowsPerPage.add(originalRowsInPage);
             }
@@ -500,7 +502,8 @@ public class ParquetTableWriter {
             rowSet = ungroupedArrays.getRowSet();
             columnSource = ungroupedArrays.getColumnSource("array");
         } else {
-            final int finalTargetSize = getTargetRowsPerPage(columnSource.getType());
+            final int finalTargetSize = getTargetRowsPerPage(columnSource.getType(),
+                                                             writeInstructions.getTargetPageSize());
             rowStepGetter = valuesStepGetter = () -> finalTargetSize;
             maxValuesPerPage = maxOriginalRowsPerPage = (int)Math.min(rowSet.size(), finalTargetSize);
             pageCount = (int) (rowSet.size() / finalTargetSize + ((rowSet.size() % finalTargetSize) == 0 ? 0 : 1));
@@ -732,30 +735,32 @@ public class ParquetTableWriter {
     }
 
     /**
-     * Get the number of rows that fit within the current {@link #PAGE_SIZE} for the specifed type.
+     * Get the number of rows that fit within the current targetPageSize for the specified type.
      *
      * @param columnType the column type
      * @return the number of rows that fit within the target page size.
      */
-    private static int getTargetRowsPerPage(@NotNull final Class<?> columnType) throws IllegalAccessException {
+    private static int getTargetRowsPerPage(@NotNull final Class<?> columnType,
+                                            final int targetPageSize)
+            throws IllegalAccessException {
         if (columnType == Boolean.class) {
-            return PAGE_SIZE * 8;
+            return targetPageSize * 8;
         }
 
         if (columnType == short.class || columnType == char.class || columnType == byte.class) {
-            return PAGE_SIZE / Integer.BYTES;
+            return targetPageSize / Integer.BYTES;
         }
 
         if (columnType == String.class) {
-            return PAGE_SIZE / Integer.BYTES;
+            return targetPageSize / Integer.BYTES;
         }
 
         try {
             final Field bytesCountField = TypeUtils.getBoxedType(columnType).getField("BYTES");
-            return PAGE_SIZE / ((Integer) bytesCountField.get(null));
+            return targetPageSize / ((Integer) bytesCountField.get(null));
         } catch (NoSuchFieldException e) {
             // We assume the baseline and go from there
-            return PAGE_SIZE / 8;
+            return targetPageSize / 8;
         }
     }
 

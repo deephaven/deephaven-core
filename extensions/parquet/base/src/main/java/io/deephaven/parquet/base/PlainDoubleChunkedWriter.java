@@ -3,7 +3,7 @@
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PlainIntChunkedWriter and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-/**
+/*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.parquet.base;
@@ -26,23 +26,21 @@ import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 
 /**
- * Plain encoding except for booleans
+ * A writer for encoding doubles in the PLAIN format
  */
 public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuffer, Double> {
+    private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Double.BYTES;
+
+    private final int targetPageSize;
     private final ByteBufferAllocator allocator;
-    private final int originalLimit;
 
-    private final DoubleBuffer targetBuffer;
-    private final ByteBuffer innerBuffer;
+    private DoubleBuffer targetBuffer;
+    private ByteBuffer innerBuffer;
 
-    PlainDoubleChunkedWriter(final int pageSize, @NotNull final ByteBufferAllocator allocator) {
-        this.innerBuffer = allocator.allocate(pageSize);
-        this.innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        this.originalLimit = innerBuffer.limit();
+
+    PlainDoubleChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
+        this.targetPageSize = targetPageSize;
         this.allocator = allocator;
-        this.targetBuffer = innerBuffer.asDoubleBuffer();
-        targetBuffer.mark();
-        innerBuffer.mark();
     }
 
     @Override
@@ -63,8 +61,8 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
 
     @Override
     public void reset() {
-        innerBuffer.limit(originalLimit);
         innerBuffer.reset();
+        innerBuffer.limit(innerBuffer.capacity());
         targetBuffer.reset();
     }
 
@@ -96,6 +94,7 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
 
     @Override
     public void writeBulk(@NotNull DoubleBuffer bulkValues, int rowCount) {
+        ensureCapacityFor(bulkValues);
         targetBuffer.put(bulkValues);
     }
 
@@ -105,6 +104,7 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
                                             @Nullable final Double nullValue,
                                             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
                                             final int rowCount) throws IOException {
+        ensureCapacityFor(bulkValues);
         while (bulkValues.hasRemaining()) {
             final double next = bulkValues.get();
             if (next != QueryConstants.NULL_DOUBLE) {
@@ -122,6 +122,7 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
     public WriteResult writeBulkFilterNulls(@NotNull final DoubleBuffer bulkValues,
                                             @Nullable final Double nullValue,
                                             final int rowCount) {
+        ensureCapacityFor(bulkValues);
         int i = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
@@ -135,5 +136,45 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
             i++;
         }
         return new WriteResult(rowCount, nullOffsets);
+    }
+
+    private void ensureCapacityFor(@NotNull final DoubleBuffer valuesToAdd) {
+        if(!valuesToAdd.hasRemaining()) {
+            return;
+        }
+
+        final int currentCapacity = targetBuffer == null ? 0 : targetBuffer.capacity();
+        final int currentPosition = targetBuffer == null ? 0 : targetBuffer.position();
+        final int requiredCapacity = currentPosition + valuesToAdd.remaining();
+        if(requiredCapacity < currentCapacity) {
+            return;
+        }
+
+        if(requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
+            throw new IllegalStateException("Unable to write " + requiredCapacity + " values");
+        }
+
+        int newCapacity = Math.max(targetPageSize / Double.BYTES, currentCapacity * 2);
+        while(newCapacity < requiredCapacity) {
+            newCapacity = Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2);
+        }
+
+        newCapacity *= Double.BYTES;
+
+        final ByteBuffer newBuf = allocator.allocate(newCapacity);
+        newBuf.order(ByteOrder.LITTLE_ENDIAN);
+        final DoubleBuffer newDoubleBuf = newBuf.asDoubleBuffer();
+        newBuf.mark();
+        newDoubleBuf.mark();
+
+        if(this.innerBuffer != null) {
+            targetBuffer.flip();
+            newDoubleBuf.put(targetBuffer);
+            allocator.release(innerBuffer);
+        }
+        this.innerBuffer = newBuf;
+        this.targetBuffer = newDoubleBuf;
+        targetBuffer.mark();
+        innerBuffer.mark();
     }
 }
