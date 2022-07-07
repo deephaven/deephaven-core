@@ -579,7 +579,6 @@ public class ParquetTableWriter {
                 writeInstructions)) {
             final boolean supportNulls = supportNulls(columnType);
             final Object bufferToWrite = transferObject.getBuffer();
-            final Object nullValue = getNullValue(columnType);
             try (final RowSequence.Iterator lengthIndexIt =
                     lengthSource != null ? originalRowSet.getRowSequenceIterator() : null;
                     final ChunkSource.GetContext lengthSourceContext =
@@ -597,11 +596,11 @@ public class ParquetTableWriter {
                                 lengthIndexIt.getNextRowSequenceWithLength(rowStepGetter.getAsLong())).asIntChunk();
                         lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                         repeatCount.limit(lenChunk.size());
-                        columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(),
-                                nullValue);
+                        columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount()
+                        );
                         repeatCount.clear();
                     } else if (supportNulls) {
-                        columnWriter.addPage(bufferToWrite, nullValue, transferObject.rowCount());
+                        columnWriter.addPage(bufferToWrite, transferObject.rowCount());
                     } else {
                         columnWriter.addPageNoNulls(bufferToWrite, transferObject.rowCount());
                     }
@@ -694,10 +693,10 @@ public class ParquetTableWriter {
             for (final IntBuffer pageBuffer : pageBuffers) {
                 pageBuffer.flip();
                 if (lengthSource != null) {
-                    columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining(),
-                            QueryConstants.NULL_INT);
+                    columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining()
+                    );
                 } else if (hasNulls) {
-                    columnWriter.addPage(pageBuffer, QueryConstants.NULL_INT, pageBuffer.remaining());
+                    columnWriter.addPage(pageBuffer, pageBuffer.remaining());
                 } else {
                     columnWriter.addPageNoNulls(pageBuffer, pageBuffer.remaining());
                 }
@@ -706,28 +705,6 @@ public class ParquetTableWriter {
         } catch (final DictionarySizeExceededException ignored) {
             return false;
         }
-    }
-
-    private static Object getNullValue(@NotNull final Class<?> columnType) {
-        if (columnType == Boolean.class) {
-            return QueryConstants.NULL_BYTE;
-        } else if (columnType == char.class) {
-            return (int) QueryConstants.NULL_CHAR;
-        } else if (columnType == byte.class) {
-            return QueryConstants.NULL_BYTE;
-        } else if (columnType == short.class) {
-            return QueryConstants.NULL_SHORT;
-        } else if (columnType == int.class) {
-            return QueryConstants.NULL_INT;
-        } else if (columnType == long.class) {
-            return QueryConstants.NULL_LONG;
-        } else if (columnType == float.class) {
-            return QueryConstants.NULL_FLOAT;
-        } else if (columnType == double.class) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-
-        return null;
     }
 
     private static boolean supportNulls(@NotNull final Class<?> columnType) {

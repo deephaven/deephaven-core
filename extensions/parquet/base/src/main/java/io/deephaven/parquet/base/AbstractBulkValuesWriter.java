@@ -7,7 +7,6 @@ import io.deephaven.util.QueryConstants;
 import org.apache.parquet.column.values.ValuesWriter;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.IntBuffer;
@@ -38,9 +37,8 @@ public abstract class AbstractBulkValuesWriter<BUFFER_TYPE, VALUE_TYPE> extends 
                                @NotNull final IntBuffer vectorSizes,
                                @NotNull final RunLengthBitPackingHybridEncoder rlEncoder,
                                @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-                               final int nonNullValueCount,
-                               @Nullable final VALUE_TYPE nullValue) throws IOException {
-        final IntBuffer nullsOffsets = writeBulkFilterNulls(bulkValues, nullValue, nonNullValueCount).nullOffsets;
+                               final int nonNullValueCount) throws IOException {
+        final IntBuffer nullsOffsets = writeBulkFilterNulls(bulkValues, nonNullValueCount).nullOffsets;
         return applyDlAndRl(vectorSizes, rlEncoder, dlEncoder, nullsOffsets);
     }
 

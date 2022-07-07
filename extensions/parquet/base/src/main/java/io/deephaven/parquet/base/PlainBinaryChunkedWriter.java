@@ -10,13 +10,11 @@ import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
-import java.util.Objects;
 
 /**
  * Plain encoding except for binary values
@@ -101,7 +99,6 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final Binary[] bulkValues,
-                                            @Nullable final Binary nullValue,
                                             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
                                             final int rowCount) throws IOException {
         for (int i = 0; i < rowCount; i++) {
@@ -116,7 +113,7 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
     }
 
     @Override
-    public @NotNull WriteResult writeBulkFilterNulls(@NotNull Binary[] bulkValues, @Nullable Binary nullValue, int nonNullLeafCount) {
+    public @NotNull WriteResult writeBulkFilterNulls(@NotNull Binary[] bulkValues, int nonNullLeafCount) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         for (int i = 0; i < nonNullLeafCount; i++) {
             if (bulkValues[i] != null) {

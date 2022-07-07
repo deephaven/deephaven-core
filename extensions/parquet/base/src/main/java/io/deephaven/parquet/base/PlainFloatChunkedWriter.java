@@ -15,7 +15,6 @@ import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -101,7 +100,6 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final FloatBuffer bulkValues,
-                                            @Nullable final Float nullValue,
                                             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
                                             final int rowCount) throws IOException {
         ensureCapacityFor(bulkValues);
@@ -120,7 +118,6 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final FloatBuffer bulkValues,
-                                            @Nullable final Float nullValue,
                                             final int rowCount) {
         ensureCapacityFor(bulkValues);
         int i = 0;

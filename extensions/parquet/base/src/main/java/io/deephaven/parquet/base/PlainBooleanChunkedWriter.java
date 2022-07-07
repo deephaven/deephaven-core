@@ -11,7 +11,6 @@ import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.plain.BooleanPlainValuesWriter;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -81,7 +80,7 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
 
     @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(@NotNull ByteBuffer bulkValues, @Nullable Byte nullValue, @NotNull RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
+    public WriteResult writeBulkFilterNulls(@NotNull ByteBuffer bulkValues, @NotNull RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
         while (bulkValues.hasRemaining()) {
             final byte next = bulkValues.get();
             if (next != QueryConstants.NULL_BYTE) {
@@ -95,7 +94,7 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
     }
 
     @Override
-    public @NotNull WriteResult writeBulkFilterNulls(@NotNull ByteBuffer bulkValues, @Nullable Byte nullValue, int rowCount) {
+    public @NotNull WriteResult writeBulkFilterNulls(@NotNull ByteBuffer bulkValues, int rowCount) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         int i = 0;
         while (bulkValues.hasRemaining()) {

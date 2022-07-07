@@ -160,10 +160,8 @@ public class ColumnWriterImpl implements ColumnWriter {
     private BulkWriter getWriter(final PrimitiveType primitiveType) {
         switch (primitiveType.getPrimitiveTypeName()) {
             case INT96:
-                return new PlainFixedLenChunkedWriter(targetPageSize, 12, allocator);
             case FIXED_LEN_BYTE_ARRAY:
-                return new PlainFixedLenChunkedWriter(targetPageSize,
-                        column.getPrimitiveType().getTypeLength(), allocator);
+                throw new UnsupportedOperationException("No support for writing FIXED_LENGTH or INT96 types");
             case INT32:
                 return new PlainIntChunkedWriter(targetPageSize, allocator);
             case INT64:
@@ -183,13 +181,13 @@ public class ColumnWriterImpl implements ColumnWriter {
     }
 
     @Override
-    public void addPage(final Object pageData, final Object nullValues, final int valuesCount) throws IOException {
+    public void addPage(final Object pageData, final int valuesCount) throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");
         }
         initWriter();
         // noinspection unchecked
-        bulkWriter.writeBulkFilterNulls(pageData, nullValues, dlEncoder, valuesCount);
+        bulkWriter.writeBulkFilterNulls(pageData, dlEncoder, valuesCount);
         writePage(bulkWriter.getByteBufferView(), valuesCount);
         bulkWriter.reset();
     }
@@ -197,8 +195,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     public void addVectorPage(
             final Object pageData,
             final IntBuffer repeatCount,
-            final int nonNullValueCount,
-            final Object nullValue) throws IOException {
+            final int nonNullValueCount) throws IOException {
         if (dlEncoder == null) {
             throw new IllegalStateException("Null values not supported");
         }
@@ -208,10 +205,9 @@ public class ColumnWriterImpl implements ColumnWriter {
         initWriter();
         // noinspection unchecked
         int valueCount =
-                bulkWriter.writeBulkVector(pageData, repeatCount, rlEncoder, dlEncoder, nonNullValueCount, nullValue);
+                bulkWriter.writeBulkVector(pageData, repeatCount, rlEncoder, dlEncoder, nonNullValueCount);
         writePage(bulkWriter.getByteBufferView(), valueCount);
         bulkWriter.reset();
-
     }
 
     private void writeDataPageV2Header(

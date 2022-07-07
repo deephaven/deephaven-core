@@ -44,16 +44,13 @@ public interface BulkWriter<BUFFER_TYPE, VALUE_TYPE> {
      * definition level will be set for null values.
      *
      * @param bulkValues the values to write
-     * @param nullValue the value that represents {@code null}
-     * @param dlEncoder the encoder for definition levels
-     * @param rowCount the number of rows being written
-     *
+     * @param dlEncoder  the encoder for definition levels
+     * @param rowCount   the number of rows being written
      * @return a {@link WriteResult} containing the statistics of the result.
      * @throws IOException if there was an error during write.
      */
     @NotNull
     WriteResult writeBulkFilterNulls(@NotNull BUFFER_TYPE bulkValues,
-                                     @Nullable VALUE_TYPE nullValue,
                                      @NotNull RunLengthBitPackingHybridEncoder dlEncoder,
                                      int rowCount) throws IOException;
 
@@ -61,13 +58,11 @@ public interface BulkWriter<BUFFER_TYPE, VALUE_TYPE> {
      * Write a buffers worth of packed vector values to the underlying page.  This method will set the proper
      * definition level and repetition values in the encoders for {@code null} values.
      *
-     * @param bulkValues the packed array values
-     * @param vectorSizes a buffer where each element contains the number of elements in each packed vector.
-     * @param rlEncoder the repetition level encoder
-     * @param dlEncoder the definition level encoder.
+     * @param bulkValues        the packed array values
+     * @param vectorSizes       a buffer where each element contains the number of elements in each packed vector.
+     * @param rlEncoder         the repetition level encoder
+     * @param dlEncoder         the definition level encoder.
      * @param nonNullValueCount the total count of non-null values
-     * @param nullValue the value that represents {@code null}
-     *
      * @return the number of values actually written
      * @throws IOException if writing failed.
      */
@@ -75,20 +70,18 @@ public interface BulkWriter<BUFFER_TYPE, VALUE_TYPE> {
                         @NotNull final IntBuffer vectorSizes,
                         @NotNull final RunLengthBitPackingHybridEncoder rlEncoder,
                         @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-                        final int nonNullValueCount,
-                        @Nullable final VALUE_TYPE nullValue) throws IOException;
+                        final int nonNullValueCount) throws IOException;
 
     /**
      * Write a buffers worth of packed vector values to the underlying page, skipping null values.  This method will
      * find {@code null} values and record their offsets in an {@link WriteResult#nullOffsets IntBuffer} in the result.
      *
      * @param bulkValues the packed vector values to write
-     * @param nullValue  the value that represents {@link null}
      * @param rowCount   the number of rows being written.
      * @return a {@link WriteResult} containing the statistics of the result.
      */
     @NotNull
-    WriteResult writeBulkFilterNulls(@NotNull BUFFER_TYPE bulkValues, @Nullable VALUE_TYPE nullValue, int rowCount);
+    WriteResult writeBulkFilterNulls(@NotNull BUFFER_TYPE bulkValues, int rowCount);
 
     /**
      * Clear all internal state.

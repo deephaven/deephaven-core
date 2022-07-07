@@ -10,7 +10,6 @@ import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -18,7 +17,7 @@ import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
 // Duplicate for Replication
-import java.nio.IntBuffer;
+
 
 /**
  * A writer for encoding ints in the PLAIN format
@@ -96,7 +95,6 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, I
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final IntBuffer bulkValues,
-                                            @Nullable final Integer nullValue,
                                             @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
                                             final int rowCount) throws IOException {
         ensureCapacityFor(bulkValues);
@@ -115,7 +113,6 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, I
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final IntBuffer bulkValues,
-                                            @Nullable final Integer nullValue,
                                             final int rowCount) {
         ensureCapacityFor(bulkValues);
         int i = 0;

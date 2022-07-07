@@ -4,12 +4,12 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
+import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,11 +104,10 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, Int
 
     @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues, @Nullable Integer nullValue, @NotNull RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
-        int nullInt = nullValue;
+    public WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues, @NotNull RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
         while (bulkValues.hasRemaining()) {
             int next = bulkValues.get();
-            if (next != nullInt) {
+            if (next != QueryConstants.NULL_INT) {
                 writeInteger(next);
                 dlEncoder.writeInt(1);
             } else {
@@ -119,13 +118,12 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, Int
     }
 
     @Override
-    public @NotNull WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues, @Nullable Integer nullValue, int rowCount) {
-        int nullInt = nullValue;
+    public @NotNull WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues, int rowCount) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         int i = 0;
         while (bulkValues.hasRemaining()) {
             int next = bulkValues.get();
-            if (next != nullInt) {
+            if (next != QueryConstants.NULL_INT) {
                 writeInteger(next);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
