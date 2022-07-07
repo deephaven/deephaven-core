@@ -9,6 +9,8 @@ import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
 import org.apache.parquet.io.api.Binary;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -21,16 +23,14 @@ import java.util.Objects;
  */
 public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[], Binary> {
     private final ByteBufferAllocator allocator;
-    private int originalLimit;
 
     ByteBuffer innerBuffer;
 
-    public PlainBinaryChunkedWriter(int pageSize, ByteBufferAllocator allocator) {
+    public PlainBinaryChunkedWriter(final int pageSize, @NotNull final ByteBufferAllocator allocator) {
         innerBuffer = allocator.allocate(pageSize);
         innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
         this.allocator = allocator;
         innerBuffer.mark();
-        originalLimit = innerBuffer.limit();
     }
 
     @Override
@@ -43,7 +43,7 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
             allocator.release(innerBuffer);
             innerBuffer = newBuffer;
             innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
-            originalLimit = innerBuffer.limit();
+            innerBuffer.limit(innerBuffer.capacity());
         }
         innerBuffer.putInt(v.length());
         innerBuffer.put(v.toByteBuffer());
@@ -62,7 +62,7 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
     @Override
     public void reset() {
         innerBuffer.position(0);
-        innerBuffer.limit(originalLimit);
+        innerBuffer.limit(innerBuffer.capacity());
     }
 
     @Override
@@ -92,16 +92,20 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
     }
 
     @Override
-    public void writeBulk(Binary[] bulkValues, int rowCount) {
+    public void writeBulk(@NotNull Binary[] bulkValues, int rowCount) {
         for (int i = 0; i < rowCount; i++) {
             writeBytes(bulkValues[i]);
         }
     }
 
+    @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(Binary[] bulkValues, Binary nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
+    public WriteResult writeBulkFilterNulls(@NotNull final Binary[] bulkValues,
+                                            @Nullable final Binary nullValue,
+                                            @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
+                                            final int rowCount) throws IOException {
         for (int i = 0; i < rowCount; i++) {
-            if (!Objects.equals(bulkValues[i], nullValue)) {
+            if (bulkValues[i] != null) {
                 writeBytes(bulkValues[i]);
                 dlEncoder.writeInt(1);
             } else {
@@ -112,10 +116,10 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
     }
 
     @Override
-    public WriteResult writeBulkFilterNulls(Binary[] bulkValues, Binary nullValue, int nonNullLeafCount) {
+    public @NotNull WriteResult writeBulkFilterNulls(@NotNull Binary[] bulkValues, @Nullable Binary nullValue, int nonNullLeafCount) {
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         for (int i = 0; i < nonNullLeafCount; i++) {
-            if (!Objects.equals(bulkValues[i], nullValue)) {
+            if (bulkValues[i] != null) {
                 writeBytes(bulkValues[i]);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);

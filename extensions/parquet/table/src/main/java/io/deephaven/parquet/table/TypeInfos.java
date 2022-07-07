@@ -51,7 +51,7 @@ class TypeInfos {
     private static final Map<Class<?>, TypeInfo> BY_CLASS;
 
     static {
-        Map<Class<?>, TypeInfo> fa = new HashMap<>();
+        final Map<Class<?>, TypeInfo> fa = new HashMap<>();
         for (TypeInfo typeInfo : TYPE_INFOS) {
             for (Class<?> type : typeInfo.getTypes()) {
                 fa.put(type, typeInfo);

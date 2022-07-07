@@ -34,7 +34,7 @@ public class ParquetFileWriter {
 
     private final SeekableByteChannel writeChannel;
     private final MessageType type;
-    private final int pageSize;
+    private final int targetPageSize;
     private final ByteBufferAllocator allocator;
     private final SeekableChannelsProvider channelsProvider;
     private final Compressor compressor;
@@ -45,12 +45,12 @@ public class ParquetFileWriter {
     public ParquetFileWriter(
             final String filePath,
             final SeekableChannelsProvider channelsProvider,
-            final int pageSize,
+            final int targetPageSize,
             final ByteBufferAllocator allocator,
             final MessageType type,
             final String codecName,
             final Map<String, String> extraMetaData) throws IOException {
-        this.pageSize = pageSize;
+        this.targetPageSize = targetPageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
         writeChannel = channelsProvider.getWriteChannel(filePath, false); // TODO add support for appending
@@ -62,13 +62,13 @@ public class ParquetFileWriter {
     @SuppressWarnings("unused")
     RowGroupWriter addRowGroup(final String path, final boolean append) throws IOException {
         RowGroupWriterImpl rowGroupWriter =
-                new RowGroupWriterImpl(path, append, channelsProvider, type, pageSize, allocator, compressor);
+                new RowGroupWriterImpl(path, append, channelsProvider, type, targetPageSize, allocator, compressor);
         blocks.add(rowGroupWriter.getBlock());
         return rowGroupWriter;
     }
 
     public RowGroupWriter addRowGroup(final long size) {
-        RowGroupWriterImpl rowGroupWriter = new RowGroupWriterImpl(writeChannel, type, pageSize, allocator, compressor);
+        RowGroupWriterImpl rowGroupWriter = new RowGroupWriterImpl(writeChannel, type, targetPageSize, allocator, compressor);
         rowGroupWriter.getBlock().setRowCount(size);
         blocks.add(rowGroupWriter.getBlock());
         offsetIndexes.add(rowGroupWriter.offsetIndexes());
