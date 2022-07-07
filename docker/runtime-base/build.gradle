@@ -10,7 +10,6 @@ configurations {
 }
 
 dependencies {
-    pythonWheel project(path: ':deephaven-jpy', targetConfiguration: 'pythonWheel')
     pythonWheel project(':py-server')
 }
 

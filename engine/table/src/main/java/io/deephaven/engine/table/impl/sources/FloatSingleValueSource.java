@@ -24,6 +24,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
@@ -42,8 +43,8 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
     // region Constructor
     public FloatSingleValueSource() {
         super(float.class);
-        current = QueryConstants.NULL_FLOAT;
-        prev = QueryConstants.NULL_FLOAT;
+        current = NULL_FLOAT;
+        prev = NULL_FLOAT;
     }
     // endregion Constructor
 
@@ -76,6 +77,13 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
     @Override
     public final void set(long key, float value) {
         set(value);
+    }
+
+    @Override
+    public final void setNull(long key) {
+        // region null set
+        set(NULL_FLOAT);
+        // endregion null set
     }
 
     @Override

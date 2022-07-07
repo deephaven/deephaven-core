@@ -83,6 +83,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     }
 
     @Override
+    public void setNull(long key) {
+        set(key, NULL_DOUBLE);
+    }
+
+    @Override
     public final double getDouble(long rowKey) {
         if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_DOUBLE;

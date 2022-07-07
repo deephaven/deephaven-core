@@ -57,6 +57,11 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
+    public void setNull(long key) {
+        set(key, null);
+    }
+
+    @Override
     public void set(long key, T value) {
         final int block = (int) (key >> LOG_BLOCK_SIZE);
         final int indexWithinBlock = (int) (key & INDEX_MASK);

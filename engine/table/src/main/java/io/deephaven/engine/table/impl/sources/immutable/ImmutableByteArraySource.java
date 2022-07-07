@@ -88,6 +88,11 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
     }
 
     @Override
+    public final void setNull(long key) {
+        data[(int)key] = NULL_BYTE;
+    }
+
+    @Override
     public final void set(long key, byte value) {
         data[(int)key] = value;
     }

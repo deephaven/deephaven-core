@@ -15,4 +15,5 @@ public class JsChartType {
     public static final int CATEGORY = ChartDescriptor.ChartType.getCATEGORY();
     public static final int XYZ = ChartDescriptor.ChartType.getXYZ();
     public static final int CATEGORY_3D = ChartDescriptor.ChartType.getCATEGORY_3D();
+    public static final int TREEMAP = ChartDescriptor.ChartType.getTREEMAP();
 }

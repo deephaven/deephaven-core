@@ -7,34 +7,32 @@ import com.google.common.annotations.VisibleForTesting;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.linked.TLongLinkedList;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
+import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.HdrHistogram.Histogram;
@@ -55,14 +53,14 @@ import java.util.function.LongConsumer;
  *
  * Note that <b>viewport</b>s are defined in row positions of the upstream table.
  */
-public class BarrageTable extends QueryTable implements BarrageMessage.Listener, Runnable {
+public abstract class BarrageTable extends QueryTable implements BarrageMessage.Listener, Runnable {
 
     public static final boolean DEBUG_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("BarrageTable.debug", false);
 
-    private static final Logger log = LoggerFactory.getLogger(BarrageTable.class);
+    protected static final Logger log = LoggerFactory.getLogger(BarrageTable.class);
 
-    private static final int BATCH_SIZE = ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
+    protected static final int BATCH_SIZE = ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
 
     private final UpdateSourceRegistrar registrar;
     private final NotificationQueue notificationQueue;
@@ -70,16 +68,12 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
     private final PerformanceEntry refreshEntry;
 
-    private final Stats stats;
+    protected final Stats stats;
 
     /** the capacity that the destSources been set to */
-    private long capacity = 0;
+    protected long capacity = 0;
     /** the reinterpreted destination writable sources */
-    private final WritableColumnSource<?>[] destSources;
-    /** we compact the parent table's key-space and instead redirect; ideal for viewport */
-    private final WritableRowRedirection rowRedirection;
-    /** represents which rows in writable source exist but are not mapped to any parent rows */
-    private WritableRowSet freeset = RowSetFactory.empty();
+    protected final WritableColumnSource<?>[] destSources;
 
 
     /** unsubscribed must never be reset to false once it has been set to true */
@@ -101,9 +95,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
      * the server assumes that the client has maintained its state prior to these server-side viewport acks and will not
      * re-send data that the client should already have within the existing viewport.
      */
-    private RowSet serverViewport;
-    private boolean serverReverseViewport;
-    private BitSet serverColumns;
+    protected RowSet serverViewport;
+    protected boolean serverReverseViewport;
+    protected BitSet serverColumns;
 
 
     /** synchronize access to pendingUpdates */
@@ -118,21 +112,20 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     /** if we receive an error from upstream, then we publish the error downstream and stop updating */
     private Throwable pendingError = null;
 
-    private final List<Object> processedData;
-    private final TLongList processedStep;
-
     /** enable prev tracking only after receiving first snapshot */
     private volatile int prevTrackingEnabled = 0;
     private static final AtomicIntegerFieldUpdater<BarrageTable> PREV_TRACKING_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BarrageTable.class, "prevTrackingEnabled");
+
+    private final List<Object> processedData;
+    private final TLongList processedStep;
 
     protected BarrageTable(final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
             @Nullable final ScheduledExecutorService executorService,
             final LinkedHashMap<String, ColumnSource<?>> columns,
             final WritableColumnSource<?>[] writableSources,
-            final WritableRowRedirection rowRedirection,
-            final Map<String, String> attributes,
+            final Map<String, Object> attributes,
             final boolean isViewPort) {
         super(RowSetFactory.empty().toTracking(), columns);
         attributes.entrySet().stream()
@@ -142,8 +135,6 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         this.registrar = registrar;
         this.notificationQueue = notificationQueue;
         this.executorService = executorService;
-
-        this.rowRedirection = rowRedirection;
 
         final String tableKey = BarragePerformanceLog.getKeyFor(this);
         if (executorService == null || tableKey == null) {
@@ -174,8 +165,6 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
         registrar.addSource(this);
 
-        setAttribute(Table.DO_NOT_MAKE_REMOTE_ATTRIBUTE, true);
-
         if (DEBUG_ENABLED) {
             processedData = new LinkedList<>();
             processedStep = new TLongLinkedList();
@@ -184,6 +173,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             processedStep = null;
         }
     }
+
+    abstract protected TableUpdate applyUpdates(ArrayDeque<BarrageMessage> localPendingUpdates);
 
     public ChunkType[] getWireChunkTypes() {
         return Arrays.stream(destSources).map(s -> ChunkType.fromElementType(s.getType())).toArray(ChunkType[]::new);
@@ -248,260 +239,6 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         enqueueError(t);
     }
 
-    private UpdateCoalescer processUpdate(final BarrageMessage update, final UpdateCoalescer coalescer) {
-        if (DEBUG_ENABLED) {
-            saveForDebugging(update);
-
-            final ModifiedColumnSet modifiedColumnSet = getModifiedColumnSetForUpdates();
-            modifiedColumnSet.clear();
-            final WritableRowSet mods = RowSetFactory.empty();
-            for (int ci = 0; ci < update.modColumnData.length; ++ci) {
-                final RowSet rowsModified = update.modColumnData[ci].rowsModified;
-                if (rowsModified.isNonempty()) {
-                    mods.insert(rowsModified);
-                    modifiedColumnSet.setColumnWithIndex(ci);
-                }
-            }
-            final TableUpdate up = new TableUpdateImpl(
-                    update.rowsAdded, update.rowsRemoved, mods, update.shifted, modifiedColumnSet);
-
-            beginLog(LogLevel.INFO).append(": Processing delta updates ")
-                    .append(update.firstSeq).append("-").append(update.lastSeq)
-                    .append(" update=").append(up)
-                    .append(" included=").append(update.rowsIncluded)
-                    .append(" rowset=").append(this.getRowSet())
-                    .append(" isSnapshot=").append(update.isSnapshot)
-                    .append(" snapshotRowSet=").append(update.snapshotRowSet)
-                    .append(" snapshotRowSetIsReversed=").append(update.snapshotRowSetIsReversed)
-                    .endl();
-            mods.close();
-        }
-
-        if (update.isSnapshot) {
-            serverViewport = update.snapshotRowSet == null ? null : update.snapshotRowSet.copy();
-            serverReverseViewport = update.snapshotRowSetIsReversed;
-            serverColumns = update.snapshotColumns == null ? null : (BitSet) update.snapshotColumns.clone();
-        }
-
-        // make sure that these RowSet updates make some sense compared with each other, and our current view of the
-        // table
-        final WritableRowSet currentRowSet = getRowSet().writableCast();
-        final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
-
-        try (final RowSet currRowsFromPrev = currentRowSet.copy();
-                final WritableRowSet populatedRows =
-                        (serverViewport != null
-                                ? currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)
-                                : null)) {
-
-            // removes
-            currentRowSet.remove(update.rowsRemoved);
-            try (final RowSet removed = serverViewport != null ? populatedRows.extract(update.rowsRemoved) : null) {
-                freeRows(removed != null ? removed : update.rowsRemoved);
-            }
-
-            // shifts
-            if (update.shifted.nonempty()) {
-                rowRedirection.applyShift(currentRowSet, update.shifted);
-                update.shifted.apply(currentRowSet);
-                if (populatedRows != null) {
-                    update.shifted.apply(populatedRows);
-                }
-            }
-            currentRowSet.insert(update.rowsAdded);
-
-            final WritableRowSet totalMods = RowSetFactory.empty();
-            for (int i = 0; i < update.modColumnData.length; ++i) {
-                final BarrageMessage.ModColumnData column = update.modColumnData[i];
-                totalMods.insert(column.rowsModified);
-            }
-
-            if (update.rowsIncluded.isNonempty()) {
-                // perform the addition operations in batches for efficiency
-                final int addBatchSize = (int) Math.min(update.rowsIncluded.size(), BATCH_SIZE);
-
-                if (mightBeInitialSnapshot) {
-                    // ensure the data sources have at least the incoming capacity. The sources can auto-resize but
-                    // we know the initial snapshot size and can resize immediately
-                    capacity = update.rowsIncluded.size();
-                    for (final WritableColumnSource<?> source : destSources) {
-                        source.ensureCapacity(capacity);
-                    }
-                    freeset.insertRange(0, capacity - 1);
-                }
-
-                // this will hold all the free rows allocated for the included rows
-                final WritableRowSet destinationRowSet = RowSetFactory.empty();
-
-                // update the table with the rowsIncluded set (in manageable batch sizes)
-                try (final RowSequence.Iterator rowsIncludedIterator = update.rowsIncluded.getRowSequenceIterator();
-                        final ChunkSink.FillFromContext redirContext =
-                                rowRedirection.makeFillFromContext(addBatchSize)) {
-                    while (rowsIncludedIterator.hasMore()) {
-                        final RowSequence rowsToRedirect =
-                                rowsIncludedIterator.getNextRowSequenceWithLength(addBatchSize);
-                        try (final RowSet newRows = getFreeRows(rowsToRedirect.intSize())) {
-                            // Update redirection mapping:
-                            rowRedirection.fillFromChunk(redirContext, newRows.asRowKeyChunk(), rowsToRedirect);
-                            // add these rows to the final destination set
-                            destinationRowSet.insert(newRows);
-                        }
-                    }
-                }
-
-                // update the column sources (in manageable batch sizes)
-                for (int ii = 0; ii < update.addColumnData.length; ++ii) {
-                    if (isSubscribedColumn(ii)) {
-                        final BarrageMessage.AddColumnData column = update.addColumnData[ii];
-                        try (final ChunkSink.FillFromContext fillContext =
-                                destSources[ii].makeFillFromContext(addBatchSize);
-                                final RowSequence.Iterator destIterator = destinationRowSet.getRowSequenceIterator()) {
-                            // grab the matching rows from each chunk
-                            for (final Chunk<Values> chunk : column.data) {
-                                // track where we are in the current chunk
-                                int chunkOffset = 0;
-                                while (chunkOffset < chunk.size()) {
-                                    // don't overrun the chunk boundary
-                                    int effectiveBatchSize = Math.min(addBatchSize, chunk.size() - chunkOffset);
-                                    final RowSequence chunkKeys =
-                                            destIterator.getNextRowSequenceWithLength(effectiveBatchSize);
-                                    Chunk<Values> slicedChunk = chunk.slice(chunkOffset, effectiveBatchSize);
-                                    destSources[ii].fillFromChunk(fillContext, slicedChunk, chunkKeys);
-                                    chunkOffset += effectiveBatchSize;
-                                }
-                            }
-                            Assert.assertion(!destIterator.hasMore(), "not all rowsIncluded were processed");
-                        }
-                    }
-                }
-            }
-
-            final ModifiedColumnSet modifiedColumnSet = getModifiedColumnSetForUpdates();
-            modifiedColumnSet.clear();
-            for (int ii = 0; ii < update.modColumnData.length; ++ii) {
-                final BarrageMessage.ModColumnData column = update.modColumnData[ii];
-                if (column.rowsModified.isEmpty()) {
-                    continue;
-                }
-
-                // perform the modification operations in batches for efficiency
-                final int modBatchSize = (int) Math.min(column.rowsModified.size(), BATCH_SIZE);
-                modifiedColumnSet.setColumnWithIndex(ii);
-
-                try (final ChunkSource.FillContext redirContext = rowRedirection.makeFillContext(modBatchSize, null);
-                        final ChunkSink.FillFromContext fillContext = destSources[ii].makeFillFromContext(modBatchSize);
-                        final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(modBatchSize);
-                        final RowSequence.Iterator destIterator = column.rowsModified.getRowSequenceIterator()) {
-
-                    // grab the matching rows from each chunk
-                    for (final Chunk<Values> chunk : column.data) {
-                        // track where we are in the current chunk
-                        int chunkOffset = 0;
-                        while (chunkOffset < chunk.size()) {
-                            // don't overrun the chunk boundary
-                            int effectiveBatchSize = Math.min(modBatchSize, chunk.size() - chunkOffset);
-                            final RowSequence chunkKeys = destIterator.getNextRowSequenceWithLength(effectiveBatchSize);
-                            // fill the key chunk with the keys from this rowset
-                            rowRedirection.fillChunk(redirContext, keys, chunkKeys);
-                            Chunk<Values> slicedChunk = chunk.slice(chunkOffset, effectiveBatchSize);
-
-                            destSources[ii].fillFromChunkUnordered(fillContext, slicedChunk, keys);
-
-                            chunkOffset += effectiveBatchSize;
-                        }
-                    }
-                    Assert.assertion(!destIterator.hasMore(), "not all rowsModified were processed");
-                }
-            }
-
-            // remove all data outside of our viewport
-            if (serverViewport != null) {
-                try (final RowSet newPopulated =
-                        currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
-                    populatedRows.remove(newPopulated);
-                    freeRows(populatedRows);
-                }
-            }
-
-            if (update.isSnapshot && !mightBeInitialSnapshot) {
-                // This applies to viewport or subscribed column changes; after the first snapshot later snapshots can't
-                // change the RowSet. In this case, we apply the data from the snapshot to local column sources but
-                // otherwise cannot communicate this change to listeners.
-                return coalescer;
-            }
-
-            final TableUpdate downstream = new TableUpdateImpl(
-                    update.rowsAdded.copy(), update.rowsRemoved.copy(), totalMods, update.shifted, modifiedColumnSet);
-            return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
-                    : coalescer.update(downstream);
-        }
-    }
-
-    private boolean isSubscribedColumn(int i) {
-        return serverColumns == null || serverColumns.get(i);
-    }
-
-    private RowSet getFreeRows(long size) {
-        if (size <= 0) {
-            return RowSetFactory.empty();
-        }
-        boolean needsResizing = false;
-        if (capacity == 0) {
-            capacity = Long.highestOneBit(Math.max(size * 2, 8));
-            freeset = RowSetFactory.flat(capacity);
-            needsResizing = true;
-        } else if (freeset.size() < size) {
-            long usedSlots = capacity - freeset.size();
-            long prevCapacity = capacity;
-
-            do {
-                capacity *= 2;
-            } while ((capacity - usedSlots) < size);
-            freeset.insertRange(prevCapacity, capacity - 1);
-            needsResizing = true;
-        }
-
-        if (needsResizing) {
-            for (final WritableColumnSource<?> source : destSources) {
-                source.ensureCapacity(capacity);
-            }
-        }
-
-        final RowSet result = freeset.subSetByPositionRange(0, size);
-        Assert.assertion(result.size() == size, "result.size() == size");
-        freeset.removeRange(0, result.lastRowKey());
-        return result;
-    }
-
-    private void freeRows(final RowSet rowsToFree) {
-        if (rowsToFree.isEmpty()) {
-            return;
-        }
-
-        // Note: these are NOT OrderedRowKeys until after the call to .sort()
-        final int chunkSize = (int) Math.min(rowsToFree.size(), BATCH_SIZE);
-
-        try (final WritableLongChunk<OrderedRowKeys> redirectedRows = WritableLongChunk.makeWritableChunk(chunkSize);
-                final RowSequence.Iterator rowsToFreeIterator = rowsToFree.getRowSequenceIterator()) {
-
-            while (rowsToFreeIterator.hasMore()) {
-
-                final RowSequence chunkRowsToFree = rowsToFreeIterator.getNextRowSequenceWithLength(chunkSize);
-
-                redirectedRows.setSize(0);
-
-                chunkRowsToFree.forAllRowKeys(next -> {
-                    final long prevIndex = rowRedirection.remove(next);
-                    Assert.assertion(prevIndex != -1, "prevIndex != -1", prevIndex, "prevIndex", next, "next");
-                    redirectedRows.add(prevIndex);
-                });
-
-                redirectedRows.sort(); // now they're truly ordered
-                freeset.insert(redirectedRows, 0, redirectedRows.size());
-            }
-        }
-    }
-
     @Override
     public void run() {
         refreshEntry.onUpdateStart();
@@ -547,18 +284,12 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             Assert.eqZero(pendingUpdates.size(), "pendingUpdates.size()");
         }
 
-        UpdateCoalescer coalescer = null;
-        for (final BarrageMessage update : localPendingUpdates) {
-            final long startTm = System.nanoTime();
-            coalescer = processUpdate(update, coalescer);
-            update.close();
-            recordMetric(stats -> stats.processUpdate, System.nanoTime() - startTm);
-        }
+        final TableUpdate update = applyUpdates(localPendingUpdates);
         localPendingUpdates.clear();
 
-        if (coalescer != null) {
+        if (update != null) {
             maybeEnablePrevTracking();
-            notifyListeners(coalescer.coalesce());
+            notifyListeners(update);
         }
 
         if (sealed) {
@@ -593,19 +324,6 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         return notificationQueue;
     }
 
-    private void saveForDebugging(final BarrageMessage snapshotOrDelta) {
-        if (!DEBUG_ENABLED) {
-            return;
-        }
-        if (processedData.size() > 10) {
-            final BarrageMessage msg = (BarrageMessage) processedData.remove(0);
-            msg.close();
-            processedStep.remove(0);
-        }
-        processedData.add(snapshotOrDelta.clone());
-        processedStep.add(LogicalClock.DEFAULT.currentStep());
-    }
-
     /**
      * Enqueue an error to be reported on the next run cycle.
      *
@@ -633,7 +351,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     public static BarrageTable make(
             @Nullable final ScheduledExecutorService executorService,
             final TableDefinition tableDefinition,
-            final Map<String, String> attributes,
+            final Map<String, Object> attributes,
             final boolean isViewPort) {
         return make(UpdateGraphProcessor.DEFAULT, UpdateGraphProcessor.DEFAULT, executorService, tableDefinition,
                 attributes, isViewPort);
@@ -645,17 +363,26 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             final NotificationQueue queue,
             @Nullable final ScheduledExecutorService executor,
             final TableDefinition tableDefinition,
-            final Map<String, String> attributes,
+            final Map<String, Object> attributes,
             final boolean isViewPort) {
         final List<ColumnDefinition<?>> columns = tableDefinition.getColumns();
         final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.size()];
-        final WritableRowRedirection rowRedirection =
-                new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
-        final LinkedHashMap<String, ColumnSource<?>> finalColumns =
-                makeColumns(columns, writableSources, rowRedirection);
 
-        final BarrageTable table = new BarrageTable(
-                registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, isViewPort);
+        final BarrageTable table;
+
+        Object isStreamTable = attributes.getOrDefault(Table.STREAM_TABLE_ATTRIBUTE, false);
+        if (isStreamTable instanceof Boolean && (Boolean) isStreamTable) {
+            final LinkedHashMap<String, ColumnSource<?>> finalColumns = makeColumns(columns, writableSources);
+            table = new BarrageStreamTable(
+                    registrar, queue, executor, finalColumns, writableSources, attributes, isViewPort);
+        } else {
+            final WritableRowRedirection rowRedirection =
+                    new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
+            final LinkedHashMap<String, ColumnSource<?>> finalColumns =
+                    makeColumns(columns, writableSources, rowRedirection);
+            table = new BarrageRedirectedTable(
+                    registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, isViewPort);
+        }
 
         // Even if this source table will eventually be static, the data isn't here already. Static tables need to
         // have refreshing set to false after processing data but prior to publishing the object to consumers.
@@ -665,7 +392,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     }
 
     /**
-     * Set up the columns for the replicated table.
+     * Set up the columns for the replicated redirected table.
      *
      * @apiNote emptyRowRedirection must be initialized and empty.
      */
@@ -686,18 +413,51 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         return finalColumns;
     }
 
-    private void maybeEnablePrevTracking() {
-        if (!PREV_TRACKING_UPDATER.compareAndSet(this, 0, 1)) {
+    /**
+     * Set up the columns for the replicated stream table.
+     */
+    @NotNull
+    protected static LinkedHashMap<String, ColumnSource<?>> makeColumns(
+            final List<ColumnDefinition<?>> columns,
+            final WritableColumnSource<?>[] writableSources) {
+        final int numColumns = columns.size();
+        final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>(numColumns);
+        for (int ii = 0; ii < numColumns; ii++) {
+            final ColumnDefinition<?> column = columns.get(ii);
+            writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(0, column.getDataType(),
+                    column.getComponentType());
+            finalColumns.put(column.getName(), writableSources[ii]);
+        }
+
+        return finalColumns;
+    }
+
+    protected void saveForDebugging(final BarrageMessage snapshotOrDelta) {
+        if (!DEBUG_ENABLED) {
             return;
+        }
+        if (processedData.size() > 10) {
+            final BarrageMessage msg = (BarrageMessage) processedData.remove(0);
+            msg.close();
+            processedStep.remove(0);
+        }
+        processedData.add(snapshotOrDelta.clone());
+        processedStep.add(LogicalClock.DEFAULT.currentStep());
+    }
+
+    protected boolean maybeEnablePrevTracking() {
+        if (!PREV_TRACKING_UPDATER.compareAndSet(this, 0, 1)) {
+            return false;
         }
 
         for (final WritableColumnSource<?> ws : destSources) {
             ws.startTrackingPrevValues();
         }
-        rowRedirection.startTrackingPrevValues();
+
+        return true;
     }
 
-    private void doWakeup() {
+    protected void doWakeup() {
         registrar.requestRefresh();
     }
 
@@ -719,7 +479,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
      * @param level the log level
      * @return a LogEntry
      */
-    private LogEntry beginLog(LogLevel level) {
+    protected LogEntry beginLog(LogLevel level) {
         return log.getEntry(level).append(System.identityHashCode(this));
     }
 
@@ -739,7 +499,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         return value -> recordMetric(stats -> stats.deserialize, value);
     }
 
-    private void recordMetric(final Function<Stats, Histogram> hist, final long value) {
+    protected void recordMetric(final Function<Stats, Histogram> hist, final long value) {
         if (stats == null) {
             return;
         }
@@ -748,7 +508,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         }
     }
 
-    private class Stats implements Runnable {
+    protected class Stats implements Runnable {
         private final int NUM_SIG_FIGS = 3;
 
         public final String tableId = Integer.toHexString(System.identityHashCode(BarrageTable.this));

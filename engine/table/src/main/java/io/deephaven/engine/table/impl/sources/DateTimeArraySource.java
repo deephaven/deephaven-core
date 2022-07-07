@@ -29,6 +29,11 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
     }
 
     @Override
+    public void setNull(long key) {
+        set(key, NULL_LONG);
+    }
+
+    @Override
     public void set(long key, DateTime value) {
         set(key, value == null ? NULL_LONG : value.getNanos());
     }
@@ -211,6 +216,11 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
                 @NotNull final WritableChunk<? super Values> destination,
                 @NotNull final LongChunk<? extends RowKeys> keyIndices) {
             fillSparsePrevLongChunkUnordered(destination, keyIndices);
+        }
+
+        @Override
+        public void setNull(long key) {
+            set(key, NULL_LONG);
         }
 
         @Override

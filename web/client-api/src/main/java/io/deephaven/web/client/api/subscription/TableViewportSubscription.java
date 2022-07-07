@@ -192,7 +192,10 @@ public class TableViewportSubscription extends HasEventHandling {
                     "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
         }
         copy.then(table -> {
-            table.setInternalViewport(firstRow, lastRow, columns);
+            if (!table.isStreamTable()) {
+                // we only set stream table viewports once; and that's in the constructor
+                table.setInternalViewport(firstRow, lastRow, columns);
+            }
             return Promise.resolve(table);
         });
     }

@@ -13,6 +13,8 @@ dependencies {
             project(':engine-updategraph'),
             project(':engine-rowset')
 
+    Classpaths.inheritImmutables(project)
+
     implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
 
     implementation 'com.google.guava:guava:19.0'

@@ -95,6 +95,26 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
         // Nothing to do here. Sparse array sources allocate on-demand and always null-fill.
     }
 
+    // region setNull
+    @Override
+    public void setNull(long key) {
+        final float [] blocks2 = blocks.getInnermostBlockByKeyOrNull(key);
+        if (blocks2 == null) {
+            return;
+        }
+        final int indexWithinBlock = (int) (key & INDEX_MASK);
+        if (blocks2[indexWithinBlock] == NULL_FLOAT) {
+            return;
+        }
+
+        final float [] prevBlocksInner = shouldRecordPrevious(key);
+        if (prevBlocksInner != null) {
+            prevBlocksInner[indexWithinBlock] = blocks2[indexWithinBlock];
+        }
+        blocks2[indexWithinBlock] = NULL_FLOAT;
+    }
+    // endregion setNull
+
     @Override
     public final void set(long key, float value) {
         final int block0 = (int) (key >> BLOCK0_SHIFT) & BLOCK0_MASK;

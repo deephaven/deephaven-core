@@ -106,6 +106,8 @@ class StaticChunkedNaturalJoinStateManager
     // region extra variables
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     StaticChunkedNaturalJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
      // region constructor arguments

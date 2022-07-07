@@ -90,6 +90,11 @@ public class ImmutableLongArraySource extends AbstractDeferredGroupingColumnSour
     }
 
     @Override
+    public final void setNull(long key) {
+        data[(int)key] = NULL_LONG;
+    }
+
+    @Override
     public final void set(long key, long value) {
         data[(int)key] = value;
     }

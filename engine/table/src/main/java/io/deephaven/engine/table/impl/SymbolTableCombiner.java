@@ -146,6 +146,8 @@ class SymbolTableCombiner
     private int nextUniqueIdentifier = 0;
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     SymbolTableCombiner(ColumnSource<?>[] tableKeySources
                                          , int tableSize
                         // region constructor arguments

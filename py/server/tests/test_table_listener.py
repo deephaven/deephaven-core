@@ -9,11 +9,11 @@ from typing import List, Union
 import numpy
 
 from deephaven import time_table
-from deephaven._ugp import ugp_exclusive_lock
 from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
 from deephaven.table_listener import listen, TableListener, TableListenerHandle
+from deephaven.ugp import exclusive_lock
 from tests.testbase import BaseTestCase
 
 
@@ -58,7 +58,7 @@ def ensure_ugp_cycles(table_update_recorder: TableUpdateRecorder, cycles: int = 
 class TableListenerTestCase(BaseTestCase):
 
     def setUp(self) -> None:
-        with ugp_exclusive_lock():
+        with exclusive_lock():
             self.test_table = time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
             source_table = time_table("00:00:00.001").update(["TS=currentTime()"])
             self.test_table2 = time_window(source_table, ts_col="TS", window=10 ** 7, bool_col="InWindow")

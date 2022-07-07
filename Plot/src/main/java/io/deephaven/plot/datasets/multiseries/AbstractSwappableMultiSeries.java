@@ -102,8 +102,8 @@ public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInte
     }
 
     @Override
-    protected void applyFunction(final java.util.function.Function function, final String columnName,
-            final String functionInput, final Class resultClass) {
+    protected <T, R> void applyFunction(final java.util.function.Function<? super T, ? extends R> function, final String columnName,
+            final String functionInput, final Class<R> resultClass) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";
         final Map<String, Object> params = new HashMap<>();

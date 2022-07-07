@@ -102,6 +102,11 @@ public class Immutable2DByteArraySource extends AbstractDeferredGroupingColumnSo
     }
 
     @Override
+    public final void setNull(long key) {
+        data[keyToSegment(key)][keyToOffset(key)] = NULL_BYTE;
+    }
+
+    @Override
     public final void set(long key, byte value) {
         data[keyToSegment(key)][keyToOffset(key)] = value;
     }

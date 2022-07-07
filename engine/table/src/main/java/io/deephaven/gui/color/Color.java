@@ -130,6 +130,9 @@ public class Color implements Paint, Serializable {
         color = new java.awt.Color(r, g, b, a);
     }
 
+    public String toHex() {
+        return String.format("#%02X%02X%02X", color.getRed(), color.getGreen(), color.getBlue());
+    }
 
     ////////////////////////// internal functionality //////////////////////////
 

@@ -83,6 +83,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
+    public void setNull(long key) {
+        set(key, NULL_BYTE);
+    }
+
+    @Override
     public final byte getByte(long rowKey) {
         if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_BYTE;

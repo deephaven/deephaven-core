@@ -226,6 +226,9 @@ project(':plugin-dagger').projectDir = file('plugin/dagger')
 include(':plugin-figure')
 project(':plugin-figure').projectDir = file('plugin/figure')
 
+include(':plugin-partitionedtable')
+project(':plugin-partitionedtable').projectDir = file('plugin/partitionedtable')
+
 include(':envoy')
 
 include(':grpc-proxy')
@@ -269,9 +272,6 @@ include(':application-mode')
 
 include(':util-immutables')
 project(':util-immutables').projectDir = file('Util/util-immutables')
-
-include(':deephaven-jpy')
-project(':deephaven-jpy').projectDir = file('py/jpy')
 
 include(':deephaven-jpy-config')
 project(':deephaven-jpy-config').projectDir = file('py/jpy-config')

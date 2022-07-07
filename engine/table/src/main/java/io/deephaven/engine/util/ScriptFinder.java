@@ -13,10 +13,10 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Optional;
 
-class ScriptFinder {
+public class ScriptFinder {
     final private String defaultScriptPath;
 
-    static class FileOrStream {
+    public static class FileOrStream {
         FileOrStream(File file) {
             this.file = Require.neqNull(file, "file");
             this.stream = null;
@@ -30,7 +30,7 @@ class ScriptFinder {
         }
 
 
-        Optional<File> getFile() {
+        public Optional<File> getFile() {
             if (isFile) {
                 return Optional.of(Require.neqNull(file, "file"));
             } else {
@@ -38,7 +38,7 @@ class ScriptFinder {
             }
         }
 
-        Optional<InputStream> getStream() {
+        public Optional<InputStream> getStream() {
             if (isFile) {
                 return Optional.empty();
             } else {
@@ -51,7 +51,7 @@ class ScriptFinder {
         private final InputStream stream;
     }
 
-    ScriptFinder(String defaultScriptPath) {
+    public ScriptFinder(String defaultScriptPath) {
         this.defaultScriptPath = defaultScriptPath;
     }
 
@@ -60,7 +60,7 @@ class ScriptFinder {
         return findScript(script, null);
     }
 
-    FileOrStream findScriptEx(final String script) throws IOException {
+    public FileOrStream findScriptEx(final String script) throws IOException {
         return findScriptEx(script, null);
     }
 
