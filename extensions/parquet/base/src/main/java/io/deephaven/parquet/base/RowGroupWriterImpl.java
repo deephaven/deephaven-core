@@ -30,12 +30,12 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     private final Compressor compressor;
 
     RowGroupWriterImpl(String path,
-                       boolean append,
-                       SeekableChannelsProvider channelsProvider,
-                       MessageType type,
-                       int targetPageSize,
-                       ByteBufferAllocator allocator,
-                       Compressor compressor)
+            boolean append,
+            SeekableChannelsProvider channelsProvider,
+            MessageType type,
+            int targetPageSize,
+            ByteBufferAllocator allocator,
+            Compressor compressor)
             throws IOException {
         this(channelsProvider.getWriteChannel(path, append), type, targetPageSize, allocator, blockWithPath(path),
                 compressor);
@@ -48,20 +48,20 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     }
 
     RowGroupWriterImpl(SeekableByteChannel writeChannel,
-                       MessageType type,
-                       int targetPageSize,
-                       ByteBufferAllocator allocator,
-                       Compressor compressor) {
+            MessageType type,
+            int targetPageSize,
+            ByteBufferAllocator allocator,
+            Compressor compressor) {
         this(writeChannel, type, targetPageSize, allocator, new BlockMetaData(), compressor);
     }
 
 
     private RowGroupWriterImpl(SeekableByteChannel writeChannel,
-                               MessageType type,
-                               int targetPageSize,
-                               ByteBufferAllocator allocator,
-                               BlockMetaData blockMetaData,
-                               Compressor compressor) {
+            MessageType type,
+            int targetPageSize,
+            ByteBufferAllocator allocator,
+            BlockMetaData blockMetaData,
+            Compressor compressor) {
         this.writeChannel = writeChannel;
         this.type = type;
         this.targetPageSize = targetPageSize;

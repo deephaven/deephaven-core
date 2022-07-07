@@ -66,20 +66,22 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     private static volatile int defaultTargetPageSize = 1 << 20;
 
     /**
-     * Set the default target page size (in bytes) used to section rows of data into pages during column writing.  This
+     * Set the default target page size (in bytes) used to section rows of data into pages during column writing. This
      * number should be no smaller than {@link #MIN_DEFAULT_PAGE_SIZE}.
      *
      * @param newDefaultSizeBytes the new default target page size.
      */
     public static void setDefaultTargetPageSize(final int newDefaultSizeBytes) {
-        if(newDefaultSizeBytes < MIN_DEFAULT_PAGE_SIZE) {
-            throw new IllegalArgumentException("default page sizes should be larger than " + MIN_DEFAULT_PAGE_SIZE + " bytes");
+        if (newDefaultSizeBytes < MIN_DEFAULT_PAGE_SIZE) {
+            throw new IllegalArgumentException(
+                    "default page sizes should be larger than " + MIN_DEFAULT_PAGE_SIZE + " bytes");
         }
         defaultTargetPageSize = newDefaultSizeBytes;
     }
 
     /**
      * Get the current default target page size in bytes.
+     * 
      * @return the current default target page size in bytes.
      */
     public static int getDefaultTargetPageSize() {
@@ -535,7 +537,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public Builder setTargetPageSize(final int targetPageSize) {
-            if(targetPageSize < MIN_DEFAULT_PAGE_SIZE) {
+            if (targetPageSize < MIN_DEFAULT_PAGE_SIZE) {
                 throw new IllegalArgumentException("Target page size should be >= " + MIN_DEFAULT_PAGE_SIZE);
             }
             this.targetPageSize = targetPageSize;

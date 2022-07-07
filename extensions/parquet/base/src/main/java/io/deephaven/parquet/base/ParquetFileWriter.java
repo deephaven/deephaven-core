@@ -68,7 +68,8 @@ public class ParquetFileWriter {
     }
 
     public RowGroupWriter addRowGroup(final long size) {
-        RowGroupWriterImpl rowGroupWriter = new RowGroupWriterImpl(writeChannel, type, targetPageSize, allocator, compressor);
+        RowGroupWriterImpl rowGroupWriter =
+                new RowGroupWriterImpl(writeChannel, type, targetPageSize, allocator, compressor);
         rowGroupWriter.getBlock().setRowCount(size);
         blocks.add(rowGroupWriter.getBlock());
         offsetIndexes.add(rowGroupWriter.offsetIndexes());

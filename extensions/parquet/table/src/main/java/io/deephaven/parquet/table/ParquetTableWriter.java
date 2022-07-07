@@ -433,7 +433,7 @@ public class ParquetTableWriter {
                 && !CodecLookup.explicitCodecPresent(writeInstructions.getCodecName(columnDefinition.getName()))
                 && !CodecLookup.codecRequired(columnDefinition)) {
             final int targetRowsPerPage = getTargetRowsPerPage(columnSource.getComponentType(),
-                                                               writeInstructions.getTargetPageSize());
+                    writeInstructions.getTargetPageSize());
             final HashMap<String, ColumnSource<?>> columns = new HashMap<>();
             columns.put("array", columnSource);
             final Table lengthsTable = new QueryTable(tableRowSet, columns);
@@ -503,9 +503,9 @@ public class ParquetTableWriter {
             columnSource = ungroupedArrays.getColumnSource("array");
         } else {
             final int finalTargetSize = getTargetRowsPerPage(columnSource.getType(),
-                                                             writeInstructions.getTargetPageSize());
+                    writeInstructions.getTargetPageSize());
             rowStepGetter = valuesStepGetter = () -> finalTargetSize;
-            maxValuesPerPage = maxOriginalRowsPerPage = (int)Math.min(rowSet.size(), finalTargetSize);
+            maxValuesPerPage = maxOriginalRowsPerPage = (int) Math.min(rowSet.size(), finalTargetSize);
             pageCount = (int) (rowSet.size() / finalTargetSize + ((rowSet.size() % finalTargetSize) == 0 ? 0 : 1));
         }
 
@@ -596,8 +596,7 @@ public class ParquetTableWriter {
                                 lengthIndexIt.getNextRowSequenceWithLength(rowStepGetter.getAsLong())).asIntChunk();
                         lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                         repeatCount.limit(lenChunk.size());
-                        columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount()
-                        );
+                        columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount());
                         repeatCount.clear();
                     } else if (supportNulls) {
                         columnWriter.addPage(bufferToWrite, transferObject.rowCount());
@@ -693,8 +692,7 @@ public class ParquetTableWriter {
             for (final IntBuffer pageBuffer : pageBuffers) {
                 pageBuffer.flip();
                 if (lengthSource != null) {
-                    columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining()
-                    );
+                    columnWriter.addVectorPage(pageBuffer, arraySizeIt.next(), pageBuffer.remaining());
                 } else if (hasNulls) {
                     columnWriter.addPage(pageBuffer, pageBuffer.remaining());
                 } else {
@@ -718,7 +716,7 @@ public class ParquetTableWriter {
      * @return the number of rows that fit within the target page size.
      */
     private static int getTargetRowsPerPage(@NotNull final Class<?> columnType,
-                                            final int targetPageSize)
+            final int targetPageSize)
             throws IllegalAccessException {
         if (columnType == Boolean.class) {
             return targetPageSize * 8;
