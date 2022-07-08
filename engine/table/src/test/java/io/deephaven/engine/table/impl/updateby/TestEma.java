@@ -48,12 +48,12 @@ public class TestEma extends BaseUpdateByTest {
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
         final EmaControl skipControl = EmaControl.builder()
-                .onNullValue(BadDataBehavior.Skip)
-                .onNanValue(BadDataBehavior.Skip).build();
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
 
         final EmaControl resetControl = EmaControl.builder()
-                .onNullValue(BadDataBehavior.Reset)
-                .onNanValue(BadDataBehavior.Reset).build();
+                .onNullValue(BadDataBehavior.RESET)
+                .onNanValue(BadDataBehavior.RESET).build();
 
         computeEma((TableWithDefaults) t.dropColumns("ts"), null, 100, skipControl);
         computeEma((TableWithDefaults) t.dropColumns("ts"), null, 100, resetControl);
@@ -82,12 +82,12 @@ public class TestEma extends BaseUpdateByTest {
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
         final EmaControl skipControl = EmaControl.builder()
-                .onNullValue(BadDataBehavior.Skip)
-                .onNanValue(BadDataBehavior.Skip).build();
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
 
         final EmaControl resetControl = EmaControl.builder()
-                .onNullValue(BadDataBehavior.Reset)
-                .onNanValue(BadDataBehavior.Reset).build();
+                .onNullValue(BadDataBehavior.RESET)
+                .onNanValue(BadDataBehavior.RESET).build();
         computeEma((TableWithDefaults) t.dropColumns("ts"), null, 100, skipControl, "Sym");
         computeEma((TableWithDefaults) t.dropColumns("ts"), null, 100, resetControl, "Sym");
 
@@ -98,7 +98,7 @@ public class TestEma extends BaseUpdateByTest {
     @Test
     public void testThrowBehaviors() {
         final EmaControl throwControl = EmaControl.builder()
-                .onNullValue(BadDataBehavior.Throw).build();
+                .onNullValue(BadDataBehavior.THROW).build();
 
         final TableWithDefaults bytes = testTable(RowSetFactory.flat(4).toTracking(),
                 byteCol("col", (byte) 0, (byte) 1, NULL_BYTE, (byte) 3));
@@ -133,12 +133,12 @@ public class TestEma extends BaseUpdateByTest {
 
         assertThrows(TableDataException.class,
                 () -> floats.updateBy(
-                        UpdateByClause.Ema(EmaControl.builder().onNullValue(BadDataBehavior.Throw).build(), 10)),
+                        UpdateByClause.Ema(EmaControl.builder().onNullValue(BadDataBehavior.THROW).build(), 10)),
                 "Encountered null value during EMA processing");
 
         assertThrows(TableDataException.class,
                 () -> floats.updateBy(
-                        UpdateByClause.Ema(EmaControl.builder().onNanValue(BadDataBehavior.Throw).build(), 10)),
+                        UpdateByClause.Ema(EmaControl.builder().onNanValue(BadDataBehavior.THROW).build(), 10)),
                 "Encountered NaN value during EMA processing");
 
         TableWithDefaults doubles = testTable(RowSetFactory.flat(4).toTracking(),
@@ -146,12 +146,12 @@ public class TestEma extends BaseUpdateByTest {
 
         assertThrows(TableDataException.class,
                 () -> doubles.updateBy(
-                        UpdateByClause.Ema(EmaControl.builder().onNullValue(BadDataBehavior.Throw).build(), 10)),
+                        UpdateByClause.Ema(EmaControl.builder().onNullValue(BadDataBehavior.THROW).build(), 10)),
                 "Encountered null value during EMA processing");
 
         assertThrows(TableDataException.class,
                 () -> doubles.updateBy(
-                        UpdateByClause.Ema(EmaControl.builder().onNanValue(BadDataBehavior.Throw).build(), 10)),
+                        UpdateByClause.Ema(EmaControl.builder().onNanValue(BadDataBehavior.THROW).build(), 10)),
                 "Encountered NaN value during EMA processing");
 
 
@@ -227,16 +227,16 @@ public class TestEma extends BaseUpdateByTest {
         assertThrows(TableDataException.class,
                 () -> table.updateBy(UpdateByClause.Ema(
                         EmaControl.builder()
-                                .onNegativeDeltaTime(BadDataBehavior.Skip)
-                                .onZeroDeltaTime(BadDataBehavior.Throw).build(),
+                                .onNegativeDeltaTime(BadDataBehavior.SKIP)
+                                .onZeroDeltaTime(BadDataBehavior.THROW).build(),
                         "ts", 100)),
                 "Encountered zero delta time during EMA processing");
 
         assertThrows(TableDataException.class,
                 () -> table.updateBy(UpdateByClause.Ema(
                         EmaControl.builder()
-                                .onNegativeDeltaTime(BadDataBehavior.Skip)
-                                .onNullTime(BadDataBehavior.Throw).build(),
+                                .onNegativeDeltaTime(BadDataBehavior.SKIP)
+                                .onNullTime(BadDataBehavior.THROW).build(),
                         "ts", 100)),
                 "Encountered null timestamp during EMA processing");
     }
@@ -283,7 +283,7 @@ public class TestEma extends BaseUpdateByTest {
 
         // Test reset for NaN values
         final EmaControl resetControl = EmaControl.builder()
-                .onNanValue(BadDataBehavior.Reset)
+                .onNanValue(BadDataBehavior.RESET)
                 .build();
 
         TableWithDefaults input = testTable(RowSetFactory.flat(3).toTracking(), doubleCol("col", 0, Double.NaN, 1));
@@ -298,9 +298,9 @@ public class TestEma extends BaseUpdateByTest {
     }
 
     private void testResetBehaviorInternal(Table expected, final ColumnHolder ts, final ColumnHolder col) {
-        final EmaControl resetControl = EmaControl.builder().onNegativeDeltaTime(BadDataBehavior.Reset)
-                .onNullTime(BadDataBehavior.Reset)
-                .onZeroDeltaTime(BadDataBehavior.Reset)
+        final EmaControl resetControl = EmaControl.builder().onNegativeDeltaTime(BadDataBehavior.RESET)
+                .onNullTime(BadDataBehavior.RESET)
+                .onZeroDeltaTime(BadDataBehavior.RESET)
                 .build();
 
         TableWithDefaults input = testTable(RowSetFactory.flat(6).toTracking(), ts, col);
@@ -310,10 +310,10 @@ public class TestEma extends BaseUpdateByTest {
 
     @Test
     public void testPoison() {
-        final EmaControl nanCtl = EmaControl.builder().onNanValue(BadDataBehavior.Poison)
-                .onNullValue(BadDataBehavior.Reset)
-                .onNullTime(BadDataBehavior.Reset)
-                .onNegativeDeltaTime(BadDataBehavior.Reset)
+        final EmaControl nanCtl = EmaControl.builder().onNanValue(BadDataBehavior.POISON)
+                .onNullValue(BadDataBehavior.RESET)
+                .onNullTime(BadDataBehavior.RESET)
+                .onNegativeDeltaTime(BadDataBehavior.RESET)
                 .build();
 
         Table expected = testTable(RowSetFactory.flat(5).toTracking(),
@@ -381,12 +381,12 @@ public class TestEma extends BaseUpdateByTest {
         }
 
         final EmaControl skipControl = EmaControl.builder()
-                .onNullValue(BadDataBehavior.Skip)
-                .onNanValue(BadDataBehavior.Skip).build();
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
 
         final EmaControl resetControl = EmaControl.builder()
-                .onNullValue(BadDataBehavior.Reset)
-                .onNanValue(BadDataBehavior.Reset).build();
+                .onNullValue(BadDataBehavior.RESET)
+                .onNanValue(BadDataBehavior.RESET).build();
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 new EvalNugget() {
@@ -464,10 +464,10 @@ public class TestEma extends BaseUpdateByTest {
             String... groups) {
         final boolean useTicks = StringUtils.isNullOrEmpty(tsCol);
         final ByEmaSimple bes = new ByEmaSimple(
-                control.onNullValue() == BadDataBehavior.Reset
+                control.onNullValueOrDefault() == BadDataBehavior.RESET
                         ? ByEma.BadDataBehavior.BD_RESET
                         : ByEma.BadDataBehavior.BD_SKIP,
-                control.onNanValue() == BadDataBehavior.Reset
+                control.onNanValueOrDefault() == BadDataBehavior.RESET
                         ? ByEma.BadDataBehavior.BD_RESET
                         : ByEma.BadDataBehavior.BD_SKIP,
                 useTicks ? AbstractMa.Mode.TICK : AbstractMa.Mode.TIME,

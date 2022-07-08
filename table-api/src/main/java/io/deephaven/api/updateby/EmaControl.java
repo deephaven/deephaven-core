@@ -1,10 +1,11 @@
 package io.deephaven.api.updateby;
 
+import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Default;
 import io.deephaven.annotations.BuildableStyle;
 
 import java.math.MathContext;
+import java.util.Optional;
 
 /**
  * <p>
@@ -29,67 +30,95 @@ public abstract class EmaControl {
         return ImmutableEmaControl.builder();
     }
 
-    public final static EmaControl DEFAULT = ImmutableEmaControl.builder().build();
+    public static EmaControl defaultInstance() {
+        return builder().build();
+    }
+
+    public abstract Optional<BadDataBehavior> onNullValue();
+
+    public abstract Optional<BadDataBehavior> onNanValue();
+
+    public abstract Optional<BadDataBehavior> onNullTime();
+
+    public abstract Optional<BadDataBehavior> onNegativeDeltaTime();
+
+    public abstract Optional<BadDataBehavior> onZeroDeltaTime();
+
+    public abstract Optional<MathContext> bigValueContext();
 
     /**
-     * Get the behavior for when null values are encountered.
+     * Get the behavior for when {@code null} values are encountered. Defaults to {@link BadDataBehavior#SKIP SKIP}.
      * 
-     * @return the behavior for null values.
+     * @return the behavior for {@code null} values.
      */
-    @Default
-    public BadDataBehavior onNullValue() {
-        return BadDataBehavior.Skip;
+    @Value.Derived
+    public BadDataBehavior onNullValueOrDefault() {
+        return onNullValue().orElse(BadDataBehavior.SKIP);
     }
 
     /**
-     * Get the behavior for when NaN values are encountered.
+     * Get the behavior for when {@link Double#NaN} values are encountered. Defaults to {@link BadDataBehavior#SKIP
+     * SKIP}.
      * 
-     * @return the behavior for NaN values
+     * @return the behavior for {@link Double#NaN} values
      */
-    @Default
-    public BadDataBehavior onNanValue() {
-        return BadDataBehavior.Skip;
+    @Value.Derived
+    public BadDataBehavior onNanValueOrDefault() {
+        return onNanValue().orElse(BadDataBehavior.SKIP);
     }
 
     /**
-     * Get the behavior for when null timestamps are encountered.
+     * Get the behavior for when {@code null} timestamps are encountered. Defaults to {@link BadDataBehavior#SKIP SKIP}.
      * 
-     * @return the behavior for null timestamps.
+     * @return the behavior for {@code null} timestamps.
      */
-    @Default
-    public BadDataBehavior onNullTime() {
-        return BadDataBehavior.Skip;
+    @Value.Derived
+    public BadDataBehavior onNullTimeOrDefault() {
+        return onNullTime().orElse(BadDataBehavior.SKIP);
     }
 
     /**
-     * Get the behavior for when negative sample-to-sample time differences are encountered
+     * Get the behavior for when negative sample-to-sample time differences are encountered. Defaults to
+     * {@link BadDataBehavior#THROW THROW}.
      * 
      * @return the behavior for when dt is negative
      */
-    @Default
-    public BadDataBehavior onNegativeDeltaTime() {
-        return BadDataBehavior.Throw;
+    @Value.Derived
+    public BadDataBehavior onNegativeDeltaTimeOrDefault() {
+        return onNegativeDeltaTime().orElse(BadDataBehavior.THROW);
     }
 
     /**
-     * Get the behavior for when zero sample-to-sample-time differences are encountered.
+     * Get the behavior for when zero sample-to-sample-time differences are encountered. Defaults to
+     * {@link BadDataBehavior#SKIP SKIP}.
      * 
      * @return the behavior for when dt is zero
      */
-    @Default
-    public BadDataBehavior onZeroDeltaTime() {
-        return BadDataBehavior.Skip;
+    @Value.Derived
+    public BadDataBehavior onZeroDeltaTimeOrDefault() {
+        return onZeroDeltaTime().orElse(BadDataBehavior.SKIP);
     }
 
     /**
      * Get the {@link MathContext} to use when processing {@link java.math.BigInteger} and {@link java.math.BigDecimal}
-     * values.
+     * values. Defaults to {@link MathContext#DECIMAL128}.
      * 
      * @return the {@link MathContext}
      */
-    @Default
-    public MathContext bigValueContext() {
-        return MathContext.DECIMAL128;
+    @Value.Derived
+    public MathContext bigValueContextOrDefault() {
+        return bigValueContext().orElse(MathContext.DECIMAL128);
+    }
+
+    public final EmaControl materialize() {
+        return builder()
+                .onNullValue(onNullValueOrDefault())
+                .onNanValue(onNanValueOrDefault())
+                .onNullTime(onNullTimeOrDefault())
+                .onNegativeDeltaTime(onNegativeDeltaTimeOrDefault())
+                .onZeroDeltaTime(onZeroDeltaTimeOrDefault())
+                .bigValueContext(bigValueContextOrDefault())
+                .build();
     }
 
     public interface Builder {

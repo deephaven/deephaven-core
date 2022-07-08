@@ -5,14 +5,14 @@ package io.deephaven.api.updateby;
  */
 public enum BadDataBehavior {
     /** Reset the state for the bucket to {@code null} when invalid data is encountered */
-    Reset,
+    RESET,
 
     /** Skip and do not process the invalid data without changing state */
-    Skip,
+    SKIP,
 
     /** Throw an exception and abort processing when bad data is encountered */
-    Throw,
+    THROW,
 
     /** Allow the bad data to poison the result. This is only valid for use with NaN */
-    Poison
+    POISON
 }
