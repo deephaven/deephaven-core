@@ -48,7 +48,7 @@ public
 // endregion class visibility
 class IncrementalUpdateByStateManager
         // region extensions
-        implements UpdateByStateManager
+        extends UpdateByStateManager
     // endregion extensions
 {
     // region constants
@@ -162,6 +162,7 @@ class IncrementalUpdateByStateManager
                                     // endregion constructor arguments
     ) {
         // region super
+        super(tableKeySources);
         // endregion super
         keyColumnCount = tableKeySources.length;
 
