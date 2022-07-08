@@ -27,7 +27,7 @@ import java.nio.IntBuffer;
 /**
  * A writer for encoding doubles in the PLAIN format
  */
-public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuffer, Double> {
+public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Double.BYTES;
 
     private final int targetPageSize;

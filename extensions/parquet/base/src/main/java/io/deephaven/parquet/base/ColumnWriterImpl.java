@@ -173,7 +173,7 @@ public class ColumnWriterImpl implements ColumnWriter {
             case BINARY:
                 return new PlainBinaryChunkedWriter(targetPageSize, allocator);
             case BOOLEAN:
-                return new PlainBooleanChunkedWriter(targetPageSize, allocator);
+                return new PlainBooleanChunkedWriter();
             default:
                 throw new UnsupportedOperationException("Unknown type " + primitiveType.getPrimitiveTypeName());
         }

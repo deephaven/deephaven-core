@@ -22,7 +22,7 @@ import java.nio.IntBuffer;
 /**
  * A writer for encoding ints in the PLAIN format
  */
-public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, Integer> {
+public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Integer.BYTES;
 
     private final int targetPageSize;

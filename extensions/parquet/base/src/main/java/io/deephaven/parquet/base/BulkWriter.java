@@ -15,7 +15,7 @@ import java.nio.IntBuffer;
  * Provides the option to write values of specific type in bulk The concrete type of the bulkValue object depends on the
  * specific implementation
  */
-public interface BulkWriter<BUFFER_TYPE, VALUE_TYPE> {
+public interface BulkWriter<BUFFER_TYPE> {
     class WriteResult {
         final int valueCount;
         final IntBuffer nullOffsets;

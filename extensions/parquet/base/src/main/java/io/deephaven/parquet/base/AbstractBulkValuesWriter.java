@@ -15,10 +15,9 @@ import java.nio.IntBuffer;
  * The base class for writing vectors into individual pages.
  *
  * @param <BUFFER_TYPE>
- * @param <VALUE_TYPE>
  */
-public abstract class AbstractBulkValuesWriter<BUFFER_TYPE, VALUE_TYPE> extends ValuesWriter
-        implements BulkWriter<BUFFER_TYPE, VALUE_TYPE> {
+public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
+        implements BulkWriter<BUFFER_TYPE> {
     private static final int RL_FIRST_ELEM = 0;
     private static final int RL_CONSECUTIVE_ELEM = 1;
 

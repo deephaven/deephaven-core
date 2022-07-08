@@ -20,8 +20,7 @@ import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.vector.LongVector;
-import io.deephaven.vector.LongVectorDirect;
+import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.junit.*;
 
@@ -34,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
@@ -373,8 +373,18 @@ public class TestParquetTools {
             QueryLibrary.importClass(LongVectorDirect.class);
             QueryLibrary.importClass(LongVector.class);
             QueryLibrary.importClass(LongStream.class);
+            QueryLibrary.importClass(IntVectorDirect.class);
+            QueryLibrary.importClass(IntVector.class);
+            QueryLibrary.importClass(IntStream.class);
+            QueryLibrary.importClass(TestParquetTools.class);
+
             final Table stuff = emptyTable(10)
-                    .update("Doobles = (LongVector)new LongVectorDirect(LongStream.range(0, (int)(500_000/(k+1))).toArray())");
+                    .update("Biggie = (int)(500_000/(k+1))",
+                            "Doobles = (LongVector)new LongVectorDirect(LongStream.range(0, Biggie).toArray())",
+                            "Woobles = TestParquetTools.generateDoubles(Biggie)",
+                            "Goobles = (IntVector)new IntVectorDirect(IntStream.range(0, 2*Biggie).toArray())",
+                            "Toobles = TestParquetTools.generateDoubles(2*Biggie)",
+                            "Noobles = TestParquetTools.makeSillyStringArray(Biggie)");
 
             final File f2w = new File(testRoot, "bigArray.parquet");
             ParquetTools.writeTable(stuff, f2w);
@@ -384,5 +394,29 @@ public class TestParquetTools {
         } finally {
             QueryLibrary.resetLibrary();
         }
+    }
+
+    public static DoubleVector generateDoubles(int howMany) {
+        final double[] yarr = new double[howMany];
+        for(int ii = 0; ii < howMany; ii++) {
+            yarr[ii] = ii;
+        }
+        return new DoubleVectorDirect(yarr);
+    }
+
+    public static FloatVector generateFloats(int howMany) {
+        final float[] yarr = new float[howMany];
+        for(int ii = 0; ii < howMany; ii++) {
+            yarr[ii] = ii;
+        }
+        return new FloatVectorDirect(yarr);
+    }
+
+    public static ObjectVector<String> makeSillyStringArray(int howMany) {
+        final String[] fireTruck = new String[howMany];
+        for(int ii = 0; ii< howMany; ii++) {
+            fireTruck[ii] = String.format("%04d", ii);
+        }
+        return new ObjectVectorDirect<>(fireTruck);
     }
 }

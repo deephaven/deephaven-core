@@ -19,7 +19,7 @@ import java.nio.IntBuffer;
 /**
  * Plain encoding except for binary values
  */
-public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[], Binary> {
+public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> {
     private final ByteBufferAllocator allocator;
 
     ByteBuffer innerBuffer;
@@ -33,16 +33,7 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
 
     @Override
     public final void writeBytes(Binary v) {
-        if (innerBuffer.remaining() < v.length() + 4) {
-            ByteBuffer newBuffer = allocator.allocate(innerBuffer.capacity() * 2);
-            innerBuffer.flip();
-            newBuffer.mark();
-            newBuffer.put(innerBuffer);
-            allocator.release(innerBuffer);
-            innerBuffer = newBuffer;
-            innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
-            innerBuffer.limit(innerBuffer.capacity());
-        }
+        ensureCapacityFor(v);
         innerBuffer.putInt(v.length());
         innerBuffer.put(v.toByteBuffer());
     }
@@ -125,4 +116,32 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[],
         }
         return new WriteResult(nonNullLeafCount, nullOffsets);
     }
+
+    private void ensureCapacityFor(@NotNull final Binary v) {
+        if(v.length() == 0 || innerBuffer.remaining() > v.length()) {
+            return;
+        }
+
+        final int currentCapacity = innerBuffer.capacity();
+        final int currentPosition = innerBuffer.position();
+        final long requiredCapacity = (long)currentPosition + v.length();
+        if(requiredCapacity > Integer.MAX_VALUE) {
+            throw new IllegalStateException("Unable to write " + requiredCapacity + " values");
+        }
+
+        int newCapacity = currentCapacity * 2;
+        while(newCapacity < requiredCapacity) {
+            newCapacity = Math.min(Integer.MAX_VALUE, newCapacity * 2);
+        }
+
+        final ByteBuffer newBuf = allocator.allocate(newCapacity);
+        newBuf.order(ByteOrder.LITTLE_ENDIAN);
+        newBuf.mark();
+        innerBuffer.flip();
+        newBuf.put(innerBuffer);
+        allocator.release(innerBuffer);
+        this.innerBuffer = newBuf;
+        innerBuffer.mark();
+    }
+
 }

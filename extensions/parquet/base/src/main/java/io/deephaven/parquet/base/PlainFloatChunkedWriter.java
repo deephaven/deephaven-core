@@ -27,7 +27,7 @@ import java.nio.IntBuffer;
 /**
  * A writer for encoding floats in the PLAIN format
  */
-public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffer, Float> {
+public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Float.BYTES;
 
     private final int targetPageSize;

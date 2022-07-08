@@ -22,7 +22,7 @@ import static org.apache.parquet.bytes.BytesInput.concat;
 /**
  * Plain encoding except for booleans
  */
-public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, Integer> {
+public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     private static final Logger LOG = LoggerFactory.getLogger(org.apache.parquet.column.values.plain.PlainValuesWriter.class);
 
     private final RunLengthBitPackingHybridEncoder encoder;

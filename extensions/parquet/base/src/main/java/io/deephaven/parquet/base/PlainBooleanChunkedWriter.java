@@ -19,10 +19,10 @@ import java.nio.IntBuffer;
 /**
  * Plain encoding except for booleans
  */
-public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuffer, Byte> {
+public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuffer> {
     private final BooleanPlainValuesWriter writer;
 
-    public PlainBooleanChunkedWriter(int pageSize, ByteBufferAllocator allocator) {
+    public PlainBooleanChunkedWriter() {
         writer = new BooleanPlainValuesWriter();
     }
 

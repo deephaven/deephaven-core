@@ -27,7 +27,7 @@ import java.nio.IntBuffer;
 /**
  * A writer for encoding longs in the PLAIN format
  */
-public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer, Long> {
+public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Long.BYTES;
 
     private final int targetPageSize;
