@@ -8,6 +8,8 @@
  */
 package io.deephaven.parquet.base;
 
+import java.nio.IntBuffer;
+
 import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
@@ -21,16 +23,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
 
-// Duplicate for Replication
-import java.nio.IntBuffer;
-
 /**
  * A writer for encoding doubles in the PLAIN format
  */
 public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Double.BYTES;
-
-    private final int targetPageSize;
     private final ByteBufferAllocator allocator;
 
     private DoubleBuffer targetBuffer;
@@ -38,8 +35,8 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
 
 
     PlainDoubleChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
-        this.targetPageSize = targetPageSize;
         this.allocator = allocator;
+        realloc(targetPageSize);
     }
 
     @Override
@@ -140,8 +137,8 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
             return;
         }
 
-        final int currentCapacity = targetBuffer == null ? 0 : targetBuffer.capacity();
-        final int currentPosition = targetBuffer == null ? 0 : targetBuffer.position();
+        final int currentCapacity = targetBuffer.capacity();
+        final int currentPosition = targetBuffer.position();
         final int requiredCapacity = currentPosition + valuesToAdd.remaining();
         if(requiredCapacity < currentCapacity) {
             return;
@@ -151,13 +148,15 @@ public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuf
             throw new IllegalStateException("Unable to write " + requiredCapacity + " values");
         }
 
-        int newCapacity = Math.max(targetPageSize / Double.BYTES, currentCapacity * 2);
+        int newCapacity = currentCapacity * 2;
         while(newCapacity < requiredCapacity) {
             newCapacity = Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2);
         }
 
-        newCapacity *= Double.BYTES;
+        realloc(newCapacity * Double.BYTES);
+    }
 
+    private void realloc(final int newCapacity) {
         final ByteBuffer newBuf = allocator.allocate(newCapacity);
         newBuf.order(ByteOrder.LITTLE_ENDIAN);
         final DoubleBuffer newDoubleBuf = newBuf.asDoubleBuffer();

@@ -398,7 +398,7 @@ public class TestParquetTools {
 
     public static DoubleVector generateDoubles(int howMany) {
         final double[] yarr = new double[howMany];
-        for(int ii = 0; ii < howMany; ii++) {
+        for (int ii = 0; ii < howMany; ii++) {
             yarr[ii] = ii;
         }
         return new DoubleVectorDirect(yarr);
@@ -406,7 +406,7 @@ public class TestParquetTools {
 
     public static FloatVector generateFloats(int howMany) {
         final float[] yarr = new float[howMany];
-        for(int ii = 0; ii < howMany; ii++) {
+        for (int ii = 0; ii < howMany; ii++) {
             yarr[ii] = ii;
         }
         return new FloatVectorDirect(yarr);
@@ -414,7 +414,7 @@ public class TestParquetTools {
 
     public static ObjectVector<String> makeSillyStringArray(int howMany) {
         final String[] fireTruck = new String[howMany];
-        for(int ii = 0; ii< howMany; ii++) {
+        for (int ii = 0; ii < howMany; ii++) {
             fireTruck[ii] = String.format("%04d", ii);
         }
         return new ObjectVectorDirect<>(fireTruck);

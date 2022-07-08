@@ -16,16 +16,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
-// Duplicate for Replication
-
-
 /**
  * A writer for encoding ints in the PLAIN format
  */
 public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Integer.BYTES;
-
-    private final int targetPageSize;
     private final ByteBufferAllocator allocator;
 
     private IntBuffer targetBuffer;
@@ -33,8 +28,8 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
 
 
     PlainIntChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
-        this.targetPageSize = targetPageSize;
         this.allocator = allocator;
+        realloc(targetPageSize);
     }
 
     @Override
@@ -135,8 +130,8 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
             return;
         }
 
-        final int currentCapacity = targetBuffer == null ? 0 : targetBuffer.capacity();
-        final int currentPosition = targetBuffer == null ? 0 : targetBuffer.position();
+        final int currentCapacity = targetBuffer.capacity();
+        final int currentPosition = targetBuffer.position();
         final int requiredCapacity = currentPosition + valuesToAdd.remaining();
         if(requiredCapacity < currentCapacity) {
             return;
@@ -146,13 +141,15 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
             throw new IllegalStateException("Unable to write " + requiredCapacity + " values");
         }
 
-        int newCapacity = Math.max(targetPageSize / Integer.BYTES, currentCapacity * 2);
+        int newCapacity = currentCapacity * 2;
         while(newCapacity < requiredCapacity) {
             newCapacity = Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2);
         }
 
-        newCapacity *= Integer.BYTES;
+        realloc(newCapacity * Integer.BYTES);
+    }
 
+    private void realloc(final int newCapacity) {
         final ByteBuffer newBuf = allocator.allocate(newCapacity);
         newBuf.order(ByteOrder.LITTLE_ENDIAN);
         final IntBuffer newIntBuf = newBuf.asIntBuffer();

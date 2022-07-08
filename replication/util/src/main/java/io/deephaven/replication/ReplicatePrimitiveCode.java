@@ -533,16 +533,19 @@ public class ReplicatePrimitiveCode {
         return result;
     }
 
-    public static void intToLongAndFloatingPoints(String sourceClassJavaPath,
-            Map<String, Long> serialVersionUIDs,
-            String... exemptions) throws IOException {
-        intToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions);
-        intToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions);
-        intToLong(sourceClassJavaPath, serialVersionUIDs, exemptions);
+    public static List<String> intToLongAndFloatingPoints(String sourceClassJavaPath,
+                                                          Map<String, Long> serialVersionUIDs,
+                                                          String... exemptions) throws IOException {
+        final List<String> files = new ArrayList<>();
+        files.add(intToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        files.add(intToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions));
+        files.add(intToLong(sourceClassJavaPath, serialVersionUIDs, exemptions));
+
+        return files;
     }
 
-    public static void intToLongAndFloatingPoints(String sourceClassJavaPath, String... exemptions)
+    public static List<String> intToLongAndFloatingPoints(String sourceClassJavaPath, String... exemptions)
             throws IOException {
-        intToLongAndFloatingPoints(sourceClassJavaPath, null, exemptions);
+        return intToLongAndFloatingPoints(sourceClassJavaPath, null, exemptions);
     }
 }
