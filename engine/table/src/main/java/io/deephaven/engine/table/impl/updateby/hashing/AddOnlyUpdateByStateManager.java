@@ -48,8 +48,8 @@ public
 // endregion class visibility
 class AddOnlyUpdateByStateManager
         // region extensions
-        implements UpdateByStateManager
-    // endregion extensions
+        extends UpdateByStateManager
+        // endregion extensions
 {
     // region constants
     public static final int CHUNK_SIZE = 4096;
@@ -162,6 +162,7 @@ class AddOnlyUpdateByStateManager
                                 // endregion constructor arguments
     ) {
         // region super
+        super(tableKeySources);
         // endregion super
         keyColumnCount = tableKeySources.length;
 

@@ -27,6 +27,8 @@ import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerT
 import io.deephaven.engine.table.impl.naturaljoin.TypedNaturalJoinFactory;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.*;
+import io.deephaven.engine.table.impl.updateby.hashing.AddOnlyUpdateByStateManagerTypedBase;
+import io.deephaven.engine.table.impl.updateby.hashing.TypedUpdateByFactory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -323,6 +325,28 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("probeRightSide", "rowState",
                     true, TypedAsOfJoinFactory::rightIncrementalProbeDecorateRightFound, null, hashSlots,
                     sequentialBuilders));
+        } else if (baseClass.equals(AddOnlyUpdateByStateManagerTypedBase.class)) {
+            final TypeName longArraySource = TypeName.get(LongArraySource.class);
+            final ParameterSpec hashSlots = ParameterSpec.builder(longArraySource, "hashSlots").build();
+            final ParameterSpec hashSlotOffset = ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build();
+
+            builder.classPrefix("AddOnlyUpdateByHasher").packageGroup("updateby.hashing")
+                    .packageMiddle("addonlyopen")
+                    .openAddressedAlternate(true)
+                    .stateType(int.class).mainStateName("stateSource")
+                    .overflowOrAlternateStateName("alternateStateSource")
+                    .emptyStateName("EMPTY_RIGHT_VALUE")
+                    .includeOriginalSources(true)
+                    .supportRehash(true)
+                    .addExtraPartialRehashParameter(hashSlots)
+                    .moveMainFull(TypedUpdateByFactory::addOnlyMoveMainFull)
+                    .moveMainAlternate(TypedUpdateByFactory::addOnlyMoveMainAlternate)
+                    .alwaysMoveMain(true)
+                    .rehashFullSetup(TypedUpdateByFactory::addOnlyRehashSetup);
+
+            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
+                    true, true, TypedUpdateByFactory::addOnlyBuildLeftFound,
+                    TypedUpdateByFactory::addOnlyBuildLeftInsert, hashSlots, hashSlotOffset));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
