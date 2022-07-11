@@ -133,9 +133,10 @@ class ZeroKeyUpdateBy extends UpdateBy {
         UpdateContext(@NotNull final TableUpdate upstream,
                 @Nullable final ModifiedColumnSet[] inputModifiedColumnSets,
                 final boolean isInitializeStep) {
-            final int updateSize = UpdateSizeCalculator.chunkSize(upstream, control.chunkCapacity());
+            final int updateSize = UpdateSizeCalculator.chunkSize(upstream, control.chunkCapacityOrDefault());
 
-            this.chunkSize = UpdateSizeCalculator.chunkSize(updateSize, upstream.shifted(), control.chunkCapacity());
+            this.chunkSize =
+                    UpdateSizeCalculator.chunkSize(updateSize, upstream.shifted(), control.chunkCapacityOrDefault());
             this.opAffected = new boolean[operators.length];
             // noinspection unchecked
             this.fillContexts = new SizedSafeCloseable[operators.length];
@@ -413,7 +414,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
             final RowSet sourceRowSet = source.getRowSet();
             try (final RowSet indexToReprocess =
                     sourceRowSet.subSetByKeyRange(smallestModifiedKey, sourceRowSet.lastRowKey())) {
-                final int newChunkSize = (int) Math.min(control.chunkCapacity(), indexToReprocess.size());
+                final int newChunkSize = (int) Math.min(control.chunkCapacityOrDefault(), indexToReprocess.size());
                 setChunkSize(newChunkSize);
 
                 final long keyBefore;

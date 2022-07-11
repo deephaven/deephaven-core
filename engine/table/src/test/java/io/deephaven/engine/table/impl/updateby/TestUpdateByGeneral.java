@@ -76,8 +76,8 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
         }
 
         final EmaControl skipControl = EmaControl.builder()
-                .onNullValue(BadDataBehavior.Skip)
-                .onNanValue(BadDataBehavior.Skip).build();
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 new EvalNugget() {
@@ -100,19 +100,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                                 UpdateByClause.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
                                 UpdateByClause
                                         .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
-
-                        final UpdateByControl control;
-                        if (redirected) {
-                            control = new UpdateByControl() {
-                                @Override
-                                public boolean useRedirection() {
-                                    return true;
-                                }
-                            };
-                        } else {
-                            control = UpdateByControl.defaultInstance();
-                        }
-
+                        final UpdateByControl control = UpdateByControl.builder().useRedirection(redirected).build();
                         return bucketed
                                 ? base.updateBy(control, clauses, Selectable.from("Sym"))
                                 : base.updateBy(control, clauses);

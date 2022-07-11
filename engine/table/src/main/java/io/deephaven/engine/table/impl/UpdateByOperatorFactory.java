@@ -225,28 +225,28 @@ public class UpdateByOperatorFactory {
             final long timeScaleUnits = ema.timeScale().timescaleUnits();
 
             if (csType == byte.class || csType == Byte.class) {
-                return new ByteEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
+                return new ByteEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
+                return new ShortEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
+                return new IntEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
+                return new LongEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
+                return new FloatEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleEMAOperator(pair, affectingColumns, ema.control(), recorder,
+                return new DoubleEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder,
                         timeScaleUnits, columnSource, rowRedirection);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalEMAOperator(pair, affectingColumns, ema.control(), recorder,
+                return new BigDecimalEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder,
                         timeScaleUnits, columnSource, rowRedirection);
             } else if (csType == BigInteger.class) {
-                return new BigIntegerEMAOperator(pair, affectingColumns, ema.control(), recorder,
+                return new BigIntegerEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder,
                         timeScaleUnits, columnSource, rowRedirection);
             }
 
@@ -285,7 +285,7 @@ public class UpdateByOperatorFactory {
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleCumProdOperator(fc, rowRedirection);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalCumProdOperator(fc, rowRedirection, control.mathContext());
+                return new BigDecimalCumProdOperator(fc, rowRedirection, control.mathContextOrDefault());
             } else if (csType == BigInteger.class) {
                 return new BigIntegerCumProdOperator(fc, rowRedirection);
             }
@@ -333,7 +333,7 @@ public class UpdateByOperatorFactory {
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleCumSumOperator(fc, rowRedirection);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalCumSumOperator(fc, rowRedirection, control.mathContext());
+                return new BigDecimalCumSumOperator(fc, rowRedirection, control.mathContextOrDefault());
             } else if (csType == BigInteger.class) {
                 return new BigIntegerCumSumOperator(fc, rowRedirection);
             }

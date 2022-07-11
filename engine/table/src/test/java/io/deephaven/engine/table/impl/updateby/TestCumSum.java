@@ -321,7 +321,7 @@ public class TestCumSum extends BaseUpdateByTest {
                 result[i] = result[i - 1];
             } else if (isBD) {
                 result[i] = ((BigDecimal) result[i - 1]).add((BigDecimal) values[i],
-                        UpdateByControl.defaultInstance().mathContext());
+                        UpdateByControl.mathContextDefault());
             } else {
                 result[i] = ((BigInteger) result[i - 1]).add((BigInteger) values[i]);
             }

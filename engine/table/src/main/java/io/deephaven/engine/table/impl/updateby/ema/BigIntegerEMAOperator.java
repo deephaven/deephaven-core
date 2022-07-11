@@ -55,15 +55,15 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
             if(input == null) {
                 handleBadData(ctx, true, false);
             } else {
-                final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContext());
+                final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
                 if(ctx.curVal == null) {
                     ctx.curVal = decimalInput;
                 } else {
-                    ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContext())
+                    ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContextOrDefault())
                             .add(decimalInput.multiply(
-                                            BigDecimal.ONE.subtract(ctx.alpha, control.bigValueContext()),
-                                            control.bigValueContext()),
-                                    control.bigValueContext());
+                                            BigDecimal.ONE.subtract(ctx.alpha, control.bigValueContextOrDefault()),
+                                            control.bigValueContextOrDefault()),
+                                    control.bigValueContextOrDefault());
                 }
             }
 
@@ -86,7 +86,7 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
             if(isNull || isNullTime) {
                 handleBadData(ctx, isNull, isNullTime);
             } else {
-                final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContext());
+                final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
                 if(ctx.curVal == null) {
                     ctx.curVal = decimalInput;
                     ctx.lastStamp = timestamp;
@@ -96,9 +96,9 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                         handleBadTime(ctx, dt);
                     } else {
                         ctx.alpha = BigDecimal.valueOf(Math.exp(-dt / timeScaleUnits));
-                        ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContext())
-                                .add(decimalInput.multiply(BigDecimal.ONE.subtract(ctx.alpha, control.bigValueContext()), control.bigValueContext()),
-                                        control.bigValueContext());
+                        ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContextOrDefault())
+                                .add(decimalInput.multiply(BigDecimal.ONE.subtract(ctx.alpha, control.bigValueContextOrDefault()), control.bigValueContextOrDefault()),
+                                        control.bigValueContextOrDefault());
                         ctx.lastStamp = timestamp;
                     }
                 }

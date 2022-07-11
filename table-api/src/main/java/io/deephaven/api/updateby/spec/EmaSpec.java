@@ -3,9 +3,9 @@ package io.deephaven.api.updateby.spec;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.updateby.EmaControl;
 import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Parameter;
 
 import java.time.Duration;
+import java.util.Optional;
 
 /**
  * A {@link UpdateBySpec} for performing an Exponential Moving Average across the specified columns
@@ -13,57 +13,50 @@ import java.time.Duration;
 @Immutable
 @BuildableStyle
 public abstract class EmaSpec extends UpdateBySpecBase {
+
+    public static EmaSpec of(EmaControl control, TimeScale timeScale) {
+        return ImmutableEmaSpec.builder().control(control).timeScale(timeScale).build();
+    }
+
+    public static EmaSpec of(TimeScale timeScale) {
+        return ImmutableEmaSpec.builder().timeScale(timeScale).build();
+    }
+
     public static EmaSpec ofTime(final EmaControl control,
             final String timestampCol,
             long timeScaleNanos) {
-        return ImmutableEmaSpec.builder()
-                .control(control)
-                .timeScale(TimeScale.ofTime(timestampCol, timeScaleNanos))
-                .build();
+        return of(control, TimeScale.ofTime(timestampCol, timeScaleNanos));
     }
 
     public static EmaSpec ofTime(final String timestampCol, long timeScaleNanos) {
-        return ImmutableEmaSpec.builder()
-                .control(EmaControl.DEFAULT)
-                .timeScale(TimeScale.ofTime(timestampCol, timeScaleNanos))
-                .build();
+        return of(TimeScale.ofTime(timestampCol, timeScaleNanos));
     }
 
     public static EmaSpec ofTime(final EmaControl control,
             final String timestampCol,
             Duration emaDuration) {
-        return ImmutableEmaSpec.builder()
-                .control(control)
-                .timeScale(TimeScale.ofTime(timestampCol, emaDuration))
-                .build();
+        return of(control, TimeScale.ofTime(timestampCol, emaDuration));
     }
 
     public static EmaSpec ofTime(final String timestampCol, Duration emaDuration) {
-        return ImmutableEmaSpec.builder()
-                .control(EmaControl.DEFAULT)
-                .timeScale(TimeScale.ofTime(timestampCol, emaDuration))
-                .build();
+        return of(TimeScale.ofTime(timestampCol, emaDuration));
     }
 
     public static EmaSpec ofTicks(EmaControl control, long tickWindow) {
-        return ImmutableEmaSpec.builder()
-                .control(control)
-                .timeScale(TimeScale.ofTicks(tickWindow))
-                .build();
+        return of(control, TimeScale.ofTicks(tickWindow));
     }
 
     public static EmaSpec ofTicks(long tickWindow) {
-        return ImmutableEmaSpec.builder()
-                .control(EmaControl.DEFAULT)
-                .timeScale(TimeScale.ofTicks(tickWindow))
-                .build();
+        return of(TimeScale.ofTicks(tickWindow));
     }
 
-    @Parameter
-    public abstract EmaControl control();
+    public abstract Optional<EmaControl> control();
 
-    @Parameter
     public abstract TimeScale timeScale();
+
+    public final EmaControl controlOrDefault() {
+        return control().orElseGet(EmaControl::defaultInstance);
+    }
 
     @Override
     public final boolean applicableTo(Class<?> inputType) {

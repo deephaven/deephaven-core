@@ -87,10 +87,10 @@ public abstract class UpdateBy {
             @NotNull final UpdateByControl control) {
 
         WritableRowRedirection rowRedirection = null;
-        if (control.useRedirection()) {
+        if (control.useRedirectionOrDefault()) {
             if (!source.isRefreshing()) {
                 if (!source.isFlat() && SparseConstants.sparseStructureExceedsOverhead(source.getRowSet(),
-                        control.maxStaticSparseMemoryOverhead())) {
+                        control.maxStaticSparseMemoryOverheadOrDefault())) {
                     rowRedirection = new InverseRowRedirectionImpl(source.getRowSet());
                 }
             } else {
