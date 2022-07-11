@@ -534,8 +534,8 @@ public class ReplicatePrimitiveCode {
     }
 
     public static List<String> intToLongAndFloatingPoints(String sourceClassJavaPath,
-                                                          Map<String, Long> serialVersionUIDs,
-                                                          String... exemptions) throws IOException {
+            Map<String, Long> serialVersionUIDs,
+            String... exemptions) throws IOException {
         final List<String> files = new ArrayList<>();
         files.add(intToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions));
         files.add(intToFloat(sourceClassJavaPath, serialVersionUIDs, exemptions));
