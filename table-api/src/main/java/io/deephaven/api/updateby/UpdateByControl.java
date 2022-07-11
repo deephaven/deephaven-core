@@ -4,7 +4,6 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Default;
 
 import javax.annotation.Nullable;
 import java.math.MathContext;
@@ -18,45 +17,76 @@ import java.util.OptionalInt;
 @Immutable
 @BuildableStyle
 public abstract class UpdateByControl {
+
+    public static final String USE_REDIRECTION_PROPERTY = "UpdateByControl.useRedirection";
+    public static final String CHUNK_CAPACITY_PROPERTY = "UpdateByControl.chunkCapacity";
+    public static final String MAXIMUM_STATIC_MEMORY_OVERHEAD_PROPERTY = "UpdateByControl.maximumStaticMemoryOverhead";
+    public static final String INITIAL_HASH_TABLE_SIZE_PROPERTY = "UpdateByControl.initialHashTableSize";
+    public static final String MAXIMUM_LOAD_FACTOR_PROPERTY = "UpdateByControl.maximumLoadFactor";
+    public static final String TARGET_LOAD_FACTOR_PROPERTY = "UpdateByControl.targetLoadFactor";
+    public static final String MATH_CONTEXT_PROPERTY = "UpdateByControl.mathContext";
+
     public static Builder builder() {
         return ImmutableUpdateByControl.builder();
     }
 
     /**
-     * Get an instance of UpdateByControl with the defaults from the system properties applied.
+     * Creates an instance with none of the values explicitly set. Equivalent to {@code builder().build()}.
      *
-     * @return default UpdateByControl
+     * @return the default instance
      */
     public static UpdateByControl defaultInstance() {
         return builder().build();
     }
 
+    /**
+     * Default is {@code false}. Can be changed with system property {@value USE_REDIRECTION_PROPERTY}.
+     */
     public static boolean useRedirectionDefault() {
-        return Boolean.getBoolean("UpdateByControl.useRedirection");
+        return Boolean.getBoolean(USE_REDIRECTION_PROPERTY);
     }
 
+    /**
+     * Default is {@code 4096}. Can be changed with system property {@value CHUNK_CAPACITY_PROPERTY}.
+     */
     public static int chunkCapacityDefault() {
-        return Integer.getInteger("UpdateByControl.chunkCapacity", 4096);
+        return Integer.getInteger(CHUNK_CAPACITY_PROPERTY, 4096);
     }
 
+    /**
+     * Default is {@code 1.1}. Can be changed with system property {@value MAXIMUM_STATIC_MEMORY_OVERHEAD_PROPERTY}.
+     */
     public static double maximumStaticMemoryOverheadDefault() {
-        return Double.parseDouble(System.getProperty("UpdateByControl.maximumStaticMemoryOverhead", "1.1"));
+        return Double.parseDouble(System.getProperty(MAXIMUM_STATIC_MEMORY_OVERHEAD_PROPERTY, "1.1"));
     }
 
+    /**
+     * Default is {@code 4096}. Can be changed with system property {@value INITIAL_HASH_TABLE_SIZE_PROPERTY}.
+     */
     public static int initialHashTableSizeDefault() {
-        return Integer.getInteger("UpdateByControl.initialHashTableSize", 4096);
+        return Integer.getInteger(INITIAL_HASH_TABLE_SIZE_PROPERTY, 4096);
     }
 
+    /**
+     * Default is {@code 0.75}. Can be changed with system property {@value MAXIMUM_LOAD_FACTOR_PROPERTY}.
+     */
     public static double maximumLoadFactorDefault() {
-        return Double.parseDouble(System.getProperty("UpdateByControl.maximumLoadFactor", "0.75"));
+        return Double.parseDouble(System.getProperty(MAXIMUM_LOAD_FACTOR_PROPERTY, "0.75"));
     }
 
+    /**
+     * Default is {@code 0.7}. Can be changed with system property {@value TARGET_LOAD_FACTOR_PROPERTY}.
+     */
     public static double targetLoadFactorDefault() {
-        return Double.parseDouble(System.getProperty("UpdateByControl.targetLoadFactor", "0.7"));
+        return Double.parseDouble(System.getProperty(TARGET_LOAD_FACTOR_PROPERTY, "0.7"));
     }
 
+    /**
+     * Default is {@link MathContext#DECIMAL64 DECIMAL64}. Can be changed with system property
+     * {@value MATH_CONTEXT_PROPERTY}.
+     */
     public static MathContext mathContextDefault() {
-        final String p = System.getProperty("UpdateByControl.mathContext", "DECIMAL64");
+        final String p = System.getProperty(MATH_CONTEXT_PROPERTY, "DECIMAL64");
         switch (p) {
             case "UNLIMITED":
                 return MathContext.UNLIMITED;
@@ -67,33 +97,52 @@ public abstract class UpdateByControl {
             case "DECIMAL128":
                 return MathContext.DECIMAL128;
             default:
-                throw new IllegalArgumentException("Unexpected UpdateByControl.mathContext: " + p);
+                throw new IllegalArgumentException(String.format("Unexpected '%s': %s", MATH_CONTEXT_PROPERTY, p));
         }
     }
 
+    /**
+     * If redirections should be used for output sources instead of sparse array sources.
+     */
     @Nullable
     public abstract Boolean useRedirection();
 
+    /**
+     * The maximum chunk capacity.
+     */
     public abstract OptionalInt chunkCapacity();
 
+    /**
+     * The maximum fractional memory overhead allowable for sparse redirections as a fraction (e.g. 1.1 is 10%
+     * overhead). Values less than zero disable overhead checking, and result in always using the sparse structure. A
+     * value of zero results in never using the sparse structure.
+     */
     public abstract OptionalDouble maxStaticSparseMemoryOverhead();
 
+    /**
+     * The initial hash table size.
+     */
     public abstract OptionalInt initialHashTableSize();
 
+    /**
+     * The maximum load factor for the hash table.
+     */
     public abstract OptionalDouble maximumLoadFactor();
 
+    /**
+     * The target load factor for the hash table.
+     */
     public abstract OptionalDouble targetLoadFactor();
 
+    /**
+     * The math context.
+     */
     public abstract Optional<MathContext> mathContext();
 
     /**
-     * If redirections should be used for output sources instead of sparse array sources.
+     * Equivalent to {@code useRedirection() == null ? useRedirectionDefault() : useRedirection()}.
      *
-     * <p>
-     * Default is `false`. Can be changed with system property {@code UpdateByControl.useRedirection} or by providing a
-     * value to {@link Builder#useRedirection(boolean)}.
-     *
-     * @return true if redirections should be used.
+     * @see #useRedirectionDefault()
      */
     @Value.Derived
     public boolean useRedirectionOrDefault() {
@@ -102,13 +151,9 @@ public abstract class UpdateByControl {
     }
 
     /**
-     * Get the maximum chunk capacity.
+     * Equivalent to {@code chunkCapacity().orElseGet(UpdateByControl::chunkCapacityDefault)}.
      *
-     * <p>
-     * Default is `4096`. Can be changed with system property {@code UpdateByControl.chunkCapacity} or by providing a
-     * value to {@link Builder#chunkCapacity(int)}.
-     *
-     * @return the maximum chunk capacity.
+     * @see #chunkCapacityDefault()
      */
     @Value.Derived
     public int chunkCapacityOrDefault() {
@@ -116,15 +161,10 @@ public abstract class UpdateByControl {
     }
 
     /**
-     * The maximum fractional memory overhead allowable for sparse redirections as a fraction (e.g. 1.1 is 10%
-     * overhead). Values less than zero disable overhead checking, and result in always using the sparse structure. A
-     * value of zero results in never using the sparse structure.
+     * Equivalent to
+     * {@code maxStaticSparseMemoryOverhead().orElseGet(UpdateByControl::maximumStaticMemoryOverheadDefault)}.
      *
-     * <p>
-     * Default is `1.1`. Can be changed with system property {@code UpdateByControl.maximumStaticMemoryOverhead} or by
-     * providing a value to {@link Builder#maxStaticSparseMemoryOverhead(double)}.
-     *
-     * @return the maximum fractional memory overhead.
+     * @see #maximumStaticMemoryOverheadDefault()
      */
     @Value.Derived
     public double maxStaticSparseMemoryOverheadOrDefault() {
@@ -132,13 +172,9 @@ public abstract class UpdateByControl {
     }
 
     /**
-     * Get the initial hash table size
+     * Equivalent to {@code initialHashTableSize().orElseGet(UpdateByControl::initialHashTableSizeDefault)}.
      *
-     * <p>
-     * Default is `4096`. Can be changed with system property {@code UpdateByControl.initialHashTableSize} or by
-     * providing a value to {@link Builder#initialHashTableSize(int)}.
-     *
-     * @return the initial hash table size
+     * @see #initialHashTableSizeDefault()
      */
     @Value.Derived
     public int initialHashTableSizeOrDefault() {
@@ -146,13 +182,9 @@ public abstract class UpdateByControl {
     }
 
     /**
-     * Get the maximum load factor for the hash table.
+     * Equivalent to {@code maximumLoadFactor().orElseGet(UpdateByControl::maximumLoadFactorDefault)}.
      *
-     * <p>
-     * Default is `0.75`. Can be changed with system property {@code UpdateByControl.maximumLoadFactor} or by providing
-     * a value to {@link Builder#maximumLoadFactor(double)}.
-     *
-     * @return the maximum load factor
+     * @see #maximumLoadFactorDefault()
      */
     @Value.Derived
     public double maximumLoadFactorOrDefault() {
@@ -160,24 +192,32 @@ public abstract class UpdateByControl {
     }
 
     /**
-     * Get the target load factor for the hash table.
+     * Equivalent to {@code targetLoadFactor().orElseGet(UpdateByControl::targetLoadFactorDefault)}.
      *
-     * <p>
-     * Default is `0.7`. Can be changed with system property {@code UpdateByControl.targetLoadFactor} or by providing a
-     * value to {@link Builder#targetLoadFactor(double)}.
-     *
-     * @return the target load factor
+     * @see #targetLoadFactorDefault()
      */
     @Value.Derived
     public double targetLoadFactorOrDefault() {
         return targetLoadFactor().orElseGet(UpdateByControl::targetLoadFactorDefault);
     }
 
+    /**
+     * Equivalent to {@code mathContext().orElseGet(UpdateByControl::mathContextDefault)}.
+     *
+     * @see #mathContextDefault()
+     */
     @Value.Derived
     public MathContext mathContextOrDefault() {
         return mathContext().orElseGet(UpdateByControl::mathContextDefault);
     }
 
+    /**
+     * Create a new instance with all of the explicit-or-default values from {@code this}. This may be useful from the
+     * context of a client who wants to use client-side configuration defaults instead of server-side configuration
+     * defaults.
+     *
+     * @return the explicit new instance
+     */
     public final UpdateByControl materialize() {
         return builder()
                 .useRedirection(useRedirectionOrDefault())

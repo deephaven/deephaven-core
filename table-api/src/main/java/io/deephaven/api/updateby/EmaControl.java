@@ -110,6 +110,13 @@ public abstract class EmaControl {
         return bigValueContext().orElse(MathContext.DECIMAL128);
     }
 
+    /**
+     * Create a new instance with all of the explicit-or-default values from {@code this}. This may be useful from the
+     * context of a client who wants to use client-side configuration defaults instead of server-side configuration
+     * defaults.
+     *
+     * @return the explicit new instance
+     */
     public final EmaControl materialize() {
         return builder()
                 .onNullValue(onNullValueOrDefault())
