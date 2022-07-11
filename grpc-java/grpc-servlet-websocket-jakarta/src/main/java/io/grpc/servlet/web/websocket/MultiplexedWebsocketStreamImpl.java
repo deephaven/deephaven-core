@@ -25,12 +25,11 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
 
     private final Sink sink = new Sink();
 
-    // Note that this isn't a "true" stream id in the h2 or grpc sense
+    // Note that this isn't a "true" stream id in the h2 or grpc sense, this shouldn't be returned via streamId()
     private final int streamId;
 
     public MultiplexedWebsocketStreamImpl(StatsTraceContext statsTraceCtx, int maxInboundMessageSize,
-            Session websocketSession,
-            InternalLogId logId, Attributes attributes, int streamId) {
+            Session websocketSession, InternalLogId logId, Attributes attributes, int streamId) {
         super(ByteArrayWritableBuffer::new, statsTraceCtx, maxInboundMessageSize, websocketSession, logId, attributes,
                 logger);
         this.streamId = streamId;
@@ -50,8 +49,8 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
             // message
 
             byte[][] serializedHeaders = InternalMetadata.serialize(headers);
-            // Total up the size of the payload: 5 bytes for the prefix, and each header needs a colon delimiter, and to
-            // end with \r\n
+            // Total up the size of the payload: 4 bytes for multiplexing framing, 5 bytes for the prefix, and each
+            // header needs a colon delimiter, and to end with \r\n
             int headerLength = Arrays.stream(serializedHeaders).mapToInt(arr -> arr.length + 2).sum();
             ByteBuffer message = ByteBuffer.allocate(headerLength + 9 + 4);
             message.putInt(streamId);
@@ -115,8 +114,8 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
             // trailer response must be prefixed with 0x80 (0r 0x81 if compressed), followed by the size in a 4 byte int
 
             byte[][] serializedTrailers = InternalMetadata.serialize(trailers);
-            // Total up the size of the payload: 5 bytes for the prefix, and each trailer needs a colon+space delimiter,
-            // and to end with \r\n
+            // Total up the size of the payload: 4 bytes for multiplexing framing, 5 bytes for the grpc payload prefix,
+            // and each trailer needs a colon+space delimiter, and to end with \r\n
             int trailerLength = Arrays.stream(serializedTrailers).mapToInt(arr -> arr.length + 2).sum();
 
             ByteBuffer message = ByteBuffer.allocate(9 + trailerLength);
