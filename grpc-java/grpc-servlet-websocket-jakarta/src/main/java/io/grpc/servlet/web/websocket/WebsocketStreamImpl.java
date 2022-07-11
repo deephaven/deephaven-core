@@ -1,18 +1,13 @@
 package io.grpc.servlet.web.websocket;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import io.grpc.Attributes;
 import io.grpc.InternalLogId;
 import io.grpc.InternalMetadata;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.internal.AbstractServerStream;
-import io.grpc.internal.ReadableBuffer;
-import io.grpc.internal.SerializingExecutor;
-import io.grpc.internal.ServerTransportListener;
 import io.grpc.internal.StatsTraceContext;
 import io.grpc.internal.TransportFrameUtil;
-import io.grpc.internal.TransportTracer;
 import io.grpc.internal.WritableBuffer;
 import jakarta.websocket.Session;
 
@@ -20,127 +15,23 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-
-public class WebsocketStreamImpl extends AbstractServerStream {
+public class WebsocketStreamImpl extends AbstractWebsocketStreamImpl {
     private static final Logger logger = Logger.getLogger(WebsocketStreamImpl.class.getName());
 
-    public final class WebsocketTransportState extends TransportState {
-
-        private final SerializingExecutor transportThreadExecutor =
-                new SerializingExecutor(MoreExecutors.directExecutor());
-
-        protected WebsocketTransportState(int maxMessageSize, StatsTraceContext statsTraceCtx,
-                TransportTracer transportTracer) {
-            super(maxMessageSize, statsTraceCtx, transportTracer);
-        }
-
-        @Override
-        public void runOnTransportThread(Runnable r) {
-            transportThreadExecutor.execute(r);
-        }
-
-        @Override
-        public void bytesRead(int numBytes) {
-            // no-op, no flow-control yet
-        }
-
-        @Override
-        public void deframeFailed(Throwable cause) {
-            if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, String.format("[{%s}] Exception processing message", logId), cause);
-            }
-            cancel(Status.fromThrowable(cause));
-        }
-    }
-    private static final class ByteArrayWritableBuffer implements WritableBuffer {
-
-        private final int capacity;
-        final byte[] bytes;
-        private int index;
-
-        ByteArrayWritableBuffer(int capacityHint) {
-            this.bytes = new byte[min(1024 * 1024, max(4096, capacityHint))];
-            this.capacity = bytes.length;
-        }
-
-        @Override
-        public void write(byte[] src, int srcIndex, int length) {
-            System.arraycopy(src, srcIndex, bytes, index, length);
-            index += length;
-        }
-
-        @Override
-        public void write(byte b) {
-            bytes[index++] = b;
-        }
-
-        @Override
-        public int writableBytes() {
-            return capacity - index;
-        }
-
-        @Override
-        public int readableBytes() {
-            return index;
-        }
-
-        @Override
-        public void release() {}
-    }
-
-    private final WebsocketTransportState transportState;
     private final Sink sink = new Sink();
-    private final Session websocketSession;
-    private final InternalLogId logId;
-    private final Attributes attributes;
 
     public WebsocketStreamImpl(StatsTraceContext statsTraceCtx, int maxInboundMessageSize, Session websocketSession,
             InternalLogId logId, Attributes attributes) {
-        super(ByteArrayWritableBuffer::new, statsTraceCtx);
-        this.websocketSession = websocketSession;
-        this.logId = logId;
-        this.attributes = attributes;
-        transportState = new WebsocketTransportState(maxInboundMessageSize, statsTraceCtx, new TransportTracer());
-    }
-
-    @Override
-    public Attributes getAttributes() {
-        return attributes;
-    }
-
-    public void createStream(ServerTransportListener transportListener, String methodName, Metadata headers) {
-        transportListener.streamCreated(this, methodName, headers);
-        transportState().onStreamAllocated();
-    }
-
-    public void inboundDataReceived(ReadableBuffer message, boolean endOfStream) {
-        transportState().inboundDataReceived(message, endOfStream);
-    }
-
-    public void transportReportStatus(Status status) {
-        transportState().transportReportStatus(status);
-    }
-
-    @Override
-    public TransportState transportState() {
-        return transportState;
+        super(ByteArrayWritableBuffer::new, statsTraceCtx, maxInboundMessageSize, websocketSession, logId, attributes,
+                logger);
     }
 
     @Override
     protected Sink abstractServerStreamSink() {
         return sink;
-    }
-
-    @Override
-    public int streamId() {
-        return -1;
     }
 
     private final class Sink implements AbstractServerStream.Sink {
@@ -160,14 +51,7 @@ public class WebsocketStreamImpl extends AbstractServerStream {
             prefix.putInt(headerLength);
             prefix.flip();
             ByteBuffer message = ByteBuffer.allocate(headerLength);
-            for (int i = 0; i < serializedHeaders.length; i += 2) {
-                message.put(serializedHeaders[i]);
-                message.put((byte) ':');
-                message.put((byte) ' ');
-                message.put(serializedHeaders[i + 1]);
-                message.put((byte) '\r');
-                message.put((byte) '\n');
-            }
+            writeAsciiHeadersToMessage(serializedHeaders, message);
             message.flip();
             try {
                 // send in two separate payloads
@@ -233,14 +117,7 @@ public class WebsocketStreamImpl extends AbstractServerStream {
             prefix.putInt(trailerLength);
             prefix.flip();
             ByteBuffer message = ByteBuffer.allocate(trailerLength);
-            for (int i = 0; i < serializedTrailers.length; i += 2) {
-                message.put(serializedTrailers[i]);
-                message.put((byte) ':');
-                message.put((byte) ' ');
-                message.put(serializedTrailers[i + 1]);
-                message.put((byte) '\r');
-                message.put((byte) '\n');
-            }
+            writeAsciiHeadersToMessage(serializedTrailers, message);
             message.flip();
             try {
                 // send in two separate messages
@@ -258,27 +135,7 @@ public class WebsocketStreamImpl extends AbstractServerStream {
 
         @Override
         public void cancel(Status status) {
-            if (!websocketSession.isOpen() && Status.Code.DEADLINE_EXCEEDED == status.getCode()) {
-                return; // let the servlet timeout, the container will sent RST_STREAM automatically
-            }
-            transportState.runOnTransportThread(() -> transportState.transportReportStatus(status));
-            // There is no way to RST_STREAM with CANCEL code, so write trailers instead
-            close(Status.CANCELLED.withCause(status.asRuntimeException()), new Metadata());
-            CountDownLatch countDownLatch = new CountDownLatch(1);
-            transportState.runOnTransportThread(() -> {
-                try {
-                    websocketSession.close();
-                } catch (IOException ioException) {
-                    // already closing, ignore
-                }
-                countDownLatch.countDown();
-            });
-            try {
-                countDownLatch.await(5, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            cancelSink(status);
         }
     }
-
 }

@@ -2,7 +2,6 @@ package io.grpc.servlet.web.websocket;
 
 import io.grpc.Attributes;
 import io.grpc.InternalLogId;
-import io.grpc.InternalMetadata;
 import io.grpc.Metadata;
 import io.grpc.ServerStreamTracer;
 import io.grpc.Status;
@@ -10,17 +9,11 @@ import io.grpc.internal.ReadableBuffers;
 import io.grpc.internal.ServerTransportListener;
 import io.grpc.internal.StatsTraceContext;
 import jakarta.websocket.CloseReason;
-import jakarta.websocket.Endpoint;
-import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,18 +26,10 @@ import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
  * JSR356 websockets always handle their incoming messages in a serial manner, so we don't need to worry here about
  * runOnTransportThread while in onMessage, as we're already in the transport thread.
  */
-public class WebSocketServerStream extends Endpoint {
+public class WebSocketServerStream extends AbstractWebSocketServerStream {
     private static final Logger logger = Logger.getLogger(WebSocketServerStream.class.getName());
 
-    private final ServerTransportListener transportListener;
-    private final List<? extends ServerStreamTracer.Factory> streamTracerFactories;
-    private final int maxInboundMessageSize;
-    private final Attributes attributes;
-
     private final InternalLogId logId = InternalLogId.allocate(WebSocketServerStream.class, null);
-
-    // assigned on open, always available
-    private Session websocketSession;
 
     // fields set after headers are decoded
     private WebsocketStreamImpl stream;
@@ -54,29 +39,7 @@ public class WebSocketServerStream extends Endpoint {
     public WebSocketServerStream(ServerTransportListener transportListener,
             List<? extends ServerStreamTracer.Factory> streamTracerFactories, int maxInboundMessageSize,
             Attributes attributes) {
-        this.transportListener = transportListener;
-        this.streamTracerFactories = streamTracerFactories;
-        this.maxInboundMessageSize = maxInboundMessageSize;
-        this.attributes = attributes;
-    }
-
-    @Override
-    public void onOpen(Session websocketSession, EndpointConfig config) {
-        this.websocketSession = websocketSession;
-
-        websocketSession.addMessageHandler(String.class, this::onMessage);
-        websocketSession.addMessageHandler(ByteBuffer.class, message -> {
-            try {
-                onMessage(message);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
-
-        // Configure defaults present in some servlet containers to avoid some confusing limits. Subclasses
-        // can override this method to control those defaults on their own.
-        websocketSession.setMaxIdleTimeout(0);
-        websocketSession.setMaxBinaryMessageBufferSize(Integer.MAX_VALUE);
+        super(transportListener, streamTracerFactories, maxInboundMessageSize, attributes);
     }
 
     public void onMessage(String message) {
@@ -163,60 +126,5 @@ public class WebSocketServerStream extends Endpoint {
         stream = new WebsocketStreamImpl(statsTraceCtx, maxInboundMessageSize, websocketSession, logId,
                 attributes);
         stream.createStream(transportListener, methodName(), headers);
-    }
-
-    private static Metadata readHeaders(ByteBuffer headerPayload) {
-        // Headers are passed as ascii (browsers don't support binary), ":"-separated key/value pairs, separated on
-        // "\r\n". The client implementation shows that values might be comma-separated, but we'll pass that through
-        // directly as a plain string.
-        //
-        List<byte[]> byteArrays = new ArrayList<>();
-        while (headerPayload.hasRemaining()) {
-            int nameStart = headerPayload.position();
-            while (headerPayload.hasRemaining() && headerPayload.get() != ':');
-            int nameEnd = headerPayload.position() - 1;
-            int valueStart = headerPayload.position() + 1;// assumes that the colon is followed by a space
-
-            while (headerPayload.hasRemaining() && headerPayload.get() != '\n');
-            int valueEnd = headerPayload.position() - 2;// assumes that \n is preceded by a \r, this isnt generally
-                                                        // safe?
-            if (valueEnd < valueStart) {
-                valueEnd = valueStart;
-            }
-            int endOfLinePosition = headerPayload.position();
-
-            byte[] headerBytes = new byte[nameEnd - nameStart];
-            headerPayload.position(nameStart);
-            headerPayload.get(headerBytes);
-
-            byteArrays.add(headerBytes);
-            if (Arrays.equals(headerBytes, "content-type".getBytes(StandardCharsets.US_ASCII))) {
-                // rewrite grpc-web content type to matching grpc content type
-                byteArrays.add("grpc+proto".getBytes(StandardCharsets.US_ASCII));
-                // TODO support other formats like text, non-proto
-                headerPayload.position(valueEnd);
-                continue;
-            }
-
-            // TODO check for binary header suffix
-            // if (headerBytes.endsWith(Metadata.BINARY_HEADER_SUFFIX)) {
-            //
-            // } else {
-            byte[] valueBytes = new byte[valueEnd - valueStart];
-            headerPayload.position(valueStart);
-            headerPayload.get(valueBytes);
-            byteArrays.add(valueBytes);
-            // }
-
-            headerPayload.position(endOfLinePosition);
-        }
-
-        // add a te:trailers, as gRPC will expect it
-        byteArrays.add("te".getBytes(StandardCharsets.US_ASCII));
-        byteArrays.add("trailers".getBytes(StandardCharsets.US_ASCII));
-
-        // TODO to support text encoding
-
-        return InternalMetadata.newMetadata(byteArrays.toArray(new byte[][] {}));
     }
 }
