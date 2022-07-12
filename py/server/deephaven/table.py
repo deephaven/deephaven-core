@@ -2,8 +2,8 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
-""" This module implements the Table and PartitionedTable classes which are the main instruments for working with
-Deephaven refreshing and static data."""
+""" This module implements the Table, PartitionedTable and PartitionedTableProxy classes which are the main
+instruments for working with Deephaven refreshing and static data. """
 
 from __future__ import annotations
 
@@ -1672,7 +1672,7 @@ class PartitionedTable(JObjectWrapper):
         Args:
             require_matching_keys (bool): whether to ensure that both partitioned tables have all the same keys
                 present when an operation uses this PartitionedTable and another PartitionedTable as inputs for a
-                partitioned_transform, default is True
+                :meth:`~PartitionedTable.partitioned_transform`, default is True
             sanity_check_joins (bool): whether to check that join operations will only find a given join key in
                 one constituent table and the right table argument if it is also a proxy, default is True
         """
@@ -1689,7 +1689,7 @@ class PartitionedTableProxy(JObjectWrapper):
         target (PartitionedTable): the underlying partitioned table of the proxy
         require_matching_keys (bool): whether to ensure that both partitioned tables have all the same keys
             present when an operation uses this PartitionedTable and another PartitionedTable as inputs for a
-            partitioned_transform, default is True
+            :meth:`~PartitionedTable.partitioned_transform`, default is True
         sanity_check_joins (bool): whether to check that join operations will only find a given join key in
             one constituent table and the right table argument if it is also a proxy, default is True
     """
@@ -1760,16 +1760,19 @@ class PartitionedTableProxy(JObjectWrapper):
             raise DHError(e, "reverse operation on the PartitionedTableProxy failed.") from e
 
     @auto_locking_op
-    def snapshot(self, source_table: Table, do_init: bool = False,
+    def snapshot(self, source_table: Union[Table, PartitionedTableProxy], do_init: bool = False,
                  cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.snapshot` table operation to all constituent tables of the underlying
-        partitioned table with the provided source table, and produces a new PartitionedTableProxy with the result
-        tables as the constituents of its underlying partitioned table.
+        partitioned table with the provided source table or PartitionedTableProxy, and produces a new
+        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
+
+        In the case of source table being another PartitionedTableProxy, the :meth:`~Table.snapshot` table operation
+        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
 
         Note, the constituent tables are often time tables that add new rows at a regular, user-defined interval.
 
         Args:
-            source_table (Table): the table to be snapshot
+            source_table (Union[Table, PartitionedTableProxy]): the table or PartitionedTableProxy to be snapshot
             do_init (bool): whether to snapshot when this method is initially called, default is False
             cols (Union[str, List[str]]): names of the columns of the constituent table to be included in the snapshot,
                 default is None, meaning all the columns
@@ -1782,7 +1785,8 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot(source_table.j_table, do_init, *cols))
+            table_op = jpy.cast(source_table.j_object, _JTableOperations)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot(table_op, do_init, *cols))
         except Exception as e:
             raise DHError(e, "snapshot operation on the PartitionedTableProxy failed.") from e
 
@@ -2008,11 +2012,14 @@ class PartitionedTableProxy(JObjectWrapper):
     def natural_join(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
                      joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.natural_join` table operation to all constituent tables of the underlying
-        partitioned table with the provided right table, and produces a new PartitionedTableProxy with the result
-        tables as the constituents of its underlying partitioned table.
+        partitioned table with the provided right table or PartitionedTableProxy, and produces a new
+        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.natural_join` table
+        operation is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
 
         Args:
-            table (Union[Table, PartitionedTableProxy]): the right-table of the join
+            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
@@ -2040,12 +2047,15 @@ class PartitionedTableProxy(JObjectWrapper):
     @auto_locking_op
     def exact_join(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
                    joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.exact_join` table operation to all constituent tables of the underlying partitioned
-        table with the provided right table, and produces a new PartitionedTableProxy with the result tables as the
-        constituents of its underlying partitioned table.
+        """Applies the :meth:`~Table.exact_join` table operation to all constituent tables of the underlying
+        partitioned table with the provided right table or PartitionedTableProxy,and produces a new
+        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.exact_join` table
+        operation is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
 
         Args:
-            table (Union[Table, PartitionedTableProxy]): the right-table of the join
+            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
@@ -2074,11 +2084,14 @@ class PartitionedTableProxy(JObjectWrapper):
     def join(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]] = None,
              joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.join` table operation to all constituent tables of the underlying partitioned
-        table with the provided right table, and produces a new PartitionedTableProxy with the result tables as the
-        constituents of its underlying partitioned table.
+        table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
+        the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.join` table operation
+        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
 
         Args:
-            table (table: Union[Table, PartitionedTableProxy]): the right-table of the join
+            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
@@ -2108,11 +2121,14 @@ class PartitionedTableProxy(JObjectWrapper):
            joins: Union[str, Sequence[str]] = None,
            match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.aj` table operation to all constituent tables of the underlying partitioned
-        table with the provided right table, and produces a new PartitionedTableProxy with the result tables as the
-        constituents of its underlying partitioned table.
+        table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
+        the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.aj` table operation
+        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
 
         Args:
-            table (Union[Table, PartitionedTableProxy]): the right-table of the join
+            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
@@ -2151,11 +2167,14 @@ class PartitionedTableProxy(JObjectWrapper):
             joins: Union[str, Sequence[str]] = None,
             match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.raj` table operation to all constituent tables of the underlying partitioned
-        table with the provided right table, and produces a new PartitionedTableProxy with the result tables as the
-        constituents of its underlying partitioned table.
+        table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
+        the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.raj` table operation
+        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
 
         Args:
-            table (Union[Table, PartitionedTableProxy]): the right-table of the join
+            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
