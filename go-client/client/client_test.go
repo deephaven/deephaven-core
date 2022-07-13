@@ -223,6 +223,30 @@ func TestFieldSyncRepeatingCanceled(t *testing.T) {
 	}
 }
 
+// waitForTable attempts to find all of the given tables in the client's list of openable tables.
+// It will check repeatedly until the timeout expires.
+func waitForTable(cl *client.Client, names []string, timeout time.Duration) bool {
+	timer := time.After(time.Second)
+	for {
+		ok := true
+		for _, name := range names {
+			if !contains(cl.ListOpenableTables(), name) {
+				ok = false
+				break
+			}
+		}
+		if ok {
+			return true
+		}
+
+		select {
+		case <-timer:
+			return false
+		default:
+		}
+	}
+}
+
 func TestFieldSyncRepeating(t *testing.T) {
 	ctx := context.Background()
 
@@ -245,6 +269,7 @@ gotesttable1 = None
 		err, ok := <-errChan
 		if ok && err != nil {
 			t.Error("FetchTablesRepeating error:", err)
+			return
 		}
 	}()
 
@@ -255,18 +280,9 @@ gotesttable1 = empty_table(10)
 `)
 	test_tools.CheckError(t, "RunScript", err)
 
-	timer := time.After(time.Second)
-	for {
-		if contains(client2.ListOpenableTables(), "gotesttable1") {
-			break
-		}
-
-		select {
-		case <-timer:
-			t.Errorf("test table should exist")
-			return
-		default:
-		}
+	if !waitForTable(client2, []string{"gotesttable1"}, time.Second) {
+		t.Error("gotesttable1 should exist")
+		return
 	}
 
 	err = client2.RunScript(ctx, "print('hi')")
@@ -279,18 +295,9 @@ gotesttable2 = empty_table(20)
 `)
 	test_tools.CheckError(t, "RunScript", err)
 
-	timer = time.After(time.Second)
-	for {
-		if contains(client2.ListOpenableTables(), "gotesttable1") && contains(client2.ListOpenableTables(), "gotesttable2") {
-			break
-		}
-
-		select {
-		case <-timer:
-			t.Errorf("test tables should exist")
-			return
-		default:
-		}
+	if !waitForTable(client2, []string{"gotesttable1", "gotesttable2"}, time.Second) {
+		t.Error("gotesttable1 and gotesttable2 should exist")
+		return
 	}
 
 	tbl, err := client2.OpenTable(ctx, "gotesttable1")

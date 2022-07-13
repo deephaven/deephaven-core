@@ -65,6 +65,8 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromSchema(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
+	// This warns about copying an RWMutex.
+	// However, since the old mutex is immediately discarded, it is not actually a problem.
 	return &AppendOnlyInputTable{TableHandle: *newTable}, nil
 }
 
@@ -82,6 +84,8 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromTable(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+	// This warns about copying an RWMutex.
+	// However, since the old mutex is immediately discarded, it is not actually a problem.
 	return &AppendOnlyInputTable{TableHandle: *newTable}, nil
 }
 
@@ -97,6 +101,8 @@ func (its *inputTableStub) NewKeyBackedInputTableFromSchema(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+	// This warns about copying an RWMutex.
+	// However, since the old mutex is immediately discarded, it is not actually a problem.
 	return &KeyBackedInputTable{TableHandle: *newTable}, nil
 }
 
@@ -115,6 +121,8 @@ func (its *inputTableStub) NewKeyBackedInputTableFromTable(ctx context.Context, 
 	if err != nil {
 		return nil, err
 	}
+	// This warns about copying an RWMutex.
+	// However, since the old mutex is immediately discarded, it is not actually a problem.
 	return &KeyBackedInputTable{TableHandle: *newTable}, nil
 }
 

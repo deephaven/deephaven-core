@@ -84,7 +84,7 @@ func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceCl
 		return err
 	}
 
-	ctx = metadata.NewOutgoingContext(context.Background(), metadata.Pairs("deephaven_session_id", string(handshakeResp.SessionToken)))
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("deephaven_session_id", string(handshakeResp.SessionToken)))
 
 	token.setToken(handshakeResp.SessionToken)
 
@@ -115,8 +115,9 @@ func (ref *refresher) refresh() error {
 		return err
 	}
 
+	ctx := metadata.NewOutgoingContext(ref.ctx, metadata.Pairs("deephaven_session_id", string(oldToken)))
 	handshakeReq := &sessionpb2.HandshakeRequest{AuthProtocol: 0, Payload: oldToken}
-	handshakeResp, err := ref.sessionStub.RefreshSessionToken(ref.ctx, handshakeReq)
+	handshakeResp, err := ref.sessionStub.RefreshSessionToken(ctx, handshakeReq)
 
 	if err != nil {
 		ref.token.setError(err)

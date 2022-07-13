@@ -33,7 +33,7 @@ func applyTableOp(input arrow.Record, t *testing.T, op unaryTableOp) arrow.Recor
 
 	after, err := op(ctx, before)
 	if err != nil {
-		t.Errorf("DropColumns %s", err.Error())
+		t.Errorf("table operation %s", err.Error())
 		return nil
 	}
 	defer after.Release(ctx)
@@ -554,5 +554,52 @@ func TestReleasedTable(t *testing.T) {
 	err = tbl1.Release(ctx)
 	if err != nil {
 		t.Error("error when releasing released table", err.Error())
+	}
+}
+
+func TestDifferentClients(t *testing.T) {
+	ctx := context.Background()
+
+	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer client1.Close()
+
+	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer client2.Close()
+
+	table1, err := client1.EmptyTable(ctx, 5)
+	test_tools.CheckError(t, "EmptyTable", err)
+	defer table1.Release(ctx)
+
+	table2, err := client2.EmptyTable(ctx, 5)
+	test_tools.CheckError(t, "EmptyTable", err)
+	defer table2.Release(ctx)
+
+	type makeTableOp func() (*client.TableHandle, error)
+
+	crossJoin := func() (*client.TableHandle, error) {
+		return table1.Join(ctx, table2, nil, nil, 10)
+	}
+	exactJoin := func() (*client.TableHandle, error) {
+		return table1.ExactJoin(ctx, table2, nil, nil)
+	}
+	naturalJoin := func() (*client.TableHandle, error) {
+		return table1.NaturalJoin(ctx, table2, nil, nil)
+	}
+	asOfJoin := func() (*client.TableHandle, error) {
+		return table1.AsOfJoin(ctx, table2, nil, nil, client.MatchRuleLessThanEqual)
+	}
+	merge := func() (*client.TableHandle, error) {
+		return client.Merge(ctx, "", table1, table2)
+	}
+
+	ops := []makeTableOp{crossJoin, exactJoin, naturalJoin, asOfJoin, merge}
+	for _, op := range ops {
+		_, err := op()
+		if !errors.Is(err, client.ErrDifferentClients) {
+			t.Errorf("missing or incorrect error %s", err)
+			return
+		}
 	}
 }

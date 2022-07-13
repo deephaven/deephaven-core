@@ -228,6 +228,7 @@ func parseCreationResponse(client *Client, resp *tablepb2.ExportedTableCreationR
 }
 
 // dropColumns is a wrapper around the DropColumns gRPC request.
+// The table must not be released before this method returns.
 func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols []string) (*TableHandle, error) {
 	if !table.IsValid() {
 		return nil, ErrInvalidTableHandle
@@ -255,6 +256,7 @@ func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols [
 type selectOrUpdateOp func(tablepb2.TableServiceClient, context.Context, *tablepb2.SelectOrUpdateRequest, ...grpc.CallOption) (*tablepb2.ExportedTableCreationResponse, error)
 
 // doSelectOrUpdate wraps Update, View, UpdateView, Select, and LazyUpdate gRPC requests.
+// The table must not be released before this method returns.
 func (ts *tableStub) doSelectOrUpdate(ctx context.Context, table *TableHandle, formulas []string, op selectOrUpdateOp) (*TableHandle, error) {
 	if !table.IsValid() {
 		return nil, ErrInvalidTableHandle
@@ -278,32 +280,38 @@ func (ts *tableStub) doSelectOrUpdate(ctx context.Context, table *TableHandle, f
 }
 
 // update wraps the Update gRPC request.
+// The table must not be released before this method returns.
 func (ts *tableStub) update(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	return ts.doSelectOrUpdate(ctx, table, formulas, tablepb2.TableServiceClient.Update)
 }
 
 // lazyUpdadte wraps the LazyUpdate gRPC request.
+// The table must not be released before this method returns.
 func (ts *tableStub) lazyUpdate(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	return ts.doSelectOrUpdate(ctx, table, formulas, tablepb2.TableServiceClient.LazyUpdate)
 }
 
 // updateView wraps the UpdateView gRPC request.
+// The table must not be released before this method returns.
 func (ts *tableStub) updateView(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	return ts.doSelectOrUpdate(ctx, table, formulas, tablepb2.TableServiceClient.UpdateView)
 }
 
 // view wraps the View gRPC request.
+// The table must not be released before this method returns.
 func (ts *tableStub) view(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	return ts.doSelectOrUpdate(ctx, table, formulas, tablepb2.TableServiceClient.View)
 }
 
-// selectTbl wraps the Select gRPC request
+// selectTbl wraps the Select gRPC request.
+// The table must not be released before this method returns.
 func (ts *tableStub) selectTbl(ctx context.Context, table *TableHandle, formulas []string) (*TableHandle, error) {
 	return ts.doSelectOrUpdate(ctx, table, formulas, tablepb2.TableServiceClient.Select)
 }
 
 // makeRequest is a convenience function to perform all the boilerplate required to actually make a gRPC request.
 // The op argument should simply create a request given the result and source ID and call the appropriate gRPC method.
+// The table must not be released before this method returns.
 func (ts *tableStub) makeRequest(ctx context.Context, table *TableHandle, op reqOp) (*TableHandle, error) {
 	if !table.IsValid() {
 		return nil, ErrInvalidTableHandle
@@ -383,11 +391,19 @@ func (ts *tableStub) headOrTail(ctx context.Context, table *TableHandle, numRows
 }
 
 // naturalJoin is a wrapper around the naturalJoin gRPC operation.
+// The tables must not be released before this method returns.
 func (ts *tableStub) naturalJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
+	if !leftTable.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	if !rightTable.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	if leftTable.client != rightTable.client {
+		return nil, ErrDifferentClients
+	}
+
 	return ts.makeRequest(ctx, leftTable, func(ctx context.Context, resultId *ticket, leftId *tblRef) (*tblResp, error) {
-		if !rightTable.IsValid() {
-			return nil, ErrInvalidTableHandle
-		}
 		rightId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: rightTable.ticket}}
 		req := tablepb2.NaturalJoinTablesRequest{ResultId: resultId, LeftId: leftId, RightId: rightId, ColumnsToMatch: on, ColumnsToAdd: joins}
 		return ts.stub.NaturalJoinTables(ctx, &req)
@@ -395,7 +411,18 @@ func (ts *tableStub) naturalJoin(ctx context.Context, leftTable *TableHandle, ri
 }
 
 // crossJoin is a wrapper around the crossJoin gRPC operation.
+// The tables must not be released before this method returns.
 func (ts *tableStub) crossJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string, reserveBits int32) (*TableHandle, error) {
+	if !leftTable.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	if !rightTable.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	if leftTable.client != rightTable.client {
+		return nil, ErrDifferentClients
+	}
+
 	return ts.makeRequest(ctx, leftTable, func(ctx context.Context, resultId *ticket, leftId *tblRef) (*tblResp, error) {
 		if !rightTable.IsValid() {
 			return nil, ErrInvalidTableHandle
@@ -407,7 +434,18 @@ func (ts *tableStub) crossJoin(ctx context.Context, leftTable *TableHandle, righ
 }
 
 // exactJoin is a wrapper around the exactJoin gRPC operation.
+// The tables must not be released before this method returns.
 func (ts *tableStub) exactJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
+	if !leftTable.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	if !rightTable.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	if leftTable.client != rightTable.client {
+		return nil, ErrDifferentClients
+	}
+
 	return ts.makeRequest(ctx, leftTable, func(ctx context.Context, resultId *ticket, leftId *tblRef) (*tblResp, error) {
 		if !rightTable.IsValid() {
 			return nil, ErrInvalidTableHandle
@@ -419,7 +457,18 @@ func (ts *tableStub) exactJoin(ctx context.Context, leftTable *TableHandle, righ
 }
 
 // asOfJoin is a wrapper around the asOfJoin gRPC operation.
+// The tables must not be released before this method returns.
 func (ts *tableStub) asOfJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string, matchRule MatchRule) (*TableHandle, error) {
+	if !leftTable.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	if !rightTable.IsValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	if leftTable.client != rightTable.client {
+		return nil, ErrDifferentClients
+	}
+
 	return ts.makeRequest(ctx, leftTable, func(ctx context.Context, resultId *ticket, leftId *tblRef) (*tblResp, error) {
 		if !rightTable.IsValid() {
 			return nil, ErrInvalidTableHandle
@@ -445,6 +494,7 @@ func (ts *tableStub) asOfJoin(ctx context.Context, leftTable *TableHandle, right
 }
 
 // headOrTailBy is a wrapper around the HeadBy and TailBy gRPC operations (which one it is can be selected using isHead).
+// The table must not be released before this method returns.
 func (ts *tableStub) headOrTailBy(ctx context.Context, table *TableHandle, numRows int64, by []string, isHead bool) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx context.Context, resultId *ticket, sourceId *tblRef) (*tblResp, error) {
 		req := tablepb2.HeadOrTailByRequest{ResultId: resultId, SourceId: sourceId, NumRows: numRows, GroupByColumnSpecs: by}
@@ -457,6 +507,7 @@ func (ts *tableStub) headOrTailBy(ctx context.Context, table *TableHandle, numRo
 }
 
 // dedicatedAggOp is actually a convenience method to perform the ComboAggregate gRPC operation with only a single aggregation.
+// The table must not be released before this method returns.
 func (ts *tableStub) dedicatedAggOp(ctx context.Context, table *TableHandle, by []string, countColumn string, kind tablepb2.ComboAggregateRequest_AggType) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx context.Context, resultId *ticket, sourceId *tblRef) (*tblResp, error) {
 		var agg tablepb2.ComboAggregateRequest_Aggregate
@@ -474,6 +525,7 @@ func (ts *tableStub) dedicatedAggOp(ctx context.Context, table *TableHandle, by 
 }
 
 // ungroup is a wrapper around the Ungroup gRPC method.
+// The table must not be released before this method returns.
 func (ts *tableStub) ungroup(ctx context.Context, table *TableHandle, cols []string, nullFill bool) (*TableHandle, error) {
 	return ts.makeRequest(ctx, table, func(ctx context.Context, resultId *ticket, sourceId *tblRef) (*tblResp, error) {
 		req := tablepb2.UngroupRequest{ResultId: resultId, SourceId: sourceId, NullFill: nullFill, ColumnsToUngroup: cols}
@@ -496,10 +548,15 @@ func (ts *tableStub) aggBy(ctx context.Context, table *TableHandle, aggs []aggPa
 }
 
 // merge is a wrapper around the MergeTables gRPC request.
+// The tables must not be released before this method returns.
 func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHandle) (*TableHandle, error) {
 	for _, table := range others {
 		if !table.IsValid() {
 			return nil, ErrInvalidTableHandle
+		}
+
+		if table.client != ts.client {
+			return nil, ErrDifferentClients
 		}
 	}
 
@@ -542,6 +599,18 @@ type serialOpsState struct {
 
 	// A map containing query nodes that have already been processed and the resulting tables.
 	finishedNodes map[QueryNode]*TableHandle
+
+	// It is difficult to determine what queryBuilders are used ahead of time,
+	// so instead we lock queryBuilders as we encounter them.
+	// This set contains all the queryBuilders that have been locked so far.
+	lockedBuilders map[*queryBuilder]struct{}
+
+	// It is difficult to determine what TableHandles are used ahead of time,
+	// so instead we lock handles as we encounter them.
+	// However, only TableHandles that are the root of some query node (i.e. ones that were used with the Query method)
+	// are actually shared, so we only lock those handles.
+	// This set contains the handles that have been locked so far.
+	lockedTables map[*TableHandle]struct{}
 }
 
 // isExported returns true if the given node is exported,
@@ -555,6 +624,18 @@ func (state *serialOpsState) isExported(node QueryNode) bool {
 	return false
 }
 
+// unlockAll unlocks any locks that were acquired while processing nodes,
+// i.e. everything in lockedBuilders and lockedTables.
+func (state *serialOpsState) unlockAll() {
+	for builder := range state.lockedBuilders {
+		builder.opLock.Unlock()
+	}
+
+	for table := range state.lockedTables {
+		table.lock.RUnlock()
+	}
+}
+
 // processNode performs the table operations for the given node and its children and returns the resulting table.
 // This may return a QueryError.
 func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*TableHandle, error) {
@@ -563,8 +644,24 @@ func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*
 		return tbl, nil
 	}
 
+	if _, ok := state.lockedBuilders[node.builder]; !ok {
+		state.lockedBuilders[node.builder] = struct{}{}
+		node.builder.opLock.Lock()
+	}
+
 	if node.index == -1 {
 		oldTable := node.builder.table
+
+		if _, ok := state.lockedTables[oldTable]; !ok {
+			if !oldTable.rLockIfValid() {
+				return nil, wrapExecSerialError(ErrInvalidTableHandle, node)
+			}
+			state.lockedTables[oldTable] = struct{}{}
+		}
+
+		if oldTable.client != state.client {
+			return nil, wrapExecSerialError(ErrDifferentClients, node)
+		}
 
 		if state.isExported(node) {
 			// This node is exported, so in order to avoid two having TableHandles with the same ticket we need to re-export the old table.
@@ -593,6 +690,8 @@ func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*
 		children = append(children, childTbl)
 	}
 
+	// All of the children have either been locked by lockedTables,
+	// or are exclusively owned by this goroutine, so this method is safe.
 	tbl, err := op.execSerialOp(ctx, &state.client.tableStub, children)
 	if err != nil {
 		return nil, wrapExecSerialError(err, node)
@@ -607,10 +706,14 @@ func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*
 // This may return a QueryError.
 func execSerial(ctx context.Context, client *Client, nodes []QueryNode) ([]*TableHandle, error) {
 	state := serialOpsState{
-		client:        client,
-		exportedNodes: nodes,
-		finishedNodes: make(map[QueryNode]*TableHandle),
+		client:         client,
+		exportedNodes:  nodes,
+		finishedNodes:  make(map[QueryNode]*TableHandle),
+		lockedBuilders: make(map[*queryBuilder]struct{}),
+		lockedTables:   make(map[*TableHandle]struct{}),
 	}
+
+	defer state.unlockAll()
 
 	var result []*TableHandle
 
@@ -642,7 +745,9 @@ func execSerial(ctx context.Context, client *Client, nodes []QueryNode) ([]*Tabl
 	}
 
 	for node, tbl := range state.finishedNodes {
-		if !state.isExported(node) {
+		// If a table comes from a node with index -1, it was passed in as an argument, so it's not ours to release.
+		// If a table is exported, then we want to return it, so we also shouldn't release it.
+		if node.index != -1 && !state.isExported(node) {
 			err := tbl.Release(ctx)
 			if err != nil {
 				return nil, wrapExecSerialError(err, node)

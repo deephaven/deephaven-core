@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"sync"
 
 	"github.com/apache/arrow/go/v8/arrow"
 
@@ -13,22 +14,29 @@ import (
 
 // ErrInvalidTableHandle is returned by most table methods
 // when called on a table handle that contains its zero value or has been already released.
-var ErrInvalidTableHandle = errors.New("tried to use a zero-value or released table handle")
+var ErrInvalidTableHandle = errors.New("tried to use a nil, zero-value, or released table handle")
+
+// ErrDifferentClients is returned when performing a table operation
+// on handles that come from different Client structs.
+var ErrDifferentClients = errors.New("tried to use tables from different clients")
 
 // A TableHandle is a reference to a table stored on the deephaven server.
 //
 // It should eventually be released using Release() once it is no longer needed on the client.
 // Releasing a table handle does not affect table handles derived from it.
+// Once a TableHandle has been released, no other methods should be called on it.
 //
-// All TableHandle methods (with the exception of Release) are goroutine-safe.
+// All TableHandle methods are goroutine-safe.
 //
-// A TableHandle's zero value is an invalid table that cannot be used (it may be released, though, which is a no-op).
+// Both a nil TableHandle pointer and a TableHandle's zero values act identically to handles that have been released.
 type TableHandle struct {
 	client   *Client
 	ticket   *ticketpb2.Ticket // The ticket this table can be referred to by.
 	schema   *arrow.Schema     // The schema (i.e. name, type, and metadata) for this table's columns.
 	size     int64             // The number of rows that this table has.
 	isStatic bool              // False if this table is dynamic, like a streaming table or a time table.
+
+	lock sync.RWMutex // Used to guard the state of the table handle. Table operations acquire a read lock, and releasing the table acquires a write lock.
 }
 
 func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Schema, size int64, isStatic bool) *TableHandle {
@@ -44,11 +52,31 @@ func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Sche
 // IsValid returns true if the handle is valid, i.e. table operations can be performed on it.
 // No methods can be called on invalid TableHandles except for Release.
 func (th *TableHandle) IsValid() bool {
+	if th == nil {
+		return false
+	}
+	th.lock.RLock()
+	defer th.lock.RUnlock()
 	return th.client != nil
+}
+
+// rLockIfValid returns true if the handle is valid, i.e. table operations can be performed on it.
+// If this function returns true, it will acquire a read lock for the handle.
+func (th *TableHandle) rLockIfValid() bool {
+	if th == nil {
+		return false
+	}
+	th.lock.RLock()
+	if th.client == nil {
+		th.lock.RUnlock()
+		return false
+	}
+	return true
 }
 
 // IsStatic returns false for dynamic tables, like streaming tables or time tables.
 func (th *TableHandle) IsStatic() bool {
+	// No need to lock since this is never changed
 	return th.isStatic
 }
 
@@ -56,23 +84,31 @@ func (th *TableHandle) IsStatic() bool {
 //
 // If a Record is returned successfully, it must be freed later with arrow.record.Release().
 func (th *TableHandle) Snapshot(ctx context.Context) (arrow.Record, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.snapshotRecord(ctx, th.ticket)
 }
 
 // Query creates a new query based on this table. Table operations can be performed on query nodes to create new nodes.
 // A list of query nodes can then be passed to client.ExecSerial() or client.ExecBatch() to get a list of tables.
 func (th *TableHandle) Query() QueryNode {
-	// If this TableHandle is invalid, the error will occur when the query is actually used.
+	// The validity check and lock will occur when the query is actually used, so they aren't handled here.
 	qb := newQueryBuilder(th)
 	return qb.curRootNode()
 }
 
 // Release releases this table handle's resources on the server. The TableHandle is no longer usable after Release is called.
-// This method is NOT goroutine-safe if other goroutines have references to this TableHandle.
+// It is safe to call Release multiple times.
 func (th *TableHandle) Release(ctx context.Context) error {
+	if th == nil {
+		return nil
+	}
+
+	th.lock.Lock()
+	defer th.lock.Unlock()
+
 	if th.client != nil {
 		err := th.client.release(ctx, th.ticket)
 		if err != nil {
@@ -91,27 +127,30 @@ func (th *TableHandle) Release(ctx context.Context) error {
 
 // DropColumns creates a table with the same number of rows as the source table but omits any columns included in the arguments.
 func (th *TableHandle) DropColumns(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dropColumns(ctx, th, cols)
 }
 
 // Update creates a new table containing a new, in-memory column for each argument.
 // The returned table also includes all the original columns from the source table.
 func (th *TableHandle) Update(ctx context.Context, formulas ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.update(ctx, th, formulas)
 }
 
 // LazyUpdate creates a new table containing a new, cached, formula column for each argument.
 // The returned table also includes all the original columns from the source table.
 func (th *TableHandle) LazyUpdate(ctx context.Context, formulas ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.lazyUpdate(ctx, th, formulas)
 }
 
@@ -120,9 +159,10 @@ func (th *TableHandle) LazyUpdate(ctx context.Context, formulas ...string) (*Tab
 // Rather, a formula is stored that is used to recalculate each cell every time it is accessed.
 // The returned table also includes all the original columns from the source table.
 func (th *TableHandle) UpdateView(ctx context.Context, formulas ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.updateView(ctx, th, formulas)
 }
 
@@ -130,35 +170,39 @@ func (th *TableHandle) UpdateView(ctx context.Context, formulas ...string) (*Tab
 // When using view, the data being requested is not stored in memory.
 // Rather, a formula is stored that is used to recalculate each cell every time it is accessed.
 func (th *TableHandle) View(ctx context.Context, formulas ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.view(ctx, th, formulas)
 }
 
 // Select creates a new in-memory table that includes one column for each argument.
 // Any columns not specified in the arguments will not appear in the resulting table.
 func (th *TableHandle) Select(ctx context.Context, formulas ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.selectTbl(ctx, th, formulas)
 }
 
 // SelectDistinct creates a new table containing all of the unique values for a set of key columns.
 // When SelectDistinct is used on multiple columns, it looks for distinct sets of values in the selected columns.
 func (th *TableHandle) SelectDistinct(ctx context.Context, columns ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.selectDistinct(ctx, th, columns)
 }
 
 // Sort returns a new table with rows sorted in a smallest to largest order based on the listed column(s).
 func (th *TableHandle) Sort(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	var columns []SortColumn
 	for _, col := range cols {
 		columns = append(columns, SortAsc(col))
@@ -168,34 +212,38 @@ func (th *TableHandle) Sort(ctx context.Context, cols ...string) (*TableHandle, 
 
 // Sort returns a new table with rows sorted in the order specified by the listed column(s).
 func (th *TableHandle) SortBy(ctx context.Context, cols ...SortColumn) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.sortBy(ctx, th, cols)
 }
 
 // Where filters rows of data from the source table.
 // It returns a new table with only the rows meeting the filter criteria of the source table.
 func (th *TableHandle) Where(ctx context.Context, filters ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.where(ctx, th, filters)
 }
 
 // Head returns a table with a specific number of rows from the beginning of the source table.
 func (th *TableHandle) Head(ctx context.Context, numRows int64) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.headOrTail(ctx, th, numRows, true)
 }
 
 // Tail returns a table with a specific number of rows from the end of the source table.
 func (th *TableHandle) Tail(ctx context.Context, numRows int64) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.headOrTail(ctx, th, numRows, false)
 }
 
@@ -211,9 +259,16 @@ func (th *TableHandle) Tail(ctx context.Context, numRows int64) (*TableHandle, e
 //
 // joins is the columns to add from the right table.
 func (th *TableHandle) NaturalJoin(ctx context.Context, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
+	if !rightTable.rLockIfValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	defer rightTable.lock.RUnlock()
+
+	// Different-client check is done by this method.
 	return th.client.naturalJoin(ctx, th, rightTable, on, joins)
 }
 
@@ -232,9 +287,16 @@ func (th *TableHandle) NaturalJoin(ctx context.Context, rightTable *TableHandle,
 //
 // reserveBits is the number of bits of key-space to initially reserve per group. Set it to 10 if unsure.
 func (th *TableHandle) Join(ctx context.Context, rightTable *TableHandle, on []string, joins []string, reserveBits int32) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
+	if !rightTable.rLockIfValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	defer rightTable.lock.RUnlock()
+
+	// Different-client check is done by this method.
 	return th.client.crossJoin(ctx, th, rightTable, on, joins, reserveBits)
 }
 
@@ -250,9 +312,16 @@ func (th *TableHandle) Join(ctx context.Context, rightTable *TableHandle, on []s
 //
 // joins is the columns to add from the right table.
 func (th *TableHandle) ExactJoin(ctx context.Context, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
+	if !rightTable.rLockIfValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	defer rightTable.lock.RUnlock()
+
+	// Different-client check is done by this method.
 	return th.client.exactJoin(ctx, th, rightTable, on, joins)
 }
 
@@ -276,25 +345,34 @@ func (th *TableHandle) ExactJoin(ctx context.Context, rightTable *TableHandle, o
 // matchRule is the match rule for the join.
 // Use MatchRuleLessThanEqual for a normal as-of join, or MatchRuleGreaterThanEqual for a reverse-as-of-join.
 func (th *TableHandle) AsOfJoin(ctx context.Context, rightTable *TableHandle, on []string, joins []string, matchRule MatchRule) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
+	if !rightTable.rLockIfValid() {
+		return nil, ErrInvalidTableHandle
+	}
+	defer rightTable.lock.RUnlock()
+
+	// Different-client check is done by this method.
 	return th.client.asOfJoin(ctx, th, rightTable, on, joins, matchRule)
 }
 
 // HeadBy returns the first numRows rows for each group.
 func (th *TableHandle) HeadBy(ctx context.Context, numRows int64, columnsToGroupBy ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.headOrTailBy(ctx, th, numRows, columnsToGroupBy, true)
 }
 
 // TailBy returns the last numRows rows for each group.
 func (th *TableHandle) TailBy(ctx context.Context, numRows int64, columnsToGroupBy ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.headOrTailBy(ctx, th, numRows, columnsToGroupBy, false)
 }
 
@@ -302,9 +380,10 @@ func (th *TableHandle) TailBy(ctx context.Context, numRows int64, columnsToGroup
 // Columns not in the aggregation become array-type.
 // If no group-by columns are given, the content of each column is grouped into its own array.
 func (th *TableHandle) GroupBy(ctx context.Context, by ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, by, "", tablepb2.ComboAggregateRequest_GROUP)
 }
 
@@ -312,125 +391,139 @@ func (th *TableHandle) GroupBy(ctx context.Context, by ...string) (*TableHandle,
 // Ungroup unwraps columns containing either Deephaven arrays or Java arrays.
 // nullFill indicates whether or not missing cells may be filled with null. Set it to true if unsure.
 func (th *TableHandle) Ungroup(ctx context.Context, cols []string, nullFill bool) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.ungroup(ctx, th, cols, nullFill)
 }
 
 // FirstBy returns the first row for each group.
 // If no columns are given, only the first row of the table is returned.
 func (th *TableHandle) FirstBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_FIRST)
 }
 
 // LastBy returns the last row for each group.
 // If no columns are given, only the last row of the table is returned.
 func (th *TableHandle) LastBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_LAST)
 }
 
 // SumBy returns the total sum for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) SumBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_SUM)
 }
 
 // AbsSumBy returns the total sum of absolute values for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) AbsSumBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_ABS_SUM)
 }
 
 // AvgBy returns the average (mean) of each non-key column for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) AvgBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_AVG)
 }
 
 // StdBy returns the standard deviation for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) StdBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_STD)
 }
 
 // VarBy returns the variance for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) VarBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_VAR)
 }
 
 // MedianBy returns the median value for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) MedianBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_MEDIAN)
 }
 
 // MinBy returns the minimum value for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) MinBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_MIN)
 }
 
 // MaxBy returns the maximum value for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
 func (th *TableHandle) MaxBy(ctx context.Context, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, cols, "", tablepb2.ComboAggregateRequest_MAX)
 }
 
 // CountBy returns the number of rows for each group.
 // The count of each group is stored in a new column named after the resultCol argument.
 func (th *TableHandle) CountBy(ctx context.Context, resultCol string, cols ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, cols, resultCol, tablepb2.ComboAggregateRequest_COUNT)
 }
 
 // Count counts the number of values in the specified column and returns it as a table with one row and one column.
 func (th *TableHandle) Count(ctx context.Context, col string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.dedicatedAggOp(ctx, th, nil, col, tablepb2.ComboAggregateRequest_COUNT)
 }
 
 // AggBy applies a list of aggregations to table data.
 // See the docs on AggBuilder for details on what each of the aggregation types do.
 func (th *TableHandle) AggBy(ctx context.Context, agg *AggBuilder, by ...string) (*TableHandle, error) {
-	if !th.IsValid() {
+	if !th.rLockIfValid() {
 		return nil, ErrInvalidTableHandle
 	}
+	defer th.lock.RUnlock()
 	return th.client.aggBy(ctx, th, agg.aggs, by)
 }
 
@@ -443,9 +536,10 @@ func Merge(ctx context.Context, sortBy string, tables ...*TableHandle) (*TableHa
 	}
 
 	for _, table := range tables {
-		if !table.IsValid() {
+		if !table.rLockIfValid() {
 			return nil, ErrInvalidTableHandle
 		}
+		defer table.lock.RUnlock()
 	}
 
 	client := tables[0].client

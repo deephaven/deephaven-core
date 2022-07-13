@@ -160,6 +160,45 @@ func emptyMerge(t *testing.T, exec execBatchOrSerial) {
 	}
 }
 
+func TestTableNotReleasedBatched(t *testing.T) {
+	tableNotReleasedQuery(t, (*client.Client).ExecBatch)
+}
+
+func TestTableNotReleasedSerial(t *testing.T) {
+	tableNotReleasedQuery(t, (*client.Client).ExecSerial)
+}
+
+// Tests that query operations don't accidentally release their inputs.
+func tableNotReleasedQuery(t *testing.T, exec execBatchOrSerial) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer c.Close()
+
+	inTable, err := c.EmptyTable(ctx, 10)
+	if err != nil {
+		t.Errorf("EmptyTable %s", err.Error())
+	}
+	defer inTable.Release(ctx)
+
+	query := inTable.Query().Update("foo = i")
+
+	outTables, err := exec(c, ctx, query)
+	if err != nil {
+		t.Errorf("exec %s", err.Error())
+	}
+	outTable1 := outTables[0]
+	defer outTable1.Release(ctx)
+
+	// If the query released its inputs, this will fail.
+	rec, err := inTable.Snapshot(ctx)
+	if err != nil {
+		t.Errorf("Snapshot %s", err.Error())
+	}
+	defer rec.Release()
+}
+
 func TestSeparateQueriesBatched(t *testing.T) {
 	separateQueries(t, (*client.Client).ExecBatch)
 }
@@ -962,6 +1001,64 @@ func dedicatedAggQuery(t *testing.T, exec execBatchOrSerial) {
 
 		if results[0].NumRows() > 5 {
 			t.Errorf("table had wrong size %d", results[0].NumRows())
+			return
+		}
+	}
+}
+
+func TestDifferentClientsBatched(t *testing.T) {
+	differentClientsQuery(t, (*client.Client).ExecBatch)
+}
+
+func TestDifferentClientsSerial(t *testing.T) {
+	differentClientsQuery(t, (*client.Client).ExecSerial)
+}
+
+func differentClientsQuery(t *testing.T, exec execBatchOrSerial) {
+	ctx := context.Background()
+
+	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer client1.Close()
+
+	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer client2.Close()
+
+	table1, err := client1.EmptyTable(ctx, 5)
+	test_tools.CheckError(t, "EmptyTable", err)
+	defer table1.Release(ctx)
+	query1 := table1.Query()
+
+	table2, err := client2.EmptyTable(ctx, 5)
+	test_tools.CheckError(t, "EmptyTable", err)
+	defer table2.Release(ctx)
+	query2 := table2.Query()
+
+	type makeQueryOp func() client.QueryNode
+
+	crossJoin := func() client.QueryNode {
+		return query1.Join(query2, nil, nil, 10)
+	}
+	exactJoin := func() client.QueryNode {
+		return query1.ExactJoin(query2, nil, nil)
+	}
+	naturalJoin := func() client.QueryNode {
+		return query1.NaturalJoin(query2, nil, nil)
+	}
+	asOfJoin := func() client.QueryNode {
+		return query1.AsOfJoin(query2, nil, nil, client.MatchRuleLessThanEqual)
+	}
+	merge := func() client.QueryNode {
+		return client.MergeQuery("", query1, query2)
+	}
+
+	ops := []makeQueryOp{crossJoin, exactJoin, naturalJoin, asOfJoin, merge}
+	for _, op := range ops {
+		node := op()
+		_, err := exec(client1, ctx, node)
+		if !errors.Is(err, client.ErrDifferentClients) {
+			t.Errorf("missing or incorrect error %s", err)
 			return
 		}
 	}

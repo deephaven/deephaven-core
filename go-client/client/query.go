@@ -135,6 +135,7 @@ type tableOp interface {
 
 	// execSerialOp performs a table operation immediately.
 	// The children argument must be the returned table handles from processing each of the childQueries.
+	// None of the children may be released before this method returns.
 	execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error)
 }
 
@@ -188,6 +189,16 @@ type batchBuilder struct {
 	// This is a list of all of the operations currently in the batch.
 	// This is what will actually end up in the gRPC request.
 	grpcOps []*tablepb2.BatchTableRequest_Operation
+
+	// It is difficult to determine what queryBuilders are used ahead of time,
+	// so instead we lock queryBuilders as we encounter them.
+	// This set contains all the queryBuilders that have been locked so far.
+	lockedBuilders map[*queryBuilder]struct{}
+
+	// It is difficult to determine what TableHandles are used ahead of time,
+	// so instead we lock handles as we encounter them.
+	// This set contains the handles that have been locked so far.
+	lockedTables map[*TableHandle]struct{}
 }
 
 // needsExport returns the indexes in the export list of the node found
@@ -201,6 +212,19 @@ func (b *batchBuilder) needsExport(node QueryNode) []int {
 	return indices
 }
 
+// unlockAll unlocks any locks that were acquired while processing nodes,
+// i.e. everything in lockedBuilders and lockedTables.
+func (b *batchBuilder) unlockAll() {
+	for builder := range b.lockedBuilders {
+		builder.opLock.Unlock()
+	}
+
+	for table := range b.lockedTables {
+		table.lock.RUnlock()
+	}
+
+}
+
 // addGrpcOps adds any table operations needed by the node to the list, and returns a handle to the node's output table.
 func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, error) {
 	var source *tablepb2.TableReference
@@ -209,6 +233,24 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, err
 	if prevIdx, skip := b.finishedOps[node]; skip {
 		// So just use the output of the existing occurence.
 		return &tablepb2.TableReference{Ref: &tablepb2.TableReference_BatchOffset{BatchOffset: prevIdx}}, nil
+	}
+
+	if _, ok := b.lockedBuilders[node.builder]; !ok {
+		b.lockedBuilders[node.builder] = struct{}{}
+		node.builder.opLock.Lock()
+	}
+
+	if node.index == -1 {
+		if _, ok := b.lockedTables[node.builder.table]; !ok {
+			if !node.builder.table.rLockIfValid() {
+				return nil, ErrInvalidTableHandle
+			}
+			b.lockedTables[node.builder.table] = struct{}{}
+		}
+
+		if node.builder.table.client != b.client {
+			return nil, ErrDifferentClients
+		}
 	}
 
 	var resultId *ticketpb2.Ticket = nil
@@ -222,9 +264,6 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, err
 		extraNodes = nodes[1:]
 
 		if node.index == -1 {
-			if !node.builder.table.IsValid() {
-				return nil, ErrInvalidTableHandle
-			}
 			// Even this node needs its own FetchTable request, because it's empty.
 			sourceId := &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}
 			t := b.client.ticketFact.newTicket()
@@ -235,9 +274,6 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, err
 			b.grpcOps = append(b.grpcOps, &grpcOp)
 		}
 	} else if node.index == -1 {
-		if !node.builder.table.IsValid() {
-			return nil, ErrInvalidTableHandle
-		}
 		// An unexported node can just re-use the existing ticket since we don't have to worry about aliasing.
 		return &tablepb2.TableReference{Ref: &tablepb2.TableReference_Ticket{Ticket: node.builder.table.ticket}}, nil
 	}
@@ -283,24 +319,15 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, err
 // nodeOps is a mapping from all of the query nodes processed to the index in grpcOps that they generated.
 func getGrpcOps(client *Client, nodes []QueryNode) (grpcOps []*tablepb2.BatchTableRequest_Operation, nodeTickets []*ticketpb2.Ticket, nodeOps map[QueryNode]int32, err error) {
 	builder := batchBuilder{
-		client:      client,
-		nodes:       nodes,
-		nodeOrder:   make([]*ticketpb2.Ticket, len(nodes)),
-		finishedOps: make(map[QueryNode]int32),
-		grpcOps:     nil,
+		client:         client,
+		nodes:          nodes,
+		nodeOrder:      make([]*ticketpb2.Ticket, len(nodes)),
+		finishedOps:    make(map[QueryNode]int32),
+		grpcOps:        nil,
+		lockedBuilders: make(map[*queryBuilder]struct{}),
+		lockedTables:   make(map[*TableHandle]struct{}),
 	}
-
-	// Lock all of the builders because even though we can only
-	// append to the operation list, the reassignment used in the
-	// append isn't actually atomic, so it could race with this goroutine.
-	locked := make(map[*queryBuilder]struct{})
-	for _, node := range nodes {
-		if _, ok := locked[node.builder]; !ok {
-			locked[node.builder] = struct{}{}
-			node.builder.opLock.Lock()
-			defer node.builder.opLock.Unlock()
-		}
-	}
+	defer builder.unlockAll()
 
 	for _, node := range nodes {
 		_, err = builder.addGrpcOps(node)

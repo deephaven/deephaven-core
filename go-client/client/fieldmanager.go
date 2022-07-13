@@ -183,10 +183,12 @@ func (fme *fieldManagerExecutor) loop() {
 			// so we handle it immediately.
 			resp := <-fme.chanChanges
 			fme.handleFetchResponse(resp)
-		case resp := <-fme.chanChanges:
-			// Canceled errors are ignored,
-			// since they happen normally when stopping a request.
-			fme.handleFetchResponse(resp)
+		case resp, ok := <-fme.chanChanges:
+			if ok {
+				fme.handleFetchResponse(resp)
+			} else {
+				fme.chanChanges = nil
+			}
 		}
 	}
 }
@@ -269,8 +271,9 @@ func (fm *fieldManagerExecutor) listOpenableTables() []string {
 	return result
 }
 
-// fieldManager is an interface to fieldManagerExecutor.
-// The channels communicate with an executor, and the executor does the actual work.
+// A fieldManager is a wrapper for a fieldManagerExecutor.
+// The channels send requests to the executor, and the executor does the actual work.
+// This is essentially just a way of offering goroutine-safe methods without explicit locking.
 type fieldManager struct {
 	chanClose          chan<- reqClose // Closing this channel will stop the executor.
 	chanOpenTables     chan<- reqListOpenableTables

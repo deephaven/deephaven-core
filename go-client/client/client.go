@@ -10,7 +10,7 @@
 // The docs for the Arrow package can be found at the following link:
 // https://pkg.go.dev/github.com/apache/arrow/go/v8
 //
-// All methods are thread-safe unless otherwise specified.
+// All methods for all structs in this package are thread-safe unless otherwise specified.
 package client
 
 import (
