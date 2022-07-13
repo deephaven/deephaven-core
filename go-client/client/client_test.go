@@ -177,12 +177,24 @@ gotesttable = empty_table(10)
 `)
 	test_tools.CheckError(t, "RunScript", err)
 
-	err = client2.FetchTablesOnce(ctx)
-	test_tools.CheckError(t, "FetchTables", err)
+	timer := time.After(time.Second)
+	for {
+		err = client2.FetchTablesOnce(ctx)
+		if err != nil {
+			t.Error("FetchTables error", err)
+			return
+		}
 
-	if !contains(client2.ListOpenableTables(), "gotesttable") {
-		t.Errorf("test table should exist")
-		return
+		if contains(client2.ListOpenableTables(), "gotesttable") {
+			break
+		}
+
+		select {
+		case <-timer:
+			t.Errorf("test table should exist")
+			return
+		default:
+		}
 	}
 }
 

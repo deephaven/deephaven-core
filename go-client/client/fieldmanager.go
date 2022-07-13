@@ -17,32 +17,44 @@ type fieldId struct {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//todo doc all
-
+// reqClose is a field manager request used to stop an executor.
+// This struct is unused; closing the channel stops the executor instead.
 type reqClose struct{}
 
+// respListOpenableTables is a field manager response containing a list of table names that can be opened using GetTable.
 type respListOpenableTables []string
+
+// reqListOpenableTables is a field manager request used to fetch a list of table names that can be opened using GetTable.
 type reqListOpenableTables struct{ out chan respListOpenableTables }
 
+// respGetTable is a field manager response containing a newly-opened table handle from GetTable.
 type respGetTable struct {
 	table *TableHandle
 	ok    bool
 }
+
+// reqGetTable is a field manager request used to open a new table handle given a table name.
 type reqGetTable struct {
 	id  fieldId
 	out chan respGetTable
 }
 
+// funcFMExec is a function that can be called by the executor and returns some list of field changes.
 type funcFMExec func() (*apppb2.FieldsChangeUpdate, error)
+
+// respFMExec is the result of calling a funcFMExec.
 type respFMExec struct {
 	changes *apppb2.FieldsChangeUpdate
 	err     error
 }
+
+// reqFMExec is a field manager request that makes the executor call a function and handle its result.
 type reqFMExec struct {
 	f   funcFMExec
-	out chan respFMExec
+	out chan respFMExec // The function's return value is sent over this channel.
 }
 
+// reqFetchRepeating is a field manager request that starts a new FetchRepeating request.
 type reqFetchRepeating struct {
 	fs        *fieldStream
 	chanError chan<- error
@@ -80,7 +92,9 @@ func (fs *fieldStream) FetchOnce() (*apppb2.FieldsChangeUpdate, error) {
 }
 
 // FetchRepeating starts a goroutine that will forward responses from the ListFields request
-// to the given channel. The goroutine will loop infinitely until Close() is called.
+// to the given channel. The goroutine will loop infinitely until Close() is called
+// or an error occurs.
+// This function will close the stream channel when it terminates.
 func (fs *fieldStream) FetchRepeating(stream chan<- respFMExec) {
 	go func() {
 		for {
@@ -90,6 +104,7 @@ func (fs *fieldStream) FetchRepeating(stream chan<- respFMExec) {
 			if err != nil {
 				// The error will be handled by the fieldManagerExecutor.
 				fs.Close()
+				close(stream)
 				return
 			}
 		}
@@ -125,26 +140,17 @@ type fieldManagerExecutor struct {
 	chanFMExec              <-chan reqFMExec
 	chanFetchRepeating      <-chan reqFetchRepeating
 	chanFetchRepeatingError chan<- error // Errors coming from FetchRepeating requests will be sent to this channel.
+
+	// Receives changes from a running FetchRepeating request.
+	// This is nil if no FetchRepeating request is running.
+	chanChanges <-chan respFMExec
 }
 
 // loop starts up an executor loop, which will handle requests
 // from the executor's channels and perform the appropriate actions.
 // It will run forever until chanClose is closed.
 func (fme *fieldManagerExecutor) loop() {
-	// This channel is used to send/receive responses from FetchRepeating requests.
-	chanChanges := make(chan respFMExec)
-
-	defer func() {
-		if fme.fs != nil {
-			fme.fs.Close()
-			fme.fs = nil
-		}
-
-		if fme.chanFetchRepeatingError != nil {
-			close(fme.chanFetchRepeatingError)
-			fme.chanFetchRepeatingError = nil
-		}
-	}()
+	defer fme.cancelFieldStream()
 
 	for {
 		select {
@@ -164,38 +170,64 @@ func (fme *fieldManagerExecutor) loop() {
 				fme.handleFieldChanges(changes)
 			}
 		case req := <-fme.chanFetchRepeating:
-			if fme.fs != nil {
-				fme.fs.Close()
-				fme.fs = nil
-			}
-
-			if fme.chanFetchRepeatingError != nil {
-				close(fme.chanFetchRepeatingError)
-				fme.chanFetchRepeatingError = nil
-			}
+			fme.cancelFieldStream()
 
 			fme.fs = req.fs
 			fme.chanFetchRepeatingError = req.chanError
-			// TODO: The first response is always synchronous,
-			// and it would be nice to handle it immediately.
-			// However, there might be existing responses from the previous fetch,
-			// so we can't just immediately read from the channel and take the first result.
+
+			chanChanges := make(chan respFMExec)
 			fme.fs.FetchRepeating(chanChanges)
-		case resp := <-chanChanges:
+			fme.chanChanges = chanChanges
+
+			// The first response is always synchronous,
+			// so we handle it immediately.
+			resp := <-fme.chanChanges
+			fme.handleFetchResponse(resp)
+		case resp := <-fme.chanChanges:
 			// Canceled errors are ignored,
 			// since they happen normally when stopping a request.
-			if isCanceledError(resp.err) {
-				break
-			}
-			if resp.err != nil {
-				fme.chanFetchRepeatingError <- resp.err
-				close(fme.chanFetchRepeatingError)
-				fme.chanFetchRepeatingError = nil
-				fme.fs.Close()
-				break
-			}
-			fme.handleFieldChanges(resp.changes)
+			fme.handleFetchResponse(resp)
 		}
+	}
+}
+
+// handleFetchResponse handles a response from a FetchRepeating request.
+// It will update the list of tables or forward an error to the request's associated error channel as appropriate.
+func (fme *fieldManagerExecutor) handleFetchResponse(resp respFMExec) {
+	// Canceled errors are ignored,
+	// since they happen normally when stopping a request.
+	if isCanceledError(resp.err) {
+		return
+	}
+	if resp.err != nil {
+		fme.chanFetchRepeatingError <- resp.err
+		fme.cancelFieldStream()
+		return
+	}
+	fme.handleFieldChanges(resp.changes)
+}
+
+// cancelFieldStream cancels the executor's existing FetchRepeating request (if one is running).
+// It then handles any remaining responses from the request.
+// Finally, it closes the request's associated error channel.
+func (fme *fieldManagerExecutor) cancelFieldStream() {
+	if fme.fs != nil {
+		fme.fs.Close()
+		fme.fs = nil
+	} else {
+		return
+	}
+
+	if fme.chanChanges != nil {
+		for resp := range fme.chanChanges {
+			fme.handleFetchResponse(resp)
+		}
+		fme.chanChanges = nil
+	}
+
+	if fme.chanFetchRepeatingError != nil {
+		close(fme.chanFetchRepeatingError)
+		fme.chanFetchRepeatingError = nil
 	}
 }
 
