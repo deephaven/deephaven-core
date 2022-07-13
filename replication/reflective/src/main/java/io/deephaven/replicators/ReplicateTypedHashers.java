@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.updateby.hashing.AddOnlyUpdateByStateManagerTypedBase;
+import io.deephaven.engine.table.impl.updateby.hashing.IncrementalUpdateByStateManagerTypedBase;
 import org.jetbrains.annotations.NotNull;
 
 import javax.lang.model.element.Modifier;
@@ -40,6 +41,7 @@ public class ReplicateTypedHashers {
         generatePackage(StaticAsOfJoinStateManagerTypedBase.class, false);
         generatePackage(RightIncrementalAsOfJoinStateManagerTypedBase.class, false);
         generatePackage(AddOnlyUpdateByStateManagerTypedBase.class, false);
+        generatePackage(IncrementalUpdateByStateManagerTypedBase.class, false);
     }
 
     private static void generatePackage(Class<?> baseClass, boolean doDouble) throws IOException {

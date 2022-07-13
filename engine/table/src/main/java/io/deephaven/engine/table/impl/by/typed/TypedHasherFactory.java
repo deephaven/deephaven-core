@@ -28,6 +28,7 @@ import io.deephaven.engine.table.impl.naturaljoin.TypedNaturalJoinFactory;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.engine.table.impl.updateby.hashing.AddOnlyUpdateByStateManagerTypedBase;
+import io.deephaven.engine.table.impl.updateby.hashing.IncrementalUpdateByStateManagerTypedBase;
 import io.deephaven.engine.table.impl.updateby.hashing.TypedUpdateByFactory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
@@ -326,9 +327,11 @@ public class TypedHasherFactory {
                     true, TypedAsOfJoinFactory::rightIncrementalProbeDecorateRightFound, null, hashSlots,
                     sequentialBuilders));
         } else if (baseClass.equals(AddOnlyUpdateByStateManagerTypedBase.class)) {
-            final TypeName longArraySource = TypeName.get(LongArraySource.class);
-            final ParameterSpec hashSlots = ParameterSpec.builder(longArraySource, "hashSlots").build();
-            final ParameterSpec hashSlotOffset = ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build();
+            final ClassName rowKeyType = ClassName.get(RowKeys.class);
+            final ParameterizedTypeName chunkType =
+                    ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class), rowKeyType);
+            final ParameterSpec outputPositions = ParameterSpec.builder(chunkType, "outputPositions").build();
+            final ParameterSpec outputPositionOffset = ParameterSpec.builder(MutableInt.class, "outputPositionOffset").build();
 
             builder.classPrefix("AddOnlyUpdateByHasher").packageGroup("updateby.hashing")
                     .packageMiddle("addonlyopen")
@@ -338,15 +341,42 @@ public class TypedHasherFactory {
                     .emptyStateName("EMPTY_RIGHT_VALUE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
-                    .addExtraPartialRehashParameter(hashSlots)
+                    .addExtraPartialRehashParameter(outputPositions)
                     .moveMainFull(TypedUpdateByFactory::addOnlyMoveMainFull)
                     .moveMainAlternate(TypedUpdateByFactory::addOnlyMoveMainAlternate)
                     .alwaysMoveMain(true)
                     .rehashFullSetup(TypedUpdateByFactory::addOnlyRehashSetup);
 
-            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
+            builder.addBuild(new HasherConfig.BuildSpec("buildHashTable", "rowState",
                     true, true, TypedUpdateByFactory::addOnlyBuildLeftFound,
-                    TypedUpdateByFactory::addOnlyBuildLeftInsert, hashSlots, hashSlotOffset));
+                    TypedUpdateByFactory::addOnlyBuildLeftInsert, outputPositionOffset, outputPositions));
+        } else if (baseClass.equals(IncrementalUpdateByStateManagerTypedBase.class)) {
+            final ClassName rowKeyType = ClassName.get(RowKeys.class);
+            final ParameterizedTypeName chunkType =
+                    ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class), rowKeyType);
+            final ParameterSpec outputPositions = ParameterSpec.builder(chunkType, "outputPositions").build();
+            final ParameterSpec outputPositionOffset = ParameterSpec.builder(MutableInt.class, "outputPositionOffset").build();
+
+            builder.classPrefix("IncrementalUpdateByHasher").packageGroup("updateby.hashing")
+                    .packageMiddle("incopen")
+                    .openAddressedAlternate(true)
+                    .stateType(int.class).mainStateName("stateSource")
+                    .overflowOrAlternateStateName("alternateStateSource")
+                    .emptyStateName("EMPTY_RIGHT_VALUE")
+                    .includeOriginalSources(true)
+                    .supportRehash(true)
+                    .addExtraPartialRehashParameter(outputPositions)
+                    .moveMainFull(TypedUpdateByFactory::incrementalMoveMainFull)
+                    .moveMainAlternate(TypedUpdateByFactory::incrementalMoveMainAlternate)
+                    .alwaysMoveMain(true)
+                    .rehashFullSetup(TypedUpdateByFactory::incrementalRehashSetup);
+
+            builder.addBuild(new HasherConfig.BuildSpec("buildHashTable", "rowState",
+                    true, true, TypedUpdateByFactory::incrementalBuildLeftFound,
+                    TypedUpdateByFactory::incrementalBuildLeftInsert, outputPositionOffset, outputPositions));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("probeHashTable", "rowState",
+                    true, TypedUpdateByFactory::incrementalProbeFound, TypedUpdateByFactory::incrementalProbeMissing, outputPositions));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
@@ -454,6 +484,26 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher =
                         (T) io.deephaven.engine.table.impl.asofjoin.typed.rightincopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
+                    .equals(AddOnlyUpdateByStateManagerTypedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.updateby.hashing.typed.addonlyopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
+                    .equals(IncrementalUpdateByStateManagerTypedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.updateby.hashing.typed.incopen.gen.TypedHashDispatcher
                                 .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
                                         targetLoadFactor);
                 if (pregeneratedHasher != null) {
