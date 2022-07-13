@@ -9,12 +9,17 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedIntChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.by.HashedRunFinder;
+import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sort.permute.LongPermuteKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.updateby.hashing.*;
@@ -34,6 +39,11 @@ import java.util.Map;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 public class BucketedUpdateBy extends UpdateBy {
+    static boolean USE_TYPED_STATE_MANAGER =
+            Configuration.getInstance().getBooleanWithDefault(
+                    "UpdateBy.useTypedStateManager",
+                    true);
+
     /** The column sources that are used as keys for bucketing values. */
     private final ColumnSource<?>[] keySources;
 
@@ -1070,7 +1080,13 @@ public class BucketedUpdateBy extends UpdateBy {
         if (source.isRefreshing() && !source.isAddOnly()) {
             final int hashTableSize = control.initialHashTableSize();
             slotTracker = new UpdateBySlotTracker(control.chunkCapacity());
-            this.hashTable = new IncrementalUpdateByStateManager(keySources,
+
+            this.hashTable = USE_TYPED_STATE_MANAGER
+                    ? TypedHasherFactory.make(IncrementalUpdateByStateManagerTypedBase.class,
+                    keySources, keySources,
+                    hashTableSize, control.maximumLoadFactor(),
+                    control.targetLoadFactor())
+            : new IncrementalUpdateByStateManager(keySources,
                     hashTableSize,
                     control.maximumLoadFactor(),
                     control.targetLoadFactor());
@@ -1078,10 +1094,16 @@ public class BucketedUpdateBy extends UpdateBy {
             slotTracker = null;
             if (!useGrouping) {
                 final int hashTableSize = control.initialHashTableSize();
-                this.hashTable = new AddOnlyUpdateByStateManager(keySources,
-                        hashTableSize,
-                        control.maximumLoadFactor(),
-                        control.targetLoadFactor());
+
+                this.hashTable = USE_TYPED_STATE_MANAGER
+                        ? TypedHasherFactory.make(AddOnlyUpdateByStateManagerTypedBase.class,
+                            keySources, keySources,
+                            hashTableSize, control.maximumLoadFactor(),
+                            control.targetLoadFactor())
+                        : new AddOnlyUpdateByStateManager(keySources,
+                            hashTableSize,
+                            control.maximumLoadFactor(),
+                            control.targetLoadFactor());
             }
         }
     }
