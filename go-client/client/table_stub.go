@@ -196,10 +196,7 @@ func (ts *tableStub) TimeTable(ctx context.Context, period time.Duration, startT
 
 	result := ts.client.ticketFact.newTicket()
 
-	// TODO: Is this affected by timezones? Does it need to be the monotonic reading?
-	realStartTime := startTime.UnixNano()
-
-	req := tablepb2.TimeTableRequest{ResultId: &result, PeriodNanos: period.Nanoseconds(), StartTimeNanos: realStartTime}
+	req := tablepb2.TimeTableRequest{ResultId: &result, PeriodNanos: period.Nanoseconds(), StartTimeNanos: startTime.UnixNano()}
 	resp, err := ts.stub.TimeTable(ctx, &req)
 	if err != nil {
 		return nil, err

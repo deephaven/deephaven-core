@@ -265,13 +265,6 @@ gotesttable1 = None
 	defer client2.Close()
 
 	errChan := client2.FetchTablesRepeating(ctx)
-	go func() {
-		err, ok := <-errChan
-		if ok && err != nil {
-			t.Error("FetchTablesRepeating error:", err)
-			return
-		}
-	}()
 
 	err = client1.RunScript(ctx,
 		`
@@ -282,6 +275,11 @@ gotesttable1 = empty_table(10)
 
 	if !waitForTable(client2, []string{"gotesttable1"}, time.Second) {
 		t.Error("gotesttable1 should exist")
+
+		client2.Close() // Explicitly close the client so that the error channel closes
+		for err := range errChan {
+			t.Error("FetchTablesRepeating error:", err)
+		}
 		return
 	}
 
@@ -297,10 +295,21 @@ gotesttable2 = empty_table(20)
 
 	if !waitForTable(client2, []string{"gotesttable1", "gotesttable2"}, time.Second) {
 		t.Error("gotesttable1 and gotesttable2 should exist")
+
+		client2.Close() // Explicitly close the client so that the error channel closes
+		for err := range errChan {
+			t.Error("FetchTablesRepeating error:", err)
+		}
 		return
 	}
 
 	tbl, err := client2.OpenTable(ctx, "gotesttable1")
 	test_tools.CheckError(t, "OpenTable", err)
-	defer tbl.Release(ctx)
+	err = tbl.Release(ctx)
+	test_tools.CheckError(t, "Release", err)
+
+	client2.Close() // Explicitly close the client so that the error channel closes
+	for err := range errChan {
+		t.Error("FetchTablesRepeating error:", err)
+	}
 }

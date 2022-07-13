@@ -38,7 +38,7 @@ func newQueryErrorPart(part batchErrorPart, nodeTickets []*ticketpb2.Ticket, opN
 			return queryErrorPart{serverErr: part.ServerErr, resultId: part.ResultId}
 		}
 	default:
-		panic("unreachable")
+		panic(fmt.Sprintf("unreachable table reference type %s", tblRef))
 	}
 }
 
@@ -69,16 +69,19 @@ func newQueryError(err batchError, nodeTickets []*ticketpb2.Ticket, nodeOps map[
 	return QueryError{parts: wrappedParts}
 }
 
+// Unwrap returns the first part of the query error.
 func (err QueryError) Unwrap() error {
 	return err.parts[0].serverErr
 }
 
+// Error returns some minimal info about the first part of the query error.
+// For debugging, the Details method returns more helpful info.
 func (err QueryError) Error() string {
 	return "query error: " + err.parts[0].serverErr.Error()
 }
 
 // Details returns a string containing detailed information on all of the query errors that occurred.
-// This includes a pseudo-traceback of what query operations caused each error.
+// This includes a pseudo-traceback of the query operations that caused each error.
 func (err QueryError) Details() string {
 	details := "details:\n"
 
@@ -93,10 +96,6 @@ func (err QueryError) Details() string {
 		}
 	}
 
-	// TODO: Typically the first error is the most helpful,
-	// because all the following errors are just caused by the first one.
-	// However, we want to print all the parts in case there were actually multiple distinct errors.
-	// Should we look into figuring out how to emphasize root errors?
 	for _, part := range err.parts {
 		details += fmt.Sprintf("msg: %s\n", part.serverErr)
 		if part.source.builder != nil {
@@ -110,7 +109,8 @@ func (err QueryError) Details() string {
 				details += fmt.Sprintf("    %s\n", op)
 			}
 		} else {
-			details += fmt.Sprintf("no source info, this is a bug (ResultId is %s)", part.resultId)
+			details += fmt.Sprintf("no source info (ResultId is %s)\n", part.resultId)
+			details += "file a bug report containing your query code at https://github.com/deephaven/deephaven-core/"
 		}
 	}
 	return details
@@ -352,8 +352,7 @@ func findTicketOutputIndex(nodeTickets []*ticketpb2.Ticket, tableTicket *ticketp
 		if bytes.Equal(nodeTicket.GetTicket(), tableTicket.GetTicket()) {
 			if foundMatch {
 				// Multiple matches
-				ok = false
-				return
+				return 0, false
 			} else {
 				foundMatch = true
 				idx = i
@@ -362,8 +361,7 @@ func findTicketOutputIndex(nodeTickets []*ticketpb2.Ticket, tableTicket *ticketp
 	}
 
 	// idx was already set in the loop if found
-	ok = foundMatch
-	return
+	return idx, foundMatch
 }
 
 // execBatch performs the Batch gRPC operation, which performs several table operations in a single request.
@@ -450,7 +448,6 @@ func (op timeTableOp) childQueries() []QueryNode {
 
 func (op timeTableOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
 	assert(len(children) == 0, "wrong number of children for TimeTable")
-	// TODO: Same question as for TimeTable: timezones? local time?
 	req := &tablepb2.TimeTableRequest{ResultId: resultId, PeriodNanos: op.period.Nanoseconds(), StartTimeNanos: op.startTime.UnixNano()}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_TimeTable{TimeTable: req}}
 }
@@ -955,15 +952,21 @@ func (op dedicatedAggOp) String() string {
 	case tablepb2.ComboAggregateRequest_MEDIAN:
 		return fmt.Sprintf("MedianBy(%#v)", op.colNames)
 	case tablepb2.ComboAggregateRequest_PERCENTILE:
-		panic("unreachable")
+		// There is no PercentileBy method,
+		// so something has gone very wrong if we get here.
+		panic("invalid aggregation PERCENTILE")
 	case tablepb2.ComboAggregateRequest_STD:
 		return fmt.Sprintf("StdBy(%#v)", op.colNames)
 	case tablepb2.ComboAggregateRequest_VAR:
 		return fmt.Sprintf("VarBy(%#v)", op.colNames)
 	case tablepb2.ComboAggregateRequest_WEIGHTED_AVG:
-		panic("unreachable")
+		// There is no WeightedAverageBy method,
+		// so something has gone very wrong if we get here.
+		panic("invalid aggregation WEIGHTED_AVG")
 	default:
-		panic("unreachable")
+		// This is an invalid value for the enumeration,
+		// so this is really really wrong.
+		panic(fmt.Sprintf("invalid aggregation type %d", op.kind))
 	}
 }
 
