@@ -70,6 +70,8 @@ type fieldStream struct {
 	cancel       context.CancelFunc
 }
 
+// newFieldStream starts a new ListFields gRPC request.
+// The gRPC request can then be controlled using the other fieldStream methods.
 func newFieldStream(ctx context.Context, appServiceClient apppb2.ApplicationServiceClient) (*fieldStream, error) {
 	ctx, cancel := context.WithCancel(ctx)
 

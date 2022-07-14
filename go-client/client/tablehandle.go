@@ -33,7 +33,7 @@ type TableHandle struct {
 	client   *Client
 	ticket   *ticketpb2.Ticket // The ticket this table can be referred to by.
 	schema   *arrow.Schema     // The schema (i.e. name, type, and metadata) for this table's columns.
-	size     int64             // The number of rows that this table has.
+	size     int64             // The number of rows that this table has. Not meaningful if isStatic is false.
 	isStatic bool              // False if this table is dynamic, like a streaming table or a time table.
 
 	lock sync.RWMutex // Used to guard the state of the table handle. Table operations acquire a read lock, and releasing the table acquires a write lock.
@@ -78,6 +78,14 @@ func (th *TableHandle) rLockIfValid() bool {
 func (th *TableHandle) IsStatic() bool {
 	// No need to lock since this is never changed
 	return th.isStatic
+}
+
+// NumRows returns the number of rows in the table.
+// The return value is only ok if IsStatic() is true,
+// since only static tables have a fixed number of rows.
+func (th *TableHandle) NumRows() (numRows int64, ok bool) {
+	// No need to lock since these are never changed
+	return th.size, th.isStatic
 }
 
 // Snapshot downloads the current state of the table from the server and returns it as an Arrow Record.
