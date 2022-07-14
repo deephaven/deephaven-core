@@ -12,6 +12,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.util.QueryConstants;
@@ -104,11 +105,11 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
     }
 
     @Override
-    public void add(SafeCloseable bc, RowSequence orderedKeys, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
+    public void add(boolean initialBuild, SafeCloseable bc, RowSequence orderedKeys, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
         if (orderedKeys.isEmpty()) {
             return;
         }
-        buildTable((BuildContext)bc, orderedKeys, sources, outputPositions, new AddOnlyBuildHandler(nextOutputPosition, outputPositions));
+        buildTable(initialBuild, (BuildContext)bc, orderedKeys, sources, outputPositions, new AddOnlyBuildHandler(nextOutputPosition, outputPositions));
     }
 
     public static class BuildContext extends TypedHasherUtil.BuildOrProbeContext {
@@ -145,6 +146,7 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
     }
 
     protected void buildTable(
+            final boolean initialBuild,
             final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
@@ -160,7 +162,7 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
 
-                while (doRehash(bc.rehashCredits, chunkOk.intSize(), outputPositions)) {
+                while (doRehash(initialBuild, bc.rehashCredits, chunkOk.intSize(), outputPositions)) {
                     migrateFront(outputPositions);
                 }
 
@@ -174,11 +176,12 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
     }
 
     /**
+     * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
      * @param rehashCredits the number of entries this operation has rehashed (input/output)
      * @param nextChunkSize the size of the chunk we are processing
      * @return true if a front migration is required
      */
-    public boolean doRehash(MutableInt rehashCredits, int nextChunkSize,
+    public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize,
                             WritableIntChunk<RowKeys> outputPositions) {
         if (rehashPointer > 0) {
             final int requiredRehash = nextChunkSize - rehashCredits.intValue();
@@ -209,6 +212,18 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
         if (rehashCredits.intValue() > 0) {
             rehashCredits.setValue(0);
+        }
+
+        if (fullRehash) {
+            // if we are doing a full rehash, we need to ditch the alternate
+            if (rehashPointer > 0) {
+                rehashInternalPartial((int) numEntries, outputPositions);
+                clearAlternate();
+            }
+
+            rehashInternalFull(oldTableSize);
+
+            return false;
         }
 
         Assert.eqZero(rehashPointer, "rehashPointer");

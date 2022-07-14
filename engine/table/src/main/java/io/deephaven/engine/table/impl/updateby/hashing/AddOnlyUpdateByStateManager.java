@@ -238,7 +238,8 @@ class AddOnlyUpdateByStateManager
     // region build wrappers
 
     @Override
-    public void add(final SafeCloseable bc,
+    public void add(final boolean initialBuild,
+                    final SafeCloseable bc,
                     RowSequence orderedKeys,
                     ColumnSource<?>[] sources,
                     MutableInt nextOutputPosition,

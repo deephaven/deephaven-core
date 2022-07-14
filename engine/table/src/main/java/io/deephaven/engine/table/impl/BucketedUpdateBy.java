@@ -426,7 +426,7 @@ public class BucketedUpdateBy extends UpdateBy {
                                     : modifiedPreShiftOk;
 
                     hashTable.remove(getProbeContet(), modifiedPreShiftOk, keySources, localOutputPositions);
-                    hashTable.add(bc, modifiedPostShiftOk, keySources, nextOutputPosition, postSlots);
+                    hashTable.add(false, bc, modifiedPostShiftOk, keySources, nextOutputPosition, postSlots);
 
                     modifiedPreShiftOk.fillRowKeyChunk(preShiftIndicesChunk);
                     final LongChunk<OrderedRowKeys> postShiftIndices;
@@ -489,7 +489,7 @@ public class BucketedUpdateBy extends UpdateBy {
                 final WritableLongChunk<OrderedRowKeys> localKeyIndicesChunk = keyChunk.get();
                 while (okIt.hasMore()) {
                     final RowSequence chunkOk = okIt.getNextRowSequenceWithLength(chunkSize);
-                    hashTable.add(bc, chunkOk, keySources, nextOutputPosition, localOutputPositions);
+                    hashTable.add(false, bc, chunkOk, keySources, nextOutputPosition, localOutputPositions);
                     final boolean permuteRequired = findRunsAndPermute(chunkOk);
 
                     for (int runIdx = 0; runIdx < localRunStarts.size(); runIdx++) {
@@ -859,7 +859,7 @@ public class BucketedUpdateBy extends UpdateBy {
          *
          * @param added the keys added.
          */
-        private void doAppendOnlyAdds(@NotNull final RowSet added) {
+        private void doAppendOnlyAdds(final boolean initialBuild, @NotNull final RowSet added) {
             initializeFor(added, UpdateType.Add);
 
             try (final RowSequence.Iterator okIt = added.getRowSequenceIterator()) {
@@ -875,7 +875,7 @@ public class BucketedUpdateBy extends UpdateBy {
                     final RowSequence chunkOk = okIt.getNextRowSequenceWithLength(chunkSize);
 
                     // add the values to the hash table, and produce a chunk of the positions each added key mapped to
-                    hashTable.add(bc, chunkOk, keySources, nextOutputPosition, localOutputPositions);
+                    hashTable.add(initialBuild, bc, chunkOk, keySources, nextOutputPosition, localOutputPositions);
                     setBucketCapacity(nextOutputPosition.intValue());
 
                     // Now, organize that chunk by position so we can hand them off to the operators
@@ -1154,7 +1154,7 @@ public class BucketedUpdateBy extends UpdateBy {
                     processUpdateForRedirection(initialUpdate);
                 }
 
-                ctx.doAppendOnlyAdds(source.getRowSet());
+                ctx.doAppendOnlyAdds(true, source.getRowSet());
                 if (slotTracker != null) {
                     // noinspection resource
                     slotTracker.applyUpdates(RowSetShiftData.EMPTY);
@@ -1254,7 +1254,7 @@ public class BucketedUpdateBy extends UpdateBy {
                 final boolean isAppendOnly =
                         UpdateByOperator.isAppendOnly(upstream, source.getRowSet().lastRowKeyPrev());
                 if (isAppendOnly) {
-                    ctx.doAppendOnlyAdds(upstream.added());
+                    ctx.doAppendOnlyAdds(false, upstream.added());
                 } else {
                     accumulateUpdatesByBucket(upstream, ctx);
                 }

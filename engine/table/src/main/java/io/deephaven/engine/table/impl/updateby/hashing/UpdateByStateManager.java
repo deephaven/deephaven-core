@@ -31,7 +31,8 @@ public abstract class UpdateByStateManager {
         return "[" + Arrays.stream(keySourcesForErrorMessages).map(ls -> Objects.toString(ls.get(leftKey))).collect(Collectors.joining(", ")) + "]";
     }
 
-    public abstract void add(final SafeCloseable bc,
+    public abstract void add(final boolean initialBuild,
+             final SafeCloseable bc,
              final RowSequence orderedKeys,
              final ColumnSource<?>[] sources,
              final MutableInt nextOutputPosition,
