@@ -32,7 +32,10 @@ public class JpyInit {
      * @throws InterruptedException if the current thread is interrupted
      * @throws TimeoutException if the command times out
      */
-    public static void init() throws IOException, InterruptedException, TimeoutException {
+    public static synchronized void init() throws IOException, InterruptedException, TimeoutException {
+        if (PyLibInitializer.isPyLibInitialized()) {
+            return;
+        }
         final JpyConfig explicitConfig = new JpyConfigLoader(Configuration.getInstance()).asJpyConfig();
         if (!explicitConfig.isEmpty()) {
             init(new JpyConfigExt(explicitConfig));
@@ -42,19 +45,11 @@ public class JpyInit {
         init(new JpyConfigExt(fromSubprocess.asJpyConfig()));
     }
 
-    private static synchronized void init(JpyConfigExt jpyConfig) {
-        if (PyLibInitializer.isPyLibInitialized()) {
-            log.warn().append("Skipping initialization of Jpy, already initialized").endl();
-            log.warn().append("Using Python Installation ").append(System.getProperty("jpy.pythonLib", "(unknown)"))
-                    .endl();
-            return;
-        }
-
+    private static void init(JpyConfigExt jpyConfig) {
         log.info().append("Loaded jpy config ").append(jpyConfig).endl();
         log.info().append("Starting Python interpreter").endl();
         jpyConfig.initPython();
         jpyConfig.startPython();
         log.info().append("Started Python interpreter").endl();
-        log.info().append("Using Python Installation ").append(System.getProperty("jpy.pythonLib", "(unknown)")).endl();
     }
 }
