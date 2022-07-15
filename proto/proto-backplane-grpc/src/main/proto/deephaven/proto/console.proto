@@ -18,6 +18,7 @@ import "deephaven/proto/application.proto";
 service ConsoleService {
     rpc GetConsoleTypes(GetConsoleTypesRequest) returns (GetConsoleTypesResponse) {}
     rpc StartConsole(StartConsoleRequest) returns (StartConsoleResponse) {}
+    rpc GetHeapInfo(GetHeapInfoRequest) returns (GetHeapInfoResponse) {}
 
     rpc SubscribeToLogs(LogSubscriptionRequest) returns (stream LogSubscriptionData) {}
 
@@ -59,6 +60,19 @@ message StartConsoleRequest {
 }
 message StartConsoleResponse {
     io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+}
+
+message GetHeapInfoRequest {
+    // left empty for future compatibility
+}
+message GetHeapInfoResponse {
+    string error_message = 1;
+    HeapInfo info = 2;
+}
+message HeapInfo {
+    int64 maximum_heap_size = 1;
+    int64 total_heap_size = 2;
+    int64 free_memory = 3;
 }
 
 message LogSubscriptionRequest {

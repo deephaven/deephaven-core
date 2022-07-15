@@ -205,7 +205,17 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
         return promise.then(result -> Promise.resolve(result.getConsoleTypesList()));
     }
-
+//
+//    @JsMethod
+//    public Promise<JsWorkerHeapInfo> getWorkerHeapInfo() {
+//        Promise<GetHeap> promise = Callbacks.grpcUnaryPromise(callback -> {
+//            HeapInfoRequest request = new HeapInfoRequest();
+//            connection.get().consoleServiceClient().get(request, connection.get().metadata(),
+//                    callback::apply);
+//        });
+//
+//        return promise.then(result -> Promise.resolve(result.getConsoleTypesList()));
+//    }
 
     public void connected() {
         if (closed) {

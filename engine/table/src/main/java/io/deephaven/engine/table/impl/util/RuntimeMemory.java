@@ -189,9 +189,23 @@ public class RuntimeMemory {
     }
 
     /**
+     * See {@link Runtime#freeMemory()}.
+     */
+    public long freeMemory() {
+        return currSnapshot.lastFreeMemory;
+    }
+
+    /**
+     * See {@link Runtime#totalMemory()}.
+     */
+    public long totalMemory() {
+        return currSnapshot.lastTotalMemory;
+    }
+
+    /**
      * See {@link Runtime#maxMemory()}.
      */
-    long getMaxMemory() {
+    public long getMaxMemory() {
         return maxMemory;
     }
 }

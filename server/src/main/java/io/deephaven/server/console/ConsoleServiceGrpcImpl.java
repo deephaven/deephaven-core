@@ -6,6 +6,7 @@ package io.deephaven.server.console;
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -26,28 +27,7 @@ import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
-import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
-import io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse;
-import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
-import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
-import io.deephaven.proto.backplane.script.grpc.CancelCommandRequest;
-import io.deephaven.proto.backplane.script.grpc.CancelCommandResponse;
-import io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest;
-import io.deephaven.proto.backplane.script.grpc.CloseDocumentRequest;
-import io.deephaven.proto.backplane.script.grpc.CompletionItem;
-import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
-import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
-import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
-import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest;
-import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse;
-import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest;
-import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesResponse;
-import io.deephaven.proto.backplane.script.grpc.LogSubscriptionData;
-import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
-import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
-import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
-import io.deephaven.proto.backplane.script.grpc.TextDocumentItem;
-import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier;
+import io.deephaven.proto.backplane.script.grpc.*;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
@@ -195,6 +175,26 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         changes.removed.entrySet()
                                 .forEach(entry -> fieldChanges.addRemoved(makeVariableDefinition(entry)));
                         responseObserver.onNext(diff.setChanges(fieldChanges).build());
+                        responseObserver.onCompleted();
+                    });
+        });
+    }
+
+    @Override
+    public void getHeapInfo(GetHeapInfoRequest request, StreamObserver<GetHeapInfoResponse> responseObserver) {
+        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            final SessionState session = sessionService.getCurrentSession();
+            session.nonExport()
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        GetHeapInfoResponse.Builder infoResponse = GetHeapInfoResponse.newBuilder();
+                        HeapInfo.Builder heapInfo = HeapInfo.newBuilder();
+                        heapInfo.setTotalHeapSize(RuntimeMemory.getInstance().totalMemory());
+                        heapInfo.setFreeMemory(RuntimeMemory.getInstance().freeMemory());
+                        heapInfo.setMaximumHeapSize(RuntimeMemory.getInstance().getMaxMemory());
+                        infoResponse.setInfo(heapInfo);
+
+                        responseObserver.onNext(infoResponse.build());
                         responseObserver.onCompleted();
                     });
         });
