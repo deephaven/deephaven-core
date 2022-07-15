@@ -180,6 +180,23 @@ func TestMerge(t *testing.T) {
 	}
 }
 
+func TestMergeNull(t *testing.T) {
+	result := applyTableOp(test_tools.RandomRecord(2, 30, 10), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
+		head, err := before.Head(ctx, 5)
+		if err != nil {
+			return nil, err
+		}
+		defer head.Release(ctx)
+
+		return client.Merge(ctx, "a", before, head, nil)
+	})
+
+	if result.NumRows() != 35 {
+		t.Errorf("Merge had wrong size")
+		return
+	}
+}
+
 func TestExactJoin(t *testing.T) {
 	ctx := context.Background()
 

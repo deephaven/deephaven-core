@@ -28,7 +28,9 @@ var ErrDifferentClients = errors.New("tried to use tables from different clients
 //
 // All TableHandle methods are goroutine-safe.
 //
-// Both a nil TableHandle pointer and a TableHandle's zero values act identically to handles that have been released.
+// A TableHandle's zero value acts identically to a TableHandle that has been released.
+// A nil TableHandle pointer also acts like a released table with one key exception:
+// The Merge and MergeQuery methods will simply ignore nil handles.
 type TableHandle struct {
 	client   *Client
 	ticket   *ticketpb2.Ticket // The ticket this table can be referred to by.
@@ -536,21 +538,30 @@ func (th *TableHandle) AggBy(ctx context.Context, agg *AggBuilder, by ...string)
 }
 
 // Merge combines two or more tables into one table.
-// This essentially appends the tables one on top of the other.
+// This essentially appends the tables on top of each other.
+//
 // If sortBy is provided, the resulting table will be sorted based on that column.
+//
+// Any nil TableHandle pointers passed in are ignored.
+// At least one non-nil *TableHandle must be provided.
 func Merge(ctx context.Context, sortBy string, tables ...*TableHandle) (*TableHandle, error) {
 	if len(tables) < 1 {
 		return nil, errors.New("must provide at least one table to merge")
 	}
 
+	var usedTables []*TableHandle
 	for _, table := range tables {
-		if !table.rLockIfValid() {
-			return nil, ErrInvalidTableHandle
+		if table != nil {
+			if !table.rLockIfValid() {
+				return nil, ErrInvalidTableHandle
+			}
+			defer table.lock.RUnlock()
+
+			usedTables = append(usedTables, table)
 		}
-		defer table.lock.RUnlock()
 	}
 
-	client := tables[0].client
+	client := usedTables[0].client
 
-	return client.merge(ctx, sortBy, tables)
+	return client.merge(ctx, sortBy, usedTables)
 }

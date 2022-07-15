@@ -638,8 +638,11 @@ func (state *serialOpsState) unlockAll() {
 }
 
 // processNode performs the table operations for the given node and its children and returns the resulting table.
-// This may return a QueryError.
-func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*TableHandle, error) {
+// allowNilTables is used only for mergeOp, and allows returning a nil table reference for a node that points to a nil table.
+// Normally, nil tables are treated as an error.
+//
+// This may retuorn a QueryError.
+func (state *serialOpsState) processNode(ctx context.Context, node QueryNode, allowNilTables bool) (*TableHandle, error) {
 	// If this node has already been processed, just return the old result.
 	if tbl, ok := state.finishedNodes[node]; ok {
 		return tbl, nil
@@ -652,6 +655,17 @@ func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*
 
 	if node.index == -1 {
 		oldTable := node.builder.table
+
+		skipValidCheck := allowNilTables && node.builder.table == nil
+
+		if skipValidCheck {
+			if state.isExported(node) {
+				// Exporting a nil table is not allowed.
+				return nil, ErrInvalidTableHandle
+			} else {
+				return nil, nil
+			}
+		}
 
 		if _, ok := state.lockedTables[oldTable]; !ok {
 			if !oldTable.rLockIfValid() {
@@ -681,9 +695,11 @@ func (state *serialOpsState) processNode(ctx context.Context, node QueryNode) (*
 
 	op := node.builder.ops[node.index]
 
+	_, childNilIsOk := op.(mergeOp)
+
 	var children []*TableHandle
 	for _, childNode := range op.childQueries() {
-		childTbl, err := state.processNode(ctx, childNode)
+		childTbl, err := state.processNode(ctx, childNode, childNilIsOk)
 		if err != nil {
 			// This error is already wrapped
 			return nil, err
@@ -736,7 +752,7 @@ func execSerial(ctx context.Context, client *Client, nodes []QueryNode) ([]*Tabl
 		} else {
 			exported[node] = struct{}{}
 
-			tbl, err := state.processNode(ctx, node)
+			tbl, err := state.processNode(ctx, node, false)
 			if err != nil {
 				// This error is already wrapped
 				return nil, err

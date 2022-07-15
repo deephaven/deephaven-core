@@ -223,7 +223,9 @@ func (b *batchBuilder) unlockAll() {
 }
 
 // addGrpcOps adds any table operations needed by the node to the list, and returns a handle to the node's output table.
-func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, error) {
+// allowNilTables is used only for mergeOp, and allows returning a nil table reference for a node that points to a nil table.
+// Normally, nil tables are treated as an error.
+func (b *batchBuilder) addGrpcOps(node QueryNode, allowNilTables bool) (*tablepb2.TableReference, error) {
 	var source *tablepb2.TableReference
 
 	// If the op is already in the list, we don't need to do it again.
@@ -237,7 +239,18 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, err
 		node.builder.opLock.Lock()
 	}
 
+	skipValidCheck := allowNilTables && node.builder.table == nil
+
 	if node.index == -1 {
+		if skipValidCheck {
+			if nodes := b.needsExport(node); len(nodes) > 0 {
+				// Exporting a nil table is not allowed.
+				return nil, ErrInvalidTableHandle
+			} else {
+				return nil, nil
+			}
+		}
+
 		if _, ok := b.lockedTables[node.builder.table]; !ok {
 			if !node.builder.table.rLockIfValid() {
 				return nil, ErrInvalidTableHandle
@@ -279,9 +292,11 @@ func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, err
 	if node.index != -1 {
 		op := node.builder.ops[node.index]
 
+		_, childNilIsOk := op.(mergeOp)
+
 		var childQueries []*tablepb2.TableReference = nil
 		for _, child := range op.childQueries() {
-			childRef, err := b.addGrpcOps(child)
+			childRef, err := b.addGrpcOps(child, childNilIsOk)
 			if err != nil {
 				return nil, err
 			}
@@ -327,7 +342,7 @@ func getGrpcOps(client *Client, nodes []QueryNode) (grpcOps []*tablepb2.BatchTab
 	defer builder.unlockAll()
 
 	for _, node := range nodes {
-		_, err = builder.addGrpcOps(node)
+		_, err = builder.addGrpcOps(node, false)
 		if err != nil {
 			return
 		}
@@ -1468,23 +1483,42 @@ func (op mergeOp) childQueries() []QueryNode {
 func (op mergeOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
 	assert(len(children) == len(op.children), "wrong number of children for Merge")
 
-	req := &tablepb2.MergeTablesRequest{ResultId: resultId, SourceIds: children, KeyColumn: op.sortBy}
+	var nonNilChildren []*tablepb2.TableReference
+	for _, child := range children {
+		if child != nil {
+			nonNilChildren = append(nonNilChildren, child)
+		}
+	}
+
+	req := &tablepb2.MergeTablesRequest{ResultId: resultId, SourceIds: nonNilChildren, KeyColumn: op.sortBy}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Merge{Merge: req}}
 }
 
 func (op mergeOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
 	assert(len(children) == len(op.children), "wrong number of children for Merge")
 
-	return stub.merge(ctx, op.sortBy, children)
+	var nonNilChildren []*TableHandle
+	for _, child := range children {
+		if child != nil {
+			nonNilChildren = append(nonNilChildren, child)
+		}
+	}
+
+	return stub.merge(ctx, op.sortBy, nonNilChildren)
 }
 
 func (op mergeOp) String() string {
-	return fmt.Sprintf("Merge(%s, /* %d tables omitted */)", op.sortBy, len(op.children))
+	return fmt.Sprintf("MergeQuery(%s, /* %d tables omitted */)", op.sortBy, len(op.children))
 }
 
 // MergeQuery combines two or more tables into one table as part of a query.
-// This essentially appends the tables one on top of the other.
+// This essentially appends the tables on top of each other.
+//
 // If sortBy is provided, the resulting table will be sorted based on that column.
+//
+// "nil Table" nodes (i.e. QueryNodes returned from calling Query() on a nil *TableHandle) are ignored.
+//
+// At least one non-nil node must be provided.
 func MergeQuery(sortBy string, tables ...QueryNode) QueryNode {
 	if len(tables) == 0 {
 		// A merge with no tables will always error,

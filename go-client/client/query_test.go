@@ -137,6 +137,94 @@ func mergeQuery(t *testing.T, exec execBatchOrSerial) {
 	test_tools.CheckError(t, "Release", err)
 }
 
+func TestNullMergeQueryBatched(t *testing.T) {
+	nullMergeQuery(t, (*client.Client).ExecBatch)
+}
+
+func TestNullMergeQuerySerial(t *testing.T) {
+	nullMergeQuery(t, (*client.Client).ExecSerial)
+}
+
+func nullMergeQuery(t *testing.T, exec execBatchOrSerial) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer c.Close()
+
+	left, err := c.EmptyTable(ctx, 10)
+	test_tools.CheckError(t, "EmptyTable", err)
+	defer left.Release(ctx)
+
+	var right *client.TableHandle
+
+	tables, err := exec(c, ctx, client.MergeQuery("", left.Query(), right.Query()))
+	test_tools.CheckError(t, "ExecBatch", err)
+	if len(tables) != 1 {
+		t.Errorf("wrong number of tables")
+	}
+
+	tbl, err := tables[0].Snapshot(ctx)
+	test_tools.CheckError(t, "Snapshot", err)
+
+	if tbl.NumRows() != 10 || tbl.NumCols() != 0 {
+		t.Errorf("table was wrong size")
+	}
+
+	err = tables[0].Release(ctx)
+	test_tools.CheckError(t, "Release", err)
+}
+
+func TestExportNullTableQueryBatched(t *testing.T) {
+	exportNullTableQuery(t, (*client.Client).ExecBatch)
+}
+
+func TestExportNullTableQuerySerial(t *testing.T) {
+	exportNullTableQuery(t, (*client.Client).ExecSerial)
+}
+
+func exportNullTableQuery(t *testing.T, exec execBatchOrSerial) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer c.Close()
+
+	var nullTbl *client.TableHandle
+
+	_, err = exec(c, ctx, nullTbl.Query())
+	if !errors.Is(err, client.ErrInvalidTableHandle) {
+		t.Error("wrong or missing error:", err)
+		return
+	}
+}
+
+func TestNullTableArgQueryBatched(t *testing.T) {
+	nullTableArgQuery(t, (*client.Client).ExecBatch)
+}
+
+func TestNullTableArgQuerySerial(t *testing.T) {
+	nullTableArgQuery(t, (*client.Client).ExecSerial)
+}
+
+func nullTableArgQuery(t *testing.T, exec execBatchOrSerial) {
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer c.Close()
+
+	var nullTbl *client.TableHandle
+
+	query := nullTbl.Query().Update("foo = i")
+
+	_, err = exec(c, ctx, query)
+	if !errors.Is(err, client.ErrInvalidTableHandle) {
+		t.Error("wrong or missing error:", err)
+		return
+	}
+}
+
 func TestEmptyMergeBatched(t *testing.T) {
 	emptyMerge(t, (*client.Client).ExecBatch)
 }
