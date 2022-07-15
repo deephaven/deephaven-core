@@ -1084,13 +1084,13 @@ public class BucketedUpdateBy extends UpdateBy {
 
             this.hashTable = USE_TYPED_STATE_MANAGER
                     ? TypedHasherFactory.make(IncrementalUpdateByStateManagerTypedBase.class,
-                    keySources, keySources,
-                    hashTableSize, control.maximumLoadFactorOrDefault(),
-                    control.targetLoadFactorOrDefault())
-            : new IncrementalUpdateByStateManager(keySources,
-                    hashTableSize,
-                    control.maximumLoadFactorOrDefault(),
-                    control.targetLoadFactorOrDefault());
+                            keySources, keySources,
+                            hashTableSize, control.maximumLoadFactorOrDefault(),
+                            control.targetLoadFactorOrDefault())
+                    : new IncrementalUpdateByStateManager(keySources,
+                            hashTableSize,
+                            control.maximumLoadFactorOrDefault(),
+                            control.targetLoadFactorOrDefault());
         } else {
             slotTracker = null;
             if (!useGrouping) {
@@ -1098,13 +1098,13 @@ public class BucketedUpdateBy extends UpdateBy {
 
                 this.hashTable = USE_TYPED_STATE_MANAGER
                         ? TypedHasherFactory.make(AddOnlyUpdateByStateManagerTypedBase.class,
-                            keySources, keySources,
-                            hashTableSize, control.maximumLoadFactorOrDefault(),
-                            control.targetLoadFactorOrDefault())
+                                keySources, keySources,
+                                hashTableSize, control.maximumLoadFactorOrDefault(),
+                                control.targetLoadFactorOrDefault())
                         : new AddOnlyUpdateByStateManager(keySources,
-                            hashTableSize,
-                            control.maximumLoadFactorOrDefault(),
-                            control.targetLoadFactorOrDefault());
+                                hashTableSize,
+                                control.maximumLoadFactorOrDefault(),
+                                control.targetLoadFactorOrDefault());
             }
         }
     }

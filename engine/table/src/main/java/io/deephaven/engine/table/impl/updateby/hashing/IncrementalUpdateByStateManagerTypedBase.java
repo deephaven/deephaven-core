@@ -58,7 +58,7 @@ public abstract class IncrementalUpdateByStateManagerTypedBase extends UpdateByS
     protected int alternateInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
 
     protected IncrementalUpdateByStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
-                                                       ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
+            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
 
         super(keySourcesForErrorMessages);
 
@@ -119,35 +119,39 @@ public abstract class IncrementalUpdateByStateManagerTypedBase extends UpdateByS
     }
 
     @Override
-    public void add(boolean initialBuild, SafeCloseable bc, RowSequence orderedKeys, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
+    public void add(boolean initialBuild, SafeCloseable bc, RowSequence orderedKeys, ColumnSource<?>[] sources,
+            MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
         if (orderedKeys.isEmpty()) {
             return;
         }
-        buildTable(initialBuild, (BuildContext)bc, orderedKeys, sources, outputPositions, new IncrementalBuildHandler(nextOutputPosition, outputPositions));
+        buildTable(initialBuild, (BuildContext) bc, orderedKeys, sources, outputPositions,
+                new IncrementalBuildHandler(nextOutputPosition, outputPositions));
     }
 
     @Override
     public void remove(@NotNull final SafeCloseable pc,
-                       @NotNull final RowSequence indexToRemove,
-                       @NotNull final ColumnSource<?> [] sources,
-                       @NotNull final WritableIntChunk<RowKeys> outputPositions)  {
+            @NotNull final RowSequence indexToRemove,
+            @NotNull final ColumnSource<?>[] sources,
+            @NotNull final WritableIntChunk<RowKeys> outputPositions) {
         if (indexToRemove.isEmpty()) {
             outputPositions.setSize(0);
             return;
         }
-        probeTable((ProbeContext) pc, indexToRemove, true, sources, outputPositions, new IncrementalProbeHandler(outputPositions));
+        probeTable((ProbeContext) pc, indexToRemove, true, sources, outputPositions,
+                new IncrementalProbeHandler(outputPositions));
     }
 
     @Override
     public void findModifications(@NotNull final SafeCloseable pc,
-                                  @NotNull final RowSequence modifiedIndex,
-                                  @NotNull final ColumnSource<?> [] leftSources,
-                                  @NotNull final WritableIntChunk<RowKeys> outputPositions)  {
+            @NotNull final RowSequence modifiedIndex,
+            @NotNull final ColumnSource<?>[] leftSources,
+            @NotNull final WritableIntChunk<RowKeys> outputPositions) {
         if (modifiedIndex.isEmpty()) {
             outputPositions.setSize(0);
             return;
         }
-        probeTable((ProbeContext) pc, modifiedIndex, false, leftSources, outputPositions, new IncrementalProbeHandler(outputPositions));
+        probeTable((ProbeContext) pc, modifiedIndex, false, leftSources, outputPositions,
+                new IncrementalProbeHandler(outputPositions));
     }
 
     public static class BuildContext extends TypedHasherUtil.BuildOrProbeContext {
@@ -171,7 +175,7 @@ public abstract class IncrementalUpdateByStateManagerTypedBase extends UpdateByS
 
     @Override
     public SafeCloseable makeUpdateByProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
-        return new ProbeContext(buildSources, (int)Math.min(maxSize, CHUNK_SIZE));
+        return new ProbeContext(buildSources, (int) Math.min(maxSize, CHUNK_SIZE));
     }
 
     protected void newAlternate() {
@@ -261,7 +265,7 @@ public abstract class IncrementalUpdateByStateManagerTypedBase extends UpdateByS
      * @return true if a front migration is required
      */
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize,
-                            WritableIntChunk<RowKeys> outputPositions) {
+            WritableIntChunk<RowKeys> outputPositions) {
         if (rehashPointer > 0) {
             final int requiredRehash = nextChunkSize - rehashCredits.intValue();
             if (requiredRehash <= 0) {
@@ -336,10 +340,10 @@ public abstract class IncrementalUpdateByStateManagerTypedBase extends UpdateByS
     }
 
     abstract protected void buildHashTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-                                       MutableInt outputPositionOffset, WritableIntChunk<RowKeys> outputPositions);
+            MutableInt outputPositionOffset, WritableIntChunk<RowKeys> outputPositions);
 
     abstract protected void probeHashTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-                                           WritableIntChunk<RowKeys> outputPositions);
+            WritableIntChunk<RowKeys> outputPositions);
 
     abstract protected int rehashInternalPartial(int entriesToRehash, WritableIntChunk<RowKeys> outputPositions);
 

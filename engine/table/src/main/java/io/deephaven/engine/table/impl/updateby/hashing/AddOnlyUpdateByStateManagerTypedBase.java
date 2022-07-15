@@ -57,7 +57,7 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
     protected int alternateInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
 
     protected AddOnlyUpdateByStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
-                    ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
+            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
 
         super(keySourcesForErrorMessages);
 
@@ -105,11 +105,13 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
     }
 
     @Override
-    public void add(boolean initialBuild, SafeCloseable bc, RowSequence orderedKeys, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
+    public void add(boolean initialBuild, SafeCloseable bc, RowSequence orderedKeys, ColumnSource<?>[] sources,
+            MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
         if (orderedKeys.isEmpty()) {
             return;
         }
-        buildTable(initialBuild, (BuildContext)bc, orderedKeys, sources, outputPositions, new AddOnlyBuildHandler(nextOutputPosition, outputPositions));
+        buildTable(initialBuild, (BuildContext) bc, orderedKeys, sources, outputPositions,
+                new AddOnlyBuildHandler(nextOutputPosition, outputPositions));
     }
 
     public static class BuildContext extends TypedHasherUtil.BuildOrProbeContext {
@@ -182,7 +184,7 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
      * @return true if a front migration is required
      */
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize,
-                            WritableIntChunk<RowKeys> outputPositions) {
+            WritableIntChunk<RowKeys> outputPositions) {
         if (rehashPointer > 0) {
             final int requiredRehash = nextChunkSize - rehashCredits.intValue();
             if (requiredRehash <= 0) {
@@ -257,7 +259,7 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
     }
 
     abstract protected void buildHashTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-                                           MutableInt outputPositionOffset, WritableIntChunk<RowKeys> outputPositions);
+            MutableInt outputPositionOffset, WritableIntChunk<RowKeys> outputPositions);
 
     abstract protected int rehashInternalPartial(int entriesToRehash, WritableIntChunk<RowKeys> outputPositions);
 

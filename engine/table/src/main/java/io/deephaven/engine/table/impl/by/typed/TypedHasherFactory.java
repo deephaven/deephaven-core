@@ -331,7 +331,8 @@ public class TypedHasherFactory {
             final ParameterizedTypeName chunkType =
                     ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class), rowKeyType);
             final ParameterSpec outputPositions = ParameterSpec.builder(chunkType, "outputPositions").build();
-            final ParameterSpec outputPositionOffset = ParameterSpec.builder(MutableInt.class, "outputPositionOffset").build();
+            final ParameterSpec outputPositionOffset =
+                    ParameterSpec.builder(MutableInt.class, "outputPositionOffset").build();
 
             builder.classPrefix("AddOnlyUpdateByHasher").packageGroup("updateby.hashing")
                     .packageMiddle("addonlyopen")
@@ -355,7 +356,8 @@ public class TypedHasherFactory {
             final ParameterizedTypeName chunkType =
                     ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class), rowKeyType);
             final ParameterSpec outputPositions = ParameterSpec.builder(chunkType, "outputPositions").build();
-            final ParameterSpec outputPositionOffset = ParameterSpec.builder(MutableInt.class, "outputPositionOffset").build();
+            final ParameterSpec outputPositionOffset =
+                    ParameterSpec.builder(MutableInt.class, "outputPositionOffset").build();
 
             builder.classPrefix("IncrementalUpdateByHasher").packageGroup("updateby.hashing")
                     .packageMiddle("incopen")
@@ -376,7 +378,8 @@ public class TypedHasherFactory {
                     TypedUpdateByFactory::incrementalBuildLeftInsert, outputPositionOffset, outputPositions));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probeHashTable", "rowState",
-                    true, TypedUpdateByFactory::incrementalProbeFound, TypedUpdateByFactory::incrementalProbeMissing, outputPositions));
+                    true, TypedUpdateByFactory::incrementalProbeFound, TypedUpdateByFactory::incrementalProbeMissing,
+                    outputPositions));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
