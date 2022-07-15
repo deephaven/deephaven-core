@@ -18,8 +18,8 @@ type fieldId struct {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // reqClose is a field manager request used to stop an executor.
-// This struct is unused; closing the channel stops the executor instead.
-type reqClose struct{}
+// The returned channel will close to signal that the executor is finished.
+type reqClose struct{ out chan<- struct{} }
 
 // respListOpenableTables is a field manager response containing a list of table names that can be opened using GetTable.
 type respListOpenableTables []string
@@ -152,11 +152,11 @@ type fieldManagerExecutor struct {
 // from the executor's channels and perform the appropriate actions.
 // It will run forever until chanClose is closed.
 func (fme *fieldManagerExecutor) loop() {
-	defer fme.cancelFieldStream()
-
 	for {
 		select {
-		case <-fme.chanClose:
+		case req := <-fme.chanClose:
+			fme.cancelFieldStream()
+			req.out <- struct{}{}
 			return
 		case req := <-fme.chanOpenTables:
 			req.out <- fme.listOpenableTables()
@@ -361,7 +361,11 @@ func (fm *fieldManager) FetchTablesRepeating(ctx context.Context, appServiceClie
 // Once Close has been called, no other methods should be used on the fieldManager (except Close again, which will do nothing).
 func (fm *fieldManager) Close() {
 	if fm.chanClose != nil {
+		// This waits for the executor to stop.
+		closeConfirm := make(chan struct{})
+		fm.chanClose <- reqClose{out: closeConfirm}
 		close(fm.chanClose)
+		<-closeConfirm
 
 		fm.chanClose = nil
 		fm.chanOpenTables = nil
