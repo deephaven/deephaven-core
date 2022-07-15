@@ -189,6 +189,8 @@ func (client *Client) Close() error {
 
 	client.isClosed = true
 
+	client.fieldMan.Close()
+
 	client.sessionStub.Close()
 
 	if client.grpcChannel != nil {
@@ -202,8 +204,6 @@ func (client *Client) Close() error {
 	if err != nil {
 		log.Println("unable to close client:", err.Error())
 	}
-
-	client.fieldMan.Close()
 
 	return err
 }

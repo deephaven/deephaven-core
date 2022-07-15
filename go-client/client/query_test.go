@@ -34,20 +34,20 @@ func dagQuery(t *testing.T, exec execBatchOrSerial) {
 	rec := test_tools.ExampleRecord()
 	defer rec.Release()
 
-	// Close (float32), Vol (int32), Ticker (string)
+	// Close (float32), Volume (int32), Ticker (string)
 	exTable, err := c.ImportTable(ctx, rec)
 	test_tools.CheckError(t, "ImportTable", err)
 	defer exTable.Release(ctx)
 
-	// Close (float32), Vol (int32), TickerLen (int)
+	// Close (float32), Volume (int32), TickerLen (int)
 	exLenQuery := exTable.Query().
 		Update("TickerLen = Ticker.length()").
 		DropColumns("Ticker")
 
 	// Close (float32), TickerLen (int)
 	exCloseLenQuery := exLenQuery.
-		Update("TickerLen = TickerLen + Vol").
-		DropColumns("Vol")
+		Update("TickerLen = TickerLen + Volume").
+		DropColumns("Volume")
 
 	// Close (float32), TickerLen (int)
 	otherQuery := c.EmptyTableQuery(5).
@@ -337,7 +337,7 @@ func updateDropQuery(t *testing.T, exec execBatchOrSerial) {
 	}
 	defer before.Release(ctx)
 
-	updateQuery := before.Query().Update("Foo = Close * 17.0", "Bar = Vol + 1")
+	updateQuery := before.Query().Update("Foo = Close * 17.0", "Bar = Volume + 1")
 	dropQuery := updateQuery.DropColumns("Bar", "Ticker")
 
 	tables, err := exec(c, ctx, updateQuery, dropQuery)
@@ -371,7 +371,7 @@ func updateDropQuery(t *testing.T, exec execBatchOrSerial) {
 	}
 
 	col0, col1, col2 := drpTbl.ColumnName(0), drpTbl.ColumnName(1), drpTbl.ColumnName(2)
-	if col0 != "Close" || col1 != "Vol" || col2 != "Foo" {
+	if col0 != "Close" || col1 != "Volume" || col2 != "Foo" {
 		t.Errorf("wrong columns %s %s %s", col0, col1, col2)
 		return
 	}
@@ -672,7 +672,7 @@ func TestWhereQuerySerial(t *testing.T) {
 
 func whereQuery(t *testing.T, exec execBatchOrSerial) {
 	results := doQueryTest(test_tools.ExampleRecord(), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
-		return []client.QueryNode{tbl.Query().Where("Vol % 1000 != 0")}
+		return []client.QueryNode{tbl.Query().Where("Volume % 1000 != 0")}
 	})
 	defer results[0].Release()
 

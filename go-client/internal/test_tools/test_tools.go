@@ -19,7 +19,7 @@ func ExampleRecord() arrow.Record {
 		[]arrow.Field{
 			{Name: "Ticker", Type: arrow.BinaryTypes.String},
 			{Name: "Close", Type: arrow.PrimitiveTypes.Float32},
-			{Name: "Vol", Type: arrow.PrimitiveTypes.Int32},
+			{Name: "Volume", Type: arrow.PrimitiveTypes.Int32},
 		},
 		nil,
 	)

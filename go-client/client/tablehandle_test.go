@@ -49,7 +49,7 @@ func applyTableOp(input arrow.Record, t *testing.T, op unaryTableOp) arrow.Recor
 
 func TestDropColumns(t *testing.T) {
 	result := applyTableOp(test_tools.ExampleRecord(), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
-		return before.DropColumns(ctx, "Ticker", "Vol")
+		return before.DropColumns(ctx, "Ticker", "Volume")
 	})
 	defer result.Release()
 
@@ -99,7 +99,7 @@ func TestSelectDistinct(t *testing.T) {
 
 func TestWhere(t *testing.T) {
 	result := applyTableOp(test_tools.ExampleRecord(), t, func(ctx context.Context, before *client.TableHandle) (*client.TableHandle, error) {
-		return before.Where(ctx, "Vol % 1000 != 0")
+		return before.Where(ctx, "Volume % 1000 != 0")
 	})
 	defer result.Release()
 
