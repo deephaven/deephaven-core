@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/deephaven/deephaven-core/go-client/client"
-	"github.com/deephaven/deephaven-core/go-client/examples/common"
+	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
 // This example shows how to use the powerful query system,
@@ -30,7 +30,7 @@ func Example_basicQuery() {
 	defer cl.Close()
 
 	// First, let's create some example data to manipulate.
-	sampleRecord := common.GetExampleRecord()
+	sampleRecord := test_tools.ExampleRecord()
 	// Note that Arrow records must eventually be released.
 	defer sampleRecord.Release()
 

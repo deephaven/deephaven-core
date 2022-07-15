@@ -6,7 +6,7 @@ import (
 
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/deephaven/deephaven-core/go-client/client"
-	"github.com/deephaven/deephaven-core/go-client/examples/common"
+	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
 // This example shows how to use Input Tables.
@@ -63,7 +63,7 @@ func Example_inputTable() {
 
 	// Now, let's get some new data to add to the input table.
 	// We import the data so that it is available on the server.
-	newDataRec := common.GetExampleRecord()
+	newDataRec := test_tools.ExampleRecord()
 	// Note that Arrow records must be eventually released.
 	defer newDataRec.Release()
 	newDataTable, err := cl.ImportTable(ctx, newDataRec)

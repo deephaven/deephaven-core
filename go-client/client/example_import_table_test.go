@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/deephaven/deephaven-core/go-client/client"
-	"github.com/deephaven/deephaven-core/go-client/examples/common"
+	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
 // This example shows off the ability to upload tables to the Deephaven server,
@@ -29,7 +29,7 @@ func Example_importTable() {
 	defer cl.Close()
 
 	// First, we need some Arrow record we want to upload.
-	sampleRecord := common.GetExampleRecord()
+	sampleRecord := test_tools.ExampleRecord()
 	// Note that Arrow records should be eventually released.
 	defer sampleRecord.Release()
 
