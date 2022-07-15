@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
-import jpy
+from deephaven_internal._jvm import jpy
 
 _JCallbackAdapter = jpy.get_type('io.deephaven.server.plugin.python.CallbackAdapter')
 

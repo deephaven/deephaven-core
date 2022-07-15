@@ -7,7 +7,7 @@ Deephaven table out as a CSV file.
 """
 from typing import Dict, List
 
-import jpy
+from deephaven_internal._jvm import jpy
 
 import deephaven.dtypes as dht
 from deephaven import DHError

@@ -5,7 +5,7 @@
 """ This module provides various ways to make a Deephaven table. """
 from typing import List, Dict, Any
 
-import jpy
+from deephaven_internal._jvm import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper

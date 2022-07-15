@@ -6,7 +6,7 @@
 from enum import Enum
 from typing import Dict, Tuple, List, Callable
 
-import jpy
+from deephaven_internal._jvm import jpy
 
 from deephaven import dtypes
 from deephaven.jcompat import j_hashmap, j_properties

@@ -11,6 +11,8 @@ import io.deephaven.jpy.JpyConfigExt;
 import io.deephaven.jpy.JpyConfigFromSubprocess;
 import io.deephaven.jpy.JpyConfigSource;
 import org.jpy.PyLibInitializer;
+import org.jpy.PyModule;
+import org.jpy.PyObject;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -36,10 +38,20 @@ public class JpyInit {
         final JpyConfig explicitConfig = new JpyConfigLoader(Configuration.getInstance()).asJpyConfig();
         if (!explicitConfig.isEmpty()) {
             init(new JpyConfigExt(explicitConfig));
-            return;
+        } else {
+            final JpyConfigSource fromSubprocess = JpyConfigFromSubprocess.fromSubprocess(Duration.ofSeconds(10));
+            init(new JpyConfigExt(fromSubprocess.asJpyConfig()));
         }
-        final JpyConfigSource fromSubprocess = JpyConfigFromSubprocess.fromSubprocess(Duration.ofSeconds(10));
-        init(new JpyConfigExt(fromSubprocess.asJpyConfig()));
+        markServerReady();
+    }
+
+    private static void markServerReady() {
+        // noinspection EmptyTryBlock,unused
+        try (
+                final PyModule deephavenJpyModule = PyModule.importModule("deephaven_internal._server");
+                final PyObject obj = deephavenJpyModule.callMethod("ready")) {
+            // empty
+        }
     }
 
     private static synchronized void init(JpyConfigExt jpyConfig) {

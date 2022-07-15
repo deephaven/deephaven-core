@@ -8,7 +8,7 @@ from enum import Enum
 from numbers import Number
 from typing import List
 
-import jpy
+from deephaven_internal._jvm import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper

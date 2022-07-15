@@ -7,7 +7,7 @@ system and Deephaven queries.
 """
 from typing import Dict
 
-import jpy
+from deephaven_internal._jvm import jpy
 
 from deephaven import DHError
 from deephaven.jcompat import j_map_to_dict

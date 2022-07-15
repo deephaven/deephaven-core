@@ -7,7 +7,7 @@
 import enum
 from typing import Any, Type
 
-import jpy
+from deephaven_internal._jvm import jpy
 import numpy as np
 
 from deephaven import DHError

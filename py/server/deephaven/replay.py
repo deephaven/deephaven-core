@@ -4,7 +4,8 @@
 
 """ This module provides support for replaying historical data. """
 
-import jpy
+from deephaven_internal._jvm import jpy
+from deephaven_internal._jvm import jpy
 
 from deephaven import dtypes, DHError
 from deephaven._wrapper import JObjectWrapper

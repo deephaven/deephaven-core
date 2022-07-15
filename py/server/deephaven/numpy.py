@@ -6,7 +6,7 @@
 import re
 from typing import List
 
-import jpy
+from deephaven_internal._jvm import jpy
 import numpy as np
 from deephaven.dtypes import DType
 

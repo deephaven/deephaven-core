@@ -7,7 +7,7 @@ data structures from corresponding Python ones in order to be able to call Java 
 
 from typing import Any, Iterable, Dict, Set, TypeVar, Callable, Union, Sequence
 
-import jpy
+from deephaven_internal._jvm import jpy
 
 from deephaven._wrapper import unwrap
 from deephaven.dtypes import DType

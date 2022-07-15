@@ -8,6 +8,8 @@ import jpyutil
 import os
 import pathlib
 
+import deephaven_internal._server
+
 # TODO(deephaven-core#2592): Generalize start_jvm to work with importlib.resources
 
 def _jars_path():
@@ -98,5 +100,6 @@ def start_jvm(
         jvm_options=jvm_args,
         # config_file=config_file,
         config=config)
+    deephaven_internal._server.ready()
     import jpy
     jpy.VerboseExceptions.enabled = True

@@ -10,7 +10,7 @@ from __future__ import annotations
 from enum import Enum, auto
 from typing import Union, Sequence, List, Any, Optional, Callable
 
-import jpy
+from deephaven_internal._jvm import jpy
 
 from deephaven import DHError, dtypes
 from deephaven._wrapper import JObjectWrapper
