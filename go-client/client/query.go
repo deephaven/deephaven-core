@@ -11,31 +11,32 @@ import (
 	ticketpb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/ticket"
 )
 
-// A queryErrorPart is a single error in a QueryError.
-type queryErrorPart struct {
+// A querySubError is an error when creating a table in a batched or serial query.
+// Several querySubErrors may be combined into a queryError.
+type querySubError struct {
 	serverErr error                    // The raw error returned by the server.
 	resultId  *tablepb2.TableReference // The result ID of the table which caused the error. Only present for errors from batch execution.
 	source    QueryNode                // The query node that caused this error.
 }
 
-// newQueryErrorPart wraps a single part of a batch error to create a single part of a query error.
+// newQuerySubError wraps a single batch sub-error to create a single query sub-error.
 // The other parameters are used to attach debugging info to the error.
 // nodeTickets is a list of the tickets assigned to each exported node, returned by batch().
 // opNodes is a map from grpc op list indices to query nodes, created by newQueryError().
 // exportNodes is the list of nodes that are exported from the source query.
-func newQueryErrorPart(part batchErrorPart, nodeTickets []*ticketpb2.Ticket, opNodes map[int32]QueryNode, exportNodes []QueryNode) queryErrorPart {
-	switch tblRef := part.ResultId.Ref.(type) {
+func newQuerySubError(subError batchSubError, nodeTickets []*ticketpb2.Ticket, opNodes map[int32]QueryNode, exportNodes []QueryNode) querySubError {
+	switch tblRef := subError.ResultId.Ref.(type) {
 	case *tablepb2.TableReference_Ticket:
 		if idx, ok := findTicketOutputIndex(nodeTickets, tblRef.Ticket); ok {
-			return queryErrorPart{serverErr: part.ServerErr, resultId: part.ResultId, source: exportNodes[idx]}
+			return querySubError{serverErr: subError.ServerErr, resultId: subError.ResultId, source: exportNodes[idx]}
 		} else {
-			return queryErrorPart{serverErr: part.ServerErr, resultId: part.ResultId}
+			return querySubError{serverErr: subError.ServerErr, resultId: subError.ResultId}
 		}
 	case *tablepb2.TableReference_BatchOffset:
 		if key, ok := opNodes[tblRef.BatchOffset]; ok {
-			return queryErrorPart{serverErr: part.ServerErr, resultId: part.ResultId, source: key}
+			return querySubError{serverErr: subError.ServerErr, resultId: subError.ResultId, source: key}
 		} else {
-			return queryErrorPart{serverErr: part.ServerErr, resultId: part.ResultId}
+			return querySubError{serverErr: subError.ServerErr, resultId: subError.ResultId}
 		}
 	default:
 		panic(fmt.Sprintf("unreachable table reference type %s", tblRef))
@@ -46,7 +47,9 @@ func newQueryErrorPart(part batchErrorPart, nodeTickets []*ticketpb2.Ticket, opN
 // The Details method will return more information about the error,
 // including a pseudo-traceback of the methods that caused it.
 type QueryError struct {
-	parts []queryErrorPart
+	// Multiple tables in a query might fail,
+	// so each failed table gets its own querySubError.
+	subErrors []querySubError
 }
 
 // newQueryError wraps a batch error with debugging info.
@@ -59,25 +62,25 @@ func newQueryError(err batchError, nodeTickets []*ticketpb2.Ticket, nodeOps map[
 		opNodes[idx] = key
 	}
 
-	var wrappedParts []queryErrorPart
+	var wrappedSubErrors []querySubError
 
-	for _, part := range err.parts {
-		wrappedPart := newQueryErrorPart(part, nodeTickets, opNodes, exportNodes)
-		wrappedParts = append(wrappedParts, wrappedPart)
+	for _, subError := range err.subErrors {
+		wrappedSubError := newQuerySubError(subError, nodeTickets, opNodes, exportNodes)
+		wrappedSubErrors = append(wrappedSubErrors, wrappedSubError)
 	}
 
-	return QueryError{parts: wrappedParts}
+	return QueryError{subErrors: wrappedSubErrors}
 }
 
 // Unwrap returns the first part of the query error.
 func (err QueryError) Unwrap() error {
-	return err.parts[0].serverErr
+	return err.subErrors[0].serverErr
 }
 
 // Error returns some minimal info about the first part of the query error.
 // For debugging, the Details method returns more helpful info.
 func (err QueryError) Error() string {
-	return "query error: " + err.parts[0].serverErr.Error()
+	return "query error: " + err.subErrors[0].serverErr.Error()
 }
 
 // Details returns a string containing detailed information on all of the query errors that occurred.
@@ -86,30 +89,30 @@ func (err QueryError) Details() string {
 	details := "details:\n"
 
 	locked := make(map[*queryBuilder]struct{})
-	for _, part := range err.parts {
-		if part.source.builder != nil {
-			if _, ok := locked[part.source.builder]; !ok {
-				part.source.builder.opLock.Lock()
-				defer part.source.builder.opLock.Unlock()
-				locked[part.source.builder] = struct{}{}
+	for _, subError := range err.subErrors {
+		if subError.source.builder != nil {
+			if _, ok := locked[subError.source.builder]; !ok {
+				subError.source.builder.opLock.Lock()
+				defer subError.source.builder.opLock.Unlock()
+				locked[subError.source.builder] = struct{}{}
 			}
 		}
 	}
 
-	for _, part := range err.parts {
-		details += fmt.Sprintf("msg: %s\n", part.serverErr)
-		if part.source.builder != nil {
-			builder := part.source.builder
+	for _, subError := range err.subErrors {
+		details += fmt.Sprintf("msg: %s\n", subError.serverErr)
+		if subError.source.builder != nil {
+			builder := subError.source.builder
 
 			if builder.table != nil {
 				details += fmt.Sprintf("  base table: %s\n", builder.table.ticket)
 			}
 			details += "  query operations:\n"
-			for _, op := range builder.ops[:part.source.index+1] {
+			for _, op := range builder.ops[:subError.source.index+1] {
 				details += fmt.Sprintf("    %s\n", op)
 			}
 		} else {
-			details += fmt.Sprintf("no source info (ResultId is %s)\n", part.resultId)
+			details += fmt.Sprintf("no source info (ResultId is %s)\n", subError.resultId)
 			details += "file a bug report containing your query code at https://github.com/deephaven/deephaven-core/"
 		}
 	}

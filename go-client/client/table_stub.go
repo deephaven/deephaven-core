@@ -45,20 +45,24 @@ func (ts *tableStub) createInputTable(ctx context.Context, req *tablepb2.CreateI
 	return parseCreationResponse(ts.client, resp)
 }
 
-// batchErrorPart is a single error in a batchError.
-type batchErrorPart struct {
+// A batchSubError is an error when creating a table in a batch request.
+// Several batchSubErrors can be combined into a batchError.
+type batchSubError struct {
 	ServerErr error                    // The raw error returned by the server
 	ResultId  *tablepb2.TableReference // The result ID of the table which caused the error
 }
 
 // batchError is an error that might be returned by batch().
-// This is typically never displayed, and gets immediately wrapped in a QueryError.
+//
+// This struct is typically never displayed, and gets immediately wrapped in a QueryError.
 type batchError struct {
-	parts []batchErrorPart
+	// Since several tables in a batch might fail, a batchError is a list of individual errors,
+	// one for each table that failed.
+	subErrors []batchSubError
 }
 
 func (err batchError) Error() string {
-	return fmt.Sprintf("batch error in %d tables", len(err.parts))
+	return fmt.Sprintf("batch error in %d tables", len(err.subErrors))
 }
 
 // batch executes a Batch request on the server and returns the resulting tables.
@@ -82,7 +86,7 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 
 	exportedTables := []*TableHandle{}
 
-	var batchErrors []batchErrorPart
+	var batchErrors []batchSubError
 
 	for {
 		created, err := resp.Recv()
@@ -93,11 +97,11 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 		}
 
 		if !created.Success {
-			part := batchErrorPart{
+			subError := batchSubError{
 				ServerErr: errors.New(created.GetErrorInfo()),
 				ResultId:  created.ResultId,
 			}
-			batchErrors = append(batchErrors, part)
+			batchErrors = append(batchErrors, subError)
 		}
 
 		if created.Success {
@@ -112,7 +116,7 @@ func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableReques
 	}
 
 	if len(batchErrors) > 0 {
-		return nil, batchError{parts: batchErrors}
+		return nil, batchError{subErrors: batchErrors}
 	}
 
 	return exportedTables, nil
@@ -581,8 +585,8 @@ func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHa
 // wrapExecSerialError wraps an error caused while executing a query serially and wraps it into a QueryError.
 // The source argument should be the node that caused the error.
 func wrapExecSerialError(inner error, source QueryNode) QueryError {
-	part := queryErrorPart{serverErr: inner, resultId: nil, source: source}
-	return QueryError{parts: []queryErrorPart{part}}
+	subError := querySubError{serverErr: inner, resultId: nil, source: source}
+	return QueryError{subErrors: []querySubError{subError}}
 }
 
 // serialOpsState is used to keep track of the state of a serially-executed query.
