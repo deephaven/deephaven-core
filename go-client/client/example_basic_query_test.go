@@ -69,9 +69,6 @@ func Example_basicQuery() {
 	tables, err := cl.ExecBatch(ctx, midStocks, magStocks)
 	if err != nil {
 		fmt.Println("error when executing query:", err.Error())
-		if e, ok := err.(client.QueryError); ok {
-			fmt.Println(e.Details())
-		}
 		return
 	}
 	// The order of the tables in the returned list is the same as the order of the queries passed as arguments.

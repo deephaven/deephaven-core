@@ -77,17 +77,9 @@ func (err QueryError) Unwrap() error {
 	return err.subErrors[0].serverErr
 }
 
-// Error returns some minimal info about the first part of the query error.
-// For debugging, the Details method returns more helpful info.
+// Error returns detailed information about all of the sub-errors that occured inside this query error.
+// Each sub-error is given a pseudo-traceback of the query operations that caused it.
 func (err QueryError) Error() string {
-	return "query error: " + err.subErrors[0].serverErr.Error()
-}
-
-// Details returns a string containing detailed information on all of the query errors that occurred.
-// This includes a pseudo-traceback of the query operations that caused each error.
-func (err QueryError) Details() string {
-	details := "details:\n"
-
 	locked := make(map[*queryBuilder]struct{})
 	for _, subError := range err.subErrors {
 		if subError.source.builder != nil {
@@ -98,6 +90,8 @@ func (err QueryError) Details() string {
 			}
 		}
 	}
+
+	var details string
 
 	for _, subError := range err.subErrors {
 		details += fmt.Sprintf("msg: %s\n", subError.serverErr)
