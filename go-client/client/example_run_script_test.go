@@ -1,4 +1,4 @@
-package main
+package client_test
 
 import (
 	"context"
@@ -10,7 +10,9 @@ import (
 
 // This example shows how you can run a server-side script directly via the client
 // and how you can use the script results in the client.
-func main() {
+//
+// This example requires a Deephaven server running on localhost:10000, so it will not work on pkg.go.dev.
+func Example_runScript() {
 	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
@@ -46,7 +48,7 @@ func main() {
 	err = cl.RunScript(ctx,
 		`
 from deephaven.time import upper_bin
-example_table_2 = my_example_table.update(["UpperBinned = upperBin(Timestamp, SECOND)"]).headBy(5, "UpperBinned")
+example_table_2 = my_example_table.update(["UpperBinned = upperBin(Timestamp, SECOND)"]).head(5)
 `)
 	if err != nil {
 		fmt.Println("error when running script:", err.Error())
@@ -72,5 +74,9 @@ example_table_2 = my_example_table.update(["UpperBinned = upperBin(Timestamp, SE
 	defer exampleSnapshot.Release()
 
 	fmt.Println("Got table snapshot!")
-	fmt.Println(exampleSnapshot)
+	fmt.Printf("It has %d rows and %d columns", exampleSnapshot.NumRows(), exampleSnapshot.NumCols())
+
+	// Output:
+	// Got table snapshot!
+	// It has 5 rows and 2 columns
 }

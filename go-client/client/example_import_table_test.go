@@ -1,4 +1,4 @@
-package main
+package client_test
 
 import (
 	"context"
@@ -11,7 +11,9 @@ import (
 // This example shows off the ability to upload tables to the Deephaven server,
 // perform some operations on them,
 // and then download them to access the modified data.
-func main() {
+//
+// This example requires a Deephaven server running on localhost:10000, so it will not work on pkg.go.dev.
+func Example_importTable() {
 	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
@@ -70,4 +72,33 @@ func main() {
 
 	fmt.Println("Data After:")
 	fmt.Println(filteredRecord)
+
+	// Output:
+	// Data Before:
+	// record:
+	//   schema:
+	//   fields: 3
+	//     - Ticker: type=utf8
+	//     - Close: type=float32
+	//     - Volume: type=int32
+	//   rows: 7
+	//   col[0][Ticker]: ["XRX" "XYZZY" "IBM" "GME" "AAPL" "ZNGA" "T"]
+	//   col[1][Close]: [53.8 88.5 38.7 453 26.7 544.9 13.4]
+	//   col[2][Volume]: [87000 6060842 138000 138000000 19000 48300 1500]
+	//
+	// Data After:
+	// record:
+	//   schema:
+	//   fields: 3
+	//     - Ticker: type=utf8, nullable
+	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "java.lang.String", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:isRollupColumn": "false", "deephaven:isDateFormat": "false"]
+	//     - Close: type=float32, nullable
+	//        metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "float", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:isRollupColumn": "false", "deephaven:isDateFormat": "false"]
+	//     - Volume: type=int32, nullable
+	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "int", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:isRollupColumn": "false", "deephaven:isDateFormat": "false"]
+	//   metadata: ["deephaven:attribute.SortedColumns": "Close=Ascending", "deephaven:attribute.DoNotMakeRemote": "true", "deephaven:attribute.AddOnly": "true"]
+	//   rows: 5
+	//   col[0][Ticker]: ["IBM" "XRX" "XYZZY" "GME" "ZNGA"]
+	//   col[1][Close]: [38.7 53.8 88.5 453 544.9]
+	//   col[2][Volume]: [138000 87000 6060842 138000000 48300]
 }

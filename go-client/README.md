@@ -26,11 +26,11 @@ This project also includes several example applications.
 Examples assume the server is running on `localhost:10000`.
 An example can be run using one of the following commands:
 ```bash
-$ go run ./examples/basic_query
-$ go run ./examples/fetch_table
-$ go run ./examples/import_table
-$ go run ./examples/input_table
-$ go run ./examples/run_script
+$ go test -v ./client/example_basic_query_test.go
+$ go test -v ./client/example_fetch_table_test.go
+$ go test -v ./client/example_import_table_test.go
+$ go test -v ./client/example_input_table_test.go
+$ go test -v ./client/example_run_script_test.go
 ```
 
 The source code is available in the directory for each example.

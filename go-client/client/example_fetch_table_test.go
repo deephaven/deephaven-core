@@ -1,4 +1,4 @@
-package main
+package client_test
 
 import (
 	"context"
@@ -10,7 +10,9 @@ import (
 // Typically, you don't have to worry about this,
 // but if you want to access tables from previous sessions or from the web UI,
 // you will need to do a table fetch.
-func main() {
+//
+// This example requires a Deephaven server running on localhost:10000, so it will not work on pkg.go.dev.
+func Example_fetchTable() {
 	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
@@ -69,4 +71,7 @@ func main() {
 
 	tbl.Release(ctx)
 	cl.Close()
+
+	// Output:
+	// Successfully opened the old table!
 }
