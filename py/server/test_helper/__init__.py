@@ -11,7 +11,7 @@ from glob import glob
 from typing import Dict
 
 import jpyutil
-
+import deephaven_internal._server
 
 def start_jvm(jvm_props: Dict[str, str] = None):
     jpyutil.preload_jvm_dll()
@@ -91,6 +91,7 @@ def start_jvm(jvm_props: Dict[str, str] = None):
             jvm_properties=jvm_properties,
             jvm_options=jvm_options
         )
+        deephaven_internal._server.ready()
 
         # Set up a Deephaven Python session
         py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
