@@ -4,7 +4,7 @@
 
 """ Utility module for the stream subpackage. """
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 from deephaven.table import Table

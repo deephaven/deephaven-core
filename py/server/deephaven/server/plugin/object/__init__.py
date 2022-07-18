@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from typing import Optional
 from deephaven.plugin.object import Exporter, ObjectType, Reference

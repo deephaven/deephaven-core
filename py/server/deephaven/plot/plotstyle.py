@@ -6,7 +6,7 @@
 
 from enum import Enum
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 _JPlotStyle = jpy.get_type("io.deephaven.plot.PlotStyle")
 

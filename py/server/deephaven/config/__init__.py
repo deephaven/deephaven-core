@@ -3,7 +3,7 @@
 #
 
 """ This module provides access to the Deephaven server configuration. """
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 from deephaven.time import TimeZone

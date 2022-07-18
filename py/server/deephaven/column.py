@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Sequence, Any
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 import deephaven.dtypes as dtypes
 from deephaven import DHError

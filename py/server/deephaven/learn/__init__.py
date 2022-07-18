@@ -8,7 +8,7 @@ as well as a framework for using popular machine-learning / deep-learning librar
 
 from typing import List, Union, Callable, Type
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 from deephaven.table import Table

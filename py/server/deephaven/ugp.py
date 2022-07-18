@@ -11,7 +11,7 @@ from collections import abc
 from functools import wraps
 from typing import Callable
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 

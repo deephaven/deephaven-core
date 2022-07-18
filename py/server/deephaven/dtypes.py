@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Sequence, Callable, Dict, Type, Union
 
-from deephaven_internal._jvm import jpy
+import jpy
 import numpy as np
 import pandas as pd
 

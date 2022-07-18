@@ -5,7 +5,7 @@
 """ The kafka.producer module supports publishing Deephaven tables to Kafka streams. """
 from typing import Dict, Callable, List
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 from deephaven.jcompat import j_hashmap, j_hashset, j_properties

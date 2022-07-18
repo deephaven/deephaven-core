@@ -7,7 +7,7 @@ Parquet files. """
 from dataclasses import dataclass
 from typing import List
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 from deephaven.column import Column

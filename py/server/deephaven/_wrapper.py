@@ -15,7 +15,7 @@ import sys
 from abc import ABC, abstractmethod
 from typing import Set, Union, Optional, Any
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 # a set of all the directly initializable wrapper classes
 _di_wrapper_classes: Set[JObjectWrapper] = set()

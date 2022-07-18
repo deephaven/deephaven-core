@@ -4,7 +4,7 @@
 
 """ This module implements the AxisFormat class that can be applied to format axis tick labels on a plot. """
 
-from deephaven_internal._jvm import jpy
+import jpy
 from deephaven.time import TimeZone
 
 from deephaven._wrapper import JObjectWrapper

@@ -7,7 +7,7 @@
 from __future__ import annotations
 from enum import Enum
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 from deephaven.dtypes import DateTime, Period

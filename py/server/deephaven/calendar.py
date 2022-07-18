@@ -7,7 +7,7 @@
 from enum import Enum
 from typing import List
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven._wrapper import JObjectWrapper
 from deephaven.time import TimeZone, DateTime

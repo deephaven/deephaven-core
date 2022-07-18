@@ -15,7 +15,7 @@ from enum import Enum
 from typing import Any, Dict, Union, Sequence, List, Callable, _GenericAlias
 
 import numpy
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError, dtypes
 from deephaven._wrapper import JObjectWrapper

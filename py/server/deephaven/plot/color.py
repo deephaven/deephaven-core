@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper

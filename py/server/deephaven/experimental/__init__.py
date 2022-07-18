@@ -4,7 +4,7 @@
 
 """ This package is a place for Deephaven experimental features. """
 
-from deephaven_internal._jvm import jpy
+import jpy
 from deephaven import DHError
 from deephaven.table import Table
 

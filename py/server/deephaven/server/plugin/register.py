@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
-from deephaven_internal._jvm import jpy
+import jpy
 import deephaven.plugin
 
 from typing import Union, Type

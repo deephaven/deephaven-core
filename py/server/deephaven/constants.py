@@ -5,7 +5,7 @@
 """ The module defines the global constants including Deephaven's special numerical values. Other constants are defined
 at the individual module level because they are only locally applicable. """
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 _JQueryConstants = jpy.get_type("io.deephaven.util.QueryConstants")
 

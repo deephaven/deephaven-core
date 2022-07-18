@@ -6,7 +6,7 @@
 
 from enum import Enum
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 _JNamedShape = jpy.get_type("io.deephaven.gui.shape.NamedShape")
 _JShapes = jpy.get_type("io.deephaven.gui.shape.JShapes")

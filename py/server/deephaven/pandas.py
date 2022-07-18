@@ -5,7 +5,7 @@
 """ This module supports the conversion between Deephaven tables and Pandas DataFrames. """
 from typing import List
 
-from deephaven_internal._jvm import jpy
+import jpy
 import numpy as np
 import pandas
 import pandas as pd

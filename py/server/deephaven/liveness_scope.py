@@ -6,7 +6,7 @@
 graph instead of solely relying on garbage collection."""
 import contextlib
 
-from deephaven_internal._jvm import jpy
+import jpy
 from deephaven._wrapper import JObjectWrapper
 
 _JLivenessScopeStack = jpy.get_type("io.deephaven.engine.liveness.LivenessScopeStack")

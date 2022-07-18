@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List, Union
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 from deephaven.jcompat import to_sequence

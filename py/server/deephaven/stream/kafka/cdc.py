@@ -7,7 +7,7 @@ tables. """
 
 from typing import Dict, List
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 from deephaven.jcompat import j_properties

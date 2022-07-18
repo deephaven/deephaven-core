@@ -4,7 +4,7 @@
 
 """ This module supports exporting Deephaven data in the HTML format. """
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 from deephaven.table import Table

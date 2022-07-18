@@ -10,7 +10,7 @@ from functools import wraps
 from inspect import signature
 from typing import Callable, Union, List, Generator, Dict, Optional
 
-from deephaven_internal._jvm import jpy
+import jpy
 import numpy
 
 from deephaven import DHError

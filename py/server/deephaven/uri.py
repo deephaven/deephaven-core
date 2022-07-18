@@ -6,7 +6,7 @@
 
 from typing import Union
 
-from deephaven_internal._jvm import jpy
+import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper, wrap_j_object
