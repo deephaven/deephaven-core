@@ -9,18 +9,11 @@ unlocks the unique power of Deephaven to the Python community.
 
 __version__ = "0.15.0"
 
-def _check_server():
-    from deephaven_internal import _server
-    if not _server.is_ready:
-        raise Exception("The Deephaven Server has not been initialized. "
-                        "Please ensure that deephaven_server.Server has been constructed, "
-                        "or that deephaven_server.start_jvm() has been invoked, "
-                        "before importing deephaven.")
-
+import deephaven_internal
 try:
-    _check_server()
+    deephaven_internal.check_server()
 finally:
-    del _check_server
+    del deephaven_internal
 
 from .dherror import DHError
 from .table import SortDirection, AsOfMatchRule

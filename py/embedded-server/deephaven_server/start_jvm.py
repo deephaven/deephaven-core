@@ -8,7 +8,7 @@ import jpyutil
 import os
 import pathlib
 
-import deephaven_internal._server
+import deephaven_internal
 
 # TODO(deephaven-core#2592): Generalize start_jvm to work with importlib.resources
 
@@ -100,6 +100,6 @@ def start_jvm(
         jvm_options=jvm_args,
         # config_file=config_file,
         config=config)
-    deephaven_internal._server.ready()
+    deephaven_internal.server_ready()
     import jpy
     jpy.VerboseExceptions.enabled = True
