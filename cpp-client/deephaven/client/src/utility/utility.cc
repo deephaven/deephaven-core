@@ -8,13 +8,20 @@
 
 using namespace std;
 
-namespace deephaven {
-namespace client {
-namespace utility {
+namespace deephaven::client::utility {
 
 namespace {
 void dumpTillPercentOrEnd(ostream &result, const char **fmt);
 }  // namespace
+
+void assertLessEq(size_t lhs, size_t rhs, std::string_view context, std::string_view lhsText,
+    std::string_view rhsText) {
+  if (lhs <= rhs) {
+    return;
+  }
+  auto message = stringf("%o: assertion failed: %o <= %o (%o <= %o)",
+      context, lhs, rhs, lhsText, rhsText);
+}
 
 SimpleOstringstream::SimpleOstringstream() : std::ostream(this), dest_(&internalBuffer_) {}
 
@@ -86,22 +93,35 @@ bool dumpFormat(ostream &result, const char **fmt, bool placeholderExpected) {
 }
 }  // namespace internal
 
-std::shared_ptr<std::vector<std::shared_ptr<std::string>>> stringVecToShared(std::vector<std::string> src) {
+std::shared_ptr<std::vector<std::shared_ptr<std::string>>>
+stringVecToShared(std::vector<std::string> src) {
   auto result = std::make_shared<std::vector<std::shared_ptr<std::string>>>();
   result->reserve(src.size());
-  for (auto &s : src) {
+  for (auto &s: src) {
     result->push_back(std::make_shared<std::string>(std::move(s)));
   }
   return result;
 }
 
-void okOrThrow(const arrow::Status &status, const char *message) {
+DebugInfo::DebugInfo(const char *func, const char *file, size_t line, const char *args) :
+    func_(func), file_(file), line_(line), args_(args) {}
+
+std::ostream &operator<<(std::ostream &s, const DebugInfo &o) {
+  return streamf(s, "%o@%o:%o args=(%o))", o.func_, o.file_, o.line_, o.args_);
+}
+
+void okOrThrow(const DebugInfo &debugInfo, const arrow::Status &status) {
   if (status.ok()) {
     return;
   }
 
-  auto msg = stringf("Status: %o. Caller message: %o", status, message != nullptr ? message : "(none)");
+  auto msg = stringf("Status: %o. Caller: %o", status, debugInfo);
   throw std::runtime_error(msg);
+}
+
+std::string formatDebugString(const char *func, const char *file, size_t line,
+    const std::string &message) {
+  return stringf("%o@%o:%o: %o", func, file, line, message);
 }
 
 namespace {
@@ -122,6 +142,4 @@ void dumpTillPercentOrEnd(ostream &result, const char **fmt) {
   *fmt = p;
 }
 }  // namespace
-}  // namespace utility
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::utility
