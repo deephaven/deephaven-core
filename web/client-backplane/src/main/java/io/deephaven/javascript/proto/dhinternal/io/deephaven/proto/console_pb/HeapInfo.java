@@ -24,22 +24,22 @@ public class HeapInfo {
         }
 
         @JsProperty
-        double getFreeMemory();
+        String getFreeMemory();
 
         @JsProperty
-        double getMaximumHeapSize();
+        String getMaximumHeapSize();
 
         @JsProperty
-        double getTotalHeapSize();
+        String getTotalHeapSize();
 
         @JsProperty
-        void setFreeMemory(double freeMemory);
+        void setFreeMemory(String freeMemory);
 
         @JsProperty
-        void setMaximumHeapSize(double maximumHeapSize);
+        void setMaximumHeapSize(String maximumHeapSize);
 
         @JsProperty
-        void setTotalHeapSize(double totalHeapSize);
+        void setTotalHeapSize(String totalHeapSize);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -50,22 +50,22 @@ public class HeapInfo {
         }
 
         @JsProperty
-        double getFreeMemory();
+        String getFreeMemory();
 
         @JsProperty
-        double getMaximumHeapSize();
+        String getMaximumHeapSize();
 
         @JsProperty
-        double getTotalHeapSize();
+        String getTotalHeapSize();
 
         @JsProperty
-        void setFreeMemory(double freeMemory);
+        void setFreeMemory(String freeMemory);
 
         @JsProperty
-        void setMaximumHeapSize(double maximumHeapSize);
+        void setMaximumHeapSize(String maximumHeapSize);
 
         @JsProperty
-        void setTotalHeapSize(double totalHeapSize);
+        void setTotalHeapSize(String totalHeapSize);
     }
 
     public static native HeapInfo deserializeBinary(Uint8Array bytes);
@@ -76,19 +76,19 @@ public class HeapInfo {
 
     public static native HeapInfo.ToObjectReturnType toObject(boolean includeInstance, HeapInfo msg);
 
-    public native double getFreeMemory();
+    public native String getFreeMemory();
 
-    public native double getMaximumHeapSize();
+    public native String getMaximumHeapSize();
 
-    public native double getTotalHeapSize();
+    public native String getTotalHeapSize();
 
     public native Uint8Array serializeBinary();
 
-    public native void setFreeMemory(double value);
+    public native void setFreeMemory(String value);
 
-    public native void setMaximumHeapSize(double value);
+    public native void setMaximumHeapSize(String value);
 
-    public native void setTotalHeapSize(double value);
+    public native void setTotalHeapSize(String value);
 
     public native HeapInfo.ToObjectReturnType0 toObject();
 

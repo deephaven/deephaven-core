@@ -26,22 +26,22 @@ public class GetHeapInfoResponse {
             }
 
             @JsProperty
-            double getFreeMemory();
+            String getFreeMemory();
 
             @JsProperty
-            double getMaximumHeapSize();
+            String getMaximumHeapSize();
 
             @JsProperty
-            double getTotalHeapSize();
+            String getTotalHeapSize();
 
             @JsProperty
-            void setFreeMemory(double freeMemory);
+            void setFreeMemory(String freeMemory);
 
             @JsProperty
-            void setMaximumHeapSize(double maximumHeapSize);
+            void setMaximumHeapSize(String maximumHeapSize);
 
             @JsProperty
-            void setTotalHeapSize(double totalHeapSize);
+            void setTotalHeapSize(String totalHeapSize);
         }
 
         @JsOverlay
@@ -72,22 +72,22 @@ public class GetHeapInfoResponse {
             }
 
             @JsProperty
-            double getFreeMemory();
+            String getFreeMemory();
 
             @JsProperty
-            double getMaximumHeapSize();
+            String getMaximumHeapSize();
 
             @JsProperty
-            double getTotalHeapSize();
+            String getTotalHeapSize();
 
             @JsProperty
-            void setFreeMemory(double freeMemory);
+            void setFreeMemory(String freeMemory);
 
             @JsProperty
-            void setMaximumHeapSize(double maximumHeapSize);
+            void setMaximumHeapSize(String maximumHeapSize);
 
             @JsProperty
-            void setTotalHeapSize(double totalHeapSize);
+            void setTotalHeapSize(String totalHeapSize);
         }
 
         @JsOverlay
