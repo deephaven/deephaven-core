@@ -21,6 +21,7 @@ import io.deephaven.time.DateTime;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.time.calendar.BusinessCalendar;
 import groovy.lang.Closure;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -1362,6 +1363,24 @@ public interface Axes extends Serializable {
      */
     CategoryDataSeries piePlot(final Comparable seriesName, final SelectableDataSet sds, final String categories,
             final String y);
+
+    ////////////////////////// tree map plot //////////////////////////
+
+    /**
+     * Creates a treemap plot. Required columns are values, ids, and parents, the rest can be null.
+     * @param seriesName
+     * @param t
+     * @param values
+     * @param ids
+     * @param parents
+     * @param labels
+     * @param text
+     * @param color
+     * @param hoverText
+     * @return
+     */
+    CategoryDataSeries treeMapPlot(Comparable seriesName, Table t, String values, String ids, String parents, @Nullable String labels, @Nullable String text, @Nullable String color, @Nullable String hoverText);
+
 
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateAxesPlotMethods //////////////////////////////

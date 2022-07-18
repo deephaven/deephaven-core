@@ -446,6 +446,12 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     }
 
     @Override
+    public void setNull(final long key) {
+        final long translatedKey = lookupOrCreateIndexInDeltaSpace(key);
+        chunkAdapter.get().setNull(translatedKey);
+    }
+
+    @Override
     public void set(final long key, final byte value) {
         final long translatedKey = lookupOrCreateIndexInDeltaSpace(key);
         chunkAdapter.get().set(translatedKey, value);

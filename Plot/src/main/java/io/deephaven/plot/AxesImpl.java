@@ -47,6 +47,7 @@ import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.time.calendar.BusinessCalendar;
 import groovy.lang.Closure;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.*;
@@ -213,6 +214,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
                 return PlotStyle.OHLC;
             case PIE:
                 return PlotStyle.PIE;
+            case TREEMAP:
+                return PlotStyle.TREEMAP;
             default:
                 throw new PlotUnsupportedOperationException(
                         "No default plot style for chart type: " + chart.getChartType(), this);
@@ -247,6 +250,14 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         this.setDimension(2);
         chart.setChartType(ChartType.OHLC);
         xAxis().setType(AxisImpl.Type.NUMBER);
+        yAxis().setType(AxisImpl.Type.NUMBER);
+        initialize();
+    }
+
+    private void configureTreeMapPlot() {
+        this.setDimension(2);
+        chart.setChartType(ChartType.TREEMAP);
+        xAxis().setType(AxisImpl.Type.CATEGORY);
         yAxis().setType(AxisImpl.Type.NUMBER);
         initialize();
     }
@@ -1852,6 +1863,38 @@ public class AxesImpl implements Axes, PlotExceptionCause {
                 new CategoryDataSeriesSwappablePartitionedTable(this, dataSeries.nextId(), seriesName, t, categories, y),
                 null, new SwappableTable[] {t});
     }
+    // endregion
+
+    // region Tree Map
+
+    private CategoryDataSeriesInternal treeMapPlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles,
+                                               final SwappableTable[] swappableTables) {
+        configureTreeMapPlot();
+
+        if (tableHandles != null) {
+            for (TableHandle tableHandle : tableHandles) {
+                ds.addTableHandle(tableHandle);
+            }
+        }
+
+        if (swappableTables != null) {
+            for (SwappableTable swappableTable : swappableTables) {
+                ds.addSwappableTable(swappableTable);
+            }
+        }
+
+        registerDataSeries(SeriesCollection.SeriesType.CATEGORY, false, ds);
+        return ds;
+    }
+
+
+    @Override
+    public CategoryDataSeries treeMapPlot(Comparable seriesName, Table t, String values, String ids, String parents, @Nullable String labels, @Nullable String text, @Nullable String color, @Nullable String hoverText) {
+        final TableHandle h = PlotUtils.createCategoryTableHandle(t, new String[] { ids }, values, parents, labels, text, color, hoverText);
+        return treeMapPlot(new CategoryTreeMapDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, ids, parents, labels, values, text, color, hoverText), new TableHandle[]{h}, null);
+    }
+
+
     // endregion
 
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////

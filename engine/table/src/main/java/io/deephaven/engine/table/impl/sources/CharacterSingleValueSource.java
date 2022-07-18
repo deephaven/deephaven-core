@@ -15,6 +15,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
@@ -33,8 +34,8 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     // region Constructor
     public CharacterSingleValueSource() {
         super(char.class);
-        current = QueryConstants.NULL_CHAR;
-        prev = QueryConstants.NULL_CHAR;
+        current = NULL_CHAR;
+        prev = NULL_CHAR;
     }
     // endregion Constructor
 
@@ -67,6 +68,13 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     @Override
     public final void set(long key, char value) {
         set(value);
+    }
+
+    @Override
+    public final void setNull(long key) {
+        // region null set
+        set(NULL_CHAR);
+        // endregion null set
     }
 
     @Override

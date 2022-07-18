@@ -27,6 +27,9 @@ class Color(JObjectWrapper):
     def __init__(self, j_color: jpy.JType):
         self.j_color = j_color
 
+    def to_hex(self) -> str:
+        return self.j_color.toHex()
+
     @staticmethod
     def of_name(name: str) -> Color:
         """ Creates a Color instance represented by the name string.

@@ -100,6 +100,11 @@ public class Immutable2DDoubleArraySource extends AbstractDeferredGroupingColumn
     }
 
     @Override
+    public final void setNull(long key) {
+        data[keyToSegment(key)][keyToOffset(key)] = NULL_DOUBLE;
+    }
+
+    @Override
     public final void set(long key, double value) {
         data[keyToSegment(key)][keyToOffset(key)] = value;
     }

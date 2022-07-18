@@ -19,6 +19,7 @@ _JColumn = jpy.get_type("io.deephaven.qst.column.Column")
 _JColumnDefinition = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
 _JColumnDefinitionType = jpy.get_type("io.deephaven.engine.table.ColumnDefinition$ColumnType")
 
+
 class ColumnType(Enum):
     NORMAL = _JColumnDefinitionType.Normal
     """ A regular column. """
@@ -29,6 +30,7 @@ class ColumnType(Enum):
 
     def __repr__(self):
         return self.name
+
 
 @dataclass
 class Column:

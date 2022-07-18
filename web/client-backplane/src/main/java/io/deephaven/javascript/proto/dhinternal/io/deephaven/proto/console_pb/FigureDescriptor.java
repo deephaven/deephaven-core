@@ -313,7 +313,7 @@ public class FigureDescriptor {
                     String getColumnName();
 
                     @JsProperty
-                    double getTableMapId();
+                    double getPartitionedTableId();
 
                     @JsProperty
                     double getType();
@@ -325,7 +325,7 @@ public class FigureDescriptor {
                     void setColumnName(String columnName);
 
                     @JsProperty
-                    void setTableMapId(double tableMapId);
+                    void setPartitionedTableId(double partitionedTableId);
 
                     @JsProperty
                     void setType(double type);
@@ -599,10 +599,10 @@ public class FigureDescriptor {
                     FigureDescriptor.ToObjectReturnType.ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType getOneClick();
 
                     @JsProperty
-                    double getTableId();
+                    double getPartitionedTableId();
 
                     @JsProperty
-                    double getTableMapId();
+                    double getTableId();
 
                     @JsProperty
                     double getType();
@@ -621,10 +621,10 @@ public class FigureDescriptor {
                             FigureDescriptor.ToObjectReturnType.ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType oneClick);
 
                     @JsProperty
-                    void setTableId(double tableId);
+                    void setPartitionedTableId(double partitionedTableId);
 
                     @JsProperty
-                    void setTableMapId(double tableMapId);
+                    void setTableId(double tableId);
 
                     @JsProperty
                     void setType(double type);
@@ -1200,7 +1200,7 @@ public class FigureDescriptor {
                     String getColumnName();
 
                     @JsProperty
-                    double getTableMapId();
+                    double getPartitionedTableId();
 
                     @JsProperty
                     double getType();
@@ -1212,7 +1212,7 @@ public class FigureDescriptor {
                     void setColumnName(String columnName);
 
                     @JsProperty
-                    void setTableMapId(double tableMapId);
+                    void setPartitionedTableId(double partitionedTableId);
 
                     @JsProperty
                     void setType(double type);
@@ -1486,10 +1486,10 @@ public class FigureDescriptor {
                     FigureDescriptor.ToObjectReturnType0.ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType getOneClick();
 
                     @JsProperty
-                    double getTableId();
+                    double getPartitionedTableId();
 
                     @JsProperty
-                    double getTableMapId();
+                    double getTableId();
 
                     @JsProperty
                     double getType();
@@ -1508,10 +1508,10 @@ public class FigureDescriptor {
                             FigureDescriptor.ToObjectReturnType0.ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType oneClick);
 
                     @JsProperty
-                    void setTableId(double tableId);
+                    void setPartitionedTableId(double partitionedTableId);
 
                     @JsProperty
-                    void setTableMapId(double tableMapId);
+                    void setTableId(double tableId);
 
                     @JsProperty
                     void setType(double type);

@@ -7,6 +7,8 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.iterators.*;
@@ -1718,6 +1720,105 @@ public interface Table extends
      */
     @ConcurrentMethod
     Table treeTable(String idColumn, String parentColumn);
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // UpdateBy Operations
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
+     * based operation to it.
+     *
+     * @param operation the operation to apply to the table.
+     * @return a table with the same index, with the specified operations applied to the entire table
+     */
+    @ConcurrentMethod
+    Table updateBy(@NotNull final UpdateByClause operation);
+
+    /**
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
+     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows.
+     *
+     * @param operations the operations to apply to the table.
+     * @return a table with the same index, with the specified operations applied to the entire table.
+     */
+    @ConcurrentMethod
+    Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations);
+
+    /**
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
+     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows. This operation will group the table by the specified set of keys if
+     * provided before applying the operation.
+     *
+     * @param control the {@link UpdateByControl control} to use when updating the table.
+     * @param operations the operations to apply to the table.
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    Table updateBy(@NotNull final UpdateByControl control,
+            @NotNull final Collection<? extends UpdateByClause> operations);
+
+    /**
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified row based
+     * operation to it. This operation will group the table by the specified set of keys if provided before applying the
+     * operation.
+     *
+     * @param operation the operation to apply to the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    Table updateBy(@NotNull final UpdateByClause operation, final String... byColumns);
+
+    /**
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
+     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows. This operation will group the table by the specified set of keys if
+     * provided before applying the operation.
+     *
+     * @param operations the operations to apply to the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations, final String... byColumns);
+
+    /**
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
+     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows. This operation will group the table by the specified set of keys if
+     * provided before applying the operation.
+     *
+     * @param operations the operations to apply to the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    Table updateBy(@NotNull Collection<? extends UpdateByClause> operations,
+            @NotNull Collection<? extends Selectable> byColumns);
+
+    /**
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
+     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+     * capable of processing state between rows. This operation will group the table by the specified set of keys if
+     * provided before applying the operation.
+     *
+     * @param control the {@link UpdateByControl control} to use when updating the table.
+     * @param operations the operations to apply to the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same index, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    Table updateBy(@NotNull final UpdateByControl control,
+            @NotNull final Collection<? extends UpdateByClause> operations,
+            @NotNull final Collection<? extends Selectable> byColumns);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Sort Operations

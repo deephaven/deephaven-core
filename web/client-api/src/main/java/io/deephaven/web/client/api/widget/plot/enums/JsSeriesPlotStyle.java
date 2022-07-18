@@ -20,4 +20,5 @@ public class JsSeriesPlotStyle {
     public static final int SCATTER = FigureDescriptor.SeriesPlotStyle.getSCATTER();
     public static final int STEP = FigureDescriptor.SeriesPlotStyle.getSTEP();
     public static final int ERROR_BAR = FigureDescriptor.SeriesPlotStyle.getERROR_BAR();
+    public static final int TREEMAP = FigureDescriptor.SeriesPlotStyle.getTREEMAP();
 }

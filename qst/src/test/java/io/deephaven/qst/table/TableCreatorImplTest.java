@@ -5,6 +5,7 @@ package io.deephaven.qst.table;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.deephaven.api.updateby.UpdateByClause;
 import io.deephaven.qst.examples.EmployeesExample;
 import io.deephaven.qst.column.Column;
 
@@ -34,6 +35,7 @@ public class TableCreatorImplTest {
                     TableCreatorImplTest::updateViewFoo, TableCreatorImplTest::updateViewFooPlus1,
                     TableCreatorImplTest::updateViewFooEqBar, TableCreatorImplTest::updateFoo,
                     TableCreatorImplTest::updateFooPlus1, TableCreatorImplTest::updateFooEqBar,
+                    TableCreatorImplTest::updateByFooCumSum, TableCreatorImplTest::updateByFooCumSumByBar,
                     TableCreatorImplTest::selectFoo, TableCreatorImplTest::selectFooPlus1,
                     TableCreatorImplTest::selectFooEqBar, TableCreatorImplTest::selectAll);
 
@@ -106,6 +108,14 @@ public class TableCreatorImplTest {
 
     static TableSpec updateFooEqBar(TableSpec table) {
         return table.update("Foo=Bar");
+    }
+
+    static TableSpec updateByFooCumSum(TableSpec table) {
+        return table.updateBy(UpdateByClause.CumSum("Foo"));
+    }
+
+    static TableSpec updateByFooCumSumByBar(TableSpec table) {
+        return table.updateBy(UpdateByClause.CumSum("Foo"), "Bar");
     }
 
     static TableSpec selectFoo(TableSpec table) {

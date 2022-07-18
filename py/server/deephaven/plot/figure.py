@@ -1202,6 +1202,74 @@ class Figure(JObjectWrapper):
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
+    def plot_tree_map(
+        self,
+        t: Union[Table, SelectableDataSet],
+        series_name: str = None,
+        hover_text_column: str = None,
+        ids_column: str = None,
+        labels_column: str = None,
+        parents_column: str = None,
+        text_column: str = None,
+        values_column: str = None,
+        color: Union[str, int, Color] = None,
+    ) -> Figure:
+        """
+
+        Args:
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            series_name (str): name of the data series
+            hover_text_column (str): 
+            ids_column (str): 
+            labels_column (str): 
+            parents_column (str): 
+            text_column (str): 
+            values_column (str): 
+            color (Union[str, int, Color]): color
+
+        Returns:
+            a new Figure
+
+        Raises:
+            DHError
+        """
+        if not t:
+            raise DHError("required parameter is not set: t")
+        non_null_args = set()
+
+        if t is not None:
+            non_null_args.add("t")
+            t = _convert_j("t", t, [Table, SelectableDataSet])
+        if series_name is not None:
+            non_null_args.add("series_name")
+            series_name = _convert_j("series_name", series_name, [str])
+        if hover_text_column is not None:
+            non_null_args.add("hover_text_column")
+            hover_text_column = _convert_j("hover_text_column", hover_text_column, [str])
+        if ids_column is not None:
+            non_null_args.add("ids_column")
+            ids_column = _convert_j("ids_column", ids_column, [str])
+        if labels_column is not None:
+            non_null_args.add("labels_column")
+            labels_column = _convert_j("labels_column", labels_column, [str])
+        if parents_column is not None:
+            non_null_args.add("parents_column")
+            parents_column = _convert_j("parents_column", parents_column, [str])
+        if text_column is not None:
+            non_null_args.add("text_column")
+            text_column = _convert_j("text_column", text_column, [str])
+        if values_column is not None:
+            non_null_args.add("values_column")
+            values_column = _convert_j("values_column", values_column, [str])
+        if color is not None:
+            non_null_args.add("color")
+            color = _convert_j("color", color, [str, int, Color])
+
+        if non_null_args == {"series_name", "t", "values_column", "ids_column", "parents_column", "labels_column", "text_column", "color", "hover_text_column"}:
+            return Figure(self.j_figure.treeMapPlot(series_name, t, values_column, ids_column, parents_column, labels_column, text_column, color, hover_text_column))
+        else:
+            raise DHError(f"unsupported parameter combination: {non_null_args}")
+
     def plot_xy(
         self,
         series_name: str,

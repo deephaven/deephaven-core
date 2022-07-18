@@ -17,16 +17,20 @@ public interface MultiSeries extends Series {
     // add functions to modify multiseries here (e.g. color)
 
     /**
-     * Defines the procedure to name a generated series. The input of the naming function is an array of the column
-     * values corresponding to the new series.
+     * Defines the procedure to name a generated series. If there is only one key column defining the series, the input
+     * to the naming function is the singular key column value as an {@code Object}. If there are multiple key columns
+     * defining the series, the input to the naming function will be an {@code Object[]} containing the key column
+     * values in order.
      *
      * @param namingFunction series naming function
      */
-    MultiSeries seriesNamingFunction(final Function<Object[], String> namingFunction);
+    MultiSeries seriesNamingFunction(final Function<Object, String> namingFunction);
 
     /**
-     * Defines the procedure to name a generated series. The input of the naming function is an array of the column
-     * values corresponding to the new series.
+     * Defines the procedure to name a generated series. If there is only one key column defining the series, the input
+     * to the naming function is the singular key column value as an {@code Object}. If there are multiple key columns
+     * defining the series, the input to the naming function will be an {@code Object[]} containing the key column
+     * values in order.
      *
      * @param namingFunction series naming closure
      */

@@ -30,4 +30,4 @@ from .combo_agg import ComboAggregation
 from .constants import SortDirection, MatchRule
 from .query import Query
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"

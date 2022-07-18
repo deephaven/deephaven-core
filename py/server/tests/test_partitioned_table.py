@@ -4,11 +4,12 @@
 
 import unittest
 
-from deephaven.table import Table
+from deephaven.agg import partition
+from deephaven.table import Table, PartitionedTable
 
 from deephaven.filters import Filter
 
-from deephaven import read_csv, DHError, new_table
+from deephaven import read_csv, DHError, new_table, ugp, time_table
 from tests.testbase import BaseTestCase
 
 
@@ -132,6 +133,86 @@ class PartitionedTableTestCase(BaseTestCase):
 
         pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer())
         self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+
+    def test_partition_agg(self):
+        with ugp.shared_lock():
+            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+        self.wait_ticking_table_update(test_table, row_count=1, timeout=5)
+        agg = partition("aggPartition", include_by_columns=True)
+        pt = PartitionedTable.from_partitioned_table(test_table.agg_by(agg, ["Y"]))
+        self.assertEqual(['Y'], pt.key_columns)
+        # includes Timestamp column
+        self.assertEqual(4, len(pt.constituent_table_columns))
+
+        agg = partition("aggPartition", include_by_columns=False)
+        pt = PartitionedTable.from_partitioned_table(test_table.agg_by(agg, ["Y"]))
+        self.assertEqual(['Y'], pt.key_columns)
+        print(pt.constituent_table_columns)
+        # includes Timestamp column, no "Y"
+        self.assertEqual(3, len(pt.constituent_table_columns))
+
+    def test_from_partitioned_table(self):
+        with ugp.shared_lock():
+            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+
+        pt = test_table.partition_by("Y")
+        self.assertTrue(pt.is_refreshing)
+
+        agg = partition("aggPartition")
+        agg_table = test_table.agg_by(agg, ["Y"])
+        pt1 = PartitionedTable.from_partitioned_table(
+            table=agg_table,
+            key_cols="Y",
+            unique_keys=True,
+            constituent_column="aggPartition",
+            constituent_table_columns=test_table.columns,
+            constituent_changes_permitted=True,
+        )
+        self.assertEqual(pt.key_columns, pt1.key_columns)
+        self.assertEqual(len(pt.constituent_table_columns), len(pt1.constituent_table_columns))
+        self.assertTrue(pt1.is_refreshing)
+
+        with self.assertRaises(DHError) as cm:
+            PartitionedTable.from_partitioned_table(
+                table=agg_table,
+                key_cols="Y",
+                unique_keys=True,
+                constituent_column="Non-existing",
+                constituent_table_columns=test_table.columns,
+                constituent_changes_permitted=True,
+            )
+        self.assertIn("no column named", str(cm.exception))
+
+    def test_from_constituent_tables(self):
+        with ugp.shared_lock():
+            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table1 = time_table("00:00:01").update(["X=i", "Y=i%23", "Z=X*Y"])
+            test_table2 = time_table("00:00:00.001").update(["X=i", "Y=i%23", "Z=`foo`"])
+            test_table3 = time_table("00:00:00.001").update(["X=i", "Y=i%23", "Z=(int)(X*Y)"])
+
+        pt = PartitionedTable.from_constituent_tables([test_table, test_table1])
+        self.assertEqual("__CONSTITUENT__", pt.constituent_column)
+
+        with self.subTest("Incompatible Table Definition"):
+            with self.assertRaises(DHError) as cm:
+                pt = PartitionedTable.from_constituent_tables([test_table, test_table1, test_table2])
+            self.assertIn("IncompatibleTableDefinitionException", str(cm.exception))
+
+        with self.subTest("Compatible table definition"):
+            pt = PartitionedTable.from_constituent_tables([test_table, test_table1, test_table3], test_table.columns)
+
+    def test_keys(self):
+        keys_table = self.partitioned_table.keys()
+        select_distinct_table = self.test_table.select_distinct(["c", "e"])
+        self.assertEqual(keys_table.size, select_distinct_table.size)
+
+        with ugp.shared_lock():
+            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+        pt = test_table.partition_by("Y")
+        self.wait_ticking_table_update(test_table, row_count=20, timeout=5)
+        keys_table = pt.keys()
+        select_distinct_table = test_table.select_distinct(["Y"])
+        self.assertEqual(keys_table.size, select_distinct_table.size)
 
 
 if __name__ == '__main__':

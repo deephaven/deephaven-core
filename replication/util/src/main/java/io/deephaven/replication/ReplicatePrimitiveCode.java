@@ -39,7 +39,7 @@ public class ReplicatePrimitiveCode {
         return replaceAll(sourceClassJavaPath, serialVersionUIDs, exemptions, pairs);
     }
 
-    private static void replicateCodeBasedOnShort(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String replicateCodeBasedOnShort(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String[] exemptions, String upperCharacterReplace,
             String charReplace, String allCapsCharReplace, String[]... extraPairs) throws IOException {
         final String[][] pairs;
@@ -55,7 +55,7 @@ public class ReplicatePrimitiveCode {
         pairs[extraPairsLength] = new String[] {"Short", upperCharacterReplace};
         pairs[extraPairsLength + 1] = new String[] {"short", charReplace};
         pairs[extraPairsLength + 2] = new String[] {"SHORT", allCapsCharReplace};
-        replaceAll(sourceClassJavaPath, serialVersionUIDs, exemptions, pairs);
+        return replaceAll(sourceClassJavaPath, serialVersionUIDs, exemptions, pairs);
     }
 
     private static void replicateCodeBasedOnFloat(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
@@ -221,9 +221,9 @@ public class ReplicatePrimitiveCode {
                 "Short", "Short", "short", "short", "SHORT");
     }
 
-    private static void shortToByte(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String shortToByte(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Byte", "byte", "BYTE");
+        return replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Byte", "byte", "BYTE");
     }
 
     private static void shortToDouble(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
@@ -236,15 +236,15 @@ public class ReplicatePrimitiveCode {
         replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Float", "float", "FLOAT");
     }
 
-    private static void shortToInteger(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String shortToInteger(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Integer", "int", "INT",
+        return replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Integer", "int", "INT",
                 new String[][] {{"ShortVector", "IntVector"}});
     }
 
-    private static void shortToLong(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String shortToLong(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Long", "long", "LONG",
+        return replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Long", "long", "LONG",
                 new String[][] {{"Integer.signum", "Long.signum"}});
     }
 
@@ -352,9 +352,9 @@ public class ReplicatePrimitiveCode {
         charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions);
     }
 
-    public static void charToAllButBooleanAndFloats(String sourceClassJavaPath, String... exemptions)
+    public static List<String> charToAllButBooleanAndFloats(String sourceClass, String... exemptions)
             throws IOException {
-        charToAllButBooleanAndFloats(sourceClassJavaPath, null, exemptions);
+        return charToAllButBooleanAndFloats(sourceClass, null, exemptions);
     }
 
     public static void charToShortAndByte(String sourceClassJavaPath, String... exemptions)
@@ -363,15 +363,15 @@ public class ReplicatePrimitiveCode {
         charToShort(sourceClassJavaPath, null, exemptions);
     }
 
-    public static void charToAllButBooleanAndFloats(String sourceClassJavaPath,
-            Map<String, Long> serialVersionUIDs,
+    public static List<String> charToAllButBooleanAndFloats(String sourceClass, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        charToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions);
-        charToByte(sourceClassJavaPath, serialVersionUIDs, exemptions);
-        charToLong(sourceClassJavaPath, serialVersionUIDs, exemptions);
-        charToShort(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        final List<String> files = new ArrayList<>();
+        files.add(charToInteger(sourceClass, serialVersionUIDs, exemptions));
+        files.add(charToByte(sourceClass, serialVersionUIDs, exemptions));
+        files.add(charToLong(sourceClass, serialVersionUIDs, exemptions));
+        files.add(charToShort(sourceClass, serialVersionUIDs, exemptions));
+        return files;
     }
-
 
     public static void shortToAllNumericals(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
@@ -409,17 +409,17 @@ public class ReplicatePrimitiveCode {
         return results;
     }
 
-    public static void shortToAllIntegralTypes(String sourceClassJavaPath, String... exemptions)
-            throws IOException {
-        shortToAllIntegralTypes(sourceClassJavaPath, null, exemptions);
+    public static List<String> shortToAllIntegralTypes(String sourceClass, String... exemptions) throws IOException {
+        return shortToAllIntegralTypes(sourceClass, null, exemptions);
     }
 
-    private static void shortToAllIntegralTypes(String sourceClassJavaPath,
-            Map<String, Long> serialVersionUIDs,
+    private static List<String> shortToAllIntegralTypes(String sourceClass, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        shortToByte(sourceClassJavaPath, serialVersionUIDs, exemptions);
-        shortToInteger(sourceClassJavaPath, serialVersionUIDs, exemptions);
-        shortToLong(sourceClassJavaPath, serialVersionUIDs, exemptions);
+        final List<String> results = new ArrayList<>();
+        results.add(shortToByte(sourceClass, serialVersionUIDs, exemptions));
+        results.add(shortToInteger(sourceClass, serialVersionUIDs, exemptions));
+        results.add(shortToLong(sourceClass, serialVersionUIDs, exemptions));
+        return results;
     }
 
     public static void floatToAllFloatingPoints(String sourceClassJavaPath, String... exemptions)

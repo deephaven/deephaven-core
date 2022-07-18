@@ -100,6 +100,11 @@ public class Immutable2DFloatArraySource extends AbstractDeferredGroupingColumnS
     }
 
     @Override
+    public final void setNull(long key) {
+        data[keyToSegment(key)][keyToOffset(key)] = NULL_FLOAT;
+    }
+
+    @Override
     public final void set(long key, float value) {
         data[keyToSegment(key)][keyToOffset(key)] = value;
     }

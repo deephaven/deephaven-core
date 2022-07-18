@@ -5,12 +5,13 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -87,7 +88,7 @@ public class DeferredViewTable extends RedefinableTable {
             result = applyDeferredViews(result);
             result = result.where(tableAndRemainingFilters.remainingFilters);
             copyAttributes(result, CopyAttributeOperation.Coalesce);
-            setCoalesced((BaseTable) result);
+            setCoalesced(result);
             return result;
         }
 
@@ -109,7 +110,7 @@ public class DeferredViewTable extends RedefinableTable {
         }
         if (whereFilters.length == 0) {
             copyAttributes(localResult, CopyAttributeOperation.Coalesce);
-            setCoalesced((BaseTable) localResult);
+            setCoalesced(localResult);
         }
         return localResult;
     }
@@ -215,7 +216,7 @@ public class DeferredViewTable extends RedefinableTable {
             result = applyDeferredViews(result);
         }
         copyAttributes(result, CopyAttributeOperation.Coalesce);
-        return (BaseTable) result;
+        return result;
     }
 
     @Override
@@ -264,6 +265,14 @@ public class DeferredViewTable extends RedefinableTable {
                 new SimpleTableReference(this), null, viewColumns, null);
         deferredViewTable.setRefreshing(isRefreshing());
         return deferredViewTable;
+    }
+
+    @Override
+    public Table updateBy(@NotNull final UpdateByControl control,
+            @NotNull final Collection<? extends UpdateByClause> ops,
+            @NotNull final Collection<? extends Selectable> byColumns) {
+        return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
+                () -> UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control));
     }
 
     /**

@@ -20,6 +20,12 @@ import io.deephaven.util.SafeCloseable;
 public final class SizedFloatChunk<T extends Any> implements SafeCloseable {
     private WritableFloatChunk<T> chunk;
 
+    public SizedFloatChunk(){}
+
+    public SizedFloatChunk(final int initialSize) {
+        chunk = WritableFloatChunk.makeWritableChunk(initialSize);
+    }
+
     /**
      * Get the underlying chunk.
      *
