@@ -1501,8 +1501,4 @@ public class WorkerConnection {
         }, "create timetable(" + periodNanos + ", " + startTime + ")"))
                 .then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
-//
-//    public Promise<WorkerHeapInfo> getWorkerHeapInfo() {
-//        return whenServerReady("get heap info").then(server -> Callbacks.promise(null, server::getWorkerHeapInfo));
-//    }
 }
