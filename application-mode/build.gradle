@@ -4,6 +4,8 @@ plugins {
 }
 
 dependencies {
+    implementation project(':Integrations')
+
     Classpaths.inheritImmutables(project)
 
     // we'll rely on the engine-table module to provide the necessary groovy dependencies

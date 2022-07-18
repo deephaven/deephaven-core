@@ -17,6 +17,7 @@ test {
 dependencies {
   testCompile project(':CompilerTools'),
           project(':engine-table'),
+          project(':Integrations'),
           TestTools.projectDependency(project, 'engine-table')
 
   // This allows us to access jpy-integration javaToPython code around setting up python

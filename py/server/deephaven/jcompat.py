@@ -98,6 +98,38 @@ def j_function(func: Callable[[T], R], dtype: DType) -> jpy.JType:
     )
 
 
+def j_unary_operator(func: Callable[[T], T], dtype: DType) -> jpy.JType:
+    """Constructs a Java 'Function<PyObject, Object>' implementation from a Python callable or an object with an
+     'apply' method that accepts a single argument.
+
+    Args:
+        func (Callable): a Python callable or an object with an 'apply' method that accepts a single argument
+        dtype (DType): the return type of 'func'
+
+    Returns:
+        io.deephaven.integrations.python.PythonFunction instance
+    """
+    return jpy.get_type("io.deephaven.integrations.python.PythonFunction$PythonUnaryOperator")(
+        func, dtype.qst_type.clazz()
+    )
+
+
+def j_binary_operator(func: Callable[[T, T], T], dtype: DType) -> jpy.JType:
+    """Constructs a Java 'Function<PyObject, PyObject, Object>' implementation from a Python callable or an object with an
+     'apply' method that accepts a single argument.
+
+    Args:
+        func (Callable): a Python callable or an object with an 'apply' method that accepts two arguments
+        dtype (DType): the return type of 'func'
+
+    Returns:
+        io.deephaven.integrations.python.PythonFunction instance
+    """
+    return jpy.get_type("io.deephaven.integrations.python.PythonBiFunction$PythonBinaryOperator")(
+        func, dtype.qst_type.clazz()
+    )
+
+
 def to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]]:
     """A convenience function to create a sequence of unwrapped object from either one or a sequence of input values to
     help JPY find the matching Java overloaded method to call.

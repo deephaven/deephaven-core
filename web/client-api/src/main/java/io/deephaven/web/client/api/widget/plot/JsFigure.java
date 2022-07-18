@@ -638,18 +638,18 @@ public class JsFigure extends HasEventHandling {
 
             Promise<?>[] promises = new Promise[response.getTypedExportIdList().length];
 
-            response.getTypedExportIdList().forEach((p0, p1, p2) -> {
-                if (!p0.getType().equals("Table")) {
+            response.getTypedExportIdList().forEach((ticket, index, array) -> {
+                if (!ticket.getType().equals("Table")) {
                     // TODO (deephaven-core#62) implement fetch for tablemaps
-                    assert false : p0.getType() + " found in figure, not yet supported";
+                    assert false : ticket.getType() + " found in figure, not yet supported";
                     return null;
                 }
 
 
                 // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
                 // reconnect in this way without refetching the entire figure anyway.
-                promises[p1] = Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
-                    connection.tableServiceClient().getExportedTableCreationResponse(p0.getTicket(),
+                promises[index] = Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
+                    connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
                             connection.metadata(),
                             c::apply);
                 }).then(etcr -> {
@@ -657,15 +657,9 @@ public class JsFigure extends HasEventHandling {
                     JsTable table = new JsTable(connection, cts);
                     // never attempt a reconnect, since we might have a different figure schema entirely
                     table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
+                    tables[index] = table;
                     return Promise.resolve(table);
                 });
-                return null;
-            });
-
-            Promise.all(promises).then((allTables) -> {
-                for (int ii = 0; ii < allTables.length; ++ii) {
-                    tables[ii] = (JsTable) allTables[ii];
-                }
                 return null;
             });
 

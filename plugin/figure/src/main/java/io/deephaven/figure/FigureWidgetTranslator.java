@@ -491,6 +491,9 @@ public class FigureWidgetTranslator {
         businessCalendarDescriptor.setName(businessCalendar.name());
         businessCalendarDescriptor.setTimeZone(businessCalendar.timeZone().getTimeZone().getID());
         Arrays.stream(BusinessCalendarDescriptor.DayOfWeek.values()).filter(dayOfWeek -> {
+            if (dayOfWeek == BusinessCalendarDescriptor.DayOfWeek.UNRECOGNIZED) {
+                return false;
+            }
             final DayOfWeek day = DayOfWeek.valueOf(dayOfWeek.name());
             return businessCalendar.isBusinessDay(day);
         }).forEach(businessCalendarDescriptor::addBusinessDays);
@@ -761,6 +764,9 @@ public class FigureWidgetTranslator {
     }
 
     private String toCssColorString(io.deephaven.gui.color.Paint color) {
+        if (color == null) {
+            return null;
+        }
         if (!(color instanceof io.deephaven.gui.color.Color)) {
             errorList.add("OpenAPI does not presently support paint of type " + color);
             return null;

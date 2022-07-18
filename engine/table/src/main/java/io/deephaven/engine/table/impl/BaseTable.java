@@ -285,7 +285,6 @@ public abstract class BaseTable extends LivenessArtifact
 
         // the existing attributes would have been copied for these operations
         tempMap.put(INPUT_TABLE_ATTRIBUTE, LEGACY_COPY_ATTRIBUTES);
-        tempMap.put(DO_NOT_MAKE_REMOTE_ATTRIBUTE, LEGACY_COPY_ATTRIBUTES);
 
         // partitionBy was creating the sub table with a bespoke ACL copy; we should copy ACLs there in addition to the
         // legacy attributes
