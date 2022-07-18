@@ -1673,8 +1673,9 @@ class PartitionedTable(JObjectWrapper):
             require_matching_keys (bool): whether to ensure that both partitioned tables have all the same keys
                 present when an operation uses this PartitionedTable and another PartitionedTable as inputs for a
                 :meth:`~PartitionedTable.partitioned_transform`, default is True
-            sanity_check_joins (bool): whether to check that for join operations involving two proxies, a given join
-                key can only be found in one constituent table of both proxied partitioned tables, default is True
+            sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs 
+            in exactly one constituent table of the underlying partitioned table. If the other table argument is also a 
+            PartitionedTableProxy, its constituents will also be subjected to this constraint. 
         """
         return PartitionedTableProxy(
             j_pt_proxy=self.j_partitioned_table.proxy(require_matching_keys, sanity_check_joins))
