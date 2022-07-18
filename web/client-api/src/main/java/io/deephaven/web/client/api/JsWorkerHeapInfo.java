@@ -1,7 +1,6 @@
 package io.deephaven.web.client.api;
 
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.HeapInfo;
-import io.deephaven.web.shared.data.WorkerHeapInfo;
 import jsinterop.annotations.JsProperty;
 
 public class JsWorkerHeapInfo {
