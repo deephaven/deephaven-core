@@ -1673,8 +1673,8 @@ class PartitionedTable(JObjectWrapper):
             require_matching_keys (bool): whether to ensure that both partitioned tables have all the same keys
                 present when an operation uses this PartitionedTable and another PartitionedTable as inputs for a
                 :meth:`~PartitionedTable.partitioned_transform`, default is True
-            sanity_check_joins (bool): whether to check that join operations will only find a given join key in
-                one constituent table and the right table argument if it is also a proxy, default is True
+            sanity_check_joins (bool): whether to check that for join operations involving two proxies, a given join
+                key can only be found in one constituent table of both proxied partitioned tables, default is True
         """
         return PartitionedTableProxy(
             j_pt_proxy=self.j_partitioned_table.proxy(require_matching_keys, sanity_check_joins))
@@ -1682,22 +1682,27 @@ class PartitionedTable(JObjectWrapper):
 
 class PartitionedTableProxy(JObjectWrapper):
     """A PartitionedTableProxy is a table operation proxy for the underlying partitioned table. It provides methods
-    that apply table operations on the constituent tables of the underlying partitioned table and produce a new
-    partitioned table from the result constituent tables.
+    that apply table operations to the constituent tables of the underlying partitioned table, produce a new
+    partitioned table from the resulting constituent tables, and return a proxy of it.
 
     Attributes:
         target (PartitionedTable): the underlying partitioned table of the proxy
         require_matching_keys (bool): whether to ensure that both partitioned tables have all the same keys
             present when an operation uses this PartitionedTable and another PartitionedTable as inputs for a
             :meth:`~PartitionedTable.partitioned_transform`, default is True
-        sanity_check_joins (bool): whether to check that join operations will only find a given join key in
-            one constituent table and the right table argument if it is also a proxy, default is True
+        sanity_check_joins (bool): whether to check that for join operations involving two proxies, a given join
+            key can only be found in one constituent table of both proxied partitioned tables, default is True
     """
     j_object_type = _JPartitionedTableProxy
 
     @property
     def j_object(self) -> jpy.JType:
         return self.j_pt_proxy
+
+    @property
+    def is_refreshing(self) -> bool:
+        """Whether this proxy represents a refreshing partitioned table."""
+        return self.target.is_refreshing
 
     def __init__(self, j_pt_proxy):
         self.j_pt_proxy = jpy.cast(j_pt_proxy, _JPartitionedTableProxy)

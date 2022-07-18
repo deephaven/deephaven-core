@@ -4,7 +4,7 @@
 
 import unittest
 
-from deephaven import read_csv, empty_table, SortDirection, AsOfMatchRule, DHError
+from deephaven import read_csv, empty_table, SortDirection, AsOfMatchRule, DHError, time_table, ugp
 from deephaven.agg import sum_, avg, pct, weighted_avg, formula, group, first, last, max_, median, min_, std, abs_sum, \
     var
 from deephaven.table import PartitionedTableProxy
@@ -23,6 +23,16 @@ class PartitionedTableProxyTestCase(BaseTestCase):
 
     def test_target(self):
         self.assertEqual(self.partitioned_table, self.pt_proxy.target)
+
+    def test_is_refreshing(self):
+        with ugp.shared_lock():
+            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+
+        pt = test_table.partition_by("Y")
+        proxy = pt.proxy()
+        self.assertTrue(pt.is_refreshing)
+        self.assertTrue(proxy.is_refreshing)
+        self.assertFalse(self.pt_proxy.is_refreshing)
 
     def test_head_tail(self):
         ops = [PartitionedTableProxy.head, PartitionedTableProxy.tail]
@@ -141,6 +151,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 right_proxy = self.test_table.drop_columns(["b", "d"]).partition_by("c").proxy()
                 joined_pt_proxy = pt_proxy.natural_join(right_proxy, on="a", joins="e")
             self.assertIn("join keys found in multiple constituents", str(cm.exception))
+            print(cm.exception)
 
             with self.assertRaises(DHError) as cm:
                 pt_proxy = self.test_table.drop_columns(["d", "e"]).partition_by("c").proxy(sanity_check_joins=False)
