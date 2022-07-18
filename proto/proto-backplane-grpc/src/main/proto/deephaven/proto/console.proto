@@ -70,9 +70,9 @@ message GetHeapInfoResponse {
     HeapInfo info = 2;
 }
 message HeapInfo {
-    int64 maximum_heap_size = 1;
-    int64 total_heap_size = 2;
-    int64 free_memory = 3;
+    int64 maximum_heap_size = 1 [jstype=JS_STRING];
+    int64 total_heap_size = 2 [jstype=JS_STRING];
+    int64 free_memory = 3 [jstype=JS_STRING];
 }
 
 message LogSubscriptionRequest {

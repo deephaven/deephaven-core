@@ -9,10 +9,8 @@ import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.ide.shared.IdeSession;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.StartConsoleRequest;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.fu.JsLog;
@@ -205,17 +203,17 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
         return promise.then(result -> Promise.resolve(result.getConsoleTypesList()));
     }
-//
-//    @JsMethod
-//    public Promise<JsWorkerHeapInfo> getWorkerHeapInfo() {
-//        Promise<GetHeap> promise = Callbacks.grpcUnaryPromise(callback -> {
-//            HeapInfoRequest request = new HeapInfoRequest();
-//            connection.get().consoleServiceClient().get(request, connection.get().metadata(),
-//                    callback::apply);
-//        });
-//
-//        return promise.then(result -> Promise.resolve(result.getConsoleTypesList()));
-//    }
+
+    @JsMethod
+    public Promise<JsWorkerHeapInfo> getWorkerHeapInfo() {
+        Promise<GetHeapInfoResponse> promise = Callbacks.grpcUnaryPromise(callback -> {
+            GetHeapInfoRequest request = new GetHeapInfoRequest();
+            connection.get().consoleServiceClient().getHeapInfo(request, connection.get().metadata(),
+                    callback::apply);
+        });
+
+        return promise.then(result -> Promise.resolve(new JsWorkerHeapInfo(result.getInfo())));
+    }
 
     public void connected() {
         if (closed) {
