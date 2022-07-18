@@ -1022,6 +1022,8 @@ This enum describes the name of each supported operation/aggregation type when c
 ###### Methods
 
  * `addEventListener(String eventType, Function eventListener)`
+ * `getConsoleTypes():String[]` - Retrieve the available console types for this worker.
+ * `getHeapInfo():HeapInfo` - Retrieve the current heap info for this worker.
  * `removeEventListener(String eventType, Function eventListener)`
  * `onLogMessage(Function logHandler):Function`
  * `startSession(String scriptLanguage):Promise<IdeSession>`
@@ -1188,6 +1190,11 @@ as needed.
  * `VariableDefinition created`
  * `VariableDefinition updated`
  * `VariableDefinition removed`
+
+##### Class `HeapInfo`
+ * `long maximumHeapSize` - Maximum heap size of this worker.
+ * `long freeMemory` - Free memory of this worker.
+ * `long totalHeapSize` - Total heap size available for this worker.
 -->
 
 #### The `dh.plot` namespace:
