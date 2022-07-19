@@ -35,6 +35,8 @@ services:
       - CLOUDSDK_CONFIG=/root/.config/gcloud
       - IS_CONTROLLER=true
       - VERSION=${VERSION}
+      - DH_SLACK_TOKEN=${DH_SLACK_TOKEN}
+      - DH_ERROR_PREFIX=${DH_ERROR_PREFIX}
 
   envoy:
     image: envoyproxy/envoy:v1.18.3

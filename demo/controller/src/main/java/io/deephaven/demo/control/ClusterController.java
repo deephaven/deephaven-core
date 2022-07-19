@@ -59,6 +59,9 @@ public class ClusterController implements IClusterController {
     private volatile boolean shutdown;
     private final WeakHashMap<Machine, Boolean> hasLogged = new WeakHashMap<>();
 
+    private final DhDemoReporter reporter;
+    private volatile boolean reservationScheduled;
+
     public ClusterController() {
         this(new GoogleDeploymentManager("/tmp"));
     }
@@ -74,6 +77,7 @@ public class ClusterController implements IClusterController {
     public ClusterController(@NotNull final GoogleDeploymentManager manager, boolean loadMachines,
             boolean loadIpsAndDns) {
         this.manager = manager;
+        this.reporter = new DhDemoReporter(this::isLeader);
         this.client = new OkHttpClient();
         latch = new CountDownLatch(loadMachines ? 4 : 3);
         if (manager == null) {
@@ -140,6 +144,12 @@ public class ClusterController implements IClusterController {
     }
 
     private void monitorLoop() {
+        reporter.recordUsage(
+                (int)machines.getAllMachines()
+                    .filter(Machine::isInUse).count(),
+                (int)machines.getAllMachines()
+                    .filter(Machine::isOnline).count()
+        );
         final Vertx vx = Vertx.vertx();
         vx.setTimer(TimeUnit.MINUTES.toMillis(checkLatency), t -> {
             Execute.setTimer("Monitor Loop", () -> {
@@ -337,9 +347,82 @@ public class ClusterController implements IClusterController {
         }
         LOG.infof("Retired %s machines", retired);
 
-
         // kill any offline machines that are older than a given time; for now, ttl + 1 hour
         reduceOfflineMachines();
+        if (retired > 0) {
+            // if we retired any machines, we may be able to reduce our reserved machine counts
+            try {
+                checkReservations(numRunning);
+            } catch (Exception e) {
+                // don't let reservation
+                LOG.error("Unable to update reservations", e);
+            }
+        }
+    }
+
+    private void scheduleReservationCheck() {
+        if (!reservationScheduled) {
+            reservationScheduled = true;
+            Execute.setTimer("Checking reservations", ()-> {
+                try {
+                    int numRunning = machines.getNumberMachines() - machines.getNumberOfflineMachines();
+                    checkReservations(numRunning);
+                } finally {
+                    reservationScheduled = false;
+                }
+            });
+        }
+    }
+
+    private void checkReservations(final int numRunning) {
+        if (!leader.get()) {
+            // only the leader should consider reservations!
+            return;
+        }
+        final int reservationsAllowed = numRunning + getExtraReservationSize();
+        final Map<String, int[]> reservations = getReservations();
+        int currentReservations = 0, usedReservations = 0;
+        for (int[] value : reservations.values()) {
+            currentReservations += value[0];
+            usedReservations += value[1];
+        }
+        LOG.infof("We want %s reservations, and are currently using %s out of %s reservations", reservationsAllowed, usedReservations, currentReservations);
+
+        if (currentReservations < numRunning) {
+            // we have fewer reservations than we have running machines. Reserve more.
+            manager.reserveMachines(reservations.keySet(), getExtraReservationSize()); // just add small increments at a time
+            return;
+        }
+        while (reservationsAllowed < currentReservations) {
+            // we want fewer reservations than we have
+            boolean didWork = false;
+            for (
+                    final Iterator<Map.Entry<String, int[]>> itr = reservations.entrySet().iterator();
+                    itr.hasNext();) {
+                Map.Entry<String, int[]> e = itr.next();
+                int[] reservation = e.getValue();
+                if (reservation[1] == 0) {
+                    // no reservations in use, we can remove this one
+                    manager.removeReservations(e.getKey());
+                    currentReservations -= e.getValue()[0];
+                    didWork = true;
+                    itr.remove();
+                }
+            }
+            if (!didWork) {
+                // no unused reservations. keep waiting until more machines are shut down
+                LOG.infof("Unable to delete enough reservations to reduce usage from %s to %s", currentReservations, reservationsAllowed);
+                break;
+            }
+        }
+        if (reservationsAllowed < currentReservations) {
+            // TODO: issue a command to resize existing reservations that have unused machine counts
+            // see https://cloud.google.com/compute/docs/instances/reserving-zonal-resources#consuming_reserved_instances
+        }
+    }
+
+    private Map<String, int[]> getReservations() {
+        return manager.getReservations();
     }
 
     private void reduceOfflineMachines() throws IOException, InterruptedException {
@@ -483,9 +566,9 @@ public class ClusterController implements IClusterController {
             return Integer.parseInt(poolSize);
         }
         if (isPeakHours()) {
-            return 150;
+            return 80;
         }
-        return 75;
+        return 35;
     }
 
     private int getMaxOfflineSize() {
@@ -498,13 +581,28 @@ public class ClusterController implements IClusterController {
             return Integer.parseInt(poolSize);
         }
         if (isPeakHours()) {
-            return 30;
+            return 9;
         }
-        return 5;
+        return 3;
+    }
+
+    private int getExtraReservationSize() {
+        String reservationSize = System.getenv("RESERVATION_BUFFER_SIZE");
+        if (reservationSize != null) {
+            return Integer.parseInt(reservationSize);
+        }
+        reservationSize = System.getProperty("dh-reservationBufferSize");
+        if (reservationSize != null) {
+            return Integer.parseInt(reservationSize);
+        }
+        if (isPeakHours()) {
+            return 2;
+        }
+        return 1;
     }
 
     /**
-     * @return The number of warm machines to keep around. Default is 15 during business hours, 5 otherwise.
+     * @return The number of warm, unused machines to keep around. Default is 4 during business hours, 2 otherwise.
      */
     private int getPoolBuffer() {
         String poolSize = System.getenv("POOL_BUFFER");
@@ -516,9 +614,9 @@ public class ClusterController implements IClusterController {
             return Integer.parseInt(poolSize);
         }
         if (isPeakHours()) {
-            return 15;
+            return 4;
         }
-        return 5;
+        return 2;
     }
 
     /**
@@ -536,9 +634,9 @@ public class ClusterController implements IClusterController {
             return Integer.parseInt(poolSize);
         }
         if (isPeakHours()) {
-            return 20;
+            return 6;
         }
-        return 5;
+        return 2;
     }
 
 
@@ -614,12 +712,16 @@ public class ClusterController implements IClusterController {
                     if (line.isEmpty()) {
                         continue;
                     }
-                    final Machine updated = updateMachineFromCsv(line);
-                    if (updated != null) {
-                        updated.setMark(mark);
-                        if (updated.isOnline()) {
-                            online++;
+                    try {
+                        final Machine updated = updateMachineFromCsv(line);
+                        if (updated != null) {
+                            updated.setMark(mark);
+                            if (updated.isOnline()) {
+                                online++;
+                            }
                         }
+                    } catch (Throwable t) {
+                        reporter.recordError("Failure parsing machine metadata " + line, t);
                     }
                 }
                 LOG.infof("Found %s running machines", online);
@@ -636,7 +738,7 @@ public class ClusterController implements IClusterController {
             });
 
         } catch (IOException | InterruptedException e) {
-            LOG.error("Failed to get active workers", e);
+            reporter.recordError("Failed to get active workers", e);
         }
     }
 
@@ -701,8 +803,14 @@ public class ClusterController implements IClusterController {
         if (bits[getIndexHostname()].length() > 0) {
             // we aren't really setting a string field,
             // rather we're selecting an existing DomainMapping from the object.
-            String domain = mach.domain() == null ? DOMAIN : mach.domain().getDomainRoot();
-            mach.setDomainName(bits[getIndexHostname()].trim() + "." + domain);
+            try {
+                String domain = mach.domain() == null ? DOMAIN : mach.domain().getDomainRoot();
+                mach.setDomainName(bits[getIndexHostname()].trim() + "." + domain);
+            } catch (Throwable t) {
+                LOG.error("Got unexpected exception loading machine " + line);
+                // just return null if it's busted
+                return null;
+            }
         }
 
         mach.setOnline(online);
@@ -772,7 +880,14 @@ public class ClusterController implements IClusterController {
                 if (hostname != null && hostname.length() > 0) {
                     DomainMapping mapping = new DomainMapping(hostname, DOMAIN);
                     LOG.infof("Purging old DNS record %s for machine %s (%s)", mapping, name, debugString);
-                    manager.dns().tx(change -> change.removeRecord(mapping, ip));
+                    final String cmd = "dig +short " + mapping.getDomainQualified();
+                    try {
+                        if (!Execute.execute(cmd).out.isEmpty()) {
+                            manager.dns().tx(change -> change.removeRecord(mapping, ip));
+                        }
+                    } catch (Exception e) {
+                        LOG.warnf(e,"Error trying to check DNS mapping %s", cmd);
+                    }
                 }
             });
         }
@@ -957,7 +1072,7 @@ public class ClusterController implements IClusterController {
             latch.countDown();
         } catch (Throwable t) {
             shutdown = true;
-            System.err.println("Unable to load used IPs, shutting down controller.");
+            reporter.recordError("Unable to load used IPs, shutting down controller.", t);
             throw t;
         }
     }
@@ -992,14 +1107,16 @@ public class ClusterController implements IClusterController {
             }
             LOG.info("Found " + ips.getNumUsed() + " used IP addresses");
         } catch (Exception e) {
-            System.err
-                    .println("Unable to load IPs! Last seen item: " + (ipBits == null ? null : Arrays.asList(ipBits)));
-            e.printStackTrace();
+            reporter.recordError("Unable to load IPs! Last seen item: " + (ipBits == null ? null : Arrays.asList(ipBits)), e);
         }
     }
 
     public boolean isReady() {
         return latch.getCount() == 0;
+    }
+
+    public boolean isLeader() {
+        return leader.get();
     }
 
     public void waitUntilReady() {
@@ -1010,7 +1127,7 @@ public class ClusterController implements IClusterController {
             latch.await(120, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             String msg = "Interrupted waiting for controller to read metadata; check for error logs!";
-            System.err.println(msg);
+            reporter.recordError(msg, e);
             Thread.currentThread().interrupt();
             throw new RuntimeException(msg, e);
         }
@@ -1104,6 +1221,7 @@ public class ClusterController implements IClusterController {
                         } else if (isAllowUnexpectedMachines()) {
                             manager.createMachine(machine, ips);
                             result.code = 0;
+                            scheduleReservationCheck();
                         }
                     }
                 }
@@ -1126,6 +1244,7 @@ public class ClusterController implements IClusterController {
                     } else {
                         if (!updated.isOnline()) {
                             manager.turnOn(updated);
+                            scheduleReservationCheck();
                         }
                         if (reserve) {
                             assert updated == machine
@@ -1147,7 +1266,7 @@ public class ClusterController implements IClusterController {
                     LOG.warnf("Replaced IP %s with %s", machineIp, machine.getIp());
                 }
             } catch (Exception e) {
-                LOG.errorf(e, "Unable to move machine %s to running state", machine);
+                reporter.recordError("Unable to move machine " + machine + " to running state", e);
             }
             // machine (should be) alive, make sure it has DNS!
             // We check DNS with google; nobody is listening to this method,
@@ -1167,7 +1286,7 @@ public class ClusterController implements IClusterController {
                     setupDns(machine);
                     LOG.warnf("DNS setup requested for %s @ %s", machine.toStringShort(), machine.getIp());
                 } catch (Exception e) {
-                    LOG.errorf(e, "Unable to setup DNS for machine %s", machine);
+                    reporter.recordError("Unable to setup DNS for machine " + machine, e);
                 }
             }
 
@@ -1330,5 +1449,9 @@ public class ClusterController implements IClusterController {
 
     public MachinePool getMachinePool() {
         return machines;
+    }
+
+    public DhDemoReporter getReporter() {
+        return reporter;
     }
 }

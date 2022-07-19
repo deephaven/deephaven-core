@@ -24,6 +24,8 @@ public class NameConstants {
 
     public static final String REGION = System.getProperty("dh-region", "us-central1");
     public static final String VERSION = System.getProperty("dh-version", System.getenv("VERSION"));
+    public static final String DEFAULT_MACHINE_TYPE = "n2d-standard-4";
+
     static {
         if (VERSION == null) {
             throw new IllegalStateException("Must specify -Ddh-version= system property or export VERSION= environment variable");

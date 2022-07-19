@@ -10,6 +10,7 @@ import org.jboss.logging.Logger;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
@@ -83,5 +84,11 @@ public interface DeploymentManager {
     String guessRealIp(String name);
 
     IpMapping findIp(String ipAddr);
+
+    Map<String, int[]> getReservations();
+
+    void removeReservations(String name);
+
+    void reserveMachines(final Collection<String> existing, int reservationSize);
 }
 

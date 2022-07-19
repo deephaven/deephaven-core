@@ -49,6 +49,8 @@ dependencies {
    // implementation 'io.quarkus:quarkus-resteasy-reactive-jackson'
     implementation 'io.smallrye.reactive:smallrye-mutiny-vertx-web-client'
 
+    implementation 'com.slack.api:slack-api-client:1.23.0'
+
     implementation 'io.quarkus:quarkus-container-image-docker'
 
     implementation 'com.squareup.okhttp3:okhttp'

@@ -3,10 +3,7 @@ package io.deephaven.demo.gcloud;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import io.deephaven.demo.api.*;
-import io.deephaven.demo.manager.DeploymentManager;
-import io.deephaven.demo.manager.Execute;
-import io.deephaven.demo.manager.IClusterController;
-import io.deephaven.demo.manager.NameGen;
+import io.deephaven.demo.manager.*;
 import org.apache.commons.io.FileUtils;
 import org.jboss.logging.Logger;
 
@@ -109,6 +106,88 @@ public class GoogleDeploymentManager implements DeploymentManager {
     @Override
     public IpMapping findIp(final String ipAddr) {
         return findByIp(ips, ipAddr);
+    }
+
+    @Override
+    public Map<String, int[]> getReservations() {
+        final Map<String, int[]> reservations = new HashMap<>();
+        final Execute.ExecutionResult result;
+        try {
+            result = gcloudQuiet(true, false, "reservations", "list",
+                    "--format='value(name,specificReservation.count,specificReservation.inUseCount)'");
+            if (result.code != 0) {
+                LOG.errorf("Exit code (%s) listing reservations.\nstdout:%s\nstderr:%s", result.code, result.out, result.err);
+
+            }
+            final String[] lines = result.out.split("\\s+");
+            for (String line : lines) {
+                if (!line.isEmpty()) {
+                    String[] words = line.split("\\s+");
+                    if (words.length < 3) {
+                        LOG.errorf("Invalid reservation line %s", line);
+                    } else {
+                        String name = words[0];
+                        int count = Integer.parseInt(words[1]);
+                        int inUse = Integer.parseInt(words[2]);
+                        reservations.put(name, new int[]{count, inUse});
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+        return reservations;
+    }
+
+    @Override
+    public void removeReservations(final String name) {
+        try {
+            LOG.infof("Removing reservation %s", name);
+            final Execute.ExecutionResult result = gcloudQuiet(false, false, "reservations", "delete", "name");
+            if (result.code != 0) {
+                LOG.errorf("Unable to delete reservation %s\nstdout:%s\nstderr:%s", name, result.out, result.err);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void reserveMachines(final Collection<String> existing, final int reservationSize) {
+        try {
+            Random randSrc = new Random();
+            String reservationName;
+            do {
+                reservationName = "reserve-" + reservationSize + "-"
+                        + (char)('a' + randSrc.nextInt(26))
+                        + (char)('a' + randSrc.nextInt(26))
+                        + (char)('a' + randSrc.nextInt(26))
+                        + (char)('a' + randSrc.nextInt(26))
+                        + (char)('a' + randSrc.nextInt(26));
+            } while (!existing.contains(reservationName));
+            LOG.infof("Adding %s reservations using name %s", reservationSize, reservationName);
+            final Execute.ExecutionResult result = gcloudQuiet(false, true,
+                    "reservations", "create", reservationName,
+                        "--machine-type", DEFAULT_MACHINE_TYPE,
+                        "--vm-count", Integer.toString(reservationSize)
+                    );
+            if (result.code != 0) {
+                LOG.errorf("Unable to add %s reservations\nstdout:%s\nstderr:%s", reservationSize, result.out, result.err);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+
     }
 
     static String getDnsZone() {
@@ -959,7 +1038,16 @@ public class GoogleDeploymentManager implements DeploymentManager {
             for (String script : scripts) {
                 // Gradle sends us the version via sysprop, and we pass that along to startup script here:
                 if ("VERSION".equals(script)) {
-                    byte[] versionBytes = ("VERSION=" + VERSION + "\n").getBytes();
+                    String extraVersion = "VERSION=\"" + VERSION + "\"\n";
+                    String slackToken = System.getenv("DH_SLACK_TOKEN");
+                    if (slackToken != null) {
+                        extraVersion += "DH_SLACK_TOKEN=\"" + slackToken + "\"\n";
+                    }
+                    String errorPrefix = System.getenv("DH_ERROR_PREFIX");
+                    if (errorPrefix != null) {
+                        extraVersion += "DH_ERROR_PREFIX=\"" + errorPrefix + "\"\n";
+                    }
+                    byte[] versionBytes = (extraVersion).getBytes();
                     out.write(versionBytes, 0, versionBytes.length);
                     continue;
                 }

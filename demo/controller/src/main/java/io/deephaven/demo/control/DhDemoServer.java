@@ -4,6 +4,7 @@ import io.deephaven.demo.api.Machine;
 import io.deephaven.demo.gcloud.GoogleDeploymentManager;
 import io.deephaven.demo.manager.Execute;
 import io.deephaven.demo.manager.NameConstants;
+import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
@@ -11,6 +12,8 @@ import io.vertx.core.http.Cookie;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import org.jboss.logging.Logger;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
@@ -65,7 +68,7 @@ public class DhDemoServer implements QuarkusApplication {
         LOG.info("Setting up Deephaven Demo Server!");
         Thread.setDefaultUncaughtExceptionHandler((thread, fail) -> {
             LOG.errorf("Unhandled failure on thread %s (%s)", thread.getName(), thread.getId());
-            fail.printStackTrace();
+            controller.getReporter().recordError("Unhandled failure on thread " + thread.getName(), fail);
         });
 
         Router router = CDI.current().select(Router.class).get();
@@ -122,7 +125,12 @@ public class DhDemoServer implements QuarkusApplication {
             LOG.info("Sending user off-thread to complete new machine request.");
             Cookie cookie = req.getCookie(NameConstants.COOKIE_NAME);
             Execute.setTimer("Claim Machine", () -> {
-
+                final DhDemoReporter reporter = controller.getReporter();
+                String debugInfo = "uri: " + req.request().absoluteURI() + " agent: " + userAgent;
+                try {
+                    debugInfo += " ip: " +
+                            req.request().connection().remoteAddress().hostAddress();
+                } catch (Throwable ignored) {}
                 if (cookie != null) {
                     String uname = cookie.getValue();
                     LOG.info("Handling request " + req.request().uri() + " w/ cookie " + uname);
@@ -131,6 +139,7 @@ public class DhDemoServer implements QuarkusApplication {
                     if (!uname.contains(".")) {
                         uname = uname + "." + DOMAIN;
                     }
+                    debugInfo = "[" + uname + "] " + debugInfo;
                     if (controller.isMachineReady(uname)) {
                         String uri = "https://" + uname;
                         // if you re-visit the main url, we'll renew your 45 minute lease then send you back
@@ -145,6 +154,7 @@ public class DhDemoServer implements QuarkusApplication {
                             if (query != null && query.length() > 0) {
                                 path = path + "?" + query;
                             }
+                            reporter.recordVisitor(debugInfo);
                             req.redirect(uri + path);
                             return;
                         }
@@ -152,18 +162,33 @@ public class DhDemoServer implements QuarkusApplication {
                 }
 
                 LOG.info("Finding gcloud worker for user");
-                handleGcloud(req);
+                try {
+                    handleGcloud(req, debugInfo);
+                } catch (Throwable t) {
+                    reporter.recordError("Failure sending user to machine " + debugInfo + "\n", t);
+                }
             });
 
         });
         LOG.info("Serving controller on https://" + DOMAIN);
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{
+            System.out.println("stdout: Shutting Down");
+            System.err.println("stderr: Shutting Down");
+            // only the leader should report to slack
+            controller.getReporter().reportToSlack(controller.isLeader());
+            System.out.print(" ");
+            System.err.print(" ");
+            System.out.flush();
+            System.err.flush();
+        }));
         Quarkus.waitForExit();
         return 0;
     }
 
-    private void handleGcloud(final RoutingContext req) {
+    private void handleGcloud(final RoutingContext req, final String debugInfo) {
         final Machine machine = controller.requestMachine();
         String uri = "https://" + machine.getDomainName();
+        controller.getReporter().recordVisitor("[" + machine.getDomainName() + "] " + debugInfo);
         LOG.infof("Sending user to %s", uri);
         // if we can reach /health immediately, the machine is ready, we should send user straight there
         final boolean isDev = "true".equals(System.getProperty("devMode"));

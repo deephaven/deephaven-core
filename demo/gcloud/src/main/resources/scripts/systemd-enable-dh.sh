@@ -29,12 +29,13 @@ WantedBy=multi-user.target
 EOF
 
 cat > /dh/grab_logs <<EOF
-if (( $(id -u) != 0 )); then
+if (( \$(id -u) != 0 )); then
     sudo /dh/grab_logs
-    exit $?
+    exit \$?
 fi
 set -o errexit
 mkdir -p /dh/logs
+cd /dh
 log_file="/dh/logs/dh-log-\$(date "+%Y%m%d%H%M%S").log"
 $docker_compose logs > "\$log_file"
 ln -nsf "\$log_file" /dh/logs/dh-log-current

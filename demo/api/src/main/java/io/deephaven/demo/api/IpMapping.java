@@ -167,7 +167,7 @@ public class IpMapping implements Comparable<IpMapping> {
         if (domainName.isEmpty() || domains.isEmpty()) {
             return;
         }
-        if (domainName.equals(currentDomain.getDomainQualified())) {
+        if (currentDomain != null && domainName.equals(currentDomain.getDomainQualified())) {
             // already correct, do nothing.
             return;
         }

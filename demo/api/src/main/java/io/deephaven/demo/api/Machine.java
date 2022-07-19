@@ -110,7 +110,7 @@ public class Machine {
     }
 
     public String getMachineType() {
-        return machineType == null ? "n2d-standard-4" : machineType;
+        return machineType == null ? DEFAULT_MACHINE_TYPE : machineType;
     }
 
     public void setMachineType(final String machineType) {
