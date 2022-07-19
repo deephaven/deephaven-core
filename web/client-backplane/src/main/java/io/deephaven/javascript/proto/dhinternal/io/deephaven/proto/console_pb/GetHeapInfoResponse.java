@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2022-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb;
 
 import elemental2.core.Uint8Array;
@@ -18,94 +15,54 @@ import jsinterop.base.JsPropertyMap;
 public class GetHeapInfoResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface InfoFieldType {
-            @JsOverlay
-            static GetHeapInfoResponse.ToObjectReturnType.InfoFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            String getFreeMemory();
-
-            @JsProperty
-            String getMaximumHeapSize();
-
-            @JsProperty
-            String getTotalHeapSize();
-
-            @JsProperty
-            void setFreeMemory(String freeMemory);
-
-            @JsProperty
-            void setMaximumHeapSize(String maximumHeapSize);
-
-            @JsProperty
-            void setTotalHeapSize(String totalHeapSize);
-        }
-
         @JsOverlay
         static GetHeapInfoResponse.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        String getErrorMessage();
+        String getFreeMemory();
 
         @JsProperty
-        GetHeapInfoResponse.ToObjectReturnType.InfoFieldType getInfo();
+        String getMaximumHeapSize();
 
         @JsProperty
-        void setErrorMessage(String errorMessage);
+        String getTotalHeapSize();
 
         @JsProperty
-        void setInfo(GetHeapInfoResponse.ToObjectReturnType.InfoFieldType info);
+        void setFreeMemory(String freeMemory);
+
+        @JsProperty
+        void setMaximumHeapSize(String maximumHeapSize);
+
+        @JsProperty
+        void setTotalHeapSize(String totalHeapSize);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface InfoFieldType {
-            @JsOverlay
-            static GetHeapInfoResponse.ToObjectReturnType0.InfoFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            String getFreeMemory();
-
-            @JsProperty
-            String getMaximumHeapSize();
-
-            @JsProperty
-            String getTotalHeapSize();
-
-            @JsProperty
-            void setFreeMemory(String freeMemory);
-
-            @JsProperty
-            void setMaximumHeapSize(String maximumHeapSize);
-
-            @JsProperty
-            void setTotalHeapSize(String totalHeapSize);
-        }
-
         @JsOverlay
         static GetHeapInfoResponse.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        String getErrorMessage();
+        String getFreeMemory();
 
         @JsProperty
-        GetHeapInfoResponse.ToObjectReturnType0.InfoFieldType getInfo();
+        String getMaximumHeapSize();
 
         @JsProperty
-        void setErrorMessage(String errorMessage);
+        String getTotalHeapSize();
 
         @JsProperty
-        void setInfo(GetHeapInfoResponse.ToObjectReturnType0.InfoFieldType info);
+        void setFreeMemory(String freeMemory);
+
+        @JsProperty
+        void setMaximumHeapSize(String maximumHeapSize);
+
+        @JsProperty
+        void setTotalHeapSize(String totalHeapSize);
     }
 
     public static native GetHeapInfoResponse deserializeBinary(Uint8Array bytes);
@@ -118,21 +75,19 @@ public class GetHeapInfoResponse {
     public static native GetHeapInfoResponse.ToObjectReturnType toObject(
             boolean includeInstance, GetHeapInfoResponse msg);
 
-    public native void clearInfo();
+    public native String getFreeMemory();
 
-    public native String getErrorMessage();
+    public native String getMaximumHeapSize();
 
-    public native HeapInfo getInfo();
-
-    public native boolean hasInfo();
+    public native String getTotalHeapSize();
 
     public native Uint8Array serializeBinary();
 
-    public native void setErrorMessage(String value);
+    public native void setFreeMemory(String value);
 
-    public native void setInfo();
+    public native void setMaximumHeapSize(String value);
 
-    public native void setInfo(HeapInfo value);
+    public native void setTotalHeapSize(String value);
 
     public native GetHeapInfoResponse.ToObjectReturnType0 toObject();
 
