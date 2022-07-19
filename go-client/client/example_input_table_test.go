@@ -22,9 +22,9 @@ func Example_inputTable() {
 	// When starting a client connection, the client script language
 	// must match the language the server was started with,
 	// even if the client does not execute any scripts.
-	cl, err := client.NewClient(ctx, "localhost", "10000", "python")
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
-		fmt.Println("error when connecting to localhost port 10000:", err.Error())
+		fmt.Println("error when connecting to server:", err.Error())
 		return
 	}
 	defer cl.Close()

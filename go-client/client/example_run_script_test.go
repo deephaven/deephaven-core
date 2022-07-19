@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/deephaven/deephaven-core/go-client/client"
+	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
 // This example shows how you can run a server-side script directly via the client
@@ -19,9 +20,9 @@ func Example_runScript() {
 
 	// Let's start a client connection using python as the script language ("groovy" is the other option).
 	// Note that the client language must match the language the server was started with.
-	cl, err := client.NewClient(ctx, "localhost", "10000", "python")
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
-		fmt.Println("error when connecting to localhost port 10000:", err.Error())
+		fmt.Println("error when connecting to server:", err.Error())
 		return
 	}
 	defer cl.Close()

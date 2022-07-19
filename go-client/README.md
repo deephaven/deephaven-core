@@ -23,7 +23,8 @@ Tests assume the server is on `localhost:10000` by default, but can be configure
 ## Examples
 
 This project also includes several example applications.
-Examples assume the server is running on `localhost:10000`.
+Examples assume the server is running on `localhost:10000` by default,
+but can be configured by setting the `DH_HOST` and `DH_PORT` environment variables.
 An example can be run using one of the following commands:
 ```bash
 $ go test -v ./client/example_basic_query_test.go

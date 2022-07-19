@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/deephaven/deephaven-core/go-client/client"
+	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
 // Typically, you don't have to worry about this,
@@ -20,9 +21,9 @@ func Example_fetchTable() {
 	// When starting a client connection, the client script language
 	// must match the language the server was started with,
 	// even if the client does not execute any scripts.
-	cl, err := client.NewClient(ctx, "localhost", "10000", "python")
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
-		fmt.Println("error when connecting to localhost port 10000:", err.Error())
+		fmt.Println("error when connecting to server:", err.Error())
 		return
 	}
 
