@@ -252,7 +252,7 @@ class UgpTestCase(BaseTestCase):
 
     def test_auto_locking_partitioned_table_proxy(self):
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table = time_table("00:00:01").update(["X=i", "Y=i%13", "Z=X*Y"])
         proxy = test_table.drop_columns(["Timestamp", "Y"]).partition_by(by="X").proxy()
         proxy2 = test_table.drop_columns(["Timestamp", "Z"]).partition_by(by="X").proxy()
 
@@ -262,6 +262,7 @@ class UgpTestCase(BaseTestCase):
 
         ugp.auto_locking = True
         joined_pt_proxy = proxy.natural_join(proxy2, on="X")
+        del joined_pt_proxy
 
 
 if __name__ == "__main__":
