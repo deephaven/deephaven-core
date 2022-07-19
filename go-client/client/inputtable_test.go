@@ -2,6 +2,7 @@ package client_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -308,4 +309,20 @@ func TestKeyBackedTable(t *testing.T) {
 	}
 	err = checkTable(ctx, outputTable, afterCheck, time.Second*5)
 	test_tools.CheckError(t, "checktable", err)
+}
+
+func TestInvalidInputTable(t *testing.T) {
+	ctx := context.Background()
+
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	test_tools.CheckError(t, "NewClient", err)
+	defer cl.Close()
+
+	inTable := client.AppendOnlyInputTable{}
+
+	_, err = inTable.Head(ctx, 50)
+	if !errors.Is(err, client.ErrInvalidTableHandle) {
+		t.Error("wrong or missing error", err)
+		return
+	}
 }

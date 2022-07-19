@@ -191,7 +191,7 @@ gotesttable = empty_table(10)
 
 		select {
 		case <-timer:
-			t.Errorf("test table should exist")
+			t.Errorf("timeout: test table should exist")
 			return
 		default:
 		}
@@ -274,7 +274,7 @@ gotesttable1 = empty_table(10)
 	test_tools.CheckError(t, "RunScript", err)
 
 	if !waitForTable(client2, []string{"gotesttable1"}, time.Second) {
-		t.Error("gotesttable1 should exist")
+		t.Error("timeout: gotesttable1 should exist")
 
 		client2.Close() // Explicitly close the client so that the error channel closes
 		for err := range errChan {
@@ -294,7 +294,7 @@ gotesttable2 = empty_table(20)
 	test_tools.CheckError(t, "RunScript", err)
 
 	if !waitForTable(client2, []string{"gotesttable1", "gotesttable2"}, time.Second) {
-		t.Error("gotesttable1 and gotesttable2 should exist")
+		t.Error("timeout: gotesttable1 and gotesttable2 should exist")
 
 		client2.Close() // Explicitly close the client so that the error channel closes
 		for err := range errChan {

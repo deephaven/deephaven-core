@@ -15,14 +15,14 @@ import (
 // The only difference between this handle and a normal table handle is the ability
 // to add data to it using AddTable.
 type AppendOnlyInputTable struct {
-	TableHandle
+	*TableHandle
 }
 
 // KeyBackedInputTable is a handle to a key-backed input table on the server.
 // The only difference between this handle and a normal table handle is the ability
 // to add and remove data to and from it using AddTable and DeleteTable.
 type KeyBackedInputTable struct {
-	TableHandle
+	*TableHandle
 }
 
 // inputTableStub wraps gRPC calls for inputtable.proto.
@@ -65,9 +65,7 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromSchema(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
-	// This warns about copying an RWMutex.
-	// However, since the old mutex is immediately discarded, it is not actually a problem.
-	return &AppendOnlyInputTable{TableHandle: *newTable}, nil
+	return &AppendOnlyInputTable{TableHandle: newTable}, nil
 }
 
 // NewAppendOnlyInputTableFromTable creates a new append-only input table with the same columns as the provided table.
@@ -84,9 +82,7 @@ func (its *inputTableStub) NewAppendOnlyInputTableFromTable(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	// This warns about copying an RWMutex.
-	// However, since the old mutex is immediately discarded, it is not actually a problem.
-	return &AppendOnlyInputTable{TableHandle: *newTable}, nil
+	return &AppendOnlyInputTable{TableHandle: newTable}, nil
 }
 
 // NewKeyBackedInputTableFromSchema creates a new key-backed input table with columns according to the provided schema.
@@ -101,9 +97,7 @@ func (its *inputTableStub) NewKeyBackedInputTableFromSchema(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	// This warns about copying an RWMutex.
-	// However, since the old mutex is immediately discarded, it is not actually a problem.
-	return &KeyBackedInputTable{TableHandle: *newTable}, nil
+	return &KeyBackedInputTable{TableHandle: newTable}, nil
 }
 
 // NewKeyBackedInputTableFromTable creates a new key-backed input table with the same columns as the provided table.
@@ -121,9 +115,7 @@ func (its *inputTableStub) NewKeyBackedInputTableFromTable(ctx context.Context, 
 	if err != nil {
 		return nil, err
 	}
-	// This warns about copying an RWMutex.
-	// However, since the old mutex is immediately discarded, it is not actually a problem.
-	return &KeyBackedInputTable{TableHandle: *newTable}, nil
+	return &KeyBackedInputTable{TableHandle: newTable}, nil
 }
 
 // AddTable appends data from the given table to the end of this table.
@@ -132,7 +124,7 @@ func (th *AppendOnlyInputTable) AddTable(ctx context.Context, toAdd *TableHandle
 	if !th.IsValid() || !toAdd.IsValid() {
 		return ErrInvalidTableHandle
 	}
-	return th.client.inputTableStub.addTable(ctx, &th.TableHandle, toAdd)
+	return th.client.inputTableStub.addTable(ctx, th.TableHandle, toAdd)
 }
 
 // AddTable merges the keys from the given table into this table.
@@ -143,7 +135,7 @@ func (th *KeyBackedInputTable) AddTable(ctx context.Context, toAdd *TableHandle)
 	if !th.IsValid() || !toAdd.IsValid() {
 		return ErrInvalidTableHandle
 	}
-	return th.client.inputTableStub.addTable(ctx, &th.TableHandle, toAdd)
+	return th.client.inputTableStub.addTable(ctx, th.TableHandle, toAdd)
 }
 
 // addTable makes the AddTableToInputTable gRPC request.
@@ -170,7 +162,7 @@ func (th *KeyBackedInputTable) DeleteTable(ctx context.Context, toDelete *TableH
 	if !th.IsValid() || !toDelete.IsValid() {
 		return ErrInvalidTableHandle
 	}
-	return th.client.inputTableStub.deleteTable(ctx, &th.TableHandle, toDelete)
+	return th.client.inputTableStub.deleteTable(ctx, th.TableHandle, toDelete)
 }
 
 // deleteTable makes the DeleteTableFromInputTable gRPC request.
