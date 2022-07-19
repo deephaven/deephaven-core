@@ -87,7 +87,12 @@ func (th *TableHandle) IsStatic() bool {
 // since only static tables have a fixed number of rows.
 func (th *TableHandle) NumRows() (numRows int64, ok bool) {
 	// No need to lock since these are never changed
-	return th.size, th.isStatic
+	if th.isStatic {
+		return th.size, true
+	} else {
+		// Return -1 here so that it can't possibly be mistaken for a valid size
+		return -1, false
+	}
 }
 
 // Snapshot downloads the current state of the table from the server and returns it as an Arrow Record.
@@ -545,20 +550,24 @@ func (th *TableHandle) AggBy(ctx context.Context, agg *AggBuilder, by ...string)
 // Any nil TableHandle pointers passed in are ignored.
 // At least one non-nil *TableHandle must be provided.
 func Merge(ctx context.Context, sortBy string, tables ...*TableHandle) (*TableHandle, error) {
-	if len(tables) < 1 {
-		return nil, errors.New("must provide at least one table to merge")
-	}
-
+	// First, remove all the nil TableHandles.
+	// No lock needed here since we're not using any TableHandle methods.
 	var usedTables []*TableHandle
 	for _, table := range tables {
 		if table != nil {
-			if !table.rLockIfValid() {
-				return nil, ErrInvalidTableHandle
-			}
-			defer table.lock.RUnlock()
-
 			usedTables = append(usedTables, table)
 		}
+	}
+
+	if len(usedTables) < 1 {
+		return nil, errors.New("must provide at least one non-nil table to merge")
+	}
+
+	for _, table := range usedTables {
+		if !table.rLockIfValid() {
+			return nil, ErrInvalidTableHandle
+		}
+		defer table.lock.RUnlock()
 	}
 
 	client := usedTables[0].client

@@ -543,8 +543,8 @@ func invalidTableQuery(t *testing.T, exec execBatchOrSerial) {
 
 	tbl := &client.TableHandle{}
 
-	node1 := tbl.Query()
-	node2 := node1.Update("a = ii * 3")
+	node1 := tbl.Query().Update("foo = i")
+	node2 := client.MergeQuery("", node1, node1)
 
 	_, err = exec(c, ctx, node1)
 	if !errors.Is(err, client.ErrInvalidTableHandle) {

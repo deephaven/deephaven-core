@@ -359,6 +359,7 @@ func (fm *fieldManager) FetchTablesRepeating(ctx context.Context, appServiceClie
 // Close closes the fieldManager and frees any associated resources.
 // It will also stop the associated executor and any running FetchTablesRepeating requests.
 // Once Close has been called, no other methods should be used on the fieldManager (except Close again, which will do nothing).
+// The client lock should be held while calling this function.
 func (fm *fieldManager) Close() {
 	if fm.chanClose != nil {
 		// This waits for the executor to stop.

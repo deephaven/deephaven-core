@@ -63,6 +63,9 @@ func (ref *refresher) refreshLoop() {
 	for {
 		select {
 		case <-ref.cancelCh:
+			// Make sure that nobody accidentally tries
+			// to use a token after the client has closed.
+			ref.token.setError(ErrClosedClient)
 			return
 		case <-time.After(ref.timeout):
 			err := ref.refresh()
@@ -190,6 +193,8 @@ func (hs *sessionStub) release(ctx context.Context, ticket *ticketpb2.Ticket) er
 
 // Close closes the session stub and frees any associated resources.
 // The session stub should not be used after calling this function.
+// The token refresh loop will be stopped,
+// and any attempts to access the session token will return an error.
 // The client lock should be held when calling this function.
 func (hs *sessionStub) Close() {
 	if hs.cancelCh != nil {

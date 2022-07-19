@@ -228,11 +228,28 @@ func parseCreationResponse(client *Client, resp *tablepb2.ExportedTableCreationR
 	return newTableHandle(client, respTicket, schema, resp.Size, resp.IsStatic), nil
 }
 
+// checkTableValidity returns an error if any of the provided tables
+// are invalid or come from a different client than the tableStub.
+// The tables must not be released before this method returns.
+func (ts *tableStub) checkTableValidity(ctx context.Context, tables ...*TableHandle) error {
+	for _, table := range tables {
+		if !table.IsValid() {
+			return ErrInvalidTableHandle
+		}
+
+		if table.client != ts.client {
+			return ErrDifferentClients
+		}
+	}
+
+	return nil
+}
+
 // dropColumns is a wrapper around the DropColumns gRPC request.
 // The table must not be released before this method returns.
 func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols []string) (*TableHandle, error) {
-	if !table.IsValid() {
-		return nil, ErrInvalidTableHandle
+	if err := ts.checkTableValidity(ctx, table); err != nil {
+		return nil, err
 	}
 
 	ctx, err := ts.client.withToken(ctx)
@@ -259,8 +276,8 @@ type selectOrUpdateOp func(tablepb2.TableServiceClient, context.Context, *tablep
 // doSelectOrUpdate wraps Update, View, UpdateView, Select, and LazyUpdate gRPC requests.
 // The table must not be released before this method returns.
 func (ts *tableStub) doSelectOrUpdate(ctx context.Context, table *TableHandle, formulas []string, op selectOrUpdateOp) (*TableHandle, error) {
-	if !table.IsValid() {
-		return nil, ErrInvalidTableHandle
+	if err := ts.checkTableValidity(ctx, table); err != nil {
+		return nil, err
 	}
 
 	ctx, err := ts.client.withToken(ctx)
@@ -314,8 +331,8 @@ func (ts *tableStub) selectTbl(ctx context.Context, table *TableHandle, formulas
 // The op argument should simply create a request given the result and source ID and call the appropriate gRPC method.
 // The table must not be released before this method returns.
 func (ts *tableStub) makeRequest(ctx context.Context, table *TableHandle, op reqOp) (*TableHandle, error) {
-	if !table.IsValid() {
-		return nil, ErrInvalidTableHandle
+	if err := ts.checkTableValidity(ctx, table); err != nil {
+		return nil, err
 	}
 
 	ctx, err := ts.client.withToken(ctx)
@@ -394,14 +411,8 @@ func (ts *tableStub) headOrTail(ctx context.Context, table *TableHandle, numRows
 // naturalJoin is a wrapper around the naturalJoin gRPC operation.
 // The tables must not be released before this method returns.
 func (ts *tableStub) naturalJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
-	if !leftTable.IsValid() {
-		return nil, ErrInvalidTableHandle
-	}
-	if !rightTable.IsValid() {
-		return nil, ErrInvalidTableHandle
-	}
-	if leftTable.client != rightTable.client {
-		return nil, ErrDifferentClients
+	if err := ts.checkTableValidity(ctx, leftTable, rightTable); err != nil {
+		return nil, err
 	}
 
 	return ts.makeRequest(ctx, leftTable, func(ctx context.Context, resultId *ticket, leftId *tblRef) (*tblResp, error) {
@@ -414,14 +425,8 @@ func (ts *tableStub) naturalJoin(ctx context.Context, leftTable *TableHandle, ri
 // crossJoin is a wrapper around the crossJoin gRPC operation.
 // The tables must not be released before this method returns.
 func (ts *tableStub) crossJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string, reserveBits int32) (*TableHandle, error) {
-	if !leftTable.IsValid() {
-		return nil, ErrInvalidTableHandle
-	}
-	if !rightTable.IsValid() {
-		return nil, ErrInvalidTableHandle
-	}
-	if leftTable.client != rightTable.client {
-		return nil, ErrDifferentClients
+	if err := ts.checkTableValidity(ctx, leftTable, rightTable); err != nil {
+		return nil, err
 	}
 
 	return ts.makeRequest(ctx, leftTable, func(ctx context.Context, resultId *ticket, leftId *tblRef) (*tblResp, error) {
@@ -437,14 +442,8 @@ func (ts *tableStub) crossJoin(ctx context.Context, leftTable *TableHandle, righ
 // exactJoin is a wrapper around the exactJoin gRPC operation.
 // The tables must not be released before this method returns.
 func (ts *tableStub) exactJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string) (*TableHandle, error) {
-	if !leftTable.IsValid() {
-		return nil, ErrInvalidTableHandle
-	}
-	if !rightTable.IsValid() {
-		return nil, ErrInvalidTableHandle
-	}
-	if leftTable.client != rightTable.client {
-		return nil, ErrDifferentClients
+	if err := ts.checkTableValidity(ctx, leftTable, rightTable); err != nil {
+		return nil, err
 	}
 
 	return ts.makeRequest(ctx, leftTable, func(ctx context.Context, resultId *ticket, leftId *tblRef) (*tblResp, error) {
@@ -460,14 +459,8 @@ func (ts *tableStub) exactJoin(ctx context.Context, leftTable *TableHandle, righ
 // asOfJoin is a wrapper around the asOfJoin gRPC operation.
 // The tables must not be released before this method returns.
 func (ts *tableStub) asOfJoin(ctx context.Context, leftTable *TableHandle, rightTable *TableHandle, on []string, joins []string, matchRule MatchRule) (*TableHandle, error) {
-	if !leftTable.IsValid() {
-		return nil, ErrInvalidTableHandle
-	}
-	if !rightTable.IsValid() {
-		return nil, ErrInvalidTableHandle
-	}
-	if leftTable.client != rightTable.client {
-		return nil, ErrDifferentClients
+	if err := ts.checkTableValidity(ctx, leftTable, rightTable); err != nil {
+		return nil, err
 	}
 
 	return ts.makeRequest(ctx, leftTable, func(ctx context.Context, resultId *ticket, leftId *tblRef) (*tblResp, error) {
@@ -551,14 +544,8 @@ func (ts *tableStub) aggBy(ctx context.Context, table *TableHandle, aggs []aggPa
 // merge is a wrapper around the MergeTables gRPC request.
 // The tables must not be released before this method returns.
 func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHandle) (*TableHandle, error) {
-	for _, table := range others {
-		if !table.IsValid() {
-			return nil, ErrInvalidTableHandle
-		}
-
-		if table.client != ts.client {
-			return nil, ErrDifferentClients
-		}
+	if err := ts.checkTableValidity(ctx, others...); err != nil {
+		return nil, err
 	}
 
 	ctx, err := ts.client.withToken(ctx)
@@ -641,7 +628,7 @@ func (state *serialOpsState) unlockAll() {
 // allowNilTables is used only for mergeOp, and allows returning a nil table reference for a node that points to a nil table.
 // Normally, nil tables are treated as an error.
 //
-// This may retuorn a QueryError.
+// This may return a QueryError.
 func (state *serialOpsState) processNode(ctx context.Context, node QueryNode, allowNilTables bool) (*TableHandle, error) {
 	// If this node has already been processed, just return the old result.
 	if tbl, ok := state.finishedNodes[node]; ok {
