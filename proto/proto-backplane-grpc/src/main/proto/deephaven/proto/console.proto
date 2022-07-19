@@ -66,10 +66,6 @@ message GetHeapInfoRequest {
     // left empty for future compatibility
 }
 message GetHeapInfoResponse {
-    string error_message = 1;
-    HeapInfo info = 2;
-}
-message HeapInfo {
     int64 maximum_heap_size = 1 [jstype=JS_STRING];
     int64 total_heap_size = 2 [jstype=JS_STRING];
     int64 free_memory = 3 [jstype=JS_STRING];
