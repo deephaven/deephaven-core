@@ -93,10 +93,10 @@ func (fs *fieldStream) FetchOnce() (*apppb2.FieldsChangeUpdate, error) {
 	return fs.fieldsClient.Recv()
 }
 
-// FetchRepeating starts a goroutine that will forward responses from the ListFields request
-// to the given channel. The goroutine will loop infinitely until Close() is called
-// or an error occurs.
-// This function will close the stream channel when it terminates.
+// FetchRepeating starts a goroutine that will forward responses from the ListFields request to the given channel.
+// The goroutine will loop infinitely until Close() is called or an error occurs.
+// In either case, an error will be sent on the channel, the channel will close, and the goroutine will terminate.
+// (Note that in the Close() case, the error will be a gRPC canceled error. Use isCanceledError to check for and handle/ignore it.)
 func (fs *fieldStream) FetchRepeating(stream chan<- respFMExec) {
 	go func() {
 		for {

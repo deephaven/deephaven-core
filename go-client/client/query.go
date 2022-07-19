@@ -1529,6 +1529,8 @@ func MergeQuery(sortBy string, tables ...QueryNode) QueryNode {
 	}
 
 	// Just pick an arbitrary node to add the operation to.
+	// It's okay if this node (or any of the other nodes) come from a nil *TableHandle,
+	// because the nil check is done by execSerialOp or makeBatchOp later.
 	qb := tables[0]
 
 	return qb.addOp(mergeOp{children: tables, sortBy: sortBy})
