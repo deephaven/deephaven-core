@@ -188,13 +188,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .onError(responseObserver)
                     .submit(() -> {
                         final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
-                        final HeapInfo heapInfo = HeapInfo.newBuilder()
+                        final GetHeapInfoResponse infoResponse = GetHeapInfoResponse.newBuilder()
                                 .setTotalHeapSize(runtimeMemory.totalMemory())
                                 .setFreeMemory(runtimeMemory.freeMemory())
                                 .setMaximumHeapSize(runtimeMemory.getMaxMemory())
-                                .build();
-                        final GetHeapInfoResponse infoResponse = GetHeapInfoResponse.newBuilder()
-                                .setInfo(heapInfo)
                                 .build();
 
                         responseObserver.onNext(infoResponse);

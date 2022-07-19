@@ -1,6 +1,6 @@
 package io.deephaven.web.client.api;
 
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.HeapInfo;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetHeapInfoResponse;
 import jsinterop.annotations.JsProperty;
 
 public class JsWorkerHeapInfo {
@@ -8,7 +8,7 @@ public class JsWorkerHeapInfo {
     private long freeMemory;
     private long totalHeapSize;
 
-    public JsWorkerHeapInfo(HeapInfo heapInfo) {
+    public JsWorkerHeapInfo(GetHeapInfoResponse heapInfo) {
         this.maximumHeapSize = Long.parseLong(heapInfo.getMaximumHeapSize());
         this.freeMemory = Long.parseLong(heapInfo.getFreeMemory());
         this.totalHeapSize = Long.parseLong(heapInfo.getTotalHeapSize());

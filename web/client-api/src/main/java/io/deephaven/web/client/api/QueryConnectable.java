@@ -212,7 +212,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
                     callback::apply);
         });
 
-        return promise.then(result -> Promise.resolve(new JsWorkerHeapInfo(result.getInfo())));
+        return promise.then(result -> Promise.resolve(new JsWorkerHeapInfo(result)));
     }
 
     public void connected() {
