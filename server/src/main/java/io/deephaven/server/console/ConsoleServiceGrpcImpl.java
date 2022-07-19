@@ -183,20 +183,15 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     @Override
     public void getHeapInfo(GetHeapInfoRequest request, StreamObserver<GetHeapInfoResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            session.nonExport()
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
-                        final GetHeapInfoResponse infoResponse = GetHeapInfoResponse.newBuilder()
-                                .setTotalHeapSize(runtimeMemory.totalMemory())
-                                .setFreeMemory(runtimeMemory.freeMemory())
-                                .setMaximumHeapSize(runtimeMemory.getMaxMemory())
-                                .build();
+            final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
+            final GetHeapInfoResponse infoResponse = GetHeapInfoResponse.newBuilder()
+                    .setTotalHeapSize(runtimeMemory.totalMemory())
+                    .setFreeMemory(runtimeMemory.freeMemory())
+                    .setMaximumHeapSize(runtimeMemory.getMaxMemory())
+                    .build();
 
-                        responseObserver.onNext(infoResponse);
-                        responseObserver.onCompleted();
-                    });
+            responseObserver.onNext(infoResponse);
+            responseObserver.onCompleted();
         });
     }
 
