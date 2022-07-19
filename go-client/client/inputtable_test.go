@@ -166,6 +166,8 @@ func addNewDataToAppend(
 		return
 	}
 
+	err = output.Release(ctx)
+
 	return
 }
 

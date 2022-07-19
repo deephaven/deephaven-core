@@ -156,7 +156,7 @@ func (fme *fieldManagerExecutor) loop() {
 		select {
 		case req := <-fme.chanClose:
 			fme.cancelFieldStream()
-			req.out <- struct{}{}
+			close(req.out)
 			return
 		case req := <-fme.chanOpenTables:
 			req.out <- fme.listOpenableTables()
@@ -241,14 +241,14 @@ func (fm *fieldManagerExecutor) handleFieldChanges(changes *apppb2.FieldsChangeU
 	for _, created := range changes.Created {
 		if created.TypedTicket.Type == "Table" {
 			fieldId := fieldId{appId: created.ApplicationId, fieldName: created.FieldName}
-			fm.tables[fieldId] = newTableHandle(fm.client, created.TypedTicket.Ticket, nil, 0, false)
+			fm.tables[fieldId] = newBorrowedTableHandle(fm.client, created.TypedTicket.Ticket, nil, 0, false)
 		}
 	}
 
 	for _, updated := range changes.Updated {
 		if updated.TypedTicket.Type == "Table" {
 			fieldId := fieldId{appId: updated.ApplicationId, fieldName: updated.FieldName}
-			fm.tables[fieldId] = newTableHandle(fm.client, updated.TypedTicket.Ticket, nil, 0, false)
+			fm.tables[fieldId] = newBorrowedTableHandle(fm.client, updated.TypedTicket.Ticket, nil, 0, false)
 		}
 	}
 
@@ -277,7 +277,7 @@ func (fm *fieldManagerExecutor) listOpenableTables() []string {
 // The channels send requests to the executor, and the executor does the actual work.
 // This is essentially just a way of offering goroutine-safe methods without explicit locking.
 type fieldManager struct {
-	chanClose          chan<- reqClose // Closing this channel will stop the executor.
+	chanClose          chan<- reqClose
 	chanOpenTables     chan<- reqListOpenableTables
 	chanGetTable       chan<- reqGetTable
 	chanFMExec         chan<- reqFMExec

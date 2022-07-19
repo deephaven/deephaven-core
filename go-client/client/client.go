@@ -16,13 +16,14 @@ package client
 import (
 	"context"
 	"errors"
+	"log"
+	"sync"
+
 	apppb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/application"
 	consolepb2 "github.com/deephaven/deephaven-core/go-client/internal/proto/console"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	"log"
-	"sync"
 )
 
 // ErrClosedClient is returned as an error when trying to perform a network operation on a client that has been closed.
@@ -32,11 +33,11 @@ var ErrClosedClient = errors.New("client is closed")
 // It can be used to run scripts, create new tables, execute queries, etc.
 // Check the various methods of Client to learn more.
 type Client struct {
-	// This lock guards isClosed.
+	// This lock guards isOpen.
 	// Other functionality does not need a lock, since the gRPC interface is already thread-safe,
 	// the tables array has its own lock, and the session token also has its own lock.
-	lock     sync.Mutex
-	isClosed bool // True if Close has been called (i.e. the client can no longer perform operations).
+	lock   sync.Mutex
+	isOpen bool // False if Close has been called (i.e. the client can no longer perform operations).
 
 	grpcChannel *grpc.ClientConn
 
@@ -65,7 +66,7 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 		return nil, err
 	}
 
-	client := &Client{grpcChannel: grpcChannel, isClosed: false}
+	client := &Client{grpcChannel: grpcChannel, isOpen: true}
 
 	client.ticketFact = newTicketFactory()
 
@@ -100,7 +101,7 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 
 // Closed checks if the client is closed, i.e. it can no longer perform operations on the server.
 func (client *Client) Closed() bool {
-	return client.isClosed
+	return !client.isOpen
 }
 
 // FetchTablesOnce fetches the list of tables from the server.
@@ -183,11 +184,11 @@ func (client *Client) Close() error {
 	client.lock.Lock()
 	defer client.lock.Unlock()
 
-	if client.isClosed {
+	if client.Closed() {
 		return nil
 	}
 
-	client.isClosed = true
+	client.isOpen = false
 
 	client.fieldMan.Close()
 

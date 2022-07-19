@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"log"
+	"runtime"
+	"runtime/debug"
 	"sync"
 
 	"github.com/apache/arrow/go/v8/arrow"
@@ -41,7 +43,10 @@ type TableHandle struct {
 	lock sync.RWMutex // Used to guard the state of the table handle. Table operations acquire a read lock, and releasing the table acquires a write lock.
 }
 
-func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Schema, size int64, isStatic bool) *TableHandle {
+// newBorrowedTableHandle is like newTableHandle, but doesn't attach a finalizer to the handle.
+// This is necessary because certain server API calls return tickets that don't need to be released by the client (e.g. ListFields).
+// Such tables are only ever used internally, so the user does not need to know about this detail.
+func newBorrowedTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Schema, size int64, isStatic bool) *TableHandle {
 	return &TableHandle{
 		client:   client,
 		ticket:   ticket,
@@ -49,6 +54,45 @@ func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Sche
 		size:     size,
 		isStatic: isStatic,
 	}
+}
+
+// newTableHandle returns a new table handle given information about the table,
+// typically from a gRPC ExportedTableCreationResponse.
+// This also attaches a finalizer to the TableHandle that will warn if the handle is leaked and free the table automatically.
+func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Schema, size int64, isStatic bool) *TableHandle {
+	handle := newBorrowedTableHandle(client, ticket, schema, size, isStatic)
+
+	stackTrace := string(debug.Stack())
+
+	runtime.SetFinalizer(handle, func(th *TableHandle) {
+		// Start up a new goroutine, since finalizers block the GC
+		// and this needs to lock a mutex and perform a network request.
+		go func() {
+			th.lock.Lock()
+			defer th.lock.Unlock()
+
+			if th.client != nil { // using IsValid here would cause deadlock
+				th.client.lock.Lock()
+				defer th.client.lock.Unlock()
+
+				if th.client.Closed() {
+					// Closing a client automatically releases its TableHandles,
+					// so nothing needs to be done.
+				} else {
+					_ = th.releaseLocked(context.Background()) // ignore the error here, since we can't do anything about it.
+
+					warningMsg := "warning: a TableHandle was forgotten without calling the Release method.\n" +
+						"the handle will be automatically released, but this is unreliable and may lead to resource exhaustion.\n" +
+						"stack trace of where the TableHandle was created:\n" +
+						stackTrace
+
+					log.Println(warningMsg)
+				}
+			}
+		}()
+	})
+
+	return handle
 }
 
 // IsValid returns true if the handle is valid, i.e. table operations can be performed on it.
@@ -114,15 +158,11 @@ func (th *TableHandle) Query() QueryNode {
 	return qb.curRootNode()
 }
 
-// Release releases this table handle's resources on the server. The TableHandle is no longer usable after Release is called.
-// It is safe to call Release multiple times.
-func (th *TableHandle) Release(ctx context.Context) error {
+// releaseLocked is identical to Release, except it assumes a write lock for the table is already held by the caller.
+func (th *TableHandle) releaseLocked(ctx context.Context) error {
 	if th == nil {
 		return nil
 	}
-
-	th.lock.Lock()
-	defer th.lock.Unlock()
 
 	if th.client != nil {
 		err := th.client.release(ctx, th.ticket)
@@ -138,6 +178,21 @@ func (th *TableHandle) Release(ctx context.Context) error {
 		th.schema = nil
 	}
 	return nil
+}
+
+// Release releases this table handle's resources on the server. The TableHandle is no longer usable after Release is called.
+// It is safe to call Release multiple times.
+func (th *TableHandle) Release(ctx context.Context) error {
+	if th == nil {
+		return nil
+	}
+
+	runtime.SetFinalizer(th, nil)
+
+	th.lock.Lock()
+	defer th.lock.Unlock()
+
+	return th.releaseLocked(ctx)
 }
 
 // DropColumns creates a table with the same number of rows as the source table but omits any columns included in the arguments.

@@ -73,6 +73,11 @@ func TestEmptyTable(t *testing.T) {
 	if rows != expectedRows || cols != expectedCols {
 		t.Errorf("Record had wrong size (expected %d x %d, got %d x %d)", expectedRows, expectedCols, rows, cols)
 	}
+
+	err = tbl.Release(ctx)
+	if err != nil {
+		t.Errorf("Release err %s", err.Error())
+	}
 }
 
 func TestTimeTable(t *testing.T) {
@@ -93,6 +98,11 @@ func TestTimeTable(t *testing.T) {
 		t.Error("time table should not be static")
 		return
 	}
+
+	err = tbl.Release(ctx)
+	if err != nil {
+		t.Errorf("Release err %s", err.Error())
+	}
 }
 
 func TestTableUpload(t *testing.T) {
@@ -103,17 +113,20 @@ func TestTableUpload(t *testing.T) {
 	s, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
+		return
 	}
 	defer s.Close()
 
 	tbl, err := s.ImportTable(ctx, r)
 	if err != nil {
 		t.Errorf("ImportTable err %s", err.Error())
+		return
 	}
 
 	rec, err := tbl.Snapshot(ctx)
 	if err != nil {
 		t.Errorf("Snapshot err %s", err.Error())
+		return
 	}
 	defer rec.Release()
 
@@ -133,6 +146,14 @@ func TestTableUpload(t *testing.T) {
 		if expCol.DataType() != actCol.DataType() {
 			t.Error("DataType differed", expCol.DataType(), " and ", actCol.DataType())
 		}
+	}
+
+	rec.Release()
+	err = tbl.Release(ctx)
+
+	if err != nil {
+		t.Errorf("Release err %s", err.Error())
+		return
 	}
 }
 
