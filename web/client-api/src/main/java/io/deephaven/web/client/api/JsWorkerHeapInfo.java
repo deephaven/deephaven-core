@@ -15,17 +15,17 @@ public class JsWorkerHeapInfo {
     }
 
     @JsProperty
-    public long getMaximumHeapSize() {
+    public double getMaximumHeapSize() {
         return maximumHeapSize;
     }
 
     @JsProperty
-    public long getFreeMemory() {
+    public double getFreeMemory() {
         return freeMemory;
     }
 
     @JsProperty
-    public long getTotalHeapSize() {
+    public double getTotalHeapSize() {
         return totalHeapSize;
     }
 }

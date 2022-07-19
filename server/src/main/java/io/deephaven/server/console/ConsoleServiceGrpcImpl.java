@@ -187,14 +187,17 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             session.nonExport()
                     .onError(responseObserver)
                     .submit(() -> {
-                        GetHeapInfoResponse.Builder infoResponse = GetHeapInfoResponse.newBuilder();
-                        HeapInfo.Builder heapInfo = HeapInfo.newBuilder();
-                        heapInfo.setTotalHeapSize(RuntimeMemory.getInstance().totalMemory());
-                        heapInfo.setFreeMemory(RuntimeMemory.getInstance().freeMemory());
-                        heapInfo.setMaximumHeapSize(RuntimeMemory.getInstance().getMaxMemory());
-                        infoResponse.setInfo(heapInfo);
+                        RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
+                        HeapInfo heapInfo = HeapInfo.newBuilder()
+                                .setTotalHeapSize(runtimeMemory.totalMemory())
+                                .setFreeMemory(runtimeMemory.freeMemory())
+                                .setMaximumHeapSize(runtimeMemory.getMaxMemory())
+                                .build();
+                        GetHeapInfoResponse infoResponse = GetHeapInfoResponse.newBuilder()
+                                .setInfo(heapInfo)
+                                .build();
 
-                        responseObserver.onNext(infoResponse.build());
+                        responseObserver.onNext(infoResponse);
                         responseObserver.onCompleted();
                     });
         });
