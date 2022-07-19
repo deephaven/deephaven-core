@@ -220,7 +220,7 @@ public class ImageDeployer {
         LOG.infof("Assign DNS to %s with domain %s", newCtrl.getHost(), newCtrl.domain());
         manager.assignDns(ctrl, Stream.of(newCtrl));
 
-        manager.waitForSsh(newCtrl, TimeUnit.MINUTES.toMillis(3), TimeUnit.MINUTES.toMillis(7));
+        manager.waitForSsh(newCtrl, TimeUnit.MINUTES.toMillis(8), TimeUnit.MINUTES.toMillis(10));
 
         LOG.infof("Destroying VMs %s and %s", worker, controller);
         manager.destroyCluster(Arrays.asList(worker, controller), "");
