@@ -24,7 +24,7 @@ public class UpdateOrSelectSessionTest extends DeephavenSessionTestBase {
 
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<Object[]> methods() {
-        return () -> Arrays.stream(UpdateOrSelect.values()).map(u -> new Object[] { u }).iterator();
+        return () -> Arrays.stream(UpdateOrSelect.values()).map(u -> new Object[] {u}).iterator();
     }
 
     enum UpdateOrSelect implements BiFunction<TableSpec, String, TableSpec> {
