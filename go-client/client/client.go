@@ -60,6 +60,9 @@ type Client struct {
 //
 // Keepalive messages are sent automatically by the client to the server at a regular interval (~30 seconds)
 // so that the connection remains open. The provided context is saved and used to send keepalive messages.
+//
+// The option arguments can be used to specify other settings for the client.
+// See the "WithXYZ" methods (e.g. WithConsole) for details on what options are available.
 func NewClient(ctx context.Context, host string, port string, options ...ClientOption) (*Client, error) {
 	grpcChannel, err := grpc.Dial(host+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
