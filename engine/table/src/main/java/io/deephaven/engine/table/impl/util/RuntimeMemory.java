@@ -16,7 +16,7 @@ import java.util.List;
  * Cache memory utilization.
  *
  * <p>
- * >Calling Runtime.getRuntime().getFreeMemory() is expensive; and we may do it a lot when we have automatically
+ * >Calling Runtime.getRuntime().freeMemory() is expensive; and we may do it a lot when we have automatically
  * computed tables, such as in a partitionBy. Instead of calling the runtime directly from the performance
  * instrumentation framework, we call this class's methods; which cache the result for a configurable number of
  * milliseconds to avoid repeated calls that are not likely any different./p>
@@ -205,7 +205,7 @@ public class RuntimeMemory {
     /**
      * See {@link Runtime#maxMemory()}.
      */
-    public long getMaxMemory() {
+    public long maxMemory() {
         return maxMemory;
     }
 }

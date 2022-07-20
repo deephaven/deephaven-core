@@ -1192,9 +1192,9 @@ as needed.
  * `VariableDefinition removed`
 
 ##### Class `HeapInfo`
- * `long maximumHeapSize` - Maximum heap size of this worker.
- * `long freeMemory` - Free memory of this worker.
- * `long totalHeapSize` - Total heap size available for this worker.
+ * `Number maximumHeapSize` - Maximum heap size of this worker.
+ * `Number freeMemory` - Free memory of this worker.
+ * `Number totalHeapSize` - Total heap size available for this worker.
 -->
 
 #### The `dh.plot` namespace:
