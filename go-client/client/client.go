@@ -51,7 +51,6 @@ type Client struct {
 
 	appServiceClient apppb2.ApplicationServiceClient
 	ticketFact       ticketFactory
-	fieldMan         fieldManager
 }
 
 // NewClient starts a connection to a Deephaven server.
@@ -101,55 +100,12 @@ func NewClient(ctx context.Context, host string, port string, options ...ClientO
 
 	client.appServiceClient = apppb2.NewApplicationServiceClient(client.grpcChannel)
 
-	client.fieldMan = newFieldManager(client)
-
 	return client, nil
 }
 
 // Closed checks if the client is closed, i.e. it can no longer perform operations on the server.
 func (client *Client) Closed() bool {
 	return !client.isOpen
-}
-
-// FetchTablesOnce fetches the list of tables from the server.
-// This allows the client to see the list of named global tables on the server,
-// and thus allows the client to open them using OpenTable.
-// Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
-func (client *Client) FetchTablesOnce(ctx context.Context) error {
-	ctx, err := client.withToken(ctx)
-	if err != nil {
-		return err
-	}
-
-	return client.fieldMan.FetchTablesOnce(ctx, client.appServiceClient)
-}
-
-// FetchTablesRepeating starts up a goroutine that fetches the list of tables from the server continuously.
-// This allows the client to see the list of named global tables on the server,
-// and thus allows the client to open them using OpenTable.
-// Tables created in scripts run by the current client are immediately visible and do not require a FetchTables call.
-// The returned error channel is guaranteed to send zero or one errors and then close,
-// however it is not specified at what time this will occur.
-func (client *Client) FetchTablesRepeating(ctx context.Context) <-chan error {
-	ctx, err := client.withToken(ctx)
-	if err != nil {
-		chanError := make(chan error, 1)
-		chanError <- err
-		close(chanError)
-		return chanError
-	}
-
-	return client.fieldMan.FetchTablesRepeating(ctx, client.appServiceClient)
-}
-
-// ListOpenableTables returns a list of the (global) tables that can be opened with OpenTable.
-// Tables that are created by other clients or in the web UI are not listed here automatically.
-// Tables that are created in scripts run by this client, however, are immediately available,
-// and will be added to/removed from the list as soon as the script finishes.
-// FetchTablesOnce or FetchTablesRepeating can be used to update the list
-// to reflect what tables are currently available from other clients or the web UI.
-func (client *Client) ListOpenableTables() []string {
-	return client.fieldMan.ListOpenableTables()
 }
 
 // ExecSerial executes several table operations on the server and returns the resulting tables.
@@ -197,8 +153,6 @@ func (client *Client) Close() error {
 
 	client.isOpen = false
 
-	client.fieldMan.Close()
-
 	client.sessionStub.Close()
 
 	if client.grpcChannel != nil {
@@ -241,20 +195,13 @@ func (client *Client) RunScript(ctx context.Context, script string) error {
 		return err
 	}
 
-	f := func() (*apppb2.FieldsChangeUpdate, error) {
-		// TODO: This might fall victim to the double-responses problem if a FetchTablesRepeating
-		// request is already active.
-
-		req := consolepb2.ExecuteCommandRequest{ConsoleId: client.consoleStub.consoleId, Code: script}
-		rst, err := client.consoleStub.stub.ExecuteCommand(ctx, &req)
-		if err != nil {
-			return nil, err
-		} else {
-			return rst.Changes, nil
-		}
+	req := consolepb2.ExecuteCommandRequest{ConsoleId: client.consoleStub.consoleId, Code: script}
+	_, err = client.consoleStub.stub.ExecuteCommand(ctx, &req)
+	if err != nil {
+		return err
 	}
 
-	return client.fieldMan.ExecAndUpdate(f)
+	return nil
 }
 
 // clientOptions holds a set of configurable options to use when creating a client with NewClient.

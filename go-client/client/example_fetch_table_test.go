@@ -8,9 +8,8 @@ import (
 	"github.com/deephaven/deephaven-core/go-client/internal/test_tools"
 )
 
-// Typically, you don't have to worry about this,
-// but if you want to access tables from previous sessions or from the web UI,
-// you will need to do a table fetch.
+// If you want to access tables from previous sessions or from the web UI,
+// you will need to use OpenTable.
 //
 // This example requires a Deephaven server running on localhost:10000, so it will not work on pkg.go.dev.
 func Example_fetchTable() {
@@ -48,16 +47,6 @@ func Example_fetchTable() {
 	cl, err = client.NewClient(ctx, "localhost", "10000")
 	if err != nil {
 		fmt.Println("error when connecting to localhost port 10000:", err.Error())
-		return
-	}
-
-	// Now we have to fetch the list of tables.
-	// We use FetchTablesOnce here rather than FetchTablesRepeating because we
-	// are going to immediately open the table afterwards and we don't care about
-	// what other changes may happen in the future.
-	err = cl.FetchTablesOnce(ctx)
-	if err != nil {
-		fmt.Println("error when fetching tables:", err.Error())
 		return
 	}
 

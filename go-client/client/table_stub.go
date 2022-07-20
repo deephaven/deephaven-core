@@ -148,10 +148,15 @@ func (ts *tableStub) fetchTable(ctx context.Context, oldTable *TableHandle) (*Ta
 // OpenTable opens a globally-scoped table with the given name on the server.
 func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, error) {
 	fieldId := fieldId{appId: "scope", fieldName: name}
-	if tbl, ok := ts.client.fieldMan.getTable(fieldId); ok {
+	tbl, err := ts.client.getTable(ctx, fieldId)
+	if err != nil {
+		return nil, err
+	}
+
+	if tbl != nil {
 		return ts.fetchTable(ctx, tbl)
 	} else {
-		return nil, errors.New("no table by the name " + name + " (maybe it isn't fetched?)")
+		return nil, errors.New("no table by the name " + name)
 	}
 }
 
