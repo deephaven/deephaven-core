@@ -11,6 +11,7 @@ from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import InputColumn
 from deephaven.dtypes import DType
+from deephaven.jcompat import to_sequence
 from deephaven.table import Table
 from deephaven.ugp import auto_locking_op
 
@@ -180,6 +181,7 @@ class DynamicTableWriter(JObjectWrapper):
              DHError
         """
         try:
-            self._j_table_writer.logRowPermissive(*values)
+            values = to_sequence(values)
+            self._j_table_writer.logRowPermissive(values)
         except Exception as e:
             raise DHError(e, "failed to write a row.") from e

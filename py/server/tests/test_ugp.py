@@ -250,6 +250,20 @@ class UgpTestCase(BaseTestCase):
         with self.subTest("Merge Sorted"):
             self.skipTest("mergeSorted does not yet support refreshing tables")
 
+    def test_auto_locking_partitioned_table_proxy(self):
+        with ugp.shared_lock():
+            test_table = time_table("00:00:01").update(["X=i", "Y=i%13", "Z=X*Y"])
+        proxy = test_table.drop_columns(["Timestamp", "Y"]).partition_by(by="X").proxy()
+        proxy2 = test_table.drop_columns(["Timestamp", "Z"]).partition_by(by="X").proxy()
+
+        with self.assertRaises(DHError) as cm:
+            joined_pt_proxy = proxy.natural_join(proxy2, on="X")
+        self.assertRegex(str(cm.exception), r"IllegalStateException")
+
+        ugp.auto_locking = True
+        joined_pt_proxy = proxy.natural_join(proxy2, on="X")
+        del joined_pt_proxy
+
 
 if __name__ == "__main__":
     unittest.main()
