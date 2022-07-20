@@ -13,6 +13,7 @@ import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyConfig.Builder;
 import io.deephaven.server.jetty.JettyServerModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
+import io.deephaven.server.python.What;
 import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServer;
 import io.deephaven.server.runner.DeephavenApiServerComponent;
@@ -78,6 +79,7 @@ public class EmbeddedServer {
         server.run();
         checkGlobals(scriptSession.get(), null);
         System.out.println("Server started on port " + server.server().getPort());
+        What.markServerReady();
     }
 
     private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {

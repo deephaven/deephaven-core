@@ -42,7 +42,7 @@ public class JpyInit {
             final JpyConfigSource fromSubprocess = JpyConfigFromSubprocess.fromSubprocess(Duration.ofSeconds(10));
             init(new JpyConfigExt(fromSubprocess.asJpyConfig()));
         }
-        markServerReady();
+//        markServerReady();
     }
 
     private static void markServerReady() {
