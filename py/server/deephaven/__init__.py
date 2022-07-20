@@ -11,7 +11,7 @@ __version__ = "0.15.0"
 
 import deephaven_internal
 try:
-    deephaven_internal.check_server()
+    deephaven_internal.check_jvm()
 finally:
     del deephaven_internal
 

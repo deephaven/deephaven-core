@@ -45,14 +45,14 @@ public class JpyInit {
             final JpyConfigSource fromSubprocess = JpyConfigFromSubprocess.fromSubprocess(Duration.ofSeconds(10));
             init(new JpyConfigExt(fromSubprocess.asJpyConfig()));
         }
-//        markServerReady();
+         markJvmReady();
     }
 
-    private static void markServerReady() {
+    private static void markJvmReady() {
         // noinspection EmptyTryBlock,unused
         try (
                 final PyModule deephavenJpyModule = PyModule.importModule("deephaven_internal");
-                final PyObject obj = deephavenJpyModule.callMethod("server_ready")) {
+                final PyObject obj = deephavenJpyModule.callMethod("jvm_ready")) {
             // empty
         }
     }

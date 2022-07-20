@@ -79,7 +79,6 @@ public class EmbeddedServer {
         server.run();
         checkGlobals(scriptSession.get(), null);
         System.out.println("Server started on port " + server.server().getPort());
-        What.markServerReady();
     }
 
     private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {

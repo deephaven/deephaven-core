@@ -10,13 +10,11 @@ import io.deephaven.engine.table.impl.util.ServerStateTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.server.plugin.PluginRegistration;
 import io.deephaven.server.appmode.ApplicationInjector;
 import io.deephaven.server.log.LogInit;
-import io.deephaven.server.python.What;
+import io.deephaven.server.plugin.PluginRegistration;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.uri.resolver.UriResolver;
 import io.deephaven.uri.resolver.UriResolvers;
@@ -111,7 +109,7 @@ public class DeephavenApiServer {
 
         log.info().append("Initializing Script Session...").endl();
 
-        ScriptSession scriptSession = scriptSessionProvider.get();
+        scriptSessionProvider.get();
         pluginRegistration.registerAll();
 
         log.info().append("Starting UGP...").endl();
@@ -136,11 +134,6 @@ public class DeephavenApiServer {
         log.info().append("Starting server...").endl();
         server.start();
         log.info().append("Server started on port ").append(server.getPort()).endl();
-
-        if (scriptSession instanceof PythonDeephavenSession) {
-            What.markServerReady();
-        }
-
         return this;
     }
 
