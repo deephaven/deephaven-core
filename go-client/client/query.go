@@ -107,7 +107,7 @@ func (err QueryError) Error() string {
 			}
 		} else {
 			details += fmt.Sprintf("no source info (ResultId is %s)\n", subError.resultId)
-			details += "file a bug report containing your query code at https://github.com/deephaven/deephaven-core/"
+			details += "file a bug report containing your query code and this error at https://github.com/deephaven/deephaven-core/"
 		}
 	}
 	return details

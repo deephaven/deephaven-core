@@ -4,7 +4,7 @@
 // To get started, use client.NewClient to connect to the server. The Client can then be used to perform operations.
 // See the provided examples in the examples/ folder or the individual code documentation for more.
 //
-// Online docs for the client can be found at /* TODO: deephaven.io link goes here once docs are hosted. */
+// Online docs for the client can be found at https://pkg.go.dev/github.com/deephaven/deephaven-core/go/client
 //
 // The Go API uses Records from the Apache Arrow package as tables.
 // The docs for the Arrow package can be found at the following link:
