@@ -2,8 +2,8 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
-""" This module implements the Table and PartitionedTable classes which are the main instruments for working with
-Deephaven refreshing and static data."""
+""" This module implements the Table, PartitionedTable and PartitionedTableProxy classes which are the main
+instruments for working with Deephaven refreshing and static data. """
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ from deephaven.filters import Filter
 from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator
 from deephaven.ugp import auto_locking_op
 
+# Table
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
@@ -29,9 +30,17 @@ _JAsOfMatchRule = jpy.get_type("io.deephaven.engine.table.Table$AsOfMatchRule")
 _JPair = jpy.get_type("io.deephaven.api.agg.Pair")
 _JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
+
+# PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
 _JPartitionedTableFactory = jpy.get_type("io.deephaven.engine.table.PartitionedTableFactory")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
+_JPartitionedTableProxy = jpy.get_type("io.deephaven.engine.table.PartitionedTable$Proxy")
+_JJoinMatch = jpy.get_type("io.deephaven.api.JoinMatch")
+_JJoinAddition = jpy.get_type("io.deephaven.api.JoinAddition")
+_JAsOfJoinRule = jpy.get_type("io.deephaven.api.AsOfJoinRule")
+_JReverseAsOfJoinRule = jpy.get_type("io.deephaven.api.ReverseAsOfJoinRule")
+_JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 
 class SortDirection(Enum):
@@ -915,7 +924,7 @@ class Table(JObjectWrapper):
             else:
                 return Table(j_table=self.j_table.groupBy())
         except Exception as e:
-            raise DHError(e, "table group operation failed.") from e
+            raise DHError(e, "table group-by operation failed.") from e
 
     @auto_locking_op
     def ungroup(self, cols: Union[str, Sequence[str]] = None) -> Table:
@@ -1317,7 +1326,7 @@ class Table(JObjectWrapper):
 
 
 class PartitionedTable(JObjectWrapper):
-    """A partitioned table is a table containing tables, known as constituent tables.  
+    """A partitioned table is a table containing tables, known as constituent tables.
     Each constituent table has the same schema.
 
     The partitioned table contains:
@@ -1325,7 +1334,7 @@ class PartitionedTable(JObjectWrapper):
     2. key columns (optional)
     3. non-key columns (optional)
 
-    Key values can be used to retrieve constituent tables from the partitioned table and 
+    Key values can be used to retrieve constituent tables from the partitioned table and
     can be used to perform operations with other like-keyed partitioned tables.
     """
 
@@ -1462,7 +1471,6 @@ class PartitionedTable(JObjectWrapper):
         else:
             return self.table.select_distinct(self.key_columns)
 
-
     @property
     def unique_keys(self) -> bool:
         """Whether the keys in the underlying table must always be unique. If keys must be unique, one can expect
@@ -1497,8 +1505,8 @@ class PartitionedTable(JObjectWrapper):
         1. has no adds
         2. has no removes
         3. has no shifts
-        4. has no modifies that include the constituent column  
-        
+        4. has no modifies that include the constituent column
+
         Note, it is possible for constituent changes to not be permitted even if constituent tables are refreshing or
         if the underlying partitioned table is refreshing. Also note that the underlying partitioned table must be
         refreshing if it contains any refreshing constituents.
@@ -1552,7 +1560,7 @@ class PartitionedTable(JObjectWrapper):
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTable:
         """The sort method creates a new partitioned table where the rows are ordered based on values in a specified
         set of columns. Sort can not use the constituent column.
-        
+
          Args:
              order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
              order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
@@ -1656,3 +1664,856 @@ class PartitionedTable(JObjectWrapper):
             return PartitionedTable(j_partitioned_table=j_pt)
         except Exception as e:
             raise DHError(e, "failed to transform the PartitionedTable with another PartitionedTable.") from e
+
+    def proxy(self, require_matching_keys: bool = True, sanity_check_joins: bool = True) -> PartitionedTableProxy:
+        """Makes a proxy that allows table operations to be applied to the constituent tables of this
+        PartitionedTable.
+
+        Args:
+            require_matching_keys (bool): whether to ensure that both partitioned tables have all the same keys
+                present when an operation uses this PartitionedTable and another PartitionedTable as inputs for a
+                :meth:`~PartitionedTable.partitioned_transform`, default is True
+            sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs 
+            in exactly one constituent table of the underlying partitioned table. If the other table argument is also a 
+            PartitionedTableProxy, its constituents will also be subjected to this constraint. 
+        """
+        return PartitionedTableProxy(
+            j_pt_proxy=self.j_partitioned_table.proxy(require_matching_keys, sanity_check_joins))
+
+
+class PartitionedTableProxy(JObjectWrapper):
+    """A PartitionedTableProxy is a table operation proxy for the underlying partitioned table. It provides methods
+    that apply table operations to the constituent tables of the underlying partitioned table, produce a new
+    partitioned table from the resulting constituent tables, and return a proxy of it.
+
+    Attributes:
+        target (PartitionedTable): the underlying partitioned table of the proxy
+        require_matching_keys (bool): whether to ensure that both partitioned tables have all the same keys
+            present when an operation uses this PartitionedTable and another PartitionedTable as inputs for a
+            :meth:`~PartitionedTable.partitioned_transform`, default is True
+        sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs
+            in exactly one constituent table of the underlying partitioned table. If the other table argument is also a
+            PartitionedTableProxy, its constituents will also be subjected to this constraint.
+    """
+    j_object_type = _JPartitionedTableProxy
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_pt_proxy
+
+    @property
+    def is_refreshing(self) -> bool:
+        """Whether this proxy represents a refreshing partitioned table."""
+        return self.target.is_refreshing
+
+    def __init__(self, j_pt_proxy):
+        self.j_pt_proxy = jpy.cast(j_pt_proxy, _JPartitionedTableProxy)
+        self.require_matching_keys = self.j_pt_proxy.requiresMatchingKeys()
+        self.sanity_check_joins = self.j_pt_proxy.sanityChecksJoins()
+        self.target = PartitionedTable(j_partitioned_table=self.j_pt_proxy.target())
+
+    def head(self, num_rows: int) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.head` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            num_rows (int): the number of rows at the head of the constituent tables
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.head(num_rows))
+        except Exception as e:
+            raise DHError(e, "head operation on the PartitionedTableProxy failed.") from e
+
+    def tail(self, num_rows: int) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.tail` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            num_rows (int): the number of rows at the end of the constituent tables
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.tail(num_rows))
+        except Exception as e:
+            raise DHError(e, "tail operation on the PartitionedTableProxy failed.") from e
+
+    def reverse(self) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.reverse` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.reverse())
+        except Exception as e:
+            raise DHError(e, "reverse operation on the PartitionedTableProxy failed.") from e
+
+    @auto_locking_op
+    def snapshot(self, source_table: Union[Table, PartitionedTableProxy], do_init: bool = False,
+                 cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.snapshot` table operation to all constituent tables of the underlying
+        partitioned table with the provided source table or PartitionedTableProxy, and produces a new
+        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
+
+        In the case of source table being another PartitionedTableProxy, the :meth:`~Table.snapshot` table operation
+        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
+
+        Note, the constituent tables are often time tables that add new rows at a regular, user-defined interval.
+
+        Args:
+            source_table (Union[Table, PartitionedTableProxy]): the table or PartitionedTableProxy to be snapshot
+            do_init (bool): whether to snapshot when this method is initially called, default is False
+            cols (Union[str, List[str]]): names of the columns of the constituent table to be included in the snapshot,
+                default is None, meaning all the columns
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            table_op = jpy.cast(source_table.j_object, _JTableOperations)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot(table_op, do_init, *cols))
+        except Exception as e:
+            raise DHError(e, "snapshot operation on the PartitionedTableProxy failed.") from e
+
+    def sort(self, order_by: Union[str, Sequence[str]],
+             order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.sort` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
+            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
+                each sort column, default is None, meaning ascending order for all the sort columns.
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            order_by = to_sequence(order_by)
+            if not order:
+                order = (SortDirection.ASCENDING,) * len(order_by)
+            order = to_sequence(order)
+            if len(order_by) != len(order):
+                raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
+
+            sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
+            j_sc_list = j_array_list(sort_columns)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sort(j_sc_list))
+        except Exception as e:
+            raise DHError(e, "sort operation on the PartitionedTableProxy failed.") from e
+
+    def sort_descending(self, order_by: Union[str, Sequence[str]]) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.sort_descending` table operation to all constituent tables of the underlying
+        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
+        underlying partitioned table.
+
+        Args:
+            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            order_by = to_sequence(order_by)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sortDescending(*order_by))
+        except Exception as e:
+            raise DHError(e, "sort_descending operation on the PartitionedTableProxy failed.") from e
+
+    def where(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.where` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+                expression(s) or Filter object(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            filters = to_sequence(filters)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(*filters))
+        except Exception as e:
+            raise DHError(e, "where operation on the PartitionedTableProxy failed.") from e
+
+    @auto_locking_op
+    def where_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.where_in` table operation to all constituent tables of the underlying
+        partitioned table with the provided filter table, and produces a new PartitionedTableProxy with the result
+        tables as the constituents of its underlying partitioned table.
+
+        Args:
+            filter_table (Table): the table containing the set of values to filter on
+            cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.whereIn(filter_table.j_table, *cols))
+        except Exception as e:
+            raise DHError(e, "where_in operation on the PartitionedTableProxy failed.") from e
+
+    @auto_locking_op
+    def where_not_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.where_not_in` table operation to all constituent tables of the underlying
+        partitioned table with the provided filter table, and produces a new PartitionedTableProxy with the result
+        tables as the constituents of its underlying partitioned table.
+
+        Args:
+            filter_table (Table): the table containing the set of values to filter on
+            cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.whereNotIn(filter_table.j_table, *cols))
+        except Exception as e:
+            raise DHError(e, "where_not_in operation on the PartitionedTableProxy failed.") from e
+
+    def view(self, formulas: Union[str, Sequence[str]]) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.view` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            formulas (Union[str, Sequence[str]]): the column formula(s)
+
+        Returns:
+            A new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = to_sequence(formulas)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.view(*formulas))
+        except Exception as e:
+            raise DHError(e, "view operation on the PartitionedTableProxy failed.") from e
+
+    def update_view(self, formulas: Union[str, Sequence[str]]) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.update_view` table operation to all constituent tables of the underlying
+        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
+        underlying partitioned table.
+
+        Args:
+            formulas (Union[str, Sequence[str]]): the column formula(s)
+
+        Returns:
+            A new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = to_sequence(formulas)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateView(*formulas))
+        except Exception as e:
+            raise DHError(e, "update_view operation on the PartitionedTableProxy failed.") from e
+
+    @auto_locking_op
+    def update(self, formulas: Union[str, Sequence[str]]) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.update` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            formulas (Union[str, Sequence[str]]): the column formula(s)
+
+        Returns:
+            A new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = to_sequence(formulas)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(*formulas))
+        except Exception as e:
+            raise DHError(e, "update operation on the PartitionedTableProxy failed.") from e
+
+    @auto_locking_op
+    def select(self, formulas: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.select` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            formulas (Union[str, Sequence[str]], optional): the column formula(s), default is None
+
+        Returns:
+            A new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = to_sequence(formulas)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(*formulas))
+        except Exception as e:
+            raise DHError(e, "select operation on the PartitionedTableProxy failed.") from e
+
+    def select_distinct(self, formulas: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.select_distinct` table operation to all constituent tables of the underlying
+        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
+        underlying partitioned table.
+
+        Args:
+            formulas (Union[str, Sequence[str]], optional): the column formula(s), default is None
+
+        Returns:
+            A new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = to_sequence(formulas)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.selectDistinct(*formulas))
+        except Exception as e:
+            raise DHError(e, "select_distinct operation on the PartitionedTableProxy failed.") from e
+
+    @auto_locking_op
+    def natural_join(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
+                     joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.natural_join` table operation to all constituent tables of the underlying
+        partitioned table with the provided right table or PartitionedTableProxy, and produces a new
+        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.natural_join` table
+        operation is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
+
+        Args:
+            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+                i.e. "col_a = col_b" for different column names
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            on = to_sequence(on)
+            joins = to_sequence(joins)
+            table_op = jpy.cast(table.j_object, _JTableOperations)
+            if joins:
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, ",".join(on), ",".join(joins)))
+            else:
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, ",".join(on)))
+        except Exception as e:
+            raise DHError(e, "natural_join operation on the PartitionedTableProxy failed.") from e
+
+    @auto_locking_op
+    def exact_join(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
+                   joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.exact_join` table operation to all constituent tables of the underlying
+        partitioned table with the provided right table or PartitionedTableProxy,and produces a new
+        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.exact_join` table
+        operation is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
+
+        Args:
+            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+                i.e. "col_a = col_b" for different column names
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            on = to_sequence(on)
+            joins = to_sequence(joins)
+            table_op = jpy.cast(table.j_object, _JTableOperations)
+            if joins:
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, ",".join(on), ",".join(joins)))
+            else:
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, ",".join(on)))
+        except Exception as e:
+            raise DHError(e, "exact_join operation on the PartitionedTableProxy failed.") from e
+
+    @auto_locking_op
+    def join(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]] = None,
+             joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.join` table operation to all constituent tables of the underlying partitioned
+        table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
+        the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.join` table operation
+        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
+
+        Args:
+            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+                i.e. "col_a = col_b" for different column names; default is None
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            on = to_sequence(on)
+            joins = to_sequence(joins)
+            table_op = jpy.cast(table.j_object, _JTableOperations)
+            if joins:
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.join(table_op, ",".join(on), ",".join(joins)))
+            else:
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.join(table_op, ",".join(on)))
+        except Exception as e:
+            raise DHError(e, "join operation on the PartitionedTableProxy failed.") from e
+
+    @auto_locking_op
+    def aj(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
+           joins: Union[str, Sequence[str]] = None,
+           match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.aj` table operation to all constituent tables of the underlying partitioned
+        table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
+        the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.aj` table operation
+        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
+
+        Args:
+            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+                i.e. "col_a = col_b" for different column names
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
+            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
+                default is AsOfMatchRule.LESS_THAN_EQUAL. The other valid value is AsOfMatchRule.LESS_THAN.
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            on = to_sequence(on)
+            joins = to_sequence(joins)
+            if on:
+                on = [_JJoinMatch.parse(p) for p in on]
+            if joins:
+                joins = [_JJoinAddition.parse(p) for p in joins]
+
+            on = j_array_list(on)
+            joins = j_array_list(joins)
+            table_op = jpy.cast(table.j_object, _JTableOperations)
+            if match_rule is AsOfMatchRule.LESS_THAN_EQUAL:
+                match_rule = _JAsOfJoinRule.LESS_THAN_EQUAL
+            elif match_rule is AsOfMatchRule.LESS_THAN:
+                match_rule = _JAsOfJoinRule.LESS_THAN
+            else:
+                raise ValueError("invalid match_rule value")
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aj(table_op, on, joins, match_rule))
+        except Exception as e:
+            raise DHError(e, "as-of join operation on the PartitionedTableProxy failed.") from e
+
+    @auto_locking_op
+    def raj(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
+            joins: Union[str, Sequence[str]] = None,
+            match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.raj` table operation to all constituent tables of the underlying partitioned
+        table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
+        the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the right table being another PartitionedTableProxy, the :meth:`~Table.raj` table operation
+        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
+
+        Args:
+            table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+                i.e. "col_a = col_b" for different column names
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
+            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
+                default is AsOfMatchRule.GREATER_THAN_EQUAL. The other valid value is AsOfMatchRule.GREATER_THAN.
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            on = to_sequence(on)
+            joins = to_sequence(joins)
+            if on:
+                on = [_JJoinMatch.parse(p) for p in on]
+            if joins:
+                joins = [_JJoinAddition.parse(p) for p in joins]
+
+            on = j_array_list(on)
+            joins = j_array_list(joins)
+            table_op = jpy.cast(table.j_object, _JTableOperations)
+            if match_rule is AsOfMatchRule.GREATER_THAN_EQUAL:
+                match_rule = _JReverseAsOfJoinRule.GREATER_THAN_EQUAL
+            elif match_rule is AsOfMatchRule.GREATER_THAN:
+                match_rule = _JReverseAsOfJoinRule.GREATER_THAN
+            else:
+                raise ValueError("invalid match_rule value")
+
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.raj(table_op, on, joins, match_rule))
+        except Exception as e:
+            raise DHError(e, "reverse as-of join operation on the PartitionedTableProxy failed.") from e
+
+    def group_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.group_by` table operation to all constituent tables of the underlying
+        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
+        underlying partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.groupBy(*by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.groupBy())
+        except Exception as e:
+            raise DHError(e, "group-by operation on the PartitionedTableProxy failed.") from e
+
+    def agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]],
+               by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.agg_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
+            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            aggs = to_sequence(aggs)
+            by = to_sequence(by)
+            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
+        except Exception as e:
+            raise DHError(e, "agg_by operation on the PartitionedTableProxy failed.") from e
+
+    def agg_all_by(self, agg: Aggregation, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.agg_all_by` table operation to all constituent tables of the underlying
+        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
+        underlying partitioned table.
+
+        Note, because agg_all_by applies the aggregation to all the columns of the table, it will ignore
+        any column names specified for the aggregation.
+
+        Args:
+            agg (Aggregation): the aggregation
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggAllBy(agg.j_agg_spec, *by))
+        except Exception as e:
+            raise DHError(e, "agg_all_by operation on the PartitionedTableProxy failed.") from e
+
+    def count_by(self, col: str, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.count_by` table operation to all constituent tables of the underlying partitioned
+        table with the provided source table, and produces a new PartitionedTableProxy with the result tables as the
+        constituents of its underlying partitioned table.
+
+        Args:
+            col (str): the name of the column to store the counts
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.countBy(col, *by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.countBy(col))
+        except Exception as e:
+            raise DHError(e, "count_by operation on the PartitionedTableProxy failed.") from e
+
+    def first_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.first_by` table operation to all constituent tables of the underlying
+        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
+        underlying partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.firstBy(*by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.firstBy())
+        except Exception as e:
+            raise DHError(e, "first_by operation on the PartitionedTableProxy failed.") from e
+
+    def last_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.last_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.lastBy(*by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.lastBy())
+        except Exception as e:
+            raise DHError(e, "last_by operation on the PartitionedTableProxy failed.") from e
+
+    def min_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.min_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.minBy(*by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.minBy())
+        except Exception as e:
+            raise DHError(e, "min_by operation on the PartitionedTableProxy failed.") from e
+
+    def max_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.max_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.maxBy(*by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.maxBy())
+        except Exception as e:
+            raise DHError(e, "max_by operation on the PartitionedTableProxy failed.") from e
+
+    def sum_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.sum_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sumBy(*by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sumBy())
+        except Exception as e:
+            raise DHError(e, "sum_by operation on the PartitionedTableProxy failed.") from e
+
+    def avg_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.avg_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy(*by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy())
+        except Exception as e:
+            raise DHError(e, "avg_by operation on the PartitionedTableProxy failed.") from e
+
+    def median_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.median_by` table operation to all constituent tables of the underlying
+        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
+        underlying partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.medianBy(*by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.medianBy())
+        except Exception as e:
+            raise DHError(e, "median_by operation on the PartitionedTableProxy failed.") from e
+
+    def std_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.std_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.stdBy(*by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.stdBy())
+        except Exception as e:
+            raise DHError(e, "std_by operation on the PartitionedTableProxy failed.") from e
+
+    def var_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.var_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.varBy(*by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.varBy())
+        except Exception as e:
+            raise DHError(e, "var_by operation on the PartitionedTableProxy failed.") from e

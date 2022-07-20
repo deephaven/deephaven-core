@@ -108,7 +108,7 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(cm.exception.root_cause)
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
-    def test_usv(self):
+    def test_USV(self):
         ops = [
             Table.update,
             Table.lazy_update,
