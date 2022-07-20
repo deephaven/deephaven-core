@@ -45,7 +45,15 @@ public class JpyInit {
             final JpyConfigSource fromSubprocess = JpyConfigFromSubprocess.fromSubprocess(Duration.ofSeconds(10));
             init(new JpyConfigExt(fromSubprocess.asJpyConfig()));
         }
-         markJvmReady();
+    }
+
+    private static void init(JpyConfigExt jpyConfig) {
+        log.info().append("Loaded jpy config ").append(jpyConfig).endl();
+        log.info().append("Starting Python interpreter").endl();
+        jpyConfig.initPython();
+        jpyConfig.startPython();
+        log.info().append("Started Python interpreter").endl();
+        markJvmReady();
     }
 
     private static void markJvmReady() {
@@ -55,13 +63,5 @@ public class JpyInit {
                 final PyObject obj = deephavenJpyModule.callMethod("jvm_ready")) {
             // empty
         }
-    }
-
-    private static void init(JpyConfigExt jpyConfig) {
-        log.info().append("Loaded jpy config ").append(jpyConfig).endl();
-        log.info().append("Starting Python interpreter").endl();
-        jpyConfig.initPython();
-        jpyConfig.startPython();
-        log.info().append("Started Python interpreter").endl();
     }
 }

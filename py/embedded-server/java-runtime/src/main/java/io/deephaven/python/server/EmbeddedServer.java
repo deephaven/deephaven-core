@@ -13,7 +13,6 @@ import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyConfig.Builder;
 import io.deephaven.server.jetty.JettyServerModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
-import io.deephaven.server.python.What;
 import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServer;
 import io.deephaven.server.runner.DeephavenApiServerComponent;
