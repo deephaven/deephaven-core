@@ -71,8 +71,6 @@ class Session:
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
         self._session_type = session_type
-        self._list_fields = None
-        self._field_update_thread = None
 
         self._connect()
 
