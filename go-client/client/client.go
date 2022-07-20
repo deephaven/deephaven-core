@@ -41,6 +41,8 @@ type Client struct {
 
 	grpcChannel *grpc.ClientConn
 
+	allowLeakedTables bool // When true, this disables TableHandle finalizers.
+
 	sessionStub
 	consoleStub
 	flightStub
@@ -54,19 +56,21 @@ type Client struct {
 
 // NewClient starts a connection to a Deephaven server.
 //
-// scriptLanguage can be either "python" or "groovy", and must match the language used on the server. Python is the default.
-//
 // The client should be closed using Close() after it is done being used.
 //
 // Keepalive messages are sent automatically by the client to the server at a regular interval (~30 seconds)
 // so that the connection remains open. The provided context is saved and used to send keepalive messages.
-func NewClient(ctx context.Context, host string, port string, scriptLanguage string) (*Client, error) {
+func NewClient(ctx context.Context, host string, port string, options ...ClientOption) (*Client, error) {
 	grpcChannel, err := grpc.Dial(host+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
 
+	opts := newClientOptions(options...)
+
 	client := &Client{grpcChannel: grpcChannel, isOpen: true}
+
+	client.allowLeakedTables = opts.allowLeakedTables
 
 	client.ticketFact = newTicketFactory()
 
@@ -76,7 +80,7 @@ func NewClient(ctx context.Context, host string, port string, scriptLanguage str
 		return nil, err
 	}
 
-	client.consoleStub, err = newConsoleStub(ctx, client, scriptLanguage)
+	client.consoleStub, err = newConsoleStub(ctx, client, opts.scriptLanguage)
 	if err != nil {
 		client.Close()
 		return nil, err
@@ -221,8 +225,14 @@ func (client *Client) withToken(ctx context.Context) (context.Context, error) {
 }
 
 // RunScript executes a script on the deephaven server.
-// The script language depends on the scriptLanguage argument passed when creating the client.
+//
+// The script language depends on the argument passed to WithConsole when creating the client.
+// If WithConsole was not provided when creating the client, this will return ErrNoConsole.
 func (client *Client) RunScript(ctx context.Context, script string) error {
+	if client.consoleStub.consoleId == nil {
+		return ErrNoConsole
+	}
+
 	ctx, err := client.consoleStub.client.withToken(ctx)
 	if err != nil {
 		return err
@@ -242,4 +252,57 @@ func (client *Client) RunScript(ctx context.Context, script string) error {
 	}
 
 	return client.fieldMan.ExecAndUpdate(f)
+}
+
+// clientOptions holds a set of configurable options to use when creating a client with NewClient.
+type clientOptions struct {
+	scriptLanguage    string // The language to use for server-side scripts. Empty string means no scripts can be run.
+	allowLeakedTables bool   // When true, disables TableHandle finalizers.
+}
+
+func newClientOptions(opts ...ClientOption) clientOptions {
+	options := clientOptions{}
+	for _, opt := range opts {
+		opt.apply(&options)
+	}
+	return options
+}
+
+// A ClientOption configures some aspect of a client connection when passed to NewClient.
+// See the WithXYZ methods for possible client options.
+type ClientOption interface {
+	// apply sets the relevant option in the clientOptions struct.
+	apply(opts *clientOptions)
+}
+
+// A funcDialOption wraps a function that will apply a client option.
+// Inspiration from the grpc-go package.
+type funcDialOption struct {
+	f func(opts *clientOptions)
+}
+
+func (opt funcDialOption) apply(opts *clientOptions) {
+	opt.f(opts)
+}
+
+// WithConsole allows the client to run scripts on the server using the RunScript method and bind tables to variables using BindToVariable.
+//
+// The script language can be either "python" or "groovy", and must match the language used on the server.
+func WithConsole(scriptLanguage string) ClientOption {
+	return funcDialOption{func(opts *clientOptions) {
+		opts.scriptLanguage = scriptLanguage
+	}}
+}
+
+// WithTableLeaksAllowed disables the automatic TableHandle leak check.
+//
+// Normally, a warning is printed whenever a TableHandle is forgotten without calling Release on it,
+// and a GC finalizer automatically frees the table.
+// However, TableHandles are automatically released by the server whenever a client connection closes.
+// So, it can be okay for short-lived clients that don't create large tables to forget their TableHandles
+// and rely on them being freed when the client closes.
+func WithTableLeaksAllowed() ClientOption {
+	return funcDialOption{func(opts *clientOptions) {
+		opts.allowLeakedTables = true
+	}}
 }

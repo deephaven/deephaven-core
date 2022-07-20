@@ -19,10 +19,7 @@ func Example_inputTable() {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
-	// When starting a client connection, the client script language
-	// must match the language the server was started with,
-	// even if the client does not execute any scripts.
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	if err != nil {
 		fmt.Println("error when connecting to server:", err.Error())
 		return

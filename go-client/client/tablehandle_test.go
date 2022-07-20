@@ -18,7 +18,7 @@ type unaryTableOp func(context.Context, *client.TableHandle) (*client.TableHandl
 func applyTableOp(input arrow.Record, t *testing.T, op unaryTableOp) arrow.Record {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -200,7 +200,7 @@ func TestMergeNull(t *testing.T) {
 func TestExactJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -248,7 +248,7 @@ func TestExactJoin(t *testing.T) {
 func TestNaturalJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -296,7 +296,7 @@ func TestNaturalJoin(t *testing.T) {
 func TestCrossJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -353,7 +353,7 @@ func TestCrossJoin(t *testing.T) {
 func TestAsOfJoin(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -524,7 +524,7 @@ func TestDedicatedAgg(t *testing.T) {
 func TestZeroTable(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -548,7 +548,7 @@ func TestZeroTable(t *testing.T) {
 func TestReleasedTable(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -577,11 +577,11 @@ func TestReleasedTable(t *testing.T) {
 func TestDifferentClients(t *testing.T) {
 	ctx := context.Background()
 
-	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	test_tools.CheckError(t, "NewClient", err)
 	defer client1.Close()
 
-	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	test_tools.CheckError(t, "NewClient", err)
 	defer client2.Close()
 

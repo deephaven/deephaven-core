@@ -20,7 +20,7 @@ func Example_runScript() {
 
 	// Let's start a client connection using python as the script language ("groovy" is the other option).
 	// Note that the client language must match the language the server was started with.
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), client.WithConsole("python"))
 	if err != nil {
 		fmt.Println("error when connecting to server:", err.Error())
 		return

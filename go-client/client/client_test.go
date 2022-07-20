@@ -12,7 +12,7 @@ import (
 func TestConnectError(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := client.NewClient(ctx, "foobar", "1234", "python")
+	_, err := client.NewClient(ctx, "foobar", "1234")
 	if err == nil {
 		t.Fatalf("client did not fail to connect")
 	}
@@ -21,7 +21,7 @@ func TestConnectError(t *testing.T) {
 func TestClosedClient(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -40,7 +40,7 @@ func TestClosedClient(t *testing.T) {
 func TestMismatchedScript(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "groovy")
+	_, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), client.WithConsole("groovy"))
 	if err == nil {
 		t.Fatalf("client did not fail to connect")
 	}
@@ -52,7 +52,7 @@ func TestEmptyTable(t *testing.T) {
 
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -83,7 +83,7 @@ func TestEmptyTable(t *testing.T) {
 func TestTimeTable(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -110,7 +110,7 @@ func TestTableUpload(t *testing.T) {
 	defer r.Release()
 
 	ctx := context.Background()
-	s, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	s, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 		return
@@ -169,7 +169,7 @@ func contains(slice []string, elem string) bool {
 func TestFieldSyncOnce(t *testing.T) {
 	ctx := context.Background()
 
-	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), client.WithConsole("python"))
 	test_tools.CheckError(t, "NewClient", err)
 	defer client1.Close()
 
@@ -179,7 +179,7 @@ gotesttable = None
 `)
 	test_tools.CheckError(t, "RunScript", err)
 
-	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	test_tools.CheckError(t, "NewClient", err)
 	defer client2.Close()
 
@@ -222,7 +222,7 @@ gotesttable = empty_table(10)
 func TestFieldSyncRepeatingCanceled(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	client, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	test_tools.CheckError(t, "NewClient", err)
 
 	errChan1 := client.FetchTablesRepeating(ctx)
@@ -271,7 +271,7 @@ func waitForTable(cl *client.Client, names []string, timeout time.Duration) bool
 func TestFieldSyncRepeating(t *testing.T) {
 	ctx := context.Background()
 
-	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), client.WithConsole("python"))
 	test_tools.CheckError(t, "NewClient", err)
 	defer client1.Close()
 
@@ -281,7 +281,7 @@ gotesttable1 = None
 `)
 	test_tools.CheckError(t, "RunScript", err)
 
-	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "python")
+	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), client.WithConsole("python"))
 	test_tools.CheckError(t, "NewClient", err)
 	defer client2.Close()
 
