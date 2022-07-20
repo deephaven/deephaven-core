@@ -57,7 +57,7 @@ func Example_tableOps() {
 	//        metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "float", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:isRollupColumn": "false", "deephaven:isDateFormat": "false"]
 	//     - Volume: type=int32, nullable
 	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "int", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:isRollupColumn": "false", "deephaven:isDateFormat": "false"]
-	//   metadata: ["deephaven:attribute.DoNotMakeRemote": "true", "deephaven:attribute.AddOnly": "true"]
+	//   metadata: ["deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute.AddOnly": "true"]
 	//   rows: 5
 	//   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
 	//   col[1][Close]: [53.8 38.7 453 26.7 544.9]

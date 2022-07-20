@@ -93,7 +93,7 @@ func Example_importTable() {
 	//        metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "float", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:isRollupColumn": "false", "deephaven:isDateFormat": "false"]
 	//     - Volume: type=int32, nullable
 	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "int", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:isRollupColumn": "false", "deephaven:isDateFormat": "false"]
-	//   metadata: ["deephaven:attribute.SortedColumns": "Close=Ascending", "deephaven:attribute.DoNotMakeRemote": "true", "deephaven:attribute.AddOnly": "true"]
+	//   metadata: ["deephaven:attribute.SortedColumns": "Close=Ascending", "deephaven:attribute_type.SortedColumns": "java.lang.String", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute.AddOnly": "true"]
 	//   rows: 5
 	//   col[0][Ticker]: ["IBM" "XRX" "XYZZY" "GME" "ZNGA"]
 	//   col[1][Close]: [38.7 53.8 88.5 453 544.9]
