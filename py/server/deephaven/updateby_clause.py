@@ -66,7 +66,7 @@ class EmaControl(JObjectWrapper):
 
         Args:
             on_null (BadDataBehavior): the behavior for when null values are encountered, default is SKIP
-            on_nan (BadDataBehavior): the behavior for when Nan values are encountered, default is SKIP
+            on_nan (BadDataBehavior): the behavior for when NaN values are encountered, default is SKIP
             on_null_time (BadDataBehavior): the behavior for when null timestamps are encountered, default is SKIP
             on_negative_deltatime (BadDataBehavior): the behavior for when negative sample-to-sample time differences are
                 encountered, default is THROW
@@ -109,13 +109,13 @@ def ema_tick_decay(time_scale_ticks: int, pairs: Union[str, List[str]],
     the decay unit.
 
     The formula used is
-        a = e^(-1 / timeScaleTicks)
+        a = e^(-1 / time_scale_ticks)
         ema_next = a * ema_last + (1 - a) * value
 
     Args:
         time_scale_ticks (int): the decay rate (tau) in ticks
         pairs (Union[str, List[str]]): the input/output column name pairs
-        ema_control (EmaControl): defines how special cases should behave,  when None, the default EmaControl settings
+        ema_control (EmaControl): defines how special cases should behave, when None, the default EmaControl settings
             as specified in :meth:`~EmaControl.__init__` will be used
 
     Returns:
@@ -172,7 +172,7 @@ def cum_sum(pairs: Union[str, List[str]]) -> UpdateByClause:
     """Creates a CumSum (cumulative sum) update-by clause for the supplied column name pairs.
 
     Args:
-        pairs (Union[str, List[str]]): the input/output column name pairs; when empty, update_by perform the
+        pairs (Union[str, List[str]]): the input/output column name pairs; when empty, update_by performs the
             cumulative sum operation on all the applicable columns.
 
     Returns:
@@ -189,7 +189,7 @@ def cum_sum(pairs: Union[str, List[str]]) -> UpdateByClause:
 
 
 def cum_prod(pairs: Union[str, List[str]]) -> UpdateByClause:
-    """Creates a CumProd (cumulative produce) update-by clause for the supplied column name pairs.
+    """Creates a CumProd (cumulative product) update-by clause for the supplied column name pairs.
 
     Args:
         pairs (Union[str, List[str]]): the input/output column name pairs; when empty, update_by perform the
@@ -205,7 +205,7 @@ def cum_prod(pairs: Union[str, List[str]]) -> UpdateByClause:
         pairs = to_sequence(pairs)
         return UpdateByClause(j_updateby_clause=_JUpdateByClause.CumProd(pairs))
     except Exception as e:
-        raise DHError(e, "failed to create a cumulative produce UpdateByClause.") from e
+        raise DHError(e, "failed to create a cumulative product UpdateByClause.") from e
 
 
 def cum_min(pairs: Union[str, List[str]]) -> UpdateByClause:
@@ -229,7 +229,7 @@ def cum_min(pairs: Union[str, List[str]]) -> UpdateByClause:
 
 
 def cum_max(pairs: Union[str, List[str]]) -> UpdateByClause:
-    """Creates a CumMin (cumulative maximum) update-by clause for the supplied column name pairs.
+    """Creates a CumMax (cumulative maximum) update-by clause for the supplied column name pairs.
 
     Args:
         pairs (Union[str, List[str]]): the input/output column name pairs; when empty, update_by perform the
@@ -249,7 +249,7 @@ def cum_max(pairs: Union[str, List[str]]) -> UpdateByClause:
 
 
 def forward_fill(pairs: Union[str, List[str]]) -> UpdateByClause:
-    """Creates a Forward Fill update-by clause for the supplied column name pairs. Invalid values in the columns are
+    """Creates a forward fill update-by clause for the supplied column name pairs. Invalid values in the columns are
     replaced by the last known valid values. This operation is forward only.
 
     Args:
