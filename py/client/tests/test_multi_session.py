@@ -5,7 +5,6 @@
 
 
 from pydeephaven import Session
-from pydeephaven.session import SYNC_ONCE, SYNC_REPEATED
 from tests.testbase import BaseTestCase
 import timeout_decorator
 
@@ -19,12 +18,11 @@ class MultiSessionTestCase(BaseTestCase):
             t = session1.empty_table(10)
             session1.bind_table('t', t)
 
-
-        with Session(sync_fields=SYNC_ONCE) as session2:
+        with Session() as session2:
             self.assertIn('t', session2.tables)
 
     def test_shared_tables(self):
-        session1 = Session(sync_fields=SYNC_REPEATED)
+        session1 = Session()
         session1.run_script('t = None')
 
         session2 = Session()
