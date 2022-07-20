@@ -22,6 +22,10 @@ var ErrInvalidTableHandle = errors.New("tried to use a nil, zero-value, or relea
 // on handles that come from different Client structs.
 var ErrDifferentClients = errors.New("tried to use tables from different clients")
 
+// ErrEmptyMerge is returned by merge operations when all of the table arguments are nil
+// (or when no table arguments are provided at all).
+var ErrEmptyMerge = errors.New("no non-nil tables were provided to merge")
+
 // A TableHandle is a reference to a table stored on the deephaven server.
 //
 // It should eventually be released using Release() once it is no longer needed on the client.
@@ -607,7 +611,7 @@ func (th *TableHandle) AggBy(ctx context.Context, agg *AggBuilder, by ...string)
 // If sortBy is provided, the resulting table will be sorted based on that column.
 //
 // Any nil TableHandle pointers passed in are ignored.
-// At least one non-nil *TableHandle must be provided.
+// At least one non-nil *TableHandle must be provided, otherwise an ErrEmptyMerge will be returned.
 func Merge(ctx context.Context, sortBy string, tables ...*TableHandle) (*TableHandle, error) {
 	// First, remove all the nil TableHandles.
 	// No lock needed here since we're not using any TableHandle methods.
@@ -618,8 +622,8 @@ func Merge(ctx context.Context, sortBy string, tables ...*TableHandle) (*TableHa
 		}
 	}
 
-	if len(usedTables) < 1 {
-		return nil, errors.New("must provide at least one non-nil table to merge")
+	if len(usedTables) == 0 {
+		return nil, ErrEmptyMerge
 	}
 
 	for _, table := range usedTables {

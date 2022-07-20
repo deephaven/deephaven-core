@@ -197,6 +197,16 @@ func TestMergeNull(t *testing.T) {
 	}
 }
 
+func TestEmptyMerge(t *testing.T) {
+	ctx := context.Background()
+
+	_, err := client.Merge(ctx, "", nil)
+	if !errors.Is(err, client.ErrEmptyMerge) {
+		t.Error("empty Merge returned wrong or missing error", err)
+		return
+	}
+}
+
 func TestExactJoin(t *testing.T) {
 	ctx := context.Background()
 

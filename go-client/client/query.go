@@ -223,9 +223,7 @@ func (b *batchBuilder) unlockAll() {
 }
 
 // addGrpcOps adds any table operations needed by the node to the list, and returns a handle to the node's output table.
-// allowNilTables is used only for mergeOp, and allows returning a nil table reference for a node that points to a nil table.
-// Normally, nil tables are treated as an error.
-func (b *batchBuilder) addGrpcOps(node QueryNode, allowNilTables bool) (*tablepb2.TableReference, error) {
+func (b *batchBuilder) addGrpcOps(node QueryNode) (*tablepb2.TableReference, error) {
 	var source *tablepb2.TableReference
 
 	// If the op is already in the list, we don't need to do it again.
@@ -239,18 +237,7 @@ func (b *batchBuilder) addGrpcOps(node QueryNode, allowNilTables bool) (*tablepb
 		node.builder.opLock.Lock()
 	}
 
-	skipValidCheck := allowNilTables && node.builder.table == nil
-
 	if node.index == -1 {
-		if skipValidCheck {
-			if nodes := b.needsExport(node); len(nodes) > 0 {
-				// Exporting a nil table is not allowed.
-				return nil, ErrInvalidTableHandle
-			} else {
-				return nil, nil
-			}
-		}
-
 		if _, ok := b.lockedTables[node.builder.table]; !ok {
 			if !node.builder.table.rLockIfValid() {
 				return nil, ErrInvalidTableHandle
@@ -292,11 +279,13 @@ func (b *batchBuilder) addGrpcOps(node QueryNode, allowNilTables bool) (*tablepb
 	if node.index != -1 {
 		op := node.builder.ops[node.index]
 
-		_, childNilIsOk := op.(mergeOp)
+		if _, ok := op.(mergeOp); ok && len(op.childQueries()) == 0 {
+			return nil, ErrEmptyMerge
+		}
 
 		var childQueries []*tablepb2.TableReference = nil
 		for _, child := range op.childQueries() {
-			childRef, err := b.addGrpcOps(child, childNilIsOk)
+			childRef, err := b.addGrpcOps(child)
 			if err != nil {
 				return nil, err
 			}
@@ -342,7 +331,7 @@ func getGrpcOps(client *Client, nodes []QueryNode) (grpcOps []*tablepb2.BatchTab
 	defer builder.unlockAll()
 
 	for _, node := range nodes {
-		_, err = builder.addGrpcOps(node, false)
+		_, err = builder.addGrpcOps(node)
 		if err != nil {
 			return
 		}
@@ -1482,29 +1471,20 @@ func (op mergeOp) childQueries() []QueryNode {
 
 func (op mergeOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
 	assert(len(children) == len(op.children), "wrong number of children for Merge")
+	assert(len(children) != 0, "cannot make an empty Merge into a batch operation")
 
-	var nonNilChildren []*tablepb2.TableReference
-	for _, child := range children {
-		if child != nil {
-			nonNilChildren = append(nonNilChildren, child)
-		}
-	}
-
-	req := &tablepb2.MergeTablesRequest{ResultId: resultId, SourceIds: nonNilChildren, KeyColumn: op.sortBy}
+	req := &tablepb2.MergeTablesRequest{ResultId: resultId, SourceIds: children, KeyColumn: op.sortBy}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_Merge{Merge: req}}
 }
 
 func (op mergeOp) execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error) {
 	assert(len(children) == len(op.children), "wrong number of children for Merge")
 
-	var nonNilChildren []*TableHandle
-	for _, child := range children {
-		if child != nil {
-			nonNilChildren = append(nonNilChildren, child)
-		}
+	if len(children) == 0 {
+		return nil, ErrEmptyMerge
 	}
 
-	return stub.merge(ctx, op.sortBy, nonNilChildren)
+	return stub.merge(ctx, op.sortBy, children)
 }
 
 func (op mergeOp) String() string {
@@ -1518,20 +1498,25 @@ func (op mergeOp) String() string {
 //
 // "nil Table" nodes (i.e. QueryNodes returned from calling Query() on a nil *TableHandle) are ignored.
 //
-// At least one non-nil node must be provided.
+// At least one non-nil node must be provided, otherwise an ErrEmptyMerge will be returned by ExecSerial or ExecBatch.
 func MergeQuery(sortBy string, tables ...QueryNode) QueryNode {
-	if len(tables) == 0 {
+	var nonNilTables []QueryNode
+	for _, table := range tables {
+		if table.index != -1 || table.builder.table != nil {
+			nonNilTables = append(nonNilTables, table)
+		}
+	}
+
+	if len(nonNilTables) == 0 {
 		// A merge with no tables will always error,
 		// but since we can't return an error from this method
-		// we have to let the server give us an error instead.
+		// we have to let ExecSerial or ExecBatch handle the error.
 		emptyNode := QueryNode{builder: &queryBuilder{}}
 		return emptyNode.addOp(mergeOp{children: tables, sortBy: sortBy})
 	}
 
 	// Just pick an arbitrary node to add the operation to.
-	// It's okay if this node (or any of the other nodes) come from a nil *TableHandle,
-	// because the nil check is done by execSerialOp or makeBatchOp later.
-	qb := tables[0]
+	qb := nonNilTables[0]
 
-	return qb.addOp(mergeOp{children: tables, sortBy: sortBy})
+	return qb.addOp(mergeOp{children: nonNilTables, sortBy: sortBy})
 }

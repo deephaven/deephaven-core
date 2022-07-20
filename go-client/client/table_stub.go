@@ -553,6 +553,10 @@ func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHa
 		return nil, err
 	}
 
+	if len(others) == 0 {
+		return nil, ErrEmptyMerge
+	}
+
 	ctx, err := ts.client.withToken(ctx)
 	if err != nil {
 		return nil, err

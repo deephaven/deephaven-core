@@ -243,8 +243,8 @@ func emptyMerge(t *testing.T, exec execBatchOrSerial) {
 	invalidMerge := client.MergeQuery("")
 
 	_, err = exec(c, ctx, invalidMerge)
-	if err == nil {
-		t.Error("empty merge did not return error")
+	if !errors.Is(err, client.ErrEmptyMerge) {
+		t.Error("empty merge returned wrong or missing error", err)
 	}
 }
 
