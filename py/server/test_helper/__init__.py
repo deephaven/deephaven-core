@@ -10,10 +10,10 @@ import warnings
 from glob import glob
 from typing import Dict
 
-import deephaven_internal
+from deephaven_internal import jvm
 
 def start_jvm(jvm_props: Dict[str, str] = None):
-    deephaven_internal.preload_jvm_dll()
+    jvm.preload_jvm_dll()
     import jpy
 
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
@@ -85,7 +85,7 @@ def start_jvm(jvm_props: Dict[str, str] = None):
 
         # Start up the JVM
         jpy.VerboseExceptions.enabled = True
-        deephaven_internal.init_jvm(
+        jvm.init_jvm(
             jvm_classpath=_expandWildcardsInList(jvm_classpath.split(os.path.pathsep)),
             jvm_properties=jvm_properties,
             jvm_options=jvm_options

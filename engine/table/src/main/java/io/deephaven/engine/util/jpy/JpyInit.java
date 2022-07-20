@@ -59,8 +59,8 @@ public class JpyInit {
     private static void markJvmReady() {
         // noinspection EmptyTryBlock,unused
         try (
-                final PyModule deephavenJpyModule = PyModule.importModule("deephaven_internal");
-                final PyObject obj = deephavenJpyModule.callMethod("jvm_ready")) {
+                final PyModule deephavenJpyModule = PyModule.importModule("deephaven_internal.jvm");
+                final PyObject obj = deephavenJpyModule.callMethod("ready")) {
             // empty
         }
     }

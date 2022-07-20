@@ -9,11 +9,11 @@ unlocks the unique power of Deephaven to the Python community.
 
 __version__ = "0.15.0"
 
-import deephaven_internal
+from deephaven_internal import jvm
 try:
-    deephaven_internal.check_jvm()
+    jvm.check_ready()
 finally:
-    del deephaven_internal
+    del jvm
 
 from .dherror import DHError
 from .table import SortDirection, AsOfMatchRule

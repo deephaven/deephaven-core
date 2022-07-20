@@ -78,9 +78,9 @@ autodoc_typehints = 'none'
 from glob import glob
 import os
 
-import deephaven_internal
+from deephaven_internal import jvm
 
-deephaven_internal.init_jvm(
+jvm.init_jvm(
     jvm_classpath=glob(os.environ.get('DEEPHAVEN_CLASSPATH')),
     jvm_properties={
         'Configuration.rootFile': os.environ.get('DEEPHAVEN_PROPFILE')
