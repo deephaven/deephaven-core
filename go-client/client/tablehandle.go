@@ -58,39 +58,43 @@ func newBorrowedTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *ar
 
 // newTableHandle returns a new table handle given information about the table,
 // typically from a gRPC ExportedTableCreationResponse.
-// This also attaches a finalizer to the TableHandle that will warn if the handle is leaked and free the table automatically.
+// If WithTableLeaksAllowed was not provided when creating a client,
+// this will also attaches a finalizer to the TableHandle that will warn if the handle is leaked and free the table automatically.
 func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Schema, size int64, isStatic bool) *TableHandle {
 	handle := newBorrowedTableHandle(client, ticket, schema, size, isStatic)
 
-	stackTrace := string(debug.Stack())
+	if !client.allowLeakedTables {
+		stackTrace := string(debug.Stack())
 
-	runtime.SetFinalizer(handle, func(th *TableHandle) {
-		// Start up a new goroutine, since finalizers block the GC
-		// and this needs to lock a mutex and perform a network request.
-		go func() {
-			th.lock.Lock()
-			defer th.lock.Unlock()
+		runtime.SetFinalizer(handle, func(th *TableHandle) {
+			// Start up a new goroutine, since finalizers block the GC
+			// and this needs to lock a mutex and perform a network request.
+			go func() {
+				th.lock.Lock()
+				defer th.lock.Unlock()
 
-			if th.client != nil { // using IsValid here would cause deadlock
-				th.client.lock.Lock()
-				defer th.client.lock.Unlock()
+				if th.client != nil { // using IsValid here would cause deadlock
+					th.client.lock.Lock()
+					defer th.client.lock.Unlock()
 
-				if th.client.Closed() {
-					// Closing a client automatically releases its TableHandles,
-					// so nothing needs to be done.
-				} else {
-					_ = th.releaseLocked(context.Background()) // ignore the error here, since we can't do anything about it.
+					if th.client.Closed() {
+						// Closing a client automatically releases its TableHandles,
+						// so nothing needs to be done.
+					} else {
+						_ = th.releaseLocked(context.Background()) // ignore the error here, since we can't do anything about it.
 
-					warningMsg := "warning: a TableHandle was forgotten without calling the Release method.\n" +
-						"the handle will be automatically released, but this is unreliable and may lead to resource exhaustion.\n" +
-						"stack trace of where the TableHandle was created:\n" +
-						stackTrace
+						warningMsg := "warning: a TableHandle was forgotten without calling the Release method.\n" +
+							"the handle will be automatically released, but this is unreliable and may lead to resource exhaustion.\n" +
+							"to suppress this warning, see the WithTableLeaksAllowed option when creating the client.\n" +
+							"stack trace of where the TableHandle was created:\n" +
+							stackTrace
 
-					log.Println(warningMsg)
+						log.Println(warningMsg)
+					}
 				}
-			}
-		}()
-	})
+			}()
+		})
+	}
 
 	return handle
 }
