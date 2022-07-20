@@ -185,9 +185,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
             final GetHeapInfoResponse infoResponse = GetHeapInfoResponse.newBuilder()
-                    .setTotalHeapSize(runtimeMemory.totalMemory())
+                    .setTotalMemory(runtimeMemory.totalMemory())
                     .setFreeMemory(runtimeMemory.freeMemory())
-                    .setMaximumHeapSize(runtimeMemory.maxMemory())
+                    .setMaxMemory(runtimeMemory.maxMemory())
                     .build();
 
             responseObserver.onNext(infoResponse);

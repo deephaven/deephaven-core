@@ -9,9 +9,9 @@ public class JsWorkerHeapInfo {
     private long totalHeapSize;
 
     public JsWorkerHeapInfo(GetHeapInfoResponse heapInfo) {
-        this.maximumHeapSize = Long.parseLong(heapInfo.getMaximumHeapSize());
+        this.maximumHeapSize = Long.parseLong(heapInfo.getMaxMemory());
         this.freeMemory = Long.parseLong(heapInfo.getFreeMemory());
-        this.totalHeapSize = Long.parseLong(heapInfo.getTotalHeapSize());
+        this.totalHeapSize = Long.parseLong(heapInfo.getTotalMemory());
     }
 
     @JsProperty
