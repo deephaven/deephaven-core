@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2022-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb;
 
 import elemental2.core.Uint8Array;
@@ -24,19 +27,19 @@ public class GetHeapInfoResponse {
         String getFreeMemory();
 
         @JsProperty
-        String getMaximumHeapSize();
+        String getMaxMemory();
 
         @JsProperty
-        String getTotalHeapSize();
+        String getTotalMemory();
 
         @JsProperty
         void setFreeMemory(String freeMemory);
 
         @JsProperty
-        void setMaximumHeapSize(String maximumHeapSize);
+        void setMaxMemory(String maxMemory);
 
         @JsProperty
-        void setTotalHeapSize(String totalHeapSize);
+        void setTotalMemory(String totalMemory);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -50,19 +53,19 @@ public class GetHeapInfoResponse {
         String getFreeMemory();
 
         @JsProperty
-        String getMaximumHeapSize();
+        String getMaxMemory();
 
         @JsProperty
-        String getTotalHeapSize();
+        String getTotalMemory();
 
         @JsProperty
         void setFreeMemory(String freeMemory);
 
         @JsProperty
-        void setMaximumHeapSize(String maximumHeapSize);
+        void setMaxMemory(String maxMemory);
 
         @JsProperty
-        void setTotalHeapSize(String totalHeapSize);
+        void setTotalMemory(String totalMemory);
     }
 
     public static native GetHeapInfoResponse deserializeBinary(Uint8Array bytes);
@@ -77,17 +80,17 @@ public class GetHeapInfoResponse {
 
     public native String getFreeMemory();
 
-    public native String getMaximumHeapSize();
+    public native String getMaxMemory();
 
-    public native String getTotalHeapSize();
+    public native String getTotalMemory();
 
     public native Uint8Array serializeBinary();
 
     public native void setFreeMemory(String value);
 
-    public native void setMaximumHeapSize(String value);
+    public native void setMaxMemory(String value);
 
-    public native void setTotalHeapSize(String value);
+    public native void setTotalMemory(String value);
 
     public native GetHeapInfoResponse.ToObjectReturnType0 toObject();
 
