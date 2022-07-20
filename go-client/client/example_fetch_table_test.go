@@ -44,7 +44,7 @@ func Example_fetchTable() {
 	cl.Close()
 
 	// Now let's make a new connection, completely unrelated to the old one.
-	cl, err = client.NewClient(ctx, "localhost", "10000")
+	cl, err = client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
 	if err != nil {
 		fmt.Println("error when connecting to localhost port 10000:", err.Error())
 		return
