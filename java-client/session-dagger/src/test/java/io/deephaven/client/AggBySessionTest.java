@@ -57,14 +57,37 @@ public class AggBySessionTest extends DeephavenSessionTestBase {
         disallow(TableSpec.empty(1), "Key = new Object()");
     }
 
-    private void allow(TableSpec parent, String groupBy) throws InterruptedException, TableHandle.TableHandleException {
-        try (final TableHandle handle = session.batch().execute(parent.aggBy(Aggregation.AggCount("Count"), groupBy))) {
+    @Test
+    public void allowPreviousColumn() throws TableHandle.TableHandleException, InterruptedException {
+        allow(TableSpec.empty(1), "X = 12", "Y = X + 1");
+    }
+
+    @Test
+    public void disallowFutureColumn() throws InterruptedException {
+        disallow(TableSpec.empty(1), "Y = X + 1", "X = 12");
+    }
+
+    @Test
+    public void allowReassignmentColumn() throws TableHandle.TableHandleException, InterruptedException {
+        allow(TableSpec.empty(1), "X = 12", "Y = X + 1", "X = 42");
+    }
+
+    @Test
+    public void disallowNonExistentColumn() throws InterruptedException {
+        disallow(TableSpec.empty(1), "X = 12", "Y = Z + 1");
+    }
+
+    private void allow(TableSpec parent, String... groupBys)
+            throws InterruptedException, TableHandle.TableHandleException {
+        try (final TableHandle handle =
+                session.batch().execute(parent.aggBy(Aggregation.AggCount("Count"), groupBys))) {
             assertThat(handle.isSuccessful()).isTrue();
         }
     }
 
-    private void disallow(TableSpec parent, String groupBy) throws InterruptedException {
-        try (final TableHandle handle = session.batch().execute(parent.aggBy(Aggregation.AggCount("Count"), groupBy))) {
+    private void disallow(TableSpec parent, String... groupBys) throws InterruptedException {
+        try (final TableHandle handle =
+                session.batch().execute(parent.aggBy(Aggregation.AggCount("Count"), groupBys))) {
             failBecauseExceptionWasNotThrown(TableHandle.TableHandleException.class);
         } catch (TableHandle.TableHandleException e) {
             // expected

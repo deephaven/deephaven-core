@@ -27,29 +27,29 @@ public class UpdateOrSelectSessionTest extends DeephavenSessionTestBase {
         return () -> Arrays.stream(UpdateOrSelect.values()).map(u -> new Object[] {u}).iterator();
     }
 
-    enum UpdateOrSelect implements BiFunction<TableSpec, String, TableSpec> {
+    enum UpdateOrSelect implements BiFunction<TableSpec, String[], TableSpec> {
         VIEW {
             @Override
-            public TableSpec apply(TableSpec spec, String formula) {
-                return spec.view(formula);
+            public TableSpec apply(TableSpec spec, String[] formulas) {
+                return spec.view(formulas);
             }
         },
         UPDATE_VIEW {
             @Override
-            public TableSpec apply(TableSpec spec, String formula) {
-                return spec.updateView(formula);
+            public TableSpec apply(TableSpec spec, String[] formulas) {
+                return spec.updateView(formulas);
             }
         },
         UPDATE {
             @Override
-            public TableSpec apply(TableSpec spec, String formula) {
-                return spec.update(formula);
+            public TableSpec apply(TableSpec spec, String[] formulas) {
+                return spec.update(formulas);
             }
         },
         SELECT {
             @Override
-            public TableSpec apply(TableSpec spec, String formula) {
-                return spec.select(formula);
+            public TableSpec apply(TableSpec spec, String[] formulas) {
+                return spec.select(formulas);
             }
         }
         // TODO Lazy via TableSpec
@@ -103,14 +103,35 @@ public class UpdateOrSelectSessionTest extends DeephavenSessionTestBase {
         disallow(TableSpec.empty(1), "X = new Object()");
     }
 
-    private void allow(TableSpec parent, String formula) throws InterruptedException, TableHandle.TableHandleException {
-        try (final TableHandle handle = session.batch().execute(method.apply(parent, formula))) {
+    @Test
+    public void allowPreviousColumn() throws TableHandle.TableHandleException, InterruptedException {
+        allow(TableSpec.empty(1), "X = 12", "Y = X + 1");
+    }
+
+    @Test
+    public void disallowFutureColumn() throws InterruptedException {
+        disallow(TableSpec.empty(1), "Y = X + 1", "X = 12");
+    }
+
+    @Test
+    public void allowReassignmentColumn() throws TableHandle.TableHandleException, InterruptedException {
+        allow(TableSpec.empty(1), "X = 12", "Y = X + 1", "X = 42");
+    }
+
+    @Test
+    public void disallowNonExistentColumn() throws InterruptedException {
+        disallow(TableSpec.empty(1), "X = 12", "Y = Z + 1");
+    }
+
+    private void allow(TableSpec parent, String... formulas)
+            throws InterruptedException, TableHandle.TableHandleException {
+        try (final TableHandle handle = session.batch().execute(method.apply(parent, formulas))) {
             assertThat(handle.isSuccessful()).isTrue();
         }
     }
 
-    private void disallow(TableSpec parent, String formula) throws InterruptedException {
-        try (final TableHandle handle = session.batch().execute(method.apply(parent, formula))) {
+    private void disallow(TableSpec parent, String... formulas) throws InterruptedException {
+        try (final TableHandle handle = session.batch().execute(method.apply(parent, formulas))) {
             failBecauseExceptionWasNotThrown(TableHandle.TableHandleException.class);
         } catch (TableHandle.TableHandleException e) {
             // expected
