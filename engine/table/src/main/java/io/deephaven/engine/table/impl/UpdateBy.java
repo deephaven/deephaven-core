@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.Strings;
 import io.deephaven.api.updateby.UpdateByClause;
@@ -83,7 +84,7 @@ public abstract class UpdateBy {
      */
     public static Table updateBy(@NotNull final QueryTable source,
             @NotNull final Collection<? extends UpdateByClause> clauses,
-            @NotNull final Collection<? extends Selectable> byColumns,
+            @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByControl control) {
 
         WritableRowRedirection rowRedirection = null;
@@ -109,10 +110,9 @@ public abstract class UpdateBy {
             }
         }
 
+        // TODO: pass through ColumnName to impl instead
         // generate a MatchPair array for use by the existing algorithm
-        MatchPair[] pairs = byColumns.stream()
-                .map(s -> new MatchPair(s.newColumn().name(), Strings.of(s.expression())))
-                .toArray(MatchPair[]::new);
+        MatchPair[] pairs = MatchPair.fromPairs(byColumns);
 
         final UpdateByOperatorFactory updateByOperatorFactory =
                 new UpdateByOperatorFactory(source, pairs, rowRedirection, control);
