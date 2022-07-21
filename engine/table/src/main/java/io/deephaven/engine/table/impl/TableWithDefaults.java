@@ -624,14 +624,14 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
-    default Table groupBy(Collection<? extends Selectable> groupByColumns) {
+    default Table groupBy(Collection<? extends ColumnName> groupByColumns) {
         return aggAllBy(AggSpec.group(), groupByColumns.toArray(Selectable[]::new));
     }
 
     @Override
     @ConcurrentMethod
     default Table groupBy(String... groupByColumns) {
-        return groupBy(Selectable.from(groupByColumns));
+        return groupBy(ColumnName.from(groupByColumns));
     }
 
     @Override

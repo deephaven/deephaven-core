@@ -261,7 +261,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 groupBy(Collection<? extends Selectable> groupByColumns) {
+    public final TOPS_1 groupBy(Collection<? extends ColumnName> groupByColumns) {
         return adapt(delegate.groupBy(groupByColumns));
     }
 

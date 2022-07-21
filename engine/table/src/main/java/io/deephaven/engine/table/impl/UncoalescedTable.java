@@ -345,7 +345,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public Table groupBy(Collection<? extends Selectable> groupByColumns) {
+    public Table groupBy(Collection<? extends ColumnName> groupByColumns) {
         return coalesce().groupBy(groupByColumns);
     }
 

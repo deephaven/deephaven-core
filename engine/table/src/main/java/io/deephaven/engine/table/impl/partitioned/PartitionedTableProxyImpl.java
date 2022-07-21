@@ -609,7 +609,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy groupBy(Collection<? extends Selectable> groupByColumns) {
+    public PartitionedTable.Proxy groupBy(Collection<? extends ColumnName> groupByColumns) {
         return basicTransform(ct -> ct.groupBy(groupByColumns));
     }
 

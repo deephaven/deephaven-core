@@ -965,7 +965,7 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
-    Table groupBy(Collection<? extends Selectable> groupByColumns);
+    Table groupBy(Collection<? extends ColumnName> groupByColumns);
 
     @Override
     @ConcurrentMethod
@@ -1030,7 +1030,7 @@ public interface Table extends
      *
      * @param formulaColumn Formula applied to each column
      * @param columnParamName The parameter name used as a placeholder for each column
-     * @param groupByColumns The grouping columns as in {@link Table#groupBy(Collection)}
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy(Collection)}
      */
     @ConcurrentMethod
     Table applyToAllBy(String formulaColumn, String columnParamName, Collection<? extends Selectable> groupByColumns);
@@ -1041,7 +1041,7 @@ public interface Table extends
      *
      * @param formulaColumn Formula applied to each column, uses parameter <i>each</i> to refer to each colum it being
      *        applied to
-     * @param groupByColumns The grouping columns as in {@link Table#groupBy(Collection)}
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy(Collection)}
      */
     @ConcurrentMethod
     Table applyToAllBy(String formulaColumn, Collection<? extends Selectable> groupByColumns);

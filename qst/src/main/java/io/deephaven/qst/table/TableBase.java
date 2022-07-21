@@ -387,7 +387,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable groupBy(Collection<? extends Selectable> groupByColumns) {
+    public final AggregateAllByTable groupBy(Collection<? extends ColumnName> groupByColumns) {
         return aggAllBy(AggSpec.group(), groupByColumns.toArray(new Selectable[0]));
     }
 

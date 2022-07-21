@@ -491,7 +491,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS groupBy(String... groupByColumns);
 
-    TOPS groupBy(Collection<? extends Selectable> groupByColumns);
+    TOPS groupBy(Collection<? extends ColumnName> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
