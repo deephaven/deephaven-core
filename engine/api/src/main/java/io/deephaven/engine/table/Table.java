@@ -1810,7 +1810,7 @@ public interface Table extends
      * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
      * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
      * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
-     * for the row group (as determined by the {@code byColumns})
+     * for the row group (as determined by the {@code byColumns}).
      *
      * @param control the {@link UpdateByControl control} to use when updating the table.
      * @param operations the operations to apply to the table.
