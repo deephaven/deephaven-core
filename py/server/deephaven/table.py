@@ -1035,7 +1035,7 @@ class Table(JObjectWrapper):
             raise DHError(e, "table asb_sum_by operation failed.") from e
 
     def weighted_sum_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> Table:
-        """The sum_by method creates a new table containing the weighted sum for each group.
+        """The weighted_sum_by method creates a new table containing the weighted sum for each group.
 
         Args:
             wcol (str): the name of the weight column
@@ -1078,7 +1078,7 @@ class Table(JObjectWrapper):
             raise DHError(e, "table avg_by operation failed.") from e
 
     def weighted_avg_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> Table:
-        """The avg_by method creates a new table containing the weighted average for each group.
+        """The weighted_avg_by method creates a new table containing the weighted average for each group.
 
         Args:
             wcol (str): the name of the weight column
