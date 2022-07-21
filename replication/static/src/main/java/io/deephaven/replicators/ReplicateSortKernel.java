@@ -322,7 +322,19 @@ public class ReplicateSortKernel {
 
         lines = globalReplacements(fixupCharNullComparisons(lines, ascending), oldName, newName);
 
-        lines.addAll(0, Arrays.asList(
+        // preserve the first comment of the file; typically the copyright
+        int insertionPoint = 0;
+        if (lines.size() > 0 && lines.get(0).startsWith("/*")) {
+            for (int ii = 0; ii < lines.size(); ++ii) {
+                final int offset = lines.get(ii).indexOf("*/");
+                if (offset != -1) {
+                    insertionPoint = ii + 1;
+                    break;
+                }
+            }
+        }
+
+        lines.addAll(insertionPoint, Arrays.asList(
                 "/* ---------------------------------------------------------------------------------------------------------------------",
                 " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + oldName
                         + " and regenerate",

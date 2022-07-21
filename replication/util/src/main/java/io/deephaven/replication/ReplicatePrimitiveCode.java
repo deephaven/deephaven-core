@@ -454,6 +454,18 @@ public class ReplicatePrimitiveCode {
 
         System.out.println("Generating java file " + resultClassJavaPath);
         PrintWriter out = new PrintWriter(resultClassJavaPath);
+
+        String body = replaceAllInternal(inputText.toString(), serialVersionUID, exemptions, pairs);
+
+        // preserve the first comment of the file; typically the copyright
+        if (body.startsWith("/*")) {
+            final int idx = body.indexOf("*/");
+            if (idx != -1 && body.length() >= idx + 3) {
+                out.print(body.substring(0, idx + 3));
+                body = body.substring(idx + 3);
+            }
+        }
+
         out.println("/*");
         out.println(
                 " * ---------------------------------------------------------------------------------------------------------------------");
@@ -463,7 +475,8 @@ public class ReplicatePrimitiveCode {
                 " * ---------------------------------------------------------------------------------------------------------------------");
         out.println(
                 " */");
-        out.print(replaceAllInternal(inputText.toString(), serialVersionUID, exemptions, pairs));
+
+        out.print(body);
         out.flush();
         out.close();
 
