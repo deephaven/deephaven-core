@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
@@ -28,7 +29,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(100000, false, false, false, 0x2134BCFA).t;
 
-        final Table result = t.updateBy(UpdateByClause.of(
+        final Table result = t.updateBy(List.of(
                 UpdateByClause.CumMin("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",
                         "longColMin=longCol", "floatColMin=floatCol", "doubleColMin=doubleCol",
                         "bigIntColMin=bigIntCol", "bigDecimalColMin=bigDecimalCol"),
@@ -61,7 +62,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
     private void doTestStaticBucketed(boolean grouped) {
         final QueryTable t = createTestTable(100000, true, grouped, false, 0xACDB4321).t;
 
-        final Table result = t.updateBy(UpdateByClause.of(
+        final Table result = t.updateBy(List.of(
                 UpdateByClause.CumMin("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",
                         "longColMin=longCol", "floatColMin=floatCol", "doubleColMin=doubleCol",
                         "bigIntColMin=bigIntCol", "bigDecimalColMin=bigDecimalCol"),

@@ -1726,11 +1726,10 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Create a table with the same {@link #getRowSet() row set} as its parent, with additional columns added according
-     * to the specified {@code operation}. Operations apply position or time-based windowing functions in order to
-     * determine the set of responsive rows from the parent table, and then compute the output column value(s) as an
-     * incremental aggregation over the responsive rows. In contrast to update or select, updateBy has no correctness
-     * concerns for multi-row computations.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
      *
      * @param operation the operation to apply to the table.
      * @return a table with the same rowset, with the specified operation applied to the entire table
@@ -1739,11 +1738,10 @@ public interface Table extends
     Table updateBy(@NotNull final UpdateByClause operation);
 
     /**
-     * Create a table with the same {@link #getRowSet() row set} as its parent, with additional columns added according
-     * to the specified {@code operations}. Operations apply position or time-based windowing functions in order to
-     * determine the set of responsive rows from the parent table, and then compute the output column value(s) as an
-     * incremental aggregation over the responsive rows. In contrast to update or select, updateBy has no correctness
-     * concerns for multi-row computations.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
      *
      * @param operations the operations to apply to the table.
      * @return a table with the same rowset, with the specified operations applied to the entire table.
@@ -1752,11 +1750,10 @@ public interface Table extends
     Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations);
 
     /**
-     * Create a table with the same {@link #getRowSet() row set} as its parent, with additional columns added according
-     * to the specified {@code operations}. Operations apply position or time-based windowing functions in order to
-     * determine the set of responsive rows from the parent table, and then compute the output column value(s) as an
-     * incremental aggregation over the responsive rows. In contrast to update or select, updateBy has no correctness
-     * concerns for multi-row computations.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
      *
      * @param control the {@link UpdateByControl control} to use when updating the table.
      * @param operations the operations to apply to the table.
@@ -1767,11 +1764,10 @@ public interface Table extends
             @NotNull final Collection<? extends UpdateByClause> operations);
 
     /**
-     * Create a table with the same {@link #getRowSet() row set} as its parent, with additional columns added according
-     * to the specified {@code operation}. Operations apply position or time-based windowing functions in order to
-     * determine the set of responsive rows from a given input row’s group (as determined by the {@code byColumns}), and
-     * then compute the output column value(s) as an incremental aggregation over the responsive rows. In contrast to
-     * update or select, updateBy has no correctness concerns for multi-row computations.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns})
      *
      * @param operation the operation to apply to the table.
      * @param byColumns the columns to group by before applying.
@@ -1782,11 +1778,10 @@ public interface Table extends
     Table updateBy(@NotNull final UpdateByClause operation, final String... byColumns);
 
     /**
-     * Create a table with the same {@link #getRowSet() row set} as its parent, with additional columns added according
-     * to the specified {@code operations}. Operations apply position or time-based windowing functions in order to
-     * determine the set of responsive rows from a given input row’s group (as determined by the {@code byColumns}), and
-     * then compute the output column value(s) as an incremental aggregation over the responsive rows. In contrast to
-     * update or select, updateBy has no correctness concerns for multi-row computations.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns})
      *
      * @param operations the operations to apply to the table.
      * @param byColumns the columns to group by before applying.
@@ -1797,11 +1792,10 @@ public interface Table extends
     Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations, final String... byColumns);
 
     /**
-     * Create a table with the same {@link #getRowSet() row set} as its parent, with additional columns added according
-     * to the specified {@code operations}. Operations apply position or time-based windowing functions in order to
-     * determine the set of responsive rows from a given input row’s group (as determined by the {@code byColumns}), and
-     * then compute the output column value(s) as an incremental aggregation over the responsive rows. In contrast to
-     * update or select, updateBy has no correctness concerns for multi-row computations.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns})
      *
      * @param operations the operations to apply to the table.
      * @param byColumns the columns to group by before applying.
@@ -1813,11 +1807,10 @@ public interface Table extends
             @NotNull Collection<? extends Selectable> byColumns);
 
     /**
-     * Create a table with the same {@link #getRowSet() row set} as its parent, with additional columns added according
-     * to the specified {@code operations}. Operations apply position or time-based windowing functions in order to
-     * determine the set of responsive rows from a given input row’s group (as determined by the {@code byColumns}), and
-     * then compute the output column value(s) as an incremental aggregation over the responsive rows. In contrast to
-     * update or select, updateBy has no correctness concerns for multi-row computations.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns})
      *
      * @param control the {@link UpdateByControl control} to use when updating the table.
      * @param operations the operations to apply to the table.
