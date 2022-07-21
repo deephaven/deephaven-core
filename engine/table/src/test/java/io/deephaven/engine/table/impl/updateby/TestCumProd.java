@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
@@ -62,7 +63,7 @@ public class TestCumProd extends BaseUpdateByTest {
                 longCol("ShortValProd", 1, 2, NULL_LONG, 3),
                 longCol("IntValProd", 1, 2, NULL_LONG, 3));
 
-        final Table r = t.updateBy(UpdateByClause.of(
+        final Table r = t.updateBy(List.of(
                 UpdateByClause.CumProd("ByteValProd=ByteVal"),
                 UpdateByClause.CumProd("ShortValProd=ShortVal"),
                 UpdateByClause.CumProd("IntValProd=IntVal")), "Sym");
