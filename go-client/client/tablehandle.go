@@ -73,16 +73,14 @@ func newTableHandle(client *Client, ticket *ticketpb2.Ticket, schema *arrow.Sche
 		// Start up a new goroutine, since finalizers block the GC
 		// and this needs to lock a mutex and perform a network request.
 		go func() {
-			th.lock.Lock()
-			defer th.lock.Unlock()
-
-			if th.client != nil { // using IsValid here would cause deadlock
-				th.client.lock.Lock()
-				defer th.client.lock.Unlock()
+			if th.wLockIfValid() {
+				defer th.lock.Unlock()
 
 				// Closing a client automatically releases its TableHandles,
 				// so we only need to release the handle if the client is still open.
-				if th.client.isOpen { // using Closed here would cause deadlock
+				if th.client.lockIfOpen() {
+					defer th.client.lock.Unlock()
+
 					_ = th.releaseLocked(context.Background()) // ignore the error here, since we can't do anything about it.
 
 					if !client.suppressTableLeakWarning {
@@ -122,6 +120,20 @@ func (th *TableHandle) rLockIfValid() bool {
 	th.lock.RLock()
 	if th.client == nil {
 		th.lock.RUnlock()
+		return false
+	}
+	return true
+}
+
+// wLockIfValid returns true if the handle is valid, i.e. table operations can be performed on it.
+// If this function returns true, it will acquire a write lock for the handle.
+func (th *TableHandle) wLockIfValid() bool {
+	if th == nil {
+		return false
+	}
+	th.lock.Lock()
+	if th.client == nil {
+		th.lock.Unlock()
 		return false
 	}
 	return true

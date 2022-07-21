@@ -144,15 +144,25 @@ func (client *Client) ExecBatch(ctx context.Context, nodes ...QueryNode) ([]*Tab
 	return execBatch(client, ctx, nodes)
 }
 
+// lockIfOpen returns true if the client is open, i.e. it can be used to perform operations.
+// If this function returns true, it will acquire a lock for the client,
+// which will prevent it from being closed.
+func (client *Client) lockIfOpen() bool {
+	client.lock.Lock()
+	if client.isOpen {
+		return true
+	}
+	client.lock.Unlock()
+	return false
+}
+
 // Close closes the connection to the server and frees any associated resources.
 // Once this method is called, the client and any TableHandles from it cannot be used.
 func (client *Client) Close() error {
-	client.lock.Lock()
-	defer client.lock.Unlock()
-
-	if !client.isOpen { // using Closed here would cause deadlock
+	if !client.lockIfOpen() {
 		return nil
 	}
+	defer client.lock.Unlock()
 
 	client.isOpen = false
 
