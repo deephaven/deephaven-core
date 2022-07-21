@@ -1726,9 +1726,9 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
-     * based operation to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows.
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified row based
+     * operation to it. As opposed to {@link #update(String...)} this operation is more restricted but is capable of
+     * processing state between rows.
      *
      * @param operation the operation to apply to the table.
      * @return a table with the same rowset, with the specified operation applied to the entire table
@@ -1737,9 +1737,9 @@ public interface Table extends
     Table updateBy(@NotNull final UpdateByClause operation);
 
     /**
-     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
-     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows.
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified row based
+     * operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are capable
+     * of processing state between rows.
      *
      * @param operations the operations to apply to the table.
      * @return a table with the same rowset, with the specified operations applied to the entire table.
@@ -1748,9 +1748,9 @@ public interface Table extends
     Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations);
 
     /**
-     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
-     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows.
+     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified row based
+     * operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are capable
+     * of processing state between rows.
      *
      * @param control the {@link UpdateByControl control} to use when updating the table.
      * @param operations the operations to apply to the table.
@@ -1762,7 +1762,7 @@ public interface Table extends
 
     /**
      * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified row based
-     * operation to it. As opposed to {@link #update(String...)} these operations are more restricted but are capable of
+     * operation to it. As opposed to {@link #update(String...)} this operation is more restricted but is capable of
      * processing state between rows. The operation will be applied to each group individually (identified by the set of
      * key columns provided by the user).
      *
@@ -1777,8 +1777,8 @@ public interface Table extends
     /**
      * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified row based
      * operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are capable
-     * of processing state between rows. The operation will be applied to each group individually (identified by the set
-     * of key columns provided by the user).
+     * of processing state between rows. The operations will be applied to each group individually (identified by the
+     * set of key columns provided by the user).
      *
      * @param operations the operations to apply to the table.
      * @param byColumns the columns to group by before applying.
@@ -1791,8 +1791,8 @@ public interface Table extends
     /**
      * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified row based
      * operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are capable
-     * of processing state between rows. The operation will be applied to each group individually (identified by the set
-     * of key columns provided by the user).
+     * of processing state between rows. The operations will be applied to each group individually (identified by the
+     * set of key columns provided by the user).
      *
      * @param operations the operations to apply to the table.
      * @param byColumns the columns to group by before applying.
