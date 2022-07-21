@@ -129,7 +129,7 @@ public class SwitchColumn implements SelectColumn {
     }
 
     public SelectColumn getRealColumn() {
-        return realColumn;
+        return Require.neqNull(realColumn, "realColumn");
     }
 
     @Override

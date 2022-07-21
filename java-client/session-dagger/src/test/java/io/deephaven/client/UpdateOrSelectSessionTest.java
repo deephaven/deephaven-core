@@ -84,13 +84,13 @@ public class UpdateOrSelectSessionTest extends DeephavenSessionTestBase {
     }
 
     @Test
-    public void disallowTickingI() throws InterruptedException {
-        disallow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "Y = i");
+    public void allowTickingI() throws InterruptedException, TableHandle.TableHandleException {
+        allow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "Y = i");
     }
 
     @Test
-    public void disallowTickingII() throws InterruptedException {
-        disallow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "Y = ii");
+    public void allowTickingII() throws InterruptedException, TableHandle.TableHandleException {
+        allow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "Y = ii");
     }
 
     @Test
