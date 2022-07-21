@@ -76,7 +76,7 @@ public class ColumnExpressionValidator extends VoidVisitorAdapter<Object> {
                 .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
     }
 
-    public static WhereFilter[] validateSelectFilters(final String[] conditionalExpressions, Table table) {
+    public static WhereFilter[] validateSelectFilters(final String[] conditionalExpressions, final Table table) {
         final WhereFilter[] whereFilters = WhereFilterFactory.getExpressions(conditionalExpressions);
         final List<String> dummyAssignments = new ArrayList<>();
         for (int ii = 0; ii < whereFilters.length; ++ii) {
