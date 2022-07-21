@@ -24,7 +24,9 @@ public class FormulaKernelAdapter extends io.deephaven.engine.table.impl.select.
     private final ChunkType chunkType;
     private final GetHandler getHandler;
 
-    public FormulaKernelAdapter(final TrackingRowSet rowSet, final FormulaSourceDescriptor sourceDescriptor,
+    public FormulaKernelAdapter(
+            final TrackingRowSet rowSet,
+            final FormulaSourceDescriptor sourceDescriptor,
             final Map<String, ? extends ColumnSource> columnSources,
             final FormulaKernel kernel) {
         super(rowSet);

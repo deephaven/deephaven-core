@@ -30,7 +30,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     public NoLanguageDeephavenSession(final String scriptType) {
-        super(null, null, false);
+        super(null, null);
 
         this.scriptType = scriptType;
         variables = new LinkedHashMap<>();

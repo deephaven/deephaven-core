@@ -4,6 +4,7 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.util.ExecutionContext;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -32,5 +33,10 @@ public class NotificationAdapter extends AbstractNotification {
     @Override
     public void run() {
         wrapped.run();
+    }
+
+    @Override
+    public ExecutionContext getExecutionContext() {
+        return wrapped.getExecutionContext();
     }
 }

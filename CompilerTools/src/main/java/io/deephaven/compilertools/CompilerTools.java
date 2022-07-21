@@ -9,6 +9,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -146,12 +147,32 @@ public class CompilerTools {
     public static final String FORMULA_PREFIX = "io.deephaven.temp";
     public static final String DYNAMIC_GROOVY_CLASS_PREFIX = "io.deephaven.dynamic";
 
-    public static class Context {
+    public interface Context {
+        Hashtable<String, SimplePromise<Class<?>>> getKnownClasses();
+
+        ClassLoader getClassLoaderForFormula(final Map<String, Class<?>> parameterClasses);
+
+        File getClassDestination();
+
+        File getFakeClassDestination();
+
+        String getClassPath();
+
+        void setParentClassLoader(final ClassLoader parentClassLoader);
+    }
+
+    public static class ContextImpl implements Context {
         private final Hashtable<String, SimplePromise<Class<?>>> knownClasses = new Hashtable<>();
+
+        @Override
+        public Hashtable<String, SimplePromise<Class<?>>> getKnownClasses() {
+            return knownClasses;
+        }
 
         String[] dynamicPatterns = new String[] {DYNAMIC_GROOVY_CLASS_PREFIX, FORMULA_PREFIX};
 
-        private ClassLoader getClassLoaderForFormula(final Map<String, Class<?>> parameterClasses) {
+        @Override
+        public ClassLoader getClassLoaderForFormula(final Map<String, Class<?>> parameterClasses) {
             // We should always be able to get our own class loader, even if this is invoked from external code
             // that doesn't have security permissions to make ITS own class loader.
             return doPrivileged((PrivilegedAction<URLClassLoader>) () -> new URLClassLoader(ucl.getURLs(), ucl) {
@@ -276,11 +297,11 @@ public class CompilerTools {
         private final Set<File> additionalClassLocations;
         private volatile WritableURLClassLoader ucl;
 
-        public Context(File classDestination) {
+        public ContextImpl(File classDestination) {
             this(classDestination, Context.class.getClassLoader());
         }
 
-        public Context(File classDestination, ClassLoader parentClassLoader) {
+        public ContextImpl(File classDestination, ClassLoader parentClassLoader) {
             this.classDestination = classDestination;
             ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
                     classDestination.getAbsolutePath());
@@ -322,7 +343,8 @@ public class CompilerTools {
             return null;
         }
 
-        private File getClassDestination() {
+        @Override
+        public File getClassDestination() {
             return classDestination;
         }
 
@@ -356,12 +378,11 @@ public class CompilerTools {
 
     private static volatile Context defaultContext = null;
 
-    private static Context getDefaultContext() {
+    public static Context getDefaultContext() {
         if (defaultContext == null) {
             synchronized (CompilerTools.class) {
                 if (defaultContext == null) {
-                    defaultContext = new Context(new File(Configuration.getInstance().getWorkspacePath() +
-                            File.separator + "cache" + File.separator + "classes"));
+                    defaultContext = new PoisonedCompilerToolsContext();
                 }
             }
         }
@@ -385,9 +406,14 @@ public class CompilerTools {
 
     private static final ThreadLocal<Context> currContext = ThreadLocal.withInitial(CompilerTools::getDefaultContext);
 
+    @VisibleForTesting
+    public static void setContextForUnitTests() {
+        setContext(new ContextImpl(new File(Configuration.getInstance().getWorkspacePath() +
+                File.separator + "cache" + File.separator + "classes")));
+    }
+
     public static void resetContext() {
-        setContext(new Context(new File(Configuration.getInstance().getWorkspacePath() + File.separator + "cache"
-                + File.separator + "classes")));
+        setContext(new PoisonedCompilerToolsContext());
     }
 
     public static void setContext(@Nullable Context context) {
@@ -449,12 +475,12 @@ public class CompilerTools {
         final Context context = getContext();
 
         synchronized (context) {
-            promise = context.knownClasses.get(classBody);
+            promise = context.getKnownClasses().get(classBody);
             if (promise != null) {
                 promiseAlreadyMade = true;
             } else {
                 promise = new SimplePromise<>();
-                context.knownClasses.put(classBody, promise);
+                context.getKnownClasses().put(classBody, promise);
                 promiseAlreadyMade = false;
             }
         }
@@ -538,7 +564,7 @@ public class CompilerTools {
                 // member of the class we just loaded. This should be easier on the garbage collector because we are
                 // replacing a calculated value with a classloaded value and so in effect we are "canonicalizing" the
                 // string. This is important because these long strings stay in knownClasses forever.
-                SimplePromise<Class<?>> p = context.knownClasses.remove(identifyingFieldValue);
+                SimplePromise<Class<?>> p = context.getKnownClasses().remove(identifyingFieldValue);
                 if (p == null) {
                     // If we encountered a different class than the one we're looking for, make a fresh promise and
                     // immediately fulfill it. This is for the purpose of populating the cache in case someone comes
@@ -546,7 +572,7 @@ public class CompilerTools {
                     // throwing it away now, even though this is not the class we're looking for.
                     p = new SimplePromise<>();
                 }
-                context.knownClasses.put(identifyingFieldValue, p);
+                context.getKnownClasses().put(identifyingFieldValue, p);
                 // It's also possible that some other code has already fulfilled this promise with exactly the same
                 // class. That's ok though: the promise code does not reject multiple sets to the identical value.
                 p.setResultFriendly(result);
@@ -865,7 +891,7 @@ public class CompilerTools {
 
     /**
      * Retrieve the java class path from our existing Java class path, and IntelliJ/TeamCity environment variables.
-     * 
+     *
      * @return
      */
     public static String getJavaClassPath() {
@@ -937,7 +963,7 @@ public class CompilerTools {
         return javaClasspath;
     }
 
-    private static class SimplePromise<R> {
+    public static class SimplePromise<R> {
         private R result;
         private RuntimeException exception;
 

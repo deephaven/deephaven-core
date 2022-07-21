@@ -25,6 +25,7 @@ import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.util.ExecutionContext;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
@@ -497,11 +498,16 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         /**
          * Cause runnable to be executed.
          *
+         * @param executionContext the execution context to run it under
          * @param runnable the runnable to execute
          * @param description a description for logging
          * @param onError a routine to call if an exception occurs while running runnable
          */
-        void submit(Runnable runnable, final LogOutputAppendable description, final Consumer<Exception> onError);
+        void submit(
+                ExecutionContext executionContext,
+                Runnable runnable,
+                final LogOutputAppendable description,
+                final Consumer<Exception> onError);
 
         /**
          * The performance statistics of all runnables that have been completed off-thread, or null if it was executed
@@ -520,7 +526,10 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
 
         @Override
-        public void submit(final Runnable runnable, final LogOutputAppendable description,
+        public void submit(
+                final ExecutionContext executionContext,
+                final Runnable runnable,
+                final LogOutputAppendable description,
                 final Consumer<Exception> onError) {
             UpdateGraphProcessor.DEFAULT.addNotification(new AbstractNotification(false) {
                 @Override
@@ -552,6 +561,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     return output.append("{Notification(").append(System.identityHashCode(this)).append(" for ")
                             .append(description).append("}");
                 }
+
+                @Override
+                public ExecutionContext getExecutionContext() {
+                    return executionContext;
+                }
             });
         }
 
@@ -570,12 +584,15 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
 
         @Override
-        public void submit(final Runnable runnable, final LogOutputAppendable description,
+        public void submit(
+                final ExecutionContext executionContext,
+                final Runnable runnable,
+                final LogOutputAppendable description,
                 final Consumer<Exception> onError) {
             OperationInitializationThreadPool.executorService.submit(() -> {
                 final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
                 basePerformanceEntry.onBaseEntryStart();
-                try {
+                try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
                     runnable.run();
                 } catch (Exception e) {
                     onError.accept(e);
@@ -606,9 +623,12 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         public static final ImmediateJobScheduler INSTANCE = new ImmediateJobScheduler();
 
         @Override
-        public void submit(final Runnable runnable, final LogOutputAppendable description,
+        public void submit(
+                final ExecutionContext executionContext,
+                final Runnable runnable,
+                final LogOutputAppendable description,
                 final Consumer<Exception> onError) {
-            try {
+            try (SafeCloseable ignored = executionContext != null ? executionContext.open() : null) {
                 runnable.run();
             } catch (Exception e) {
                 onError.accept(e);

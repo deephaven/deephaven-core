@@ -5,6 +5,7 @@ package io.deephaven.plot.composite;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
+import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.plot.FigureImpl;
 import io.deephaven.plot.datasets.xy.XYDataSeriesInternal;
 import io.deephaven.plot.filters.SelectableDataSetOneClick;
@@ -12,6 +13,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,17 +24,21 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public class TestScatterPlotMatrix extends BaseArrayTestCase {
     private final int length = 10;
 
+    private SafeCloseable executionContext;
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        executionContext = ExecutionContextImpl.createForUnitTests();
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        executionContext.close();
     }
 
     public void testScatterPlotMatrix() {

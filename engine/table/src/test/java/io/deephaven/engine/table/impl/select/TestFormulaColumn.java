@@ -51,10 +51,6 @@ public class TestFormulaColumn {
     private final boolean useKernelFormulas;
     private boolean kernelFormulasSavedValue;
 
-    static {
-        setUpQueryScope();
-    }
-
     public TestFormulaColumn(boolean useKernelFormulas) {
         this.useKernelFormulas = useKernelFormulas;
         testDataTable = getTestDataTable();
@@ -69,6 +65,7 @@ public class TestFormulaColumn {
         kernelFormulasSavedValue = DhFormulaColumn.useKernelFormulasProperty;
         DhFormulaColumn.useKernelFormulasProperty = useKernelFormulas;
 
+        setUpQueryScope();
         setUpQueryLibrary();
     }
 

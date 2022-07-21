@@ -4,6 +4,7 @@
 package io.deephaven.plot.datasets.ohlc;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.plot.BaseFigureImpl;
@@ -17,6 +18,7 @@ import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.util.SafeCloseable;
 
 import java.util.ArrayList;
 
@@ -38,9 +40,19 @@ public class TestOHLCDataSeries extends BaseArrayTestCase {
     private final OHLCDataSeriesInternal dataSeries2 = new OHLCDataSeriesArray(
             new BaseFigureImpl().newChart().newAxes(), 1, "Test2", dates, close, high, low, open);
 
+    private SafeCloseable executionContext;
 
     @Override
-    public void setUp() {}
+    public void setUp() throws Exception {
+        super.setUp();
+        executionContext = ExecutionContextImpl.createForUnitTests();
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        executionContext.close();
+    }
 
     public void testOHLCDataSeriesArray() {
         checkOHLCDataSeriesArray(dataSeries, datesA, openA, highA, lowA, closeA);

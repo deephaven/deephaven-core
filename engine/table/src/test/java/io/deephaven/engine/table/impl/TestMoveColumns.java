@@ -4,14 +4,33 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 
 import java.util.stream.Collectors;
 
 public class TestMoveColumns extends TestCase {
-    private static final Table table = TableTools.emptyTable(1).update("a=1", "b=2", "c=3", "d=4", "e=5");
-    private static final int numCols = table.numColumns();
+
+    private Table table;
+    private int numCols;
+
+    private SafeCloseable executionContext;
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        executionContext = ExecutionContextImpl.createForUnitTests();
+        table = TableTools.emptyTable(1).update("a=1", "b=2", "c=3", "d=4", "e=5");
+        numCols = table.numColumns();
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        executionContext.close();
+    }
 
     public void testMoveColumns() {
         // Basic moving

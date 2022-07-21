@@ -10,6 +10,7 @@ import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.parquet.table.ParquetTools;
@@ -31,6 +32,7 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.*;
@@ -55,10 +57,12 @@ import static org.junit.Assert.assertTrue;
 @Category(OutOfBandTest.class)
 public class TestChunkedRegionedOperations {
 
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
     private static final long TABLE_SIZE = 100_000;
     private static final long STRIPE_SIZE = TABLE_SIZE / 10;
 
-    private QueryScope originalScope;
     private File dataDirectory;
 
     private Table expected;
@@ -127,18 +131,13 @@ public class TestChunkedRegionedOperations {
 
     @Before
     public void setUp() throws Exception {
-        originalScope = QueryScope.getScope();
-        final QueryScope queryScope = new QueryScope.StandaloneImpl();
-        Arrays.stream(originalScope.getParams(originalScope.getParamNames()))
-                .forEach(p -> queryScope.putParam(p.getName(), p.getValue()));
+        final QueryScope queryScope = QueryScope.getScope();
         queryScope.putParam("nowNanos", DateTimeUtils.currentTime().getNanos());
         queryScope.putParam("letters",
                 IntStream.range('A', 'A' + 64).mapToObj(c -> new String(new char[] {(char) c})).toArray(String[]::new));
         queryScope.putParam("emptySymbolSet", new ArrayStringSet());
         queryScope.putParam("stripeSize", STRIPE_SIZE);
-        QueryScope.setScope(queryScope);
 
-        QueryLibrary.resetLibrary();
         QueryLibrary.importClass(BigInteger.class);
         QueryLibrary.importClass(StringSet.class);
         QueryLibrary.importClass(ArrayStringSet.class);
@@ -284,9 +283,6 @@ public class TestChunkedRegionedOperations {
             actual.releaseCachedResources();
         }
 
-        QueryScope.setScope(originalScope);
-        QueryLibrary.resetLibrary();
-
         if (dataDirectory.exists()) {
             TrackedFileHandleFactory.getInstance().closeAll();
             int tries = 0;
@@ -322,10 +318,10 @@ public class TestChunkedRegionedOperations {
 
             // noinspection unchecked
             final WritableChunk<Values>[] expectedChunks = Arrays.stream(chunkTypes)
-                    .map(ct -> ct.makeWritableChunk(chunkCapacity)).toArray(WritableChunk[]::new);
+                    .map(ct -> closeables.add(ct.makeWritableChunk(chunkCapacity))).toArray(WritableChunk[]::new);
             // noinspection unchecked
             final WritableChunk<Values>[] actualChunks = Arrays.stream(chunkTypes)
-                    .map(ct -> ct.makeWritableChunk(chunkCapacity)).toArray(WritableChunk[]::new);
+                    .map(ct -> closeables.add(ct.makeWritableChunk(chunkCapacity))).toArray(WritableChunk[]::new);
 
             final ColumnSource[] expectedSources =
                     expected.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);

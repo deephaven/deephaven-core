@@ -8,23 +8,22 @@ import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.util.ModelFileGenerator;
+import io.deephaven.test.junit4.EngineCleanup;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class TestConditionFilterGeneration {
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
+
     @Before
     public void setUp() {
         QueryLibrary.setLibrary(QueryLibrary.makeNewLibrary("DEFAULT"));
-    }
-
-    @After
-    public void tearDown() {
-        QueryLibrary.resetLibrary();
     }
 
     // @Test

@@ -8,8 +8,8 @@ import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -37,9 +37,9 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     private UpdateErrorReporter oldReporter;
     private boolean expectError = false;
     private SafeCloseable livenessScopeCloseable;
-    private QueryScope originalQueryScope;
     private boolean oldLogEnabled;
     private boolean oldCheckLtm;
+    private SafeCloseable executionContext;
 
     List<Throwable> errors;
 
@@ -58,7 +58,9 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
         errors = null;
         livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
-        originalQueryScope = QueryScope.getScope();
+
+        // initialize the unit test's execution context
+        executionContext = ExecutionContextImpl.createForUnitTests();
 
         oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
         oldCheckLtm = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
@@ -72,7 +74,9 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckLtm);
         CompilerTools.setLogEnabled(oldLogEnabled);
 
-        QueryScope.setScope(originalQueryScope);
+        // reset the execution context
+        executionContext.close();
+
         livenessScopeCloseable.close();
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);

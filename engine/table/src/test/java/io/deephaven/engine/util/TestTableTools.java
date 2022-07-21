@@ -26,6 +26,7 @@ import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.junit.*;
 
@@ -55,6 +56,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     private boolean oldLogEnabled;
 
     private LivenessScope scope;
+    private SafeCloseable executionContext;
 
     private Table table1;
     private Table table2;
@@ -71,6 +73,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
 
         scope = new LivenessScope();
+        executionContext = ExecutionContextImpl.createForUnitTests();
         LivenessScopeStack.push(scope);
 
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
@@ -92,6 +95,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         LivenessScopeStack.pop(scope);
         scope.release();
+        executionContext.close();
         CompilerTools.setLogEnabled(oldLogEnabled);
         UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckUgp);
         AsyncClientErrorNotifier.setReporter(oldReporter);

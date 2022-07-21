@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.util.ExecutionContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
@@ -109,33 +110,48 @@ public class PartitionAwareSourceTable extends SourceTable {
         }
 
         @Override
-        public TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
+        public TableAndRemainingFilters getWithWhere(
+                WhereFilter[] whereFilters, ExecutionContext[] whereExecutionContexts) {
             ArrayList<WhereFilter> partitionFilters = new ArrayList<>();
+            ArrayList<ExecutionContext> partitionExecutionContexts = new ArrayList<>();
             ArrayList<WhereFilter> groupFilters = new ArrayList<>();
+            ArrayList<ExecutionContext> groupExecutionContexts = new ArrayList<>();
             ArrayList<WhereFilter> otherFilters = new ArrayList<>();
+            ArrayList<ExecutionContext> otherExecutionContexts = new ArrayList<>();
 
             List<ColumnDefinition<?>> groupingColumns = table.getDefinition().getGroupingColumns();
             Set<String> groupingColumnNames =
                     groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
-            for (WhereFilter filter : whereFilters) {
-                filter.init(table.definition);
+            for (int ii = 0; ii < whereFilters.length; ++ii) {
+                final WhereFilter filter = whereFilters[ii];
+                final ExecutionContext filterExecutionContext = whereExecutionContexts[ii];
+                filterExecutionContext.apply(() -> {
+                    filter.init(table.definition);
+                });
+
                 List<String> columns = filter.getColumns();
                 if (filter instanceof ReindexingFilter) {
                     otherFilters.add(filter);
+                    otherExecutionContexts.add(filterExecutionContext);
                 } else if (((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(columns,
                         filter.getColumnArrays())) {
                     partitionFilters.add(filter);
+                    partitionExecutionContexts.add(filterExecutionContext);
                 } else if (filter.isSimpleFilter() && (columns.size() == 1)
                         && (groupingColumnNames.contains(columns.get(0)))) {
                     groupFilters.add(filter);
+                    groupExecutionContexts.add(filterExecutionContext);
                 } else {
                     otherFilters.add(filter);
+                    otherExecutionContexts.add(filterExecutionContext);
                 }
             }
 
             final Table result = partitionFilters.isEmpty() ? table.coalesce()
-                    : table.where(partitionFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+                    : DeferredViewTable.doApplyWhereFilters(
+                            table, partitionFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY),
+                            partitionExecutionContexts.toArray(ExecutionContext.ZERO_LENGTH_EXECUTION_CONTEXT_ARRAY));
 
             // put the other filters onto the end of the grouping filters, this means that the group filters should
             // go first, which should be preferable to having them second. This is basically the first query
@@ -143,9 +159,11 @@ public class PartitionAwareSourceTable extends SourceTable {
             // it, is that we have deferred the filters for the users permissions, and they did not have the opportunity
             // to properly filter the data yet at this point.
             groupFilters.addAll(otherFilters);
+            groupExecutionContexts.addAll(otherExecutionContexts);
 
             return new TableAndRemainingFilters(result,
-                    groupFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+                    groupFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY),
+                    groupExecutionContexts.toArray(ExecutionContext.ZERO_LENGTH_EXECUTION_CONTEXT_ARRAY));
         }
 
         @Override

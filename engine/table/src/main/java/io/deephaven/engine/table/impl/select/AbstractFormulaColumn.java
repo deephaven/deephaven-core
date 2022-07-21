@@ -7,6 +7,8 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.util.ExecutionContextImpl;
+import io.deephaven.util.ExecutionContext;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.impl.vector.*;
@@ -54,6 +56,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     protected boolean usesI; // uses the "i" variable which is an integer position for the row
     protected boolean usesII; // uses the "ii" variable which is the long position for the row
     protected boolean usesK; // uses the "k" variable which is the long row key into a column source
+    private final ExecutionContext executionContext;
 
     /**
      * Create a formula column for the given formula string.
@@ -68,6 +71,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         this.formulaString = Require.neqNull(formulaString, "formulaString");
         this.columnName = NameValidator.validateColumnName(columnName);
         this.useKernelFormulas = useKernelFormulas;
+        this.executionContext = ExecutionContextImpl.getCurrentContext();
     }
 
     @Override
@@ -224,7 +228,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         if (formulaFactory == null) {
             formulaFactory = useKernelFormulas ? createKernelFormulaFactory() : createFormulaFactory();
         }
-        formula = formulaFactory.createFormula(rowSet, initLazyMap, columnsToData, params);
+        formula = formulaFactory.createFormula(rowSet, initLazyMap, columnsToData, executionContext, params);
         return formula;
     }
 
@@ -266,7 +270,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         final FormulaKernelFactory formulaKernelFactory = getFormulaKernelFactory();
         final FormulaSourceDescriptor sd = getSourceDescriptor();
 
-        return (rowSet, lazy, columnsToData, params) -> {
+        return (rowSet, lazy, columnsToData, executionContext, params) -> {
             // Maybe warn that we ignore "lazy". By the way, "lazy" is the wrong term anyway. "lazy" doesn't mean
             // "cached", which is how we are using it.
             final Map<String, ColumnSource<?>> netColumnSources = new HashMap<>();
@@ -280,7 +284,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
                 final ColumnSource<?> cs = columnsToData.get(sd.arrays[ii]);
                 vectors[ii] = makeAppropriateVectorWrapper(cs, rowSet);
             }
-            final FormulaKernel fk = formulaKernelFactory.createInstance(vectors, params);
+            final FormulaKernel fk = executionContext.apply(() -> formulaKernelFactory.createInstance(vectors, params));
             return new FormulaKernelAdapter(rowSet, sd, netColumnSources, fk);
         };
     }

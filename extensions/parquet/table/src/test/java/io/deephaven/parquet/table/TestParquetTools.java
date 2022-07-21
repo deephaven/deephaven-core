@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.test.junit4.EngineCleanup;
 import junit.framework.TestCase;
 import org.junit.*;
 
@@ -38,6 +39,10 @@ import static io.deephaven.engine.util.TableTools.*;
  * Tests for {@link ParquetTools}.
  */
 public class TestParquetTools {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
     private final static String testRoot =
             Configuration.getInstance().getWorkspacePath() + File.separator + "TestParquetTools";
     private final static File testRootFile = new File(testRoot);
@@ -79,23 +84,19 @@ public class TestParquetTools {
 
     @After
     public void tearDown() {
-        try {
-            if (testRootFile.exists()) {
-                int tries = 0;
-                boolean success = false;
-                do {
-                    try {
-                        FileUtils.deleteRecursively(testRootFile);
-                        success = true;
-                    } catch (Exception e) {
-                        System.gc();
-                        tries++;
-                    }
-                } while (!success && tries < 10);
-                TestCase.assertTrue(success);
-            }
-        } finally {
-            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        if (testRootFile.exists()) {
+            int tries = 0;
+            boolean success = false;
+            do {
+                try {
+                    FileUtils.deleteRecursively(testRootFile);
+                    success = true;
+                } catch (Exception e) {
+                    System.gc();
+                    tries++;
+                }
+            } while (!success && tries < 10);
+            TestCase.assertTrue(success);
         }
     }
 

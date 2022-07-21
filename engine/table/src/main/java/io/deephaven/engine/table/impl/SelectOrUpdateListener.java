@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 
 import java.io.IOException;

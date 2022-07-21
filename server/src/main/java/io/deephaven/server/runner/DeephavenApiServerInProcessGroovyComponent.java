@@ -5,7 +5,7 @@ package io.deephaven.server.runner;
 
 import dagger.BindsInstance;
 import dagger.Component;
-import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
+import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.grpc.ManagedChannelBuilder;
 
 import javax.inject.Named;
@@ -15,10 +15,10 @@ import java.io.PrintStream;
 @Singleton
 @Component(modules = {
         DeephavenApiServerModule.class,
-        PythonGlobalScopeCopyModule.class,
+        GroovyConsoleSessionModule.class,
         ServerBuilderInProcessModule.class
 })
-public interface DeephavenApiServerInProcessComponent {
+public interface DeephavenApiServerInProcessGroovyComponent {
 
     DeephavenApiServer getServer();
 
@@ -39,6 +39,6 @@ public interface DeephavenApiServerInProcessComponent {
         @BindsInstance
         Builder withErr(@Named("err") PrintStream err);
 
-        DeephavenApiServerInProcessComponent build();
+        DeephavenApiServerInProcessGroovyComponent build();
     }
 }

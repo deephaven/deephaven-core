@@ -10,6 +10,8 @@ import io.deephaven.engine.exceptions.NotSortableException;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.ExecutionContextImpl;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.test.types.OutOfBandTest;
@@ -24,7 +26,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 
 @Category(OutOfBandTest.class)
@@ -35,6 +39,7 @@ public class TestSort extends BaseArrayTestCase {
 
     private boolean lastMemoize = false;
     private boolean oldCompilerToolsLogEnabled;
+    private SafeCloseable executionContext;
 
     @Override
     protected void setUp() throws Exception {
@@ -43,6 +48,7 @@ public class TestSort extends BaseArrayTestCase {
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
         lastMemoize = QueryTable.setMemoizeResults(false);
         oldCompilerToolsLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
+        executionContext = ExecutionContextImpl.createForUnitTests();
     }
 
     @Override
@@ -51,6 +57,7 @@ public class TestSort extends BaseArrayTestCase {
         CompilerTools.setLogEnabled(oldCompilerToolsLogEnabled);
         QueryTable.setMemoizeResults(lastMemoize);
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        executionContext.close();
     }
 
     @FunctionalInterface

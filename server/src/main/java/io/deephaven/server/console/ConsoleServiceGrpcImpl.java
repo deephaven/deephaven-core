@@ -33,6 +33,7 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
@@ -334,9 +335,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private void getCompletionItems(GetCompletionItemsRequest request,
             SessionState.ExportObject<ScriptSession> exportedConsole, CompletionParser parser,
             StreamObserver<AutoCompleteResponse> responseObserver) {
-        try {
+        final ScriptSession scriptSession = exportedConsole.get();
+        try (final SafeCloseable ignored = scriptSession.getSystemicExecutionContext().open()) {
             final VersionedTextDocumentIdentifier doc = request.getTextDocument();
-            ScriptSession scriptSession = exportedConsole.get();
             final VariableProvider vars = scriptSession.getVariableProvider();
             final CompletionLookups h = CompletionLookups.preload(scriptSession);
             // The only stateful part of a completer is the CompletionLookups, which are already once-per-session-cached

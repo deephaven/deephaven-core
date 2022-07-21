@@ -126,21 +126,22 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     public GroovyDeephavenSession(ObjectTypeLookup objectTypeLookup, final RunScripts runScripts)
             throws IOException {
-        this(objectTypeLookup, null, runScripts, false);
+        this(objectTypeLookup, null, runScripts);
     }
 
     public GroovyDeephavenSession(
-            ObjectTypeLookup objectTypeLookup, @Nullable final Listener changeListener,
-            final RunScripts runScripts, boolean isDefaultScriptSession)
+            ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener changeListener,
+            final RunScripts runScripts)
             throws IOException {
-        super(objectTypeLookup, changeListener, isDefaultScriptSession);
+        super(objectTypeLookup, changeListener);
 
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         groovyShell.setVariable("__groovySession", this);
         groovyShell.setVariable("DB_SCRIPT_PATH", DEFAULT_SCRIPT_PATH);
 
-        compilerContext.setParentClassLoader(getShell().getClassLoader());
+        executionContext.getCompilerContext().setParentClassLoader(getShell().getClassLoader());
 
         publishInitial();
 
@@ -596,7 +597,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 // only increment QueryLibrary version if some dynamic class overrides an existing class
                 if (!dynamicClasses.add(entry.getKey()) && !notifiedQueryLibrary) {
                     notifiedQueryLibrary = true;
-                    queryLibrary.updateVersionString();
+                    executionContext.getQueryLibrary().updateVersionString();
                 }
 
                 try {

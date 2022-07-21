@@ -4,6 +4,8 @@
 package io.deephaven.compilertools;
 
 import io.deephaven.configuration.Configuration;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Method;
@@ -48,6 +50,16 @@ public class TestCompilerTools {
         CLASS_CODE = testClassCode1.toString();
     }
 
+    @Before
+    public void setUp() {
+        CompilerTools.setContextForUnitTests();
+    }
+
+    @After
+    public void tearDown() {
+        CompilerTools.resetContext();
+    }
+
     @Test
     public void testParallelCompile() throws Throwable {
         // Load Configuration to avoid all that time
@@ -81,9 +93,12 @@ public class TestCompilerTools {
         final String className = "TestClass" + startTimeOffset + NUM_COMPILE_TESTS;
         System.out.println(printMillis(System.currentTimeMillis()) + ": starting test with class " + className);
         // We don't want to create the threads until the compile is mostly complete
+
+        final CompilerTools.Context context = CompilerTools.getContext();
         for (int i = 0; i < NUM_THREADS; i++) {
             final int fi = i; // For the lambda
             threads[i] = new Thread(() -> {
+                CompilerTools.setContext(context);
                 try {
                     final long delay = fi == 0 ? 0 : fi * WAIT_BETWEEN_THREAD_START_MILLIS + waitStartMillis;
                     final long startTime = System.currentTimeMillis();

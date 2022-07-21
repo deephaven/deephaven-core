@@ -9,8 +9,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.test.junit4.EngineCleanup;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -25,6 +27,9 @@ public class BrotliParquetTableReadWriteTest {
     private static final String ROOT_FILENAME = BrotliParquetTableReadWriteTest.class.getName() + "_root";
 
     private static File rootFile;
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     @Before
     public void setUp() {

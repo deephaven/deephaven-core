@@ -39,7 +39,7 @@ import java.text.DecimalFormat;
  * The AutotuningIncrementalReleaseFilter can be used to benchmark how many rows of data a query can process. In its
  * simplest form we can measure how many rows a lastBy statement can process. For example:
  * </p>
- * 
+ *
  * <pre>
  * import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter
  *
@@ -48,21 +48,21 @@ import java.text.DecimalFormat;
  * quotesFiltered = quotes.where(filter)
  * currentQuote = quotesFiltered.lastBy("LocalCodeStr").update("Mid=(Bid + Ask)/2")
  * </pre>
- * 
+ *
  * Produces a currentQuote table, and you can view the Log tab to determine how many rows per second were processed. The
  * summary is sent to the WARN level:
- * 
+ *
  * <pre>
  * 12:55:49.985 WARN Completed release 6.97 seconds, rows=19630961, rows/second=2,817,053.86
  * </pre>
- * 
+ *
  * If verbose mode is enabled, progress is displayed for each cycle at the INFO level.
  * </p>
  *
  * <p>
  * You may specify a StreamLoggerImpl() to send the data to STDOUT, as follows:
  * </p>
- * 
+ *
  * <pre>
  * import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter
  *
@@ -84,7 +84,7 @@ import java.text.DecimalFormat;
  * is not possible to differentiate which table is contributing more to the query's load without examining the
  * performance tables. You may need to adjust the initial size parameters so that one table does not complete processing
  * before another.
- * 
+ *
  * <pre>
  * import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter
  *

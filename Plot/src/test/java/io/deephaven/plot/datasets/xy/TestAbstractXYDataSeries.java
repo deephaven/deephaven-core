@@ -4,6 +4,7 @@
 package io.deephaven.plot.datasets.xy;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.plot.*;
 import io.deephaven.plot.datasets.data.IndexableData;
 import io.deephaven.plot.datasets.data.IndexableDataArray;
@@ -16,6 +17,7 @@ import io.deephaven.gui.color.Paint;
 import io.deephaven.gui.shape.JShapes;
 import io.deephaven.gui.shape.NamedShape;
 import groovy.lang.Closure;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 
 import java.util.*;
@@ -53,6 +55,20 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         public int size() {
             return 3;
         }
+    }
+
+    private SafeCloseable executionContext;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        executionContext = ExecutionContextImpl.createForUnitTests();
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        executionContext.close();
     }
 
     public void testVisibility() {

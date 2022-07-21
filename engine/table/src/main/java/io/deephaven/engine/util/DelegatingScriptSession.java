@@ -7,6 +7,7 @@ import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
+import io.deephaven.util.ExecutionContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,6 +54,11 @@ public class DelegatingScriptSession implements ScriptSession {
         }
         knownVariables.addAll(diff.created.keySet());
         return diff;
+    }
+
+    @Override
+    public ExecutionContext getSystemicExecutionContext() {
+        return delegate.getSystemicExecutionContext();
     }
 
     @Override

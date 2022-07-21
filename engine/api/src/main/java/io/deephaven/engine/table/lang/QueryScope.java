@@ -30,11 +30,11 @@ public abstract class QueryScope implements LogOutputAppendable {
     private static volatile QueryScope defaultScope = null;
     private static final ThreadLocal<QueryScope> currentScope = ThreadLocal.withInitial(QueryScope::getDefaultScope);
 
-    private static QueryScope getDefaultScope() {
+    public static QueryScope getDefaultScope() {
         if (defaultScope == null) {
             synchronized (QueryScope.class) {
                 if (defaultScope == null) {
-                    defaultScope = new StandaloneImpl();
+                    defaultScope = new PoisonedQueryScope();
                 }
             }
         }
@@ -42,23 +42,9 @@ public abstract class QueryScope implements LogOutputAppendable {
     }
 
     /**
-     * Sets the default scope.
-     *
-     * @param scope the script session's query scope
-     * @throws IllegalStateException if default scope is already set
-     * @throws NullPointerException if scope is null
-     */
-    public static synchronized void setDefaultScope(final QueryScope scope) {
-        if (defaultScope != null) {
-            throw new IllegalStateException("It's too late to set default scope; it's already set to: " + defaultScope);
-        }
-        defaultScope = Objects.requireNonNull(scope);
-    }
-
-    /**
      * Sets the default {@link QueryScope} to be used in the current context. By default there is a
-     * {@link StandaloneImpl} created by the static initializer and set as the defaultInstance. The method allows the
-     * use of a new or separate instance as the default instance for static methods.
+     * {@link PoisonedQueryScope} created by the static initializer and set as the defaultInstance. The method allows
+     * the use of a new or separate instance as the default instance for static methods.
      *
      * @param queryScope {@link QueryScope} to set as the new default instance; null clears the scope.
      */
@@ -77,6 +63,13 @@ public abstract class QueryScope implements LogOutputAppendable {
      */
     public static QueryScope getScope() {
         return currentScope.get();
+    }
+
+    /**
+     * Resets the {@link QueryScope} back to a PoisonedQueryScope.
+     */
+    public static void resetScope() {
+        setScope(null);
     }
 
     /**
@@ -143,7 +136,7 @@ public abstract class QueryScope implements LogOutputAppendable {
 
     /**
      * Apply conversions to certain scope variable values.
-     * 
+     *
      * @param value value
      * @return value, or an appropriately converted substitute.
      */
@@ -218,7 +211,7 @@ public abstract class QueryScope implements LogOutputAppendable {
 
     /**
      * Get a QueryScopeParam by name.
-     * 
+     *
      * @param name parameter name
      * @return newly-constructed QueryScopeParam (name + value-snapshot pair).
      * @throws QueryScope.MissingVariableException If any of the named scope variables does not exist.

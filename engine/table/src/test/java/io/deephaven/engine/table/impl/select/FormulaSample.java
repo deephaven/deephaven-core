@@ -74,11 +74,13 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
     private final io.deephaven.vector.LongVector II_;
     private final java.lang.Integer q;
     private final Map<Object, Object> __lazyResultCache;
+    private final io.deephaven.util.ExecutionContext __executionContext;
 
 
     public FormulaSample(final TrackingRowSet __rowSet,
             final boolean __lazy,
             final java.util.Map<String, ? extends io.deephaven.engine.table.ColumnSource> __columnsToData,
+            final io.deephaven.util.ExecutionContext __executionContext,
             final io.deephaven.engine.table.lang.QueryScopeParam... __params) {
         super(__rowSet);
         II = __columnsToData.get("II");
@@ -86,6 +88,7 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
         II_ = new io.deephaven.engine.table.impl.vector.LongVectorColumnWrapper(__columnsToData.get("II"), __rowSet);
         q = (java.lang.Integer) __params[0].getValue();
         __lazyResultCache = __lazy ? new ConcurrentHashMap<>() : null;
+        this.__executionContext = __executionContext;
     }
 
     @Override
@@ -95,11 +98,13 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
         final long ii = findResult;
         final long __temp0 = II.getLong(k);
         final int __temp1 = I.getInt(k);
-        if (__lazyResultCache != null) {
-            final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __temp0, __temp1);
-            return (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __temp0, __temp1));
+        try (io.deephaven.util.SafeCloseable __ignored = __executionContext != null ? __executionContext.open() : null) {
+            if (__lazyResultCache != null) {
+                final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __temp0, __temp1);
+                return (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __temp0, __temp1));
+            }
+            return applyFormulaPerItem(i, ii, __temp0, __temp1);
         }
-        return applyFormulaPerItem(i, ii, __temp0, __temp1);
     }
 
     @Override
@@ -112,11 +117,13 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
         final long ii = findResult;
         final long __temp0 = II.getPrevLong(k);
         final int __temp1 = I.getPrevInt(k);
-        if (__lazyResultCache != null) {
-            final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __temp0, __temp1);
-            return (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __temp0, __temp1));
+        try (io.deephaven.util.SafeCloseable __ignored = __executionContext != null ? __executionContext.open() : null) {
+            if (__lazyResultCache != null) {
+                final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __temp0, __temp1);
+                return (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __temp0, __temp1));
+            }
+            return applyFormulaPerItem(i, ii, __temp0, __temp1);
         }
-        return applyFormulaPerItem(i, ii, __temp0, __temp1);
     }
 
     @Override
@@ -153,33 +160,35 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
     private void fillChunkHelper(final boolean __usePrev, final FormulaFillContext __context,
             final WritableChunk<? super Values> __destination,
             final RowSequence __rowSequence, LongChunk<? extends Values> __chunk__col__II, IntChunk<? extends Values> __chunk__col__I) {
-        final WritableLongChunk<? super Values> __typedDestination = __destination.asWritableLongChunk();
-        try (final RowSet prev = __usePrev ? __rowSet.copyPrev() : null;
-                final RowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet())) {
-            __context.__iChunk.setSize(0);
-            inverted.forAllRowKeys(l -> __context.__iChunk.add(__intSize(l)));
-            inverted.fillRowKeyChunk(__context.__iiChunk);
-        }
-        final int[] __chunkPosHolder = new int[] {0};
-        if (__lazyResultCache != null) {
-            __rowSequence.forAllRowKeys(k -> {
-                final int __chunkPos = __chunkPosHolder[0]++;
-                final int i = __context.__iChunk.get(__chunkPos);
-                final long ii = __context.__iiChunk.get(__chunkPos);
-                final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos));
-                __typedDestination.set(__chunkPos, (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos))));
+        try (io.deephaven.util.SafeCloseable ignored = __executionContext != null ? __executionContext.open() : null) {
+            final WritableLongChunk<? super Values> __typedDestination = __destination.asWritableLongChunk();
+            try (final RowSet prev = __usePrev ? __rowSet.copyPrev() : null;
+                    final RowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet())) {
+                __context.__iChunk.setSize(0);
+                inverted.forAllRowKeys(l -> __context.__iChunk.add(__intSize(l)));
+                inverted.fillRowKeyChunk(__context.__iiChunk);
             }
-            );
-        } else {
-            __rowSequence.forAllRowKeys(k -> {
-                final int __chunkPos = __chunkPosHolder[0]++;
-                final int i = __context.__iChunk.get(__chunkPos);
-                final long ii = __context.__iiChunk.get(__chunkPos);
-                __typedDestination.set(__chunkPos, applyFormulaPerItem(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos)));
+            final int[] __chunkPosHolder = new int[] {0};
+            if (__lazyResultCache != null) {
+                __rowSequence.forAllRowKeys(k -> {
+                    final int __chunkPos = __chunkPosHolder[0]++;
+                    final int i = __context.__iChunk.get(__chunkPos);
+                    final long ii = __context.__iiChunk.get(__chunkPos);
+                    final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos));
+                    __typedDestination.set(__chunkPos, (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos))));
+                }
+                );
+            } else {
+                __rowSequence.forAllRowKeys(k -> {
+                    final int __chunkPos = __chunkPosHolder[0]++;
+                    final int i = __context.__iChunk.get(__chunkPos);
+                    final long ii = __context.__iiChunk.get(__chunkPos);
+                    __typedDestination.set(__chunkPos, applyFormulaPerItem(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos)));
+                }
+                );
             }
-            );
+            __typedDestination.setSize(__chunkPosHolder[0]);
         }
-        __typedDestination.setSize(__chunkPosHolder[0]);
     }
 
     private long applyFormulaPerItem(int i, long ii, long II, int I) {

@@ -27,6 +27,8 @@ import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.ConcurrentMethod;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.ExecutionContextImpl;
+import io.deephaven.util.ExecutionContext;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -239,13 +241,22 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @ConcurrentMethod
     @Override
-    public PartitionedTableImpl transform(@NotNull final UnaryOperator<Table> transformer) {
+    public PartitionedTable transform(@NotNull UnaryOperator<Table> transformer) {
+        return transform(ExecutionContextImpl.getCurrentContext(), transformer);
+    }
+
+    @Override
+    public PartitionedTableImpl transform(final ExecutionContext executionContext,
+            @NotNull final UnaryOperator<Table> transformer) {
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open();
+                final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+
             // Perform the transformation
-            resultTable = table.update(new TableTransformationColumn(constituentColumnName, transformer));
+            resultTable = table.update(new TableTransformationColumn(
+                    constituentColumnName, executionContext, transformer));
             enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition
@@ -269,6 +280,14 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     public PartitionedTableImpl partitionedTransform(
             @NotNull final PartitionedTable other,
             @NotNull final BinaryOperator<Table> transformer) {
+        return partitionedTransform(other, ExecutionContextImpl.getCurrentContext(), transformer);
+    }
+
+    @Override
+    public PartitionedTableImpl partitionedTransform(
+            @NotNull final PartitionedTable other,
+            final ExecutionContext executionContext,
+            @NotNull final BinaryOperator<Table> transformer) {
         // Check safety before doing any extra work
         if (table.isRefreshing() || other.table().isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
@@ -280,7 +299,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open();
+                final SafeCloseable ignored2 = LivenessScopeStack.open()) {
             // Perform the transformation
             final MatchPair[] joinAdditions =
                     new MatchPair[] {new MatchPair(RHS_CONSTITUENT, other.constituentColumnName())};
@@ -289,7 +309,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                             .where(new MatchFilter(Inverted, RHS_CONSTITUENT, (Object) null))
                     : table.join(other.table(), joinPairs, joinAdditions);
             resultTable = joined
-                    .update(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT, transformer))
+                    .update(new BiTableTransformationColumn(
+                            constituentColumnName, RHS_CONSTITUENT, transformer))
                     .dropColumns(RHS_CONSTITUENT);
             enclosingScope.manage(resultTable);
 

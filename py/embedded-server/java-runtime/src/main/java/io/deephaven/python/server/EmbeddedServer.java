@@ -7,6 +7,8 @@ import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
+import io.deephaven.server.console.python.PythonConsoleSessionModule;
 import io.deephaven.server.console.python.PythonGlobalScopeModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.jetty.JettyConfig;
@@ -35,7 +37,9 @@ public class EmbeddedServer {
             PythonGlobalScopeModule.class,
             HealthCheckModule.class,
             PythonPluginsRegistration.Module.class,
-            JettyServerModule.class
+            JettyServerModule.class,
+            PythonConsoleSessionModule.class,
+            GroovyConsoleSessionModule.class,
     })
     public interface PythonServerComponent extends DeephavenApiServerComponent {
         @Component.Builder
@@ -76,8 +80,13 @@ public class EmbeddedServer {
 
     public void start() throws Exception {
         server.run();
-        checkGlobals(scriptSession.get(), null);
+
+        final ScriptSession scriptSession = this.scriptSession.get();
+        checkGlobals(scriptSession, null);
         System.out.println("Server started on port " + server.server().getPort());
+
+        // We need to open the systemic execution context to permanently install the contexts for this thread.
+        scriptSession.getSystemicExecutionContext().open();
     }
 
     private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {

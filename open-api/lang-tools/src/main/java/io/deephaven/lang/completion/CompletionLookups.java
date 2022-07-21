@@ -24,16 +24,12 @@ public class CompletionLookups {
 
     private static final WeakHashMap<ScriptSession, CompletionLookups> lookups = new WeakHashMap<>();
 
-    private final Lazy<QueryLibrary> ql;
     private final Lazy<Collection<Class<?>>> statics;
     private final Map<String, TableDefinition> referencedTables;
 
     public CompletionLookups() {
-        ql = new Lazy<>(QueryLibrary::getLibrary);
-        statics = new Lazy<>(() -> {
-            ql.get();
-            return QueryLibrary.getStaticImports();
-        });
+        final QueryLibrary.Context ql = QueryLibrary.getLibrary();
+        statics = new Lazy<>(ql::getStaticImports);
         referencedTables = new ConcurrentHashMap<>();
 
         // This can be slow, so lets start it on a background thread right away.

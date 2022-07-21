@@ -75,15 +75,14 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * @param objectTypeLookup the object type lookup
      * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
-     * @param isDefaultScriptSession true if this is in the default context of a worker jvm
      * @param pythonEvaluator
      * @throws IOException if an IO error occurs running initialization scripts
      */
     public PythonDeephavenSession(
             ObjectTypeLookup objectTypeLookup, @Nullable final Listener listener, boolean runInitScripts,
-            boolean isDefaultScriptSession, PythonEvaluatorJpy pythonEvaluator)
+            PythonEvaluatorJpy pythonEvaluator)
             throws IOException {
-        super(objectTypeLookup, listener, isDefaultScriptSession);
+        super(objectTypeLookup, listener);
 
         evaluator = pythonEvaluator;
         scope = pythonEvaluator.getScope();
@@ -109,13 +108,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
             }
         }
 
-        final QueryLibrary currLibrary = QueryLibrary.getLibrary();
-        try {
-            QueryLibrary.setLibrary(queryLibrary);
-            QueryLibrary.importClass(org.jpy.PyObject.class);
-        } finally {
-            QueryLibrary.setLibrary(currLibrary);
-        }
+        executionContext.apply(() -> QueryLibrary.importClass(org.jpy.PyObject.class));
     }
 
     /**
@@ -123,7 +116,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * IPython kernel session.
      */
     public PythonDeephavenSession(PythonScope<?> scope) {
-        super(NoOp.INSTANCE, null, false);
+        super(NoOp.INSTANCE, null);
         this.scope = (PythonScope<PyObject>) scope;
         this.module = null;
         this.evaluator = null;

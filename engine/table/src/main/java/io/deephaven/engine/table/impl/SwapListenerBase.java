@@ -5,9 +5,9 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.updategraph.*;
+import io.deephaven.util.ExecutionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.liveness.LivenessArtifact;
@@ -161,7 +161,7 @@ public abstract class SwapListenerBase<T extends TableListener> extends Liveness
 
     /**
      * Set the listener that will eventually become the listener, if we have a successful swap.
-     * 
+     *
      * @param listener The listener that we will eventually forward all updates to
      * @param resultTable The table that will result from this operation
      */
@@ -223,11 +223,16 @@ public abstract class SwapListenerBase<T extends TableListener> extends Liveness
                         .append(System.identityHashCode(SwapListenerBase.this))
                         .append(", clock=")
                         .append(LogicalClock.DEFAULT.currentStep()).endl();
-                notification.run();
+                notification.runInContext();
                 log.info().append("SwapListener: Complete notification ")
                         .append(System.identityHashCode(sourceTable))
                         .append(" swap=")
                         .append(System.identityHashCode(SwapListenerBase.this)).endl();
+            }
+
+            @Override
+            public ExecutionContext getExecutionContext() {
+                return null;
             }
         };
     }

@@ -14,6 +14,9 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
+import io.deephaven.engine.util.ExecutionContextImpl;
+import io.deephaven.util.ExecutionContext;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -29,13 +32,16 @@ public class TableTransformationColumn extends BaseTableTransformationColumn {
 
     private final String inputOutputColumnName;
     private final Function<Table, Table> transformer;
+    private final ExecutionContext executionContext;
 
     private ColumnSource<Table> inputColumnSource;
 
     public TableTransformationColumn(
             @NotNull final String inputOutputColumnName,
+            final ExecutionContext executionContext,
             @NotNull final Function<Table, Table> transformer) {
         this.inputOutputColumnName = inputOutputColumnName;
+        this.executionContext = executionContext;
         this.transformer = transformer;
     }
 
@@ -71,7 +77,7 @@ public class TableTransformationColumn extends BaseTableTransformationColumn {
 
     @Override
     public SelectColumn copy() {
-        return new TableTransformationColumn(inputOutputColumnName, transformer);
+        return new TableTransformationColumn(inputOutputColumnName, executionContext, transformer);
     }
 
     private final class OutputFormulaFillContext implements Formula.FillContext {
@@ -96,12 +102,16 @@ public class TableTransformationColumn extends BaseTableTransformationColumn {
 
         @Override
         public Object get(final long rowKey) {
-            return transformer.apply(inputColumnSource.get(rowKey));
+            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
+                return transformer.apply(inputColumnSource.get(rowKey));
+            }
         }
 
         @Override
         public Object getPrev(final long rowKey) {
-            return transformer.apply(inputColumnSource.getPrev(rowKey));
+            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
+                return transformer.apply(inputColumnSource.getPrev(rowKey));
+            }
         }
 
         @Override
@@ -140,8 +150,10 @@ public class TableTransformationColumn extends BaseTableTransformationColumn {
             final WritableObjectChunk<Table, ? super Values> typedDestination = destination.asWritableObjectChunk();
             final int size = source.size();
             typedDestination.setSize(size);
-            for (int ii = 0; ii < size; ++ii) {
-                typedDestination.set(ii, transformer.apply(source.get(ii)));
+            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
+                for (int ii = 0; ii < size; ++ii) {
+                    typedDestination.set(ii, transformer.apply(source.get(ii)));
+                }
             }
         }
     }

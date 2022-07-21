@@ -29,37 +29,38 @@ public class TestSourceSink {
 
         final RandomResetter randomResetter = RandomResetter.makeRandomResetter(chunkType);
         final Random rng = new Random(120108951);
-        final ResettableWritableChunk<Values> chunkA = containerType.makeResettableWritableChunk();
-        final ResettableWritableChunk<Values> chunkB = containerType.makeResettableWritableChunk();
-        randomResetter.resetWithRandomValues(rng, chunkA, chunkSize);
-        randomResetter.resetWithRandomValues(rng, chunkB, chunkSize);
-
-        final RowSequence keysA =
-                RowSequenceFactory.wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, chunkSize - 1}));
-        final RowSequence keysB = RowSequenceFactory
-                .wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {2 * chunkSize, 3 * chunkSize - 1}));
-
-        final ChunkSink.FillFromContext fromContext = sink.makeFillFromContext(chunkSize);
-        sink.fillFromChunk(fromContext, chunkA, keysA);
-        sink.fillFromChunk(fromContext, chunkB, keysB);
-
-        // Get the whole thing back as one big chunk
-        final RowSequence keysAll =
-                RowSequenceFactory
+        try (final ResettableWritableChunk<Values> chunkA = containerType.makeResettableWritableChunk();
+                final ResettableWritableChunk<Values> chunkB = containerType.makeResettableWritableChunk();
+                final WritableChunk<Values> chunkNull = containerType.makeWritableChunk(chunkSize);
+                final RowSequence keysAll = RowSequenceFactory
                         .wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, 4 * chunkSize - 1}));
-        final ChunkSource.GetContext getContext = sink.makeGetContext(totalSize);
+                final ChunkSource.GetContext getContext = sink.makeGetContext(totalSize)) {
+            chunkNull.fillWithNullValue(0, chunkSize);
 
-        final Chunk<Values> valuesAll = sink.getChunk(getContext, keysAll);
+            randomResetter.resetWithRandomValues(rng, chunkA, chunkSize);
+            randomResetter.resetWithRandomValues(rng, chunkB, chunkSize);
 
-        final WritableChunk<Values> chunkNull = containerType.makeWritableChunk(chunkSize);
-        chunkNull.fillWithNullValue(0, chunkSize);
+            try (final RowSequence keysA =
+                    RowSequenceFactory
+                            .wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, chunkSize - 1}));
+                    final RowSequence keysB = RowSequenceFactory
+                            .wrapKeyRangesChunkAsRowSequence(
+                                    LongChunk.chunkWrap(new long[] {2 * chunkSize, 3 * chunkSize - 1}));
+                    final ChunkSink.FillFromContext fromContext = sink.makeFillFromContext(chunkSize)) {
+                sink.fillFromChunk(fromContext, chunkA, keysA);
+                sink.fillFromChunk(fromContext, chunkB, keysB);
+            }
 
-        final ChunkEquals ce = ChunkEquals.makeEqual(containerType);
+            // Get the whole thing back as one big chunk
+            final Chunk<Values> valuesAll = sink.getChunk(getContext, keysAll);
 
-        equalsHelper("first chunk", ce, chunkA, valuesAll, 0, chunkSize - 1);
-        equalsHelper("second chunk", ce, chunkNull, valuesAll, chunkSize, 2 * chunkSize - 1);
-        equalsHelper("third chunk", ce, chunkB, valuesAll, 2 * chunkSize, 3 * chunkSize - 1);
-        equalsHelper("fourth chunk", ce, chunkNull, valuesAll, 3 * chunkSize, 4 * chunkSize - 1);
+            final ChunkEquals ce = ChunkEquals.makeEqual(containerType);
+
+            equalsHelper("first chunk", ce, chunkA, valuesAll, 0, chunkSize - 1);
+            equalsHelper("second chunk", ce, chunkNull, valuesAll, chunkSize, 2 * chunkSize - 1);
+            equalsHelper("third chunk", ce, chunkB, valuesAll, 2 * chunkSize, 3 * chunkSize - 1);
+            equalsHelper("fourth chunk", ce, chunkNull, valuesAll, 3 * chunkSize, 4 * chunkSize - 1);
+        }
     }
 
     private static void equalsHelper(String what, final ChunkEquals ce, final Chunk<Values> expected,

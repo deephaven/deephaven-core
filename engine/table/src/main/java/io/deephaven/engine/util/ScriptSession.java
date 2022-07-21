@@ -8,6 +8,7 @@ import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.ReleasableLivenessManager;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
+import io.deephaven.util.ExecutionContext;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -54,6 +55,12 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
      * @return a VariableProvider instance backed by the global/binding context of this script session.
      */
     VariableProvider getVariableProvider();
+
+    /**
+     * Obtain an {@link ExecutionContext} instance for the current script session; as it is systemic it will not be
+     * recorded as a dependency to new operations while used.
+     */
+    ExecutionContext getSystemicExecutionContext();
 
     class Changes {
         public RuntimeException error = null;
