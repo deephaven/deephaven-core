@@ -12,7 +12,7 @@ import (
 // This example shows how you can run a server-side script directly via the client
 // and how you can use the script results in the client.
 //
-// This example requires a Deephaven server running on localhost:10000, so it will not work on pkg.go.dev.
+// This example requires a Deephaven server to connect to, so it will not work on pkg.go.dev.
 func Example_runScript() {
 	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.

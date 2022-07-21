@@ -1498,7 +1498,7 @@ func (op mergeOp) String() string {
 //
 // "nil Table" nodes (i.e. QueryNodes returned from calling Query() on a nil *TableHandle) are ignored.
 //
-// At least one non-nil node must be provided, otherwise an ErrEmptyMerge will be returned by ExecSerial or ExecBatch.
+// At least one non-nil query node must be provided, otherwise an ErrEmptyMerge will be returned by ExecSerial or ExecBatch.
 func MergeQuery(sortBy string, tables ...QueryNode) QueryNode {
 	var nonNilTables []QueryNode
 	for _, table := range tables {

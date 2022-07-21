@@ -45,6 +45,7 @@ func (fs *fieldStream) FetchOnce() (*apppb2.FieldsChangeUpdate, error) {
 }
 
 // Close closes the field stream.
+// This method is NOT goroutine-safe.
 func (fs *fieldStream) Close() {
 	if fs.cancel != nil {
 		fs.cancel()
@@ -65,6 +66,7 @@ func (client *Client) getFields(ctx context.Context) ([]*apppb2.FieldInfo, error
 	if err != nil {
 		return nil, err
 	}
+	// It's okay to call Close here since the fs is owned exclusively by this goroutine.
 	defer fs.Close()
 
 	changes, err := fs.FetchOnce()

@@ -12,7 +12,7 @@ import (
 // perform some operations on them,
 // and then download them to access the modified data.
 //
-// This example requires a Deephaven server running on localhost:10000, so it will not work on pkg.go.dev.
+// This example requires a Deephaven server to connect to, so it will not work on pkg.go.dev.
 func Example_importTable() {
 	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.

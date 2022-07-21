@@ -17,7 +17,7 @@ To run tests, simply run the following command from this folder.
 ```
 $ go test -v ./...
 ```
-All tests should pass within 10 seconds.
+All tests should pass within 30 seconds.
 Tests assume the server is on `localhost:10000` by default, but can be configured by setting the `DH_HOST` and `DH_PORT` environment variables.
 
 ## Examples

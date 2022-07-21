@@ -41,7 +41,7 @@ type Client struct {
 
 	grpcChannel *grpc.ClientConn
 
-	allowLeakedTables bool // When true, this disables TableHandle finalizers.
+	suppressTableLeakWarning bool // When true, this disables the TableHandle finalizer warning.
 
 	sessionStub
 	consoleStub
@@ -61,7 +61,7 @@ type Client struct {
 // so that the connection remains open. The provided context is saved and used to send keepalive messages.
 //
 // The option arguments can be used to specify other settings for the client.
-// See the "WithXYZ" methods (e.g. WithConsole) for details on what options are available.
+// See the With<XYZ> methods (e.g. WithConsole) for details on what options are available.
 func NewClient(ctx context.Context, host string, port string, options ...ClientOption) (*Client, error) {
 	grpcChannel, err := grpc.Dial(host+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -72,7 +72,7 @@ func NewClient(ctx context.Context, host string, port string, options ...ClientO
 
 	client := &Client{grpcChannel: grpcChannel, isOpen: true}
 
-	client.allowLeakedTables = opts.allowLeakedTables
+	client.suppressTableLeakWarning = opts.suppressTableLeakWarning
 
 	client.ticketFact = newTicketFactory()
 
@@ -105,6 +105,9 @@ func NewClient(ctx context.Context, host string, port string, options ...ClientO
 
 // Closed checks if the client is closed, i.e. it can no longer perform operations on the server.
 func (client *Client) Closed() bool {
+	client.lock.Lock()
+	defer client.lock.Unlock()
+
 	return !client.isOpen
 }
 
@@ -147,7 +150,7 @@ func (client *Client) Close() error {
 	client.lock.Lock()
 	defer client.lock.Unlock()
 
-	if client.Closed() {
+	if !client.isOpen { // using Closed here would cause deadlock
 		return nil
 	}
 
@@ -184,7 +187,7 @@ func (client *Client) withToken(ctx context.Context) (context.Context, error) {
 // RunScript executes a script on the deephaven server.
 //
 // The script language depends on the argument passed to WithConsole when creating the client.
-// If WithConsole was not provided when creating the client, this will return ErrNoConsole.
+// If WithConsole was not provided when creating the client, this method will return ErrNoConsole.
 func (client *Client) RunScript(ctx context.Context, script string) error {
 	if client.consoleStub.consoleId == nil {
 		return ErrNoConsole
@@ -206,10 +209,11 @@ func (client *Client) RunScript(ctx context.Context, script string) error {
 
 // clientOptions holds a set of configurable options to use when creating a client with NewClient.
 type clientOptions struct {
-	scriptLanguage    string // The language to use for server-side scripts. Empty string means no scripts can be run.
-	allowLeakedTables bool   // When true, disables TableHandle finalizers.
+	scriptLanguage           string // The language to use for server-side scripts. Empty string means no scripts can be run.
+	suppressTableLeakWarning bool   // When true, disables the TableHandle finalizer warning.
 }
 
+// newClientOptions applies all of the provided options and returns the resulting struct of settings.
 func newClientOptions(opts ...ClientOption) clientOptions {
 	options := clientOptions{}
 	for _, opt := range opts {
@@ -219,7 +223,7 @@ func newClientOptions(opts ...ClientOption) clientOptions {
 }
 
 // A ClientOption configures some aspect of a client connection when passed to NewClient.
-// See the WithXYZ methods for possible client options.
+// See the With<XYZ> methods for possible client options.
 type ClientOption interface {
 	// apply sets the relevant option in the clientOptions struct.
 	apply(opts *clientOptions)
@@ -244,15 +248,18 @@ func WithConsole(scriptLanguage string) ClientOption {
 	}}
 }
 
-// WithTableLeaksAllowed disables the automatic TableHandle leak check.
+// WithNoTableLeakWarning disables the automatic TableHandle leak check.
 //
 // Normally, a warning is printed whenever a TableHandle is forgotten without calling Release on it,
 // and a GC finalizer automatically frees the table.
 // However, TableHandles are automatically released by the server whenever a client connection closes.
 // So, it can be okay for short-lived clients that don't create large tables to forget their TableHandles
 // and rely on them being freed when the client closes.
-func WithTableLeaksAllowed() ClientOption {
+//
+// There is no guarantee on when the GC will run, so long-lived clients that forget their TableHandles
+// can end up exhausting the server's resources before any of the handles are GCed automatically.
+func WithNoTableLeakWarning() ClientOption {
 	return funcDialOption{func(opts *clientOptions) {
-		opts.allowLeakedTables = true
+		opts.suppressTableLeakWarning = true
 	}}
 }

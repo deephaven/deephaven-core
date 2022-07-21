@@ -13,7 +13,7 @@ import (
 // Input Tables make are a generic interface for streaming data from any source,
 // so you can use Deephaven's streaming table processing power for anything.
 //
-// This example requires a Deephaven server running on localhost:10000, so it will not work on pkg.go.dev.
+// This example requires a Deephaven server to connect to, so it will not work on pkg.go.dev.
 func Example_inputTable() {
 	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.

@@ -14,7 +14,7 @@ import (
 // See the doc comments for doQueryOps and doNormalOps for an explanation of each.
 // Don't be afraid to mix and match both as the situation requires!
 //
-// This example requires a Deephaven server running on localhost:10000, so it will not work on pkg.go.dev.
+// This example requires a Deephaven server to connect to, so it will not work on pkg.go.dev.
 func Example_tableOps() {
 	normalResult, err := doNormalOps()
 	if err != nil {
