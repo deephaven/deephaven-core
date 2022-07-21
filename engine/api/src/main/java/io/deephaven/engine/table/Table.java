@@ -985,7 +985,7 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
-    Table aggAllBy(AggSpec spec, Selectable... groupByColumns);
+    Table aggAllBy(AggSpec spec, ColumnName... groupByColumns);
 
     @Override
     @ConcurrentMethod

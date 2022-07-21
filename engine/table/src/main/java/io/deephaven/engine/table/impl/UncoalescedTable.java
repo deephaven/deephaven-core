@@ -351,7 +351,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public Table aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return coalesce().aggAllBy(spec, groupByColumns);
     }
 

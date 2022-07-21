@@ -589,7 +589,7 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public Table aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         for (ColumnName name : AggSpecColumnReferences.of(spec)) {
             if (!hasColumns(name.name())) {
                 throw new IllegalArgumentException(
@@ -597,7 +597,7 @@ public class QueryTable extends BaseTable {
                                 + toString(Arrays.asList(groupByColumns)));
             }
         }
-        final List<Selectable> groupByList = Arrays.asList(groupByColumns);
+        final List<ColumnName> groupByList = Arrays.asList(groupByColumns);
         final List<ColumnName> tableColumns =
                 definition.getColumnNames().stream().map(ColumnName::of).collect(Collectors.toList());
         final Optional<Aggregation> agg = AggregateAllByTable.singleAggregation(spec, groupByList, tableColumns);

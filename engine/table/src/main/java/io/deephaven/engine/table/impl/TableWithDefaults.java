@@ -625,7 +625,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table groupBy(Collection<? extends ColumnName> groupByColumns) {
-        return aggAllBy(AggSpec.group(), groupByColumns.toArray(Selectable[]::new));
+        return aggAllBy(AggSpec.group(), groupByColumns.toArray(ColumnName[]::new));
     }
 
     @Override
@@ -655,7 +655,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table aggAllBy(AggSpec spec, Collection<String> groupByColumns) {
-        return aggAllBy(spec, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return aggAllBy(spec, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
@@ -701,7 +701,7 @@ public interface TableWithDefaults extends Table {
     @Override
     default Table applyToAllBy(String formulaColumn, String columnParamName,
             Collection<? extends Selectable> groupByColumns) {
-        return aggAllBy(AggSpec.formula(formulaColumn, columnParamName), groupByColumns.toArray(Selectable[]::new));
+        return aggAllBy(AggSpec.formula(formulaColumn, columnParamName), groupByColumns.toArray(ColumnName[]::new));
     }
 
     @Override

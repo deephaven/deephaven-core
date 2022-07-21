@@ -499,7 +499,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS aggAllBy(AggSpec spec, String... groupByColumns);
 
-    TOPS aggAllBy(AggSpec spec, Selectable... groupByColumns);
+    TOPS aggAllBy(AggSpec spec, ColumnName... groupByColumns);
 
     TOPS aggAllBy(AggSpec spec, Collection<String> groupByColumns);
 

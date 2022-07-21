@@ -276,7 +276,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public final TOPS_1 aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return adapt(delegate.aggAllBy(spec, groupByColumns));
     }
 

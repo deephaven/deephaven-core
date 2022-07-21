@@ -388,7 +388,7 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final AggregateAllByTable groupBy(Collection<? extends ColumnName> groupByColumns) {
-        return aggAllBy(AggSpec.group(), groupByColumns.toArray(new Selectable[0]));
+        return aggAllBy(AggSpec.group(), groupByColumns.toArray(new ColumnName[0]));
     }
 
     @Override
@@ -402,7 +402,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public final AggregateAllByTable aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return AggregateAllByTable.builder().parent(this).spec(spec).addGroupByColumns(groupByColumns).build();
     }
 
@@ -410,7 +410,7 @@ public abstract class TableBase implements TableSpec {
     public final AggregateAllByTable aggAllBy(AggSpec spec, Collection<String> groupByColumns) {
         AggregateAllByTable.Builder builder = AggregateAllByTable.builder().parent(this).spec(spec);
         for (String groupByColumn : groupByColumns) {
-            builder.addGroupByColumns(Selectable.parse(groupByColumn));
+            builder.addGroupByColumns(ColumnName.parse(groupByColumn));
         }
         return builder.build();
     }

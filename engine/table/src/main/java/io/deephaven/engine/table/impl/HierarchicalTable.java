@@ -181,7 +181,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public Table aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return throwUnsupported("aggAllBy(" + spec + ")");
     }
 

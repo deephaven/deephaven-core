@@ -240,7 +240,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         if (aggAllByTable.groupByColumns().isEmpty()) {
             addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec));
         } else {
-            final Selectable[] groupByColumns = aggAllByTable.groupByColumns().toArray(new Selectable[0]);
+            final ColumnName[] groupByColumns = aggAllByTable.groupByColumns().toArray(new ColumnName[0]);
             addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec, groupByColumns));
         }
     }

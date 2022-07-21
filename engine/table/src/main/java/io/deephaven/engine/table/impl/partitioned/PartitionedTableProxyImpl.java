@@ -624,7 +624,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public PartitionedTable.Proxy aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.aggAllBy(spec, groupByColumns));
     }
 

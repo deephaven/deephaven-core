@@ -83,7 +83,7 @@ public class QueryTableAggregationTest {
     private static AggregationContextFactory makeGroupByACF(
             @NotNull final Table table, @NotNull final String... groupByColumns) {
         return AggregationProcessor.forAggregation(List.of(
-                AggregateAllByTable.singleAggregation(AggSpec.group(), Selectable.from(groupByColumns),
+                AggregateAllByTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
                         table.getDefinition().getColumnStream().map(ColumnDefinition::getName)
                                 .map(ColumnName::of).collect(Collectors.toList()))
                         .orElseThrow()));
@@ -197,6 +197,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testStaticNameReusingByWithChunks() {
+        // todo fix
         individualStaticByTest(emptyTable(10000).update("A=i"), null, "A=Integer.toString(A % 5)", "A=A.hashCode()",
                 "A=A / 2");
     }

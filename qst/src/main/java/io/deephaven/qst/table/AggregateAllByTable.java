@@ -18,7 +18,7 @@ import java.util.Set;
 
 @Immutable
 @NodeStyle
-public abstract class AggregateAllByTable extends ByTableBase {
+public abstract class AggregateAllByTable extends ByTableColumnNameBase {
 
     public static Builder builder() {
         return ImmutableAggregateAllByTable.builder();
@@ -34,7 +34,7 @@ public abstract class AggregateAllByTable extends ByTableBase {
      * @return the aggregation, if non-empty
      */
     public static Optional<Aggregation> singleAggregation(
-            AggSpec spec, Collection<? extends Selectable> groupByColumns,
+            AggSpec spec, Collection<? extends ColumnName> groupByColumns,
             Collection<? extends ColumnName> tableColumns) {
         Set<ColumnName> exclusions = AggAllByExclusions.of(spec, groupByColumns);
         List<ColumnName> columnsToAgg = new ArrayList<>(tableColumns.size());
@@ -71,7 +71,7 @@ public abstract class AggregateAllByTable extends ByTableBase {
         return visitor;
     }
 
-    public interface Builder extends ByTableBase.Builder<AggregateAllByTable, Builder> {
+    public interface Builder extends ByTableColumnNameBase.Builder<AggregateAllByTable, Builder> {
         Builder spec(AggSpec spec);
     }
 }
