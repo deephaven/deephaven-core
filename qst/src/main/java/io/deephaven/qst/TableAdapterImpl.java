@@ -3,6 +3,7 @@
  */
 package io.deephaven.qst;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.spec.AggSpec;
@@ -280,7 +281,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
             addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name()));
         } else {
             addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name(),
-                    countByTable.groupByColumns().toArray(new Selectable[0])));
+                    countByTable.groupByColumns().toArray(new ColumnName[0])));
         }
     }
 

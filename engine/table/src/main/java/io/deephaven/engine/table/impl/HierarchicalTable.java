@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
@@ -160,7 +161,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table countBy(String countColumnName, Selectable... groupByColumns) {
+    public Table countBy(String countColumnName, ColumnName... groupByColumns) {
         return throwUnsupported("countBy()");
     }
 

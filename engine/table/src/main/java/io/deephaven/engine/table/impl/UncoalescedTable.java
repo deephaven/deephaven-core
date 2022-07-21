@@ -381,43 +381,43 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public Table sumBy(Selectable... groupByColumns) {
+    public Table sumBy(ColumnName... groupByColumns) {
         return coalesce().sumBy(groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table absSumBy(Selectable... groupByColumns) {
+    public Table absSumBy(ColumnName... groupByColumns) {
         return coalesce().absSumBy(groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table avgBy(Selectable... groupByColumns) {
+    public Table avgBy(ColumnName... groupByColumns) {
         return coalesce().avgBy(groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table wavgBy(String weightColumn, Selectable... groupByColumns) {
+    public Table wavgBy(String weightColumn, ColumnName... groupByColumns) {
         return coalesce().wavgBy(weightColumn, groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table wsumBy(String weightColumn, Selectable... groupByColumns) {
+    public Table wsumBy(String weightColumn, ColumnName... groupByColumns) {
         return coalesce().wsumBy(weightColumn, groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table stdBy(Selectable... groupByColumns) {
+    public Table stdBy(ColumnName... groupByColumns) {
         return coalesce().stdBy(groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table varBy(Selectable... groupByColumns) {
+    public Table varBy(ColumnName... groupByColumns) {
         return coalesce().varBy(groupByColumns);
     }
 
@@ -429,31 +429,31 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public Table firstBy(Selectable... groupByColumns) {
+    public Table firstBy(ColumnName... groupByColumns) {
         return coalesce().firstBy(groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table minBy(Selectable... groupByColumns) {
+    public Table minBy(ColumnName... groupByColumns) {
         return coalesce().minBy(groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table maxBy(Selectable... groupByColumns) {
+    public Table maxBy(ColumnName... groupByColumns) {
         return coalesce().maxBy(groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table medianBy(Selectable... groupByColumns) {
+    public Table medianBy(ColumnName... groupByColumns) {
         return coalesce().medianBy(groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table countBy(String countColumnName, Selectable... groupByColumns) {
+    public Table countBy(String countColumnName, ColumnName... groupByColumns) {
         return coalesce().countBy(countColumnName, groupByColumns);
     }
 

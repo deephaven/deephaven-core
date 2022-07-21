@@ -385,7 +385,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 countBy(String countColumnName, Selectable... groupByColumns) {
+    public final TOPS_1 countBy(String countColumnName, ColumnName... groupByColumns) {
         return adapt(delegate.countBy(countColumnName, groupByColumns));
     }
 
@@ -405,7 +405,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 firstBy(Selectable... groupByColumns) {
+    public final TOPS_1 firstBy(ColumnName... groupByColumns) {
         return adapt(delegate.firstBy(groupByColumns));
     }
 
@@ -445,7 +445,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 minBy(Selectable... groupByColumns) {
+    public final TOPS_1 minBy(ColumnName... groupByColumns) {
         return adapt(delegate.minBy(groupByColumns));
     }
 
@@ -465,7 +465,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 maxBy(Selectable... groupByColumns) {
+    public final TOPS_1 maxBy(ColumnName... groupByColumns) {
         return adapt(delegate.maxBy(groupByColumns));
     }
 
@@ -485,7 +485,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 sumBy(Selectable... groupByColumns) {
+    public final TOPS_1 sumBy(ColumnName... groupByColumns) {
         return adapt(delegate.sumBy(groupByColumns));
     }
 
@@ -505,7 +505,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 avgBy(Selectable... groupByColumns) {
+    public final TOPS_1 avgBy(ColumnName... groupByColumns) {
         return adapt(delegate.avgBy(groupByColumns));
     }
 
@@ -525,7 +525,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 medianBy(Selectable... groupByColumns) {
+    public final TOPS_1 medianBy(ColumnName... groupByColumns) {
         return adapt(delegate.medianBy(groupByColumns));
     }
 
@@ -545,7 +545,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 stdBy(Selectable... groupByColumns) {
+    public final TOPS_1 stdBy(ColumnName... groupByColumns) {
         return adapt(delegate.stdBy(groupByColumns));
     }
 
@@ -565,7 +565,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 varBy(Selectable... groupByColumns) {
+    public final TOPS_1 varBy(ColumnName... groupByColumns) {
         return adapt(delegate.varBy(groupByColumns));
     }
 
@@ -585,7 +585,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 absSumBy(Selectable... groupByColumns) {
+    public final TOPS_1 absSumBy(ColumnName... groupByColumns) {
         return adapt(delegate.absSumBy(groupByColumns));
     }
 
@@ -605,7 +605,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 wsumBy(String weightColumn, Selectable... groupByColumns) {
+    public final TOPS_1 wsumBy(String weightColumn, ColumnName... groupByColumns) {
         return adapt(delegate.wsumBy(weightColumn, groupByColumns));
     }
 
@@ -625,7 +625,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 wavgBy(String weightColumn, Selectable... groupByColumns) {
+    public final TOPS_1 wavgBy(String weightColumn, ColumnName... groupByColumns) {
         return adapt(delegate.wavgBy(weightColumn, groupByColumns));
     }
 

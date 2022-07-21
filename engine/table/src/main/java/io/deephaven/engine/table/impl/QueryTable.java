@@ -646,7 +646,7 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table countBy(String countColumnName, Selectable... groupByColumns) {
+    public Table countBy(String countColumnName, ColumnName... groupByColumns) {
         return QueryPerformanceRecorder.withNugget(
                 "countBy(" + countColumnName + "," + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
                 () -> aggBy(Aggregation.AggCount(countColumnName), Arrays.asList(groupByColumns)));

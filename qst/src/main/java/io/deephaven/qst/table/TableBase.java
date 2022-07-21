@@ -559,7 +559,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final CountByTable countBy(String countColumnName, Selectable... groupByColumns) {
+    public final CountByTable countBy(String countColumnName, ColumnName... groupByColumns) {
         return CountByTable.builder().parent(this).countName(ColumnName.of(countColumnName))
                 .addGroupByColumns(groupByColumns).build();
     }
@@ -568,7 +568,7 @@ public abstract class TableBase implements TableSpec {
     public final CountByTable countBy(String countColumnName, Collection<String> groupByColumns) {
         CountByTable.Builder builder = CountByTable.builder().parent(this).countName(ColumnName.of(countColumnName));
         for (String groupByColumn : groupByColumns) {
-            builder.addGroupByColumns(Selectable.parse(groupByColumn));
+            builder.addGroupByColumns(ColumnName.parse(groupByColumn));
         }
         return builder.build();
     }
@@ -584,7 +584,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable firstBy(Selectable... groupByColumns) {
+    public final AggregateAllByTable firstBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.first(), groupByColumns);
     }
 
@@ -624,7 +624,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable minBy(Selectable... groupByColumns) {
+    public final AggregateAllByTable minBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.min(), groupByColumns);
     }
 
@@ -644,7 +644,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable maxBy(Selectable... groupByColumns) {
+    public final AggregateAllByTable maxBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.max(), groupByColumns);
     }
 
@@ -664,7 +664,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable sumBy(Selectable... groupByColumns) {
+    public final AggregateAllByTable sumBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.sum(), groupByColumns);
     }
 
@@ -684,7 +684,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable avgBy(Selectable... groupByColumns) {
+    public final AggregateAllByTable avgBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.avg(), groupByColumns);
     }
 
@@ -704,7 +704,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable medianBy(Selectable... groupByColumns) {
+    public final AggregateAllByTable medianBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.median(), groupByColumns);
     }
 
@@ -724,7 +724,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable stdBy(Selectable... groupByColumns) {
+    public final AggregateAllByTable stdBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.std(), groupByColumns);
     }
 
@@ -744,7 +744,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable varBy(Selectable... groupByColumns) {
+    public final AggregateAllByTable varBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.var(), groupByColumns);
     }
 
@@ -764,7 +764,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable absSumBy(Selectable... groupByColumns) {
+    public final AggregateAllByTable absSumBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.absSum(), groupByColumns);
     }
 
@@ -784,7 +784,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable wsumBy(String weightColumn, Selectable... groupByColumns) {
+    public final AggregateAllByTable wsumBy(String weightColumn, ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.wsum(weightColumn), groupByColumns);
     }
 
@@ -804,7 +804,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable wavgBy(String weightColumn, Selectable... groupByColumns) {
+    public final AggregateAllByTable wavgBy(String weightColumn, ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.wavg(weightColumn), groupByColumns);
     }
 

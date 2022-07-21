@@ -1064,7 +1064,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table sumBy(Selectable... groupByColumns);
+    Table sumBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
@@ -1101,7 +1101,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table absSumBy(Selectable... groupByColumns);
+    Table absSumBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
@@ -1140,7 +1140,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table avgBy(Selectable... groupByColumns);
+    Table avgBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
@@ -1180,7 +1180,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table wavgBy(String weightColumn, Selectable... groupByColumns);
+    Table wavgBy(String weightColumn, ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the weighted average using
@@ -1228,7 +1228,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table wsumBy(String weightColumn, Selectable... groupByColumns);
+    Table wsumBy(String weightColumn, ColumnName... groupByColumns);
 
     /**
      * Computes the weighted sum for all rows in the table using weightColumn for the rest of the fields
@@ -1275,7 +1275,7 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
-    Table stdBy(Selectable... groupByColumns);
+    Table stdBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
@@ -1314,7 +1314,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table varBy(Selectable... groupByColumns);
+    Table varBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
@@ -1387,7 +1387,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table firstBy(Selectable... groupByColumns);
+    Table firstBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
@@ -1423,7 +1423,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table minBy(Selectable... groupByColumns);
+    Table minBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
@@ -1459,7 +1459,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table maxBy(Selectable... groupByColumns);
+    Table maxBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
@@ -1496,7 +1496,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table medianBy(Selectable... groupByColumns);
+    Table medianBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
@@ -1528,7 +1528,7 @@ public interface Table extends
     Table medianBy();
 
     @ConcurrentMethod
-    Table countBy(String countColumnName, Selectable... groupByColumns);
+    Table countBy(String countColumnName, ColumnName... groupByColumns);
 
     @ConcurrentMethod
     Table countBy(String countColumnName, String... groupByColumns);

@@ -9,7 +9,7 @@ import org.immutables.value.Value.Immutable;
 
 @Immutable
 @NodeStyle
-public abstract class CountByTable extends ByTableBase {
+public abstract class CountByTable extends ByTableColumnNameBase {
 
     public static Builder builder() {
         return ImmutableCountByTable.builder();
@@ -23,7 +23,7 @@ public abstract class CountByTable extends ByTableBase {
         return visitor;
     }
 
-    public interface Builder extends ByTableBase.Builder<CountByTable, CountByTable.Builder> {
+    public interface Builder extends ByTableColumnNameBase.Builder<CountByTable, CountByTable.Builder> {
 
         Builder countName(ColumnName countName);
     }

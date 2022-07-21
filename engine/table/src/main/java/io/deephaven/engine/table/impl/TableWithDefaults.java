@@ -41,6 +41,7 @@ public interface TableWithDefaults extends Table {
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
     Filter[] ZERO_LENGTH_FILTER_ARRAY = new Filter[0];
     Selectable[] ZERO_LENGTH_SELECTABLE_ARRAY = new Selectable[0];
+    ColumnName[] ZERO_LENGTH_COLUMNNAME_ARRAY = new ColumnName[0];
 
     @Override
     default Table coalesce() {
@@ -717,170 +718,170 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
-    default Table sumBy(Selectable... groupByColumns) {
+    default Table sumBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.sum(), groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table sumBy(String... groupByColumns) {
-        return sumBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return sumBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table sumBy(Collection<String> groupByColumns) {
-        return sumBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return sumBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table sumBy() {
-        return sumBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+        return sumBy(ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
-    default Table absSumBy(Selectable... groupByColumns) {
+    default Table absSumBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.absSum(), groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table absSumBy(String... groupByColumns) {
-        return absSumBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return absSumBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table absSumBy(Collection<String> groupByColumns) {
-        return absSumBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return absSumBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table absSumBy() {
-        return absSumBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+        return absSumBy(ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
-    default Table avgBy(Selectable... groupByColumns) {
+    default Table avgBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.avg(), groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table avgBy(String... groupByColumns) {
-        return avgBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return avgBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table avgBy(Collection<String> groupByColumns) {
-        return avgBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return avgBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table avgBy() {
-        return avgBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+        return avgBy(ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
-    default Table wavgBy(String weightColumn, Selectable... groupByColumns) {
+    default Table wavgBy(String weightColumn, ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.wavg(weightColumn), groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table wavgBy(String weightColumn, String... groupByColumns) {
-        return wavgBy(weightColumn, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return wavgBy(weightColumn, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table wavgBy(String weightColumn, Collection<String> groupByColumns) {
-        return wavgBy(weightColumn, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return wavgBy(weightColumn, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table wavgBy(String weightColumn) {
-        return wavgBy(weightColumn, ZERO_LENGTH_SELECTABLE_ARRAY);
+        return wavgBy(weightColumn, ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
-    default Table wsumBy(String weightColumn, Selectable... groupByColumns) {
+    default Table wsumBy(String weightColumn, ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.wsum(weightColumn), groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table wsumBy(String weightColumn) {
-        return wsumBy(weightColumn, ZERO_LENGTH_SELECTABLE_ARRAY);
+        return wsumBy(weightColumn, ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
     default Table wsumBy(String weightColumn, String... groupByColumns) {
-        return wsumBy(weightColumn, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return wsumBy(weightColumn, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table wsumBy(String weightColumn, Collection<String> groupByColumns) {
-        return wsumBy(weightColumn, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return wsumBy(weightColumn, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
-    default Table stdBy(Selectable... groupByColumns) {
+    default Table stdBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.std(), groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table stdBy(String... groupByColumns) {
-        return stdBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return stdBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table stdBy(Collection<String> groupByColumns) {
-        return stdBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return stdBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table stdBy() {
-        return stdBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+        return stdBy(ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
-    default Table varBy(Selectable... groupByColumns) {
+    default Table varBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.var(), groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table varBy(String... groupByColumns) {
-        return varBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return varBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table varBy(Collection<String> groupByColumns) {
-        return varBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return varBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table varBy() {
-        return varBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+        return varBy(ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
@@ -892,13 +893,13 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table lastBy(String... groupByColumns) {
-        return lastBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return lastBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table lastBy(Collection<String> groupByColumns) {
-        return lastBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return lastBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
@@ -909,116 +910,116 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
-    default Table firstBy(Selectable... groupByColumns) {
+    default Table firstBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.first(), groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table firstBy(String... groupByColumns) {
-        return firstBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return firstBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table firstBy(Collection<String> groupByColumns) {
-        return firstBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return firstBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table firstBy() {
-        return firstBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+        return firstBy(ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
-    default Table minBy(Selectable... groupByColumns) {
+    default Table minBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.min(), groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table minBy(String... groupByColumns) {
-        return minBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return minBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table minBy(Collection<String> groupByColumns) {
-        return minBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return minBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table minBy() {
-        return minBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+        return minBy(ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
-    default Table maxBy(Selectable... groupByColumns) {
+    default Table maxBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.max(), groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table maxBy(String... groupByColumns) {
-        return maxBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return maxBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table maxBy(Collection<String> groupByColumns) {
-        return maxBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return maxBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table maxBy() {
-        return maxBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+        return maxBy(ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
-    default Table medianBy(Selectable... groupByColumns) {
+    default Table medianBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.median(), groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table medianBy(String... groupByColumns) {
-        return medianBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return medianBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table medianBy(Collection<String> groupByColumns) {
-        return medianBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return medianBy(ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table medianBy() {
-        return medianBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+        return medianBy(ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
     default Table countBy(String countColumnName, String... groupByColumns) {
-        return countBy(countColumnName, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return countBy(countColumnName, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table countBy(String countColumnName, Collection<String> groupByColumns) {
-        return countBy(countColumnName, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return countBy(countColumnName, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table countBy(String countColumnName) {
-        return countBy(countColumnName, ZERO_LENGTH_SELECTABLE_ARRAY);
+        return countBy(countColumnName, ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
