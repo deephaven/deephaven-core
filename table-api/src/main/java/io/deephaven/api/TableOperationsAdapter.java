@@ -425,7 +425,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 lastBy(Selectable... groupByColumns) {
+    public final TOPS_1 lastBy(ColumnName... groupByColumns) {
         return adapt(delegate.lastBy(groupByColumns));
     }
 

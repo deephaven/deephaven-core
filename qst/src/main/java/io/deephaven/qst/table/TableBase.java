@@ -604,7 +604,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregateAllByTable lastBy(Selectable... groupByColumns) {
+    public final AggregateAllByTable lastBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.last(), groupByColumns);
     }
 

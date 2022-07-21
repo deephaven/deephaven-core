@@ -423,7 +423,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public Table lastBy(Selectable... groupByColumns) {
+    public Table lastBy(ColumnName... groupByColumns) {
         return coalesce().lastBy(groupByColumns);
     }
 

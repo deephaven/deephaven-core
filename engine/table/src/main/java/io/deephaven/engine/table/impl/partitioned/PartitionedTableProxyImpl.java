@@ -772,7 +772,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy lastBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy lastBy(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.lastBy(groupByColumns));
     }
 

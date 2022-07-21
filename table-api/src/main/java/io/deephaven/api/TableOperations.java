@@ -570,7 +570,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS lastBy(String... groupByColumns);
 
-    TOPS lastBy(Selectable... groupByColumns);
+    TOPS lastBy(ColumnName... groupByColumns);
 
     TOPS lastBy(Collection<String> groupByColumns);
 

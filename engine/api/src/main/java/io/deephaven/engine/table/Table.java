@@ -1352,7 +1352,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table lastBy(Selectable... groupByColumns);
+    Table lastBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields

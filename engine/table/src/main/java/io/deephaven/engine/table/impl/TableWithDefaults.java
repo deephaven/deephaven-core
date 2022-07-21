@@ -886,7 +886,7 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
-    default Table lastBy(Selectable... groupByColumns) {
+    default Table lastBy(ColumnName... groupByColumns) {
         return aggAllBy(AggSpec.last(), groupByColumns);
     }
 
@@ -905,7 +905,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table lastBy() {
-        return lastBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+        return lastBy(ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
