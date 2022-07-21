@@ -1801,7 +1801,7 @@ public interface Table extends
      */
     @ConcurrentMethod
     Table updateBy(@NotNull Collection<? extends UpdateByClause> operations,
-            @NotNull Collection<? extends Selectable> byColumns);
+            @NotNull Collection<? extends ColumnName> byColumns);
 
     /**
      * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
@@ -1818,7 +1818,7 @@ public interface Table extends
     @ConcurrentMethod
     Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<? extends UpdateByClause> operations,
-            @NotNull final Collection<? extends Selectable> byColumns);
+            @NotNull final Collection<? extends ColumnName> byColumns);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Sort Operations

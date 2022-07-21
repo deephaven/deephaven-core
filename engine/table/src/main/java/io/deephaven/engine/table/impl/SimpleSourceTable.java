@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.table.Table;
@@ -69,7 +70,7 @@ public class SimpleSourceTable extends SourceTable {
     @Override
     public Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<? extends UpdateByClause> ops,
-            @NotNull final Collection<? extends Selectable> byColumns) {
+            @NotNull final Collection<? extends ColumnName> byColumns) {
         return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
                 () -> UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control));
     }

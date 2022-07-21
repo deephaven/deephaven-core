@@ -339,7 +339,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 updateBy(Collection<? extends UpdateByClause> operations,
-            Collection<? extends Selectable> byColumns) {
+            Collection<? extends ColumnName> byColumns) {
         return adapt(delegate.updateBy(operations, byColumns));
     }
 
@@ -350,7 +350,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations,
-            Collection<? extends Selectable> byColumns) {
+            Collection<? extends ColumnName> byColumns) {
         return adapt(delegate.updateBy(control, operations, byColumns));
     }
 

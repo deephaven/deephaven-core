@@ -1127,13 +1127,13 @@ public interface TableWithDefaults extends Table {
 
     @ConcurrentMethod
     default Table updateBy(@NotNull Collection<? extends UpdateByClause> operations,
-            @NotNull Collection<? extends Selectable> byColumns) {
+            @NotNull Collection<? extends ColumnName> byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), operations, byColumns);
     }
 
     @ConcurrentMethod
     default Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations, final String... byColumns) {
-        return updateBy(UpdateByControl.defaultInstance(), operations, Selectable.from(byColumns));
+        return updateBy(UpdateByControl.defaultInstance(), operations, ColumnName.from(byColumns));
     }
 
     @ConcurrentMethod
@@ -1144,7 +1144,7 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table updateBy(@NotNull final UpdateByClause operation, final String... byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), Collections.singletonList(operation),
-                Selectable.from(byColumns));
+                ColumnName.from(byColumns));
     }
 
     @ConcurrentMethod

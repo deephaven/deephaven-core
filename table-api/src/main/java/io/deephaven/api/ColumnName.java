@@ -13,6 +13,10 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Represents a column name.
@@ -32,6 +36,14 @@ public abstract class ColumnName
 
     public static ColumnName parse(String value) {
         return of(value.trim());
+    }
+
+    public static List<ColumnName> from(String... values) {
+        return Arrays.stream(values).map(ColumnName::parse).collect(Collectors.toList());
+    }
+
+    public static List<ColumnName> from(Collection<String> values) {
+        return values.stream().map(ColumnName::parse).collect(Collectors.toList());
     }
 
     /**

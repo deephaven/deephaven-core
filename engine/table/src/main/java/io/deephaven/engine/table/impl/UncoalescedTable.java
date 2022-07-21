@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
@@ -484,7 +485,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     @ConcurrentMethod
     public Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<? extends UpdateByClause> ops,
-            @NotNull final Collection<? extends Selectable> byColumns) {
+            @NotNull final Collection<? extends ColumnName> byColumns) {
         return UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control);
     }
 

@@ -470,14 +470,14 @@ public abstract class TableBase implements TableSpec {
                 .parent(this)
                 .addOperations(operation);
         for (String byColumn : byColumns) {
-            builder.addGroupByColumns(Selectable.parse(byColumn));
+            builder.addGroupByColumns(ColumnName.parse(byColumn));
         }
         return builder.build();
     }
 
     @Override
     public final UpdateByTable updateBy(Collection<? extends UpdateByClause> operations,
-            Collection<? extends Selectable> byColumns) {
+            Collection<? extends ColumnName> byColumns) {
         return UpdateByTable.builder()
                 .parent(this)
                 .addAllOperations(operations)
@@ -499,7 +499,7 @@ public abstract class TableBase implements TableSpec {
                 .parent(this)
                 .addAllOperations(operations);
         for (String byColumn : byColumns) {
-            builder.addGroupByColumns(Selectable.parse(byColumn));
+            builder.addGroupByColumns(ColumnName.parse(byColumn));
         }
         return builder.build();
     }
@@ -515,7 +515,7 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final UpdateByTable updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations,
-            Collection<? extends Selectable> byColumns) {
+            Collection<? extends ColumnName> byColumns) {
         return UpdateByTable.builder()
                 .parent(this)
                 .control(control)

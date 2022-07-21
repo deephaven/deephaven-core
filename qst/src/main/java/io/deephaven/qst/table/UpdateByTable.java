@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @Immutable
 @NodeStyle
-public abstract class UpdateByTable extends ByTableBase {
+public abstract class UpdateByTable extends ByTableColumnNameBase {
 
     public static Builder builder() {
         return ImmutableUpdateByTable.builder();
@@ -37,7 +37,7 @@ public abstract class UpdateByTable extends ByTableBase {
         }
     }
 
-    public interface Builder extends ByTableBase.Builder<UpdateByTable, Builder> {
+    public interface Builder extends ByTableColumnNameBase.Builder<UpdateByTable, Builder> {
         Builder control(UpdateByControl control);
 
         Builder addOperations(UpdateByClause element);

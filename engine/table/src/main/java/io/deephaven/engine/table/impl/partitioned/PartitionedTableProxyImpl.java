@@ -686,7 +686,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy updateBy(Collection<? extends UpdateByClause> operations,
-            Collection<? extends Selectable> byColumns) {
+            Collection<? extends ColumnName> byColumns) {
         return basicTransform(ct -> ct.updateBy(operations, byColumns));
     }
 
@@ -697,7 +697,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations,
-            Collection<? extends Selectable> byColumns) {
+            Collection<? extends ColumnName> byColumns) {
         return basicTransform(ct -> ct.updateBy(control, operations, byColumns));
     }
 
