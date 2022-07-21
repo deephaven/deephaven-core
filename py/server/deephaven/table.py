@@ -19,7 +19,7 @@ from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
 from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator
 from deephaven.ugp import auto_locking_op
-from deephaven.updateby_clause import UpdateByClause
+from deephaven.updateby import UpdateByClause
 
 # Table
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -1390,16 +1390,15 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a partitioned table.") from e
 
-    def update_by(self, clauses: Union[UpdateByClause, List[UpdateByClause]],
+    def update_by(self, ops: Union[UpdateByClause, List[UpdateByClause]],
                   by: Union[str, List[str]] = None) -> Table:
-        """This method applies the specified row based operations to this table on a cumulative basis within the
-        groups and creates a new table that has the same set of row as this table. As opposed to
-        :meth:`~Table.update` which is strictly individual row based, these operations are capable of processing
-        state between rows within the same row groups which are identified by the provided key columns. If no key
-        columns are provided, all the rows of the table forms a single group.
+        """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
+        The aggregations are defined by the provided operations, which support incremental aggregations over the
+        corresponding rows in the this table. The aggregations will apply position or time-based windowing and
+        compute the results over the entire table or each row group as identified by the provided kye columns.
 
         Args:
-            clauses (Union[UpdateByClause, List[UpdateByClause]]): the update-by operation definition(s)
+            ops (Union[UpdateByClause, List[UpdateByClause]]): the update-by operation definition(s)
             by (Union[str, List[str]]): the key column name(s) to group the rows of the table
 
         Returns:
@@ -1409,9 +1408,9 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            clauses = to_sequence(clauses)
+            ops = to_sequence(ops)
             by = to_sequence(by)
-            return Table(j_table=self.j_table.updateBy(j_array_list(clauses), *by))
+            return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
         except Exception as e:
             raise DHError(e, "table update-by operation failed.") from e
 
@@ -2706,14 +2705,14 @@ class PartitionedTableProxy(JObjectWrapper):
             raise DHError(e, "var_by operation on the PartitionedTableProxy failed.") from e
 
     @auto_locking_op
-    def update_by(self, clauses: Union[UpdateByClause, List[UpdateByClause]],
+    def update_by(self, ops: Union[UpdateByClause, List[UpdateByClause]],
                   by: Union[str, List[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.update_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
         partitioned table.
 
         Args:
-            clauses (Union[UpdateByClause, List[UpdateByClause]]): the update-by operation definition(s)
+            ops (Union[UpdateByClause, List[UpdateByClause]]): the update-by operation definition(s)
             by (Union[str, List[str]]): the key column name(s) to group the rows of the table
 
         Returns:
@@ -2723,8 +2722,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            clauses = to_sequence(clauses)
+            ops = to_sequence(ops)
             by = to_sequence(by)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateBy(j_array_list(clauses), *by))
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateBy(j_array_list(ops), *by))
         except Exception as e:
             raise DHError(e, "update-by operation on the PartitionedTableProxy failed.") from e

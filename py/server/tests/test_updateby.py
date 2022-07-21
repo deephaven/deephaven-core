@@ -5,7 +5,7 @@
 import unittest
 
 from deephaven import read_csv, time_table, ugp
-from deephaven.updateby_clause import ema_tick_decay, BadDataBehavior, MathContext, EmaControl, ema_time_decay, cum_sum, \
+from deephaven.updateby import ema_tick_decay, BadDataBehavior, MathContext, EmaControl, ema_time_decay, cum_sum, \
     cum_prod, cum_min, cum_max, forward_fill
 from tests.testbase import BaseTestCase
 
@@ -29,17 +29,17 @@ class UpdateByTestCase(BaseTestCase):
                               on_negative_deltatime=BadDataBehavior.SKIP,
                               big_value_context=MathContext.UNLIMITED)
 
-        ema_clauses = [ema_tick_decay(time_scale_ticks=100, pairs="ema_a = a"),
-                       ema_tick_decay(time_scale_ticks=100, pairs="ema_a = a", ema_control=ema_ctrl),
-                       ema_time_decay(ts_col="Timestamp", time_scale_nanos=10, pairs="ema_a = a"),
-                       ema_time_decay(ts_col="Timestamp", time_scale_nanos=100, pairs="ema_c = c",
+        ema_clauses = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
+                       ema_tick_decay(time_scale_ticks=100, cols="ema_a = a", ema_control=ema_ctrl),
+                       ema_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
+                       ema_time_decay(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
                                       ema_control=ema_ctrl),
                        ]
 
         for ema_clause in ema_clauses:
             with self.subTest(ema_clause):
                 for t in (self.static_table, self.ticking_table):
-                    ema_table = t.update_by(clauses=ema_clause, by="b")
+                    ema_table = t.update_by(ops=ema_clause, by="b")
                     self.assertTrue(ema_table.is_refreshing is t.is_refreshing)
                     self.assertEqual(len(ema_table.columns), 1 + len(t.columns))
                     with ugp.exclusive_lock():
@@ -52,7 +52,7 @@ class UpdateByTestCase(BaseTestCase):
         for ubc_builder in ubc_builders:
             with self.subTest(ubc_builder):
                 for t in (self.static_table, self.ticking_table):
-                    updateby_table = t.update_by(clauses=ubc_builder(pairs), by="e")
+                    updateby_table = t.update_by(ops=ubc_builder(pairs), by="e")
                     self.assertTrue(updateby_table.is_refreshing is t.is_refreshing)
                     self.assertEqual(len(updateby_table.columns), 2 + len(t.columns))
                     with ugp.exclusive_lock():
@@ -70,7 +70,7 @@ class UpdateByTestCase(BaseTestCase):
                 for pt_proxy in pt_proxies:
                     if pt_proxy.is_refreshing:
                         ugp.auto_locking = True
-                    updateby_proxy = pt_proxy.update_by(clauses=ubc_builder(pairs), by="e")
+                    updateby_proxy = pt_proxy.update_by(ops=ubc_builder(pairs), by="e")
 
                     self.assertTrue(updateby_proxy.is_refreshing is pt_proxy.is_refreshing)
                     self.assertEqual(len(updateby_proxy.target.constituent_table_columns),
@@ -91,10 +91,10 @@ class UpdateByTestCase(BaseTestCase):
                               on_negative_deltatime=BadDataBehavior.SKIP,
                               big_value_context=MathContext.UNLIMITED)
 
-        ema_clauses = [ema_tick_decay(time_scale_ticks=100, pairs="ema_a = a"),
-                       ema_tick_decay(time_scale_ticks=100, pairs="ema_a = a", ema_control=ema_ctrl),
-                       ema_time_decay(ts_col="Timestamp", time_scale_nanos=10, pairs="ema_a = a"),
-                       ema_time_decay(ts_col="Timestamp", time_scale_nanos=100, pairs="ema_c = c",
+        ema_clauses = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
+                       ema_tick_decay(time_scale_ticks=100, cols="ema_a = a", ema_control=ema_ctrl),
+                       ema_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
+                       ema_time_decay(ts_col="Timestamp", time_scale=100, cols="ema_c = c",
                                       ema_control=ema_ctrl),
                        ]
         pt_proxies = [self.static_table.partition_by("b").proxy(),
