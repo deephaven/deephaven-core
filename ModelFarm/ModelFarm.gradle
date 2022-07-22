@@ -11,7 +11,7 @@ configurations {
 }
 
 dependencies {
-    compile project(':engine-table')
+    implementation project(':engine-table')
 
     runtimeOnly project(':configs')
 
