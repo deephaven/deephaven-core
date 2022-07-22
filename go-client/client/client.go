@@ -124,6 +124,8 @@ func (client *Client) Closed() bool {
 // etc.
 //
 // This may return a QueryError if the query is invalid.
+//
+// See the TableOps example and the QueryNode docs for more details on how this method should be used.
 func (client *Client) ExecSerial(ctx context.Context, nodes ...QueryNode) ([]*TableHandle, error) {
 	return execSerial(ctx, client, nodes)
 }
@@ -140,6 +142,8 @@ func (client *Client) ExecSerial(ctx context.Context, nodes ...QueryNode) ([]*Ta
 // etc.
 //
 // This may return a QueryError if the query is invalid.
+//
+// See the TableOps example and the QueryNode docs for more details on how this method should be used.
 func (client *Client) ExecBatch(ctx context.Context, nodes ...QueryNode) ([]*TableHandle, error) {
 	return execBatch(client, ctx, nodes)
 }
