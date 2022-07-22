@@ -11,9 +11,9 @@ dependencies {
 
     api 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 }
-Classpaths.inheritElemental(project, 'elemental2-core', 'compile')
-Classpaths.inheritElemental(project, 'elemental2-promise', 'compile')
-Classpaths.inheritElemental(project, 'elemental2-dom', 'compile')
+Classpaths.inheritElemental(project, 'elemental2-core', 'api')
+Classpaths.inheritElemental(project, 'elemental2-promise', 'api')
+Classpaths.inheritElemental(project, 'elemental2-dom', 'api')
 
 GwtTools.gwtLib project
 
