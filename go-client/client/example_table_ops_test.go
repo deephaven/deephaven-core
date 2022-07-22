@@ -10,13 +10,13 @@ import (
 
 // This example shows how to manipulate tables using the client.
 //
-// There are two different ways to manipulate tables: normal table operations, and the query system.
-// See the doc comments for doQueryOps and doNormalOps for an explanation of each.
+// There are two different ways to manipulate tables: immediate table operations, and the query system.
+// See the doc comments for doQueryOps and doImmediateOps for an explanation of each.
 // Don't be afraid to mix and match both as the situation requires!
 //
 // This example requires a Deephaven server to connect to, so it will not work on pkg.go.dev.
 func Example_tableOps() {
-	normalResult, err := doNormalOps()
+	normalResult, err := doImmediateOps()
 	if err != nil {
 		fmt.Println("encountered an error:", err.Error())
 		return
@@ -81,11 +81,11 @@ func Example_tableOps() {
 	//   col[3][Magnitude]: [10000 100000 100000000 10000 10000]
 }
 
-// This function demonstrates how to use normal table operations.
+// This function demonstrates how to use immediate table operations.
 //
-// Normal table operations take in TableHandles as inputs, and return a TableHandle (or an error) as an output.
+// Immediate table operations take in TableHandles as inputs, and return a TableHandle (or an error) as an output.
 // They allow for more fine-grained error handling and debugging than queries, at the cost of being more verbose.
-func doNormalOps() (string, error) {
+func doImmediateOps() (string, error) {
 	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
