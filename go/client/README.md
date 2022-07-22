@@ -46,4 +46,4 @@ $ go get -v golang.org/x/tools/cmd/godoc  # Installation, only needs to be done 
 $ godoc
 ```
 This will start up a web server (by default on [`http://localhost:6060`](http://localhost:6060)) that can be opened in a browser.
-The docs for the package will be at [this link](http://localhost:6060/pkg/github.com/deephaven/deephaven-core/go/client/client/).
+The docs for the package will be at [this link](http://localhost:6060/pkg/github.com/deephaven/deephaven-core/go/client/pkg/client/).

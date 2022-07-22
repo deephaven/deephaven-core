@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/deephaven/deephaven-core/go/client/client"
 	"github.com/deephaven/deephaven-core/go/client/internal/test_tools"
+	"github.com/deephaven/deephaven-core/go/client/pkg/client"
 )
 
 // This example shows off the ability to upload tables to the Deephaven server,

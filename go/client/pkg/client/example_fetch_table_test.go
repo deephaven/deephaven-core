@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/deephaven/deephaven-core/go/client/client"
 	"github.com/deephaven/deephaven-core/go/client/internal/test_tools"
+	"github.com/deephaven/deephaven-core/go/client/pkg/client"
 )
 
 // If you want to access tables from previous sessions or from the web UI,

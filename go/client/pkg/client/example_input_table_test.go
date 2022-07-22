@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/apache/arrow/go/v8/arrow"
-	"github.com/deephaven/deephaven-core/go/client/client"
 	"github.com/deephaven/deephaven-core/go/client/internal/test_tools"
+	"github.com/deephaven/deephaven-core/go/client/pkg/client"
 )
 
 // This example shows how to use Input Tables.

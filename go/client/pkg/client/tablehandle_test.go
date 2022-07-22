@@ -9,8 +9,8 @@ import (
 
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/apache/arrow/go/v8/arrow/array"
-	"github.com/deephaven/deephaven-core/go/client/client"
 	"github.com/deephaven/deephaven-core/go/client/internal/test_tools"
+	"github.com/deephaven/deephaven-core/go/client/pkg/client"
 )
 
 type unaryTableOp func(context.Context, *client.TableHandle) (*client.TableHandle, error)

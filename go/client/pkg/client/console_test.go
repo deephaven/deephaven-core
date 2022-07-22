@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/deephaven/deephaven-core/go/client/client"
 	"github.com/deephaven/deephaven-core/go/client/internal/test_tools"
+	"github.com/deephaven/deephaven-core/go/client/pkg/client"
 )
 
 func TestOpenTable(t *testing.T) {

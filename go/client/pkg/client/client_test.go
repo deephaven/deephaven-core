@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/deephaven/deephaven-core/go/client/client"
 	"github.com/deephaven/deephaven-core/go/client/internal/test_tools"
+	"github.com/deephaven/deephaven-core/go/client/pkg/client"
 )
 
 func TestConnectError(t *testing.T) {
@@ -178,7 +178,7 @@ func waitForTable(ctx context.Context, cl *client.Client, names []string, timeou
 				return false, err
 			}
 			if !contains(tbls, name) {
-				return false, nil
+				ok = false
 			}
 		}
 		if ok {

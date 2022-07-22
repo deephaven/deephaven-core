@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/deephaven/deephaven-core/go/client/client"
 	"github.com/deephaven/deephaven-core/go/client/internal/test_tools"
+	"github.com/deephaven/deephaven-core/go/client/pkg/client"
 )
 
 // This example shows how to manipulate tables using the client.
