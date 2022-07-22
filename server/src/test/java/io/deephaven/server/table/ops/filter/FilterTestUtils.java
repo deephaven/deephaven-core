@@ -104,6 +104,9 @@ public class FilterTestUtils {
     }
 
     public static Condition invoke(String method, Value target, Value... filterDescriptors) {
+        if (target == null) {
+            return NormalizeFilterUtil.doInvoke(method, Arrays.asList(filterDescriptors));
+        }
         return NormalizeFilterUtil.doInvoke(method, target, Arrays.asList(filterDescriptors));
     }
 }
