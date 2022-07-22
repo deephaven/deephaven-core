@@ -8,8 +8,8 @@ configurations {
 }
 
 dependencies {
-    compile project(':engine-table'),
-            project(':engine-function')
+    implementation project(':engine-table')
+    implementation project(':engine-function')
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
