@@ -16,7 +16,7 @@ import java.util.List;
  */
 @Immutable
 @NodeStyle
-public abstract class AggregationTable extends ByTableColumnNameBase {
+public abstract class AggregationTable extends ByTableBase {
 
     public static Builder builder() {
         return ImmutableAggregationTable.builder();
@@ -37,7 +37,7 @@ public abstract class AggregationTable extends ByTableColumnNameBase {
         }
     }
 
-    public interface Builder extends ByTableColumnNameBase.Builder<AggregationTable, Builder> {
+    public interface Builder extends ByTableBase.Builder<AggregationTable, Builder> {
         Builder addAggregations(Aggregation element);
 
         Builder addAggregations(Aggregation... elements);

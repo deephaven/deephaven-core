@@ -68,7 +68,6 @@ import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
 import io.deephaven.qst.table.ByTableBase;
-import io.deephaven.qst.table.ByTableColumnNameBase;
 import io.deephaven.qst.table.CountByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
@@ -487,7 +486,7 @@ class BatchTableRequestBuilder {
             return builder;
         }
 
-        private ComboAggregateRequest.Builder groupByColumns(ByTableColumnNameBase base) {
+        private ComboAggregateRequest.Builder groupByColumns(ByTableBase base) {
             ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(base.parent()));

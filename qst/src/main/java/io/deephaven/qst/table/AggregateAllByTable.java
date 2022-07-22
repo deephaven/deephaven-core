@@ -5,7 +5,6 @@ package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import org.immutables.value.Value.Immutable;
@@ -18,7 +17,7 @@ import java.util.Set;
 
 @Immutable
 @NodeStyle
-public abstract class AggregateAllByTable extends ByTableColumnNameBase {
+public abstract class AggregateAllByTable extends ByTableBase {
 
     public static Builder builder() {
         return ImmutableAggregateAllByTable.builder();
@@ -71,7 +70,7 @@ public abstract class AggregateAllByTable extends ByTableColumnNameBase {
         return visitor;
     }
 
-    public interface Builder extends ByTableColumnNameBase.Builder<AggregateAllByTable, Builder> {
+    public interface Builder extends ByTableBase.Builder<AggregateAllByTable, Builder> {
         Builder spec(AggSpec spec);
     }
 }
