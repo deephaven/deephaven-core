@@ -18,8 +18,8 @@ dependencies {
 
     Classpaths.inheritImmutables(project)
 
-    testImplementation TestTools.projectDependency(project, 'engine-table'),
-            'junit:junit:4.13.2'
+    testImplementation TestTools.projectDependency(project, 'engine-table')
+    Classpaths.inheritJUnitClassic(project)
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

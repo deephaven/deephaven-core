@@ -10,10 +10,7 @@ dependencies {
 
     compile 'io.deephaven:hash:0.1.0'
 
-    testCompile 'junit:junit:4.13.2'
-    testCompile 'org.jmock:jmock-junit4:2.12.0'
-    testCompile 'org.jmock:jmock-imposters:2.12.0'
-
+    Classpaths.inheritJUnitClassic(project, true, 'testCompile')
 }
 
 sourceSets {

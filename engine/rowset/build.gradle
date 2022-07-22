@@ -13,7 +13,7 @@ dependencies {
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    testImplementation 'junit:junit:4.13.2'
+    Classpaths.inheritJUnitClassic(project)
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

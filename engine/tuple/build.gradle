@@ -10,7 +10,7 @@ dependencies {
             project(':Util'),
             project(':engine-time')
 
-    testImplementation 'junit:junit:4.13.2'
+    Classpaths.inheritJUnitClassic(project)
 }
 
 spotless {

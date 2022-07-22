@@ -30,7 +30,7 @@ dependencies {
   testImplementation 'org.junit.jupiter:junit-jupiter'
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
   testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
-  testImplementation 'junit:junit:4.13.2'
+  Classpaths.inheritJUnitClassic(project)
   testImplementation 'io.grpc:grpc-testing'
 
   Classpaths.inheritAssertJ(project)

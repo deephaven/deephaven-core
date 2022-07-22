@@ -8,7 +8,7 @@ description 'Engine Chunks: Array-like data structures for dense, efficient data
 dependencies {
     api project(':Util')
 
-    testImplementation 'junit:junit:4.13.2'
+    Classpaths.inheritJUnitClassic(project)
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
