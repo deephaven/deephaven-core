@@ -10,9 +10,9 @@ plugins {
 apply from: "$rootDir/gradle/web-common.gradle"
 
 dependencies {
-    compile project(':open-api-shared-fu')
-    compile project(':log-factory')
-    compile project(':proto:proto-backplane-grpc')
+    api project(':open-api-shared-fu')
+    implementation project(':log-factory')
+    api project(':proto:proto-backplane-grpc')
 }
 Classpaths.inheritJavaParser project
 
