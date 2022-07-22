@@ -15,7 +15,7 @@ dependencies {
 
     runtimeOnly project(':configs')
 
-    testCompile TestTools.projectDependency(project, 'engine-table')
+    testImplementation TestTools.projectDependency(project, 'engine-table')
     testRuntimeOnly project(':Numerics')
 
     testRuntimeOnly project(':log-to-slf4j')

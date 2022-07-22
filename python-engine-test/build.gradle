@@ -15,14 +15,14 @@ test {
 }
 
 dependencies {
-  testCompile project(':CompilerTools'),
-          project(':engine-table'),
-          project(':Integrations'),
-          TestTools.projectDependency(project, 'engine-table')
+  testImplementation project(':CompilerTools')
+  testImplementation project(':engine-table')
+  testImplementation project(':Integrations')
+  testImplementation TestTools.projectDependency(project, 'engine-table')
 
   // This allows us to access jpy-integration javaToPython code around setting up python
   // for testing purposes
-  testCompile project.dependencies.project([
+  testImplementation project.dependencies.project([
       path: ':jpy-integration',
       configuration: 'javaToPythonRuntime'
   ])

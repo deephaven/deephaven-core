@@ -10,7 +10,7 @@ dependencies {
 
     compile 'io.deephaven:hash:0.1.0'
 
-    Classpaths.inheritJUnitClassic(project, true, 'testCompile')
+    Classpaths.inheritJUnitClassic(project, true, 'testImplementation')
 }
 
 sourceSets {

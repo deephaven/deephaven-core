@@ -4,11 +4,11 @@ plugins {
 
 dependencies {
     compile project(':Base'), project(':DataStructures'), project(':IO'), project(':log-factory'), depCommonsLang3
-    Classpaths.inheritJUnitClassic(project, true, 'testCompile')
+    Classpaths.inheritJUnitClassic(project, true, 'testImplementation')
 
     Classpaths.inheritAutoService(project)
 
-    testCompile project(path: ':Base', configuration: 'tests')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

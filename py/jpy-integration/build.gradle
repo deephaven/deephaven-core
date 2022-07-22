@@ -24,6 +24,8 @@ sourceSets {
     resources {
       srcDirs = ['src/javaToPython/python']
     }
+    compileClasspath += sourceSets.test.output
+    runtimeClasspath += sourceSets.test.output
   }
 
   pythonToJava {
@@ -33,24 +35,26 @@ sourceSets {
     resources {
       srcDirs = ['src/pythonToJava/python']
     }
+    compileClasspath += sourceSets.test.output
+    runtimeClasspath += sourceSets.test.output
   }
 }
 
 configurations {
   testCompile.extendsFrom junit
 
-  javaToPythonCompile.extendsFrom testCompile
-  pythonToJavaCompile.extendsFrom testCompile
+  javaToPythonImplementation.extendsFrom testImplementation
+  pythonToJavaImplementation.extendsFrom testImplementation
 
-  javaToPythonRuntime.extendsFrom testRuntime
-  pythonToJavaRuntime.extendsFrom testRuntime
+  javaToPythonRuntimeOnly.extendsFrom testRuntimeOnly
+  pythonToJavaRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 dependencies {
   // todo: consider running tests where JPY is *not* on the classpath, which is a completely acceptable use case
-  testCompile project(':deephaven-jpy-ext')
-  javaToPythonCompile sourceSets.test.output
-  pythonToJavaCompile sourceSets.test.output
+  testImplementation project(':deephaven-jpy-ext')
+  javaToPythonImplementation sourceSets.test.output
+  pythonToJavaImplementation sourceSets.test.output
 }
 
 test {

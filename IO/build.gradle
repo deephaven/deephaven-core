@@ -4,7 +4,8 @@ plugins {
 
 dependencies {
     compile project(':Base'), project(':SevenZip'), depCommonsCodec
-    testCompile project(path: ':Base', configuration: 'tests')
+    testImplementation project(path: ':Base', configuration: 'tests')
+    Classpaths.inheritJUnitClassic(project, true)
 }
 
 sourceSets {

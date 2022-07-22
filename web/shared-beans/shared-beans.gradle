@@ -13,7 +13,7 @@ configurations {
 dependencies {
     compile project(':open-api-shared-fu')
 
-    testCompile 'com.google.guava:guava:19.0'
+    testImplementation 'com.google.guava:guava:19.0'
 }
 
 // non-transitive dependency

@@ -4,5 +4,5 @@ apply from: "$rootDir/gradle/web-common.gradle"
 // To start the dev server: gw gCS (./gradlew gwtCodeServer)
 
 Classpaths.inheritGwt project
-Classpaths.inheritGwt project, 'gwt-user', 'testCompile'
-Classpaths.inheritGwt project, 'gwt-dev', 'testCompile'
+Classpaths.inheritGwt project, 'gwt-user', 'testImplementation'
+Classpaths.inheritGwt project, 'gwt-dev', 'testImplementation'
