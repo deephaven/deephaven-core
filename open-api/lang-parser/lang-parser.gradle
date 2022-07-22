@@ -14,7 +14,7 @@ dependencies {
     implementation project(':log-factory')
     api project(':proto:proto-backplane-grpc')
 }
-Classpaths.inheritJavaParser(project, 'compile')
+Classpaths.inheritJavaParser(project)
 
 // All javacc plugin configuration disabled to avoid weird IntelliJ breakage
 // when we try to manually patch the plugin.  Will reinstate once upstream
