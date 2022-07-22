@@ -486,16 +486,6 @@ class BatchTableRequestBuilder {
             return builder;
         }
 
-        private ComboAggregateRequest.Builder groupByColumns(ByTableBase base) {
-            ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
-                    .setResultId(ticket)
-                    .setSourceId(ref(base.parent()));
-            for (ColumnName column : base.groupByColumns()) {
-                builder.addGroupByColumns(Strings.of(column));
-            }
-            return builder;
-        }
-
         private SelectDistinctRequest selectDistinct(SelectDistinctTable selectDistinctTable) {
             SelectDistinctRequest.Builder builder = SelectDistinctRequest.newBuilder()
                     .setResultId(ticket)
