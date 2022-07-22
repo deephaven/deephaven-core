@@ -1,14 +1,15 @@
 plugins {
     id 'io.deephaven.project.register'
+    id 'java-library'
 }
 
 apply from: "$rootDir/gradle/web-client.gradle"
 
 dependencies {
-    compile project(':web-shared-beans')
-    compile project(':web-client-backplane')
+    api project(':web-shared-beans')
+    implementation project(':web-client-backplane')
 
-    compile 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
+    implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 }
 Classpaths.inheritElemental project, 'elemental2-core'
 Classpaths.inheritElemental project, 'elemental2-promise'
