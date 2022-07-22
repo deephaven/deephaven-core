@@ -136,10 +136,6 @@ class Classpaths {
         new DefaultExternalModuleDependency(group, name, version)
     }
 
-    static Configuration compile(Project p) {
-        p.configurations.findByName('api') ?: p.configurations.getByName('compile')
-    }
-
     static void inheritGwt(Project p, String name = 'gwt-user', String configName = 'compileOnly') {
         Configuration config = p.configurations.getByName(configName)
         if (addDependency(config, GWT_GROUP, name, GWT_VERSION)) {
@@ -152,32 +148,32 @@ class Classpaths {
         }
     }
 
-    static void inheritJavaParser(Project p, String name = JAVA_PARSER_NAME) {
-        Configuration compile = compile p
-        addDependency compile, JAVA_PARSER_GROUP, name, JAVA_PARSER_VERSION
+    static void inheritJavaParser(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, JAVA_PARSER_GROUP, JAVA_PARSER_NAME, JAVA_PARSER_VERSION
     }
 
-    static void inheritJavaxAnnotations(Project p) {
-        Configuration compile = compile p
-        addDependency compile, JAVAX_ANNOTATIONS_GROUP, JAVAX_ANNOTATIONS_NAME, JAVAX_ANNOTATIONS_VERSION
+    static void inheritJavaxAnnotations(Project p, String configName = JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, JAVAX_ANNOTATIONS_GROUP, JAVAX_ANNOTATIONS_NAME, JAVAX_ANNOTATIONS_VERSION
     }
 
-    static void inheritJsInterop(Project p, String name = 'base') {
-        Configuration compile = compile p
-        addDependency compile, JS_INTEROP_GROUP, name,
+    static void inheritJsInterop(Project p, String name, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, JS_INTEROP_GROUP, name,
                 // google is annoying, and have different versions released for the same groupId
                 // :base: is the only one that is different, so we'll use it in the ternary.
                 name == 'base'? '1.0.0' : JS_INTEROP_VERSION
     }
 
-    static void inheritElemental(Project p, String name = 'elemental2-core') {
-        Configuration compile = compile p
-        addDependency compile, ELEMENTAL_GROUP, name, ELEMENTAL_VERSION
+    static void inheritElemental(Project p, String name, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, ELEMENTAL_GROUP, name, ELEMENTAL_VERSION
     }
 
-    static void inheritCommonsText(Project p) {
-        Configuration compile = compile p
-        addDependency compile, COMMONS_GROUP, 'commons-text', "1.6", {
+    static void inheritCommonsText(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, COMMONS_GROUP, 'commons-text', "1.6", {
             // commons-text depends on commons-lang3; sadly, our version of lang3 is so old,
             // there is no version of commons-text which depends on it.  So, we just exclude it.
             // we only want some small, self-contained classes in commons-text anyway.
