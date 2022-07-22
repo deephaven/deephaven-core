@@ -1,14 +1,16 @@
 plugins {
     id 'io.deephaven.project.register'
+    id 'java-library'
 }
 
 dependencies {
 
-    compile depTrove3, depAnnotations, depCommonsCompress
+    implementation depTrove3
+    compileOnlyApi depAnnotations
+    api depCommonsCompress
+    implementation depCommonsLang3
 
-    compile depCommonsLang3
-
-    compile 'io.deephaven:hash:0.1.0'
+    api 'io.deephaven:hash:0.1.0'
 
     Classpaths.inheritJUnitClassic(project, true, 'testImplementation')
 }
