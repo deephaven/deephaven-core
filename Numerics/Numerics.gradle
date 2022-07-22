@@ -11,5 +11,6 @@ dependencies {
     compile project(':engine-table'),
             project(':engine-function')
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
 }

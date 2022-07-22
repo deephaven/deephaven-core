@@ -28,14 +28,14 @@ dependencies {
   ])
 
   // needed for access to dh-tests.prop
-  testRuntime project(path: ':test-configs'),
-          project(path: ':configs'),
-          project(':Integrations'),
-          project(':engine-table')
+  testRuntimeOnly project(path: ':test-configs')
+  testRuntimeOnly project(path: ':configs')
+  testRuntimeOnly project(':Integrations')
+  testRuntimeOnly project(':engine-table')
 
   // todo: IDO-322 (io.deephaven.numerics.suanshu.SuanShuIntegration)
-  testRuntime project(':Numerics')
-  testRuntime project(':extensions-suanshu')
+  testRuntimeOnly  project(':Numerics')
+  testRuntimeOnly  project(':extensions-suanshu')
 }
 
 def gradleWrapper = tasks.register("dockerGradleInit", Wrapper.class) { wrapper ->

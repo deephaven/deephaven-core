@@ -9,7 +9,8 @@ configurations {
 
 dependencies {
     compile project(':Util')
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
 
     runtimeOnly project(path: ':configs')
 

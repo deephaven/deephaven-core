@@ -28,8 +28,8 @@ dependencies {
     runtimeOnly project(':log-to-slf4j')
     Classpaths.inheritLogbackClassic(project)
 
-    testRuntime project(path: ':configs'),
-            project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
 
     combinedJavadoc project(path: ':combined-javadoc', targetConfiguration: 'combinedJavadoc')
 }

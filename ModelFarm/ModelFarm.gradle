@@ -16,10 +16,10 @@ dependencies {
     runtime project(':configs')
 
     testCompile TestTools.projectDependency(project, 'engine-table')
-    testRuntime project(':Numerics')
+    testRuntimeOnly project(':Numerics')
 
-    testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }

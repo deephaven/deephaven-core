@@ -23,12 +23,12 @@ dependencies {
     Classpaths.inheritGroovy(project, 'groovy-templates', 'testCompile')
 
     testCompile TestTools.projectDependency(project, 'engine-table')
-    testRuntime project(':configs')
-    testRuntime project(':test-configs')
-    testRuntime(project(':Numerics'))
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly  project(':test-configs')
+    testRuntimeOnly project(':Numerics')
     // intellij can be dumb and leave out our resources directory (sometimes)...
     // Do not cargo-cult this unless you have similar issues
-    testRuntime files('build/resources/main')
+    testRuntimeOnly files('build/resources/main')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
