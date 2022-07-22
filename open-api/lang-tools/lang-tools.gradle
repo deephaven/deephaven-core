@@ -1,6 +1,7 @@
 plugins {
     id 'groovy'
     id 'io.deephaven.project.register'
+    id 'java-library'
 }
 
 apply from: "$rootDir/gradle/web-common.gradle"
@@ -8,11 +9,10 @@ apply from: "$rootDir/gradle/web-common.gradle"
 Classpaths.inheritCommonsText(project)
 dependencies {
 
-    compile project(':open-api-lang-parser')
-
-    compile project(':engine-table'),
-            project(':engine-function'),
-            project(':IO')
+    api project(':open-api-lang-parser')
+    implementation project(':engine-table')
+    implementation project(':engine-function')
+    implementation project(':IO')
 
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
 
