@@ -7,8 +7,8 @@ configurations {
 }
 
 dependencies {
-    compile project(':engine-table'),
-            project(':engine-function')
+    implementation project(':engine-table')
+    implementation project(':engine-function')
 
     testImplementation TestTools.projectDependency(project, 'Base')
     testImplementation TestTools.projectDependency(project, 'engine-table')
