@@ -23,5 +23,12 @@ CMAKE_PREFIX_PATH=\
 Then run:
 
 ```
-  $ python setup.py build
+  $ python setup.py build_ext --inplace
 ```
+
+Other environment variables useful for debugging:
+
+* `VERBOSE=1` prints detailed compiler invocations, including flags like `-I`.
+* `PARALLEL=9` run up to 9 parallel processes, useful to speed up the compilation.  Set the value to your number of CPUS + 1.
+* `CMAKE_FLAGS=...` set to any desired value to pass down that flag to cmake; `--trace-expand` shows cmake decision as they are being made.
+
