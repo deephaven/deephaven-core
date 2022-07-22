@@ -9,7 +9,7 @@ dependencies {
     api project(':web-shared-beans')
     implementation project(':web-client-backplane')
 
-    implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
+    api 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 }
 Classpaths.inheritElemental(project, 'elemental2-core', 'compile')
 Classpaths.inheritElemental(project, 'elemental2-promise', 'compile')
