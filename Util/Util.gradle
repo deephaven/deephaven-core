@@ -8,7 +8,7 @@ configurations {
 }
 
 dependencies {
-    compile project(':log-factory')
+    implementation project(':log-factory')
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
