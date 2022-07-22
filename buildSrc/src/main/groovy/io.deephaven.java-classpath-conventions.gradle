@@ -61,9 +61,8 @@ dependencies {
     jama 'gov.nist.math.jama:gov.nist.math.jama:1.1.1'
     mockrunner 'com.mockrunner:mockrunner-jdbc:1.0.4'
     commonsCsv 'org.apache.commons:commons-csv:1.4'
-    junit 'junit:junit:4.13.2'
-    junit 'org.jmock:jmock-junit4:2.12.0'
-    junit 'org.jmock:jmock-imposters:2.12.0'
+
+    Classpaths.inheritJUnitClassic(project, true, 'junit')
 
     // Now, all the various fish libs we depend on, with inherited dependencies matching
     // the actual dependencies used in fishlib... if we were strongly coupled, we could skip

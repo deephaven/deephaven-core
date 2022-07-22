@@ -17,6 +17,6 @@ dependencies {
     Classpaths.inheritDagger(project)
 
 //    Classpaths.inheritJUnitPlatform(project, 'api')
-    implementation 'junit:junit:4.13.2'
+    Classpaths.inheritJUnitClassic(project, false, 'implementation')
 
 }

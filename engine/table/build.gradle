@@ -61,8 +61,9 @@ dependencies {
             project(':Base'),
             project(':BenchmarkSupport'),
             project(':extensions-csv'),
-            project(':extensions-parquet-table'),
-            'junit:junit:4.13.2'
+            project(':extensions-parquet-table')
+
+    Classpaths.inheritJUnitClassic(project)
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
