@@ -30,11 +30,6 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.FetchPandasTableRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
-        self.FetchTableMap = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/FetchTableMap',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapResponse.FromString,
-                )
         self.ApplyPreviewColumns = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/ApplyPreviewColumns',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.SerializeToString,
@@ -214,14 +209,6 @@ class TableServiceServicer(object):
     def FetchPandasTable(self, request, context):
         """
         Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def FetchTableMap(self, request, context):
-        """
-        Fetches a TableMap from an existing source ticket and exports it to the local session result ticket.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -506,11 +493,6 @@ def add_TableServiceServicer_to_server(servicer, server):
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.FetchPandasTableRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
-            'FetchTableMap': grpc.unary_unary_rpc_method_handler(
-                    servicer.FetchTableMap,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapResponse.SerializeToString,
-            ),
             'ApplyPreviewColumns': grpc.unary_unary_rpc_method_handler(
                     servicer.ApplyPreviewColumns,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.FromString,
@@ -724,23 +706,6 @@ class TableService(object):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable',
             deephaven_dot_proto_dot_table__pb2.FetchPandasTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def FetchTableMap(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/FetchTableMap',
-            deephaven_dot_proto_dot_table__pb2.FetchTableMapRequest.SerializeToString,
-            deephaven_dot_proto_dot_table__pb2.FetchTableMapResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
