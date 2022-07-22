@@ -424,13 +424,13 @@ public abstract class TableBase implements TableSpec {
     public final AggregationTable aggBy(Aggregation aggregation, String... groupByColumns) {
         final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
         for (String groupByColumn : groupByColumns) {
-            builder.addGroupByColumns(Selectable.parse(groupByColumn));
+            builder.addGroupByColumns(ColumnName.parse(groupByColumn));
         }
         return builder.addAggregations(aggregation).build();
     }
 
     @Override
-    public final AggregationTable aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
+    public final AggregationTable aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns) {
         return AggregationTable.builder().parent(this).addAllGroupByColumns(groupByColumns)
                 .addAggregations(aggregation).build();
     }
@@ -444,14 +444,14 @@ public abstract class TableBase implements TableSpec {
     public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
         final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
         for (String groupByColumn : groupByColumns) {
-            builder.addGroupByColumns(Selectable.parse(groupByColumn));
+            builder.addGroupByColumns(ColumnName.parse(groupByColumn));
         }
         return builder.addAllAggregations(aggregations).build();
     }
 
     @Override
     public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations,
-            Collection<? extends Selectable> groupByColumns) {
+            Collection<? extends ColumnName> groupByColumns) {
         return AggregationTable.builder().parent(this).addAllGroupByColumns(groupByColumns)
                 .addAllAggregations(aggregations).build();
     }

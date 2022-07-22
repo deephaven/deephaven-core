@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -71,30 +72,21 @@ public class ChunkedOperatorAggregationHelper {
                     true);
 
     public static QueryTable aggregation(AggregationContextFactory aggregationContextFactory, QueryTable queryTable,
-            SelectColumn[] groupByColumns) {
+            Collection<? extends ColumnName> groupByColumns) {
         return aggregation(AggregationControl.DEFAULT_FOR_OPERATOR, aggregationContextFactory, queryTable,
                 groupByColumns);
     }
 
     @VisibleForTesting
     public static QueryTable aggregation(AggregationControl control,
-            AggregationContextFactory aggregationContextFactory, QueryTable queryTable, SelectColumn[] groupByColumns) {
-        final boolean viewRequired = groupByColumns.length > 0
-                && Arrays.stream(groupByColumns).anyMatch(selectColumn -> !selectColumn.isRetain());
-        final QueryTable withView = !viewRequired ? queryTable : (QueryTable) queryTable.updateView(groupByColumns);
-
-        if (queryTable.hasAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE)) {
-            withView.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE,
-                    queryTable.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE));
-        }
-
+            AggregationContextFactory aggregationContextFactory, QueryTable queryTable,
+            Collection<? extends ColumnName> groupByColumns) {
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
-        final SwapListener swapListener =
-                withView.createSwapListenerIfRefreshing(SwapListener::new);
+        final SwapListener swapListener = queryTable.createSwapListenerIfRefreshing(SwapListener::new);
         BaseTable.initializeWithSnapshot(
-                "by(" + aggregationContextFactory + ", " + Arrays.toString(groupByColumns) + ")", swapListener,
+                "by(" + aggregationContextFactory + ", " + groupByColumns + ")", swapListener,
                 (usePrev, beforeClockValue) -> {
-                    resultHolder.setValue(aggregation(control, swapListener, aggregationContextFactory, withView,
+                    resultHolder.setValue(aggregation(control, swapListener, aggregationContextFactory, queryTable,
                             groupByColumns, usePrev));
                     return true;
                 });
@@ -102,13 +94,14 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static QueryTable aggregation(AggregationControl control, SwapListener swapListener,
-            AggregationContextFactory aggregationContextFactory, QueryTable withView, SelectColumn[] groupByColumns,
+            AggregationContextFactory aggregationContextFactory, QueryTable withView,
+            Collection<? extends ColumnName> groupByColumns,
             boolean usePrev) {
-        if (groupByColumns.length == 0) {
+        if (groupByColumns.isEmpty()) {
             return noKeyAggregation(swapListener, aggregationContextFactory, withView, usePrev);
         }
 
-        final String[] keyNames = Arrays.stream(groupByColumns).map(SelectColumn::getName).toArray(String[]::new);
+        final String[] keyNames = groupByColumns.stream().map(ColumnName::name).toArray(String[]::new);
         final ColumnSource<?>[] keySources =
                 Arrays.stream(keyNames).map(withView::getColumnSource).toArray(ColumnSource[]::new);
         final ColumnSource<?>[] reinterpretedKeySources = Arrays.stream(keySources)

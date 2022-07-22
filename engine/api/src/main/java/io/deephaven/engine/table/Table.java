@@ -1001,11 +1001,11 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
-    Table aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns);
+    Table aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns);
 
     @Override
     @ConcurrentMethod
-    Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
+    Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns);
 
     @Override
     @ConcurrentMethod

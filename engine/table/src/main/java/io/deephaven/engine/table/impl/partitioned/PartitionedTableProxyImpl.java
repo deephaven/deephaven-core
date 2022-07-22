@@ -644,7 +644,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
+    public PartitionedTable.Proxy aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregation, groupByColumns));
     }
 
@@ -660,7 +660,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations,
-            Collection<? extends Selectable> groupByColumns) {
+            Collection<? extends ColumnName> groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregations, groupByColumns));
     }
 

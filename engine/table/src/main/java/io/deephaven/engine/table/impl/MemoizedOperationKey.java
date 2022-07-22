@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
@@ -13,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Indices for memoized operations on QueryTable.
@@ -99,26 +101,18 @@ public abstract class MemoizedOperationKey {
     }
 
     public static MemoizedOperationKey aggBy(Collection<? extends Aggregation> aggregations,
-            SelectColumn[] groupByColumns) {
-        if (!isMemoizable(groupByColumns)) {
-            return null;
-        }
-        return new AggBy(aggregations.toArray(new Aggregation[0]), groupByColumns);
+            Collection<? extends ColumnName> groupByColumns) {
+        return new AggBy(new ArrayList<>(aggregations), new ArrayList<>(groupByColumns));
     }
 
-    public static MemoizedOperationKey partitionBy(boolean dropKeys, SelectColumn[] groupByColumns) {
-        if (!isMemoizable(groupByColumns)) {
-            return null;
-        }
-        return new PartitionBy(dropKeys, groupByColumns);
+    public static MemoizedOperationKey partitionBy(boolean dropKeys, Collection<? extends ColumnName> groupByColumns) {
+        return new PartitionBy(dropKeys, new ArrayList<>(groupByColumns));
     }
 
     public static MemoizedOperationKey rollup(Collection<? extends Aggregation> aggregations,
-            SelectColumn[] groupByColumns, boolean includeConstituents) {
-        if (!isMemoizable(groupByColumns)) {
-            return null;
-        }
-        return new Rollup(aggregations.toArray(new Aggregation[0]), groupByColumns, includeConstituents);
+            Collection<? extends ColumnName> groupByColumns, boolean includeConstituents) {
+        return new Rollup(new AggBy(new ArrayList<>(aggregations), new ArrayList<>(groupByColumns)),
+                includeConstituents);
     }
 
     private static boolean isMemoizable(SelectColumn[] selectColumn) {
@@ -341,10 +335,10 @@ public abstract class MemoizedOperationKey {
 
     private static class AggBy extends AttributeAgnosticMemoizedOperationKey {
 
-        private final Aggregation[] aggregations;
-        private final SelectColumn[] groupByColumns;
+        private final List<? extends Aggregation> aggregations;
+        private final List<? extends ColumnName> groupByColumns;
 
-        private AggBy(Aggregation[] aggregations, SelectColumn[] groupByColumns) {
+        private AggBy(List<? extends Aggregation> aggregations, List<? extends ColumnName> groupByColumns) {
             this.aggregations = aggregations;
             this.groupByColumns = groupByColumns;
         }
@@ -355,15 +349,18 @@ public abstract class MemoizedOperationKey {
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            final AggBy aggBy = (AggBy) o;
-            return Arrays.equals(aggregations, aggBy.aggregations) &&
-                    Arrays.equals(groupByColumns, aggBy.groupByColumns);
+
+            AggBy aggBy = (AggBy) o;
+
+            if (!aggregations.equals(aggBy.aggregations))
+                return false;
+            return groupByColumns.equals(aggBy.groupByColumns);
         }
 
         @Override
         public int hashCode() {
-            int result = Arrays.hashCode(aggregations);
-            result = 31 * result + Arrays.hashCode(groupByColumns);
+            int result = aggregations.hashCode();
+            result = 31 * result + groupByColumns.hashCode();
             return result;
         }
 
@@ -376,9 +373,9 @@ public abstract class MemoizedOperationKey {
     static class PartitionBy extends MemoizedOperationKey {
 
         private final boolean dropKeys;
-        private final SelectColumn[] groupByColumns;
+        private final List<? extends ColumnName> groupByColumns;
 
-        private PartitionBy(boolean dropKeys, SelectColumn[] groupByColumns) {
+        private PartitionBy(boolean dropKeys, List<? extends ColumnName> groupByColumns) {
             this.dropKeys = dropKeys;
             this.groupByColumns = groupByColumns;
         }
@@ -389,15 +386,16 @@ public abstract class MemoizedOperationKey {
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            final PartitionBy partitionBy = (PartitionBy) o;
-            return dropKeys == partitionBy.dropKeys &&
-                    Arrays.equals(groupByColumns, partitionBy.groupByColumns);
+            PartitionBy that = (PartitionBy) o;
+            if (dropKeys != that.dropKeys)
+                return false;
+            return groupByColumns.equals(that.groupByColumns);
         }
 
         @Override
         public int hashCode() {
-            int result = Boolean.hashCode(dropKeys);
-            result = 31 * result + Arrays.hashCode(groupByColumns);
+            int result = (dropKeys ? 1 : 0);
+            result = 31 * result + groupByColumns.hashCode();
             return result;
         }
     }
@@ -407,9 +405,9 @@ public abstract class MemoizedOperationKey {
         private final AggBy aggBy;
         private final boolean includeConstituents;
 
-        Rollup(Aggregation[] aggregations, SelectColumn[] groupByColumns, boolean includeConstituents) {
+        Rollup(AggBy aggBy, boolean includeConstituents) {
             this.includeConstituents = includeConstituents;
-            this.aggBy = new AggBy(aggregations, groupByColumns);
+            this.aggBy = aggBy;
         }
 
         @Override

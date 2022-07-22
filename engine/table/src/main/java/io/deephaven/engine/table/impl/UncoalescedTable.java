@@ -358,7 +358,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     @Override
     @ConcurrentMethod
     public Table aggBy(Collection<? extends Aggregation> aggregations,
-            Collection<? extends Selectable> groupByColumns) {
+            Collection<? extends ColumnName> groupByColumns) {
         return coalesce().aggBy(aggregations, groupByColumns);
     }
 

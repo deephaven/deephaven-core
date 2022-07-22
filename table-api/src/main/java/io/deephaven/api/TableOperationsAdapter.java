@@ -296,7 +296,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
+    public final TOPS_1 aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns) {
         return adapt(delegate.aggBy(aggregation, groupByColumns));
     }
 
@@ -312,7 +312,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 aggBy(Collection<? extends Aggregation> aggregations,
-            Collection<? extends Selectable> groupByColumns) {
+            Collection<? extends ColumnName> groupByColumns) {
         return adapt(delegate.aggBy(aggregations, groupByColumns));
     }
 

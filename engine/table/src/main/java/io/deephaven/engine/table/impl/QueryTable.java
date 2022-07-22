@@ -460,10 +460,9 @@ public class QueryTable extends BaseTable {
         if (isStream()) {
             throw streamUnsupported("partitionBy");
         }
-        final SelectColumn[] groupByColumns =
-                Arrays.stream(keyColumnNames).map(SourceColumn::new).toArray(SelectColumn[]::new);
-        return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, groupByColumns), () -> {
-            final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), Arrays.asList(groupByColumns));
+        final List<ColumnName> columns = ColumnName.from(keyColumnNames);
+        return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, columns), () -> {
+            final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), columns);
             final Set<String> keyColumnNamesSet =
                     Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
             final TableDefinition constituentDefinition;
@@ -607,10 +606,9 @@ public class QueryTable extends BaseTable {
         }
         final QueryTable tableToUse = (QueryTable) AggAllByUseTable.of(this, spec);
         final List<? extends Aggregation> aggs = List.of(agg.get());
-        final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
-        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, gbsColumns);
+        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, groupByList);
         return tableToUse.memoizeResult(aggKey, () -> {
-            final QueryTable result = tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), gbsColumns);
+            final QueryTable result = tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), groupByList);
             spec.walk(new AggAllByCopyAttributes(this, result));
             return result;
         });
@@ -619,7 +617,7 @@ public class QueryTable extends BaseTable {
     @Override
     public Table aggBy(
             final Collection<? extends Aggregation> aggregations,
-            final Collection<? extends Selectable> groupByColumns) {
+            final Collection<? extends ColumnName> groupByColumns) {
         if (aggregations.isEmpty()) {
             throw new IllegalArgumentException(
                     "aggBy must have at least one aggregation, none specified. groupByColumns="
@@ -627,10 +625,9 @@ public class QueryTable extends BaseTable {
         }
 
         final List<? extends Aggregation> optimized = AggregationOptimizer.of(aggregations);
-        final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
-        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, gbsColumns);
+        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, groupByColumns);
         final Table aggregationTable =
-                memoizeResult(aggKey, () -> aggNoMemo(AggregationProcessor.forAggregation(optimized), gbsColumns));
+                memoizeResult(aggKey, () -> aggNoMemo(AggregationProcessor.forAggregation(optimized), groupByColumns));
 
         final List<ColumnName> optimizedOrder = AggregationPairs.outputsOf(optimized).collect(Collectors.toList());
         final List<ColumnName> userOrder = AggregationPairs.outputsOf(aggregations).collect(Collectors.toList());
@@ -653,9 +650,9 @@ public class QueryTable extends BaseTable {
     }
 
     private QueryTable aggNoMemo(@NotNull final AggregationContextFactory aggregationContextFactory,
-            @NotNull final SelectColumn... groupByColumns) {
+            @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final String description = "aggregation(" + aggregationContextFactory
-                + ", " + Arrays.toString(groupByColumns) + ")";
+                + ", " + groupByColumns + ")";
         return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),
                 () -> ChunkedOperatorAggregationHelper.aggregation(aggregationContextFactory, this, groupByColumns));
     }
@@ -2869,9 +2866,10 @@ public class QueryTable extends BaseTable {
         return QueryPerformanceRecorder.withNugget("selectDistinct(" + groupByColumns + ")",
                 sizeForInstrumentation(),
                 () -> {
-                    final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
-                    final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(Collections.emptyList(), gbsColumns);
-                    return memoizeResult(aggKey, () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), gbsColumns));
+                    final MemoizedOperationKey aggKey =
+                            MemoizedOperationKey.aggBy(Collections.emptyList(), groupByColumns);
+                    return memoizeResult(aggKey,
+                            () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), groupByColumns));
                 });
     }
 
