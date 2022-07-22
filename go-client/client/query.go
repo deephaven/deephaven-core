@@ -44,8 +44,6 @@ func newQuerySubError(subError batchSubError, nodeTickets []*ticketpb2.Ticket, o
 }
 
 // A QueryError may be returned by ExecSerial or ExecBatch as the result of an invalid query.
-// The Details method will return more information about the error,
-// including a pseudo-traceback of the methods that caused it.
 type QueryError struct {
 	// Multiple tables in a query might fail,
 	// so each failed table gets its own querySubError.
@@ -136,8 +134,15 @@ type tableOp interface {
 	execSerialOp(ctx context.Context, stub *tableStub, children []*TableHandle) (*TableHandle, error)
 }
 
-// A QueryNode is effectively a pointer somewhere into a query.
-// Table operations can be performed on it to build up a query, which can then be executed using Client.ExecSerial() or Client.ExecBatch().
+// A QueryNode is a pointer somewhere into a "query graph".
+// A "query graph" is effectively a list of table operations that can be executed all at once.
+//
+// Table operations on a QueryNode return other QueryNodes.
+// Several operations can be chained together to build up an entire query graph,
+// which can then be executed using Client.ExecSerial or Client.ExecBatch to turn the QueryNode into a TableHandle.
+// See the TableOps example for more details on how to use query-graph table operations.
+//
+// All QueryNode methods are goroutine-safe.
 type QueryNode struct {
 	// -1 refers to the queryBuilder's base table
 	index   int

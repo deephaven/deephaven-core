@@ -160,7 +160,7 @@ func (ts *tableStub) OpenTable(ctx context.Context, name string) (*TableHandle, 
 	}
 }
 
-// EmptyTableQuery is like EmptyTable, except it can be used as part of a query.
+// EmptyTableQuery is like EmptyTable, except it can be used as part of a query graph.
 func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
 	qb := newQueryBuilder(nil)
 	qb.ops = append(qb.ops, emptyTableOp{numRows: numRows})
@@ -187,7 +187,7 @@ func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandl
 	return parseCreationResponse(ts.client, resp)
 }
 
-// TimeTableQuery is like TimeTable, except it can be used as part of a query.
+// TimeTableQuery is like TimeTable, except it can be used as part of a query graph.
 func (ts *tableStub) TimeTableQuery(period time.Duration, startTime time.Time) QueryNode {
 	qb := newQueryBuilder(nil)
 	qb.ops = append(qb.ops, timeTableOp{period: period, startTime: startTime})

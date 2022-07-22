@@ -111,9 +111,9 @@ func (client *Client) Closed() bool {
 	return !client.isOpen
 }
 
-// ExecSerial executes several table operations on the server and returns the resulting tables.
+// ExecSerial executes a query graph on the server and returns the resulting tables.
 //
-// This function makes a request for each table operation.
+// This function makes a request for each table operation in the query graph.
 // Consider using ExecBatch to batch all of the table operations into a single request,
 // which can be more efficient.
 //
@@ -128,9 +128,9 @@ func (client *Client) ExecSerial(ctx context.Context, nodes ...QueryNode) ([]*Ta
 	return execSerial(ctx, client, nodes)
 }
 
-// ExecBatch executes a batched query on the server and returns the resulting tables.
+// ExecBatch executes a query graph on the server and returns the resulting tables.
 //
-// All of the operations in the query will be performed in a single request,
+// All of the operations in the query graph will be performed in a single request,
 // so ExecBatch is usually more efficient than ExecSerial.
 //
 // If this function completes successfully,

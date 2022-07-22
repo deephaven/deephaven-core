@@ -37,6 +37,8 @@ var ErrEmptyMerge = errors.New("no non-nil tables were provided to merge")
 // A TableHandle's zero value acts identically to a TableHandle that has been released.
 // A nil TableHandle pointer also acts like a released table with one key exception:
 // The Merge and MergeQuery methods will simply ignore nil handles.
+//
+// See the TableOps example for more details on how to manipulate and use TableHandles.
 type TableHandle struct {
 	client   *Client
 	ticket   *ticketpb2.Ticket // The ticket this table can be referred to by.
@@ -169,8 +171,12 @@ func (th *TableHandle) Snapshot(ctx context.Context) (arrow.Record, error) {
 	return th.client.snapshotRecord(ctx, th.ticket)
 }
 
-// Query creates a new query based on this table. Table operations can be performed on query nodes to create new nodes.
-// A list of query nodes can then be passed to client.ExecSerial() or client.ExecBatch() to get a list of tables.
+// Query creates a new QueryNode based on this table.
+//
+// Table operations can be performed on query nodes to get more query nodes.
+// The nodes can then be turned back into TableHandles using the Client.ExecSerial or Client.ExecBatch methods.
+//
+// See the docs for QueryNode or the TableOps example for more details on how to use query-graph operations.
 func (th *TableHandle) Query() QueryNode {
 	// The validity check and lock will occur when the query is actually used, so they aren't handled here.
 	qb := newQueryBuilder(th)

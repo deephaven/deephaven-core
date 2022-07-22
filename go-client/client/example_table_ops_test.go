@@ -10,7 +10,7 @@ import (
 
 // This example shows how to manipulate tables using the client.
 //
-// There are two different ways to manipulate tables: immediate table operations, and the query system.
+// There are two different ways to manipulate tables: immediate table operations, and query-graph table operations.
 // See the doc comments for doQueryOps and doImmediateOps for an explanation of each.
 // Don't be afraid to mix and match both as the situation requires!
 //
@@ -83,7 +83,7 @@ func Example_tableOps() {
 
 // This function demonstrates how to use immediate table operations.
 //
-// Immediate table operations take in TableHandles as inputs, and return a TableHandle (or an error) as an output.
+// Immediate table operations take in tables as inputs, and return a table (or an error) as an output.
 // They allow for more fine-grained error handling and debugging than queries, at the cost of being more verbose.
 func doImmediateOps() (string, error) {
 	// A context is used to set timeouts and deadlines for requests or cancel requests.
@@ -163,9 +163,9 @@ func doImmediateOps() (string, error) {
 	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", sampleRecord, midRecord, magRecord), nil
 }
 
-// This function demonstrates how to use the query system.
+// This function demonstrates how to use query-graph table operations.
 //
-// The query system allows you to build up an arbitrary number of table operations into a single object,
+// Query-graph operations allow you to build up an arbitrary number of table operations into a single object (known as the "query graph")
 // and then execute all of the table operations at once.
 // This simplifies error handling, is much more concise, and can be more efficient than doing the operations separately.
 func doQueryOps() (string, error) {
@@ -195,31 +195,33 @@ func doQueryOps() (string, error) {
 	// Table handles should be released when they are no longer needed.
 	defer baseTable.Release(ctx)
 
-	// Now, let's start building a query.
+	// Now, let's start building a query graph.
 	// Maybe I don't like companies whose names are too long or too short, so let's keep only the ones in the middle.
+	// Unlike with immediate operations, here midStocks is a QueryNode instead of an actual TableHandle.
+	// A QueryNode just holds a list of operations to be performed; it doesn't do anything until it's executed (see below).
 	midStocks := baseTable.Query().
 		Where("Ticker.length() == 3 || Ticker.length() == 4")
 
-	// We can use the query system to create completely new tables too.
+	// We can create completely new tables in the query graph too.
 	// Let's make a table whose columns are powers of ten.
-	// Again, EmptyTableQuery() returns a QueryNode.
 	powTenTable := cl.
 		EmptyTableQuery(10).
 		Update("Magnitude = (int)pow(10, ii)")
 
 	// What if I want to bin the companies according to the magnitude of the Volume column?
-	// Query methods can take other query nodes as arguments to build up arbitrarily complicated requests,
+	// Query-graph methods can take other query nodes as arguments to build up arbitrarily complicated requests,
 	// so we can perform an as-of join between two query nodes just fine.
 	magStocks := midStocks.
 		AsOfJoin(powTenTable, []string{"Volume = Magnitude"}, nil, client.MatchRuleLessThanEqual)
 
-	// And now, we can execute the queries we have built.
+	// And now, we can execute the query graph we have built.
+	// This turns our QueryNodes into usable TableHandles.
 	tables, err := cl.ExecBatch(ctx, midStocks, magStocks)
 	if err != nil {
 		fmt.Println("error when executing query:", err.Error())
 		return "", err
 	}
-	// The order of the tables in the returned list is the same as the order of the queries passed as arguments.
+	// The order of the tables in the returned list is the same as the order of the QueryNodes passed as arguments.
 	midTable, magTable := tables[0], tables[1]
 	defer midTable.Release(ctx)
 	defer magTable.Release(ctx)
