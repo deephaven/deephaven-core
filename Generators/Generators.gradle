@@ -21,9 +21,9 @@ dependencies {
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
 
-    runtime project(path: ':configs'),
-            project(path: ':test-configs'),
-            project(':extensions-kafka')
+    runtimeOnly project(path: ':configs')
+    runtimeOnly project(path: ':test-configs')
+    runtimeOnly project(':extensions-kafka')
 
     runtimeOnly project(':log-to-slf4j')
     Classpaths.inheritLogbackClassic(project)
