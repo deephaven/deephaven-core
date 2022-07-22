@@ -53,10 +53,6 @@ public class ReplicateSortKernelTests {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
-        final int packageIndex = lines.indexOf("package io.deephaven.engine.table.impl.sort;");
-
-        lines.add(packageIndex + 2, "import java.util.Objects;");
-
         lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<Any>", "ObjectChunk<Object, Any>"))
                 .collect(Collectors.toList());
 
