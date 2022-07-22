@@ -4,16 +4,76 @@ import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
 import com.bmuschko.gradle.docker.tasks.network.DockerCreateNetwork
 import com.bmuschko.gradle.docker.tasks.network.DockerRemoveNetwork
 import io.deephaven.tools.docker.WaitForHealthyContainer
+import io.deephaven.tools.docker.DiffTask
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.python-wheel'
 }
 
+evaluationDependsOn Docker.registryProject('python')
+
 wheel {
     src 'pydeephaven'
     src 'examples'
     src 'tests'
+}
+
+configurations {
+    python {}
+}
+
+dependencies {
+    python project(path: ':proto:proto-backplane-grpc', configuration: 'python')
+}
+
+def generatedProtoDir = layout.buildDirectory.dir('generatedProto')
+
+def updatePyNamespaces = tasks.register('updatePyNamespaces', Sync) {
+    from(configurations.python) {
+        // change directory from deephaven to pydeephaven
+        eachFile { it.path = 'pydeephaven/' + it.path.substring('deephaven/'.length()) }
+        // rewrite specific imports/namespaces from deephaven to pydeephaven
+        filter { contents ->
+            def scanner = new Scanner(contents)
+            def lines = []
+            while (scanner.hasNextLine()) {
+                def line = scanner.nextLine();
+                if (line.trim().startsWith('\'__module__\' :')) {
+                    line = line.replace('\'deephaven.', '\'pydeephaven.')
+                } else if (line.startsWith('from deephaven.proto')) {
+                    line = line.replace('from deephaven.proto', 'from pydeephaven.proto')
+                }
+                lines.add(line)
+            }
+            return lines.join(System.lineSeparator());
+        }
+    }
+
+    into generatedProtoDir
+}
+
+def compare = tasks.register('compareProtobuf', DiffTask) {
+    dependsOn updatePyNamespaces
+
+    expectedContents.set generatedProtoDir.get().dir('pydeephaven/proto')
+    actualContents.set layout.projectDirectory.dir('pydeephaven/proto')
+    generateTask.set ':py-client:updateProto'
+    ignore {
+        include '__init__.py'
+    }
+}
+// fail a "check" build if these are out of date
+tasks.getByName('quick').dependsOn(compare)
+
+def updateProtobuf = tasks.register('updateProtobuf', Sync) {
+    dependsOn(updatePyNamespaces)
+    finalizedBy compare
+    from generatedProtoDir.get().dir('pydeephaven/proto')
+    into layout.projectDirectory.dir('pydeephaven/proto')
+    preserve {
+        include '__init__.py'
+    }
 }
 
 // Start up a docker container for the grpc server, then run pydeephaven test
