@@ -24,7 +24,7 @@ dependencies {
   // for testing purposes
   testImplementation project.dependencies.project([
       path: ':jpy-integration',
-      configuration: 'javaToPythonRuntime'
+      configuration: 'javaToPythonJar'
   ])
 
   // needed for access to dh-tests.prop

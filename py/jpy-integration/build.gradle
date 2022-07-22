@@ -41,6 +41,8 @@ sourceSets {
 }
 
 configurations {
+  javaToPythonJar
+
   testCompile.extendsFrom junit
 
   javaToPythonImplementation.extendsFrom testImplementation
@@ -69,7 +71,7 @@ task javaToPythonJar(type: Jar) {
 
 // And then we need to attach it to the appropriate configuration
 artifacts {
-  javaToPythonRuntime tasks.javaToPythonJar
+  javaToPythonJar tasks.javaToPythonJar
 }
 
 // must be explicit about marking these as test source directories in IntelliJ when not delegating builds to gradle
