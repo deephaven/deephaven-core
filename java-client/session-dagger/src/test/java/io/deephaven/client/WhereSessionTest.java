@@ -42,13 +42,13 @@ public class WhereSessionTest extends DeephavenSessionTestBase {
     }
 
     @Test
-    public void disallowTickingI() throws InterruptedException {
-        disallow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "i % 2 == 0");
+    public void allowTickingI() throws InterruptedException, TableHandle.TableHandleException {
+        allow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "i % 2 == 0");
     }
 
     @Test
-    public void disallowTickingII() throws InterruptedException {
-        disallow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "ii % 2 == 0");
+    public void allowTickingII() throws InterruptedException, TableHandle.TableHandleException {
+        allow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "ii % 2 == 0");
     }
 
     @Test

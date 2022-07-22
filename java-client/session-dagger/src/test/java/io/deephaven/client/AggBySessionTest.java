@@ -38,13 +38,13 @@ public class AggBySessionTest extends DeephavenSessionTestBase {
     }
 
     @Test
-    public void disallowTickingI() throws InterruptedException {
-        disallow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "Key = i % 2");
+    public void allowTickingI() throws InterruptedException, TableHandle.TableHandleException {
+        allow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "Key = i % 2");
     }
 
     @Test
-    public void disallowTickingII() throws InterruptedException {
-        disallow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "Key = ii % 2");
+    public void allowTickingII() throws InterruptedException, TableHandle.TableHandleException {
+        allow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "Key = ii % 2");
     }
 
     @Test
