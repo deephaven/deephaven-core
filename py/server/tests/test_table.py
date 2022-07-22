@@ -336,6 +336,7 @@ class TableTestCase(BaseTestCase):
             Table.first_by,
             Table.last_by,
             Table.sum_by,
+            Table.abs_sum_by,
             Table.avg_by,
             Table.std_by,
             Table.var_by,
@@ -359,6 +360,18 @@ class TableTestCase(BaseTestCase):
             with self.subTest(op=op):
                 result_table = op(self.test_table, by=[])
                 self.assertEqual(result_table.size, 1)
+
+        wops = [Table.weighted_avg_by,
+                Table.weighted_sum_by,
+                ]
+
+        for wop in wops:
+            with self.subTest(wop):
+                result_table = wop(self.test_table, wcol='e', by=["a", "b"])
+                self.assertEqual(len(result_table.columns), len(self.test_table.columns) - 1)
+
+                result_table = wop(self.test_table, wcol='e')
+                self.assertEqual(len(result_table.columns), len(self.test_table.columns) - 1)
 
     def test_count_by(self):
         num_distinct_a = self.test_table.select_distinct(formulas=["a"]).size
