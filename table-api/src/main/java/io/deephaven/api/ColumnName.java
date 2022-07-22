@@ -39,11 +39,11 @@ public abstract class ColumnName
     }
 
     public static List<ColumnName> from(String... values) {
-        return Arrays.stream(values).map(ColumnName::parse).collect(Collectors.toList());
+        return Arrays.stream(values).map(ColumnName::of).collect(Collectors.toList());
     }
 
     public static List<ColumnName> from(Collection<String> values) {
-        return values.stream().map(ColumnName::parse).collect(Collectors.toList());
+        return values.stream().map(ColumnName::of).collect(Collectors.toList());
     }
 
     /**

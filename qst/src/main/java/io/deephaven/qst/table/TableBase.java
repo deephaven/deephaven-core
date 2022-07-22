@@ -410,7 +410,7 @@ public abstract class TableBase implements TableSpec {
     public final AggregateAllByTable aggAllBy(AggSpec spec, Collection<String> groupByColumns) {
         AggregateAllByTable.Builder builder = AggregateAllByTable.builder().parent(this).spec(spec);
         for (String groupByColumn : groupByColumns) {
-            builder.addGroupByColumns(ColumnName.parse(groupByColumn));
+            builder.addGroupByColumns(ColumnName.of(groupByColumn));
         }
         return builder.build();
     }
@@ -424,7 +424,7 @@ public abstract class TableBase implements TableSpec {
     public final AggregationTable aggBy(Aggregation aggregation, String... groupByColumns) {
         final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
         for (String groupByColumn : groupByColumns) {
-            builder.addGroupByColumns(ColumnName.parse(groupByColumn));
+            builder.addGroupByColumns(ColumnName.of(groupByColumn));
         }
         return builder.addAggregations(aggregation).build();
     }
@@ -444,7 +444,7 @@ public abstract class TableBase implements TableSpec {
     public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
         final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
         for (String groupByColumn : groupByColumns) {
-            builder.addGroupByColumns(ColumnName.parse(groupByColumn));
+            builder.addGroupByColumns(ColumnName.of(groupByColumn));
         }
         return builder.addAllAggregations(aggregations).build();
     }
@@ -470,7 +470,7 @@ public abstract class TableBase implements TableSpec {
                 .parent(this)
                 .addOperations(operation);
         for (String byColumn : byColumns) {
-            builder.addGroupByColumns(ColumnName.parse(byColumn));
+            builder.addGroupByColumns(ColumnName.of(byColumn));
         }
         return builder.build();
     }
@@ -499,7 +499,7 @@ public abstract class TableBase implements TableSpec {
                 .parent(this)
                 .addAllOperations(operations);
         for (String byColumn : byColumns) {
-            builder.addGroupByColumns(ColumnName.parse(byColumn));
+            builder.addGroupByColumns(ColumnName.of(byColumn));
         }
         return builder.build();
     }
@@ -533,7 +533,7 @@ public abstract class TableBase implements TableSpec {
     public final SelectDistinctTable selectDistinct(String... groupByColumns) {
         final SelectDistinctTable.Builder builder = SelectDistinctTable.builder().parent(this);
         for (String groupByColumn : groupByColumns) {
-            builder.addGroupByColumns(ColumnName.parse(groupByColumn));
+            builder.addGroupByColumns(ColumnName.of(groupByColumn));
         }
         return builder.build();
     }
@@ -568,7 +568,7 @@ public abstract class TableBase implements TableSpec {
     public final CountByTable countBy(String countColumnName, Collection<String> groupByColumns) {
         CountByTable.Builder builder = CountByTable.builder().parent(this).countName(ColumnName.of(countColumnName));
         for (String groupByColumn : groupByColumns) {
-            builder.addGroupByColumns(ColumnName.parse(groupByColumn));
+            builder.addGroupByColumns(ColumnName.of(groupByColumn));
         }
         return builder.build();
     }
