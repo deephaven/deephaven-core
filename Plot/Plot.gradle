@@ -10,9 +10,9 @@ configurations {
 
 dependencies {
 
-    compile project(':engine-table'),
-            project(':engine-function'),
-            project(':engine-tuple')
+    implementation project(':engine-table')
+    implementation project(':engine-function')
+    implementation project(':engine-tuple')
 
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
