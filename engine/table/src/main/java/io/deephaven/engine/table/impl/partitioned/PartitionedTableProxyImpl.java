@@ -712,12 +712,12 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy selectDistinct(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy selectDistinct(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.selectDistinct(groupByColumns));
     }
 
     @Override
-    public PartitionedTable.Proxy selectDistinct(Collection<? extends Selectable> groupByColumns) {
+    public PartitionedTable.Proxy selectDistinct(Collection<? extends ColumnName> groupByColumns) {
         return basicTransform(ct -> ct.selectDistinct(groupByColumns));
     }
 

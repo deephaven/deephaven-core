@@ -540,9 +540,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS selectDistinct(String... groupByColumns);
 
-    TOPS selectDistinct(Selectable... groupByColumns);
+    TOPS selectDistinct(ColumnName... groupByColumns);
 
-    TOPS selectDistinct(Collection<? extends Selectable> groupByColumns);
+    TOPS selectDistinct(Collection<? extends ColumnName> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 

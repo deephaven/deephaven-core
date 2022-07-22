@@ -8,7 +8,7 @@ import org.immutables.value.Value.Immutable;
 
 @Immutable
 @NodeStyle
-public abstract class SelectDistinctTable extends ByTableBase {
+public abstract class SelectDistinctTable extends ByTableColumnNameBase {
 
     public static Builder builder() {
         return ImmutableSelectDistinctTable.builder();
@@ -20,7 +20,7 @@ public abstract class SelectDistinctTable extends ByTableBase {
         return visitor;
     }
 
-    public interface Builder extends ByTableBase.Builder<SelectDistinctTable, SelectDistinctTable.Builder> {
+    public interface Builder extends ByTableColumnNameBase.Builder<SelectDistinctTable, SelectDistinctTable.Builder> {
 
     }
 }

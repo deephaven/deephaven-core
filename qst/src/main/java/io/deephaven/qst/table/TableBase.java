@@ -533,18 +533,18 @@ public abstract class TableBase implements TableSpec {
     public final SelectDistinctTable selectDistinct(String... groupByColumns) {
         final SelectDistinctTable.Builder builder = SelectDistinctTable.builder().parent(this);
         for (String groupByColumn : groupByColumns) {
-            builder.addGroupByColumns(Selectable.parse(groupByColumn));
+            builder.addGroupByColumns(ColumnName.parse(groupByColumn));
         }
         return builder.build();
     }
 
     @Override
-    public final SelectDistinctTable selectDistinct(Selectable... groupByColumns) {
+    public final SelectDistinctTable selectDistinct(ColumnName... groupByColumns) {
         return selectDistinct(Arrays.asList(groupByColumns));
     }
 
     @Override
-    public final SelectDistinctTable selectDistinct(Collection<? extends Selectable> groupByColumns) {
+    public final SelectDistinctTable selectDistinct(Collection<? extends ColumnName> groupByColumns) {
         return SelectDistinctTable.builder().parent(this).addAllGroupByColumns(groupByColumns).build();
     }
 

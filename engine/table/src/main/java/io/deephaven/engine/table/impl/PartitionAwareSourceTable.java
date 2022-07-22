@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.Selectable;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
@@ -148,20 +148,11 @@ public class PartitionAwareSourceTable extends SourceTable {
         }
 
         @Override
-        public Table selectDistinct(SelectColumn[] selectColumns) {
-            for (final SelectColumn selectColumn : selectColumns) {
-                try {
-                    selectColumn.initDef(getDefinition().getColumnNameMap());
-                } catch (Exception e) {
-                    return null;
-                }
-                if (!((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(selectColumn.getColumns(),
-                        selectColumn.getColumnArrays())) {
-                    return null;
-                }
+        public Table selectDistinctInternal(Collection<? extends ColumnName> columns) {
+            if (!((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(columns)) {
+                return null;
             }
-
-            return table.selectDistinct(selectColumns);
+            return table.selectDistinct(columns);
         }
     }
 
@@ -317,15 +308,11 @@ public class PartitionAwareSourceTable extends SourceTable {
     }
 
     @Override
-    public final Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
-        final SelectColumn[] selectColumns = SelectColumn.from(groupByColumns);
-        for (SelectColumn selectColumn : selectColumns) {
-            selectColumn.initDef(definition.getColumnNameMap());
-            if (!isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
-                // Be sure to invoke the super-class version of this method, rather than the array-based one that
-                // delegates to this method.
-                return super.selectDistinct(Arrays.asList(selectColumns));
-            }
+    public final Table selectDistinct(Collection<? extends ColumnName> groupByColumns) {
+        if (!isValidAgainstColumnPartitionTable(groupByColumns)) {
+            // Be sure to invoke the super-class version of this method, rather than the array-based one that
+            // delegates to this method.
+            return super.selectDistinct(groupByColumns);
         }
         initializeAvailableLocations();
         final List<ImmutableTableLocationKey> existingLocationKeys =
@@ -342,7 +329,7 @@ public class PartitionAwareSourceTable extends SourceTable {
         }
         return TableTools
                 .newTable(existingLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
-                .selectDistinct(selectColumns);
+                .selectDistinct(groupByColumns);
         // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         // TODO: Maybe just get rid of this implementation and coalesce? Partitioning columns are automatically grouped.
         // Needs lazy region allocation.
@@ -354,5 +341,9 @@ public class PartitionAwareSourceTable extends SourceTable {
             return false;
         }
         return columnNames.stream().allMatch(partitioningColumnDefinitions::containsKey);
+    }
+
+    private boolean isValidAgainstColumnPartitionTable(Collection<? extends ColumnName> columns) {
+        return columns.stream().map(ColumnName::name).allMatch(partitioningColumnDefinitions::containsKey);
     }
 }

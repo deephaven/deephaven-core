@@ -256,14 +256,14 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
-    default Table selectDistinct(Selectable... columns) {
+    default Table selectDistinct(ColumnName... columns) {
         return selectDistinct(List.of(columns));
     }
 
     @Override
     @ConcurrentMethod
     default Table selectDistinct(String... columns) {
-        return selectDistinct(Selectable.from(columns));
+        return selectDistinct(ColumnName.from(columns));
     }
 
     @Override

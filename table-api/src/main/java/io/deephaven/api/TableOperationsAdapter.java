@@ -365,12 +365,12 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 selectDistinct(Selectable... groupByColumns) {
+    public final TOPS_1 selectDistinct(ColumnName... groupByColumns) {
         return adapt(delegate.selectDistinct(groupByColumns));
     }
 
     @Override
-    public final TOPS_1 selectDistinct(Collection<? extends Selectable> groupByColumns) {
+    public final TOPS_1 selectDistinct(Collection<? extends ColumnName> groupByColumns) {
         return adapt(delegate.selectDistinct(groupByColumns));
     }
 

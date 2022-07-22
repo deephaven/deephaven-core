@@ -377,10 +377,10 @@ public interface Table extends
     Table select();
 
     @ConcurrentMethod
-    Table selectDistinct(Collection<? extends Selectable> columns);
+    Table selectDistinct(Collection<? extends ColumnName> columns);
 
     @ConcurrentMethod
-    Table selectDistinct(Selectable... columns);
+    Table selectDistinct(ColumnName... columns);
 
     @ConcurrentMethod
     Table selectDistinct(String... columns);
