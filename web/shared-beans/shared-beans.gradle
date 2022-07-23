@@ -8,7 +8,7 @@ apply from: "$rootDir/gradle/web-common.gradle"
 GwtTools.gwtLib project
 
 configurations {
-    testCompile.extendsFrom junit
+    testImplementation.extendsFrom junit
 }
 
 dependencies {

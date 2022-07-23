@@ -3,8 +3,8 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom configurations.dhUtil, commonsLang3
-    testCompile.extendsFrom fishBaseTest
+    implementation.extendsFrom configurations.dhUtil, commonsLang3
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {

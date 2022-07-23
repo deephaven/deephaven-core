@@ -3,9 +3,9 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom dhPlot
+    implementation.extendsFrom dhPlot
 
-    testCompile.extendsFrom fishIoTest
+    testImplementation.extendsFrom fishIoTest
 }
 
 dependencies {

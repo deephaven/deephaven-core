@@ -7,11 +7,13 @@ plugins {
 }
 
 configurations {
-    testCompile.extendsFrom fishBaseTest
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {
     implementation project(':engine-table')
+    implementation project(':Configuration')
+    implementation project(':log-factory')
 
     runtimeOnly project(':configs')
 

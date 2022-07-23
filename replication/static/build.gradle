@@ -6,9 +6,11 @@ plugins {
 description 'Static Replicators: Source code generators and replicators with no compile-time dependency on their inputs'
 
 dependencies {
-    implementation project(':Util'),
-            project(':replication-util'),
-            'commons-io:commons-io:2.5'
+    implementation project(':Util')
+    implementation project(':Base')
+    implementation project(':replication-util')
+    implementation depTrove3
+    implementation depCommonsIo
 }
 
 // These replicators do not require any manual fix-up and may be run without supervision

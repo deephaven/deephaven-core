@@ -3,8 +3,8 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom fishUtil, fishData
-    testCompile.extendsFrom fishDataTest
+    implementation.extendsFrom fishUtil, fishData
+    testImplementation.extendsFrom fishDataTest
 }
 
 dependencies {

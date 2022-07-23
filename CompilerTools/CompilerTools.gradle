@@ -3,12 +3,15 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom fishConfig, commonsLang3
-    testCompile.extendsFrom fishIoTest
+    implementation.extendsFrom fishConfig, commonsLang3
+    testImplementation.extendsFrom fishIoTest
 }
 
 dependencies {
     implementation project(':Util')
+    implementation project(':log-factory')
+    Classpaths.inheritCommonsText(project)
+
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
 

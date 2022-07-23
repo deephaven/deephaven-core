@@ -8,14 +8,17 @@ plugins {
 evaluationDependsOn ':docker-server'
 
 configurations {
-    compile.extendsFrom dhIntegrations
-    testCompile.extendsFrom fishBaseTest
+    implementation.extendsFrom dhIntegrations
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {
 
     implementation project(':engine-table')
     implementation project(':plugin')
+    implementation project(':Configuration')
+    implementation project(':log-factory')
+
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
     testRuntimeOnly project(':configs')

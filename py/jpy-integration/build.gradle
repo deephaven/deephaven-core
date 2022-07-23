@@ -43,7 +43,7 @@ sourceSets {
 configurations {
   javaToPythonJar
 
-  testCompile.extendsFrom junit
+  testImplementation.extendsFrom junit
 
   javaToPythonImplementation.extendsFrom testImplementation
   pythonToJavaImplementation.extendsFrom testImplementation

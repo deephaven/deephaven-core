@@ -30,7 +30,7 @@ task jarTests(type: Jar, dependsOn: testClasses) {
 }
 configurations {
     tests {
-        extendsFrom testRuntime
+
     }
 }
 artifacts {

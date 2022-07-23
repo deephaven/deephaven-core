@@ -4,8 +4,8 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom irisDb
-    testCompile.extendsFrom irisDbTest
+    implementation.extendsFrom irisDb
+    testImplementation.extendsFrom irisDbTest
 }
 
 description = 'An extension integrating Barrage with Deephaven\'s Table Model'
@@ -13,6 +13,9 @@ description = 'An extension integrating Barrage with Deephaven\'s Table Model'
 dependencies {
     implementation project(':Base')
     implementation project(':Util')
+    implementation project(':Configuration')
+    implementation depCommonsLang3
+
     api project(':engine-table')
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':log-factory')

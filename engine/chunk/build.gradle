@@ -7,6 +7,7 @@ description 'Engine Chunks: Array-like data structures for dense, efficient data
 
 dependencies {
     api project(':Util')
+    implementation project(':Base')
 
     Classpaths.inheritJUnitClassic(project)
 

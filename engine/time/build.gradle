@@ -6,15 +6,19 @@ plugins {
 description 'Engine Time: Types and libraries for working with instants, periods, and calendars'
 
 configurations {
-    testCompile.extendsFrom junit
+    testImplementation.extendsFrom junit
 }
 
 dependencies {
-    api project(':Base'),
-            project(':Util'),
-            'joda-time:joda-time:2.10'
+    api project(':Base')
+    api project(':Util')
+    api 'joda-time:joda-time:2.10'
 
     implementation project(':engine-function')
+    implementation project(':Configuration')
+    implementation project(':log-factory')
+    implementation project(':FishUtil')
+    implementation depJdom2
 
     testImplementation TestTools.projectDependency(project, 'Base')
 

@@ -13,6 +13,7 @@ dependencies {
     implementation project(':engine-table')
     implementation project(':engine-function')
     implementation project(':IO')
+    implementation project(':log-factory')
 
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
 

@@ -6,8 +6,8 @@ plugins {
 evaluationDependsOn Docker.registryProject('python')
 
 configurations {
-    compile.extendsFrom fishConfig, jdom
-    testCompile.extendsFrom fishBaseTest
+    implementation.extendsFrom fishConfig, jdom
+    testImplementation.extendsFrom fishBaseTest
     combinedJavadoc
 }
 

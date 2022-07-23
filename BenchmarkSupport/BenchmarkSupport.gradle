@@ -3,11 +3,11 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom dhBenchmarkSupport
+    implementation.extendsFrom dhBenchmarkSupport
 
-    testCompile.extendsFrom fishIoTest
+    testImplementation.extendsFrom fishIoTest
 
-    testRuntime.extendsFrom fishDataGenerator
+    testRuntimeOnly.extendsFrom fishDataGenerator
 }
 
 sourceSets {
@@ -29,6 +29,7 @@ sourceSets {
 dependencies {
     implementation project(':engine-table')
     implementation project(':extensions-parquet-table')
+    implementation project(':Configuration')
     implementation 'org.openjdk.jmh:jmh-core:1.20'
 
     testImplementation TestTools.projectDependency(project, 'Util')

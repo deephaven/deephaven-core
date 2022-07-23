@@ -3,8 +3,8 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom dhNumerics
-    testCompile.extendsFrom fishBaseTest
+    implementation.extendsFrom dhNumerics
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {
