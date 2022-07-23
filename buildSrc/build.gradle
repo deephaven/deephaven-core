@@ -35,7 +35,7 @@ dependencies {
     }
 
     // TODO(deephaven-core#1997): Remove license-gradle-plugin
-    implementation('gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0') {
+    implementation('gradle.plugin.com.hierynomus.gradle.plugins:license-gradle-plugin:0.16.1') {
         because('needed by plugin java-header-conventions')
     }
 }
