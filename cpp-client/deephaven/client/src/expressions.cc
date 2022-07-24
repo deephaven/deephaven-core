@@ -1,7 +1,7 @@
-#include "deephaven/client/expressions.h"
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
+#include "deephaven/client/expressions.h"
 
 #include "deephaven/client/impl/boolean_expression_impl.h"
 #include "deephaven/client/impl/datetime_expression_impl.h"

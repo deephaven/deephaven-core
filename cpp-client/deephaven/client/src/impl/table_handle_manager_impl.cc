@@ -1,7 +1,7 @@
-#include "deephaven/client/impl/table_handle_manager_impl.h"
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
+#include "deephaven/client/impl/table_handle_manager_impl.h"
 
 #include <map>
 #include "deephaven/client/utility/utility.h"

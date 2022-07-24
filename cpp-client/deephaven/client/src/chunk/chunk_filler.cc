@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 #include "deephaven/client/chunk/chunk_filler.h"
 
 #include "deephaven/client/container/row_sequence.h"

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 #pragma once
 #include <immer/algorithm.hpp>
 #include <immer/flex_vector.hpp>

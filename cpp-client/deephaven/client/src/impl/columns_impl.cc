@@ -1,7 +1,7 @@
-#include "deephaven/client/impl/columns_impl.h"
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
+#include "deephaven/client/impl/columns_impl.h"
 
 namespace deephaven::client {
 namespace impl {

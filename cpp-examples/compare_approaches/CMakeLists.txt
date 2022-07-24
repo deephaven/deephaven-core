@@ -13,7 +13,6 @@ find_package(Immer REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Threads REQUIRED)
-find_package(Flatbuffers REQUIRED)
 find_package(Immer REQUIRED)
 
 add_executable(compare_approaches main.cc)

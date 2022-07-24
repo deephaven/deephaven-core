@@ -1,7 +1,7 @@
-#include "deephaven/client/impl/escape_utils.h"
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
+#include "deephaven/client/impl/escape_utils.h"
 
 #include <codecvt>
 #include <locale>

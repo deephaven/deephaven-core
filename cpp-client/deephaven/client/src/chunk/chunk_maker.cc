@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 #include "deephaven/client/chunk/chunk_maker.h"
 
 #include "deephaven/client/column/column_source.h"

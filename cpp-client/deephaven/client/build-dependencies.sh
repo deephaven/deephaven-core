@@ -1,6 +1,10 @@
 #!/bin/bash
 
 #
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+#
+
+#
 # Tested on Ubuntu 20.04
 #
 

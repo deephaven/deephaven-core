@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 #include "deephaven/client/immerutil/abstract_flex_vector.h"
 #include "deephaven/client/immerutil/immer_column_source.h"
 

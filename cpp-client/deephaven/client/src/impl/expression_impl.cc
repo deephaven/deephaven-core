@@ -1,7 +1,7 @@
-#include "deephaven/client/impl/expression_impl.h"
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
+#include "deephaven/client/impl/expression_impl.h"
 
 #include <memory>
 #include "deephaven/client/impl/boolean_expression_impl.h"

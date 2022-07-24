@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 #include "deephaven/client/subscription/shift_processor.h"
 
 namespace deephaven::client::subscription {
