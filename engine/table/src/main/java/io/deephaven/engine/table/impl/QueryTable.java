@@ -13,7 +13,7 @@ import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -3024,7 +3024,7 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table updateBy(@NotNull final UpdateByControl control,
-            @NotNull final Collection<? extends UpdateByClause> ops,
+            @NotNull final Collection<? extends UpdateByOperation> ops,
             @NotNull final Collection<? extends Selectable> byColumns) {
         return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
                 () -> UpdateBy.updateBy(this, ops, byColumns, control));

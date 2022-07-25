@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.updateby;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.function.Numeric;
@@ -34,7 +34,7 @@ public class TestCumProd extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(1000, false, false, false, 0xABCD1234).t;
-        final Table result = t.updateBy(UpdateByClause.CumProd());
+        final Table result = t.updateBy(UpdateByOperation.CumProd());
         for (String col : t.getDefinition().getColumnNamesArray()) {
             if ("boolCol".equals(col)) {
                 continue;
@@ -64,9 +64,9 @@ public class TestCumProd extends BaseUpdateByTest {
                 longCol("IntValProd", 1, 2, NULL_LONG, 3));
 
         final Table r = t.updateBy(List.of(
-                UpdateByClause.CumProd("ByteValProd=ByteVal"),
-                UpdateByClause.CumProd("ShortValProd=ShortVal"),
-                UpdateByClause.CumProd("IntValProd=IntVal")), "Sym");
+                UpdateByOperation.CumProd("ByteValProd=ByteVal"),
+                UpdateByOperation.CumProd("ShortValProd=ShortVal"),
+                UpdateByOperation.CumProd("IntValProd=IntVal")), "Sym");
 
         assertTableEquals(expected, r);
     }
@@ -84,8 +84,9 @@ public class TestCumProd extends BaseUpdateByTest {
     private void doTestStaticBucketed(boolean grouped) {
         final QueryTable t = createTestTable(10000, true, grouped, false, 0x4321CBDA).t;
 
-        final Table result = t.updateBy(UpdateByClause.CumProd("byteCol", "shortCol", "intCol", "longCol", "floatCol",
-                "doubleCol", "bigIntCol", "bigDecimalCol"), "Sym");
+        final Table result =
+                t.updateBy(UpdateByOperation.CumProd("byteCol", "shortCol", "intCol", "longCol", "floatCol",
+                        "doubleCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
         final PartitionedTable preOp = t.partitionBy("Sym");
         final PartitionedTable postOp = result.partitionBy("Sym");
@@ -125,8 +126,8 @@ public class TestCumProd extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return bucketed ? t.updateBy(UpdateByClause.CumProd(), "Sym")
-                                : t.updateBy(UpdateByClause.CumProd());
+                        return bucketed ? t.updateBy(UpdateByOperation.CumProd(), "Sym")
+                                : t.updateBy(UpdateByOperation.CumProd());
                     }
                 }
         };
@@ -147,7 +148,7 @@ public class TestCumProd extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByClause.CumProd());
+                        return t.updateBy(UpdateByOperation.CumProd());
                     }
                 }
         };
@@ -169,7 +170,7 @@ public class TestCumProd extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByClause.CumProd(), "Sym");
+                        return t.updateBy(UpdateByOperation.CumProd(), "Sym");
                     }
                 }
         };

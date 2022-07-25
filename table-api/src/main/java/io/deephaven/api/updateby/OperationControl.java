@@ -9,7 +9,7 @@ import java.util.Optional;
 
 /**
  * <p>
- * Control parameters for performing EMAs with Table#updateBy()
+ * Control parameters for performing operations with Table#updateBy()
  * </p>
  * <p>
  * Defaults are as follows
@@ -25,12 +25,12 @@ import java.util.Optional;
  */
 @Immutable
 @BuildableStyle
-public abstract class EmaControl {
+public abstract class OperationControl {
     public static Builder builder() {
-        return ImmutableEmaControl.builder();
+        return ImmutableOperationControl.builder();
     }
 
-    public static EmaControl defaultInstance() {
+    public static OperationControl defaultInstance() {
         return builder().build();
     }
 
@@ -117,7 +117,7 @@ public abstract class EmaControl {
      *
      * @return the explicit new instance
      */
-    public final EmaControl materialize() {
+    public final OperationControl materialize() {
         return builder()
                 .onNullValue(onNullValueOrDefault())
                 .onNanValue(onNanValueOrDefault())
@@ -141,6 +141,6 @@ public abstract class EmaControl {
 
         Builder bigValueContext(MathContext context);
 
-        EmaControl build();
+        OperationControl build();
     }
 }

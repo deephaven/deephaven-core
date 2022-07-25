@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby.ema;
 
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
@@ -10,7 +11,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.api.updateby.BadDataBehavior;
-import io.deephaven.api.updateby.EmaControl;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.UpdateBy;
@@ -30,7 +30,7 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperator {
-    protected final EmaControl control;
+    protected final OperationControl control;
     protected final LongRecordingUpdateByOperator timeRecorder;
     protected final double timeScaleUnits;
     private LongArraySource bucketLastTimestamp;
@@ -63,7 +63,7 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
      */
     public BasePrimitiveEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @NotNull final EmaControl control,
+            @NotNull final OperationControl control,
             @Nullable final LongRecordingUpdateByOperator timeRecorder,
             final long timeScaleUnits,
             @Nullable final RowRedirection rowRedirection) {

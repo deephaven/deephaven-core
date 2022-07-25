@@ -7,7 +7,7 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -1735,7 +1735,7 @@ public interface Table extends
      * @return a table with the same rowset, with the specified operation applied to the entire table
      */
     @ConcurrentMethod
-    Table updateBy(@NotNull final UpdateByClause operation);
+    Table updateBy(@NotNull final UpdateByOperation operation);
 
     /**
      * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
@@ -1747,7 +1747,7 @@ public interface Table extends
      * @return a table with the same rowset, with the specified operations applied to the entire table.
      */
     @ConcurrentMethod
-    Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations);
+    Table updateBy(@NotNull final Collection<? extends UpdateByOperation> operations);
 
     /**
      * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
@@ -1761,7 +1761,7 @@ public interface Table extends
      */
     @ConcurrentMethod
     Table updateBy(@NotNull final UpdateByControl control,
-            @NotNull final Collection<? extends UpdateByClause> operations);
+            @NotNull final Collection<? extends UpdateByOperation> operations);
 
     /**
      * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
@@ -1775,7 +1775,7 @@ public interface Table extends
      *         {@code byColumns}
      */
     @ConcurrentMethod
-    Table updateBy(@NotNull final UpdateByClause operation, final String... byColumns);
+    Table updateBy(@NotNull final UpdateByOperation operation, final String... byColumns);
 
     /**
      * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
@@ -1789,7 +1789,7 @@ public interface Table extends
      *         {@code byColumns}
      */
     @ConcurrentMethod
-    Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations, final String... byColumns);
+    Table updateBy(@NotNull final Collection<? extends UpdateByOperation> operations, final String... byColumns);
 
     /**
      * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
@@ -1803,7 +1803,7 @@ public interface Table extends
      *         {@code byColumns}
      */
     @ConcurrentMethod
-    Table updateBy(@NotNull Collection<? extends UpdateByClause> operations,
+    Table updateBy(@NotNull Collection<? extends UpdateByOperation> operations,
             @NotNull Collection<? extends Selectable> byColumns);
 
     /**
@@ -1820,7 +1820,7 @@ public interface Table extends
      */
     @ConcurrentMethod
     Table updateBy(@NotNull final UpdateByControl control,
-            @NotNull final Collection<? extends UpdateByClause> operations,
+            @NotNull final Collection<? extends UpdateByOperation> operations,
             @NotNull final Collection<? extends Selectable> byColumns);
 
     // -----------------------------------------------------------------------------------------------------------------
