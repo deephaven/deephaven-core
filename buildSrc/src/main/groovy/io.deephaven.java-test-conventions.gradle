@@ -18,6 +18,7 @@ configurations {
 }
 
 artifacts {
+    testOutput jar
     testOutput testJar
     archives testJar
 }
