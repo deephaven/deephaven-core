@@ -3378,7 +3378,8 @@ public class WritableRowSetImplTest extends TestCase {
         final RowSet ix1 = builder1.build();
 
         final RowSetBuilderSequential builder2 = RowSetFactory.builderSequential();
-        builder2.appendRange(SortedRanges.MAX_CAPACITY * 2 * blockSize + 10, SortedRanges.MAX_CAPACITY * 2 * blockSize + 12);
+        builder2.appendRange(SortedRanges.MAX_CAPACITY * 2 * blockSize + 10,
+                SortedRanges.MAX_CAPACITY * 2 * blockSize + 12);
         for (int ii = SortedRanges.MAX_CAPACITY * 2 + 1; ii < SortedRanges.MAX_CAPACITY * 4; ++ii) {
             builder2.appendRange(ii * blockSize, ii * blockSize + 1);
         }
@@ -3391,6 +3392,6 @@ public class WritableRowSetImplTest extends TestCase {
 
         final RowSet ix4 = ix1.union(ix2);
         assertEquals(ix3, ix4);
-        assertEquals(ix1.size() + ix2.size() , ix4.size());
+        assertEquals(ix1.size() + ix2.size(), ix4.size());
     }
 }
