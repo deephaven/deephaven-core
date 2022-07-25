@@ -3,11 +3,14 @@ package io.deephaven.tools.docker
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileVisitDetails
 import org.gradle.api.internal.file.FileLookup
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.util.PatternFilterable
 import org.gradle.api.tasks.util.PatternSet
@@ -25,7 +28,7 @@ abstract class DiffTask extends DefaultTask {
     // This is an Object because Gradle doesn't define an interface for getAsFileTree(), so we
     // will resolve it when we execute the task. This allows us to read from various sources,
     // such as configurations.
-    @Input
+    @InputFiles
     abstract Property<Object> getExpectedContents()
     // In contrast, this is assumed to be a source directory, to easily allow some Sync action
     // to easily be the "fix this mistake" counterpart to this task
@@ -54,6 +57,11 @@ abstract class DiffTask extends DefaultTask {
         throw new UnsupportedOperationException();
     }
 
+    @Internal
+    ConfigurableFileCollection getExpectedContentsFiles() {
+        project.files(getExpectedContents().get())
+    }
+
     @TaskAction
     void diff() {
         def resolver = getFileLookup().getFileResolver(getActualContents().asFile.get())
@@ -74,7 +82,7 @@ abstract class DiffTask extends DefaultTask {
             existingFiles.add(details.file.toPath());
         }
 
-        project.files(getExpectedContents().get()).asFileTree.visit { FileVisitDetails details ->
+        expectedContentsFiles.asFileTree.visit { FileVisitDetails details ->
             if (details.isDirectory()) {
                 return;
             }

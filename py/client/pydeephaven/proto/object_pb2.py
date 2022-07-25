@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 from pydeephaven.proto import ticket_pb2 as deephaven_dot_proto_dot_ticket__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x64\x65\x65phaven/proto/object.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"W\n\x12\x46\x65tchObjectRequest\x12\x41\n\tsource_id\x18\x01 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket\"z\n\x13\x46\x65tchObjectResponse\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x12G\n\x0ftyped_export_id\x18\x03 \x03(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket2\x8f\x01\n\rObjectService\x12~\n\x0b\x46\x65tchObject\x12\x35.io.deephaven.proto.backplane.grpc.FetchObjectRequest\x1a\x36.io.deephaven.proto.backplane.grpc.FetchObjectResponse\"\x00\x42\x04H\x01P\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x64\x65\x65phaven/proto/object.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"W\n\x12\x46\x65tchObjectRequest\x12\x41\n\tsource_id\x18\x01 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket\"z\n\x13\x46\x65tchObjectResponse\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x12G\n\x0ftyped_export_id\x18\x03 \x03(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket2\x8f\x01\n\rObjectService\x12~\n\x0b\x46\x65tchObject\x12\x35.io.deephaven.proto.backplane.grpc.FetchObjectRequest\x1a\x36.io.deephaven.proto.backplane.grpc.FetchObjectResponse\"\x00\x42\x42H\x01P\x01Z<github.com/deephaven/deephaven-core/go/internal/proto/objectb\x06proto3')
 
 
 
@@ -39,7 +39,7 @@ _OBJECTSERVICE = DESCRIPTOR.services_by_name['ObjectService']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'H\001P\001'
+  DESCRIPTOR._serialized_options = b'H\001P\001Z<github.com/deephaven/deephaven-core/go/internal/proto/object'
   _FETCHOBJECTREQUEST._serialized_start=97
   _FETCHOBJECTREQUEST._serialized_end=184
   _FETCHOBJECTRESPONSE._serialized_start=186

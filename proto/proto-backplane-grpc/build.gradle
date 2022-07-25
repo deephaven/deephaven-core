@@ -7,6 +7,7 @@ plugins {
 }
 
 evaluationDependsOn Docker.registryProject('protoc-base')
+evaluationDependsOn Docker.registryProject('go')
 
 description = 'The Deephaven proto-backplane-grpc'
 
@@ -20,6 +21,7 @@ configurations {
 
   js {}
   python {}
+  go {}
 }
 
 dependencies {
@@ -69,7 +71,7 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
   }
 
   // protoc-base is only provided via linux/amd64
-  parentContainers = [ Docker.registryTask(project, 'protoc-base') ]
+  parentContainers = [ Docker.registryTask(project, 'protoc-base'), Docker.registryTask(project, 'go') ]
   platform = 'linux/amd64'
 
   containerOutPath = '/generated'
@@ -87,6 +89,9 @@ artifacts {
     builtBy generateProtobuf
   }
   python(layout.buildDirectory.dir('generated/source/proto/main/python')) {
+    builtBy generateProtobuf
+  }
+  go(layout.buildDirectory.dir('generated/source/proto/main/go')) {
     builtBy generateProtobuf
   }
 }

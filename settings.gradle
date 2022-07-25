@@ -20,7 +20,8 @@ String[] mods = [
         'python-engine-test',
         'server',
         'table-api',
-        'qst'
+        'qst',
+        'go'
 ]
 
         // new web projects; these modules are intended to form a complete, modular web application,
