@@ -1273,7 +1273,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[] {"ohlcPlot", "ohlcPlotBy"},
                 new String[] {"series_name"},
                 "Creates an open-high-low-close plot."));
-        rst.add(new PyFunc("plot_tree_map", SINGLETON, new String[] {"treeMapPlot"},
+        rst.add(new PyFunc("plot_treemap", SINGLETON, new String[] {"treemapPlot"},
                 new String[] {"t", "ids", "parents"}, ""));
 
         ////////////////////////////////////////////////////////////////

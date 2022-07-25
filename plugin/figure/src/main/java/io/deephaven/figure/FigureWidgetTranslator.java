@@ -365,14 +365,22 @@ public class FigureWidgetTranslator {
 
                                     clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
                                             series.getParentColumn(), SourceType.PARENT, null));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
-                                            series.getLabelColumn(), SourceType.LABEL, null));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
-                                            series.getColorColumn(), SourceType.COLOR, null));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
-                                            series.getHoverTextColumn(), SourceType.HOVER_TEXT, null));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
-                                            series.getTextColumn(), SourceType.TEXT, null));
+                                    if (series.getLabelColumn() != null) {
+                                        clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                                series.getLabelColumn(), SourceType.LABEL, null));
+                                    }
+                                    if (series.getColorColumn() != null) {
+                                        clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                                series.getColorColumn(), SourceType.COLOR, null));
+                                    }
+                                    if (series.getHoverTextColumn() != null) {
+                                        clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                                series.getHoverTextColumn(), SourceType.HOVER_TEXT, null));
+                                    }
+                                    if (series.getTextColumn() != null) {
+                                        clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                                series.getTextColumn(), SourceType.TEXT, null));
+                                    }
                                 } else if (s instanceof CategoryDataSeriesMap) {// bar and plot from constant data
                                     errorList.add("OpenAPI presently does not support series of type " + s.getClass());
                                 }

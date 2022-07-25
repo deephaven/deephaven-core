@@ -1202,30 +1202,30 @@ class Figure(JObjectWrapper):
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-    def plot_tree_map(
+    def plot_treemap(
         self,
+        series_name,
         t: Union[Table, SelectableDataSet],
-        series_name: str = None,
-        hover_text_column: str = None,
-        ids_column: str = None,
-        labels_column: str = None,
-        parents_column: str = None,
-        text_column: str = None,
-        values_column: str = None,
+        id: str,
+        parent: str,
+        value: str,
+        label: str,
+        text: str = None,
+        hover_text: str = None,
         color: Union[str, int, Color] = None,
     ) -> Figure:
         """
 
         Args:
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
             series_name (str): name of the data series
-            hover_text_column (str): 
-            ids_column (str): 
-            labels_column (str): 
-            parents_column (str): 
-            text_column (str): 
-            values_column (str): 
-            color (Union[str, int, Color]): color
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            id (str): column name of ID of items
+            parent (str): column name of parent ID of items
+            value (str): column name of value representing the size of an item
+            label (str): column name of label shown on item
+            text (str): column name of text shown below label
+            hover_text (str): column name of text shown on hover
+            color (Union[str, int, Color]): hex color to use for background of item
 
         Returns:
             a new Figure
@@ -1243,30 +1243,30 @@ class Figure(JObjectWrapper):
         if series_name is not None:
             non_null_args.add("series_name")
             series_name = _convert_j("series_name", series_name, [str])
-        if hover_text_column is not None:
-            non_null_args.add("hover_text_column")
-            hover_text_column = _convert_j("hover_text_column", hover_text_column, [str])
-        if ids_column is not None:
-            non_null_args.add("ids_column")
-            ids_column = _convert_j("ids_column", ids_column, [str])
-        if labels_column is not None:
-            non_null_args.add("labels_column")
-            labels_column = _convert_j("labels_column", labels_column, [str])
-        if parents_column is not None:
-            non_null_args.add("parents_column")
-            parents_column = _convert_j("parents_column", parents_column, [str])
-        if text_column is not None:
-            non_null_args.add("text_column")
-            text_column = _convert_j("text_column", text_column, [str])
-        if values_column is not None:
-            non_null_args.add("values_column")
-            values_column = _convert_j("values_column", values_column, [str])
+        if hover_text is not None:
+            non_null_args.add("hover_text")
+            hover_text = _convert_j("hover_text", hover_text, [str])
+        if id is not None:
+            non_null_args.add("id")
+            id = _convert_j("id", id, [str])
+        if label is not None:
+            non_null_args.add("label")
+            label = _convert_j("label", label, [str])
+        if parent is not None:
+            non_null_args.add("parent")
+            parent = _convert_j("parent", parent, [str])
+        if text is not None:
+            non_null_args.add("text")
+            text = _convert_j("text", text, [str])
+        if value is not None:
+            non_null_args.add("value")
+            value = _convert_j("value", value, [str])
         if color is not None:
             non_null_args.add("color")
             color = _convert_j("color", color, [str, int, Color])
 
-        if non_null_args == {"series_name", "t", "values_column", "ids_column", "parents_column", "labels_column", "text_column", "color", "hover_text_column"}:
-            return Figure(self.j_figure.treeMapPlot(series_name, t, values_column, ids_column, parents_column, labels_column, text_column, color, hover_text_column))
+        if {"series_name", "t", "value", "label" "id", "parent"}.issubset(non_null_args):
+            return Figure(self.j_figure.treeMapPlot(series_name, t, value, id, parent, label, text, color, hover_text))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
