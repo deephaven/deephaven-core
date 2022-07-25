@@ -2,14 +2,31 @@
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 #include <iostream>
-#include "deephaven/client/highlevel/client.h"
+#include "deephaven/client/client.h"
 
-using deephaven::client::highlevel::NumCol;
-using deephaven::client::highlevel::Client;
-using deephaven::client::highlevel::TableHandle;
-using deephaven::client::highlevel::TableHandleManager;
+using deephaven::client::NumCol;
+using deephaven::client::Client;
+using deephaven::client::TableHandle;
+using deephaven::client::TableHandleManager;
 
 // This example shows explicit QueryTable cleanup using destructors/RAII.
+namespace {
+void doit(const TableHandleManager &manager);
+}
+
+int main() {
+  const char *server = "localhost:10000";
+
+  try {
+    auto client = Client::connect(server);
+    auto manager = client.getManager();
+    doit(manager);
+  } catch (const std::runtime_error &e) {
+    std::cerr << "Caught exception: " << e.what() << '\n';
+  }
+}
+
+namespace {
 void doit(const TableHandleManager &manager) {
   auto table = manager.emptyTable(10).update("X = ii % 2", "Y = ii");
   auto [x, y] = table.getCols<NumCol, NumCol>("X", "Y");
@@ -37,15 +54,4 @@ void doit(const TableHandleManager &manager) {
 
   // t1 and the TableHandleManger will be destructed here.
 }
-
-int main() {
-  const char *server = "localhost:10000";
-
-  try {
-    auto client = Client::connect(server);
-    auto manager = client.getManager();
-    doit(manager);
-  } catch (const std::runtime_error &e) {
-    std::cerr << "Caught exception: " << e.what() << '\n';
-  }
-}
+}  // namespace
