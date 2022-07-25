@@ -541,7 +541,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.time.TimeZone.*;\n" +
                 "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
-                "import static io.deephaven.api.updateby.UpdateByClause.*;\n" +
+                "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
 
                 StringUtils.joinStrings(scriptImports, "\n") + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command

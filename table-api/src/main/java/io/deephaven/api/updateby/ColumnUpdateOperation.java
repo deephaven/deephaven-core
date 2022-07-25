@@ -9,9 +9,9 @@ import java.util.List;
 
 @Immutable
 @BuildableStyle
-public abstract class ColumnUpdateClause implements UpdateByClause {
+public abstract class ColumnUpdateOperation implements UpdateByOperation {
     public static Builder builder() {
-        return ImmutableColumnUpdateClause.builder();
+        return ImmutableColumnUpdateOperation.builder();
     }
 
 
@@ -40,6 +40,6 @@ public abstract class ColumnUpdateClause implements UpdateByClause {
 
         Builder addAllColumns(Iterable<? extends Pair> elements);
 
-        ColumnUpdateClause build();
+        ColumnUpdateOperation build();
     }
 }

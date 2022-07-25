@@ -1,7 +1,7 @@
 package io.deephaven.api.updateby.spec;
 
 import io.deephaven.api.agg.Pair;
-import io.deephaven.api.updateby.ColumnUpdateClause;
+import io.deephaven.api.updateby.ColumnUpdateOperation;
 
 import java.util.Collection;
 
@@ -19,44 +19,44 @@ public interface UpdateBySpec {
     boolean applicableTo(final Class<?> inputType);
 
     /**
-     * Build a {@link ColumnUpdateClause} for this UpdateBySpec.
+     * Build a {@link ColumnUpdateOperation} for this UpdateBySpec.
      *
      * @param pair The input/output column name pair
      * @return The clause
      */
-    ColumnUpdateClause clause(String pair);
+    ColumnUpdateOperation clause(String pair);
 
     /**
-     * Build a {@link ColumnUpdateClause} for this UpdateBySpec.
+     * Build a {@link ColumnUpdateOperation} for this UpdateBySpec.
      *
      * @param pair The input/output column name pair
      * @return The clause
      */
-    ColumnUpdateClause clause(Pair pair);
+    ColumnUpdateOperation clause(Pair pair);
 
     /**
-     * Build a {@link ColumnUpdateClause} clause for this UpdateBySpec.
+     * Build a {@link ColumnUpdateOperation} clause for this UpdateBySpec.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    ColumnUpdateClause clause(String... pairs);
+    ColumnUpdateOperation clause(String... pairs);
 
     /**
-     * Build a {@link ColumnUpdateClause} clause for this UpdateBySpec.
+     * Build a {@link ColumnUpdateOperation} clause for this UpdateBySpec.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    ColumnUpdateClause clause(Pair... pairs);
+    ColumnUpdateOperation clause(Pair... pairs);
 
     /**
-     * Build a {@link ColumnUpdateClause} clause for this UpdateBySpec.
+     * Build a {@link ColumnUpdateOperation} clause for this UpdateBySpec.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    ColumnUpdateClause clause(Collection<? extends Pair> pairs);
+    ColumnUpdateOperation clause(Collection<? extends Pair> pairs);
 
     // region Visitor
     <T> T walk(Visitor<T> visitor);
