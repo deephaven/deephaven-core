@@ -52,9 +52,14 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertTrue(t.is_refreshing)
         self.assertEqual("2021-11-06T13:21:00.000000000 NY", t.j_table.getColumnSource("Timestamp").get(0).toString())
 
-        t = time_table(1000000000)
+        t = time_table(1000_000_000)
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
+
+        t = time_table(1000_1000_1000, start_time="2021-11-06T13:21:00 NY")
+        self.assertEqual(1, len(t.columns))
+        self.assertTrue(t.is_refreshing)
+        self.assertEqual("2021-11-06T13:21:00.000000000 NY", t.j_table.getColumnSource("Timestamp").get(0).toString())
 
     def test_time_table_error(self):
         with self.assertRaises(DHError) as cm:
