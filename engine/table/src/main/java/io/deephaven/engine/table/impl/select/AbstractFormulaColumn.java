@@ -9,6 +9,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.util.ExecutionContext;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.impl.vector.*;
@@ -284,7 +285,11 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
                 final ColumnSource<?> cs = columnsToData.get(sd.arrays[ii]);
                 vectors[ii] = makeAppropriateVectorWrapper(cs, rowSet);
             }
-            final FormulaKernel fk = executionContext.apply(() -> formulaKernelFactory.createInstance(vectors, params));
+            final FormulaKernel fk;
+            // TODO: do we actually need execution context to instantiate the formula kernel?
+            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
+                fk = formulaKernelFactory.createInstance(vectors, params);
+            }
             return new FormulaKernelAdapter(rowSet, sd, netColumnSources, fk);
         };
     }
