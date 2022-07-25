@@ -44,7 +44,6 @@ def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
             longs = _JPrimitiveArrayConversionUtility.translateArrayDateTimeToLong(j_array)
             np_long_array = np.frombuffer(longs, np.int64)
             np_array = np_long_array.view(col_def.data_type.np_type)
-            np_array[:] = np_long_array
         elif col_def.data_type == dtypes.bool_:
             bytes_ = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)
             np_array = np.frombuffer(bytes_, col_def.data_type.np_type)
