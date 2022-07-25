@@ -3368,4 +3368,29 @@ public class WritableRowSetImplTest extends TestCase {
             }
         }
     }
+
+    public void testSequentialBuilderMergeSpans() {
+        final RowSetBuilderSequential builder1 = RowSetFactory.builderSequential();
+        final long blockSize = BLOCK_SIZE;
+        for (int ii = 0; ii <= SortedRanges.MAX_CAPACITY * 2; ++ii) {
+            builder1.appendRange(ii * blockSize, ii * blockSize + 1);
+        }
+        final RowSet ix1 = builder1.build();
+
+        final RowSetBuilderSequential builder2 = RowSetFactory.builderSequential();
+        builder2.appendRange(SortedRanges.MAX_CAPACITY * 2 * blockSize + 10, SortedRanges.MAX_CAPACITY * 2 * blockSize + 12);
+        for (int ii = SortedRanges.MAX_CAPACITY * 2 + 1; ii < SortedRanges.MAX_CAPACITY * 4; ++ii) {
+            builder2.appendRange(ii * blockSize, ii * blockSize + 1);
+        }
+        final RowSet ix2 = builder2.build();
+
+        final RowSetBuilderSequential builder3 = RowSetFactory.builderSequential();
+        builder3.appendRowSequence(ix1);
+        builder3.appendRowSequence(ix2);
+        final RowSet ix3 = builder3.build();
+
+        final RowSet ix4 = ix1.union(ix2);
+        assertEquals(ix3, ix4);
+        assertEquals(ix1.size() + ix2.size() , ix4.size());
+    }
 }
