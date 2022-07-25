@@ -30,7 +30,7 @@ class MathContext(Enum):
     """a precision setting matching the IEEE 754R Decimal64 format, 16 digits, rounding is half-even"""
 
     DECIMAL128 = _JMathContext.DECIMAL128
-    """a precision setting matching the IEEE 754R Decimal128 format, 34 digits, rounding is half-evne"""
+    """a precision setting matching the IEEE 754R Decimal128 format, 34 digits, rounding is half-even"""
 
 
 class BadDataBehavior(Enum):
@@ -64,7 +64,7 @@ class EmaControl(JObjectWrapper):
                  on_negative_deltatime: BadDataBehavior = BadDataBehavior.THROW,
                  on_zero_deltatime: BadDataBehavior = BadDataBehavior.SKIP,
                  big_value_context: MathContext = MathContext.DECIMAL128):
-        """Initializes a EmaControl for evaluating EMAs (exponential moving average) with table update-by operation.
+        """Initializes an EmaControl for evaluating EMAs (exponential moving average) with table update-by operation.
 
         Args:
             on_null (BadDataBehavior): the behavior for when null values are encountered, default is SKIP
@@ -175,7 +175,7 @@ def ema_time_decay(ts_col: str, time_scale: Union[int, str], cols: Union[str, Li
 
 
 def cum_sum(cols: Union[str, List[str]]) -> UpdateByClause:
-    """Creates a CumSum (cumulative sum) update-by clause for the supplied column names.
+    """Creates a cumulative sum update-by clause for the supplied column names.
 
     Args:
 
@@ -200,7 +200,7 @@ def cum_prod(cols: Union[str, List[str]]) -> UpdateByClause:
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can be renaming expressions, i.e. "new_col =
-            col"; when empty, update_by perform the cumulative produce operation on all the applicable columns.
+            col"; when empty, update_by performing the cumulative product operation on all the applicable columns.
 
     Returns:
         a UpdateByClause
@@ -239,8 +239,8 @@ def cum_max(cols: Union[str, List[str]]) -> UpdateByClause:
     """Creates a CumMax (cumulative maximum) update-by clause for the supplied column names.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can be renaming expressions, i.e. "new_col = 
-            col"; when empty, update_by perform the cumulative maximum operation on all the applicable columns.
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output, i.e. "new_col = 
+            col"; when empty, update_by performs the cumulative maximum operation on all the applicable columns.
 
     Returns:
         a UpdateByClause
@@ -257,7 +257,7 @@ def cum_max(cols: Union[str, List[str]]) -> UpdateByClause:
 
 def forward_fill(cols: Union[str, List[str]]) -> UpdateByClause:
     """Creates a forward fill update-by clause for the supplied column names. Null values in the columns are
-    replaced by the last known non-Null values. This operation is forward only.
+    replaced by the last known non-null values. This operation is forward only.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can be renaming expressions, i.e. "new_col = 
