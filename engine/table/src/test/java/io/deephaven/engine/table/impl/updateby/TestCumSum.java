@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
@@ -62,7 +63,7 @@ public class TestCumSum extends BaseUpdateByTest {
                 longCol("ShortValSum", 1, 3, NULL_LONG, 3),
                 longCol("IntValSum", 1, 3, NULL_LONG, 3));
 
-        final Table r = t.updateBy(UpdateByClause.of(
+        final Table r = t.updateBy(List.of(
                 UpdateByClause.CumSum("ByteValSum=ByteVal"),
                 UpdateByClause.CumSum("ShortValSum=ShortVal"),
                 UpdateByClause.CumSum("IntValSum=IntVal")), "Sym");

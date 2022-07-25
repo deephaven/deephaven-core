@@ -6,10 +6,6 @@
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkedCountDistinctOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.count;
 
 import io.deephaven.engine.rowset.WritableRowSet;

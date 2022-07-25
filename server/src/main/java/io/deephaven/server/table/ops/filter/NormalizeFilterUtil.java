@@ -101,6 +101,13 @@ public class NormalizeFilterUtil {
                 .build()).build();
     }
 
+    public static Condition doInvoke(String method, List<Value> argumentsList) {
+        return Condition.newBuilder().setInvoke(InvokeCondition.newBuilder()
+                .setMethod(method)
+                .addAllArguments(argumentsList)
+                .build()).build();
+    }
+
     public static Condition doContains(Reference reference, String searchString, CaseSensitivity caseSensitivity,
             MatchType matchType) {
         return Condition.newBuilder().setContains(ContainsCondition.newBuilder()

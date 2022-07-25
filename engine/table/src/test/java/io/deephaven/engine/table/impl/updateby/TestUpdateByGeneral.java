@@ -14,10 +14,7 @@ import io.deephaven.test.types.ParallelTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.table.impl.RefreshingTableTestCase.simulateShiftAwareStep;
@@ -91,7 +88,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                         }
 
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
-                        final Collection<? extends UpdateByClause> clauses = UpdateByClause.of(
+                        final Collection<? extends UpdateByClause> clauses = List.of(
                                 UpdateByClause.Fill(),
                                 UpdateByClause.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),

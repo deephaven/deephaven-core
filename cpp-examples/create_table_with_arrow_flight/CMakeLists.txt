@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(arrow_flight_maker)
+project(create_table_with_arrow_flight)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -12,6 +12,6 @@ find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Threads REQUIRED)
 
-add_executable(arrow_flight_maker main.cc)
+add_executable(create_table_with_arrow_flight main.cc)
 
-target_link_libraries(arrow_flight_maker deephaven::client)
+target_link_libraries(create_table_with_arrow_flight deephaven::client)

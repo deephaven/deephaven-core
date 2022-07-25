@@ -2,7 +2,6 @@
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 /*
-import java.util.Objects;
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit BaseTestCharTimSortKernel and regenerate
  * ---------------------------------------------------------------------------------------------------------------------

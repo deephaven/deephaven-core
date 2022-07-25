@@ -8,5 +8,5 @@ description 'Codegen: Code generation utilities'
 
 dependencies {
     implementation 'org.freemarker:freemarker:2.3.31'
-    testImplementation 'junit:junit:4.13.2'
+    Classpaths.inheritJUnitClassic(project)
 }

@@ -11,11 +11,10 @@
 #include "deephaven/client/utility/callbacks.h"
 #include "deephaven/client/utility/utility.h"
 
-namespace deephaven {
-namespace client {
-namespace utility {
+namespace deephaven::client::utility {
 class Executor {
-  struct Private {};
+  struct Private {
+  };
 
 public:
   static std::shared_ptr<Executor> create();
@@ -41,6 +40,4 @@ private:
   std::condition_variable condvar_;
   std::deque<std::shared_ptr<callback_t>> todo_;
 };
-}  // namespace utility
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::utility

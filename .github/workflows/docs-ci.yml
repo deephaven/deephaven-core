@@ -8,7 +8,7 @@ on:
 
 jobs:
   javadoc:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -72,7 +72,7 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
   pydoc:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -141,7 +141,7 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
   cppdoc:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3

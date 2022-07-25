@@ -19,6 +19,10 @@ class Server:
     def j_object(self):
         return self.j_server
 
+    @property
+    def port(self):
+        return self.j_server.getPort()
+
     def __init__(self, host: Optional[str] = None, port: Optional[int] = None, jvm_args: Optional[List[str]] = None, dh_args: Dict[str, str] = {}):
         """
         Creates a Deephaven embedded server. Only one instance can be created at this time.

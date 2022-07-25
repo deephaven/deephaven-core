@@ -1013,6 +1013,49 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table sum_by operation failed.") from e
 
+    def abs_sum_by(self, by: Union[str, Sequence[str]] = None) -> Table:
+        """The abs_sum_by method creates a new table containing the absolute sum for each group.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return Table(j_table=self.j_table.absSumBy(*by))
+            else:
+                return Table(j_table=self.j_table.absSumBy())
+        except Exception as e:
+            raise DHError(e, "table asb_sum_by operation failed.") from e
+
+    def weighted_sum_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> Table:
+        """The weighted_sum_by method creates a new table containing the weighted sum for each group.
+
+        Args:
+            wcol (str): the name of the weight column
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return Table(j_table=self.j_table.wsumBy(wcol, *by))
+            else:
+                return Table(j_table=self.j_table.wsumBy(wcol))
+        except Exception as e:
+            raise DHError(e, "table weighted_sum_by operation failed.") from e
+
     def avg_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The avg_by method creates a new table containing the average for each group.
 
@@ -1031,6 +1074,28 @@ class Table(JObjectWrapper):
                 return Table(j_table=self.j_table.avgBy(*by))
             else:
                 return Table(j_table=self.j_table.avgBy())
+        except Exception as e:
+            raise DHError(e, "table avg_by operation failed.") from e
+
+    def weighted_avg_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> Table:
+        """The weighted_avg_by method creates a new table containing the weighted average for each group.
+
+        Args:
+            wcol (str): the name of the weight column
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return Table(j_table=self.j_table.wavgBy(wcol, *by))
+            else:
+                return Table(j_table=self.j_table.wavgBy(wcol))
         except Exception as e:
             raise DHError(e, "table avg_by operation failed.") from e
 
@@ -2426,6 +2491,53 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "sum_by operation on the PartitionedTableProxy failed.") from e
 
+    def abs_sum_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.abs_sum_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.absSumBy(*by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.absSumBy())
+        except Exception as e:
+            raise DHError(e, "sum_by operation on the PartitionedTableProxy failed.") from e
+
+    def weighted_sum_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.weighted_sum_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            wcol (str): the name of the weight column
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.wsumBy(wcol, *by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.wsumBy(wcol))
+        except Exception as e:
+            raise DHError(e, "sum_by operation on the PartitionedTableProxy failed.") from e
+
     def avg_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.avg_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -2446,6 +2558,30 @@ class PartitionedTableProxy(JObjectWrapper):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy(*by))
             else:
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy())
+        except Exception as e:
+            raise DHError(e, "avg_by operation on the PartitionedTableProxy failed.") from e
+
+    def weighted_avg_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.weighted_avg_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            wcol (str): the name of the weight column
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.wavgBy(wcol, *by))
+            else:
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy(wcol))
         except Exception as e:
             raise DHError(e, "avg_by operation on the PartitionedTableProxy failed.") from e
 

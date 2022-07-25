@@ -17,6 +17,9 @@ configurations {
 
   // automatically pick up the standard junit version
   testCompile.extendsFrom junit
+
+  js {}
+  python {}
 }
 
 dependencies {
@@ -73,6 +76,18 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
   imageName = 'deephaven/proto-backplane-grpc:local-build'
   copyOut {
     into('build/generated/source/proto/main')
+  }
+}
+
+// Provide js, go, python output as distinct artifacts - the java output will be consumed in this project by
+// declaring it as a new sourceset, see below. This could definitely be more precisely stated, but given that
+// all are generated in the same docker image creation step, we don't need to get too clever here.
+artifacts {
+  js(layout.buildDirectory.dir('generated/source/proto/main/js')) {
+    builtBy generateProtobuf
+  }
+  python(layout.buildDirectory.dir('generated/source/proto/main/python')) {
+    builtBy generateProtobuf
   }
 }
 

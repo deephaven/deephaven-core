@@ -254,6 +254,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             PartitionedTableProxy.first_by,
             PartitionedTableProxy.last_by,
             PartitionedTableProxy.sum_by,
+            PartitionedTableProxy.abs_sum_by,
             PartitionedTableProxy.avg_by,
             PartitionedTableProxy.std_by,
             PartitionedTableProxy.var_by,
@@ -268,6 +269,17 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 for gct, ct in zip(agg_pt_proxy.target.constituent_tables, self.pt_proxy.target.constituent_tables):
                     self.assertLessEqual(gct.size, ct.size)
                     self.assertEqual(len(gct.columns), len(ct.columns))
+
+        wops = [PartitionedTableProxy.weighted_avg_by,
+                PartitionedTableProxy.weighted_sum_by,
+                ]
+
+        for wop in wops:
+            with self.subTest(wop):
+                agg_pt_proxy = wop(self.pt_proxy, wcol="e", by=["a", "b"])
+                for gct, ct in zip(agg_pt_proxy.target.constituent_tables, self.pt_proxy.target.constituent_tables):
+                    self.assertLessEqual(gct.size, ct.size)
+                    self.assertEqual(len(gct.columns), len(ct.columns) - 1)
 
     def test_agg_by(self):
         aggs = [

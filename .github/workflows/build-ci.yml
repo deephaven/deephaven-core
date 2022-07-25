@@ -6,7 +6,7 @@ on:
 
 jobs:
   server:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -244,7 +244,7 @@ jobs:
           ./docker/registry/tensorflow-base/build/crane/retag.sh
 
   grpc-proxy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -331,7 +331,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
 
   envoy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -418,7 +418,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
 
   web:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -514,7 +514,7 @@ jobs:
           ./docker/registry/nginx-base/build/crane/retag.sh
 
   web-plugin-packager:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3

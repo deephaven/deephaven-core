@@ -1726,77 +1726,80 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
-     * based operation to it.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
      *
      * @param operation the operation to apply to the table.
-     * @return a table with the same index, with the specified operations applied to the entire table
+     * @return a table with the same rowset, with the specified operation applied to the entire table
      */
     @ConcurrentMethod
     Table updateBy(@NotNull final UpdateByClause operation);
 
     /**
-     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
-     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
      *
      * @param operations the operations to apply to the table.
-     * @return a table with the same index, with the specified operations applied to the entire table.
+     * @return a table with the same rowset, with the specified operations applied to the entire table.
      */
     @ConcurrentMethod
     Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations);
 
     /**
-     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
-     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows. This operation will group the table by the specified set of keys if
-     * provided before applying the operation.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
      *
      * @param control the {@link UpdateByControl control} to use when updating the table.
      * @param operations the operations to apply to the table.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
-     *         {@code byColumns}
+     * @return a table with the same rowset, with the specified operations applied to the entire table
      */
     @ConcurrentMethod
     Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<? extends UpdateByClause> operations);
 
     /**
-     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified row based
-     * operation to it. This operation will group the table by the specified set of keys if provided before applying the
-     * operation.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns}).
      *
      * @param operation the operation to apply to the table.
      * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
+     * @return a table with the same rowSet, with the specified operation applied to each group defined by the
      *         {@code byColumns}
      */
     @ConcurrentMethod
     Table updateBy(@NotNull final UpdateByClause operation, final String... byColumns);
 
     /**
-     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
-     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows. This operation will group the table by the specified set of keys if
-     * provided before applying the operation.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns}).
      *
      * @param operations the operations to apply to the table.
      * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
+     * @return a table with the same rowSet, with the specified operations applied to each group defined by the
      *         {@code byColumns}
      */
     @ConcurrentMethod
     Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations, final String... byColumns);
 
     /**
-     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
-     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows. This operation will group the table by the specified set of keys if
-     * provided before applying the operation.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns}).
      *
      * @param operations the operations to apply to the table.
      * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
+     * @return a table with the same rowSet, with the specified operations applied to each group defined by the
      *         {@code byColumns}
      */
     @ConcurrentMethod
@@ -1804,15 +1807,15 @@ public interface Table extends
             @NotNull Collection<? extends Selectable> byColumns);
 
     /**
-     * Create a table with the same {@link #getRowSet() rowSet} as its parent that will perform the specified set of row
-     * based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
-     * capable of processing state between rows. This operation will group the table by the specified set of keys if
-     * provided before applying the operation.
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns}).
      *
      * @param control the {@link UpdateByControl control} to use when updating the table.
      * @param operations the operations to apply to the table.
      * @param byColumns the columns to group by before applying.
-     * @return a table with the same index, with the specified operations applied to each group defined by the
+     * @return a table with the same rowSet, with the specified operations applied to each group defined by the
      *         {@code byColumns}
      */
     @ConcurrentMethod

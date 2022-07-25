@@ -73,6 +73,15 @@ class Classpaths {
     static final String JUNIT_NAME = 'junit-bom'
     static final String JUNIT_VERSION = '5.7.2'
 
+    static final String JUNIT_CLASSIC_GROUP = 'junit'
+    static final String JUNIT_CLASSIC_NAME = 'junit'
+    static final String JUNIT_CLASSIC_VERSION = '4.13.2'
+
+    static final String JMOCK_GROUP = 'org.jmock'
+    static final String JMOCK_JUNIT_NAME = 'jmock-junit4'
+    static final String JMOCK_IMPORSTERS_NAME = 'jmock-imposters'
+    static final String JMOCK_VERSION = '2.12.0'
+
     static final String ASSERTJ_GROUP = 'org.assertj'
     static final String ASSERTJ_NAME = 'assertj-core'
     static final String ASSERTJ_VERSION = '3.19.0'
@@ -209,6 +218,15 @@ class Classpaths {
         Configuration ap = p.configurations.getByName('annotationProcessor')
         addDependency(ap, IMMUTABLES_GROUP, IMMUTABLES_NAME, IMMUTABLES_VERSION)
         p.getDependencies().add('compileOnly', p.project(':util-immutables'))
+    }
+
+    static void inheritJUnitClassic(Project p, boolean includeJMock = false, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, JUNIT_CLASSIC_GROUP, JUNIT_CLASSIC_NAME, JUNIT_CLASSIC_VERSION)
+        if (includeJMock) {
+            addDependency(config, JMOCK_GROUP, JMOCK_JUNIT_NAME, JMOCK_VERSION)
+            addDependency(config, JMOCK_GROUP, JMOCK_IMPORSTERS_NAME, JMOCK_VERSION)
+        }
     }
 
     static void inheritJUnitPlatform(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {

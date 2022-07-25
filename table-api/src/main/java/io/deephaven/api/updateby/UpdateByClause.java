@@ -36,17 +36,6 @@ public interface UpdateByClause {
     }
 
     /**
-     * Simply wrap the input specs as a collection suitable for Table#updateBy(). This is functionally equivalent to
-     * {@link Arrays#asList(Object[])}.
-     *
-     * @param operations the operations to wrap.
-     * @return a collection for use with Table#updateBy()}
-     */
-    static Collection<UpdateByClause> of(final UpdateByClause... operations) {
-        return Arrays.asList(operations);
-    }
-
-    /**
      * Create an {@link CumSumSpec cumulative sum} for the supplied column name pairs.
      *
      * @param pairs The input/output column name pairs
@@ -108,7 +97,7 @@ public interface UpdateByClause {
      *     ema_next = a * ema_last + (1 - a) * value
      * </pre>
      *
-     * @param timeScaleTicks the decay rate (tau) in ticks
+     * @param timeScaleTicks the decay rate in ticks
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -130,7 +119,7 @@ public interface UpdateByClause {
      *
      * @param control a {@link EmaControl control} object that defines how special cases should behave. See
      *        {@link EmaControl} for further details.
-     * @param timeScaleTicks the decay rate (tau) in ticks
+     * @param timeScaleTicks the decay rate in ticks
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -151,7 +140,7 @@ public interface UpdateByClause {
      * </pre>
      *
      * @param timestampColumn the column in the source table to use for timestamps
-     * @param timeScaleNanos the decay rate (tau) in nanoseconds
+     * @param timeScaleNanos the decay rate in nanoseconds
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -174,7 +163,7 @@ public interface UpdateByClause {
      * @param control a {@link EmaControl control} object that defines how special cases should behave. See
      *        {@link EmaControl} for further details.
      * @param timestampColumn the column in the source table to use for timestamps
-     * @param timeScaleNanos the decay rate (tau) in nanoseconds
+     * @param timeScaleNanos the decay rate in nanoseconds
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -195,7 +184,7 @@ public interface UpdateByClause {
      * </pre>
      *
      * @param timestampColumn the column in the source table to use for timestamps
-     * @param emaDuration the decay rate (tau) as {@Link Duration duration}
+     * @param emaDuration the decay rate as {@Link Duration duration}
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -218,7 +207,7 @@ public interface UpdateByClause {
      * @param control a {@link EmaControl control} object that defines how special cases should behave. See
      *        {@link EmaControl} for further details.
      * @param timestampColumn the column in the source table to use for timestamps
-     * @param emaDuration the decay rate (tau) as {@Link Duration duration}
+     * @param emaDuration the decay rate as {@Link Duration duration}
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
