@@ -79,12 +79,11 @@ latest_offset = empty_table(0).snapshot(source_table=latest_offset, do_init=True
 \
 \
 \
-With the static table, you can now set a variable by pulling a record from the table using [view](https://deephaven.io/core/docs/how-to-guides/use-select-view-update/) and get().
+With the static table, you can now set a variable by pulling a record from the table using [view](https://deephaven.io/core/docs/how-to-guides/use-select-view-update/).
 
 ```python
 size_offset = 1_000_000
 target_offset_table = latest_offset.view(["Offset=max(0, KafkaOffset-size_offset)"])
-offset_variable = target_offset_table.j_object.getColumnSource("Offset").get(0)
 ```
 
 \
@@ -93,6 +92,9 @@ offset_variable = target_offset_table.j_object.getColumnSource("Offset").get(0)
 For fun, print the value to the console.
 
 ```python
+from deephaven.pandas import to_pandas
+
+offset_variable = to_pandas(target_offset_table)["Offset"][0]
 print(offset_variable)
 ```
 
