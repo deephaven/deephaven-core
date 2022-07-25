@@ -7,41 +7,36 @@ import io.deephaven.plot.util.tables.TableHandle;
 
 import java.util.Collection;
 
-public class CategoryTreeMapDataSeriesTableMap extends AbstractTableBasedCategoryDataSeries
+public class CategoryTreemapDataSeriesTableMap extends AbstractTableBasedCategoryDataSeries
         implements CategoryTableDataSeriesInternal, TableSnapshotSeries {
 
     private final TableHandle tableHandle;
     private final String idColumn;
     private final String parentColumn;
-    private final String labelColumn;
     private final String valueColumn;
+    private final String labelColumn;
     private final String colorColumn;
     private final String hoverTextColumn;
 
-    private final String textColumn;
-
-    public CategoryTreeMapDataSeriesTableMap(AxesImpl axes, int id, Comparable name, TableHandle h, String idColumn,
-            String parentColumn, String labelColumn, String valueColumn, String textColumn, String colorColumn,
-            String hoverTextColumn) {
+    public CategoryTreemapDataSeriesTableMap(AxesImpl axes, int id, Comparable name, TableHandle h, String idColumn,
+            String parentColumn, String valueColumn, String labelColumn, String colorColumn, String hoverTextColumn) {
         super(axes, id, name, null);
         this.tableHandle = h;
         this.idColumn = idColumn;
         this.parentColumn = parentColumn;
-        this.labelColumn = labelColumn;
         this.valueColumn = valueColumn;
-        this.textColumn = textColumn;
+        this.labelColumn = labelColumn;
         this.colorColumn = colorColumn;
         this.hoverTextColumn = hoverTextColumn;
     }
 
-    public CategoryTreeMapDataSeriesTableMap(CategoryTreeMapDataSeriesTableMap series, AxesImpl axes) {
+    public CategoryTreemapDataSeriesTableMap(CategoryTreemapDataSeriesTableMap series, AxesImpl axes) {
         super(series, axes);
         this.tableHandle = series.getTableHandle();
         this.idColumn = series.getCategoryCol();
         this.parentColumn = series.getParentColumn();
-        this.labelColumn = series.getLabelColumn();
         this.valueColumn = series.getValueCol();
-        this.textColumn = series.getTextColumn();
+        this.labelColumn = series.getLabelColumn();
         this.colorColumn = series.getColorColumn();
         this.hoverTextColumn = series.getHoverTextColumn();
     }
@@ -70,10 +65,6 @@ public class CategoryTreeMapDataSeriesTableMap extends AbstractTableBasedCategor
         return valueColumn;
     }
 
-    public String getTextColumn() {
-        return textColumn;
-    }
-
     public String getParentColumn() {
         return parentColumn;
     }
@@ -92,7 +83,7 @@ public class CategoryTreeMapDataSeriesTableMap extends AbstractTableBasedCategor
 
     @Override
     public CategoryDataSeriesInternal copy(AxesImpl axes) {
-        return new CategoryTreeMapDataSeriesTableMap(this, axes);
+        return new CategoryTreemapDataSeriesTableMap(this, axes);
     }
 
     @Override

@@ -255,7 +255,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         initialize();
     }
 
-    private void configureTreeMapPlot() {
+    private void configureTreemapPlot() {
         this.setDimension(2);
         chart.setChartType(ChartType.TREEMAP);
         xAxis().setType(AxisImpl.Type.CATEGORY);
@@ -1866,9 +1866,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     // region Tree Map
 
-    private CategoryDataSeriesInternal treeMapPlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles,
+    private CategoryDataSeriesInternal treemapPlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles,
                                                final SwappableTable[] swappableTables) {
-        configureTreeMapPlot();
+        configureTreemapPlot();
 
         if (tableHandles != null) {
             for (TableHandle tableHandle : tableHandles) {
@@ -1888,9 +1888,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
 
     @Override
-    public CategoryDataSeries treeMapPlot(Comparable seriesName, Table t, String values, String ids, String parents, @Nullable String labels, @Nullable String text, @Nullable String color, @Nullable String hoverText) {
-        final TableHandle h = PlotUtils.createCategoryTableHandle(t, new String[] { ids }, values, parents, labels, text, color, hoverText);
-        return treeMapPlot(new CategoryTreeMapDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, ids, parents, labels, values, text, color, hoverText), new TableHandle[]{h}, null);
+    public CategoryDataSeries treemapPlot(Comparable seriesName, Table t, String labels, String parents, @Nullable String values, @Nullable String ids, @Nullable String color, @Nullable String hoverText) {
+        final TableHandle h = PlotUtils.createCategoryTableHandle(t, new String[] { labels }, values, parents, labels, color, hoverText);
+        return treemapPlot(new CategoryTreemapDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, labels, parents, values, ids, color, hoverText), new TableHandle[]{h}, null);
     }
 
 

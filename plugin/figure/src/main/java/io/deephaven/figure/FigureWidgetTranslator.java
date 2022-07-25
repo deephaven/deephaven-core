@@ -20,7 +20,7 @@ import io.deephaven.plot.axistransformations.AxisTransformBusinessCalendar;
 import io.deephaven.plot.datasets.AbstractDataSeries;
 import io.deephaven.plot.datasets.category.AbstractCategoryDataSeries;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesMap;
-import io.deephaven.plot.datasets.category.CategoryTreeMapDataSeriesTableMap;
+import io.deephaven.plot.datasets.category.CategoryTreemapDataSeriesTableMap;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesPartitionedTable;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesSwappablePartitionedTable;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
@@ -355,16 +355,16 @@ public class FigureWidgetTranslator {
                                             makeSourceDescriptor(series.getSwappableTable(), series.getNumericCol(),
                                                     numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
 
-                                } else if (s instanceof CategoryTreeMapDataSeriesTableMap) {
-                                    CategoryTreeMapDataSeriesTableMap series = (CategoryTreeMapDataSeriesTableMap) s;
-                                    clientAxes
-                                            .add(makeSourceDescriptor(series.getTableHandle(), series.getCategoryCol(),
-                                                    catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getValueCol(),
-                                            numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
-
+                                } else if (s instanceof CategoryTreemapDataSeriesTableMap) {
+                                    CategoryTreemapDataSeriesTableMap series = (CategoryTreemapDataSeriesTableMap) s;
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getCategoryCol(),
+                                            catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
                                     clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
                                             series.getParentColumn(), SourceType.PARENT, null));
+                                    if (series.getValueCol() != null) {
+                                        clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getValueCol(),
+                                                numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
+                                    }
                                     if (series.getLabelColumn() != null) {
                                         clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
                                                 series.getLabelColumn(), SourceType.LABEL, null));

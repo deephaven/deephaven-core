@@ -1204,28 +1204,26 @@ class Figure(JObjectWrapper):
 
     def plot_treemap(
         self,
-        series_name,
+        series_name: str,
         t: Union[Table, SelectableDataSet],
-        id: str,
-        parent: str,
-        value: str,
-        label: str,
-        text: str = None,
+        id: str = None,
+        parent: str = None,
+        value: str = None,
+        label: str = None,
         hover_text: str = None,
-        color: Union[str, int, Color] = None,
+        color: str = None,
     ) -> Figure:
-        """
+        """Creates a treemap. Must have only one root.
 
         Args:
             series_name (str): name of the data series
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            id (str): column name of ID of items
-            parent (str): column name of parent ID of items
-            value (str): column name of value representing the size of an item
-            label (str): column name of label shown on item
-            text (str): column name of text shown below label
-            hover_text (str): column name of text shown on hover
-            color (Union[str, int, Color]): hex color to use for background of item
+            id (str): column name containing IDs
+            parent (str): column name containing parent IDs
+            value (str): column name containing values
+            label (str): column name containing labels
+            hover_text (str): column name containing hover text
+            color (str): column name containing color
 
         Returns:
             a new Figure
@@ -1233,40 +1231,39 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
+        if not series_name:
+            raise DHError("required parameter is not set: series_name")
         if not t:
             raise DHError("required parameter is not set: t")
         non_null_args = set()
 
-        if t is not None:
-            non_null_args.add("t")
-            t = _convert_j("t", t, [Table, SelectableDataSet])
         if series_name is not None:
             non_null_args.add("series_name")
             series_name = _convert_j("series_name", series_name, [str])
-        if hover_text is not None:
-            non_null_args.add("hover_text")
-            hover_text = _convert_j("hover_text", hover_text, [str])
+        if t is not None:
+            non_null_args.add("t")
+            t = _convert_j("t", t, [Table, SelectableDataSet])
         if id is not None:
             non_null_args.add("id")
             id = _convert_j("id", id, [str])
-        if label is not None:
-            non_null_args.add("label")
-            label = _convert_j("label", label, [str])
         if parent is not None:
             non_null_args.add("parent")
             parent = _convert_j("parent", parent, [str])
-        if text is not None:
-            non_null_args.add("text")
-            text = _convert_j("text", text, [str])
         if value is not None:
             non_null_args.add("value")
             value = _convert_j("value", value, [str])
+        if label is not None:
+            non_null_args.add("label")
+            label = _convert_j("label", label, [str])
+        if hover_text is not None:
+            non_null_args.add("hover_text")
+            hover_text = _convert_j("hover_text", hover_text, [str])
         if color is not None:
             non_null_args.add("color")
-            color = _convert_j("color", color, [str, int, Color])
+            color = _convert_j("color", color, [str])
 
-        if {"series_name", "t", "value", "label" "id", "parent"}.issubset(non_null_args):
-            return Figure(self.j_figure.treeMapPlot(series_name, t, value, id, parent, label, text, color, hover_text))
+        if non_null_args == {"series_name", "t", "id", "parent", "value", "label", "hover_text", "color"}:
+            return Figure(self.j_figure.treemapPlot(series_name, t, id, parent, value, label, hover_text, color))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 

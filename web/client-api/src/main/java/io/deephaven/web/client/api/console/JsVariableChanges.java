@@ -18,7 +18,8 @@ public class JsVariableChanges {
             PARTITIONEDTABLE = "PartitionedTable",
             FIGURE = "Figure",
             OTHERWIDGET = "OtherWidget",
-            PANDAS = "pandas.DataFrame";
+            PANDAS = "pandas.DataFrame",
+            TREEMAP = "Treemap";
 
     private final JsVariableDefinition[] created;
     private final JsVariableDefinition[] updated;
