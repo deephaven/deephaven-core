@@ -11,26 +11,6 @@ import io.deephaven.engine.table.impl.by.typed.HasherConfig;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 public class TypedUpdateByFactory {
-    public static void addOnlyBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
-            CodeBlock.Builder builder) {
-        builder.addStatement("// map the existing bucket to this chunk position");
-        builder.addStatement("outputPositions.set(chunkPosition, rowState)");
-    }
-
-    public static void addOnlyBuildLeftInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        builder.addStatement("// create a new bucket and put it in the hash slot");
-        builder.addStatement("final int outputPosForLocation = outputPositionOffset.getAndIncrement()");
-        builder.addStatement("stateSource.set(tableLocation, outputPosForLocation)");
-        builder.addStatement("// map the new bucket to this chunk position");
-        builder.addStatement("outputPositions.set(chunkPosition, outputPosForLocation)");
-    }
-
-    public static void addOnlyRehashSetup(CodeBlock.Builder builder) {}
-
-    public static void addOnlyMoveMainFull(CodeBlock.Builder builder) {}
-
-    public static void addOnlyMoveMainAlternate(CodeBlock.Builder builder) {}
-
     public static void incrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         builder.addStatement("// map the existing bucket to this chunk position");

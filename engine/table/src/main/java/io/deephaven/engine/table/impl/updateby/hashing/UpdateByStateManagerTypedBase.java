@@ -12,16 +12,17 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
+import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
-public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByStateManager {
+public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager {
     public static final int CHUNK_SIZE = 4096;
     private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
 
@@ -56,8 +57,8 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
     protected int mainInsertMask = 0;
     protected int alternateInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
 
-    protected AddOnlyUpdateByStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
-            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
+    protected UpdateByStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
+                                            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
 
         super(keySourcesForErrorMessages);
 
@@ -89,11 +90,11 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
         stateSource.ensureCapacity(tableSize);
     }
 
-    private class AddOnlyBuildHandler implements TypedHasherUtil.BuildHandler {
+    private class IncrementalBuildHandler implements TypedHasherUtil.BuildHandler {
         final MutableInt nextOutputPosition;
         final WritableIntChunk<RowKeys> outputPositions;
 
-        private AddOnlyBuildHandler(MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
+        private IncrementalBuildHandler(MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
             this.nextOutputPosition = nextOutputPosition;
             this.outputPositions = outputPositions;
         }
@@ -104,6 +105,19 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
         }
     }
 
+    private class IncrementalProbeHandler implements TypedHasherUtil.ProbeHandler {
+        final WritableIntChunk<RowKeys> outputPositions;
+
+        private IncrementalProbeHandler(WritableIntChunk<RowKeys> outputPositions) {
+            this.outputPositions = outputPositions;
+        }
+
+        @Override
+        public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
+            probeHashTable(chunkOk, sourceKeyChunks, outputPositions);
+        }
+    }
+
     @Override
     public void add(boolean initialBuild, SafeCloseable bc, RowSequence orderedKeys, ColumnSource<?>[] sources,
             MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
@@ -111,7 +125,33 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
             return;
         }
         buildTable(initialBuild, (BuildContext) bc, orderedKeys, sources, outputPositions,
-                new AddOnlyBuildHandler(nextOutputPosition, outputPositions));
+                new IncrementalBuildHandler(nextOutputPosition, outputPositions));
+    }
+
+    @Override
+    public void remove(@NotNull final SafeCloseable pc,
+            @NotNull final RowSequence indexToRemove,
+            @NotNull final ColumnSource<?>[] sources,
+            @NotNull final WritableIntChunk<RowKeys> outputPositions) {
+        if (indexToRemove.isEmpty()) {
+            outputPositions.setSize(0);
+            return;
+        }
+        probeTable((ProbeContext) pc, indexToRemove, true, sources, outputPositions,
+                new IncrementalProbeHandler(outputPositions));
+    }
+
+    @Override
+    public void findModifications(@NotNull final SafeCloseable pc,
+            @NotNull final RowSequence modifiedIndex,
+            @NotNull final ColumnSource<?>[] leftSources,
+            @NotNull final WritableIntChunk<RowKeys> outputPositions) {
+        if (modifiedIndex.isEmpty()) {
+            outputPositions.setSize(0);
+            return;
+        }
+        probeTable((ProbeContext) pc, modifiedIndex, false, leftSources, outputPositions,
+                new IncrementalProbeHandler(outputPositions));
     }
 
     public static class BuildContext extends TypedHasherUtil.BuildOrProbeContext {
@@ -122,9 +162,20 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
         final MutableInt rehashCredits = new MutableInt(0);
     }
 
+    public static class ProbeContext extends TypedHasherUtil.BuildOrProbeContext {
+        private ProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
+            super(buildSources, chunkSize);
+        }
+    }
+
     @Override
     public SafeCloseable makeUpdateByBuildContext(ColumnSource<?>[] keySources, long updateSize) {
         return new BuildContext(keySources, (int) Math.min(CHUNK_SIZE, updateSize));
+    }
+
+    @Override
+    public SafeCloseable makeUpdateByProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
+        return new ProbeContext(buildSources, (int) Math.min(maxSize, CHUNK_SIZE));
     }
 
     protected void newAlternate() {
@@ -173,6 +224,36 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
                 buildHandler.doBuild(chunkOk, sourceKeyChunks);
 
                 bc.resetSharedContexts();
+            }
+        }
+    }
+
+    protected void probeTable(
+            final ProbeContext pc,
+            final RowSequence probeRows,
+            final boolean usePrev,
+            final ColumnSource<?>[] probeSources,
+            WritableIntChunk<RowKeys> outputPositions,
+            final TypedHasherUtil.ProbeHandler handler) {
+
+        outputPositions.setSize(probeRows.intSize());
+
+        try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator()) {
+            // noinspection unchecked
+            final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
+
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
+
+                if (usePrev) {
+                    getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+                } else {
+                    getKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+                }
+
+                handler.doProbe(chunkOk, sourceKeyChunks);
+
+                pc.resetSharedContexts();
             }
         }
     }
@@ -260,6 +341,9 @@ public abstract class AddOnlyUpdateByStateManagerTypedBase extends UpdateByState
 
     abstract protected void buildHashTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             MutableInt outputPositionOffset, WritableIntChunk<RowKeys> outputPositions);
+
+    abstract protected void probeHashTable(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            WritableIntChunk<RowKeys> outputPositions);
 
     abstract protected int rehashInternalPartial(int entriesToRehash, WritableIntChunk<RowKeys> outputPositions);
 

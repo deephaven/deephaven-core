@@ -1082,7 +1082,7 @@ public class BucketedUpdateBy extends UpdateBy {
             slotTracker = new UpdateBySlotTracker(control.chunkCapacityOrDefault());
 
             this.hashTable = USE_TYPED_STATE_MANAGER
-                    ? TypedHasherFactory.make(IncrementalUpdateByStateManagerTypedBase.class,
+                    ? TypedHasherFactory.make(UpdateByStateManagerTypedBase.class,
                             keySources, originalKeySources,
                             hashTableSize, control.maximumLoadFactorOrDefault(),
                             control.targetLoadFactorOrDefault())
@@ -1096,7 +1096,7 @@ public class BucketedUpdateBy extends UpdateBy {
                 final int hashTableSize = control.initialHashTableSizeOrDefault();
 
                 this.hashTable = USE_TYPED_STATE_MANAGER
-                        ? TypedHasherFactory.make(AddOnlyUpdateByStateManagerTypedBase.class,
+                        ? TypedHasherFactory.make(UpdateByStateManagerTypedBase.class,
                                 keySources, keySources,
                                 hashTableSize, control.maximumLoadFactorOrDefault(),
                                 control.targetLoadFactorOrDefault())
