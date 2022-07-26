@@ -34,7 +34,7 @@ class MathContext(Enum):
 
 
 class BadDataBehavior(Enum):
-    """An Enum defining ways to handle invalid data during EMA processing."""
+    """An Enum defining ways to handle invalid data during update-by operations."""
 
     RESET = _JBadDataBehavior.RESET
     """Reset the state for the bucket to None when invalid data is encountered"""
@@ -64,7 +64,7 @@ class OperationControl(JObjectWrapper):
                  on_negative_deltatime: BadDataBehavior = BadDataBehavior.THROW,
                  on_zero_deltatime: BadDataBehavior = BadDataBehavior.SKIP,
                  big_value_context: MathContext = MathContext.DECIMAL128):
-        """Initializes an OperationControl for use with certain UpdateByOperation such as EMAs.
+        """Initializes an OperationControl for use with certain UpdateByOperation, such as EMAs.
 
         Args:
             on_null (BadDataBehavior): the behavior for when null values are encountered, default is SKIP
