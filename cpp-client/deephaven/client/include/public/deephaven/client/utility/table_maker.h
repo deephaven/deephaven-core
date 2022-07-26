@@ -2,9 +2,6 @@
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 #pragma once
-/*
- * Copyright (c) 2016-2020 Deephaven Data Labs and Patent Pending
- */
 
 #include <optional>
 
@@ -20,7 +17,7 @@
 #include <arrow/array/builder_primitive.h>
 #include <arrow/util/key_value_metadata.h>
 
-#include "deephaven/client/highlevel/client.h"
+#include "deephaven/client/client.h"
 #include "deephaven/client/utility/utility.h"
 
 namespace deephaven::client::utility {
@@ -79,8 +76,8 @@ private:
  * @endcode
  */
 class TableMaker {
-  typedef deephaven::client::highlevel::TableHandleManager TableHandleManager;
-  typedef deephaven::client::highlevel::TableHandle TableHandle;
+  typedef deephaven::client::TableHandleManager TableHandleManager;
+  typedef deephaven::client::TableHandle TableHandle;
 public:
   /**
    * Constructor

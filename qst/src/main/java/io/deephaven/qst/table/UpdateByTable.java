@@ -4,7 +4,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
@@ -22,7 +22,7 @@ public abstract class UpdateByTable extends ByTableBase {
 
     public abstract Optional<UpdateByControl> control();
 
-    public abstract List<UpdateByClause> operations();
+    public abstract List<UpdateByOperation> operations();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {
@@ -40,10 +40,10 @@ public abstract class UpdateByTable extends ByTableBase {
     public interface Builder extends ByTableBase.Builder<UpdateByTable, Builder> {
         Builder control(UpdateByControl control);
 
-        Builder addOperations(UpdateByClause element);
+        Builder addOperations(UpdateByOperation element);
 
-        Builder addOperations(UpdateByClause... elements);
+        Builder addOperations(UpdateByOperation... elements);
 
-        Builder addAllOperations(Iterable<? extends UpdateByClause> elements);
+        Builder addAllOperations(Iterable<? extends UpdateByOperation> elements);
     }
 }

@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.Strings;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
@@ -82,7 +82,7 @@ public abstract class UpdateBy {
      * @return a new table with the same index as the source with all the operations applied.
      */
     public static Table updateBy(@NotNull final QueryTable source,
-            @NotNull final Collection<? extends UpdateByClause> clauses,
+            @NotNull final Collection<? extends UpdateByOperation> clauses,
             @NotNull final Collection<? extends Selectable> byColumns,
             @NotNull final UpdateByControl control) {
 

@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
@@ -269,7 +269,7 @@ public class DeferredViewTable extends RedefinableTable {
 
     @Override
     public Table updateBy(@NotNull final UpdateByControl control,
-            @NotNull final Collection<? extends UpdateByClause> ops,
+            @NotNull final Collection<? extends UpdateByOperation> ops,
             @NotNull final Collection<? extends Selectable> byColumns) {
         return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
                 () -> UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control));

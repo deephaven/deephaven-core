@@ -1,7 +1,7 @@
 package io.deephaven.api.updateby.spec;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.api.updateby.EmaControl;
+import io.deephaven.api.updateby.OperationControl;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Duration;
@@ -14,7 +14,7 @@ import java.util.Optional;
 @BuildableStyle
 public abstract class EmaSpec extends UpdateBySpecBase {
 
-    public static EmaSpec of(EmaControl control, TimeScale timeScale) {
+    public static EmaSpec of(OperationControl control, TimeScale timeScale) {
         return ImmutableEmaSpec.builder().control(control).timeScale(timeScale).build();
     }
 
@@ -22,7 +22,7 @@ public abstract class EmaSpec extends UpdateBySpecBase {
         return ImmutableEmaSpec.builder().timeScale(timeScale).build();
     }
 
-    public static EmaSpec ofTime(final EmaControl control,
+    public static EmaSpec ofTime(final OperationControl control,
             final String timestampCol,
             long timeScaleNanos) {
         return of(control, TimeScale.ofTime(timestampCol, timeScaleNanos));
@@ -32,7 +32,7 @@ public abstract class EmaSpec extends UpdateBySpecBase {
         return of(TimeScale.ofTime(timestampCol, timeScaleNanos));
     }
 
-    public static EmaSpec ofTime(final EmaControl control,
+    public static EmaSpec ofTime(final OperationControl control,
             final String timestampCol,
             Duration emaDuration) {
         return of(control, TimeScale.ofTime(timestampCol, emaDuration));
@@ -42,7 +42,7 @@ public abstract class EmaSpec extends UpdateBySpecBase {
         return of(TimeScale.ofTime(timestampCol, emaDuration));
     }
 
-    public static EmaSpec ofTicks(EmaControl control, long tickWindow) {
+    public static EmaSpec ofTicks(OperationControl control, long tickWindow) {
         return of(control, TimeScale.ofTicks(tickWindow));
     }
 
@@ -50,12 +50,12 @@ public abstract class EmaSpec extends UpdateBySpecBase {
         return of(TimeScale.ofTicks(tickWindow));
     }
 
-    public abstract Optional<EmaControl> control();
+    public abstract Optional<OperationControl> control();
 
     public abstract TimeScale timeScale();
 
-    public final EmaControl controlOrDefault() {
-        return control().orElseGet(EmaControl::defaultInstance);
+    public final OperationControl controlOrDefault() {
+        return control().orElseGet(OperationControl::defaultInstance);
     }
 
     @Override
