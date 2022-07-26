@@ -18,7 +18,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
 import io.deephaven.engine.table.impl.updateby.hashing.IncrementalUpdateByStateManagerTypedBase;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
 import java.lang.Override;
 import java.util.Arrays;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -132,7 +131,7 @@ final class IncrementalUpdateByHasherByte extends IncrementalUpdateByStateManage
                 }
                 if (!alternateFound) {
                     // throw exception if the bucket isn't found;
-                    throw new IllegalStateException("Failed to find main aggregation slot for key " + ChunkUtils.extractKeyStringFromChunks(chunkTypes, sourceKeyChunks, chunkPosition));
+                    throw new IllegalStateException("Failed to find main aggregation slot for key " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                 }
             }
         }

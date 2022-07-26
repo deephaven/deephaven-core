@@ -12,6 +12,7 @@ import io.deephaven.chunk.attributes.HashCodes;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.util.hashing.*;
@@ -27,6 +28,7 @@ import io.deephaven.engine.table.impl.util.*;
 import java.util.Arrays;
 import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QInt\E
+import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 // endmixin rehash
@@ -49,7 +51,7 @@ public
 class AddOnlyUpdateByStateManager
         // region extensions
         extends UpdateByStateManager
-        // endregion extensions
+    // endregion extensions
 {
     // region constants
     public static final int CHUNK_SIZE = 4096;
@@ -159,7 +161,7 @@ class AddOnlyUpdateByStateManager
                                 // region constructor arguments
             , double maximumLoadFactor
             , double targetLoadFactor
-                                // endregion constructor arguments
+                                              // endregion constructor arguments
     ) {
         // region super
         super(tableKeySources);

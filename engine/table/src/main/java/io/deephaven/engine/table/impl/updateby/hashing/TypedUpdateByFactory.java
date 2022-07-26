@@ -56,33 +56,15 @@ public class TypedUpdateByFactory {
         if (!alternate) {
             builder.addStatement("// map the existing bucket to this chunk position");
             builder.addStatement("outputPositions.set(chunkPosition, rowState)");
-            // builder.beginControlFlow("if (sequentialBuilders != null)");
-            // builder.addStatement("final long cookie = getCookieMain(tableLocation)");
-            // builder.addStatement("hashSlots.set(cookie, (long)tableLocation | mainInsertMask)");
-            // builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders,
-            // rowKeyChunk.get(chunkPosition))");
-            // builder.nextControlFlow("else");
-            // builder.addStatement("addRightIndex(tableLocation, rowKeyChunk.get(chunkPosition), rowState)");
-            // builder.endControlFlow();
         } else {
             builder.addStatement("// map the existing bucket (from alternate) to this chunk position");
             builder.addStatement("outputPositions.set(chunkPosition, rowState)");
-            // builder.beginControlFlow("if (sequentialBuilders != null)");
-            // builder.addStatement("final long cookie = getCookieAlternate(alternateTableLocation)");
-            // builder.addStatement("hashSlots.set(cookie, (long)alternateTableLocation | alternateInsertMask)");
-            // builder.addStatement("addToSequentialBuilder(cookie, sequentialBuilders,
-            // rowKeyChunk.get(chunkPosition))");
-            // builder.nextControlFlow("else");
-            // builder.addStatement(
-            // "addAlternateRightIndex(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState)");
-            // builder.endControlFlow();
         }
     }
 
     public static void incrementalProbeMissing(CodeBlock.Builder builder) {
         builder.addStatement("// throw exception if the bucket isn't found");
         builder.addStatement(
-                "throw new IllegalStateException(\"Failed to find main aggregation slot for key \" + $T.extractKeyStringFromChunks(chunkTypes, sourceKeyChunks, chunkPosition))",
-                ChunkUtils.class);
+                "throw new IllegalStateException(\"Failed to find main aggregation slot for key \" + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)))");
     }
 }

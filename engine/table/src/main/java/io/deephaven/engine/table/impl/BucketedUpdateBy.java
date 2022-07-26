@@ -1045,12 +1045,13 @@ public class BucketedUpdateBy extends UpdateBy {
             @NotNull final Map<String, ColumnSource<?>> resultSources,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final ColumnSource<?>[] keySources,
+            @NotNull final ColumnSource<?>[] originalKeySources,
             @NotNull final MatchPair[] byColumns,
             @NotNull final UpdateByControl control) {
         final QueryTable result = new QueryTable(source.getRowSet(), resultSources);
         final boolean useGrouping = JoinControl.useGrouping(source, keySources);
         final BucketedUpdateBy updateBy =
-                new BucketedUpdateBy(ops, source, keySources, useGrouping, rowRedirection, control);
+                new BucketedUpdateBy(ops, source, keySources, originalKeySources, useGrouping, rowRedirection, control);
         updateBy.doInitialAdditions(useGrouping, byColumns);
 
         if (source.isRefreshing()) {
@@ -1069,6 +1070,7 @@ public class BucketedUpdateBy extends UpdateBy {
     private BucketedUpdateBy(@NotNull final UpdateByOperator[] operators,
             @NotNull final QueryTable source,
             @NotNull final ColumnSource<?>[] keySources,
+            @NotNull final ColumnSource<?>[] originalKeySources,
             final boolean useGrouping,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
@@ -1081,7 +1083,7 @@ public class BucketedUpdateBy extends UpdateBy {
 
             this.hashTable = USE_TYPED_STATE_MANAGER
                     ? TypedHasherFactory.make(IncrementalUpdateByStateManagerTypedBase.class,
-                            keySources, keySources,
+                            keySources, originalKeySources,
                             hashTableSize, control.maximumLoadFactorOrDefault(),
                             control.targetLoadFactorOrDefault())
                     : new IncrementalUpdateByStateManager(keySources,

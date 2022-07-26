@@ -73,7 +73,7 @@ public abstract class IncrementalUpdateByStateManagerTypedBase extends UpdateByS
         chunkTypes = new ChunkType[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
-            chunkTypes[ii] = keySourcesForErrorMessages[ii].getChunkType();
+            chunkTypes[ii] = tableKeySources[ii].getChunkType();
             mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
                     tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
