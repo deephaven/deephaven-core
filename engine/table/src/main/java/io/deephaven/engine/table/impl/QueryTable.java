@@ -901,15 +901,8 @@ public class QueryTable extends BaseTable {
             getRowSet().writableCast().remove(removed);
 
             // Update our rowSet and compute removals due to splatting.
-            if (shiftData != null) {
-                final WritableRowSet rowSet = getRowSet().writableCast();
-                shiftData.apply((beginRange, endRange, shiftDelta) -> {
-                    final RowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange);
-                    rowSet.removeRange(beginRange, endRange);
-                    removed.insert(rowSet.subSetByKeyRange(beginRange + shiftDelta, endRange + shiftDelta));
-                    rowSet.removeRange(beginRange + shiftDelta, endRange + shiftDelta);
-                    rowSet.insert(toShift.shift(shiftDelta));
-                });
+            if (shiftData != null && shiftData.nonempty()) {
+                shiftData.apply(getRowSet().writableCast());
             }
 
             final WritableRowSet newMapping;
