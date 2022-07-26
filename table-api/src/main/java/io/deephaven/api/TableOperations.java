@@ -6,7 +6,7 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 
 import java.util.Collection;
@@ -519,19 +519,19 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
-    TOPS updateBy(UpdateByClause operation);
+    TOPS updateBy(UpdateByOperation operation);
 
-    TOPS updateBy(Collection<? extends UpdateByClause> operations);
+    TOPS updateBy(Collection<? extends UpdateByOperation> operations);
 
-    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations);
+    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations);
 
-    TOPS updateBy(UpdateByClause operation, final String... byColumns);
+    TOPS updateBy(UpdateByOperation operation, final String... byColumns);
 
-    TOPS updateBy(Collection<? extends UpdateByClause> operations, final String... byColumns);
+    TOPS updateBy(Collection<? extends UpdateByOperation> operations, final String... byColumns);
 
-    TOPS updateBy(Collection<? extends UpdateByClause> operations, Collection<? extends ColumnName> byColumns);
+    TOPS updateBy(Collection<? extends UpdateByOperation> operations, Collection<? extends ColumnName> byColumns);
 
-    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations,
+    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
             Collection<? extends ColumnName> byColumns);
 
     // -------------------------------------------------------------------------------------------

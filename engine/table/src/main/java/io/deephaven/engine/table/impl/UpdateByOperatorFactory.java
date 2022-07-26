@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.agg.Pair;
-import io.deephaven.api.updateby.ColumnUpdateClause;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.ColumnUpdateOperation;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.spec.*;
 import io.deephaven.engine.table.ColumnSource;
@@ -30,7 +30,7 @@ import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 /**
- * A factory to visit all of the {@link UpdateByClause}s to produce a set of {@link UpdateByOperator}s that
+ * A factory to visit all of the {@link UpdateByOperation}s to produce a set of {@link UpdateByOperator}s that
  * {@link UpdateBy} can use to produce a result.
  */
 public class UpdateByOperatorFactory {
@@ -51,7 +51,7 @@ public class UpdateByOperatorFactory {
         this.control = control;
     }
 
-    final Collection<UpdateByOperator> getOperators(@NotNull final Collection<? extends UpdateByClause> specs) {
+    final Collection<UpdateByOperator> getOperators(@NotNull final Collection<? extends UpdateByOperation> specs) {
         final OperationVisitor v = new OperationVisitor();
         specs.forEach(s -> s.walk(v));
         return v.ops;
@@ -102,17 +102,17 @@ public class UpdateByOperatorFactory {
                 .toArray(MatchPair[]::new);
     }
 
-    public String describe(Collection<? extends UpdateByClause> clauses) {
+    public String describe(Collection<? extends UpdateByOperation> clauses) {
         final Describer d = new Describer();
         clauses.forEach(c -> c.walk(d));
         return d.descriptionBuilder.toString();
     }
 
-    private static class Describer implements UpdateByClause.Visitor<Void> {
+    private static class Describer implements UpdateByOperation.Visitor<Void> {
         final StringBuilder descriptionBuilder = new StringBuilder();
 
         @Override
-        public Void visit(ColumnUpdateClause clause) {
+        public Void visit(ColumnUpdateOperation clause) {
             final MatchPair[] pairs = parseMatchPairs(clause.columns());
             final String columnStr;
             if (pairs.length == 0) {
@@ -126,7 +126,7 @@ public class UpdateByOperatorFactory {
         }
     }
 
-    private class OperationVisitor implements UpdateBySpec.Visitor<Void>, UpdateByClause.Visitor<Void> {
+    private class OperationVisitor implements UpdateBySpec.Visitor<Void>, UpdateByOperation.Visitor<Void> {
         private final List<UpdateByOperator> ops = new ArrayList<>();
         private MatchPair[] pairs;
 
@@ -142,7 +142,7 @@ public class UpdateByOperatorFactory {
         }
 
         @Override
-        public Void visit(@NotNull final ColumnUpdateClause clause) {
+        public Void visit(@NotNull final ColumnUpdateOperation clause) {
             final UpdateBySpec spec = clause.spec();
             pairs = createColumnsToAddIfMissing(source, parseMatchPairs(clause.columns()), spec, groupByColumns);
             spec.walk(this);

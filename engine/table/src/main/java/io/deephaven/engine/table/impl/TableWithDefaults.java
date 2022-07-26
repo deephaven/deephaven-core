@@ -7,7 +7,7 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
@@ -1122,34 +1122,34 @@ public interface TableWithDefaults extends Table {
 
     @ConcurrentMethod
     default Table updateBy(@NotNull final UpdateByControl control,
-            @NotNull final Collection<? extends UpdateByClause> operations) {
+            @NotNull final Collection<? extends UpdateByOperation> operations) {
         return updateBy(control, operations, Collections.emptyList());
     }
 
     @ConcurrentMethod
-    default Table updateBy(@NotNull Collection<? extends UpdateByClause> operations,
+    default Table updateBy(@NotNull Collection<? extends UpdateByOperation> operations,
             @NotNull Collection<? extends ColumnName> byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), operations, byColumns);
     }
 
     @ConcurrentMethod
-    default Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations, final String... byColumns) {
+    default Table updateBy(@NotNull final Collection<? extends UpdateByOperation> operations, final String... byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), operations, ColumnName.from(byColumns));
     }
 
     @ConcurrentMethod
-    default Table updateBy(@NotNull final Collection<? extends UpdateByClause> operations) {
+    default Table updateBy(@NotNull final Collection<? extends UpdateByOperation> operations) {
         return updateBy(UpdateByControl.defaultInstance(), operations, Collections.emptyList());
     }
 
     @ConcurrentMethod
-    default Table updateBy(@NotNull final UpdateByClause operation, final String... byColumns) {
+    default Table updateBy(@NotNull final UpdateByOperation operation, final String... byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), Collections.singletonList(operation),
                 ColumnName.from(byColumns));
     }
 
     @ConcurrentMethod
-    default Table updateBy(@NotNull final UpdateByClause operation) {
+    default Table updateBy(@NotNull final UpdateByOperation operation) {
         return updateBy(UpdateByControl.defaultInstance(), Collections.singletonList(operation),
                 Collections.emptyList());
     }

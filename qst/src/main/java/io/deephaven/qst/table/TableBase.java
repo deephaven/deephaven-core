@@ -14,7 +14,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.qst.TableCreationLogic;
 
@@ -457,7 +457,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final UpdateByTable updateBy(UpdateByClause operation) {
+    public final UpdateByTable updateBy(UpdateByOperation operation) {
         return UpdateByTable.builder()
                 .parent(this)
                 .addOperations(operation)
@@ -465,7 +465,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final UpdateByTable updateBy(UpdateByClause operation, String... byColumns) {
+    public final UpdateByTable updateBy(UpdateByOperation operation, String... byColumns) {
         UpdateByTable.Builder builder = UpdateByTable.builder()
                 .parent(this)
                 .addOperations(operation);
@@ -476,7 +476,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final UpdateByTable updateBy(Collection<? extends UpdateByClause> operations,
+    public final UpdateByTable updateBy(Collection<? extends UpdateByOperation> operations,
             Collection<? extends ColumnName> byColumns) {
         return UpdateByTable.builder()
                 .parent(this)
@@ -486,7 +486,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final UpdateByTable updateBy(Collection<? extends UpdateByClause> operations) {
+    public final UpdateByTable updateBy(Collection<? extends UpdateByOperation> operations) {
         return UpdateByTable.builder()
                 .parent(this)
                 .addAllOperations(operations)
@@ -494,7 +494,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final UpdateByTable updateBy(Collection<? extends UpdateByClause> operations, String... byColumns) {
+    public final UpdateByTable updateBy(Collection<? extends UpdateByOperation> operations, String... byColumns) {
         UpdateByTable.Builder builder = UpdateByTable.builder()
                 .parent(this)
                 .addAllOperations(operations);
@@ -505,7 +505,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final UpdateByTable updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations) {
+    public final UpdateByTable updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations) {
         return UpdateByTable.builder()
                 .parent(this)
                 .control(control)
@@ -514,7 +514,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final UpdateByTable updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations,
+    public final UpdateByTable updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
             Collection<? extends ColumnName> byColumns) {
         return UpdateByTable.builder()
                 .parent(this)

@@ -3,10 +3,9 @@
  */
 #include <exception>
 #include <iostream>
-#include "deephaven/client/highlevel/client.h"
+#include "deephaven/client/client.h"
 
-
-using deephaven::client::highlevel::Client;
+using deephaven::client::Client;
 
 int main() {
   const char *server = "localhost:10000";

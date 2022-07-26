@@ -9,7 +9,7 @@ dependencies {
     api project(':Util'),
             project(':qst')
 
-    testImplementation 'junit:junit:4.13.2'
+    Classpaths.inheritJUnitClassic(project)
 }
 
 spotless {

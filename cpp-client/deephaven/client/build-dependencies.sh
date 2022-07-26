@@ -1,6 +1,10 @@
 #!/bin/bash
 
 #
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+#
+
+#
 # Tested on Ubuntu 20.04
 #
 
@@ -29,11 +33,21 @@ set -eux
 : ${BUILD_RE2:=yes}
 : ${BUILD_GFLAGS:=yes}
 : ${BUILD_ABSL:=yes}
-: ${BUILD_FLATBUFFERS:=yes}
+: ${BUILD_FLATBUFFERS:=no}
 : ${BUILD_CARES:=yes}
 : ${BUILD_ZLIB:=yes}
 : ${BUILD_GRPC:=yes}
 : ${BUILD_ARROW:=yes}
+: ${BUILD_IMMER:=yes}
+: ${BUILD_BOOST:=yes}
+
+: ${BOOST_VERSION:=1_79_0}
+
+# At the point of this writing, the latest immer release is pretty old.
+# We want something a lot more recent, but don't want to track head as is a moving
+# target and we can't guarantee things will continue to compile/be consistent.
+# So we select a particular SHA.
+: ${IMMER_SHA:=e5d79ed80ec74d511cc4f52fb68feeac66507f2c}
 
 #
 # End of user customization section; you should not need to modify the code below
@@ -41,18 +55,30 @@ set -eux
 #
 
 # How many CPUs to use in -j arguments to make.
-NCPUS=$(getconf _NPROCESSORS_ONLN)
+: ${NCPUS:=$(getconf _NPROCESSORS_ONLN)}
 
 # Where the checked out sources for dependencies will go
-SRC=$DHDEPS_HOME/src
+: ${SRC:=$DHDEPS_HOME/src}
 
 # Where the install prefix paths will go
-PFX=$DHDEPS_HOME/local
+: ${PFX:=$DHDEPS_HOME/local}
 
 # Let's get make to print out commands as they run
 export VERBOSE=1
 
-export CMAKE_PREFIX_PATH=${PFX}/abseil:${PFX}/cares:${PFX}/flatbuffers:${PFX}/gflags:${PFX}/protobuf:${PFX}/re2:${PFX}/zlib:${PFX}/grpc:${PFX}/arrow:${PFX}/deephaven
+export CMAKE_PREFIX_PATH=\
+${PFX}/abseil:\
+${PFX}/cares:\
+${PFX}/flatbuffers:\
+${PFX}/gflags:\
+${PFX}/protobuf:\
+${PFX}/re2:\
+${PFX}/zlib:\
+${PFX}/grpc:\
+${PFX}/arrow:\
+${PFX}/boost:\
+${PFX}/immer:\
+${PFX}/deephaven
 
 if [ ! -d $SRC ]; then
   mkdir -p $SRC
@@ -67,19 +93,38 @@ fi
 # there is no guarantee where the CWD is after a prior phase.
 #
 
+: ${GIT_FLAGS:="--quiet -c advice.detachedHead=false"}
+
 if [ "$CHECKOUT" = "yes" ]; then
   cd $SRC
-  git clone -b v3.18.0 --depth 1 https://github.com/protocolbuffers/protobuf.git
-  git clone -b 2021-09-01 --depth 1 https://github.com/google/re2.git
-  git clone -b v2.2.2 --depth 1 https://github.com/gflags/gflags.git
-  git clone -b 20210324.2 --depth 1 https://github.com/abseil/abseil-cpp.git
-  git clone -b v2.0.0 --depth 1 https://github.com/google/flatbuffers.git
-  git clone -b cares-1_17_2 --depth 1 https://github.com/c-ares/c-ares.git
-  git clone -b v1.2.11 --depth 1 https://github.com/madler/zlib
-  git clone -b v1.38.0 --depth 1 https://github.com/grpc/grpc
-  wget 'https://www.apache.org/dyn/closer.lua?action=download&filename=arrow/arrow-5.0.0/apache-arrow-5.0.0.tar.gz' -O apache-arrow-5.0.0.tar.gz
-  tar xfz apache-arrow-5.0.0.tar.gz
-  rm -f apache-arrow-5.0.0.tar.gz
+  git clone $GIT_FLAGS -b v3.20.1 --depth 1 https://github.com/protocolbuffers/protobuf.git
+  git clone $GIT_FLAGS -b 2022-04-01 --depth 1 https://github.com/google/re2.git
+  git clone $GIT_FLAGS -b v2.2.2 --depth 1 https://github.com/gflags/gflags.git
+  git clone $GIT_FLAGS -b 20210324.2 --depth 1 https://github.com/abseil/abseil-cpp.git
+  git clone $GIT_FLAGS -b v2.0.6 --depth 1 https://github.com/google/flatbuffers.git
+  git clone $GIT_FLAGS -b cares-1_18_1 --depth 1 https://github.com/c-ares/c-ares.git
+  git clone $GIT_FLAGS -b v1.2.11 --depth 1 https://github.com/madler/zlib
+  git clone $GIT_FLAGS -b v1.45.2 --depth 1 https://github.com/grpc/grpc
+  git clone $GIT_FLAGS -b apache-arrow-7.0.0 --depth 1 https://github.com/apache/arrow
+  git clone $GIT_FLAGS https://github.com/arximboldi/immer.git && (cd immer && git checkout "${IMMER_SHA}")
+  curl -sL https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_"${BOOST_VERSION}".tar.bz2 | tar jxf -
+  # Apply apache arrow patch.
+  (cd arrow && patch -p1 <<EOF
+diff --git a/cpp/src/arrow/ipc/reader.cc b/cpp/src/arrow/ipc/reader.cc
+index 0b46203..6fe1308 100644
+--- a/cpp/src/arrow/ipc/reader.cc
++++ b/cpp/src/arrow/ipc/reader.cc
+@@ -528,7 +528,7 @@ Result<std::shared_ptr<RecordBatch>> LoadRecordBatchSubset(
+       auto column = std::make_shared<ArrayData>();
+       RETURN_NOT_OK(loader.Load(&field, column.get()));
+       if (metadata->length() != column->length) {
+-        return Status::IOError("Array length did not match record batch length");
++        // return Status::IOError("Array length did not match record batch length");
+       }
+       columns[i] = std::move(column);
+       if (inclusion_mask) {
+EOF
+)
 fi 
 
 ### Protobuf
@@ -178,13 +223,35 @@ if [ "$BUILD_ARROW" = "yes" ]; then
   echo "*** Building arrow"
   export CPATH=${PFX}/abseil/include${CPATH+:$CPATH}
   export CPATH=${PFX}/protobuf/include${CPATH+:$CPATH}
-  cd $SRC/apache-arrow-5.0.0/cpp
+  cd $SRC/arrow/cpp
   mkdir -p build && cd build
   cmake -DARROW_BUILD_STATIC=ON -DARROW_FLIGHT=ON -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_DATASET=ON -DARROW_PARQUET=ON \
         -DARROW_WITH_BZ2=ON -DARROW_WITH_ZLIB=ON -DARROW_WITH_LZ4=ON -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZSTD=ON -DARROW_WITH_BROTLI=ON \
+	-DARROW_SIMD_LEVEL=NONE \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${PFX}/arrow ..
   make -j$NCPUS
   make install
 fi
 
+### immer
+if [ "$BUILD_IMMER" = "yes" ]; then
+  echo
+  echo "*** Building immer"
+  cd $SRC/immer
+  mkdir -p build && cd build
+  cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${PFX}/immer ..
+  make -j$NCPUS
+  make install
+fi
+
+### boost
+if [ "$BUILD_BOOST" = "yes" ]; then
+  echo
+  echo "*** Building boost"
+  cd $SRC/boost_"${BOOST_VERSION}"
+  ./bootstrap.sh --prefix=${PFX}/boost
+  ./b2 install
+fi
+
 echo DONE.
+echo "Use CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH"

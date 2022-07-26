@@ -949,21 +949,20 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     }
 
     public void appendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other, final boolean acquire) {
-        if ((shiftAmount & BLOCK_LAST) == 0) {
-            if (tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other, acquire)) {
-                return;
-            }
-        } else if (lastValue() < other.firstValue() + shiftAmount) {
-            other.forEachLongRange((final long start, final long end) -> {
-                appendRangeUnsafeNoWriteCheck(start + shiftAmount, end + shiftAmount);
-                return true;
-            });
+        if ((shiftAmount & BLOCK_LAST) == 0 &&
+                tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other, acquire)) {
             return;
         }
-        throw new IllegalArgumentException(
-                "Cannot append rowSet with shiftAmount=" + shiftAmount + ", firstRowKey=" + other.firstValue() +
-                        " when our lastValue=" + lastValue());
+        if (lastValue() >= other.firstValue() + shiftAmount) {
+            throw new IllegalArgumentException(
+                    "Cannot append rowSet with shiftAmount=" + shiftAmount + ", firstRowKey=" + other.firstValue() +
+                            " when our lastValue=" + lastValue());
 
+        }
+        other.forEachLongRange((final long start, final long end) -> {
+            appendRangeUnsafeNoWriteCheck(start + shiftAmount, end + shiftAmount);
+            return true;
+        });
     }
 
     /**
