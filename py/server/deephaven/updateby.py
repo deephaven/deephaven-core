@@ -1,7 +1,7 @@
 #
 #     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-"""This module supports building various update-by clauses for use with the update-by operations on tables. """
+"""This module supports building various operations for use with the update-by Table operation."""
 from enum import Enum
 from typing import Union, List
 
@@ -11,9 +11,9 @@ from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence
 
-_JUpdateByClause = jpy.get_type("io.deephaven.api.updateby.UpdateByClause")
+_JUpdateByOperation = jpy.get_type("io.deephaven.api.updateby.UpdateByOperation")
 _JBadDataBehavior = jpy.get_type("io.deephaven.api.updateby.BadDataBehavior")
-_JEmaControl = jpy.get_type("io.deephaven.api.updateby.EmaControl")
+_JOperationControl = jpy.get_type("io.deephaven.api.updateby.OperationControl")
 _JMathContext = jpy.get_type("java.math.MathContext")
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
@@ -37,7 +37,7 @@ class BadDataBehavior(Enum):
     """An Enum defining ways to handle invalid data during EMA processing."""
 
     RESET = _JBadDataBehavior.RESET
-    """Reset the state for the bucket to {@code null} when invalid data is encountered"""
+    """Reset the state for the bucket to None when invalid data is encountered"""
 
     SKIP = _JBadDataBehavior.SKIP
     """Skip and do not process the invalid data without changing state"""
@@ -49,14 +49,14 @@ class BadDataBehavior(Enum):
     """Allow the bad data to poison the result. This is only valid for use with NaN"""
 
 
-class EmaControl(JObjectWrapper):
-    """A EmaControl represents control parameters for performing EMAs (exponential moving average) with the table
-    update-by operation. """
-    j_object_type = _JEmaControl
+class OperationControl(JObjectWrapper):
+    """A OperationControl represents control parameters for performing operations with the table
+    UpdateByOperation. """
+    j_object_type = _JOperationControl
 
     @property
     def j_object(self) -> jpy.JType:
-        return self.j_ema_control
+        return self.j_op_control
 
     def __init__(self, on_null: BadDataBehavior = BadDataBehavior.SKIP,
                  on_nan: BadDataBehavior = BadDataBehavior.SKIP,
@@ -64,7 +64,7 @@ class EmaControl(JObjectWrapper):
                  on_negative_deltatime: BadDataBehavior = BadDataBehavior.THROW,
                  on_zero_deltatime: BadDataBehavior = BadDataBehavior.SKIP,
                  big_value_context: MathContext = MathContext.DECIMAL128):
-        """Initializes an EmaControl for evaluating EMAs (exponential moving average) with table update-by operation.
+        """Initializes an OperationControl for use with certain UpdateByOperation such as EMAs.
 
         Args:
             on_null (BadDataBehavior): the behavior for when null values are encountered, default is SKIP
@@ -81,33 +81,33 @@ class EmaControl(JObjectWrapper):
             DHError
         """
         try:
-            j_builder = _JEmaControl.builder()
-            self.j_ema_control = (j_builder.onNullValue(on_null.value)
-                                  .onNanValue(on_nan.value)
-                                  .onNullTime(on_null_time.value)
-                                  .onNegativeDeltaTime(on_negative_deltatime.value)
-                                  .onZeroDeltaTime(on_zero_deltatime.value)
-                                  .bigValueContext(big_value_context.value).build())
+            j_builder = _JOperationControl.builder()
+            self.j_op_control = (j_builder.onNullValue(on_null.value)
+                                 .onNanValue(on_nan.value)
+                                 .onNullTime(on_null_time.value)
+                                 .onNegativeDeltaTime(on_negative_deltatime.value)
+                                 .onZeroDeltaTime(on_zero_deltatime.value)
+                                 .bigValueContext(big_value_context.value).build())
         except Exception as e:
-            raise DHError(e, "failed to build a EmaControl object.") from e
+            raise DHError(e, "failed to build an OperationControl object.") from e
 
 
-class UpdateByClause(JObjectWrapper):
-    """A UpdateByClause represents an operator for the table update-by operation."""
+class UpdateByOperation(JObjectWrapper):
+    """A UpdateByOperation represents an operator for the Table update-by operation."""
 
-    j_object_type = _JUpdateByClause
+    j_object_type = _JUpdateByOperation
 
-    def __init__(self, j_updateby_clause):
-        self.j_updateby_clause = j_updateby_clause
+    def __init__(self, j_updateby_op):
+        self.j_updateby_op = j_updateby_op
 
     @property
     def j_object(self) -> jpy.JType:
-        return self.j_updateby_clause
+        return self.j_updateby_op
 
 
 def ema_tick_decay(time_scale_ticks: int, cols: Union[str, List[str]],
-                   ema_control: EmaControl = None) -> UpdateByClause:
-    """Creates an EMA (exponential moving average) UpdateByClause for the supplied column names, using ticks as
+                   op_control: OperationControl = None) -> UpdateByOperation:
+    """Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
 
     The formula used is
@@ -117,29 +117,29 @@ def ema_tick_decay(time_scale_ticks: int, cols: Union[str, List[str]],
     Args:
         time_scale_ticks (int): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can be renaming expressions, i.e. "new_col = col"
-        ema_control (EmaControl): defines how special cases should behave, when None, the default EmaControl settings
-            as specified in :meth:`~EmaControl.__init__` will be used
+        op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
+            settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
-        an UpdateByClause
+        an UpdateByOperation
 
     Raises:
         DHError
     """
     try:
         cols = to_sequence(cols)
-        if ema_control is None:
-            return UpdateByClause(j_updateby_clause=_JUpdateByClause.Ema(time_scale_ticks, *cols))
+        if op_control is None:
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ema(time_scale_ticks, *cols))
         else:
-            return UpdateByClause(
-                j_updateby_clause=_JUpdateByClause.Ema(ema_control.j_ema_control, time_scale_ticks, *cols))
+            return UpdateByOperation(
+                j_updateby_op=_JUpdateByOperation.Ema(op_control.j_op_control, time_scale_ticks, *cols))
     except Exception as e:
-        raise DHError(e, "failed to create a tick-decay EMA UpdateByClause.") from e
+        raise DHError(e, "failed to create a tick-decay EMA UpdateByOperation.") from e
 
 
 def ema_time_decay(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
-                   ema_control: EmaControl = None) -> UpdateByClause:
-    """Creates an EMA(exponential moving average) UpdateByClause for the supplied column names, using time as the
+                   op_control: OperationControl = None) -> UpdateByOperation:
+    """Creates an EMA(exponential moving average) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
@@ -152,11 +152,11 @@ def ema_time_decay(ts_col: str, time_scale: Union[int, str], cols: Union[str, Li
         time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can be renaming expressions, i.e. "new_col = col"
-        ema_control (EmaControl): defines how special cases should behave,  when None, the default EmaControl settings
-            as specified in :meth:`~EmaControl.__init__` will be used
+        op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
+            settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
-        an UpdateByClause
+        an UpdateByOperation
 
     Raises:
         DHError
@@ -165,112 +165,116 @@ def ema_time_decay(ts_col: str, time_scale: Union[int, str], cols: Union[str, Li
         if isinstance(time_scale, str):
             time_scale = _JDateTimeUtils.expressionToNanos(time_scale)
         cols = to_sequence(cols)
-        if ema_control is None:
-            return UpdateByClause(j_updateby_clause=_JUpdateByClause.Ema(ts_col, time_scale, *cols))
+        if op_control is None:
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ema(ts_col, time_scale, *cols))
         else:
-            return UpdateByClause(
-                j_updateby_clause=_JUpdateByClause.Ema(ema_control.j_ema_control, ts_col, time_scale, *cols))
+            return UpdateByOperation(
+                j_updateby_op=_JUpdateByOperation.Ema(op_control.j_op_control, ts_col, time_scale, *cols))
     except Exception as e:
-        raise DHError(e, "failed to create a time-decay EMA UpdateByClause.") from e
+        raise DHError(e, "failed to create a time-decay EMA UpdateByOperation.") from e
 
 
-def cum_sum(cols: Union[str, List[str]]) -> UpdateByClause:
-    """Creates a cumulative sum update-by clause for the supplied column names.
+def cum_sum(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative sum UpdateByOperation for the supplied column names.
 
     Args:
 
-        cols (Union[str, List[str]]): the column(s) to be operated on, can be renaming expressions, i.e. "new_col =
-            col"; when empty, update_by performs the cumulative sum operation on all the applicable columns.
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative sum operation on all the applicable
+            columns.
 
     Returns:
-        a UpdateByClause
+        an UpdateByOperation
 
     Raises:
         DHError
     """
     try:
         cols = to_sequence(cols)
-        return UpdateByClause(j_updateby_clause=_JUpdateByClause.CumSum(cols))
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumSum(cols))
     except Exception as e:
-        raise DHError(e, "failed to create a cumulative sum UpdateByClause.") from e
+        raise DHError(e, "failed to create a cumulative sum UpdateByOperation.") from e
 
 
-def cum_prod(cols: Union[str, List[str]]) -> UpdateByClause:
-    """Creates a CumProd (cumulative product) update-by clause for the supplied column names.
+def cum_prod(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a CumProd (cumulative product) UpdateByOperation for the supplied column names.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can be renaming expressions, i.e. "new_col =
-            col"; when empty, update_by performing the cumulative product operation on all the applicable columns.
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performing the cumulative product operation on all the
+            applicable columns.
 
     Returns:
-        a UpdateByClause
+        an UpdateByOperation
 
     Raises:
         DHError
     """
     try:
         cols = to_sequence(cols)
-        return UpdateByClause(j_updateby_clause=_JUpdateByClause.CumProd(cols))
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumProd(cols))
     except Exception as e:
-        raise DHError(e, "failed to create a cumulative product UpdateByClause.") from e
+        raise DHError(e, "failed to create a cumulative product UpdateByOperation.") from e
 
 
-def cum_min(cols: Union[str, List[str]]) -> UpdateByClause:
-    """Creates a CumMin (cumulative minimum) update-by clause for the supplied column names.
+def cum_min(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a CumMin (cumulative minimum) UpdateByOperation for the supplied column names.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can be renaming expressions, i.e. "new_col =
-            col"; when empty, update_by perform the cumulative minimum operation on all the applicable columns.
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the cumulative minimum operation on all the applicable
+            columns.
 
     Returns:
-        a UpdateByClause
+        an UpdateByOperation
 
     Raises:
         DHError
     """
     try:
         cols = to_sequence(cols)
-        return UpdateByClause(j_updateby_clause=_JUpdateByClause.CumMin(cols))
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumMin(cols))
     except Exception as e:
-        raise DHError(e, "failed to create a cumulative minimum UpdateByClause.") from e
+        raise DHError(e, "failed to create a cumulative minimum UpdateByOperation.") from e
 
 
-def cum_max(cols: Union[str, List[str]]) -> UpdateByClause:
-    """Creates a CumMax (cumulative maximum) update-by clause for the supplied column names.
+def cum_max(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a CumMax (cumulative maximum) UpdateByOperation for the supplied column names.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output, i.e. "new_col = 
-            col"; when empty, update_by performs the cumulative maximum operation on all the applicable columns.
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative maximum operation on all the applicable
+            columns.
 
     Returns:
-        a UpdateByClause
+        an UpdateByOperation
 
     Raises:
         DHError
     """
     try:
         cols = to_sequence(cols)
-        return UpdateByClause(j_updateby_clause=_JUpdateByClause.CumMax(cols))
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumMax(cols))
     except Exception as e:
-        raise DHError(e, "failed to create a cumulative maximum UpdateByClause.") from e
+        raise DHError(e, "failed to create a cumulative maximum UpdateByOperation.") from e
 
 
-def forward_fill(cols: Union[str, List[str]]) -> UpdateByClause:
-    """Creates a forward fill update-by clause for the supplied column names. Null values in the columns are
+def forward_fill(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a forward fill UpdateByOperation for the supplied column names. Null values in the columns are
     replaced by the last known non-null values. This operation is forward only.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can be renaming expressions, i.e. "new_col = 
-            col"; when empty, update_by perform the forward fill operation on all columns.
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the forward fill operation on all columns.
 
     Returns:
-        a UpdateByClause
+        an UpdateByOperation
 
     Raises:
         DHError
     """
     try:
         cols = to_sequence(cols)
-        return UpdateByClause(j_updateby_clause=_JUpdateByClause.Fill(cols))
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Fill(cols))
     except Exception as e:
-        raise DHError(e, "failed to create a forward fill UpdateByClause.") from e
+        raise DHError(e, "failed to create a forward fill UpdateByOperation.") from e

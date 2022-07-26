@@ -19,7 +19,7 @@ from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
 from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator
 from deephaven.ugp import auto_locking_op
-from deephaven.updateby import UpdateByClause
+from deephaven.updateby import UpdateByOperation
 
 # Table
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -1390,7 +1390,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a partitioned table.") from e
 
-    def update_by(self, ops: Union[UpdateByClause, List[UpdateByClause]],
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]],
                   by: Union[str, List[str]] = None) -> Table:
         """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
         The aggregations are defined by the provided operations, which support incremental aggregations over the
@@ -1398,7 +1398,7 @@ class Table(JObjectWrapper):
         compute the results over the entire table or each row group as identified by the provided key columns.
 
         Args:
-            ops (Union[UpdateByClause, List[UpdateByClause]]): the update-by operation definition(s)
+            ops (Union[UpdateByOperation, List[UpdateByOperation]]): the update-by operation definition(s)
             by (Union[str, List[str]]): the key column name(s) to group the rows of the table
 
         Returns:
@@ -2705,14 +2705,14 @@ class PartitionedTableProxy(JObjectWrapper):
             raise DHError(e, "var_by operation on the PartitionedTableProxy failed.") from e
 
     @auto_locking_op
-    def update_by(self, ops: Union[UpdateByClause, List[UpdateByClause]],
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]],
                   by: Union[str, List[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.update_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
         partitioned table.
 
         Args:
-            ops (Union[UpdateByClause, List[UpdateByClause]]): the update-by operation definition(s)
+            ops (Union[UpdateByOperation, List[UpdateByOperation]]): the update-by operation definition(s)
             by (Union[str, List[str]]): the key column name(s) to group the rows of the table
 
         Returns:
