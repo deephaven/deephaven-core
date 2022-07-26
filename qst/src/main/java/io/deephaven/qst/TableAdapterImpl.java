@@ -267,11 +267,11 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
 
     @Override
     public void visit(SelectDistinctTable selectDistinctTable) {
-        if (selectDistinctTable.groupByColumns().isEmpty()) {
+        if (selectDistinctTable.columns().isEmpty()) {
             addOp(selectDistinctTable, parentOps(selectDistinctTable).selectDistinct());
         } else {
             addOp(selectDistinctTable,
-                    parentOps(selectDistinctTable).selectDistinct(selectDistinctTable.groupByColumns()));
+                    parentOps(selectDistinctTable).selectDistinct(selectDistinctTable.columns()));
         }
     }
 

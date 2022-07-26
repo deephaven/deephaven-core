@@ -16,6 +16,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -44,6 +45,16 @@ public abstract class ColumnName
 
     public static List<ColumnName> from(Collection<String> values) {
         return values.stream().map(ColumnName::of).collect(Collectors.toList());
+    }
+
+    public static Optional<Collection<ColumnName>> cast(Collection<? extends Selectable> columns) {
+        for (Selectable column : columns) {
+            if (!(column instanceof ColumnName)) {
+                return Optional.empty();
+            }
+        }
+        // noinspection unchecked
+        return Optional.of((Collection<ColumnName>) columns);
     }
 
     /**

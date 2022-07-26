@@ -2855,14 +2855,18 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("selectDistinct(" + groupByColumns + ")",
+    public Table selectDistinct(Collection<? extends Selectable> columns) {
+        return QueryPerformanceRecorder.withNugget("selectDistinct(" + columns + ")",
                 sizeForInstrumentation(),
                 () -> {
+                    final Collection<ColumnName> columnNames = ColumnName.cast(columns).orElse(null);
+                    if (columnNames == null) {
+                        return view(columns).selectDistinct();
+                    }
                     final MemoizedOperationKey aggKey =
-                            MemoizedOperationKey.aggBy(Collections.emptyList(), groupByColumns);
+                            MemoizedOperationKey.aggBy(Collections.emptyList(), columnNames);
                     return memoizeResult(aggKey,
-                            () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), groupByColumns));
+                            () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), columnNames));
                 });
     }
 

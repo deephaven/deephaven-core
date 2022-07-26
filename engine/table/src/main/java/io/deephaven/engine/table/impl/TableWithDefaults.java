@@ -31,7 +31,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Sub-interface to capture default methods rom {@link Table}.

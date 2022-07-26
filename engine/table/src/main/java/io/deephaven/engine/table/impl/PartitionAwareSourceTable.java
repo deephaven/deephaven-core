@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
@@ -148,7 +149,17 @@ public class PartitionAwareSourceTable extends SourceTable {
         }
 
         @Override
-        public Table selectDistinct(SelectColumn[] selectColumns) {
+        public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
+            Collection<ColumnName> columnNames = ColumnName.cast(columns).orElse(null);
+            if (columnNames != null) {
+                // Simple case, all explicit column names
+                if (!((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(columnNames)) {
+                    return null;
+                }
+                return table.selectDistinct(columnNames);
+            }
+            // General case, potential expressions
+            final SelectColumn[] selectColumns = SelectColumn.from(columns);
             for (final SelectColumn selectColumn : selectColumns) {
                 try {
                     selectColumn.initDef(getDefinition().getColumnNameMap());
@@ -160,7 +171,6 @@ public class PartitionAwareSourceTable extends SourceTable {
                     return null;
                 }
             }
-
             return table.selectDistinct(selectColumns);
         }
     }
@@ -317,8 +327,8 @@ public class PartitionAwareSourceTable extends SourceTable {
     }
 
     @Override
-    public final Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
-        final SelectColumn[] selectColumns = SelectColumn.from(groupByColumns);
+    public final Table selectDistinct(Collection<? extends Selectable> columns) {
+        final SelectColumn[] selectColumns = SelectColumn.from(columns);
         for (SelectColumn selectColumn : selectColumns) {
             selectColumn.initDef(definition.getColumnNameMap());
             if (!isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
@@ -354,5 +364,9 @@ public class PartitionAwareSourceTable extends SourceTable {
             return false;
         }
         return columnNames.stream().allMatch(partitioningColumnDefinitions::containsKey);
+    }
+
+    private boolean isValidAgainstColumnPartitionTable(Collection<ColumnName> columns) {
+        return columns.stream().map(ColumnName::name).allMatch(partitioningColumnDefinitions::containsKey);
     }
 }
