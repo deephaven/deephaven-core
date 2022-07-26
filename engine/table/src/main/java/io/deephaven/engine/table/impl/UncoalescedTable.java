@@ -230,7 +230,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public Table selectDistinct(Collection<? extends ColumnName> columns) {
+    public Table selectDistinct(Collection<? extends Selectable> columns) {
         return coalesce().selectDistinct(columns);
     }
 
