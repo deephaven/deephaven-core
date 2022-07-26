@@ -71,7 +71,7 @@ public class ExecutionContextImpl extends ExecutionContext {
             return this;
         }
 
-        public ExecutionContext build() {
+        public ExecutionContextImpl build() {
             return new ExecutionContextImpl(isSystemic, queryLibrary, queryScope, compilerContext);
         }
     }

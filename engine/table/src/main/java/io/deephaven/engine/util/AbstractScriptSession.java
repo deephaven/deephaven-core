@@ -60,7 +60,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     private final File classCacheDirectory;
 
-    protected final ExecutionContext executionContext;
+    protected final ExecutionContextImpl executionContext;
 
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
