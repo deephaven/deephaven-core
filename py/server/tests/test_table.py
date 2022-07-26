@@ -525,7 +525,7 @@ class TableTestCase(BaseTestCase):
         self.assertIsNotNone(t)
 
     def test_layout_hints(self):
-        t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d", columnGroups=[
+        t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d", column_groups=[
             {
                 "name": "Group1",
                 "children": ["a", "b"]
