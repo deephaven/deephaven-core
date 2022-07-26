@@ -1,28 +1,26 @@
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-#include "tests/catch.hpp"
+#include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 #include "deephaven/client/utility/utility.h"
 
-using deephaven::client::highlevel::aggAvg;
-using deephaven::client::highlevel::aggSum;
-using deephaven::client::highlevel::aggMin;
-using deephaven::client::highlevel::aggMax;
-using deephaven::client::highlevel::aggCount;
-using deephaven::client::highlevel::aggCombo;
-using deephaven::client::highlevel::Aggregate;
-using deephaven::client::highlevel::AggregateCombo;
-using deephaven::client::highlevel::TableHandleManager;
-using deephaven::client::highlevel::TableHandle;
-using deephaven::client::highlevel::SortPair;
-using deephaven::client::highlevel::DeephavenConstants;
+using deephaven::client::aggAvg;
+using deephaven::client::aggSum;
+using deephaven::client::aggMin;
+using deephaven::client::aggMax;
+using deephaven::client::aggCount;
+using deephaven::client::aggCombo;
+using deephaven::client::Aggregate;
+using deephaven::client::AggregateCombo;
+using deephaven::client::TableHandleManager;
+using deephaven::client::TableHandle;
+using deephaven::client::SortPair;
+using deephaven::client::DeephavenConstants;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
 
-namespace deephaven {
-namespace client {
-namespace tests {
+namespace deephaven::client::tests {
 TEST_CASE("Various aggregates", "[aggregates]") {
   auto tm = TableMakerForTests::create();
   auto table = tm.table();
@@ -73,6 +71,4 @@ TEST_CASE("Various aggregates", "[aggregates]") {
         );
   }
 }
-}  // namespace tests
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::tests

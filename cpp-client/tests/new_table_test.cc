@@ -3,21 +3,19 @@
  */
 #include <optional>
 
-#include "tests/catch.hpp"
+#include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 #include "deephaven/client/utility/utility.h"
 
-using deephaven::client::highlevel::DeephavenConstants;
-using deephaven::client::highlevel::TableHandleManager;
-using deephaven::client::highlevel::TableHandle;
-using deephaven::client::highlevel::SortPair;
+using deephaven::client::DeephavenConstants;
+using deephaven::client::TableHandleManager;
+using deephaven::client::TableHandle;
+using deephaven::client::SortPair;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
 
-namespace deephaven {
-namespace client {
-namespace tests {
+namespace deephaven::client::tests {
 TEST_CASE("New Table", "[newtable]") {
   auto tm = TableMakerForTests::create();
 
@@ -42,6 +40,4 @@ TEST_CASE("New Table", "[newtable]") {
   auto temp = maker.makeTable(tm.client().getManager());
   std::cout << temp.stream(true) << '\n';
 }
-}  // namespace tests
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::tests

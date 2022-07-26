@@ -1,21 +1,19 @@
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-#include "tests/catch.hpp"
+#include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 
 #include "deephaven/client/utility/utility.h"
 
-using deephaven::client::highlevel::TableHandleManager;
-using deephaven::client::highlevel::TableHandle;
-using deephaven::client::highlevel::SortPair;
+using deephaven::client::TableHandleManager;
+using deephaven::client::TableHandle;
+using deephaven::client::SortPair;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
 
-namespace deephaven {
-namespace client {
-namespace tests {
+namespace deephaven::client::tests {
 TEST_CASE("Sort demo table", "[sort]") {
   auto tm = TableMakerForTests::create();
   auto table = tm.table();
@@ -99,6 +97,4 @@ TEST_CASE("Sort temp table", "[sort]") {
       "IntValue3", sid3
       );
 }
-}  // namespace tests
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::tests

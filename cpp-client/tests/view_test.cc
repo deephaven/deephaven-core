@@ -1,17 +1,15 @@
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-#include "tests/catch.hpp"
+#include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 #include "deephaven/client/utility/utility.h"
 
-using deephaven::client::highlevel::TableHandleManager;
-using deephaven::client::highlevel::TableHandle;
+using deephaven::client::TableHandleManager;
+using deephaven::client::TableHandle;
 using deephaven::client::utility::streamf;
 
-namespace deephaven {
-namespace client {
-namespace tests {
+namespace deephaven::client::tests {
 TEST_CASE("View", "[view]") {
   auto tm = TableMakerForTests::create();
   auto table = tm.table();
@@ -41,6 +39,4 @@ TEST_CASE("View", "[view]") {
         );
   }
 }
-}  // namespace tests
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::tests

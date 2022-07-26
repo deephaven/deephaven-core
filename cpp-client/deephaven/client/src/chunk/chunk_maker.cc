@@ -6,6 +6,7 @@
 #include "deephaven/client/column/column_source.h"
 
 using deephaven::client::column::ColumnSourceVisitor;
+using deephaven::client::column::DateTimeColumnSource;
 using deephaven::client::column::DoubleColumnSource;
 using deephaven::client::column::FloatColumnSource;
 using deephaven::client::column::Int8ColumnSource;
@@ -43,8 +44,16 @@ struct Visitor final : ColumnSourceVisitor {
     result_ = DoubleChunk::create(chunkSize_);
   }
 
+  void visit(const column::BooleanColumnSource &source) final {
+    result_ = BooleanChunk::create(chunkSize_);
+  }
+
   void visit(const StringColumnSource &source) final {
     result_ = StringChunk::create(chunkSize_);
+  }
+
+  void visit(const DateTimeColumnSource &source) final {
+    result_ = DateTimeChunk::create(chunkSize_);
   }
 
   size_t chunkSize_;

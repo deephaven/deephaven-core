@@ -20,7 +20,7 @@ public:
 
   virtual ~RowSequence();
 
-  virtual std::shared_ptr<RowSequenceIterator> getRowSequenceIterator() const = 0;
+  RowSequenceIterator getRowSequenceIterator() const;
 
   virtual std::shared_ptr<RowSequence> take(size_t size) const = 0;
   virtual std::shared_ptr<RowSequence> drop(size_t size) const = 0;
@@ -37,9 +37,21 @@ public:
 };
 
 class RowSequenceIterator {
+  static constexpr size_t chunkSize = 8192;
+  struct Private {};
 public:
-  virtual ~RowSequenceIterator();
-  virtual bool tryGetNext(uint64_t *result) = 0;
+  explicit RowSequenceIterator(std::shared_ptr<RowSequence> rowSequence);
+  RowSequenceIterator(RowSequenceIterator &&other) noexcept;
+  ~RowSequenceIterator();
+  bool tryGetNext(uint64_t *result);
+
+private:
+  void refillRanges();
+
+  std::shared_ptr<RowSequence> residual_;
+  std::vector<std::pair<uint64_t, uint64_t>> ranges_;
+  size_t rangeIndex_ = 0;
+  uint64_t offset_ = 0;
 };
 
 class RowSequenceBuilder {
