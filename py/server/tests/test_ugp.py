@@ -66,7 +66,7 @@ class UgpTestCase(BaseTestCase):
             t = ticking_table_op_decorated()
 
         t = ticking_table_op_decorated(5)
-        self.wait_ticking_table_update(t, row_count=5, timeout=5)
+        self.wait_ticking_table_update(t, row_count=5, timeout=10)
 
         t = ticking_table_op_decorated(10, "00:00:00.001")
         self.wait_ticking_table_update(t, row_count=8, timeout=5)
@@ -82,7 +82,7 @@ class UgpTestCase(BaseTestCase):
             t = ticking_table_op_decorated()
 
         t = ticking_table_op_decorated(5)
-        self.wait_ticking_table_update(t, row_count=5, timeout=5)
+        self.wait_ticking_table_update(t, row_count=5, timeout=10)
 
         t = ticking_table_op_decorated(10, "00:00:00.001")
         self.wait_ticking_table_update(t, row_count=8, timeout=5)
