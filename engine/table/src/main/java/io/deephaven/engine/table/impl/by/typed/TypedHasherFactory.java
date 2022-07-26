@@ -469,13 +469,13 @@ public class TypedHasherFactory {
             } else if (hasherConfig.baseClass
                     .equals(UpdateByStateManagerTypedBase.class)) {
                 // noinspection unchecked
-//                T pregeneratedHasher =
-//                        (T) io.deephaven.engine.table.impl.updateby.hashing.typed.open.gen.TypedHashDispatcher
-//                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
-//                                        targetLoadFactor);
-//                if (pregeneratedHasher != null) {
-//                    return pregeneratedHasher;
-//                }
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.updateby.hashing.typed.open.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
             }
         }
 

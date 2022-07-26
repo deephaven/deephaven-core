@@ -58,7 +58,7 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
     protected int alternateInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
 
     protected UpdateByStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
-                                            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
+            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
 
         super(keySourcesForErrorMessages);
 
@@ -90,11 +90,11 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
         stateSource.ensureCapacity(tableSize);
     }
 
-    private class IncrementalBuildHandler implements TypedHasherUtil.BuildHandler {
+    private class UpdateByBuildHandler implements TypedHasherUtil.BuildHandler {
         final MutableInt nextOutputPosition;
         final WritableIntChunk<RowKeys> outputPositions;
 
-        private IncrementalBuildHandler(MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
+        private UpdateByBuildHandler(MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
             this.nextOutputPosition = nextOutputPosition;
             this.outputPositions = outputPositions;
         }
@@ -105,10 +105,10 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
         }
     }
 
-    private class IncrementalProbeHandler implements TypedHasherUtil.ProbeHandler {
+    private class UpdateByProbeHandler implements TypedHasherUtil.ProbeHandler {
         final WritableIntChunk<RowKeys> outputPositions;
 
-        private IncrementalProbeHandler(WritableIntChunk<RowKeys> outputPositions) {
+        private UpdateByProbeHandler(WritableIntChunk<RowKeys> outputPositions) {
             this.outputPositions = outputPositions;
         }
 
@@ -125,7 +125,7 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
             return;
         }
         buildTable(initialBuild, (BuildContext) bc, orderedKeys, sources, outputPositions,
-                new IncrementalBuildHandler(nextOutputPosition, outputPositions));
+                new UpdateByBuildHandler(nextOutputPosition, outputPositions));
     }
 
     @Override
@@ -138,7 +138,7 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
             return;
         }
         probeTable((ProbeContext) pc, indexToRemove, true, sources, outputPositions,
-                new IncrementalProbeHandler(outputPositions));
+                new UpdateByProbeHandler(outputPositions));
     }
 
     @Override
@@ -151,7 +151,7 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
             return;
         }
         probeTable((ProbeContext) pc, modifiedIndex, false, leftSources, outputPositions,
-                new IncrementalProbeHandler(outputPositions));
+                new UpdateByProbeHandler(outputPositions));
     }
 
     public static class BuildContext extends TypedHasherUtil.BuildOrProbeContext {
