@@ -1334,7 +1334,7 @@ class Table(JObjectWrapper):
 
     def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
                      freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,
-                     groups: List[dict] = None) -> Table:
+                     column_groups: List[dict] = None) -> Table:
         """ Sets layout hints on the Table
 
         Args:
@@ -1343,7 +1343,7 @@ class Table(JObjectWrapper):
             freeze (Union[str, List[str]]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
             hide (Union[str, List[str]]): the columns to hide.
-            groups (List[ColumnGroup]): A list of dicts specifying which columns should be grouped in the UI
+            column_groups (List[ColumnGroup]): A list of dicts specifying which columns should be grouped in the UI
                 The dicts can specify the following:
 
                 name (str): The group name
@@ -1371,10 +1371,10 @@ class Table(JObjectWrapper):
             if hide is not None:
                 _j_layout_hint_builder.hide(to_sequence(hide))
 
-            if groups is not None:
-                for group in groups:
-                    _j_layout_hint_builder.group(group.get("name"), j_array_list(group.get("children")),
-                                                 group.get("color", ""))
+            if column_groups is not None:
+                for group in column_groups:
+                    _j_layout_hint_builder.columnGroup(group.get("name"), j_array_list(group.get("children")),
+                                                       group.get("color", ""))
         except Exception as e:
             raise DHError(e, "failed to create layout hints") from e
 

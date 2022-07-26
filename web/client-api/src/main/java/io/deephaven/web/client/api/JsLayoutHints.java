@@ -88,7 +88,7 @@ public class JsLayoutHints {
             frozenColumns = JsObject.freeze(freezeStr.split(","));
         }
 
-        final String groupsStr = options.get("groups");
+        final String groupsStr = options.get("columnGroups");
         if (groupsStr != null && !groupsStr.isEmpty()) {
             List<ColumnGroup> groups =
                     Arrays.stream(groupsStr.split("\\|")).map(ColumnGroup::new).map(JsObject::freeze)
@@ -126,7 +126,7 @@ public class JsLayoutHints {
     }
 
     @JsProperty
-    public Object[] getColumnGroups() {
+    public ColumnGroup[] getColumnGroups() {
         return columnGroups;
     }
 }

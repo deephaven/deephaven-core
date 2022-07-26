@@ -223,12 +223,12 @@ public class LayoutHintBuilder {
             lhb.groupableColumns(groupableColumns);
         }
 
-        final String groupsStr = options.get("groups");
-        if (groupsStr != null && !groupsStr.isEmpty()) {
-            Arrays.stream(groupsStr.split("\\|"))
+        final String columnGroupsStr = options.get("columnGroups");
+        if (columnGroupsStr != null && !columnGroupsStr.isEmpty()) {
+            Arrays.stream(columnGroupsStr.split("\\|"))
                     .filter(s -> s != null && !s.isEmpty())
                     .map(ColumnGroup::fromString)
-                    .forEach(lhb::addGroupData);
+                    .forEach(lhb::addColumnGroupData);
         }
 
         return lhb;
@@ -344,22 +344,22 @@ public class LayoutHintBuilder {
     }
 
     /**
-     * @see LayoutHintBuilder#group(String, List, Color)
+     * @see LayoutHintBuilder#columnGroup(String, List, Color)
      */
     @ScriptApi
-    public LayoutHintBuilder group(String name, List<String> children) {
-        return group(name, children, (Color) null);
+    public LayoutHintBuilder columnGroup(String name, List<String> children) {
+        return columnGroup(name, children, (Color) null);
     }
 
     /**
-     * @see LayoutHintBuilder#group(String, List, Color)
+     * @see LayoutHintBuilder#columnGroup(String, List, Color)
      */
     @ScriptApi
-    public LayoutHintBuilder group(String name, List<String> children, String color) {
+    public LayoutHintBuilder columnGroup(String name, List<String> children, String color) {
         if (color == null || color.length() == 0) {
-            return group(name, children, (Color) null);
+            return columnGroup(name, children, (Color) null);
         }
-        return group(name, children, new Color(color));
+        return columnGroup(name, children, new Color(color));
     }
 
     /**
@@ -371,7 +371,7 @@ public class LayoutHintBuilder {
      * @return this LayoutHintBuilder
      */
     @ScriptApi
-    public LayoutHintBuilder group(String name, List<String> children, Color color) {
+    public LayoutHintBuilder columnGroup(String name, List<String> children, Color color) {
         if (columnGroups == null) {
             columnGroups = new LinkedHashMap<>();
         }
@@ -385,7 +385,7 @@ public class LayoutHintBuilder {
         return this;
     }
 
-    private void addGroupData(ColumnGroup group) {
+    private void addColumnGroupData(ColumnGroup group) {
         if (columnGroups == null) {
             columnGroups = new LinkedHashMap<>();
         }
@@ -593,7 +593,7 @@ public class LayoutHintBuilder {
         }
 
         if (columnGroups != null && !columnGroups.isEmpty()) {
-            sb.append("groups=");
+            sb.append("columnGroups=");
             List<String> groupStrings =
                     columnGroups.values().stream().map(ColumnGroup::serialize).collect(Collectors.toList());
             sb.append(String.join("|", groupStrings)).append(';');
@@ -708,7 +708,7 @@ public class LayoutHintBuilder {
      *
      * @return the map of column groups
      */
-    public @NotNull Map<String, ColumnGroup> getGroups() {
+    public @NotNull Map<String, ColumnGroup> getColumnGroups() {
         return columnGroups == null ? Collections.emptyMap() : Collections.unmodifiableMap(columnGroups);
     }
 
@@ -718,7 +718,7 @@ public class LayoutHintBuilder {
      * @param name the name of the column group
      * @return the column group if it exists
      */
-    public @NotNull ColumnGroup getGroup(String name) {
+    public @NotNull ColumnGroup getColumnGroup(String name) {
         return columnGroups == null ? null : columnGroups.get(name);
     }
     // endregion
