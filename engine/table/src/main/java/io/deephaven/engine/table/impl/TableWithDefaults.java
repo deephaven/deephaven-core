@@ -1133,7 +1133,8 @@ public interface TableWithDefaults extends Table {
     }
 
     @ConcurrentMethod
-    default Table updateBy(@NotNull final Collection<? extends UpdateByOperation> operations, final String... byColumns) {
+    default Table updateBy(@NotNull final Collection<? extends UpdateByOperation> operations,
+            final String... byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), operations, ColumnName.from(byColumns));
     }
 
