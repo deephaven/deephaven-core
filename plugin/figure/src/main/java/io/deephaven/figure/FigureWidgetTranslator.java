@@ -377,10 +377,6 @@ public class FigureWidgetTranslator {
                                         clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
                                                 series.getHoverTextColumn(), SourceType.HOVER_TEXT, null));
                                     }
-                                    if (series.getTextColumn() != null) {
-                                        clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
-                                                series.getTextColumn(), SourceType.TEXT, null));
-                                    }
                                 } else if (s instanceof CategoryDataSeriesMap) {// bar and plot from constant data
                                     errorList.add("OpenAPI presently does not support series of type " + s.getClass());
                                 }

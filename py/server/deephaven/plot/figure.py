@@ -1206,8 +1206,8 @@ class Figure(JObjectWrapper):
         self,
         series_name: str,
         t: Union[Table, SelectableDataSet],
-        id: str = None,
-        parent: str = None,
+        id: str,
+        parent: str,
         value: str = None,
         label: str = None,
         hover_text: str = None,
@@ -1235,6 +1235,10 @@ class Figure(JObjectWrapper):
             raise DHError("required parameter is not set: series_name")
         if not t:
             raise DHError("required parameter is not set: t")
+        if not id:
+            raise DHError("required parameter is not set: id")
+        if not parent:
+            raise DHError("required parameter is not set: parent")
         non_null_args = set()
 
         if series_name is not None:
@@ -1262,7 +1266,7 @@ class Figure(JObjectWrapper):
             non_null_args.add("color")
             color = _convert_j("color", color, [str])
 
-        if non_null_args == {"series_name", "t", "id", "parent", "value", "label", "hover_text", "color"}:
+        if set({"series_name", "t", "id", "parent"}).issubset(non_null_args):
             return Figure(self.j_figure.treemapPlot(series_name, t, id, parent, value, label, hover_text, color))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")

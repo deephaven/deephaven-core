@@ -15,19 +15,19 @@ public class CategoryTreemapDataSeriesTableMap extends AbstractTableBasedCategor
     private final String parentColumn;
     private final String valueColumn;
     private final String labelColumn;
-    private final String colorColumn;
     private final String hoverTextColumn;
+    private final String colorColumn;
 
     public CategoryTreemapDataSeriesTableMap(AxesImpl axes, int id, Comparable name, TableHandle h, String idColumn,
-            String parentColumn, String valueColumn, String labelColumn, String colorColumn, String hoverTextColumn) {
+            String parentColumn, String valueColumn, String labelColumn, String hoverTextColumn, String colorColumn) {
         super(axes, id, name, null);
         this.tableHandle = h;
         this.idColumn = idColumn;
         this.parentColumn = parentColumn;
         this.valueColumn = valueColumn;
         this.labelColumn = labelColumn;
-        this.colorColumn = colorColumn;
         this.hoverTextColumn = hoverTextColumn;
+        this.colorColumn = colorColumn;
     }
 
     public CategoryTreemapDataSeriesTableMap(CategoryTreemapDataSeriesTableMap series, AxesImpl axes) {
@@ -37,8 +37,8 @@ public class CategoryTreemapDataSeriesTableMap extends AbstractTableBasedCategor
         this.parentColumn = series.getParentColumn();
         this.valueColumn = series.getValueCol();
         this.labelColumn = series.getLabelColumn();
-        this.colorColumn = series.getColorColumn();
         this.hoverTextColumn = series.getHoverTextColumn();
+        this.colorColumn = series.getColorColumn();
     }
 
     @Override
