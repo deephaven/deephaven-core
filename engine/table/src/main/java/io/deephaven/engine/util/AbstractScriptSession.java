@@ -60,7 +60,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     private final File classCacheDirectory;
 
-    protected final ExecutionContextImpl executionContext;
+    protected final ExecutionContext executionContext;
 
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
@@ -92,8 +92,12 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                         return classCacheDirectory.getAbsolutePath() + File.pathSeparatorChar + super.getClassPath();
                     }
                 };
-        // TODO (NOCOMMIT): builder pattern?
-        executionContext = new ExecutionContextImpl(true, queryLibrary, queryScope, compilerContext);
+        executionContext = ExecutionContextImpl.newBuilder()
+                .markSystemic()
+                .setQueryLibrary(queryLibrary)
+                .setQueryScope(queryScope)
+                .setCompilerContext(compilerContext)
+                .build();
     }
 
     @Override

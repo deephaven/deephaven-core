@@ -310,7 +310,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     : table.join(other.table(), joinPairs, joinAdditions);
             resultTable = joined
                     .update(new BiTableTransformationColumn(
-                            constituentColumnName, RHS_CONSTITUENT, transformer))
+                            constituentColumnName, RHS_CONSTITUENT, executionContext, transformer))
                     .dropColumns(RHS_CONSTITUENT);
             enclosingScope.manage(resultTable);
 

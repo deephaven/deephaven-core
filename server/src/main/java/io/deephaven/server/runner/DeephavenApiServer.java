@@ -9,8 +9,6 @@ import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
-import io.deephaven.util.ExecutionContext;
-import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -141,7 +139,7 @@ public class DeephavenApiServer {
 
     /**
      * Blocks until the server exits.
-     *
+     * 
      * @throws InterruptedException thrown if this thread is interrupted while blocking for the server to halt.
      */
     public void join() throws InterruptedException {
