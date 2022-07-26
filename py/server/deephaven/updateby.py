@@ -197,7 +197,7 @@ def cum_sum(cols: Union[str, List[str]]) -> UpdateByOperation:
 
 
 def cum_prod(cols: Union[str, List[str]]) -> UpdateByOperation:
-    """Creates a CumProd (cumulative product) UpdateByOperation for the supplied column names.
+    """Creates a cumulative product UpdateByOperation for the supplied column names.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -218,7 +218,7 @@ def cum_prod(cols: Union[str, List[str]]) -> UpdateByOperation:
 
 
 def cum_min(cols: Union[str, List[str]]) -> UpdateByOperation:
-    """Creates a CumMin (cumulative minimum) UpdateByOperation for the supplied column names.
+    """Creates a cumulative minimum UpdateByOperation for the supplied column names.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -239,7 +239,7 @@ def cum_min(cols: Union[str, List[str]]) -> UpdateByOperation:
 
 
 def cum_max(cols: Union[str, List[str]]) -> UpdateByOperation:
-    """Creates a CumMax (cumulative maximum) UpdateByOperation for the supplied column names.
+    """Creates a cumulative maximum UpdateByOperation for the supplied column names.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
