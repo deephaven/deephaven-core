@@ -2,7 +2,6 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
     id 'com.avast.gradle.docker-compose'
-    id 'idea'
 }
 
 evaluationDependsOn ':docker-server'
@@ -31,44 +30,11 @@ dependencies {
 }
 
 sourceSets {
-    main {
-        java {
-            srcDir 'src/main/java'
-        }
-        // For gradle, we _probably_ do not want to put r into the jar,
-        // and definitely do not want to put in python, which is delivered as a wheel.
-        // This used to be `resources.srcDirs '.'` with inclusions for 'r' and 'python'
-        // We can't use srcDirs '.' and expect IntelliJ to like it, so we'll just remove
-        // the sourceSet resources entirely, and then manually staple r into the jar
-        // until we can verify that it is safe to remove (and then we'll just remove the jar {} block below)
-        resources.srcDirs = ['src/main/resources']
-    }
     test {
-        java.srcDirs = ['src/test/java']
-        resources.srcDirs = ['test_python', 'src/test/resources']
-    }
-}
-
-// Even though we don't want gradle to treat these directories as resources (for jar packing),
-// we do want IntelliJ to treat them as resources in IDE.
-idea {
-    module {
-        resourceDirs += [file('r'), file('python')]
-        testResourceDirs += [file('python/test')]
-    }
-}
-
-// This wiring is probably not needed.
-// It only exists to maintain legacy jar structure
-// (we changed the sourceSets.main.resources srcDirs,
-// which affects where files would normally be packed into the jar).
-// TODO: verify nobody pulls r from the Integrations jar, then delete this)
-(tasks.jar as Jar).configure {
-    Jar j ->
-        j.from('r') {
-            CopySpec c->
-                c.into 'r'
+        resources {
+            srcDirs += ['test_python']
         }
+    }
 }
 
 JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
