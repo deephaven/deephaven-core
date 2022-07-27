@@ -8,33 +8,53 @@ import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 /**
  * The basis for operators that participate in an updateBy operation.
  */
-public interface ChunkedUpdateByStateManager {
-    void add(final SafeCloseable bc,
+public abstract class UpdateByStateManager {
+
+    protected final ColumnSource<?>[] keySourcesForErrorMessages;
+
+    protected UpdateByStateManager(ColumnSource<?>[] keySourcesForErrorMessages) {
+        this.keySourcesForErrorMessages = keySourcesForErrorMessages;
+    }
+
+    // produce a pretty key for error messages
+    protected String extractKeyStringFromSourceTable(long leftKey) {
+        if (keySourcesForErrorMessages.length == 1) {
+            return Objects.toString(keySourcesForErrorMessages[0].get(leftKey));
+        }
+        return "[" + Arrays.stream(keySourcesForErrorMessages).map(ls -> Objects.toString(ls.get(leftKey))).collect(Collectors.joining(", ")) + "]";
+    }
+
+    public abstract void add(final boolean initialBuild,
+             final SafeCloseable bc,
              final RowSequence orderedKeys,
              final ColumnSource<?>[] sources,
              final MutableInt nextOutputPosition,
              final WritableIntChunk<RowKeys> outputPositions);
 
-    default void remove(@NotNull final SafeCloseable pc,
+    public void remove(@NotNull final SafeCloseable pc,
                         @NotNull final RowSequence indexToRemove,
                         @NotNull final ColumnSource<?>[] sources,
                         @NotNull final WritableIntChunk<RowKeys> outputPositions)  {
         throw new UnsupportedOperationException("Remove is not supported");
     }
 
-    default void findModifications(@NotNull final SafeCloseable pc,
+    public void findModifications(@NotNull final SafeCloseable pc,
                                    @NotNull final RowSequence modifiedIndex,
                                    @NotNull final ColumnSource<?> [] keySources,
                                    @NotNull final WritableIntChunk<RowKeys> outputPositions)  {
         throw new UnsupportedOperationException("Find is not supported");
     }
 
-    SafeCloseable makeUpdateByBuildContext(ColumnSource<?>[] keySources, long updateSize);
+    public abstract SafeCloseable makeUpdateByBuildContext(ColumnSource<?>[] keySources, long updateSize);
 
-    default SafeCloseable makeUpdateByProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
+    public SafeCloseable makeUpdateByProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
         throw new UnsupportedOperationException("Cannot make a probe context.");
     }
 }

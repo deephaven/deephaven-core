@@ -153,12 +153,15 @@ public abstract class UpdateBy {
         }
 
         descriptionBuilder.append(", pairs={").append(MatchPair.matchString(pairs)).append("})");
+
+        final List<ColumnSource<?>> originalKeySources = new ArrayList<>(pairs.length);
         final List<ColumnSource<?>> keySources = new ArrayList<>(pairs.length);
         for (final MatchPair byColumn : pairs) {
             if (!source.hasColumns(byColumn.rightColumn)) {
                 problems.add(byColumn.rightColumn);
                 continue;
             }
+            originalKeySources.add(source.getColumnSource(byColumn.rightColumn));
             keySources.add(ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(byColumn.rightColumn)));
         }
 
@@ -173,6 +176,7 @@ public abstract class UpdateBy {
                 resultSources,
                 rowRedirection,
                 keySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
+                originalKeySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
                 pairs,
                 control);
     }
