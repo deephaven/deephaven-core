@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.lang;
+package io.deephaven.engine.context;
 
 import junit.framework.TestCase;
 import org.junit.After;
@@ -13,12 +13,12 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class QueryLibraryTest {
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         QueryLibrary.resetLibrary();
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         QueryLibrary.resetLibrary();
     }
 

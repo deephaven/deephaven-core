@@ -1,9 +1,9 @@
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.util;
+package io.deephaven.engine.context;
 
-import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.util.SafeCloseable;
 
 import java.util.function.Supplier;
 

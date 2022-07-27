@@ -11,7 +11,7 @@ import io.deephaven.stringset.HashStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
-import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.TestTableTools;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;

@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.select.python;
 
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.select.AbstractFormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;

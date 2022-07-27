@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.util;
 
+import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;

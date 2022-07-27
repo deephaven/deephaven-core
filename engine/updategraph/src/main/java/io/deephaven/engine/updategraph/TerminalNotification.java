@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.updategraph;
 
-import io.deephaven.util.ExecutionContext;
+import io.deephaven.engine.context.ExecutionContext;
 
 public abstract class TerminalNotification extends AbstractNotification {
 

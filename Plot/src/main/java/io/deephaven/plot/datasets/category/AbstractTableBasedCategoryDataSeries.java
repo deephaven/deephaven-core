@@ -8,8 +8,8 @@ import io.deephaven.plot.datasets.ColumnNameConstants;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.functions.FigureImplFunction;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryLibrary;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.gui.color.Paint;
 
 import java.util.function.Function;

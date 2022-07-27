@@ -4,20 +4,20 @@
 package io.deephaven.plot.datasets.ohlc;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.util.ExecutionContextImpl;
-import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.plot.BaseFigureImpl;
-import io.deephaven.plot.datasets.data.IndexableNumericDataArrayDateTime;
-import io.deephaven.time.DateTime;
+import io.deephaven.engine.context.ExecutionContextImpl;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.color.Color;
+import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
+import io.deephaven.plot.datasets.data.IndexableNumericDataArrayDateTime;
 import io.deephaven.plot.datasets.data.IndexableNumericDataArrayDouble;
 import io.deephaven.plot.datasets.xy.TestAbstractXYDataSeries;
 import io.deephaven.plot.util.tables.SwappableTable;
+import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.plot.util.tables.TableHandle;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.TableTools;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.ArrayList;

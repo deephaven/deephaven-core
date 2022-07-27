@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.lang;
+package io.deephaven.engine.context;
 
 import java.util.LinkedHashSet;
 import java.util.ServiceLoader;

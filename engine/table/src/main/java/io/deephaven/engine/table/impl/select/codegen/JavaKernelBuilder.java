@@ -3,10 +3,10 @@
  */
 package io.deephaven.engine.table.impl.select.codegen;
 
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.CompilerTools;
 import io.deephaven.vector.Vector;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.context.QueryLibrary;
+import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.Formula;

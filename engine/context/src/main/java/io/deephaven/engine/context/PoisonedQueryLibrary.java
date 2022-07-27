@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.lang;
+package io.deephaven.engine.context;
 
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;

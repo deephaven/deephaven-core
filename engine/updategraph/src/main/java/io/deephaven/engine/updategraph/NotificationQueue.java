@@ -4,7 +4,7 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.util.ExecutionContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.jetbrains.annotations.NotNull;
 

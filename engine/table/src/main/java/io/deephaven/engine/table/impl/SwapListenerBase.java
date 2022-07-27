@@ -5,9 +5,9 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.updategraph.*;
-import io.deephaven.util.ExecutionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.liveness.LivenessArtifact;

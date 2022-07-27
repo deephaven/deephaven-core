@@ -23,7 +23,7 @@ import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.liveness.LivenessScope;

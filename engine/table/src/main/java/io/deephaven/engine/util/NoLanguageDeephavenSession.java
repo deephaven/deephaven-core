@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import org.jetbrains.annotations.NotNull;

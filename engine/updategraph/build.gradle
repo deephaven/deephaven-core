@@ -8,7 +8,8 @@ description 'Engine Update Graph: Core utilities for maintaining a DAG for updat
 dependencies {
     api project(':qst')
 
-    implementation project(':engine-chunk')
+    implementation project(':engine-chunk'),
+            project(':engine-context')
     implementation project(':hotspot')
     implementation project(':log-factory')
     implementation project(':Configuration')

@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.util.ExecutionContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;

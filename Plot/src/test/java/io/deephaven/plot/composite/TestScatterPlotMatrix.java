@@ -5,14 +5,14 @@ package io.deephaven.plot.composite;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
-import io.deephaven.engine.util.ExecutionContextImpl;
+import io.deephaven.engine.context.ExecutionContextImpl;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.FigureImpl;
 import io.deephaven.plot.datasets.xy.XYDataSeriesInternal;
 import io.deephaven.plot.filters.SelectableDataSetOneClick;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 

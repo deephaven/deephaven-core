@@ -4,12 +4,12 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.ExecutionContextImpl;
+import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;

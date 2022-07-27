@@ -5,7 +5,7 @@ package io.deephaven.lang.completion;
 
 import io.deephaven.base.Lazy;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.util.ScriptSession;
 
 import java.util.Collection;

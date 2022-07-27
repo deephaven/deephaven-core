@@ -8,7 +8,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.util.ExecutionContextImpl;
+import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.Vector;
 import io.deephaven.util.type.ArrayTypeUtils;

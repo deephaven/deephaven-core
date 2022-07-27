@@ -9,6 +9,8 @@ import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
@@ -18,9 +20,7 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.util.ExecutionContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

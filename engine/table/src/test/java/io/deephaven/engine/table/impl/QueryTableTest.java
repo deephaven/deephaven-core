@@ -25,7 +25,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.vector.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.time.DateTime;

@@ -5,8 +5,8 @@ package io.deephaven.modelfarm.util;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
+import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
@@ -15,7 +15,6 @@ import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 
 public class TestModelFarmUtils extends BaseArrayTestCase {
 

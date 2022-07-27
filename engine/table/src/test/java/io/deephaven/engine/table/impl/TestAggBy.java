@@ -12,7 +12,7 @@ import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.vector.CharVector;
-import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSet;

@@ -11,7 +11,6 @@ String[] mods = [
         'Numerics',
         'TableLogger',
         'Plot',
-        'CompilerTools',
         'Generators',
         'Integrations',
         'ModelFarm',
@@ -155,6 +154,9 @@ project(':replication-reflective').projectDir = file('replication/reflective')
 
 include(':engine-chunk')
 project(':engine-chunk').projectDir = file('engine/chunk')
+
+include(':engine-context')
+project(':engine-context').projectDir = file('engine/context')
 
 include(':engine-vector')
 project(':engine-vector').projectDir = file('engine/vector')

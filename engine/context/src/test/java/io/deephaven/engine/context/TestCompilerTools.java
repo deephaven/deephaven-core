@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.compilertools;
+package io.deephaven.engine.context;
 
 import io.deephaven.configuration.Configuration;
 import org.junit.After;

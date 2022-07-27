@@ -4,11 +4,11 @@
 package io.deephaven.plot;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.util.ExecutionContextImpl;
-import io.deephaven.plot.datasets.multiseries.MultiXYSeries;
-import io.deephaven.plot.datasets.xy.XYDataSeriesArray;
+import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.plot.datasets.multiseries.MultiXYSeries;
+import io.deephaven.plot.datasets.xy.XYDataSeriesArray;
 import io.deephaven.util.SafeCloseable;
 
 /**

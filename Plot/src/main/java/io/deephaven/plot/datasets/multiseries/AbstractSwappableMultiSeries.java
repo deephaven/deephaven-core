@@ -9,8 +9,8 @@ import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryLibrary;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.PartitionedTable;
 
 import java.util.*;

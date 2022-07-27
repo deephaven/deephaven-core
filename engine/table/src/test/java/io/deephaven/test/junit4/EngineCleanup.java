@@ -3,9 +3,9 @@
  */
 package io.deephaven.test.junit4;
 
+import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.table.impl.QueryTableTestBase;
 import io.deephaven.engine.table.impl.RefreshingTableTestCase;
-import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.util.SafeCloseable;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;

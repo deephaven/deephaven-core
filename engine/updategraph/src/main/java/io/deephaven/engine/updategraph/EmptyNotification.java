@@ -4,7 +4,7 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.util.ExecutionContext;
+import io.deephaven.engine.context.ExecutionContext;
 
 /**
  * A {@link NotificationQueue.Notification} that does not actually notify anything.

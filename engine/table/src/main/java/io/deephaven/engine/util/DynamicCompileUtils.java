@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.CompilerTools;
 
 import java.util.*;
 import java.util.function.Supplier;

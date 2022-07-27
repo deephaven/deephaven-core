@@ -4,10 +4,10 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.SafeCloseable;

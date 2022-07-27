@@ -9,7 +9,7 @@ import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.util.ExecutionContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.updategraph.NotificationQueue;

@@ -7,10 +7,10 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.updategraph.ConcurrentMethod;
-import io.deephaven.util.ExecutionContext;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 

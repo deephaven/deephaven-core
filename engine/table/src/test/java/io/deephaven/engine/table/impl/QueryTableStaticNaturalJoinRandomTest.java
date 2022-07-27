@@ -10,7 +10,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.map.TByteIntMap;

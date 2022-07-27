@@ -5,7 +5,7 @@ package io.deephaven.engine.updategraph;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.util.ExecutionContext;
+import io.deephaven.engine.context.ExecutionContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;

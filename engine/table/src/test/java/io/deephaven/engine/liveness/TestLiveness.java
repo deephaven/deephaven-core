@@ -3,9 +3,9 @@
  */
 package io.deephaven.engine.liveness;
 
+import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.ExecutionContextImpl;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.util.SafeCloseable;

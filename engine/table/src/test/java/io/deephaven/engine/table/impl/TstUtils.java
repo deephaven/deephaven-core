@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSetTstUtils;
 import io.deephaven.engine.table.ElementSource;
-import io.deephaven.util.ExecutionContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;

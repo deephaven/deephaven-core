@@ -9,7 +9,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;

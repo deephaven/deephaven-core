@@ -1,10 +1,5 @@
-package io.deephaven.engine.util;
+package io.deephaven.engine.context;
 
-import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.util.ExecutionContext;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 

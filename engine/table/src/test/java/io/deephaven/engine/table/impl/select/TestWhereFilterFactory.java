@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.ExecutionContextImpl;
+import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;

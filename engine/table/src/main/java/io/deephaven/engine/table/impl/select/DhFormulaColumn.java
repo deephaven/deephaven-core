@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.CompilerTools;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
@@ -12,9 +12,9 @@ import io.deephaven.engine.util.PythonScope;
 import io.deephaven.engine.util.PythonScopeJpyImpl;
 import io.deephaven.time.DateTime;
 import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryLibrary;
+import io.deephaven.engine.context.QueryScopeParam;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -242,7 +242,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         generateFormulaFactoryLambda(), "",
                         CodeGenerator.repeated("instanceVar", "private final [[TYPE]] [[NAME]];"),
                         "private final Map<Object, Object> [[LAZY_RESULT_CACHE_NAME]];",
-                        "private final io.deephaven.util.ExecutionContext [[EXECUTION_CONTEXT_NAME]];",
+                        "private final io.deephaven.engine.context.ExecutionContext [[EXECUTION_CONTEXT_NAME]];",
                         timeInstanceVariables, "",
                         generateConstructor(), "",
                         generateAppropriateGetMethod(ta, false), "",
@@ -296,7 +296,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 "public $CLASSNAME$(final TrackingRowSet __rowSet,", CodeGenerator.indent(
                         "final boolean __lazy,",
                         "final java.util.Map<String, ? extends [[COLUMN_SOURCE_CLASSNAME]]> __columnsToData,",
-                        "final io.deephaven.util.ExecutionContext __executionContext,",
+                        "final io.deephaven.engine.context.ExecutionContext __executionContext,",
                         "final [[PARAM_CLASSNAME]]... __params)"),
                 CodeGenerator.block(
                         "super(__rowSet);",

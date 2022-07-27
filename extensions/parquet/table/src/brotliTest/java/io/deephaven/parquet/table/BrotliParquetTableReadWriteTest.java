@@ -7,7 +7,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.TstUtils;
-import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.junit4.EngineCleanup;
 import org.junit.After;

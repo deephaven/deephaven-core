@@ -11,11 +11,11 @@ import groovy.lang.MissingPropertyException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
@@ -532,8 +532,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
                 "import org.joda.time.LocalTime;\n" +
                 "import io.deephaven.time.Period;\n" +
-                "import io.deephaven.engine.table.lang.QueryScopeParam;\n" +
-                "import io.deephaven.engine.table.lang.QueryScope;\n" +
+                "import io.deephaven.engine.context.QueryScopeParam;\n" +
+                "import io.deephaven.engine.context.QueryScope;\n" +
                 "import java.util.*;\n" +
                 "import java.lang.*;\n" +
                 "import static io.deephaven.util.QueryConstants.*;\n" +
