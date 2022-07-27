@@ -144,7 +144,7 @@ public interface Table extends
      * <li>{@link #groupBy} is unsupported
      * <li>{@link #aggBy} is unsupported if {@link Aggregation#AggGroup(String...)} is used
      * <li>{@link #partitionBy} is unsupported</li>
-     * <li>{@link #rollup(Collection, boolean, Selectable...) rollup()} is unsupported if
+     * <li>{@link #rollup(Collection, boolean, ColumnName...) rollup()} is unsupported if
      * {@code includeConstituents == true}</li>
      * <li>{@link #treeTable(String, String) treeTable()} is unsupported</li>
      * </ol>
@@ -1614,11 +1614,11 @@ public interface Table extends
      * replaced with null on each level.
      *
      * @param aggregations The aggregations to perform
-     * @param columns the columns to group by
+     * @param groupByColumns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1629,12 +1629,12 @@ public interface Table extends
      *
      * @param aggregations The aggregations to perform
      * @param includeConstituents set to true to include the constituent rows at the leaf level
-     * @param columns the columns to group by
+     * @param groupByColumns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
     Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Collection<String> columns);
+            Collection<String> groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1644,11 +1644,11 @@ public interface Table extends
      * replaced with null on each level.
      *
      * @param aggregations The aggregations to perform
-     * @param columns the columns to group by
+     * @param groupByColumns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, String... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1658,12 +1658,12 @@ public interface Table extends
      * replaced with null on each level.
      *
      * @param aggregations The aggregations to perform
-     * @param columns the columns to group by
+     * @param groupByColumns the columns to group by
      * @param includeConstituents set to true to include the constituent rows at the leaf level
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, String... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, String... groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1673,11 +1673,11 @@ public interface Table extends
      * replaced with null on each level.
      *
      * @param aggregations The aggregations to perform
-     * @param columns the columns to group by
+     * @param groupByColumns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, Selectable... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, ColumnName... groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1703,7 +1703,8 @@ public interface Table extends
     Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents);
 
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, Selectable... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+            ColumnName... groupByColumns);
 
     /**
      * Create a hierarchical tree table.

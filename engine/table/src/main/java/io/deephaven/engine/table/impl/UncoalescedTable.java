@@ -471,8 +471,8 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     @Override
     @ConcurrentMethod
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Selectable... columns) {
-        return coalesce().rollup(aggregations, includeConstituents, columns);
+            ColumnName... groupByColumns) {
+        return coalesce().rollup(aggregations, includeConstituents, groupByColumns);
     }
 
     @Override

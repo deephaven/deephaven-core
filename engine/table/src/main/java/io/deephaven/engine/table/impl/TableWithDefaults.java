@@ -39,7 +39,6 @@ public interface TableWithDefaults extends Table {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
     Filter[] ZERO_LENGTH_FILTER_ARRAY = new Filter[0];
-    Selectable[] ZERO_LENGTH_SELECTABLE_ARRAY = new Selectable[0];
     ColumnName[] ZERO_LENGTH_COLUMNNAME_ARRAY = new ColumnName[0];
 
     @Override
@@ -1070,48 +1069,48 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
-    default Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> columns) {
-        return rollup(aggregations, Selectable.from(columns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+    default Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> groupByColumns) {
+        return rollup(aggregations, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Collection<String> columns) {
+            Collection<String> groupByColumns) {
         return rollup(aggregations, includeConstituents,
-                Selectable.from(columns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+                ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
-    default Table rollup(Collection<? extends Aggregation> aggregations, String... columns) {
-        return rollup(aggregations, Selectable.from(columns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+    default Table rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
+        return rollup(aggregations, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
     default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            String... columns) {
+            String... groupByColumns) {
         return rollup(aggregations, includeConstituents,
-                Selectable.from(columns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+                ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
-    default Table rollup(Collection<? extends Aggregation> aggregations, Selectable... columns) {
-        return rollup(aggregations, false, columns);
+    default Table rollup(Collection<? extends Aggregation> aggregations, ColumnName... groupByColumns) {
+        return rollup(aggregations, false, groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table rollup(Collection<? extends Aggregation> aggregations) {
-        return rollup(aggregations, false, ZERO_LENGTH_SELECTABLE_ARRAY);
+        return rollup(aggregations, false, ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
     default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents) {
-        return rollup(aggregations, includeConstituents, ZERO_LENGTH_SELECTABLE_ARRAY);
+        return rollup(aggregations, includeConstituents, ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
 

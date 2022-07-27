@@ -253,7 +253,7 @@ public class HierarchicalTable extends QueryTable {
 
     @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Selectable... columns) {
+            ColumnName... groupByColumns) {
         return throwUnsupported("rollup()");
     }
 

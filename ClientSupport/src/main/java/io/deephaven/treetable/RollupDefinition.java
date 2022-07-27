@@ -4,13 +4,11 @@
 package io.deephaven.treetable;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.api.agg.AggregationPairs;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.util.string.StringUtils;
 
 import java.util.*;
@@ -152,8 +150,7 @@ public class RollupDefinition {
      * @return a rollup, as defined by this object.
      */
     public Table applyTo(Table table) {
-        Table result = table.rollup(aggregations, includeConstituents,
-                SelectColumn.from(Selectable.from(groupByColumns)));
+        Table result = table.rollup(aggregations, includeConstituents, groupByColumns);
         if (includeDescriptions) {
             result = result.withColumnDescription(AggregationDescriptions.of(aggregations));
         }

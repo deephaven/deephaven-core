@@ -479,7 +479,7 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Selectable... groupByColumns) {
+            ColumnName... groupByColumns) {
         throw new UnsupportedOperationException("rollup is not yet implemented in community");
         // TODO https://github.com/deephaven/deephaven-core/issues/65): Implement rollups based on PartitionedTable
         /*
