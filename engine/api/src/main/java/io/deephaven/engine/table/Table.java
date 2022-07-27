@@ -1033,7 +1033,7 @@ public interface Table extends
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy(Collection)}
      */
     @ConcurrentMethod
-    Table applyToAllBy(String formulaColumn, String columnParamName, Collection<? extends Selectable> groupByColumns);
+    Table applyToAllBy(String formulaColumn, String columnParamName, Collection<? extends ColumnName> groupByColumns);
 
     /**
      * Groups data according to groupByColumns and applies formulaColumn to each of columns not altered by the grouping
@@ -1044,7 +1044,7 @@ public interface Table extends
      * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy(Collection)}
      */
     @ConcurrentMethod
-    Table applyToAllBy(String formulaColumn, Collection<? extends Selectable> groupByColumns);
+    Table applyToAllBy(String formulaColumn, Collection<? extends ColumnName> groupByColumns);
 
     /**
      * Groups data according to groupByColumns and applies formulaColumn to each of columns not altered by the grouping
