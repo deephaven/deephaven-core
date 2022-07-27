@@ -194,9 +194,9 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testStaticNameReusingByWithChunks() {
-        // todo fix
-        individualStaticByTest(emptyTable(10000).update("A=i"), null, "A=Integer.toString(A % 5)", "A=A.hashCode()",
-                "A=A / 2");
+        individualStaticByTest(
+                emptyTable(10000).update("A=i").updateView("A=Integer.toString(A % 5)", "A=A.hashCode()", "A=A / 2"),
+                null, "A");
     }
 
     // endregion Static chunked groupBy() tests
