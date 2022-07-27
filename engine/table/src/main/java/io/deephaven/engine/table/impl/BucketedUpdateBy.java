@@ -36,11 +36,6 @@ import java.util.Map;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 public class BucketedUpdateBy extends UpdateBy {
-    static boolean USE_TYPED_STATE_MANAGER =
-            Configuration.getInstance().getBooleanWithDefault(
-                    "UpdateBy.useTypedStateManager",
-                    true);
-
     /** The column sources that are used as keys for bucketing values. */
     private final ColumnSource<?>[] keySources;
 
@@ -1081,29 +1076,19 @@ public class BucketedUpdateBy extends UpdateBy {
             final int hashTableSize = control.initialHashTableSizeOrDefault();
             slotTracker = new UpdateBySlotTracker(control.chunkCapacityOrDefault());
 
-            this.hashTable = USE_TYPED_STATE_MANAGER
-                    ? TypedHasherFactory.make(UpdateByStateManagerTypedBase.class,
-                            keySources, originalKeySources,
-                            hashTableSize, control.maximumLoadFactorOrDefault(),
-                            control.targetLoadFactorOrDefault())
-                    : new IncrementalUpdateByStateManager(keySources,
-                            hashTableSize,
-                            control.maximumLoadFactorOrDefault(),
-                            control.targetLoadFactorOrDefault());
+            this.hashTable = TypedHasherFactory.make(UpdateByStateManagerTypedBase.class,
+                    keySources, originalKeySources,
+                    hashTableSize, control.maximumLoadFactorOrDefault(),
+                    control.targetLoadFactorOrDefault());
         } else {
             slotTracker = null;
             if (!useGrouping) {
                 final int hashTableSize = control.initialHashTableSizeOrDefault();
 
-                this.hashTable = USE_TYPED_STATE_MANAGER
-                        ? TypedHasherFactory.make(UpdateByStateManagerTypedBase.class,
-                                keySources, keySources,
-                                hashTableSize, control.maximumLoadFactorOrDefault(),
-                                control.targetLoadFactorOrDefault())
-                        : new AddOnlyUpdateByStateManager(keySources,
-                                hashTableSize,
-                                control.maximumLoadFactorOrDefault(),
-                                control.targetLoadFactorOrDefault());
+                this.hashTable = TypedHasherFactory.make(UpdateByStateManagerTypedBase.class,
+                        keySources, keySources,
+                        hashTableSize, control.maximumLoadFactorOrDefault(),
+                        control.targetLoadFactorOrDefault());
             }
         }
     }
