@@ -637,8 +637,7 @@ public class QueryTable extends BaseTable {
 
         // We need to re-order the result columns to match the user-provided order
         final List<ColumnName> resultOrder =
-                Stream.concat(groupByColumns.stream().map(Selectable::newColumn), userOrder.stream())
-                        .collect(Collectors.toList());
+                Stream.concat(groupByColumns.stream(), userOrder.stream()).collect(Collectors.toList());
         return aggregationTable.view(resultOrder);
     }
 

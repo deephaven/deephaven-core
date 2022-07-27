@@ -150,15 +150,6 @@ public class PartitionAwareSourceTable extends SourceTable {
 
         @Override
         public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
-            Collection<ColumnName> columnNames = ColumnName.cast(columns).orElse(null);
-            if (columnNames != null) {
-                // Simple case, all explicit column names
-                if (!((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(columnNames)) {
-                    return null;
-                }
-                return table.selectDistinct(columnNames);
-            }
-            // General case, potential expressions
             final SelectColumn[] selectColumns = SelectColumn.from(columns);
             for (final SelectColumn selectColumn : selectColumns) {
                 try {

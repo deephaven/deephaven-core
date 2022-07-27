@@ -8,16 +8,12 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.SelectColumn;
-import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.server.table.validation.ColumnExpressionValidator;
 import io.grpc.StatusRuntimeException;
 import org.jetbrains.annotations.NotNull;
 

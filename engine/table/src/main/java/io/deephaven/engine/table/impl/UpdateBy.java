@@ -110,7 +110,7 @@ public abstract class UpdateBy {
             }
         }
 
-        // TODO: pass through ColumnName to impl instead
+        // TODO(deephaven-core#2693): Improve UpdateBy implementation for ColumnName
         // generate a MatchPair array for use by the existing algorithm
         MatchPair[] pairs = MatchPair.fromPairs(byColumns);
 

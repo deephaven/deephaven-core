@@ -27,7 +27,6 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sort.findruns.IntFindRunsKernel;
 import io.deephaven.engine.table.impl.sort.permute.LongPermuteKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;

@@ -14,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Indices for memoized operations on QueryTable.
@@ -345,16 +344,14 @@ public abstract class MemoizedOperationKey {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
-
+            }
             AggBy aggBy = (AggBy) o;
-
-            if (!aggregations.equals(aggBy.aggregations))
-                return false;
-            return groupByColumns.equals(aggBy.groupByColumns);
+            return aggregations.equals(aggBy.aggregations) && groupByColumns.equals(aggBy.groupByColumns);
         }
 
         @Override
@@ -382,14 +379,14 @@ public abstract class MemoizedOperationKey {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
             PartitionBy that = (PartitionBy) o;
-            if (dropKeys != that.dropKeys)
-                return false;
-            return groupByColumns.equals(that.groupByColumns);
+            return dropKeys == that.dropKeys && groupByColumns.equals(that.groupByColumns);
         }
 
         @Override
@@ -417,12 +414,14 @@ public abstract class MemoizedOperationKey {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
             final Rollup rollup = (Rollup) o;
-            return Objects.equals(aggBy, rollup.aggBy) && includeConstituents == rollup.includeConstituents;
+            return includeConstituents == rollup.includeConstituents && Objects.equals(aggBy, rollup.aggBy);
         }
 
         @Override
