@@ -3,7 +3,7 @@
 Embeds the Deephaven Core server into a python module, so that it can be started from python, with tables produced
 directly as part of startup.
 
-## Dev envirnoment setup
+## Dev environment setup
 Java 11 and Docker are required to build this project, as most of the repository is needed to properly build it.
 Note that jpy or deephaven-jpy (built for your OS and archetecture) and the deephaven server apiwheel is also
 required. 

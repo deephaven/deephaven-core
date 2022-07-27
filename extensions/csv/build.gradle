@@ -19,8 +19,9 @@ dependencies {
     Classpaths.inheritAssertJ(project)
 
     testImplementation TestTools.projectDependency(project, 'engine-table'),
-            TestTools.projectDependency(project, 'engine-base'),
-            'junit:junit:4.13.2'
+            TestTools.projectDependency(project, 'engine-base')
+
+    Classpaths.inheritJUnitClassic(project)
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

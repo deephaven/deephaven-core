@@ -9,16 +9,24 @@
 #include <vector>
 #include <arrow/type.h>
 
-namespace deephaven {
-namespace client {
-namespace utility {
+namespace deephaven::client::utility {
 template<typename Dest, typename Src>
 inline Dest bit_cast(const Src &item) {
   static_assert(sizeof(Src) == sizeof(Dest), "Src and Dest are not the same size");
   Dest dest;
-  memcpy(static_cast<void*>(&dest), static_cast<const void*>(&item), sizeof(Dest));
+  memcpy(static_cast<void *>(&dest), static_cast<const void *>(&item), sizeof(Dest));
   return dest;
 }
+
+template<typename T>
+std::vector<T> makeReservedVector(size_t n) {
+  std::vector<T> v;
+  v.reserve(n);
+  return v;
+}
+
+void assertLessEq(size_t lhs, size_t rhs, std::string_view context, std::string_view lhsName,
+  std::string_view rhsName);
 
 // A more efficient ostringstream that also allows you to grab the internal buffer if you want it.
 // Or, if you don't want to use the internal buffer, it allows you to provide your own.
@@ -130,9 +138,9 @@ void defaultCallback(std::ostream &s, const T &item) {
 }  // namespace internal
 
 template<typename Iterator>
-internal::SeparatedListAdaptor<Iterator, void(*)(std::ostream &s, const decltype(*std::declval<Iterator>()) &)> separatedList(Iterator begin, Iterator end,
-    const char *separator = ", ") {
-  return internal::SeparatedListAdaptor<Iterator, void(*)(std::ostream &s, const decltype(*std::declval<Iterator>()) &)>(
+auto separatedList(Iterator begin, Iterator end, const char *separator = ", ") {
+  return internal::SeparatedListAdaptor<Iterator, void (*)(std::ostream &s,
+      const std::remove_reference_t<decltype(*std::declval<Iterator>())> &)>(
       begin, end, separator, &internal::defaultCallback);
 }
 
@@ -142,22 +150,112 @@ internal::SeparatedListAdaptor<Iterator, Callback> separatedList(Iterator begin,
   return internal::SeparatedListAdaptor<Iterator, Callback>(begin, end, separator, std::move(cb));
 }
 
-#define DEEPHAVEN_STRINGIFY_HELPER(X) #X
-#define DEEPHAVEN_STRINGIFY(X) DEEPHAVEN_STRINGIFY_HELPER(X)
+#if defined(__clang__)
+#define DEEPHAVEN_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#elif defined(__GNUC__)
+#define DEEPHAVEN_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#elif defined(__MSC_VER)
+#define DEEPHAVEN_PRETTY_FUNCTION __FUNCSIG__
+#else
+# error Unsupported compiler
+#endif
+
+class DebugInfo {
+public:
+  DebugInfo(const char *func, const char *file, size_t line, const char *args);
+
+private:
+  const char *func_ = nullptr;
+  const char *file_ = nullptr;
+  size_t line_ = 0;
+  const char *args_ = nullptr;
+
+  friend std::ostream &operator<<(std::ostream &s, const DebugInfo &o);
+};
+
+std::string formatDebugString(const char *func, const char *file, size_t line,
+    const std::string &message);
 
 /**
- * Expands an expression into that expression followed by a stringified version of that expression
- * with file and line, suitable for a method like okOrThrow that takes an expression and an optional
- * message.
+ * Given a list of arguments, expands to that list of arguments prepended with a DebugInfo struct
+ * containing with __PRETTY_FUNCTION__, __FILE__, __LINE__ and the stringified arguments. This is
+ * useful for functions who want to throw an exception with caller information.
  */
-#define DEEPHAVEN_EXPR_MSG(EXPR) (EXPR), #EXPR "@" __FILE__ ":" DEEPHAVEN_STRINGIFY(__LINE__)
+#define DEEPHAVEN_EXPR_MSG(ARGS...) \
+  ::deephaven::client::utility::DebugInfo(DEEPHAVEN_PRETTY_FUNCTION, __FILE__, __LINE__, #ARGS),ARGS
+
+#define DEEPHAVEN_DEBUG_MSG(MESSAGE) \
+  ::deephaven::client::utility::formatDebugString( \
+    DEEPHAVEN_PRETTY_FUNCTION, __FILE__, __LINE__, MESSAGE)
+
+// https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
+template <typename T>
+constexpr std::string_view getTypeName() {
+#if defined(__clang__)
+  constexpr auto prefix = std::string_view{"[T = "};
+  constexpr auto suffix = "]";
+#elif defined(__GNUC__)
+  constexpr auto prefix = std::string_view{"with T = "};
+  constexpr auto suffix = "; ";
+#elif defined(__MSC_VER)
+  constexpr auto prefix = std::string_view{"get_type_name<"};
+  constexpr auto suffix = ">(void)";
+#else
+# error Unsupported compiler
+#endif
+
+  constexpr auto function = std::string_view{DEEPHAVEN_PRETTY_FUNCTION};
+
+  const auto start = function.find(prefix) + prefix.size();
+  const auto end = function.find(suffix);
+  const auto size = end - start;
+
+  return function.substr(start, size);
+}
+
+template<typename DESTP, typename SRCP>
+DESTP verboseCast(SRCP ptr, std::string_view caller) {
+  using deephaven::client::utility::stringf;
+
+  auto *typedPtr = dynamic_cast<DESTP>(ptr);
+  if (typedPtr != nullptr) {
+    return typedPtr;
+  }
+  typedef decltype(*std::declval<DESTP>()) destType_t;
+  auto message = stringf("%o: Expected type %o. Got type %o",
+      caller, getTypeName<destType_t>(), typeid(*ptr).name());
+  throw std::runtime_error(message);
+}
+
+/**
+ * TODO(kosak): Do something else here. Maybe.
+ */
+template<typename T>
+void assertLessEq(const T &lhs, const T &rhs, std::string_view lhsText, std::string_view rhsText,
+  std::string_view func) {
+  if (lhs <= rhs) {
+    return;
+  }
+  throw std::runtime_error(stringf("assertion failed: %o: %o <= %o (%o <= %o)", func, lhs, rhs,
+      lhsText, rhsText));
+}
+
+/**
+ * If result's status is OK, do nothing. Otherwise throw a runtime error with an informative message.
+ * @param debugInfo A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MESSAGE.
+ * @param result an arrow::Result
+ */
+template<typename T>
+void okOrThrow(const DebugInfo &debugInfo, const arrow::Result<T> &result) {
+  okOrThrow(debugInfo, result.status());
+}
 
 /**
  * If status is OK, do nothing. Otherwise throw a runtime error with an informative message.
+ * @param debugInfo A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MESSAGE.
  * @param status the arrow::Status
- * @param optionalMessage An optional message to be included in the exception message.
  */
-void okOrThrow(const arrow::Status &status, const char *optionalMessage = nullptr);
+void okOrThrow(const DebugInfo &debugInfo, const arrow::Status &status);
 
 /**
  * If result's internal status is OK, return result's contained value.
@@ -166,10 +264,10 @@ void okOrThrow(const arrow::Status &status, const char *optionalMessage = nullpt
  * @param message An optional message to be included in the exception message.
  */
 template<typename T>
-T valueOrThrow(arrow::Result<T> result, const char *optionalMessage = nullptr) {
-  okOrThrow(result.status(), optionalMessage);
+T valueOrThrow(const DebugInfo &debugInfo, arrow::Result<T> result) {
+  okOrThrow(debugInfo, result.status());
   return result.ValueUnsafe();
 }
-}  // namespace utility
-}  // namespace client
-}  // namespace deephaven
+
+
+}  // namespace deephaven::client::utility

@@ -7,6 +7,7 @@ package io.deephaven.proto.backplane.grpc;
 
 option java_multiple_files = true;
 option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/application";
 
 import "deephaven/proto/ticket.proto";
 

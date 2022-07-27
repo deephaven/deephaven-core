@@ -100,4 +100,8 @@ public class EmbeddedServer {
             checkGlobals(scriptSession, s);
         });
     }
+
+    public int getPort() {
+        return server.server().getPort();
+    }
 }

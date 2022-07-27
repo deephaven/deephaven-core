@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.updateby.ema;
 
 import io.deephaven.api.updateby.BadDataBehavior;
-import io.deephaven.api.updateby.EmaControl;
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
@@ -31,7 +31,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
     protected final ColumnSource<T> valueSource;
 
-    protected final EmaControl control;
+    protected final OperationControl control;
     protected final LongRecordingUpdateByOperator timeRecorder;
     protected final double timeScaleUnits;
 
@@ -65,7 +65,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
      */
     public BigNumberEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @NotNull final EmaControl control,
+            @NotNull final OperationControl control,
             @Nullable final LongRecordingUpdateByOperator timeRecorder,
             final long timeScaleUnits,
             @NotNull ColumnSource<T> valueSource,

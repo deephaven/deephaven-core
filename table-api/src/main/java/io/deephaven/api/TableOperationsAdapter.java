@@ -6,7 +6,7 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 
 import java.util.Collection;
@@ -318,38 +318,38 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
 
     @Override
-    public final TOPS_1 updateBy(UpdateByClause operation) {
+    public final TOPS_1 updateBy(UpdateByOperation operation) {
         return adapt(delegate.updateBy(operation));
     }
 
     @Override
-    public final TOPS_1 updateBy(UpdateByClause operation, String... byColumns) {
+    public final TOPS_1 updateBy(UpdateByOperation operation, String... byColumns) {
         return adapt(delegate.updateBy(operation, byColumns));
     }
 
     @Override
-    public final TOPS_1 updateBy(Collection<? extends UpdateByClause> operations) {
+    public final TOPS_1 updateBy(Collection<? extends UpdateByOperation> operations) {
         return adapt(delegate.updateBy(operations));
     }
 
     @Override
-    public final TOPS_1 updateBy(Collection<? extends UpdateByClause> operations, String... byColumns) {
+    public final TOPS_1 updateBy(Collection<? extends UpdateByOperation> operations, String... byColumns) {
         return adapt(delegate.updateBy(operations, byColumns));
     }
 
     @Override
-    public final TOPS_1 updateBy(Collection<? extends UpdateByClause> operations,
+    public final TOPS_1 updateBy(Collection<? extends UpdateByOperation> operations,
             Collection<? extends Selectable> byColumns) {
         return adapt(delegate.updateBy(operations, byColumns));
     }
 
     @Override
-    public final TOPS_1 updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations) {
+    public final TOPS_1 updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations) {
         return adapt(delegate.updateBy(control, operations));
     }
 
     @Override
-    public final TOPS_1 updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations,
+    public final TOPS_1 updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
             Collection<? extends Selectable> byColumns) {
         return adapt(delegate.updateBy(control, operations, byColumns));
     }

@@ -7,7 +7,7 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.MatchPair;
@@ -665,38 +665,39 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy updateBy(UpdateByClause operation) {
+    public PartitionedTable.Proxy updateBy(UpdateByOperation operation) {
         return basicTransform(ct -> ct.updateBy(operation));
     }
 
     @Override
-    public PartitionedTable.Proxy updateBy(UpdateByClause operation, String... byColumns) {
+    public PartitionedTable.Proxy updateBy(UpdateByOperation operation, String... byColumns) {
         return basicTransform(ct -> ct.updateBy(operation, byColumns));
     }
 
     @Override
-    public PartitionedTable.Proxy updateBy(Collection<? extends UpdateByClause> operations) {
+    public PartitionedTable.Proxy updateBy(Collection<? extends UpdateByOperation> operations) {
         return basicTransform(ct -> ct.updateBy(operations));
     }
 
     @Override
-    public PartitionedTable.Proxy updateBy(Collection<? extends UpdateByClause> operations, String... byColumns) {
+    public PartitionedTable.Proxy updateBy(Collection<? extends UpdateByOperation> operations, String... byColumns) {
         return basicTransform(ct -> ct.updateBy(operations, byColumns));
     }
 
     @Override
-    public PartitionedTable.Proxy updateBy(Collection<? extends UpdateByClause> operations,
+    public PartitionedTable.Proxy updateBy(Collection<? extends UpdateByOperation> operations,
             Collection<? extends Selectable> byColumns) {
         return basicTransform(ct -> ct.updateBy(operations, byColumns));
     }
 
     @Override
-    public PartitionedTable.Proxy updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations) {
+    public PartitionedTable.Proxy updateBy(UpdateByControl control,
+            Collection<? extends UpdateByOperation> operations) {
         return basicTransform(ct -> ct.updateBy(control, operations));
     }
 
     @Override
-    public PartitionedTable.Proxy updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations,
+    public PartitionedTable.Proxy updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
             Collection<? extends Selectable> byColumns) {
         return basicTransform(ct -> ct.updateBy(control, operations, byColumns));
     }

@@ -7,9 +7,7 @@
 #include <memory>
 #include <utility>
 
-namespace deephaven {
-namespace client {
-namespace utility {
+namespace deephaven::client::utility {
 // For simple callbacks.
 template<typename... Args>
 class Callback {
@@ -36,7 +34,8 @@ public:
   template<typename Callable>
   static std::shared_ptr<SFCallback> createFromCallable(Callable &&callable);
 
-  static std::pair<std::shared_ptr<SFCallback<Args...>>, std::future<std::tuple<Args...>>> createForFuture();
+  static std::pair<std::shared_ptr<SFCallback<Args...>>, std::future<std::tuple<Args...>>>
+  createForFuture();
 
   ~SFCallback() override = default;
   virtual void onSuccess(Args... item) = 0;
@@ -105,23 +104,24 @@ private:
 template<typename... Args>
 template<typename Callable>
 std::shared_ptr<Callback<Args...>> Callback<Args...>::createFromCallable(Callable &&callable) {
-  return std::make_shared<internal::CallbackCallable<Callable, Args...>>(std::forward<Callable>(callable));
+  return std::make_shared<internal::CallbackCallable<Callable, Args...>>(
+      std::forward<Callable>(callable));
 }
 
 template<typename... Args>
 template<typename Callable>
 std::shared_ptr<SFCallback<Args...>> SFCallback<Args...>::createFromCallable(Callable &&callable) {
-  return std::make_shared<internal::SFCallbackCallable<Callable, Args...>>(std::forward<Callable>(callable));
+  return std::make_shared<internal::SFCallbackCallable<Callable, Args...>>(
+      std::forward<Callable>(callable));
 }
 
 // Returns a pair whose first item is a SFCallback<T> which satisfies a promise, and whose second
 // item is a std::future<T> which is the future corresponding to that promise.
 template<typename... Args>
-std::pair<std::shared_ptr<SFCallback<Args...>>, std::future<std::tuple<Args...>>> SFCallback<Args...>::createForFuture() {
+std::pair<std::shared_ptr<SFCallback<Args...>>, std::future<std::tuple<Args...>>>
+SFCallback<Args...>::createForFuture() {
   auto cb = std::make_shared<internal::SFCallbackFutureable<Args...>>();
   auto fut = cb->makeFuture();
   return std::make_pair(std::move(cb), std::move(fut));
 }
-}  // namespace utility
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::utility
