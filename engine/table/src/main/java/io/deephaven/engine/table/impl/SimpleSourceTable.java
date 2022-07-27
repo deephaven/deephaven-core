@@ -66,12 +66,4 @@ public class SimpleSourceTable extends SourceTable {
         deferredViewTable.setRefreshing(isRefreshing());
         return deferredViewTable;
     }
-
-    @Override
-    public Table updateBy(@NotNull final UpdateByControl control,
-            @NotNull final Collection<? extends UpdateByOperation> ops,
-            @NotNull final Collection<? extends ColumnName> byColumns) {
-        return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
-                () -> UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control));
-    }
 }

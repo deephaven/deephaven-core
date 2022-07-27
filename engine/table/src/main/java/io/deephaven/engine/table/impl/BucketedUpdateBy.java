@@ -9,12 +9,14 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedIntChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.by.HashedRunFinder;
+import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.sort.permute.LongPermuteKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.updateby.hashing.*;
@@ -38,7 +40,7 @@ public class BucketedUpdateBy extends UpdateBy {
     private final ColumnSource<?>[] keySources;
 
     /** The hash table object to store key tuples -> bucket positions */
-    private ChunkedUpdateByStateManager hashTable;
+    private UpdateByStateManager hashTable;
 
     /** A tracker object to manage indices and updates on a per-bucket basis */
     private final UpdateBySlotTracker slotTracker;
@@ -106,10 +108,10 @@ public class BucketedUpdateBy extends UpdateBy {
         /** The context to use when finding runs of values in buckets within a chunk of data */
         final SizedSafeCloseable<HashedRunFinder.HashedRunContext> findCtx;
 
-        /** The {@link ChunkedUpdateByStateManager hash table} build context */
+        /** The {@link UpdateByStateManager hash table} build context */
         final SafeCloseable bc;
 
-        /** The {@link ChunkedUpdateByStateManager hash table} probe context */
+        /** The {@link UpdateByStateManager hash table} probe context */
         SafeCloseable pc;
 
         /** The index of keys that need to be revisited during the reprocess phase. */
@@ -231,8 +233,8 @@ public class BucketedUpdateBy extends UpdateBy {
 
         /**
          * Get (and potentially create) the probe context object for use with
-         * {@link ChunkedUpdateByStateManager#remove(SafeCloseable, RowSequence, ColumnSource[], WritableIntChunk)} and
-         * {@link ChunkedUpdateByStateManager#findModifications(SafeCloseable, RowSequence, ColumnSource[], WritableIntChunk)}.
+         * {@link UpdateByStateManager#remove(SafeCloseable, RowSequence, ColumnSource[], WritableIntChunk)} and
+         * {@link UpdateByStateManager#findModifications(SafeCloseable, RowSequence, ColumnSource[], WritableIntChunk)}.
          *
          * @return an appropriate probe context.
          */
@@ -416,7 +418,7 @@ public class BucketedUpdateBy extends UpdateBy {
                                     : modifiedPreShiftOk;
 
                     hashTable.remove(getProbeContet(), modifiedPreShiftOk, keySources, localOutputPositions);
-                    hashTable.add(bc, modifiedPostShiftOk, keySources, nextOutputPosition, postSlots);
+                    hashTable.add(false, bc, modifiedPostShiftOk, keySources, nextOutputPosition, postSlots);
 
                     modifiedPreShiftOk.fillRowKeyChunk(preShiftIndicesChunk);
                     final LongChunk<OrderedRowKeys> postShiftIndices;
@@ -479,7 +481,7 @@ public class BucketedUpdateBy extends UpdateBy {
                 final WritableLongChunk<OrderedRowKeys> localKeyIndicesChunk = keyChunk.get();
                 while (okIt.hasMore()) {
                     final RowSequence chunkOk = okIt.getNextRowSequenceWithLength(chunkSize);
-                    hashTable.add(bc, chunkOk, keySources, nextOutputPosition, localOutputPositions);
+                    hashTable.add(false, bc, chunkOk, keySources, nextOutputPosition, localOutputPositions);
                     final boolean permuteRequired = findRunsAndPermute(chunkOk);
 
                     for (int runIdx = 0; runIdx < localRunStarts.size(); runIdx++) {
@@ -849,7 +851,7 @@ public class BucketedUpdateBy extends UpdateBy {
          *
          * @param added the keys added.
          */
-        private void doAppendOnlyAdds(@NotNull final RowSet added) {
+        private void doAppendOnlyAdds(final boolean initialBuild, @NotNull final RowSet added) {
             initializeFor(added, UpdateType.Add);
 
             try (final RowSequence.Iterator okIt = added.getRowSequenceIterator()) {
@@ -865,7 +867,7 @@ public class BucketedUpdateBy extends UpdateBy {
                     final RowSequence chunkOk = okIt.getNextRowSequenceWithLength(chunkSize);
 
                     // add the values to the hash table, and produce a chunk of the positions each added key mapped to
-                    hashTable.add(bc, chunkOk, keySources, nextOutputPosition, localOutputPositions);
+                    hashTable.add(initialBuild, bc, chunkOk, keySources, nextOutputPosition, localOutputPositions);
                     setBucketCapacity(nextOutputPosition.intValue());
 
                     // Now, organize that chunk by position so we can hand them off to the operators
@@ -1038,12 +1040,13 @@ public class BucketedUpdateBy extends UpdateBy {
             @NotNull final Map<String, ColumnSource<?>> resultSources,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final ColumnSource<?>[] keySources,
+            @NotNull final ColumnSource<?>[] originalKeySources,
             @NotNull final MatchPair[] byColumns,
             @NotNull final UpdateByControl control) {
         final QueryTable result = new QueryTable(source.getRowSet(), resultSources);
         final boolean useGrouping = JoinControl.useGrouping(source, keySources);
         final BucketedUpdateBy updateBy =
-                new BucketedUpdateBy(ops, source, keySources, useGrouping, rowRedirection, control);
+                new BucketedUpdateBy(ops, source, keySources, originalKeySources, useGrouping, rowRedirection, control);
         updateBy.doInitialAdditions(useGrouping, byColumns);
 
         if (source.isRefreshing()) {
@@ -1062,28 +1065,25 @@ public class BucketedUpdateBy extends UpdateBy {
     private BucketedUpdateBy(@NotNull final UpdateByOperator[] operators,
             @NotNull final QueryTable source,
             @NotNull final ColumnSource<?>[] keySources,
+            @NotNull final ColumnSource<?>[] originalKeySources,
             final boolean useGrouping,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
         super(operators, source, rowRedirection, control);
         this.keySources = keySources;
 
+        final int hashTableSize = control.initialHashTableSizeOrDefault();
+
         if (source.isRefreshing() && !source.isAddOnly()) {
-            final int hashTableSize = control.initialHashTableSizeOrDefault();
             slotTracker = new UpdateBySlotTracker(control.chunkCapacityOrDefault());
-            this.hashTable = new IncrementalUpdateByStateManager(keySources,
-                    hashTableSize,
-                    control.maximumLoadFactorOrDefault(),
-                    control.targetLoadFactorOrDefault());
         } else {
             slotTracker = null;
-            if (!useGrouping) {
-                final int hashTableSize = control.initialHashTableSizeOrDefault();
-                this.hashTable = new AddOnlyUpdateByStateManager(keySources,
-                        hashTableSize,
-                        control.maximumLoadFactorOrDefault(),
-                        control.targetLoadFactorOrDefault());
-            }
+        }
+        if (!useGrouping) {
+            this.hashTable = TypedHasherFactory.make(UpdateByStateManagerTypedBase.class,
+                    keySources, keySources,
+                    hashTableSize, control.maximumLoadFactorOrDefault(),
+                    control.targetLoadFactorOrDefault());
         }
     }
 
@@ -1132,7 +1132,7 @@ public class BucketedUpdateBy extends UpdateBy {
                     processUpdateForRedirection(initialUpdate);
                 }
 
-                ctx.doAppendOnlyAdds(source.getRowSet());
+                ctx.doAppendOnlyAdds(true, source.getRowSet());
                 if (slotTracker != null) {
                     // noinspection resource
                     slotTracker.applyUpdates(RowSetShiftData.EMPTY);
@@ -1232,7 +1232,7 @@ public class BucketedUpdateBy extends UpdateBy {
                 final boolean isAppendOnly =
                         UpdateByOperator.isAppendOnly(upstream, source.getRowSet().lastRowKeyPrev());
                 if (isAppendOnly) {
-                    ctx.doAppendOnlyAdds(upstream.added());
+                    ctx.doAppendOnlyAdds(false, upstream.added());
                 } else {
                     accumulateUpdatesByBucket(upstream, ctx);
                 }

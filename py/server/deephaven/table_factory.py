@@ -3,7 +3,7 @@
 #
 
 """ This module provides various ways to make a Deephaven table. """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 
 import jpy
 
@@ -38,11 +38,12 @@ def empty_table(size: int) -> Table:
         raise DHError(e, "failed to create an empty table.") from e
 
 
-def time_table(period: str, start_time: str = None) -> Table:
+def time_table(period: Union[str, int], start_time: str = None) -> Table:
     """Creates a table that adds a new row on a regular interval.
 
     Args:
-        period (str): time interval between new row additions
+        period (Union[str, int]): time interval between new row additions, can be expressed as an integer in
+            nanoseconds or a time interval string, e.g. "00:00:00.001"
         start_time (str): start time for adding new rows
 
     Returns:

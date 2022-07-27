@@ -267,14 +267,6 @@ public class DeferredViewTable extends RedefinableTable {
         return deferredViewTable;
     }
 
-    @Override
-    public Table updateBy(@NotNull final UpdateByControl control,
-            @NotNull final Collection<? extends UpdateByOperation> ops,
-            @NotNull final Collection<? extends ColumnName> byColumns) {
-        return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
-                () -> UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control));
-    }
-
     /**
      * The table reference hides the table underlying table from us.
      */

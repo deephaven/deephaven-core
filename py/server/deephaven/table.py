@@ -19,6 +19,7 @@ from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
 from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator
 from deephaven.ugp import auto_locking_op
+from deephaven.updateby import UpdateByOperation
 
 # Table
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -1389,6 +1390,30 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a partitioned table.") from e
 
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]],
+                  by: Union[str, List[str]] = None) -> Table:
+        """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
+        The aggregations are defined by the provided operations, which support incremental aggregations over the
+        corresponding rows in the this table. The aggregations will apply position or time-based windowing and
+        compute the results over the entire table or each row group as identified by the provided key columns.
+
+        Args:
+            ops (Union[UpdateByOperation, List[UpdateByOperation]]): the update-by operation definition(s)
+            by (Union[str, List[str]]): the key column name(s) to group the rows of the table
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            ops = to_sequence(ops)
+            by = to_sequence(by)
+            return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
+        except Exception as e:
+            raise DHError(e, "table update-by operation failed.") from e
+
 
 class PartitionedTable(JObjectWrapper):
     """A partitioned table is a table containing tables, known as constituent tables.
@@ -1777,6 +1802,7 @@ class PartitionedTableProxy(JObjectWrapper):
         self.sanity_check_joins = self.j_pt_proxy.sanityChecksJoins()
         self.target = PartitionedTable(j_partitioned_table=self.j_pt_proxy.target())
 
+    @auto_locking_op
     def head(self, num_rows: int) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.head` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -1796,6 +1822,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "head operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def tail(self, num_rows: int) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.tail` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -1815,6 +1842,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "tail operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def reverse(self) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.reverse` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -1862,6 +1890,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "snapshot operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.sort` table operation to all constituent tables of the underlying partitioned
@@ -1893,6 +1922,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "sort operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def sort_descending(self, order_by: Union[str, Sequence[str]]) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.sort_descending` table operation to all constituent tables of the underlying
         partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
@@ -1913,6 +1943,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "sort_descending operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def where(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.where` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -1978,6 +2009,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "where_not_in operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def view(self, formulas: Union[str, Sequence[str]]) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.view` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -1998,6 +2030,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "view operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def update_view(self, formulas: Union[str, Sequence[str]]) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.update_view` table operation to all constituent tables of the underlying
         partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
@@ -2060,6 +2093,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "select operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def select_distinct(self, formulas: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.select_distinct` table operation to all constituent tables of the underlying
         partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
@@ -2281,6 +2315,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "reverse as-of join operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def group_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.group_by` table operation to all constituent tables of the underlying
         partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
@@ -2304,6 +2339,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "group-by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]],
                by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.agg_by` table operation to all constituent tables of the underlying partitioned
@@ -2328,6 +2364,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "agg_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def agg_all_by(self, agg: Aggregation, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.agg_all_by` table operation to all constituent tables of the underlying
         partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
@@ -2352,6 +2389,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "agg_all_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def count_by(self, col: str, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.count_by` table operation to all constituent tables of the underlying partitioned
         table with the provided source table, and produces a new PartitionedTableProxy with the result tables as the
@@ -2376,6 +2414,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "count_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def first_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.first_by` table operation to all constituent tables of the underlying
         partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
@@ -2399,6 +2438,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "first_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def last_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.last_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -2422,6 +2462,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "last_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def min_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.min_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -2445,6 +2486,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "min_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def max_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.max_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -2468,6 +2510,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "max_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def sum_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.sum_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -2491,6 +2534,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "sum_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def abs_sum_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.abs_sum_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -2514,6 +2558,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "sum_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def weighted_sum_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.weighted_sum_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -2538,6 +2583,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "sum_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def avg_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.avg_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -2561,6 +2607,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "avg_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def weighted_avg_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.weighted_avg_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -2585,6 +2632,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "avg_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def median_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.median_by` table operation to all constituent tables of the underlying
         partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
@@ -2608,6 +2656,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "median_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def std_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.std_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -2631,6 +2680,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "std_by operation on the PartitionedTableProxy failed.") from e
 
+    @auto_locking_op
     def var_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.var_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -2653,3 +2703,27 @@ class PartitionedTableProxy(JObjectWrapper):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.varBy())
         except Exception as e:
             raise DHError(e, "var_by operation on the PartitionedTableProxy failed.") from e
+
+    @auto_locking_op
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]],
+                  by: Union[str, List[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.update_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            ops (Union[UpdateByOperation, List[UpdateByOperation]]): the update-by operation definition(s)
+            by (Union[str, List[str]]): the key column name(s) to group the rows of the table
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            ops = to_sequence(ops)
+            by = to_sequence(by)
+            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateBy(j_array_list(ops), *by))
+        except Exception as e:
+            raise DHError(e, "update-by operation on the PartitionedTableProxy failed.") from e

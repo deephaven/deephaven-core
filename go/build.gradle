@@ -62,15 +62,16 @@ def testGoClient = Docker.registerDockerTask(project, 'testGoClient') {
     }
     dockerfile {
         from('deephaven/go:local-build')
-        environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
-        environmentVariable 'DH_PORT', '8080'
-        copyFile('.', '/project')
         workingDir('/project')
+        copyFile('go.*', '/project/')
         runCommand('''set -eux; \\
                       mkdir /out; \\
                       go mod download; \\
                       go install github.com/jstemmer/go-junit-report/v2@latest
                       ''')
+        copyFile('.', '/project/')
+        environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
+        environmentVariable 'DH_PORT', '8080'
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask

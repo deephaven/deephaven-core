@@ -1,12 +1,4 @@
-FROM deephaven/go:local-build as go-build
-
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
-RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
-
 FROM deephaven/protoc-base:local-build
-
-COPY --from=go-build /go/bin/protoc-gen-go-grpc /opt/protoc-gen-go-grpc
-COPY --from=go-build /go/bin/protoc-gen-go /opt/protoc-gen-go
 
 COPY src/main/proto /includes
 
