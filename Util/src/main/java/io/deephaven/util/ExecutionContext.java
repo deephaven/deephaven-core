@@ -47,13 +47,4 @@ public abstract class ExecutionContext {
      */
     public abstract <T> T apply(final Supplier<T> supplier);
 
-    /**
-     * This exception is thrown when the thread-local QueryScope, QueryLibrary, or CompilerTools.Context are accessed
-     * from user-code without an explicit ExecutionContext.
-     */
-    public static final class NotRegistered extends UncheckedDeephavenException {
-        public NotRegistered() {
-            super("ExecutionContext not registered");
-        }
-    }
 }

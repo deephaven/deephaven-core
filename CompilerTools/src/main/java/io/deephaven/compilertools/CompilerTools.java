@@ -150,7 +150,7 @@ public class CompilerTools {
     public interface Context {
         Hashtable<String, SimplePromise<Class<?>>> getKnownClasses();
 
-        ClassLoader getClassLoaderForFormula(final Map<String, Class<?>> parameterClasses);
+        ClassLoader getClassLoaderForFormula(Map<String, Class<?>> parameterClasses);
 
         File getClassDestination();
 
@@ -158,7 +158,7 @@ public class CompilerTools {
 
         String getClassPath();
 
-        void setParentClassLoader(final ClassLoader parentClassLoader);
+        void setParentClassLoader(ClassLoader parentClassLoader);
     }
 
     public static class ContextImpl implements Context {
@@ -389,21 +389,6 @@ public class CompilerTools {
         return defaultContext;
     }
 
-    /**
-     * Sets the default context.
-     *
-     * @param context the script session's compiler context
-     * @throws IllegalStateException if default context is already set
-     * @throws NullPointerException if context is null
-     */
-    public static synchronized void setDefaultContext(final Context context) {
-        if (defaultContext != null) {
-            throw new IllegalStateException(
-                    "It's too late to set default context; it's already set to: " + defaultContext);
-        }
-        defaultContext = Objects.requireNonNull(context);
-    }
-
     private static final ThreadLocal<Context> currContext = ThreadLocal.withInitial(CompilerTools::getDefaultContext);
 
     @VisibleForTesting
@@ -413,7 +398,7 @@ public class CompilerTools {
     }
 
     public static void resetContext() {
-        setContext(new PoisonedCompilerToolsContext());
+        setContext(getDefaultContext());
     }
 
     public static void setContext(@Nullable Context context) {
@@ -1009,54 +994,6 @@ public class CompilerTools {
             if (result != null || exception != null) {
                 throw new IllegalStateException("State is already set");
             }
-        }
-    }
-
-    public static void main(String[] args) {
-        final String sillyFuncFormat = String.join("\n",
-                "    public int sillyFunc%d() {",
-                "        final String temp0 = \"ᵈᵉᵉᵖʰᵃᵛᵉⁿ__½¼⅒___\uD83D\uDC96___0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\";",
-                "        final String temp1 = \"ᵈᵉᵉᵖʰᵃᵛᵉⁿ__½¼⅒___\uD83D\uDC96___0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\";",
-                "        final String temp2 = \"ᵈᵉᵉᵖʰᵃᵛᵉⁿ__½¼⅒___\uD83D\uDC96___0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\";",
-                "        final String temp3 = \"ᵈᵉᵉᵖʰᵃᵛᵉⁿ__½¼⅒___\uD83D\uDC96___0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\";",
-                "        final String temp4 = \"ᵈᵉᵉᵖʰᵃᵛᵉⁿ__½¼⅒___\uD83D\uDC96___0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\";",
-                "        final String temp5 = \"ᵈᵉᵉᵖʰᵃᵛᵉⁿ__½¼⅒___\uD83D\uDC96___0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\";",
-                "        final String temp6 = \"ᵈᵉᵉᵖʰᵃᵛᵉⁿ__½¼⅒___\uD83D\uDC96___0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\";",
-                "        final String temp7 = \"ᵈᵉᵉᵖʰᵃᵛᵉⁿ__½¼⅒___\uD83D\uDC96___0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\";",
-                "        final String temp8 = \"ᵈᵉᵉᵖʰᵃᵛᵉⁿ__½¼⅒___\uD83D\uDC96___0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\";",
-                "        final String temp9 = \"ᵈᵉᵉᵖʰᵃᵛᵉⁿ__½¼⅒___\uD83D\uDC96___0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\";",
-                "        return temp0.length() + temp1.length() + temp2.length() + temp3.length() + temp4.length() + temp5.length() + temp6.length() + temp7.length() + temp8.length() + temp9.length();",
-                "    }");
-
-        final StringBuilder sb = new StringBuilder();
-        sb.append(String.join("\n",
-                "public class $CLASSNAME$ implements java.util.function.Function<Integer, Integer> {",
-                "    private final int n;",
-                "    public $CLASSNAME$(int n) {",
-                "        this.n = n;",
-                "    }",
-                "    public Integer apply(Integer v) {",
-                "        return n + v;",
-                "    }"));
-        for (int ii = 0; ii < 100; ++ii) {
-            sb.append("\n");
-            sb.append(String.format(sillyFuncFormat, ii));
-        }
-        sb.append("\n}");
-        final String programText = sb.toString();
-        System.out.println(programText);
-
-        StringBuilder codeLog = new StringBuilder();
-        try {
-            final Class<?> clazz = compile("Test", programText, "com.deephaven.test", codeLog, Collections.emptyMap());
-            final Constructor<?> constructor = clazz.getConstructor(int.class);
-            Function<Integer, Integer> obj = (Function<Integer, Integer>) constructor.newInstance(17);
-            final int result = obj.apply(5);
-            if (result != 22) {
-                throw new Exception(String.format("Expected 22, got %d", result));
-            }
-        } catch (Exception e) {
-            System.out.printf("sad: %s%n", e);
         }
     }
 }
