@@ -1072,24 +1072,18 @@ public class BucketedUpdateBy extends UpdateBy {
         super(operators, source, rowRedirection, control);
         this.keySources = keySources;
 
-        if (source.isRefreshing() && !source.isAddOnly()) {
-            final int hashTableSize = control.initialHashTableSizeOrDefault();
-            slotTracker = new UpdateBySlotTracker(control.chunkCapacityOrDefault());
+        final int hashTableSize = control.initialHashTableSizeOrDefault();
 
-            this.hashTable = TypedHasherFactory.make(UpdateByStateManagerTypedBase.class,
-                    keySources, originalKeySources,
-                    hashTableSize, control.maximumLoadFactorOrDefault(),
-                    control.targetLoadFactorOrDefault());
+        if (source.isRefreshing() && !source.isAddOnly()) {
+            slotTracker = new UpdateBySlotTracker(control.chunkCapacityOrDefault());
         } else {
             slotTracker = null;
-            if (!useGrouping) {
-                final int hashTableSize = control.initialHashTableSizeOrDefault();
-
-                this.hashTable = TypedHasherFactory.make(UpdateByStateManagerTypedBase.class,
-                        keySources, keySources,
-                        hashTableSize, control.maximumLoadFactorOrDefault(),
-                        control.targetLoadFactorOrDefault());
-            }
+        }
+        if (!useGrouping) {
+            this.hashTable = TypedHasherFactory.make(UpdateByStateManagerTypedBase.class,
+                    keySources, keySources,
+                    hashTableSize, control.maximumLoadFactorOrDefault(),
+                    control.targetLoadFactorOrDefault());
         }
     }
 
