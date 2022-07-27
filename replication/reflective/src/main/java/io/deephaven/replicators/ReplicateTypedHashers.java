@@ -39,7 +39,7 @@ public class ReplicateTypedHashers {
         generatePackage(IncrementalNaturalJoinStateManagerTypedBase.class, false);
         generatePackage(StaticAsOfJoinStateManagerTypedBase.class, false);
         generatePackage(RightIncrementalAsOfJoinStateManagerTypedBase.class, false);
-        generatePackage(UpdateByStateManagerTypedBase.class, false);
+        generatePackage(UpdateByStateManagerTypedBase.class, true);
     }
 
     private static void generatePackage(Class<?> baseClass, boolean doDouble) throws IOException {
