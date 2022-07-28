@@ -3,6 +3,7 @@
  */
 package io.deephaven.plot;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -277,12 +278,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         if (sds instanceof SelectableDataSetOneClick) {
             Collections.addAll(cols, ((SelectableDataSetOneClick) sds).getByColumns());
         }
-
         final Collection<? extends Aggregation> aggs = aggSupplier.get();
-        final Collection<? extends Selectable> selectableCols = Selectable.from(cols);
-        final SelectColumn[] gbsColumns = SelectColumn.from(selectableCols);
-        final Function<Table, Table> applyAggs = t -> t.aggBy(aggs, selectableCols);
-        return sds.transform(MemoizedOperationKey.aggBy(aggs, gbsColumns), applyAggs);
+        final Collection<? extends ColumnName> columnNames = ColumnName.from(cols);
+        final Function<Table, Table> applyAggs = t -> t.aggBy(aggs, columnNames);
+        return sds.transform(MemoizedOperationKey.aggBy(aggs, columnNames), applyAggs);
     }
 
     private static SelectableDataSet getLastBySelectableDataSet(final SelectableDataSet sds, final String... columns) {

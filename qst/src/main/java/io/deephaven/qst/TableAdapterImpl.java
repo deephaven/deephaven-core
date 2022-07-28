@@ -3,6 +3,7 @@
  */
 package io.deephaven.qst;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.spec.AggSpec;
@@ -239,7 +240,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         if (aggAllByTable.groupByColumns().isEmpty()) {
             addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec));
         } else {
-            final Selectable[] groupByColumns = aggAllByTable.groupByColumns().toArray(new Selectable[0]);
+            final ColumnName[] groupByColumns = aggAllByTable.groupByColumns().toArray(new ColumnName[0]);
             addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec, groupByColumns));
         }
     }
@@ -266,11 +267,11 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
 
     @Override
     public void visit(SelectDistinctTable selectDistinctTable) {
-        if (selectDistinctTable.groupByColumns().isEmpty()) {
+        if (selectDistinctTable.columns().isEmpty()) {
             addOp(selectDistinctTable, parentOps(selectDistinctTable).selectDistinct());
         } else {
             addOp(selectDistinctTable,
-                    parentOps(selectDistinctTable).selectDistinct(selectDistinctTable.groupByColumns()));
+                    parentOps(selectDistinctTable).selectDistinct(selectDistinctTable.columns()));
         }
     }
 
@@ -280,7 +281,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
             addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name()));
         } else {
             addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name(),
-                    countByTable.groupByColumns().toArray(new Selectable[0])));
+                    countByTable.groupByColumns().toArray(new ColumnName[0])));
         }
     }
 

@@ -3,7 +3,7 @@
  */
 package io.deephaven.qst.table;
 
-import io.deephaven.api.Selectable;
+import io.deephaven.api.ColumnName;
 
 import java.util.List;
 
@@ -11,16 +11,16 @@ public abstract class ByTableBase extends TableBase implements SingleParentTable
 
     public abstract TableSpec parent();
 
-    public abstract List<Selectable> groupByColumns();
+    public abstract List<ColumnName> groupByColumns();
 
     interface Builder<BY extends ByTableBase, SELF extends Builder<BY, SELF>> {
         SELF parent(TableSpec parent);
 
-        SELF addGroupByColumns(Selectable element);
+        SELF addGroupByColumns(ColumnName element);
 
-        SELF addGroupByColumns(Selectable... elements);
+        SELF addGroupByColumns(ColumnName... elements);
 
-        SELF addAllGroupByColumns(Iterable<? extends Selectable> elements);
+        SELF addAllGroupByColumns(Iterable<? extends ColumnName> elements);
 
         BY build();
     }

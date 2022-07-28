@@ -173,7 +173,7 @@ public class LabelBuilder extends TableVisitorGeneric {
     @Override
     public void visit(SelectDistinctTable selectDistinctTable) {
         sb.append("selectDistinct(");
-        append(Strings::of, selectDistinctTable.groupByColumns(), sb);
+        append(Strings::of, selectDistinctTable.columns(), sb);
         sb.append(')');
     }
 

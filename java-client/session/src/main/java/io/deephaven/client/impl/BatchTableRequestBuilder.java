@@ -490,7 +490,7 @@ class BatchTableRequestBuilder {
             SelectDistinctRequest.Builder builder = SelectDistinctRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(selectDistinctTable.parent()));
-            for (Selectable column : selectDistinctTable.groupByColumns()) {
+            for (Selectable column : selectDistinctTable.columns()) {
                 builder.addColumnNames(Strings.of(column));
             }
             return builder.build();
