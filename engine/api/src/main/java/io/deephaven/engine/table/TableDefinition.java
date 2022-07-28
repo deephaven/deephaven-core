@@ -238,7 +238,7 @@ public class TableDefinition implements LogOutputAppendable {
     }
 
     /**
-     * @return The types column names as a list in the same order as {@link #getColumns()}
+     * @return The {@link ColumnName column names} as a list in the same order as {@link #getColumns()}
      */
     public List<ColumnName> getTypedColumnNames() {
         return getColumnStream().map(ColumnDefinition::getName).map(ColumnName::of).collect(Collectors.toList());
