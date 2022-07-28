@@ -67,6 +67,7 @@ def testGoClient = Docker.registerDockerTask(project, 'testGoClient') {
         runCommand('''set -eux; \\
                       mkdir /out; \\
                       go mod download; \\
+                      go mod verify; \\
                       go install github.com/jstemmer/go-junit-report/v2@latest
                       ''')
         copyFile('.', '/project/')
