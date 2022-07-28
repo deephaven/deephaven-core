@@ -9,6 +9,12 @@ unlocks the unique power of Deephaven to the Python community.
 
 __version__ = "0.15.0"
 
+from deephaven_internal import jvm
+try:
+    jvm.check_ready()
+finally:
+    del jvm
+
 from .dherror import DHError
 from .table import SortDirection, AsOfMatchRule
 from .csv import read as read_csv

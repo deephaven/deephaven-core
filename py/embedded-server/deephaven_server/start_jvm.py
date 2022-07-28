@@ -4,9 +4,10 @@
 
 import glob
 import itertools
-import jpyutil
 import os
 import pathlib
+
+from deephaven_internal import jvm
 
 # TODO(deephaven-core#2592): Generalize start_jvm to work with importlib.resources
 
@@ -90,7 +91,7 @@ def start_jvm(
     else:
         jvm_args.extend(required_jvm_args)
 
-    jpyutil.init_jvm(
+    jvm.init_jvm(
         java_home=java_home,
         # jvm_dll=jvm_dll,
         jvm_classpath=jvm_classpath,
@@ -98,5 +99,6 @@ def start_jvm(
         jvm_options=jvm_args,
         # config_file=config_file,
         config=config)
+
     import jpy
     jpy.VerboseExceptions.enabled = True
