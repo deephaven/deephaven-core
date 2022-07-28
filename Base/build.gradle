@@ -7,7 +7,6 @@ dependencies {
 
     implementation depTrove3
     compileOnlyApi depAnnotations
-    api depCommonsCompress
     implementation depCommonsLang3
 
     api 'io.deephaven:hash:0.1.0'
