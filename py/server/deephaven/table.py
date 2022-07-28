@@ -2334,10 +2334,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.groupBy(*by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.groupBy())
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.groupBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.groupBy())
         except Exception as e:
             raise DHError(e, "group-by operation on the PartitionedTableProxy failed.") from e
 
@@ -2361,7 +2362,8 @@ class PartitionedTableProxy(JObjectWrapper):
             aggs = to_sequence(aggs)
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "agg_by operation on the PartitionedTableProxy failed.") from e
 
