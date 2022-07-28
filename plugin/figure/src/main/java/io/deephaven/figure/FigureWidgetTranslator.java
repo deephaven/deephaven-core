@@ -357,13 +357,15 @@ public class FigureWidgetTranslator {
 
                                 } else if (s instanceof CategoryTreemapDataSeriesTableMap) {
                                     CategoryTreemapDataSeriesTableMap series = (CategoryTreemapDataSeriesTableMap) s;
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getCategoryCol(),
-                                            catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
+                                    clientAxes
+                                            .add(makeSourceDescriptor(series.getTableHandle(), series.getCategoryCol(),
+                                                    catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
                                     clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
                                             series.getParentColumn(), SourceType.PARENT, null));
                                     if (series.getValueCol() != null) {
-                                        clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getValueCol(),
-                                                numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
+                                        clientAxes
+                                                .add(makeSourceDescriptor(series.getTableHandle(), series.getValueCol(),
+                                                        numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
                                     }
                                     if (series.getLabelColumn() != null) {
                                         clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
