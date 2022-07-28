@@ -1274,7 +1274,8 @@ public class GeneratePyV2FigureAPI {
                 new String[] {"series_name"},
                 "Creates an open-high-low-close plot."));
         rst.add(new PyFunc("plot_treemap", SINGLETON, new String[] {"treemapPlot"},
-                new String[] {"series_name", "t", "id", "parent"}, new String[] {"value", "label", "hover_text", "color"},
+                new String[] {"series_name", "t", "id", "parent"},
+                new String[] {"value", "label", "hover_text", "color"},
                 "Creates a treemap. Must have only one root."));
 
         ////////////////////////////////////////////////////////////////
