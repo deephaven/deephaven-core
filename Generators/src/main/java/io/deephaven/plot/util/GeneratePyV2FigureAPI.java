@@ -1159,12 +1159,12 @@ public class GeneratePyV2FigureAPI {
         rst.put("pointSizes", rst.get("pointSize"));
         rst.put("pointLabelFormat", new PyArg(84, "label_format", taStr, "point label format.", null));
         rst.put("visible", new PyArg(85, "visible", taInt, "true to draw the design element; false otherwise.", null));
-        rst.put("values", new PyArg(10, "values_column", taStr, "", null));
-        rst.put("ids", new PyArg(10, "ids_column", taStr, "", null));
-        rst.put("parents", new PyArg(10, "parents_column", taStr, "", null));
-        rst.put("labels", new PyArg(10, "labels_column", taStr, "", null));
-        rst.put("text", new PyArg(10, "text_column", taStr, "", null));
-        rst.put("hoverText", new PyArg(10, "hover_text_column", taStr, "", null));
+        rst.put("ids", new PyArg(86, "id", taStr, "column name containing IDs", null));
+        rst.put("parents", new PyArg(87, "parent", taStr, "column name containing parent IDs", null));
+        rst.put("values", new PyArg(88, "value", taStr, "column name containing values", null));
+        rst.put("labels", new PyArg(89, "label", taStr, "column name containing labels", null));
+        rst.put("hoverTexts", new PyArg(90, "hover_text", taStr, "column name containing hover text", null));
+        rst.put("colors", new PyArg(91, "color", taStr, "column name containing color", null));
 
         ////////////////////////////////////////////////////////////////
 
@@ -1273,8 +1273,10 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[] {"ohlcPlot", "ohlcPlotBy"},
                 new String[] {"series_name"},
                 "Creates an open-high-low-close plot."));
-        rst.add(new PyFunc("plot_tree_map", SINGLETON, new String[] {"treeMapPlot"},
-                new String[] {"t", "ids", "parents"}, ""));
+        rst.add(new PyFunc("plot_treemap", SINGLETON, new String[] {"treemapPlot"},
+                new String[] {"series_name", "t", "id", "parent"},
+                new String[] {"value", "label", "hover_text", "color"},
+                "Creates a treemap. Must have only one root."));
 
         ////////////////////////////////////////////////////////////////
 
