@@ -769,4 +769,19 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             assertTableEquals(matching, merged);
         }
     }
+
+    public void testMergeStaticAndRefreshing() {
+        final Table staticTable;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            staticTable = emptyTable(100).update("II=ii");
+        }
+        final Table refreshingTable = emptyTable(100).update("II=100 + ii");
+        refreshingTable.setRefreshing(true);
+        final Table mergedTable = PartitionedTableFactory.ofTables(staticTable, refreshingTable).merge();
+        assertTableEquals(mergedTable, emptyTable(200).update("II=ii"));
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            mergedTable.getRowSet().writableCast().removeRange(0, 1);
+            ((BaseTable) mergedTable).notifyListeners(i(), ir(0, 1), i());
+        });
+    }
 }
