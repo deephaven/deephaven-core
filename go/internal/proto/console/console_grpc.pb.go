@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type ConsoleServiceClient interface {
 	GetConsoleTypes(ctx context.Context, in *GetConsoleTypesRequest, opts ...grpc.CallOption) (*GetConsoleTypesResponse, error)
 	StartConsole(ctx context.Context, in *StartConsoleRequest, opts ...grpc.CallOption) (*StartConsoleResponse, error)
+	GetHeapInfo(ctx context.Context, in *GetHeapInfoRequest, opts ...grpc.CallOption) (*GetHeapInfoResponse, error)
 	SubscribeToLogs(ctx context.Context, in *LogSubscriptionRequest, opts ...grpc.CallOption) (ConsoleService_SubscribeToLogsClient, error)
 	ExecuteCommand(ctx context.Context, in *ExecuteCommandRequest, opts ...grpc.CallOption) (*ExecuteCommandResponse, error)
 	CancelCommand(ctx context.Context, in *CancelCommandRequest, opts ...grpc.CallOption) (*CancelCommandResponse, error)
@@ -63,6 +64,15 @@ func (c *consoleServiceClient) GetConsoleTypes(ctx context.Context, in *GetConso
 func (c *consoleServiceClient) StartConsole(ctx context.Context, in *StartConsoleRequest, opts ...grpc.CallOption) (*StartConsoleResponse, error) {
 	out := new(StartConsoleResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.script.grpc.ConsoleService/StartConsole", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) GetHeapInfo(ctx context.Context, in *GetHeapInfoRequest, opts ...grpc.CallOption) (*GetHeapInfoResponse, error) {
+	out := new(GetHeapInfoResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetHeapInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -206,6 +216,7 @@ func (c *consoleServiceClient) NextAutoCompleteStream(ctx context.Context, in *A
 type ConsoleServiceServer interface {
 	GetConsoleTypes(context.Context, *GetConsoleTypesRequest) (*GetConsoleTypesResponse, error)
 	StartConsole(context.Context, *StartConsoleRequest) (*StartConsoleResponse, error)
+	GetHeapInfo(context.Context, *GetHeapInfoRequest) (*GetHeapInfoResponse, error)
 	SubscribeToLogs(*LogSubscriptionRequest, ConsoleService_SubscribeToLogsServer) error
 	ExecuteCommand(context.Context, *ExecuteCommandRequest) (*ExecuteCommandResponse, error)
 	CancelCommand(context.Context, *CancelCommandRequest) (*CancelCommandResponse, error)
@@ -235,6 +246,9 @@ func (UnimplementedConsoleServiceServer) GetConsoleTypes(context.Context, *GetCo
 }
 func (UnimplementedConsoleServiceServer) StartConsole(context.Context, *StartConsoleRequest) (*StartConsoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartConsole not implemented")
+}
+func (UnimplementedConsoleServiceServer) GetHeapInfo(context.Context, *GetHeapInfoRequest) (*GetHeapInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetHeapInfo not implemented")
 }
 func (UnimplementedConsoleServiceServer) SubscribeToLogs(*LogSubscriptionRequest, ConsoleService_SubscribeToLogsServer) error {
 	return status.Errorf(codes.Unimplemented, "method SubscribeToLogs not implemented")
@@ -302,6 +316,24 @@ func _ConsoleService_StartConsole_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ConsoleServiceServer).StartConsole(ctx, req.(*StartConsoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_GetHeapInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetHeapInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).GetHeapInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetHeapInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).GetHeapInfo(ctx, req.(*GetHeapInfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -460,6 +492,10 @@ var ConsoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartConsole",
 			Handler:    _ConsoleService_StartConsole_Handler,
+		},
+		{
+			MethodName: "GetHeapInfo",
+			Handler:    _ConsoleService_GetHeapInfo_Handler,
 		},
 		{
 			MethodName: "ExecuteCommand",
