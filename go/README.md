@@ -40,7 +40,7 @@ The source code is available in the directory for each example.
 
 To add the client as a dependency to your project, run:
 ```bash
-go get github.com/deephaven/deephaven-core/go@main
+go get github.com/deephaven/deephaven-core/go
 ```
 The client package can then be imported:
 ```go
