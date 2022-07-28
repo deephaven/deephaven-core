@@ -325,6 +325,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         public void putObjectFields(Object object) {
             throw new UnsupportedOperationException();
         }
+
+        public ScriptSession scriptSession() {
+            return this.scriptSession;
+        }
     }
 
     public static class UnsynchronizedScriptSessionQueryScope extends ScriptSessionQueryScope {

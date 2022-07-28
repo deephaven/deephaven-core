@@ -560,6 +560,37 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(cm.exception.root_cause)
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
+    def test_update_local(self):
+        nonlocal_str = "nonlocal str"
+
+        def inner_func(arg: str):
+            def local_fn() -> str:
+                return "local str"
+
+            final_str = nonlocal_str + arg
+            local_int = 101
+            t = empty_table(1)
+            formulas = ["Col1 = local_fn()",
+                        "Col2 = global_fn()",
+                        "Col3 = local_int",
+                        "Col4 = global_int",
+                        "Col5 = arg",
+                        "Col6 = nonlocal_str"
+                        ]
+            t2 = t.update(formulas)
+            t2_data = t2.to_string()
+            self.assertIn("local str", t2_data)
+            self.assertIn("nonlocal str", t2_data)
+            self.assertIn("global str", t2_data)
+            self.assertIn("101", t2_data)
+            self.assertIn("10001", t2_data)
+
+
+def global_fn() -> str:
+    return "global str"
+
+
+global_int = 1001
 
 if __name__ == "__main__":
     unittest.main()

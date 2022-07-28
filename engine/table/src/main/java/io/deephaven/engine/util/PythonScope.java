@@ -4,6 +4,7 @@
 package io.deephaven.engine.util;
 
 import org.jpy.PyDictWrapper;
+import org.jpy.PyObject;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
@@ -170,4 +171,6 @@ public interface PythonScope<PyObj> {
     }
 
     public PyDictWrapper globals();
+
+    void modifyScope(PyObject object);
 }

@@ -7,6 +7,8 @@ instruments for working with Deephaven refreshing and static data. """
 
 from __future__ import annotations
 
+import inspect
+import sys
 from enum import Enum, auto
 from typing import Union, Sequence, List, Any, Optional, Callable
 
@@ -42,6 +44,26 @@ _JJoinAddition = jpy.get_type("io.deephaven.api.JoinAddition")
 _JAsOfJoinRule = jpy.get_type("io.deephaven.api.AsOfJoinRule")
 _JReverseAsOfJoinRule = jpy.get_type("io.deephaven.api.ReverseAsOfJoinRule")
 _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
+
+# Dynamic Query Scope
+_JQueryScope = jpy.get_type("io.deephaven.engine.table.lang.QueryScope")
+_JUnsynchronizedScriptSessionQueryScope = jpy.get_type(
+    "io.deephaven.engine.util.AbstractScriptSession$UnsynchronizedScriptSessionQueryScope")
+_JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
+_j_script_session = jpy.cast(_JQueryScope.getScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
+_j_py_script_session = jpy.cast(_j_script_session, _JPythonScriptSession)
+_deephaven_pkg_prefix = __file__[:__file__.index("deephaven") + len("deephaven")]
+
+
+def _set_query_scope():
+    for frame, filename, line_num, func, source_code, source_index in inspect.getouterframes(inspect.currentframe()):
+        if filename and filename.startswith(_deephaven_pkg_prefix):
+            continue
+
+        scope_dict = frame.f_globals.copy()
+        scope_dict.update(frame.f_locals)
+        _j_py_script_session.modifyScope(scope_dict)
+        return
 
 
 class SortDirection(Enum):
@@ -330,6 +352,7 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
+            _set_query_scope()
             with auto_locking_ctx(self):
                 return Table(j_table=self.j_table.update(*formulas))
         except Exception as e:

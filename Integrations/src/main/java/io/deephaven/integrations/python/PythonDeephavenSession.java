@@ -178,6 +178,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 .orElse(defaultValue);
     }
 
+    public void modifyScope(PyObject object) {
+        scope.modifyScope(object);
+    }
+
     @Override
     protected void evaluate(String command, String scriptName) {
         log.info().append("Evaluating command: " + command).endl();

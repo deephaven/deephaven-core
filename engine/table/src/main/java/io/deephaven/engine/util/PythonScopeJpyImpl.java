@@ -14,6 +14,8 @@ import java.util.stream.Stream;
 
 public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private final PyDictWrapper dict;
+
+    private final ThreadLocal<PyDictWrapper> moduleDict = new ThreadLocal<>();
     private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = getNumbaVectorizedFuncType();
 
     // this assumes that the Python interpreter won't be re-initialized during a session, if this turns out to be a
@@ -34,26 +36,35 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         this.dict = dict;
     }
 
+    private PyDictWrapper currentScope() {
+        PyDictWrapper dict = moduleDict.get();
+        if (dict == null) {
+            return this.dict;
+        } else {
+            return dict;
+        }
+    }
+
     @Override
     public Optional<PyObject> getValueRaw(String name) {
         // note: we *may* be returning Optional.of(None)
         // None is a valid PyObject, and can be in scope
-        return Optional.ofNullable(dict.get(name));
+        return Optional.ofNullable(currentScope().get(name));
     }
 
     @Override
     public Stream<PyObject> getKeysRaw() {
-        return dict.keySet().stream();
+        return currentScope().keySet().stream();
     }
 
     @Override
     public Stream<Entry<PyObject, PyObject>> getEntriesRaw() {
-        return dict.entrySet().stream();
+        return currentScope().entrySet().stream();
     }
 
     @Override
     public boolean containsKey(String name) {
-        return dict.containsKey(name);
+        return currentScope().containsKey(name);
     }
 
     @Override
@@ -199,5 +210,13 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
 
     public PyDictWrapper globals() {
         return dict;
+    }
+
+    @Override
+    public void modifyScope(PyObject pydict) {
+        if (pydict.isNone())
+            moduleDict.set(null);
+        else
+            moduleDict.set(pydict.asDict());
     }
 }

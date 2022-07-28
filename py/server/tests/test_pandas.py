@@ -11,7 +11,7 @@ import pandas as pd
 from deephaven import dtypes, new_table, DHError
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
-from deephaven.constants import NULL_LONG, NULL_BYTE, NULL_SHORT, NULL_INT
+from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
 from deephaven.time import to_datetime
