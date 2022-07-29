@@ -131,7 +131,7 @@ public class LayoutHintBuilder {
             StringBuilder sb = new StringBuilder("name:").append(name);
 
             sb.append("::children:");
-            boolean first = false;
+            boolean first = true;
             for (String child : children) {
                 if (!first) {
                     sb.append(",");
