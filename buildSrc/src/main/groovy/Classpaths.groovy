@@ -148,7 +148,7 @@ class Classpaths {
         }
     }
 
-    static void inheritJavaParser(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+    static void inheritJavaParser(Project p, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency config, JAVA_PARSER_GROUP, JAVA_PARSER_NAME, JAVA_PARSER_VERSION
     }
@@ -166,7 +166,7 @@ class Classpaths {
                 name == 'base'? '1.0.0' : JS_INTEROP_VERSION
     }
 
-    static void inheritElemental(Project p, String name, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+    static void inheritElemental(Project p, String name, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency config, ELEMENTAL_GROUP, name, ELEMENTAL_VERSION
     }

@@ -23,4 +23,4 @@ Classpaths.inheritGwt project
 // upgrade inherited dependencies to become transitive
 Classpaths.inheritJsInterop(project, 'jsinterop-annotations', 'compileOnly')
 Classpaths.inheritJavaxAnnotations(project)
-Classpaths.inheritElemental(project, 'elemental2-core')
+Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')

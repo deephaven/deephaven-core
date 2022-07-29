@@ -4,6 +4,7 @@
 
 plugins {
     id 'io.deephaven.project.register'
+    id 'java-library'
 }
 
 configurations {
@@ -11,7 +12,9 @@ configurations {
 }
 
 dependencies {
-    implementation project(':engine-table')
+    api project(':engine-table')
+    api project(':engine-time')
+
     implementation project(':Configuration')
     implementation project(':log-factory')
 
