@@ -1,0 +1,10 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+description = 'Utility project to make x509 client cert available in grpc calls on the server'
+
+dependencies {
+    Classpaths.inheritGrpcPlatform(project)
+    implementation 'io.grpc:grpc-core'
+}
