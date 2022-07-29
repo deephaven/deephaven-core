@@ -76,6 +76,7 @@ import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
 import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
+import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
@@ -380,6 +381,11 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(UpdateTable v) {
             out = op(Builder::setUpdate, selectOrUpdate(v, v.columns()));
+        }
+
+        @Override
+        public void visit(LazyUpdateTable v) {
+            out = op(Builder::setLazyUpdate, selectOrUpdate(v, v.columns()));
         }
 
         @Override

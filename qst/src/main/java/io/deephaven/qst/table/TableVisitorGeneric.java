@@ -113,6 +113,11 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
+    public void visit(LazyUpdateTable lazyUpdateTable) {
+        accept(lazyUpdateTable);
+    }
+
+    @Override
     public void visit(AggregateAllByTable aggAllByTable) {
         accept(aggAllByTable);
     }
