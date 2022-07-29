@@ -385,7 +385,7 @@ public class LayoutHintBuilder {
             columnGroups = new LinkedHashMap<>();
         }
 
-        if (children.size() == 0) {
+        if (children.isEmpty()) {
             columnGroups.remove(name);
         } else {
             columnGroups.put(name, new ColumnGroup(name, children, color));
