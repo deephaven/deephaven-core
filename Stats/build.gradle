@@ -3,8 +3,13 @@ plugins {
 }
 
 dependencies {
-    implementation project(':Base'), project(':DataStructures'), project(':IO'), project(':Configuration'), project(':FishUtil'),
-            project(':Net')
+    implementation project(':Base')
+    implementation project(':DataStructures')
+    implementation project(':IO')
+    implementation project(':Configuration')
+    implementation project(':FishUtil')
+    implementation project(':Net')
+    implementation project(':log-factory')
     compileOnly 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:3.3.0'
 
     testImplementation project(path: ':Base', configuration: 'tests')

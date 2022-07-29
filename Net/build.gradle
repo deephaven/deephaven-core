@@ -8,6 +8,7 @@ dependencies {
     implementation project(':IO')
     implementation project(':Configuration')
     implementation project(':FishUtil')
+    implementation project(':log-factory')
 
     testImplementation project(path: ':Base', configuration: 'tests')
 

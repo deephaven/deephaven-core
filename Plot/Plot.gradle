@@ -15,6 +15,7 @@ dependencies {
     implementation project(':engine-table')
     implementation project(':engine-function')
     implementation project(':engine-tuple')
+    implementation project(':log-factory')
 
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
