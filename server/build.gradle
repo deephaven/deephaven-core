@@ -15,6 +15,7 @@ dependencies {
     Classpaths.inheritCommonsText(project)
 
     Classpaths.inheritJavaParser(project, 'implementation')
+    implementation project(':open-api-lang-parser')
 
     api(project(':java-client-barrage-dagger')) {
         because 'downstream dagger compile, see deephaven-core#1722'

@@ -9,7 +9,7 @@ apply from: "$rootDir/gradle/web-common.gradle"
 Classpaths.inheritCommonsText(project)
 dependencies {
 
-    api project(':open-api-lang-parser')
+    implementation project(':open-api-lang-parser')
     implementation project(':engine-table')
     implementation project(':engine-function')
     implementation project(':IO')
