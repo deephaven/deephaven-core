@@ -198,8 +198,8 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
-    public void visit(LazyUpdateTable updateTable) {
-        throw new UnsupportedOperationException("TableOperations#lazyUpdate not implemented yet");
+    public void visit(LazyUpdateTable lazyUpdateTable) {
+        addOp(lazyUpdateTable, parentOps(lazyUpdateTable).lazyUpdate(lazyUpdateTable.columns()));
     }
 
     @Override
