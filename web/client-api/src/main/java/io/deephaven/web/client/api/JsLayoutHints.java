@@ -90,11 +90,11 @@ public class JsLayoutHints {
 
         final String groupsStr = options.get("columnGroups");
         if (groupsStr != null && !groupsStr.isEmpty()) {
-            List<ColumnGroup> groups =
+            ColumnGroup[] groups =
                     Arrays.stream(groupsStr.split("\\|")).map(ColumnGroup::new).map(JsObject::freeze)
-                            .collect(Collectors.toList());
+                            .toArray(ColumnGroup[]::new);
 
-            columnGroups = JsObject.freeze(groups.toArray(new ColumnGroup[0]));
+            columnGroups = JsObject.freeze(groups);
         }
 
         return this;
