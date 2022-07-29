@@ -1343,7 +1343,7 @@ class Table(JObjectWrapper):
             freeze (Union[str, List[str]]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
             hide (Union[str, List[str]]): the columns to hide.
-            column_groups (List[ColumnGroup]): A list of dicts specifying which columns should be grouped in the UI
+            column_groups (List[Dict]): A list of dicts specifying which columns should be grouped in the UI
                 The dicts can specify the following:
 
                 name (str): The group name
