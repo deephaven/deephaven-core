@@ -16,6 +16,7 @@ import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
+import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
@@ -197,6 +198,11 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     @Override
     public void visit(UpdateTable updateTable) {
         addOp(updateTable, parentOps(updateTable).update(updateTable.columns()));
+    }
+
+    @Override
+    public void visit(LazyUpdateTable lazyUpdateTable) {
+        addOp(lazyUpdateTable, parentOps(lazyUpdateTable).lazyUpdate(lazyUpdateTable.columns()));
     }
 
     @Override
