@@ -525,7 +525,22 @@ class TableTestCase(BaseTestCase):
         self.assertIsNotNone(t)
 
     def test_layout_hints(self):
-        t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d")
+        t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d", column_groups=[
+            {
+                "name": "Group1",
+                "children": ["a", "b"]
+            },
+            {
+                "name": "Group2",
+                "children": ["c", "d"],
+                "color": "#123456"
+            },
+            {
+                "name": "Group3",
+                "children": ["e", "f"],
+                "color": "RED"
+            }
+        ])
         self.assertIsNotNone(t)
 
         t = self.test_table.layout_hints(front=["d", "e"], back=["a", "b"], freeze=["c"], hide=["d"])
