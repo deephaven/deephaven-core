@@ -128,11 +128,20 @@ public class LayoutHintBuilder {
 
         @NotNull
         public String serialize() {
-            StringBuilder sb = new StringBuilder("name:" + name);
+            StringBuilder sb = new StringBuilder("name:").append(name);
 
-            sb.append("::children:" + StringUtils.joinStrings(children, ","));
+            sb.append("::children:");
+            boolean first = false;
+            for (String child : children) {
+                if (!first) {
+                    sb.append(",");
+                }
+                first = false;
+                sb.append(child);
+            }
             if (color != null) {
-                sb.append("::color:" + "#" + Integer.toHexString(color.javaColor().getRGB()).substring(2));
+                sb.append("::color:#")
+                    .append(Integer.toHexString(color.javaColor().getRGB()).substring(2));
             }
             return sb.toString();
         }
