@@ -27,14 +27,28 @@ Examples assume the server is running on `localhost:10000` by default,
 but can be configured by setting the `DH_HOST` and `DH_PORT` environment variables.
 An example can be run using one of the following commands:
 ```bash
-$ go test -v ./client/example_basic_query_test.go
-$ go test -v ./client/example_fetch_table_test.go
-$ go test -v ./client/example_import_table_test.go
-$ go test -v ./client/example_input_table_test.go
-$ go test -v ./client/example_run_script_test.go
+$ go test -v ./pkg/client/example_table_ops_test.go
+$ go test -v ./pkg/client/example_fetch_table_test.go
+$ go test -v ./pkg/client/example_import_table_test.go
+$ go test -v ./pkg/client/example_input_table_test.go
+$ go test -v ./pkg/client/example_run_script_test.go
 ```
 
 The source code is available in the directory for each example.
+
+## Using the Client
+
+To add the client as a dependency to your project, run:
+```bash
+go get github.com/deephaven/deephaven-core/go/pkg/client
+```
+The client package can then be imported:
+```go
+import (
+	"github.com/deephaven/deephaven-core/go/pkg/client"
+)
+```
+Detailed information on how to use the client package can be found in the `pkg/client` directories of the docs.
 
 ## Viewing Docs
 

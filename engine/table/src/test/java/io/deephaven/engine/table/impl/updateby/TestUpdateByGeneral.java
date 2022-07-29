@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
@@ -99,7 +100,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                                         .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
                         final UpdateByControl control = UpdateByControl.builder().useRedirection(redirected).build();
                         return bucketed
-                                ? base.updateBy(control, clauses, Selectable.from("Sym"))
+                                ? base.updateBy(control, clauses, ColumnName.from("Sym"))
                                 : base.updateBy(control, clauses);
                     }
                 },

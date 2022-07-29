@@ -6,8 +6,6 @@
 from jpy import JType
 
 from deephaven._wrapper import JObjectWrapper
-from deephaven.plot import Figure
-import deephaven.table
 
 
 def create_change_list(from_snapshot, to_snapshot):

@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.UpdateByOperation;
@@ -220,8 +221,7 @@ public class DeferredViewTable extends RedefinableTable {
     }
 
     @Override
-    public Table selectDistinct(Collection<? extends Selectable> selectables) {
-        final SelectColumn[] columns = SelectColumn.from(selectables);
+    public Table selectDistinct(Collection<? extends Selectable> columns) {
         /* If the cachedResult table has already been created, we can just use that. */
         if (getCoalesced() != null) {
             return coalesce().selectDistinct(columns);
@@ -241,7 +241,7 @@ public class DeferredViewTable extends RedefinableTable {
         }
 
         /* If the cachedResult is not yet created, we first ask for a selectDistinct cachedResult. */
-        Table selectDistinct = tableReference.selectDistinct(columns);
+        Table selectDistinct = tableReference.selectDistinctInternal(columns);
         return selectDistinct == null ? coalesce().selectDistinct(columns) : selectDistinct;
     }
 
@@ -265,14 +265,6 @@ public class DeferredViewTable extends RedefinableTable {
                 new SimpleTableReference(this), null, viewColumns, null);
         deferredViewTable.setRefreshing(isRefreshing());
         return deferredViewTable;
-    }
-
-    @Override
-    public Table updateBy(@NotNull final UpdateByControl control,
-            @NotNull final Collection<? extends UpdateByOperation> ops,
-            @NotNull final Collection<? extends Selectable> byColumns) {
-        return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
-                () -> UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control));
     }
 
     /**
@@ -340,7 +332,7 @@ public class DeferredViewTable extends RedefinableTable {
          * @return null if the operation can not be performed on an uninstantiated table, otherwise a new table with the
          *         distinct values from strColumns.
          */
-        public Table selectDistinct(SelectColumn[] columns) {
+        public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
             return null;
         }
 

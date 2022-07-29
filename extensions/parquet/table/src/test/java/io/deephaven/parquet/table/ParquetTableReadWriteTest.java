@@ -87,7 +87,7 @@ public class ParquetTableReadWriteTest {
         Table t = getOneColumnTableFlat(size);
         QueryLibrary.importClass(ArrayStringSet.class);
         QueryLibrary.importClass(StringSet.class);
-        Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)");
+        Table result = t.updateView("groupKey = i % 100 + (int)(i/10)").groupBy("groupKey");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name
@@ -133,7 +133,7 @@ public class ParquetTableReadWriteTest {
         Table t = getTableFlat(size, includeSerializable);
         QueryLibrary.importClass(ArrayStringSet.class);
         QueryLibrary.importClass(StringSet.class);
-        Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)");
+        Table result = t.updateView("groupKey = i % 100 + (int)(i/10)").groupBy("groupKey");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name

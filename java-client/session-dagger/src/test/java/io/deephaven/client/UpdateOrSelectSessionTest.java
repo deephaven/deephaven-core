@@ -51,8 +51,13 @@ public class UpdateOrSelectSessionTest extends DeephavenSessionTestBase {
             public TableSpec apply(TableSpec spec, String[] formulas) {
                 return spec.select(formulas);
             }
+        },
+        LAZY_UPDATE {
+            @Override
+            public TableSpec apply(TableSpec spec, String[] formulas) {
+                return spec.lazyUpdate(formulas);
+            }
         }
-        // TODO Lazy via TableSpec
     }
 
     private final UpdateOrSelect method;

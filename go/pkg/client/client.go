@@ -4,13 +4,13 @@
 // To get started, use client.NewClient to connect to the server. The Client can then be used to perform operations.
 // See the provided examples in the examples/ folder or the individual code documentation for more.
 //
-// Online docs for the client can be found at https://pkg.go.dev/github.com/deephaven/deephaven-core/go/client
+// Online docs for the client can be found at https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client
 //
 // The Go API uses Records from the Apache Arrow package as tables.
 // The docs for the Arrow package can be found at the following link:
 // https://pkg.go.dev/github.com/apache/arrow/go/v8
 //
-// All methods for all structs in this package are thread-safe unless otherwise specified.
+// All methods for all structs in this package are goroutine-safe unless otherwise specified.
 package client
 
 import (

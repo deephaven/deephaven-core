@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.Strings;
 import io.deephaven.api.updateby.UpdateByOperation;
@@ -83,7 +84,7 @@ public abstract class UpdateBy {
      */
     public static Table updateBy(@NotNull final QueryTable source,
             @NotNull final Collection<? extends UpdateByOperation> clauses,
-            @NotNull final Collection<? extends Selectable> byColumns,
+            @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByControl control) {
 
         WritableRowRedirection rowRedirection = null;
@@ -109,10 +110,9 @@ public abstract class UpdateBy {
             }
         }
 
+        // TODO(deephaven-core#2693): Improve UpdateBy implementation for ColumnName
         // generate a MatchPair array for use by the existing algorithm
-        MatchPair[] pairs = byColumns.stream()
-                .map(s -> new MatchPair(s.newColumn().name(), Strings.of(s.expression())))
-                .toArray(MatchPair[]::new);
+        MatchPair[] pairs = MatchPair.fromPairs(byColumns);
 
         final UpdateByOperatorFactory updateByOperatorFactory =
                 new UpdateByOperatorFactory(source, pairs, rowRedirection, control);
@@ -153,12 +153,15 @@ public abstract class UpdateBy {
         }
 
         descriptionBuilder.append(", pairs={").append(MatchPair.matchString(pairs)).append("})");
+
+        final List<ColumnSource<?>> originalKeySources = new ArrayList<>(pairs.length);
         final List<ColumnSource<?>> keySources = new ArrayList<>(pairs.length);
         for (final MatchPair byColumn : pairs) {
             if (!source.hasColumns(byColumn.rightColumn)) {
                 problems.add(byColumn.rightColumn);
                 continue;
             }
+            originalKeySources.add(source.getColumnSource(byColumn.rightColumn));
             keySources.add(ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(byColumn.rightColumn)));
         }
 
@@ -173,6 +176,7 @@ public abstract class UpdateBy {
                 resultSources,
                 rowRedirection,
                 keySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
+                originalKeySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
                 pairs,
                 control);
     }

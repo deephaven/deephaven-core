@@ -460,10 +460,9 @@ public class QueryTable extends BaseTable {
         if (isStream()) {
             throw streamUnsupported("partitionBy");
         }
-        final SelectColumn[] groupByColumns =
-                Arrays.stream(keyColumnNames).map(SourceColumn::new).toArray(SelectColumn[]::new);
-        return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, groupByColumns), () -> {
-            final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), Arrays.asList(groupByColumns));
+        final List<ColumnName> columns = ColumnName.from(keyColumnNames);
+        return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, columns), () -> {
+            final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), columns);
             final Set<String> keyColumnNamesSet =
                     Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
             final TableDefinition constituentDefinition;
@@ -480,7 +479,7 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Selectable... groupByColumns) {
+            ColumnName... groupByColumns) {
         throw new UnsupportedOperationException("rollup is not yet implemented in community");
         // TODO https://github.com/deephaven/deephaven-core/issues/65): Implement rollups based on PartitionedTable
         /*
@@ -589,7 +588,7 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public Table aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         for (ColumnName name : AggSpecColumnReferences.of(spec)) {
             if (!hasColumns(name.name())) {
                 throw new IllegalArgumentException(
@@ -597,7 +596,7 @@ public class QueryTable extends BaseTable {
                                 + toString(Arrays.asList(groupByColumns)));
             }
         }
-        final List<Selectable> groupByList = Arrays.asList(groupByColumns);
+        final List<ColumnName> groupByList = Arrays.asList(groupByColumns);
         final List<ColumnName> tableColumns =
                 definition.getColumnNames().stream().map(ColumnName::of).collect(Collectors.toList());
         final Optional<Aggregation> agg = AggregateAllByTable.singleAggregation(spec, groupByList, tableColumns);
@@ -607,10 +606,9 @@ public class QueryTable extends BaseTable {
         }
         final QueryTable tableToUse = (QueryTable) AggAllByUseTable.of(this, spec);
         final List<? extends Aggregation> aggs = List.of(agg.get());
-        final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
-        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, gbsColumns);
+        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, groupByList);
         return tableToUse.memoizeResult(aggKey, () -> {
-            final QueryTable result = tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), gbsColumns);
+            final QueryTable result = tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), groupByList);
             spec.walk(new AggAllByCopyAttributes(this, result));
             return result;
         });
@@ -619,7 +617,7 @@ public class QueryTable extends BaseTable {
     @Override
     public Table aggBy(
             final Collection<? extends Aggregation> aggregations,
-            final Collection<? extends Selectable> groupByColumns) {
+            final Collection<? extends ColumnName> groupByColumns) {
         if (aggregations.isEmpty()) {
             throw new IllegalArgumentException(
                     "aggBy must have at least one aggregation, none specified. groupByColumns="
@@ -627,10 +625,9 @@ public class QueryTable extends BaseTable {
         }
 
         final List<? extends Aggregation> optimized = AggregationOptimizer.of(aggregations);
-        final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
-        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, gbsColumns);
+        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, groupByColumns);
         final Table aggregationTable =
-                memoizeResult(aggKey, () -> aggNoMemo(AggregationProcessor.forAggregation(optimized), gbsColumns));
+                memoizeResult(aggKey, () -> aggNoMemo(AggregationProcessor.forAggregation(optimized), groupByColumns));
 
         final List<ColumnName> optimizedOrder = AggregationPairs.outputsOf(optimized).collect(Collectors.toList());
         final List<ColumnName> userOrder = AggregationPairs.outputsOf(aggregations).collect(Collectors.toList());
@@ -640,22 +637,21 @@ public class QueryTable extends BaseTable {
 
         // We need to re-order the result columns to match the user-provided order
         final List<ColumnName> resultOrder =
-                Stream.concat(groupByColumns.stream().map(Selectable::newColumn), userOrder.stream())
-                        .collect(Collectors.toList());
+                Stream.concat(groupByColumns.stream(), userOrder.stream()).collect(Collectors.toList());
         return aggregationTable.view(resultOrder);
     }
 
     @Override
-    public Table countBy(String countColumnName, Selectable... groupByColumns) {
+    public Table countBy(String countColumnName, ColumnName... groupByColumns) {
         return QueryPerformanceRecorder.withNugget(
                 "countBy(" + countColumnName + "," + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
                 () -> aggBy(Aggregation.AggCount(countColumnName), Arrays.asList(groupByColumns)));
     }
 
     private QueryTable aggNoMemo(@NotNull final AggregationContextFactory aggregationContextFactory,
-            @NotNull final SelectColumn... groupByColumns) {
+            @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final String description = "aggregation(" + aggregationContextFactory
-                + ", " + Arrays.toString(groupByColumns) + ")";
+                + ", " + groupByColumns + ")";
         return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),
                 () -> ChunkedOperatorAggregationHelper.aggregation(aggregationContextFactory, this, groupByColumns));
     }
@@ -2858,13 +2854,18 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("selectDistinct(" + groupByColumns + ")",
+    public Table selectDistinct(Collection<? extends Selectable> columns) {
+        return QueryPerformanceRecorder.withNugget("selectDistinct(" + columns + ")",
                 sizeForInstrumentation(),
                 () -> {
-                    final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
-                    final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(Collections.emptyList(), gbsColumns);
-                    return memoizeResult(aggKey, () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), gbsColumns));
+                    final Collection<ColumnName> columnNames = ColumnName.cast(columns).orElse(null);
+                    if (columnNames == null) {
+                        return view(columns).selectDistinct();
+                    }
+                    final MemoizedOperationKey aggKey =
+                            MemoizedOperationKey.aggBy(Collections.emptyList(), columnNames);
+                    return memoizeResult(aggKey,
+                            () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), columnNames));
                 });
     }
 
@@ -3018,7 +3019,7 @@ public class QueryTable extends BaseTable {
     @Override
     public Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<? extends UpdateByOperation> ops,
-            @NotNull final Collection<? extends Selectable> byColumns) {
+            @NotNull final Collection<? extends ColumnName> byColumns) {
         return QueryPerformanceRecorder.withNugget("updateBy()", sizeForInstrumentation(),
                 () -> UpdateBy.updateBy(this, ops, byColumns, control));
     }

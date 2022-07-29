@@ -2694,10 +2694,10 @@ public class PlottingConvenience {
     }
 
     /**
-    * See {@link io.deephaven.plot.Figure#treeMapPlot} 
+    * See {@link io.deephaven.plot.Figure#treemapPlot} 
     **/
-    public static  io.deephaven.plot.Figure treeMapPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String values, java.lang.String ids, java.lang.String parents, java.lang.String labels, java.lang.String text, java.lang.String color, java.lang.String hoverText ) {
-        return FigureFactory.figure().treeMapPlot( seriesName, t, values, ids, parents, labels, text, color, hoverText );
+    public static  io.deephaven.plot.Figure treemapPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String ids, java.lang.String parents, java.lang.String values, java.lang.String labels, java.lang.String hoverTexts, java.lang.String colors ) {
+        return FigureFactory.figure().treemapPlot( seriesName, t, ids, parents, values, labels, hoverTexts, colors );
     }
 
 }

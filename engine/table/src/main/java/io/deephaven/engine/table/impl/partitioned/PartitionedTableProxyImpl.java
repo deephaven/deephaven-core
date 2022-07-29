@@ -475,6 +475,16 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
+    public PartitionedTable.Proxy lazyUpdate(String... columns) {
+        return basicTransform(ct -> ct.lazyUpdate(columns));
+    }
+
+    @Override
+    public PartitionedTable.Proxy lazyUpdate(Collection<? extends Selectable> columns) {
+        return basicTransform(ct -> ct.lazyUpdate(columns));
+    }
+
+    @Override
     public PartitionedTable.Proxy select(String... columns) {
         return basicTransform(ct -> ct.select(columns));
     }
@@ -609,7 +619,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy groupBy(Collection<? extends Selectable> groupByColumns) {
+    public PartitionedTable.Proxy groupBy(Collection<? extends ColumnName> groupByColumns) {
         return basicTransform(ct -> ct.groupBy(groupByColumns));
     }
 
@@ -624,7 +634,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public PartitionedTable.Proxy aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.aggAllBy(spec, groupByColumns));
     }
 
@@ -644,7 +654,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
+    public PartitionedTable.Proxy aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregation, groupByColumns));
     }
 
@@ -660,7 +670,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations,
-            Collection<? extends Selectable> groupByColumns) {
+            Collection<? extends ColumnName> groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregations, groupByColumns));
     }
 
@@ -686,7 +696,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy updateBy(Collection<? extends UpdateByOperation> operations,
-            Collection<? extends Selectable> byColumns) {
+            Collection<? extends ColumnName> byColumns) {
         return basicTransform(ct -> ct.updateBy(operations, byColumns));
     }
 
@@ -698,7 +708,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
-            Collection<? extends Selectable> byColumns) {
+            Collection<? extends ColumnName> byColumns) {
         return basicTransform(ct -> ct.updateBy(control, operations, byColumns));
     }
 
@@ -708,18 +718,18 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy selectDistinct(String... groupByColumns) {
-        return basicTransform(ct -> ct.selectDistinct(groupByColumns));
+    public PartitionedTable.Proxy selectDistinct(String... columns) {
+        return basicTransform(ct -> ct.selectDistinct(columns));
     }
 
     @Override
-    public PartitionedTable.Proxy selectDistinct(Selectable... groupByColumns) {
-        return basicTransform(ct -> ct.selectDistinct(groupByColumns));
+    public PartitionedTable.Proxy selectDistinct(Selectable... columns) {
+        return basicTransform(ct -> ct.selectDistinct(columns));
     }
 
     @Override
-    public PartitionedTable.Proxy selectDistinct(Collection<? extends Selectable> groupByColumns) {
-        return basicTransform(ct -> ct.selectDistinct(groupByColumns));
+    public PartitionedTable.Proxy selectDistinct(Collection<? extends Selectable> columns) {
+        return basicTransform(ct -> ct.selectDistinct(columns));
     }
 
     @Override
@@ -733,7 +743,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy countBy(String countColumnName, Selectable... groupByColumns) {
+    public PartitionedTable.Proxy countBy(String countColumnName, ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.countBy(countColumnName, groupByColumns));
     }
 
@@ -753,7 +763,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy firstBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy firstBy(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.firstBy(groupByColumns));
     }
 
@@ -773,7 +783,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy lastBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy lastBy(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.lastBy(groupByColumns));
     }
 
@@ -793,7 +803,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy minBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy minBy(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.minBy(groupByColumns));
     }
 
@@ -813,7 +823,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy maxBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy maxBy(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.maxBy(groupByColumns));
     }
 
@@ -833,7 +843,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy sumBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy sumBy(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.sumBy(groupByColumns));
     }
 
@@ -853,7 +863,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy avgBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy avgBy(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.avgBy(groupByColumns));
     }
 
@@ -873,7 +883,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy medianBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy medianBy(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.medianBy(groupByColumns));
     }
 
@@ -893,7 +903,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy stdBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy stdBy(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.stdBy(groupByColumns));
     }
 
@@ -913,7 +923,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy varBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy varBy(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.varBy(groupByColumns));
     }
 
@@ -933,7 +943,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy absSumBy(Selectable... groupByColumns) {
+    public PartitionedTable.Proxy absSumBy(ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.absSumBy(groupByColumns));
     }
 
@@ -953,7 +963,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy wsumBy(String weightColumn, Selectable... groupByColumns) {
+    public PartitionedTable.Proxy wsumBy(String weightColumn, ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.wsumBy(weightColumn, groupByColumns));
     }
 
@@ -973,7 +983,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy wavgBy(String weightColumn, Selectable... groupByColumns) {
+    public PartitionedTable.Proxy wavgBy(String weightColumn, ColumnName... groupByColumns) {
         return basicTransform(ct -> ct.wavgBy(weightColumn, groupByColumns));
     }
 

@@ -83,7 +83,7 @@ public class QueryTableAggregationTest {
     private static AggregationContextFactory makeGroupByACF(
             @NotNull final Table table, @NotNull final String... groupByColumns) {
         return AggregationProcessor.forAggregation(List.of(
-                AggregateAllByTable.singleAggregation(AggSpec.group(), Selectable.from(groupByColumns),
+                AggregateAllByTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
                         table.getDefinition().getColumnStream().map(ColumnDefinition::getName)
                                 .map(ColumnName::of).collect(Collectors.toList()))
                         .orElseThrow()));
@@ -121,17 +121,14 @@ public class QueryTableAggregationTest {
         final Table actualKeys;
         final Table actual;
         {
-            final SelectColumn[] keySelectColumns = SelectColumnFactory.getExpressions(keyColumns);
-            final String[] keyNames =
-                    Arrays.stream(keySelectColumns).map(SelectColumn::getName).distinct().toArray(String[]::new);
             final Table aggregatedInput = ChunkedOperatorAggregationHelper.aggregation(
                     aggregationControl == null ? AggregationControl.DEFAULT : aggregationControl,
                     makeGroupByACF(adjustedInput, keyColumns),
-                    (QueryTable) adjustedInput, keySelectColumns);
-            actualKeys = keyNames.length == 0
+                    (QueryTable) adjustedInput, ColumnName.from(keyColumns));
+            actualKeys = keyColumns.length == 0
                     ? aggregatedInput.dropColumns(aggregatedInput.getDefinition().getColumnNamesArray())
-                    : aggregatedInput.view(keyNames);
-            actual = aggregatedInput.sort(keyNames).ungroup();
+                    : aggregatedInput.view(keyColumns);
+            actual = aggregatedInput.sort(keyColumns).ungroup();
         }
 
         assertTableEquals(expectedKeys, actualKeys);
@@ -197,8 +194,9 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testStaticNameReusingByWithChunks() {
-        individualStaticByTest(emptyTable(10000).update("A=i"), null, "A=Integer.toString(A % 5)", "A=A.hashCode()",
-                "A=A / 2");
+        individualStaticByTest(
+                emptyTable(10000).update("A=i").updateView("A=Integer.toString(A % 5)", "A=A.hashCode()", "A=A / 2"),
+                null, "A");
     }
 
     // endregion Static chunked groupBy() tests
@@ -236,15 +234,12 @@ public class QueryTableAggregationTest {
          */
         @Override
         public final Table get() {
-            final SelectColumn[] keySelectColumns = SelectColumnFactory.getExpressions(columns);
-            final String[] keyNames =
-                    Arrays.stream(keySelectColumns).map(SelectColumn::getName).distinct().toArray(String[]::new);
             if (firstTime.compareAndSet(true, false)) {
                 return ChunkedOperatorAggregationHelper
-                        .aggregation(control, acf, input, keySelectColumns).sort(keyNames);
+                        .aggregation(control, acf, input, ColumnName.from(columns)).sort(columns);
             }
             return ChunkedOperatorAggregationHelper
-                    .aggregation(control, acf, (QueryTable) input.silent(), keySelectColumns).sort(keyNames);
+                    .aggregation(control, acf, (QueryTable) input.silent(), ColumnName.from(columns)).sort(columns);
         }
     }
 
@@ -316,9 +311,12 @@ public class QueryTableAggregationTest {
                 incrementalByEvalNugget(merged, "IntCol"),
                 incrementalByEvalNugget(controlSize8, merged, "TimeCol"),
                 incrementalByEvalNugget(controlShiftByProbing, merged, "TimeCol"),
-                incrementalByEvalNugget(controlSize8, merged,
-                        "TimeCol=isNull(TimeCol) ? NULL_LONG : TimeCol.getNanos()"),
-                incrementalByEvalNugget(merged, "TimeCol=isNull(TimeCol) ? NULL_LONG : TimeCol.getNanos()"),
+                incrementalByEvalNugget(controlSize8,
+                        (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : TimeCol.getNanos()"),
+                        "TimeCol"),
+                incrementalByEvalNugget(
+                        (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : TimeCol.getNanos()"),
+                        "TimeCol"),
 
                 incrementalByEvalNugget(controlSize8, merged, "StrCol", "IntCol"),
                 incrementalByEvalNugget(merged, "StrCol", "IntCol"),
@@ -463,14 +461,15 @@ public class QueryTableAggregationTest {
         } catch (Exception e) {
             TestCase.assertEquals("Invalid column name \"i\": \"i\" is a reserved keyword", e.getMessage());
         }
-        TestCase.assertEquals(0, table.groupBy("j=i").size());
-        TestCase.assertEquals(2, table.groupBy("j=i").numColumns());
-        TestCase.assertEquals(int.class, table.groupBy("j=i").getColumnSource("j").getType());
+        TestCase.assertEquals(0, table.updateView("j=i").groupBy("j").size());
+        TestCase.assertEquals(2, table.updateView("j=i").groupBy("j").numColumns());
+        TestCase.assertEquals(int.class, table.updateView("j=i").groupBy("j").getColumnSource("j").getType());
 
         table = newTable(intCol("V", 100));
-        TestCase.assertEquals(1, table.groupBy("j=i").size());
-        TestCase.assertEquals(2, table.groupBy("j=i").numColumns());
-        TestCase.assertEquals(int.class, table.groupBy("j=i").getDefinition().getColumn("j").getDataType());
+        TestCase.assertEquals(1, table.updateView("j=i").groupBy("j").size());
+        TestCase.assertEquals(2, table.updateView("j=i").groupBy("j").numColumns());
+        TestCase.assertEquals(int.class,
+                table.updateView("j=i").groupBy("j").getDefinition().getColumn("j").getDataType());
 
         table = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 2).toTracking(),
                 c("S", "c", "e", "g"), c("I", 2, 4, 6));
@@ -511,13 +510,17 @@ public class QueryTableAggregationTest {
                 c("S", "e", "c", "g"),
                 c("X", 4, 2, 6),
                 c("Y", 1, 2, 3));
-        TestCase.assertEquals(3, table.groupBy("Z=X+Y").size());
-        TestCase.assertEquals(4, table.groupBy("Z=X+Y").numColumns());
-        TestCase.assertEquals(ObjectVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("S").getDataType());
-        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("X").getDataType());
-        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("Y").getDataType());
-        TestCase.assertEquals(int.class, table.groupBy("Z=X+Y").getDefinition().getColumn("Z").getDataType());
-        ObjectVector sValues[] = (ObjectVector[]) table.groupBy("Z=X+Y").getColumn("S").getDirect();
+        TestCase.assertEquals(3, table.updateView("Z=X+Y").groupBy("Z").size());
+        TestCase.assertEquals(4, table.updateView("Z=X+Y").groupBy("Z").numColumns());
+        TestCase.assertEquals(ObjectVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("S").getDataType());
+        TestCase.assertEquals(IntVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("X").getDataType());
+        TestCase.assertEquals(IntVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Y").getDataType());
+        TestCase.assertEquals(int.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Z").getDataType());
+        ObjectVector sValues[] = (ObjectVector[]) table.updateView("Z=X+Y").groupBy("Z").getColumn("S").getDirect();
         TestCase.assertEquals(3, sValues.length);
         TestCase.assertEquals(1, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
@@ -525,83 +528,104 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals("e", sValues[0].get(0));
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[2].get(0));
-        TestCase.assertEquals(Arrays.asList(5, 4, 9), Arrays.asList(table.groupBy("Z=X+Y").getColumn("Z").get(0, 3)));
+        TestCase.assertEquals(Arrays.asList(5, 4, 9),
+                Arrays.asList(table.updateView("Z=X+Y").groupBy("Z").getColumn("Z").get(0, 3)));
 
         table = TstUtils.testRefreshingTable(
                 c("S", "e", "c", "g"),
                 c("X", 4, 2, 6),
                 c("Y", 4, 2, 2));
-        TestCase.assertEquals(2, table.groupBy("Z=X+Y").size());
-        TestCase.assertEquals(4, table.groupBy("Z=X+Y").numColumns());
-        TestCase.assertEquals(ObjectVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("S").getDataType());
-        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("X").getDataType());
-        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("Y").getDataType());
-        TestCase.assertEquals(int.class, table.groupBy("Z=X+Y").getDefinition().getColumn("Z").getDataType());
-        sValues = (ObjectVector[]) table.groupBy("Z=X+Y").getColumn("S").getDirect();
+        TestCase.assertEquals(2, table.updateView("Z=X+Y").groupBy("Z").size());
+        TestCase.assertEquals(4, table.updateView("Z=X+Y").groupBy("Z").numColumns());
+        TestCase.assertEquals(ObjectVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("S").getDataType());
+        TestCase.assertEquals(IntVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("X").getDataType());
+        TestCase.assertEquals(IntVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Y").getDataType());
+        TestCase.assertEquals(int.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Z").getDataType());
+        sValues = (ObjectVector[]) table.updateView("Z=X+Y").groupBy("Z").getColumn("S").getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
         TestCase.assertEquals("e", sValues[0].get(0));
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
-        TestCase.assertEquals(Arrays.asList(8, 4), Arrays.asList(table.groupBy("Z=X+Y").getColumn("Z").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(8, 4),
+                Arrays.asList(table.updateView("Z=X+Y").groupBy("Z").getColumn("Z").get(0, 2)));
 
         table = TstUtils.testRefreshingTable(
                 c("S", "e", "c", "g"),
                 TstUtils.cG("X", 4, 2, 6),
                 c("Y", 4, 2, 2));
-        TestCase.assertEquals(2, table.groupBy("Z=X+Y").size());
-        TestCase.assertEquals(4, table.groupBy("Z=X+Y").numColumns());
-        TestCase.assertEquals(ObjectVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("S").getDataType());
-        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("X").getDataType());
-        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("Y").getDataType());
-        TestCase.assertEquals(int.class, table.groupBy("Z=X+Y").getDefinition().getColumn("Z").getDataType());
-        sValues = (ObjectVector[]) table.groupBy("Z=X+Y").getColumn("S").getDirect();
+        TestCase.assertEquals(2, table.updateView("Z=X+Y").groupBy("Z").size());
+        TestCase.assertEquals(4, table.updateView("Z=X+Y").groupBy("Z").numColumns());
+        TestCase.assertEquals(ObjectVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("S").getDataType());
+        TestCase.assertEquals(IntVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("X").getDataType());
+        TestCase.assertEquals(IntVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Y").getDataType());
+        TestCase.assertEquals(int.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Z").getDataType());
+        sValues = (ObjectVector[]) table.updateView("Z=X+Y").groupBy("Z").getColumn("S").getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
         TestCase.assertEquals("e", sValues[0].get(0));
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
-        TestCase.assertEquals(Arrays.asList(8, 4), Arrays.asList(table.groupBy("Z=X+Y").getColumn("Z").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(8, 4),
+                Arrays.asList(table.updateView("Z=X+Y").groupBy("Z").getColumn("Z").get(0, 2)));
 
         table = TstUtils.testRefreshingTable(
                 c("S", "e", "c", "g"),
                 c("X", 4, 2, 6),
                 TstUtils.cG("Y", 4, 2, 2));
-        TestCase.assertEquals(2, table.groupBy("Z=X+Y").size());
-        TestCase.assertEquals(4, table.groupBy("Z=X+Y").numColumns());
-        TestCase.assertEquals(ObjectVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("S").getDataType());
-        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("X").getDataType());
-        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("Y").getDataType());
-        TestCase.assertEquals(int.class, table.groupBy("Z=X+Y").getDefinition().getColumn("Z").getDataType());
-        sValues = (ObjectVector[]) table.groupBy("Z=X+Y").getColumn("S").getDirect();
+        TestCase.assertEquals(2, table.updateView("Z=X+Y").groupBy("Z").size());
+        TestCase.assertEquals(4, table.updateView("Z=X+Y").groupBy("Z").numColumns());
+        TestCase.assertEquals(ObjectVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("S").getDataType());
+        TestCase.assertEquals(IntVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("X").getDataType());
+        TestCase.assertEquals(IntVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Y").getDataType());
+        TestCase.assertEquals(int.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Z").getDataType());
+        sValues = (ObjectVector[]) table.updateView("Z=X+Y").groupBy("Z").getColumn("S").getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
         TestCase.assertEquals("e", sValues[0].get(0));
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
-        TestCase.assertEquals(Arrays.asList(8, 4), Arrays.asList(table.groupBy("Z=X+Y").getColumn("Z").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(8, 4),
+                Arrays.asList(table.updateView("Z=X+Y").groupBy("Z").getColumn("Z").get(0, 2)));
 
         table = TstUtils.testRefreshingTable(
                 c("S", "e", "c", "g"),
                 TstUtils.cG("X", 4, 2, 6),
                 TstUtils.cG("Y", 4, 3, 2));
-        TestCase.assertEquals(2, table.groupBy("Z=X+Y").size());
-        TestCase.assertEquals(4, table.groupBy("Z=X+Y").numColumns());
-        TestCase.assertEquals(ObjectVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("S").getDataType());
-        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("X").getDataType());
-        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getDefinition().getColumn("Y").getDataType());
-        TestCase.assertEquals(int.class, table.groupBy("Z=X+Y").getDefinition().getColumn("Z").getDataType());
-        sValues = (ObjectVector[]) table.groupBy("Z=X+Y").getColumn("S").getDirect();
+        TestCase.assertEquals(2, table.updateView("Z=X+Y").groupBy("Z").size());
+        TestCase.assertEquals(4, table.updateView("Z=X+Y").groupBy("Z").numColumns());
+        TestCase.assertEquals(ObjectVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("S").getDataType());
+        TestCase.assertEquals(IntVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("X").getDataType());
+        TestCase.assertEquals(IntVector.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Y").getDataType());
+        TestCase.assertEquals(int.class,
+                table.updateView("Z=X+Y").groupBy("Z").getDefinition().getColumn("Z").getDataType());
+        sValues = (ObjectVector[]) table.updateView("Z=X+Y").groupBy("Z").getColumn("S").getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
         TestCase.assertEquals("e", sValues[0].get(0));
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
-        TestCase.assertEquals(Arrays.asList(8, 5), Arrays.asList(table.groupBy("Z=X+Y").getColumn("Z").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(8, 5),
+                Arrays.asList(table.updateView("Z=X+Y").groupBy("Z").getColumn("Z").get(0, 2)));
 
         table = TstUtils.testRefreshingTable(
                 c("S", "c", null, "g"),
@@ -1194,13 +1218,13 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(Arrays.asList(.5, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
         TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
 
-        result = table.lastBy("Sym", "Sym1=Sym");
+        result = table.updateView("Sym1=Sym").lastBy("Sym", "Sym1");
         TestCase.assertEquals(result.size(), 2);
         TestCase.assertEquals(Arrays.asList(50, 20), Arrays.asList(result.getColumn("intCol").get(0, 2)));
         TestCase.assertEquals(Arrays.asList(.5, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
         TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
 
-        result = table.lastBy("intCol", "Sym1=Sym");
+        result = table.updateView("Sym1=Sym").lastBy("intCol", "Sym1");
         TestCase.assertEquals(result.size(), 4);
         TestCase.assertEquals(Arrays.asList(10, 20, 30, 50), Arrays.asList(result.getColumn("intCol").get(0, 4)));
         TestCase.assertEquals(Arrays.asList(0.1, 0.2, 0.3, 0.5),
@@ -1213,13 +1237,13 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(Arrays.asList(10, 20), Arrays.asList(result.getColumn("intCol").get(0, 2)));
         TestCase.assertEquals(Arrays.asList(0.1, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
 
-        result = table.firstBy("Sym", "Sym1=Sym");
+        result = table.updateView("Sym1=Sym").firstBy("Sym", "Sym1");
         TestCase.assertEquals(result.size(), 2);
         TestCase.assertEquals(Arrays.asList(10, 20), Arrays.asList(result.getColumn("intCol").get(0, 2)));
         TestCase.assertEquals(Arrays.asList(0.1, .2), Arrays.asList(result.getColumn("doubleCol").get(0, 2)));
         TestCase.assertEquals(Arrays.asList("aa", "bc"), Arrays.asList(result.getColumn("Sym").get(0, 2)));
 
-        result = table.firstBy("intCol", "Sym1=Sym");
+        result = table.updateView("Sym1=Sym").firstBy("intCol", "Sym1");
         TestCase.assertEquals(result.size(), 4);
         TestCase.assertEquals(Arrays.asList(10, 20, 30, 50), Arrays.asList(result.getColumn("intCol").get(0, 4)));
         TestCase.assertEquals(Arrays.asList(0.1, 0.2, 0.3, 0.5),

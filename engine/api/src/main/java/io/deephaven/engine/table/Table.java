@@ -144,7 +144,7 @@ public interface Table extends
      * <li>{@link #groupBy} is unsupported
      * <li>{@link #aggBy} is unsupported if {@link Aggregation#AggGroup(String...)} is used
      * <li>{@link #partitionBy} is unsupported</li>
-     * <li>{@link #rollup(Collection, boolean, Selectable...) rollup()} is unsupported if
+     * <li>{@link #rollup(Collection, boolean, ColumnName...) rollup()} is unsupported if
      * {@code includeConstituents == true}</li>
      * <li>{@link #treeTable(String, String) treeTable()} is unsupported</li>
      * </ol>
@@ -965,7 +965,7 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
-    Table groupBy(Collection<? extends Selectable> groupByColumns);
+    Table groupBy(Collection<? extends ColumnName> groupByColumns);
 
     @Override
     @ConcurrentMethod
@@ -985,7 +985,7 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
-    Table aggAllBy(AggSpec spec, Selectable... groupByColumns);
+    Table aggAllBy(AggSpec spec, ColumnName... groupByColumns);
 
     @Override
     @ConcurrentMethod
@@ -1001,11 +1001,11 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
-    Table aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns);
+    Table aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns);
 
     @Override
     @ConcurrentMethod
-    Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
+    Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns);
 
     @Override
     @ConcurrentMethod
@@ -1030,10 +1030,10 @@ public interface Table extends
      *
      * @param formulaColumn Formula applied to each column
      * @param columnParamName The parameter name used as a placeholder for each column
-     * @param groupByColumns The grouping columns as in {@link Table#groupBy(Collection)}
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy(Collection)}
      */
     @ConcurrentMethod
-    Table applyToAllBy(String formulaColumn, String columnParamName, Collection<? extends Selectable> groupByColumns);
+    Table applyToAllBy(String formulaColumn, String columnParamName, Collection<? extends ColumnName> groupByColumns);
 
     /**
      * Groups data according to groupByColumns and applies formulaColumn to each of columns not altered by the grouping
@@ -1041,10 +1041,10 @@ public interface Table extends
      *
      * @param formulaColumn Formula applied to each column, uses parameter <i>each</i> to refer to each colum it being
      *        applied to
-     * @param groupByColumns The grouping columns as in {@link Table#groupBy(Collection)}
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy(Collection)}
      */
     @ConcurrentMethod
-    Table applyToAllBy(String formulaColumn, Collection<? extends Selectable> groupByColumns);
+    Table applyToAllBy(String formulaColumn, Collection<? extends ColumnName> groupByColumns);
 
     /**
      * Groups data according to groupByColumns and applies formulaColumn to each of columns not altered by the grouping
@@ -1064,7 +1064,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table sumBy(Selectable... groupByColumns);
+    Table sumBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
@@ -1101,7 +1101,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table absSumBy(Selectable... groupByColumns);
+    Table absSumBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
@@ -1140,7 +1140,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table avgBy(Selectable... groupByColumns);
+    Table avgBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
@@ -1180,7 +1180,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table wavgBy(String weightColumn, Selectable... groupByColumns);
+    Table wavgBy(String weightColumn, ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the weighted average using
@@ -1228,7 +1228,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table wsumBy(String weightColumn, Selectable... groupByColumns);
+    Table wsumBy(String weightColumn, ColumnName... groupByColumns);
 
     /**
      * Computes the weighted sum for all rows in the table using weightColumn for the rest of the fields
@@ -1275,7 +1275,7 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
-    Table stdBy(Selectable... groupByColumns);
+    Table stdBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
@@ -1314,7 +1314,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table varBy(Selectable... groupByColumns);
+    Table varBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
@@ -1352,7 +1352,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table lastBy(Selectable... groupByColumns);
+    Table lastBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
@@ -1387,7 +1387,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table firstBy(Selectable... groupByColumns);
+    Table firstBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
@@ -1423,7 +1423,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table minBy(Selectable... groupByColumns);
+    Table minBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
@@ -1459,7 +1459,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table maxBy(Selectable... groupByColumns);
+    Table maxBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
@@ -1496,7 +1496,7 @@ public interface Table extends
      */
     @Override
     @ConcurrentMethod
-    Table medianBy(Selectable... groupByColumns);
+    Table medianBy(ColumnName... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
@@ -1528,7 +1528,7 @@ public interface Table extends
     Table medianBy();
 
     @ConcurrentMethod
-    Table countBy(String countColumnName, Selectable... groupByColumns);
+    Table countBy(String countColumnName, ColumnName... groupByColumns);
 
     @ConcurrentMethod
     Table countBy(String countColumnName, String... groupByColumns);
@@ -1614,11 +1614,11 @@ public interface Table extends
      * replaced with null on each level.
      *
      * @param aggregations The aggregations to perform
-     * @param columns the columns to group by
+     * @param groupByColumns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1629,12 +1629,12 @@ public interface Table extends
      *
      * @param aggregations The aggregations to perform
      * @param includeConstituents set to true to include the constituent rows at the leaf level
-     * @param columns the columns to group by
+     * @param groupByColumns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
     Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Collection<String> columns);
+            Collection<String> groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1644,11 +1644,11 @@ public interface Table extends
      * replaced with null on each level.
      *
      * @param aggregations The aggregations to perform
-     * @param columns the columns to group by
+     * @param groupByColumns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, String... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1658,12 +1658,12 @@ public interface Table extends
      * replaced with null on each level.
      *
      * @param aggregations The aggregations to perform
-     * @param columns the columns to group by
+     * @param groupByColumns the columns to group by
      * @param includeConstituents set to true to include the constituent rows at the leaf level
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, String... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, String... groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1673,11 +1673,11 @@ public interface Table extends
      * replaced with null on each level.
      *
      * @param aggregations The aggregations to perform
-     * @param columns the columns to group by
+     * @param groupByColumns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, Selectable... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, ColumnName... groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1703,7 +1703,8 @@ public interface Table extends
     Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents);
 
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, Selectable... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+            ColumnName... groupByColumns);
 
     /**
      * Create a hierarchical tree table.
@@ -1804,7 +1805,7 @@ public interface Table extends
      */
     @ConcurrentMethod
     Table updateBy(@NotNull Collection<? extends UpdateByOperation> operations,
-            @NotNull Collection<? extends Selectable> byColumns);
+            @NotNull Collection<? extends ColumnName> byColumns);
 
     /**
      * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
@@ -1821,7 +1822,7 @@ public interface Table extends
     @ConcurrentMethod
     Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<? extends UpdateByOperation> operations,
-            @NotNull final Collection<? extends Selectable> byColumns);
+            @NotNull final Collection<? extends ColumnName> byColumns);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Sort Operations
