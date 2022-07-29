@@ -475,6 +475,16 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
+    public PartitionedTable.Proxy lazyUpdate(String... columns) {
+        return basicTransform(ct -> ct.lazyUpdate(columns));
+    }
+
+    @Override
+    public PartitionedTable.Proxy lazyUpdate(Collection<? extends Selectable> columns) {
+        return basicTransform(ct -> ct.lazyUpdate(columns));
+    }
+
+    @Override
     public PartitionedTable.Proxy select(String... columns) {
         return basicTransform(ct -> ct.select(columns));
     }

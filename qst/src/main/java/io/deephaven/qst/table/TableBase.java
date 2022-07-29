@@ -363,6 +363,20 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final LazyUpdateTable lazyUpdate(String... columns) {
+        final LazyUpdateTable.Builder builder = LazyUpdateTable.builder().parent(this);
+        for (String column : columns) {
+            builder.addColumns(Selectable.parse(column));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final LazyUpdateTable lazyUpdate(Collection<? extends Selectable> columns) {
+        return LazyUpdateTable.builder().parent(this).addAllColumns(columns).build();
+    }
+
+    @Override
     public final SelectTable select(String... columns) {
         final SelectTable.Builder builder = SelectTable.builder().parent(this);
         for (String column : columns) {

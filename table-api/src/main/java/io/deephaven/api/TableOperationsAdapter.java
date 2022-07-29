@@ -139,6 +139,16 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
+    public final TOPS_1 lazyUpdate(String... columns) {
+        return adapt(delegate.lazyUpdate(columns));
+    }
+
+    @Override
+    public final TOPS_1 lazyUpdate(Collection<? extends Selectable> columns) {
+        return adapt(delegate.lazyUpdate(columns));
+    }
+
+    @Override
     public final TOPS_1 select(String... columns) {
         return adapt(delegate.select(columns));
     }

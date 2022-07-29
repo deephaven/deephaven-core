@@ -166,6 +166,12 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    TOPS lazyUpdate(String... columns);
+
+    TOPS lazyUpdate(Collection<? extends Selectable> columns);
+
+    // -------------------------------------------------------------------------------------------
+
     TOPS select(String... columns);
 
     TOPS select(Collection<? extends Selectable> columns);
