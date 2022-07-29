@@ -141,7 +141,7 @@ public class LayoutHintBuilder {
             }
             if (color != null) {
                 sb.append("::color:#")
-                    .append(Integer.toHexString(color.javaColor().getRGB()).substring(2));
+                        .append(Integer.toHexString(color.javaColor().getRGB()).substring(2));
             }
             return sb.toString();
         }
