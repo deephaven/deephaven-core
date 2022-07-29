@@ -161,8 +161,7 @@ public class LayoutHintBuilder {
         }
     }
 
-    private LayoutHintBuilder() {
-    }
+    private LayoutHintBuilder() {}
 
     // region Builder Methods
 
@@ -366,9 +365,9 @@ public class LayoutHintBuilder {
     /**
      * Create a named group of columns in the UI
      *
-     * @param name     the column group name. Must be a valid Deephaven column name
+     * @param name the column group name. Must be a valid Deephaven column name
      * @param children the columns and other groups belonging to this group
-     * @param color    the background color for the group in the UI
+     * @param color the background color for the group in the UI
      * @return this LayoutHintBuilder
      */
     @ScriptApi
@@ -438,7 +437,7 @@ public class LayoutHintBuilder {
      * Set the default initial number of rows to fetch for columns that have been marked as
      * {@link LayoutHintBuilder#autoFilter(Collection) AutoFilter} columns.
      *
-     * @param col  the column to set the fetch size for
+     * @param col the column to set the fetch size for
      * @param size the number of rows to fetch initially
      * @return this LayoutHintBuilder
      */
@@ -577,7 +576,7 @@ public class LayoutHintBuilder {
 
         if (autoFilterCols != null && !autoFilterCols.isEmpty()) {
             sb.append("autofilter=").append(
-                            StringUtils.joinStrings(autoFilterCols.values().stream().map(AutoFilterData::serialize), ","))
+                    StringUtils.joinStrings(autoFilterCols.values().stream().map(AutoFilterData::serialize), ","))
                     .append(';');
         }
 
