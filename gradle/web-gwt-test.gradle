@@ -21,7 +21,6 @@ task 'gwtTest', type: Test, {
                                'dhTestServer': testServer
         ]
         t.include '**/*TestSuite.class'
-//        t.logging.level = 'INFO'
         t.useJUnit()
         t.maxHeapSize = '2G'
         t.scanForTestClasses = false
