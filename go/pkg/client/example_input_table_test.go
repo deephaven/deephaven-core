@@ -81,17 +81,28 @@ func Example_inputTable() {
 		return
 	}
 
-	// Now, we take a snapshot of the outputTable to see what data it currently contains.
-	// We should see the new rows we added, filtered by the condition we specified when creating outputTable.
-	outputRec, err := outputTable.Snapshot(ctx)
-	if err != nil {
-		fmt.Println("error when snapshotting table", err.Error())
-		return
-	}
-	defer outputRec.Release()
+	for {
+		// Now, we take a snapshot of the outputTable to see what data it currently contains.
+		// We should see the new rows we added, filtered by the condition we specified when creating outputTable.
+		// Note that we have to snapshot the table in a loop, because the new rows might not be immediately available!
+		outputRec, err := outputTable.Snapshot(ctx)
+		if err != nil {
+			fmt.Println("error when snapshotting table", err.Error())
+			return
+		}
 
-	fmt.Println("Got the output table!")
-	fmt.Println(outputRec)
+		if outputRec.NumRows() == 0 {
+			// The new rows we added haven't propogated to the output table yet.
+			// We just discard this record and snapshot again.
+			outputRec.Release()
+			continue
+		}
+
+		fmt.Println("Got the output table!")
+		fmt.Println(outputRec)
+		outputRec.Release()
+		break
+	}
 
 	// Output:
 	// Got the output table!
