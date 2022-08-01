@@ -3,6 +3,7 @@ package client_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/deephaven/deephaven-core/go/internal/test_tools"
@@ -81,17 +82,41 @@ func Example_inputTable() {
 		return
 	}
 
-	// Now, we take a snapshot of the outputTable to see what data it currently contains.
-	// We should see the new rows we added, filtered by the condition we specified when creating outputTable.
-	outputRec, err := outputTable.Snapshot(ctx)
-	if err != nil {
-		fmt.Println("error when snapshotting table", err.Error())
-		return
-	}
-	defer outputRec.Release()
+	// Changes made to an input table may not propogate to other tables immediately.
+	// Thus, we need to check the output in a loop to see if our output table has updated.
+	// In a future version of the API, streaming table updates will make this kind of check unnecessary.
+	timeout := time.After(time.Second * 5)
+	for {
+		// If this loop is still running after five seconds,
+		// it will terminate because of this timer.
+		select {
+		case <-timeout:
+			fmt.Println("the output table did not update in time")
+			return
+		default:
+		}
 
-	fmt.Println("Got the output table!")
-	fmt.Println(outputRec)
+		// Now, we take a snapshot of the outputTable to see what data it currently contains.
+		// We should see the new rows we added, filtered by the condition we specified when creating outputTable.
+		// However, we might just see an empty table if the new rows haven't been processed yet.
+		outputRec, err := outputTable.Snapshot(ctx)
+		if err != nil {
+			fmt.Println("error when snapshotting table", err.Error())
+			return
+		}
+
+		if outputRec.NumRows() == 0 {
+			// The new rows we added haven't propogated to the output table yet.
+			// We just discard this record and snapshot again.
+			outputRec.Release()
+			continue
+		}
+
+		fmt.Println("Got the output table!")
+		fmt.Println(outputRec)
+		outputRec.Release()
+		break
+	}
 
 	// Output:
 	// Got the output table!
