@@ -47,7 +47,7 @@ dependencies {
 
     implementation project(':plugin')
     implementation depCommonsLang3
-    Classpaths.inheritCommonsText(project)
+    Classpaths.inheritCommonsText(project, 'implementation')
 
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')

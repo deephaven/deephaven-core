@@ -6,7 +6,7 @@ plugins {
 
 apply from: "$rootDir/gradle/web-common.gradle"
 
-Classpaths.inheritCommonsText(project)
+Classpaths.inheritCommonsText(project, 'implementation')
 dependencies {
 
     implementation project(':open-api-lang-parser')

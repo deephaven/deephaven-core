@@ -171,7 +171,7 @@ class Classpaths {
         addDependency config, ELEMENTAL_GROUP, name, ELEMENTAL_VERSION
     }
 
-    static void inheritCommonsText(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+    static void inheritCommonsText(Project p, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency config, COMMONS_GROUP, 'commons-text', "1.6", {
             // commons-text depends on commons-lang3; sadly, our version of lang3 is so old,

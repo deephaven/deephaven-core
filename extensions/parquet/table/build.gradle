@@ -26,7 +26,7 @@ dependencies {
     implementation project(':Configuration')
     implementation depCommonsLang3
 
-    Classpaths.inheritCommonsText(project)
+    Classpaths.inheritCommonsText(project, 'implementation')
 
     Classpaths.inheritJacksonPlatform(project)
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'

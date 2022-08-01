@@ -10,7 +10,7 @@ configurations {
 dependencies {
     implementation project(':Util')
     implementation project(':log-factory')
-    Classpaths.inheritCommonsText(project)
+    Classpaths.inheritCommonsText(project, 'implementation')
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
