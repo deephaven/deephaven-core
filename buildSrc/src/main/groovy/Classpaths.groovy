@@ -153,7 +153,7 @@ class Classpaths {
         addDependency config, JAVA_PARSER_GROUP, JAVA_PARSER_NAME, JAVA_PARSER_VERSION
     }
 
-    static void inheritJavaxAnnotations(Project p, String configName = JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME) {
+    static void inheritJavaxAnnotations(Project p, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency config, JAVAX_ANNOTATIONS_GROUP, JAVAX_ANNOTATIONS_NAME, JAVAX_ANNOTATIONS_VERSION
     }
