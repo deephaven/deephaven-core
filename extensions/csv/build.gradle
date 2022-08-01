@@ -10,8 +10,9 @@ dependencies {
     api 'io.deephaven:deephaven-csv:0.7.0'
     runtimeOnly 'io.deephaven:deephaven-csv-fast-double-parser:0.7.0'
 
-    implementation project(':engine-table'),
-            project(':engine-base')
+    implementation project(':engine-table')
+    implementation project(':engine-base')
+    implementation depTrove3
 
     Classpaths.inheritImmutables(project)
 
@@ -21,7 +22,7 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'engine-table'),
             TestTools.projectDependency(project, 'engine-base')
 
-    Classpaths.inheritJUnitClassic(project)
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

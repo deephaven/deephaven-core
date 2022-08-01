@@ -6,30 +6,30 @@ plugins {
 evaluationDependsOn Docker.registryProject('python')
 
 configurations {
-    compile.extendsFrom fishConfig, jdom
-    testCompile.extendsFrom fishBaseTest
+    implementation.extendsFrom fishConfig, jdom
+    testImplementation.extendsFrom fishBaseTest
     combinedJavadoc
 }
 
 dependencies {
-    compile project(':engine-table'),
-            project(':Plot'),
-            project(':extensions-csv'),
-            project(':extensions-kafka'),
-            project(':extensions-parquet-table')
+    implementation project(':engine-table')
+    implementation project(':Plot')
+    implementation project(':extensions-csv')
+    implementation project(':extensions-kafka')
+    implementation project(':extensions-parquet-table')
 
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
 
-    runtime project(path: ':configs'),
-            project(path: ':test-configs'),
-            project(':extensions-kafka')
+    runtimeOnly project(path: ':configs')
+    runtimeOnly project(path: ':test-configs')
+    runtimeOnly project(':extensions-kafka')
 
     runtimeOnly project(':log-to-slf4j')
     Classpaths.inheritLogbackClassic(project)
 
-    testRuntime project(path: ':configs'),
-            project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
 
     combinedJavadoc project(path: ':combined-javadoc', targetConfiguration: 'combinedJavadoc')
 }

@@ -3,13 +3,14 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom fishUtil, fishData
-    testCompile.extendsFrom fishDataTest
+    implementation.extendsFrom fishUtil, fishData
+    testImplementation.extendsFrom fishDataTest
 }
 
 dependencies {
-    compile project(':Util')
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    implementation project(':Util')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
 
     runtimeOnly project(path: ':configs')
 

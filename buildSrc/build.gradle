@@ -17,25 +17,25 @@ repositories {
 }
 
 dependencies {
-    compile('de.esoco.gwt:gwt-gradle-plugin:1.1.1') {
+    implementation('de.esoco.gwt:gwt-gradle-plugin:1.1.1') {
         exclude group: 'org.codehaus.groovy'
         because('needed for GwtTools')
     }
 
-    compile('com.bmuschko:gradle-docker-plugin:7.1.0') {
+    implementation('com.bmuschko:gradle-docker-plugin:7.1.0') {
         because('needed by plugin com.bmuschko.docker-remote-api')
     }
 
-    compile ('com.avast.gradle:gradle-docker-compose-plugin:0.14.9') {
+    implementation('com.avast.gradle:gradle-docker-compose-plugin:0.14.9') {
         because('needed by plugin com.avast.gradle.docker-compose')
     }
 
-    compile('com.diffplug.spotless:spotless-plugin-gradle:5.14.2') {
+    implementation('com.diffplug.spotless:spotless-plugin-gradle:5.14.2') {
         because('needed by plugin java-coding-conventions')
     }
 
     // TODO(deephaven-core#1997): Remove license-gradle-plugin
-    compile('gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0') {
+    implementation('gradle.plugin.com.hierynomus.gradle.plugins:license-gradle-plugin:0.16.1') {
         because('needed by plugin java-header-conventions')
     }
 }

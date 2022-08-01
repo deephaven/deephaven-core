@@ -4,5 +4,5 @@ plugins {
 }
 
 dependencies {
-    Classpaths.inheritJUnitClassic(project)
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }

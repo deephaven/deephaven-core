@@ -3,8 +3,13 @@ plugins {
 }
 
 dependencies {
-    compile project(':Base'), project(':SevenZip'), depCommonsCodec
-    testCompile project(path: ':Base', configuration: 'tests')
+    implementation project(':Base')
+    implementation project(':SevenZip')
+    implementation depCommonsCodec
+    implementation depCommonsCompress
+    testImplementation project(path: ':Base', configuration: 'tests')
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    Classpaths.inheritJMock(project, 'testImplementation')
 }
 
 sourceSets {
@@ -27,7 +32,7 @@ task jarTests(type: Jar, dependsOn: testClasses) {
 }
 configurations {
     tests {
-        extendsFrom testRuntime
+
     }
 }
 artifacts {

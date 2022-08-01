@@ -10,6 +10,12 @@ dependencies {
     implementation project(':extensions-jdbc')
     implementation project(':Util');
     implementation project(':Integrations')
+    implementation project(':FishUtil')
+    implementation depCommonsLang3
+    Classpaths.inheritCommonsText(project, 'implementation')
+
+    Classpaths.inheritJavaParser(project, 'implementation')
+    implementation project(':open-api-lang-parser')
 
     api(project(':java-client-barrage-dagger')) {
         because 'downstream dagger compile, see deephaven-core#1722'
@@ -18,7 +24,9 @@ dependencies {
 
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':open-api-lang-tools')
-    implementation project(':log-factory')
+    api(project(':log-factory')) {
+        because 'downstream dagger compile, see deephaven-core#1722'
+    }
     Classpaths.inheritSlf4j(project, 'jul-to-slf4j', 'implementation')
     api(project(':application-mode')) {
         because 'downstream dagger compile, see deephaven-core#1722'

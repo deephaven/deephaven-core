@@ -9,10 +9,12 @@ dependencies {
     api project(':ParquetHadoop')
 
     implementation project(':extensions-parquet-compression')
-
+    implementation project(':Base')
     implementation project(':Util')
+    implementation depCommonsIo
 
-    Classpaths.inheritJUnitClassic(project)
+    compileOnly depAnnotations
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
 
 spotless {

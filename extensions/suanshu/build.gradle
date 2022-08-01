@@ -4,7 +4,7 @@ plugins {
 }
 
 configurations {
-    testCompile.extendsFrom fishBaseTest
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {

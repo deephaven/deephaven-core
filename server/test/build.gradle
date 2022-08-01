@@ -11,12 +11,13 @@ dependencies {
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':extensions-barrage')
     implementation project(':test-configs')
+    implementation depCommonsLang3
 
     Classpaths.inheritArrow(project, 'flight-core', 'implementation')
 
     Classpaths.inheritDagger(project)
 
 //    Classpaths.inheritJUnitPlatform(project, 'api')
-    Classpaths.inheritJUnitClassic(project, false, 'implementation')
+    Classpaths.inheritJUnitClassic(project, 'implementation')
 
 }
