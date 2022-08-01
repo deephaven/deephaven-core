@@ -18,7 +18,7 @@ dependencies {
 }
 
 // non-transitive dependency
-Classpaths.inheritGwt project
+Classpaths.inheritGwt project, 'gwt-user', 'compileOnly'
 
 // upgrade inherited dependencies to become transitive
 Classpaths.inheritJsInterop(project, 'jsinterop-annotations', 'compileOnly')

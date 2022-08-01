@@ -136,7 +136,7 @@ class Classpaths {
         new DefaultExternalModuleDependency(group, name, version)
     }
 
-    static void inheritGwt(Project p, String name = 'gwt-user', String configName = 'compileOnly') {
+    static void inheritGwt(Project p, String name, String configName) {
         Configuration config = p.configurations.getByName(configName)
         if (addDependency(config, GWT_GROUP, name, GWT_VERSION)) {
             // when we add gwt-dev, lets also force asm version, just to be safe.
