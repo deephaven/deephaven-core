@@ -24,7 +24,7 @@ dependencies {
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    Classpaths.inheritJUnitClassic(project)
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
 
 spotless {

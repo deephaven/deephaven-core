@@ -37,7 +37,7 @@ dependencies {
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     testImplementation TestTools.projectDependency(project, 'engine-table')
-    Classpaths.inheritJUnitClassic(project)
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

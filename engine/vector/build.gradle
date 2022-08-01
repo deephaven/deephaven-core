@@ -12,7 +12,7 @@ dependencies {
 
     compileOnly depAnnotations
 
-    Classpaths.inheritJUnitClassic(project)
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
 
 spotless {

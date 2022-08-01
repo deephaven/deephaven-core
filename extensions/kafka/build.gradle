@@ -24,7 +24,7 @@ dependencies {
     Classpaths.inheritImmutables(project)
 
     testImplementation TestTools.projectDependency(project, 'engine-table')
-    Classpaths.inheritJUnitClassic(project)
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

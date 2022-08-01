@@ -14,7 +14,7 @@ dependencies {
     implementation depCommonsIo
 
     compileOnly depAnnotations
-    Classpaths.inheritJUnitClassic(project)
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
 
 spotless {

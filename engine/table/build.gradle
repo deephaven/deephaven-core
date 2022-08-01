@@ -73,7 +73,7 @@ dependencies {
     testImplementation project(':extensions-parquet-table')
     testImplementation project(':Numerics')
 
-    Classpaths.inheritJUnitClassic(project)
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)

@@ -18,6 +18,6 @@ dependencies {
     Classpaths.inheritDagger(project)
 
 //    Classpaths.inheritJUnitPlatform(project, 'api')
-    Classpaths.inheritJUnitClassic(project, false, 'implementation')
+    Classpaths.inheritJUnitClassic(project, 'implementation')
 
 }

@@ -8,7 +8,8 @@ dependencies {
     implementation depCommonsCodec
     implementation depCommonsCompress
     testImplementation project(path: ':Base', configuration: 'tests')
-    Classpaths.inheritJUnitClassic(project, true)
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    Classpaths.inheritJMock(project, 'testImplementation')
 }
 
 sourceSets {

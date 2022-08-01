@@ -62,7 +62,8 @@ dependencies {
     mockrunner 'com.mockrunner:mockrunner-jdbc:1.0.4'
     commonsCsv 'org.apache.commons:commons-csv:1.4'
 
-    Classpaths.inheritJUnitClassic(project, true, 'junit')
+    Classpaths.inheritJUnitClassic(project, 'junit')
+    Classpaths.inheritJMock(project, 'junit')
 
     // Now, all the various fish libs we depend on, with inherited dependencies matching
     // the actual dependencies used in fishlib... if we were strongly coupled, we could skip

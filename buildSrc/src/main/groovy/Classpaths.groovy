@@ -216,13 +216,15 @@ class Classpaths {
         p.getDependencies().add('compileOnly', p.project(':util-immutables'))
     }
 
-    static void inheritJUnitClassic(Project p, boolean includeJMock = false, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {
+    static void inheritJUnitClassic(Project p, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, JUNIT_CLASSIC_GROUP, JUNIT_CLASSIC_NAME, JUNIT_CLASSIC_VERSION)
-        if (includeJMock) {
-            addDependency(config, JMOCK_GROUP, JMOCK_JUNIT_NAME, JMOCK_VERSION)
-            addDependency(config, JMOCK_GROUP, JMOCK_IMPORSTERS_NAME, JMOCK_VERSION)
-        }
+    }
+
+    static void inheritJMock(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, JMOCK_GROUP, JMOCK_JUNIT_NAME, JMOCK_VERSION)
+        addDependency(config, JMOCK_GROUP, JMOCK_IMPORSTERS_NAME, JMOCK_VERSION)
     }
 
     static void inheritJUnitPlatform(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {

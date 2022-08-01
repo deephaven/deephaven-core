@@ -11,7 +11,7 @@ dependencies {
     api project(':engine-time')
     implementation project(':DataStructures')
 
-    Classpaths.inheritJUnitClassic(project)
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
 
 spotless {
