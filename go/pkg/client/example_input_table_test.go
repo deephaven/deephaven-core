@@ -3,6 +3,7 @@ package client_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/deephaven/deephaven-core/go/internal/test_tools"
@@ -81,10 +82,23 @@ func Example_inputTable() {
 		return
 	}
 
+	// Changes made to an input table may not propogate to other tables immediately.
+	// Thus, we need to check the output in a loop to see if our output table has updated.
+	// In a future version of the API, streaming table updates will make this kind of check unnecessary.
+	timeout := time.After(time.Second * 5)
 	for {
+		// If this loop is still running after five seconds,
+		// it will terminate because of this timer.
+		select {
+		case <-timeout:
+			fmt.Println("the output table did not update in time")
+			return
+		default:
+		}
+
 		// Now, we take a snapshot of the outputTable to see what data it currently contains.
 		// We should see the new rows we added, filtered by the condition we specified when creating outputTable.
-		// Note that we have to snapshot the table in a loop, because the new rows might not be immediately available!
+		// However, we might just see an empty table if the new rows haven't been processed yet.
 		outputRec, err := outputTable.Snapshot(ctx)
 		if err != nil {
 			fmt.Println("error when snapshotting table", err.Error())

@@ -54,10 +54,10 @@ func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 	defer req.CloseSend()
 
 	reader, err := flight.NewRecordReader(req)
-	defer reader.Release()
 	if err != nil {
 		return nil, err
 	}
+	defer reader.Release()
 
 	rec1, err := reader.Read()
 	if err != nil {
