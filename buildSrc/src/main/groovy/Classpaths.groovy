@@ -158,7 +158,7 @@ class Classpaths {
         addDependency config, JAVAX_ANNOTATIONS_GROUP, JAVAX_ANNOTATIONS_NAME, JAVAX_ANNOTATIONS_VERSION
     }
 
-    static void inheritJsInterop(Project p, String name, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+    static void inheritJsInterop(Project p, String name, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency config, JS_INTEROP_GROUP, name,
                 // google is annoying, and have different versions released for the same groupId
