@@ -4,14 +4,17 @@
 package io.deephaven.client;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.client.impl.TableHandle;
-import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableCreatorImpl;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.UpdateByTable;
 import org.apache.arrow.flight.FlightStream;
+import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
@@ -49,6 +52,28 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             System.out.println(stream.getSchema());
             while (stream.next()) {
                 System.out.println(stream.getRoot().contentToTSVString());
+            }
+        }
+    }
+
+    @Test
+    public void updateBy() throws Exception {
+        final int size = 100;
+        final UpdateByTable spec = TableSpec.empty(size)
+                .view("I=i")
+                .updateBy(UpdateByOperation.CumSum("I"));
+        try (
+                final TableHandle handle = flightSession.session().batch().execute(spec);
+                final FlightStream stream = flightSession.stream(handle)) {
+            assertThat(stream.next()).isTrue();
+            final VectorSchemaRoot root = stream.getRoot();
+            assertThat(root.getRowCount()).isEqualTo(size);
+            final BigIntVector longVector = (BigIntVector) root.getVector("I");
+            long sum = 0;
+            for (int i = 0; i < size; ++i) {
+                sum += i;
+                final long actual = longVector.get(i);
+                assertThat(actual).isEqualTo(sum);
             }
         }
     }

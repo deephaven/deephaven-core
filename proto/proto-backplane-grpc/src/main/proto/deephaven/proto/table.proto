@@ -73,6 +73,11 @@ service TableService {
   rpc Select(SelectOrUpdateRequest) returns (ExportedTableCreationResponse) {}
 
   /*
+   * Returns the result of an updateBy table operation.
+   */
+  rpc UpdateBy(UpdateByRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
    * Returns a new table definition with the unique tuples of the specified columns
    */
   rpc SelectDistinct(SelectDistinctRequest) returns (ExportedTableCreationResponse) {}
@@ -266,6 +271,170 @@ message SelectOrUpdateRequest {
   Ticket result_id = 1;
   TableReference source_id = 2;
   repeated string column_specs = 3;
+}
+
+message Pair {
+  // Must be non-empty
+  string output_column_name = 1;
+
+  // May be empty
+  string input_column_name = 2;
+}
+
+message MathContext {
+  enum RoundingMode {
+    UP = 0;
+    DOWN = 1;
+    CEILING = 2;
+    FLOOR = 3;
+    HALF_UP = 4;
+    HALF_DOWN = 5;
+    HALF_EVEN = 6;
+    UNNECESSARY = 7;
+  }
+  sint32 precision = 1;
+  RoundingMode rounding_mode = 2;
+}
+
+// Directives for how to handle {@code null} and {@code NaN} values
+enum BadDataBehavior {
+  // Throw an exception and abort processing when bad data is encountered.
+  THROW = 0;
+
+  // Reset the state for the bucket to {@code null} when invalid data is encountered.
+  RESET = 1;
+
+  // Skip and do not process the invalid data without changing state.
+  SKIP = 2;
+
+  // Allow the bad data to poison the result. This is only valid for use with NaN.
+  POISON = 3;
+}
+
+// Create a table with the same rowset as its parent that will perform the specified set of row
+// based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+// capable of processing state between rows. This operation will group the table by the specified set of keys if
+// provided before applying the operation.
+message UpdateByRequest {
+
+  message UpdateByOptions {
+    // If redirections should be used for output sources instead of sparse array sources.
+    // If unset, defaults to server-provided defaults.
+    optional bool use_redirection = 1;
+
+    // The maximum chunk capacity.
+    // If unset, defaults to server-provided defaults.
+    optional int32 chunk_capacity = 2;
+
+    // The maximum fractional memory overhead allowable for sparse redirections as a fraction (e.g. 1.1 is 10%
+    // overhead). Values less than zero disable overhead checking, and result in always using the sparse structure. A
+    // value of zero results in never using the sparse structure.
+    // If unset, defaults to server-provided defaults.
+    optional double max_static_sparse_memory_overhead = 3;
+
+    // The initial hash table size.
+    // If unset, defaults to server-provided defaults.
+    optional int32 initial_hash_table_size = 4;
+
+    // The maximum load factor for the hash table.
+    // If unset, defaults to server-provided defaults.
+    optional double maximum_load_factor = 5;
+
+    // The target load factor for the hash table.
+    // If unset, defaults to server-provided defaults.
+    optional double target_load_factor = 6;
+
+    // The math context.
+    // If unset, defaults to server-provided defaults.
+    MathContext math_context = 7;
+  }
+
+  message UpdateByOperation {
+    message UpdateByColumn {
+      message UpdateBySpec {
+        message UpdateByCumulativeSum {
+
+        }
+
+        message UpdateByCumulativeMin {
+
+        }
+
+        message UpdateByCumulativeMax {
+
+        }
+
+        message UpdateByCumulativeProduct {
+
+        }
+
+        message UpdateByFill {
+
+        }
+
+        message UpdateByEma {
+          message UpdateByEmaOptions {
+            // If unset, defaults to server-provided defaults.
+            optional BadDataBehavior on_null_value = 1;
+
+            // If unset, defaults to server-provided defaults.
+            optional BadDataBehavior on_nan_value = 2;
+
+            // If unset, defaults to server-provided defaults.
+            optional BadDataBehavior on_null_time = 3;
+
+            // If unset, defaults to server-provided defaults.
+            optional BadDataBehavior on_negative_delta_time = 4;
+
+            // If unset, defaults to server-provided defaults.
+            optional BadDataBehavior on_zero_delta_time = 5;
+
+            // If unset, defaults to server-provided defaults.
+            MathContext big_value_context = 6;
+          }
+          message UpdateByEmaTimescale {
+            message UpdateByEmaTicks {
+              sint64 ticks = 1 [jstype=JS_STRING];
+            }
+            message UpdateByEmaTime {
+              string column = 1;
+              sint64 period_nanos = 2 [jstype=JS_STRING];
+            }
+            oneof type {
+              UpdateByEmaTicks ticks = 1;
+              UpdateByEmaTime time = 2;
+            }
+          }
+          // If unset, defaults to server-provided defaults.
+          UpdateByEmaOptions options = 1;
+          UpdateByEmaTimescale timescale = 2;
+        }
+
+        oneof type {
+          UpdateByCumulativeSum sum = 1;
+          UpdateByCumulativeMin min = 2;
+          UpdateByCumulativeMax max = 3;
+          UpdateByCumulativeProduct product = 4;
+          UpdateByFill fill = 5;
+          UpdateByEma ema = 6;
+        }
+      }
+
+      UpdateBySpec spec = 1;
+      repeated Pair pair = 2;
+    }
+    oneof type {
+      UpdateByColumn column = 1;
+    }
+  }
+
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+
+  // If unset, defaults to server-provided defaults.
+  UpdateByOptions options = 3;
+  repeated UpdateByOperation operations = 4;
+  repeated string group_by_columns = 5;
 }
 
 message SelectDistinctRequest {
@@ -635,6 +804,7 @@ message BatchTableRequest {
       FetchPandasTableRequest fetch_pandas_table = 29;
       ApplyPreviewColumnsRequest apply_preview_columns = 30;
       CreateInputTableRequest create_input_table = 31;
+      UpdateByRequest update_by = 32;
     }
   }
 }
