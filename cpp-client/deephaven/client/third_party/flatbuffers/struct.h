@@ -19,6 +19,10 @@
 
 #include "flatbuffers/base.h"
 
+// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
+// with the flatbuffers namespace compiled into Arrow.
+namespace deephaven::third_party::flatbuffers {}
+namespace flatbuffers = deephaven::third_party::flatbuffers;
 namespace deephaven::third_party::flatbuffers {
 
 // "structs" are flat structures that do not have an offset table, thus

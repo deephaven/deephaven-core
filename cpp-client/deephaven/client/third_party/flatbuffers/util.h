@@ -33,6 +33,10 @@
 
 #include <string>
 
+// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
+// with the flatbuffers namespace compiled into Arrow.
+namespace deephaven::third_party::flatbuffers {}
+namespace flatbuffers = deephaven::third_party::flatbuffers;
 namespace deephaven::third_party::flatbuffers {
 
 // @locale-independent functions for ASCII characters set.

@@ -21,6 +21,10 @@
 #include "flatbuffers/util.h"
 #include "flatbuffers/vector.h"
 
+// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
+// with the flatbuffers namespace compiled into Arrow.
+namespace deephaven::third_party::flatbuffers {}
+namespace flatbuffers = deephaven::third_party::flatbuffers;
 namespace deephaven::third_party::flatbuffers {
 
 // Helper class to verify the integrity of a FlatBuffer

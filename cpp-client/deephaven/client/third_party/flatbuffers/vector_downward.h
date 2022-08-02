@@ -21,6 +21,10 @@
 #include "flatbuffers/default_allocator.h"
 #include "flatbuffers/detached_buffer.h"
 
+// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
+// with the flatbuffers namespace compiled into Arrow.
+namespace deephaven::third_party::flatbuffers {}
+namespace flatbuffers = deephaven::third_party::flatbuffers;
 namespace deephaven::third_party::flatbuffers {
 
 // This is a minimal replication of std::vector<uint8_t> functionality,

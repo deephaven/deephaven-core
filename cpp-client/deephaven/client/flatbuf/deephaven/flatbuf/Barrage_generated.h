@@ -97,7 +97,7 @@ inline const char * const *EnumNamesBarrageMessageType() {
 }
 
 inline const char *EnumNameBarrageMessageType(BarrageMessageType e) {
-  if (::deephaven::third_party::flatbuffers::IsOutRange(e, BarrageMessageType_None, BarrageMessageType_BarragePublicationRequest)) return "";
+  if (flatbuffers::IsOutRange(e, BarrageMessageType_None, BarrageMessageType_BarragePublicationRequest)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesBarrageMessageType()[index];
 }
@@ -134,13 +134,13 @@ inline const char * const *EnumNamesColumnConversionMode() {
 }
 
 inline const char *EnumNameColumnConversionMode(ColumnConversionMode e) {
-  if (::deephaven::third_party::flatbuffers::IsOutRange(e, ColumnConversionMode_Stringify, ColumnConversionMode_ThrowError)) return "";
+  if (flatbuffers::IsOutRange(e, ColumnConversionMode_Stringify, ColumnConversionMode_ThrowError)) return "";
   const size_t index = static_cast<size_t>(e) - static_cast<size_t>(ColumnConversionMode_Stringify);
   return EnumNamesColumnConversionMode()[index];
 }
 
 /// The message wrapper used for all barrage app_metadata fields.
-struct BarrageMessageWrapper FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct BarrageMessageWrapper FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef BarrageMessageWrapperBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_MAGIC = 4,
@@ -157,10 +157,10 @@ struct BarrageMessageWrapper FLATBUFFERS_FINAL_CLASS : private ::deephaven::thir
     return static_cast<io::deephaven::barrage::flatbuf::BarrageMessageType>(GetField<int8_t>(VT_MSG_TYPE, 0));
   }
   /// The msg payload.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *msg_payload() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_MSG_PAYLOAD);
+  const flatbuffers::Vector<int8_t> *msg_payload() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_MSG_PAYLOAD);
   }
-  bool Verify(::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_MAGIC, 4) &&
            VerifyField<int8_t>(verifier, VT_MSG_TYPE, 1) &&
@@ -172,33 +172,33 @@ struct BarrageMessageWrapper FLATBUFFERS_FINAL_CLASS : private ::deephaven::thir
 
 struct BarrageMessageWrapperBuilder {
   typedef BarrageMessageWrapper Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
   void add_magic(uint32_t magic) {
     fbb_.AddElement<uint32_t>(BarrageMessageWrapper::VT_MAGIC, magic, 0);
   }
   void add_msg_type(io::deephaven::barrage::flatbuf::BarrageMessageType msg_type) {
     fbb_.AddElement<int8_t>(BarrageMessageWrapper::VT_MSG_TYPE, static_cast<int8_t>(msg_type), 0);
   }
-  void add_msg_payload(::deephaven::third_party::flatbuffers::Offset<::deephaven::third_party::flatbuffers::Vector<int8_t>> msg_payload) {
+  void add_msg_payload(flatbuffers::Offset<flatbuffers::Vector<int8_t>> msg_payload) {
     fbb_.AddOffset(BarrageMessageWrapper::VT_MSG_PAYLOAD, msg_payload);
   }
-  explicit BarrageMessageWrapperBuilder(::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit BarrageMessageWrapperBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<BarrageMessageWrapper> Finish() {
+  flatbuffers::Offset<BarrageMessageWrapper> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<BarrageMessageWrapper>(end);
+    auto o = flatbuffers::Offset<BarrageMessageWrapper>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageMessageWrapper> CreateBarrageMessageWrapper(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<BarrageMessageWrapper> CreateBarrageMessageWrapper(
+    flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t magic = 0,
     io::deephaven::barrage::flatbuf::BarrageMessageType msg_type = io::deephaven::barrage::flatbuf::BarrageMessageType_None,
-    ::deephaven::third_party::flatbuffers::Offset<::deephaven::third_party::flatbuffers::Vector<int8_t>> msg_payload = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> msg_payload = 0) {
   BarrageMessageWrapperBuilder builder_(_fbb);
   builder_.add_msg_payload(msg_payload);
   builder_.add_magic(magic);
@@ -206,8 +206,8 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageMessageWrapper> Crea
   return builder_.Finish();
 }
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageMessageWrapper> CreateBarrageMessageWrapperDirect(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<BarrageMessageWrapper> CreateBarrageMessageWrapperDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t magic = 0,
     io::deephaven::barrage::flatbuf::BarrageMessageType msg_type = io::deephaven::barrage::flatbuf::BarrageMessageType_None,
     const std::vector<int8_t> *msg_payload = nullptr) {
@@ -220,7 +220,7 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageMessageWrapper> Crea
 }
 
 /// Establish a new session.
-struct NewSessionRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct NewSessionRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef NewSessionRequestBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_PROTOCOL_VERSION = 4,
@@ -231,10 +231,10 @@ struct NewSessionRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_pa
     return GetField<uint32_t>(VT_PROTOCOL_VERSION, 0);
   }
   /// Arbitrary auth/handshake info.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *payload() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_PAYLOAD);
+  const flatbuffers::Vector<int8_t> *payload() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_PAYLOAD);
   }
-  bool Verify(::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_PROTOCOL_VERSION, 4) &&
            VerifyOffset(verifier, VT_PAYLOAD) &&
@@ -245,37 +245,37 @@ struct NewSessionRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_pa
 
 struct NewSessionRequestBuilder {
   typedef NewSessionRequest Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
   void add_protocol_version(uint32_t protocol_version) {
     fbb_.AddElement<uint32_t>(NewSessionRequest::VT_PROTOCOL_VERSION, protocol_version, 0);
   }
-  void add_payload(::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> payload) {
+  void add_payload(flatbuffers::Offset<flatbuffers::Vector<int8_t>> payload) {
     fbb_.AddOffset(NewSessionRequest::VT_PAYLOAD, payload);
   }
-  explicit NewSessionRequestBuilder(::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit NewSessionRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<NewSessionRequest> Finish() {
+  flatbuffers::Offset<NewSessionRequest> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<NewSessionRequest>(end);
+    auto o = flatbuffers::Offset<NewSessionRequest>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<NewSessionRequest> CreateNewSessionRequest(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<NewSessionRequest> CreateNewSessionRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t protocol_version = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> payload = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> payload = 0) {
   NewSessionRequestBuilder builder_(_fbb);
   builder_.add_payload(payload);
   builder_.add_protocol_version(protocol_version);
   return builder_.Finish();
 }
 
-inline ::deephaven::third_party::flatbuffers::Offset<NewSessionRequest> CreateNewSessionRequestDirect(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<NewSessionRequest> CreateNewSessionRequestDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t protocol_version = 0,
     const std::vector<int8_t> *payload = nullptr) {
   auto payload__ = payload ? _fbb.CreateVector<int8_t>(*payload) : 0;
@@ -286,16 +286,16 @@ inline ::deephaven::third_party::flatbuffers::Offset<NewSessionRequest> CreateNe
 }
 
 /// Refresh the provided session.
-struct RefreshSessionRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct RefreshSessionRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef RefreshSessionRequestBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_SESSION = 4
   };
   /// this session token is only required if it is the first request of a handshake rpc stream
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *session() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_SESSION);
+  const flatbuffers::Vector<int8_t> *session() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_SESSION);
   }
-  bool Verify(::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_SESSION) &&
            verifier.VerifyVector(session()) &&
@@ -305,32 +305,32 @@ struct RefreshSessionRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::thir
 
 struct RefreshSessionRequestBuilder {
   typedef RefreshSessionRequest Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
-  void add_session (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> session) {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_session(flatbuffers::Offset<flatbuffers::Vector<int8_t>> session) {
     fbb_.AddOffset(RefreshSessionRequest::VT_SESSION, session);
   }
-  explicit RefreshSessionRequestBuilder(::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit RefreshSessionRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<RefreshSessionRequest> Finish() {
+  flatbuffers::Offset<RefreshSessionRequest> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<RefreshSessionRequest>(end);
+    auto o = flatbuffers::Offset<RefreshSessionRequest>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<RefreshSessionRequest> CreateRefreshSessionRequest(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> session = 0) {
+inline flatbuffers::Offset<RefreshSessionRequest> CreateRefreshSessionRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> session = 0) {
   RefreshSessionRequestBuilder builder_(_fbb);
   builder_.add_session(session);
   return builder_.Finish();
 }
 
-inline ::deephaven::third_party::flatbuffers::Offset<RefreshSessionRequest> CreateRefreshSessionRequestDirect(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<RefreshSessionRequest> CreateRefreshSessionRequestDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int8_t> *session = nullptr) {
   auto session__ = session ? _fbb.CreateVector<int8_t>(*session) : 0;
   return io::deephaven::barrage::flatbuf::CreateRefreshSessionRequest(
@@ -339,7 +339,7 @@ inline ::deephaven::third_party::flatbuffers::Offset<RefreshSessionRequest> Crea
 }
 
 /// Information about the current session state.
-struct SessionInfoResponse FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct SessionInfoResponse FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef SessionInfoResponseBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_METADATA_HEADER = 4,
@@ -347,18 +347,18 @@ struct SessionInfoResponse FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_
     VT_TOKEN_REFRESH_DEADLINE_MS = 8
   };
   /// this is the metadata header to identify this session with future requests; it must be lower-case and remain static for the life of the session
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *metadata_header() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_METADATA_HEADER);
+  const flatbuffers::Vector<int8_t> *metadata_header() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_METADATA_HEADER);
   }
   /// this is the session_token; note that it may rotate
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *session_token() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_SESSION_TOKEN);
+  const flatbuffers::Vector<int8_t> *session_token() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_SESSION_TOKEN);
   }
   /// a suggested time for the user to refresh the session if they do not do so earlier; value is denoted in milliseconds since epoch
   int64_t token_refresh_deadline_ms() const {
     return GetField<int64_t>(VT_TOKEN_REFRESH_DEADLINE_MS, 0);
   }
-  bool Verify (::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_METADATA_HEADER) &&
            verifier.VerifyVector(metadata_header()) &&
@@ -371,32 +371,32 @@ struct SessionInfoResponse FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_
 
 struct SessionInfoResponseBuilder {
   typedef SessionInfoResponse Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
-  void add_metadata_header (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> metadata_header) {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_metadata_header(flatbuffers::Offset<flatbuffers::Vector<int8_t>> metadata_header) {
     fbb_.AddOffset(SessionInfoResponse::VT_METADATA_HEADER, metadata_header);
   }
-  void add_session_token (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> session_token) {
+  void add_session_token(flatbuffers::Offset<flatbuffers::Vector<int8_t>> session_token) {
     fbb_.AddOffset(SessionInfoResponse::VT_SESSION_TOKEN, session_token);
   }
   void add_token_refresh_deadline_ms(int64_t token_refresh_deadline_ms) {
     fbb_.AddElement<int64_t>(SessionInfoResponse::VT_TOKEN_REFRESH_DEADLINE_MS, token_refresh_deadline_ms, 0);
   }
-  explicit SessionInfoResponseBuilder (::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit SessionInfoResponseBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<SessionInfoResponse> Finish() {
+  flatbuffers::Offset<SessionInfoResponse> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<SessionInfoResponse>(end);
+    auto o = flatbuffers::Offset<SessionInfoResponse>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<SessionInfoResponse> CreateSessionInfoResponse(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> metadata_header = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> session_token = 0,
+inline flatbuffers::Offset<SessionInfoResponse> CreateSessionInfoResponse(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> metadata_header = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> session_token = 0,
     int64_t token_refresh_deadline_ms = 0) {
   SessionInfoResponseBuilder builder_(_fbb);
   builder_.add_token_refresh_deadline_ms(token_refresh_deadline_ms);
@@ -405,8 +405,8 @@ inline ::deephaven::third_party::flatbuffers::Offset<SessionInfoResponse> Create
   return builder_.Finish();
 }
 
-inline ::deephaven::third_party::flatbuffers::Offset<SessionInfoResponse> CreateSessionInfoResponseDirect(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<SessionInfoResponse> CreateSessionInfoResponseDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int8_t> *metadata_header = nullptr,
     const std::vector<int8_t> *session_token = nullptr,
     int64_t token_refresh_deadline_ms = 0) {
@@ -419,7 +419,7 @@ inline ::deephaven::third_party::flatbuffers::Offset<SessionInfoResponse> Create
       token_refresh_deadline_ms);
 }
 
-struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef BarrageSubscriptionOptionsBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_COLUMN_CONVERSION_MODE = 4,
@@ -449,7 +449,7 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private ::deephaven:
   int32_t batch_size() const {
     return GetField<int32_t>(VT_BATCH_SIZE, 0);
   }
-  bool Verify (::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_COLUMN_CONVERSION_MODE, 1) &&
            VerifyField<uint8_t>(verifier, VT_USE_DEEPHAVEN_NULLS, 1) &&
@@ -461,8 +461,8 @@ struct BarrageSubscriptionOptions FLATBUFFERS_FINAL_CLASS : private ::deephaven:
 
 struct BarrageSubscriptionOptionsBuilder {
   typedef BarrageSubscriptionOptions Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
   void add_column_conversion_mode(io::deephaven::barrage::flatbuf::ColumnConversionMode column_conversion_mode) {
     fbb_.AddElement<int8_t>(BarrageSubscriptionOptions::VT_COLUMN_CONVERSION_MODE, static_cast<int8_t>(column_conversion_mode), 1);
   }
@@ -475,19 +475,19 @@ struct BarrageSubscriptionOptionsBuilder {
   void add_batch_size(int32_t batch_size) {
     fbb_.AddElement<int32_t>(BarrageSubscriptionOptions::VT_BATCH_SIZE, batch_size, 0);
   }
-  explicit BarrageSubscriptionOptionsBuilder (::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit BarrageSubscriptionOptionsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<BarrageSubscriptionOptions> Finish() {
+  flatbuffers::Offset<BarrageSubscriptionOptions> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<BarrageSubscriptionOptions>(end);
+    auto o = flatbuffers::Offset<BarrageSubscriptionOptions>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageSubscriptionOptions> CreateBarrageSubscriptionOptions(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<BarrageSubscriptionOptions> CreateBarrageSubscriptionOptions(
+    flatbuffers::FlatBufferBuilder &_fbb,
     io::deephaven::barrage::flatbuf::ColumnConversionMode column_conversion_mode = io::deephaven::barrage::flatbuf::ColumnConversionMode_Stringify,
     bool use_deephaven_nulls = false,
     int32_t min_update_interval_ms = 0,
@@ -501,7 +501,7 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageSubscriptionOptions>
 }
 
 /// Describes the subscription the client would like to acquire.
-struct BarrageSubscriptionRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct BarrageSubscriptionRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef BarrageSubscriptionRequestBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_TICKET = 4,
@@ -511,16 +511,16 @@ struct BarrageSubscriptionRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven:
     VT_REVERSE_VIEWPORT = 12
   };
   /// Ticket for the source data set.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *ticket() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_TICKET);
+  const flatbuffers::Vector<int8_t> *ticket() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_TICKET);
   }
   /// The bitset of columns to subscribe. If not provided then all columns are subscribed.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *columns() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_COLUMNS);
+  const flatbuffers::Vector<int8_t> *columns() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_COLUMNS);
   }
   /// This is an encoded and compressed RowSet in position-space to subscribe to.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *viewport() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_VIEWPORT);
+  const flatbuffers::Vector<int8_t> *viewport() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_VIEWPORT);
   }
   /// Options to configure your subscription.
   const io::deephaven::barrage::flatbuf::BarrageSubscriptionOptions *subscription_options() const {
@@ -531,7 +531,7 @@ struct BarrageSubscriptionRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven:
   bool reverse_viewport() const {
     return GetField<uint8_t>(VT_REVERSE_VIEWPORT, 0) != 0;
   }
-  bool Verify (::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_TICKET) &&
            verifier.VerifyVector(ticket()) &&
@@ -548,40 +548,40 @@ struct BarrageSubscriptionRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven:
 
 struct BarrageSubscriptionRequestBuilder {
   typedef BarrageSubscriptionRequest Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
-  void add_ticket (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> ticket) {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_ticket(flatbuffers::Offset<flatbuffers::Vector<int8_t>> ticket) {
     fbb_.AddOffset(BarrageSubscriptionRequest::VT_TICKET, ticket);
   }
-  void add_columns (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> columns) {
+  void add_columns(flatbuffers::Offset<flatbuffers::Vector<int8_t>> columns) {
     fbb_.AddOffset(BarrageSubscriptionRequest::VT_COLUMNS, columns);
   }
-  void add_viewport (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> viewport) {
+  void add_viewport(flatbuffers::Offset<flatbuffers::Vector<int8_t>> viewport) {
     fbb_.AddOffset(BarrageSubscriptionRequest::VT_VIEWPORT, viewport);
   }
-  void add_subscription_options (::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSubscriptionOptions> subscription_options) {
+  void add_subscription_options(flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSubscriptionOptions> subscription_options) {
     fbb_.AddOffset(BarrageSubscriptionRequest::VT_SUBSCRIPTION_OPTIONS, subscription_options);
   }
   void add_reverse_viewport(bool reverse_viewport) {
     fbb_.AddElement<uint8_t>(BarrageSubscriptionRequest::VT_REVERSE_VIEWPORT, static_cast<uint8_t>(reverse_viewport), 0);
   }
-  explicit BarrageSubscriptionRequestBuilder (::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit BarrageSubscriptionRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<BarrageSubscriptionRequest> Finish() {
+  flatbuffers::Offset<BarrageSubscriptionRequest> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<BarrageSubscriptionRequest>(end);
+    auto o = flatbuffers::Offset<BarrageSubscriptionRequest>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageSubscriptionRequest> CreateBarrageSubscriptionRequest(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> ticket = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> columns = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> viewport = 0,
-    ::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSubscriptionOptions> subscription_options = 0,
+inline flatbuffers::Offset<BarrageSubscriptionRequest> CreateBarrageSubscriptionRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> ticket = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> columns = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> viewport = 0,
+    flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSubscriptionOptions> subscription_options = 0,
     bool reverse_viewport = false) {
   BarrageSubscriptionRequestBuilder builder_(_fbb);
   builder_.add_subscription_options(subscription_options);
@@ -592,12 +592,12 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageSubscriptionRequest>
   return builder_.Finish();
 }
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageSubscriptionRequest> CreateBarrageSubscriptionRequestDirect(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<BarrageSubscriptionRequest> CreateBarrageSubscriptionRequestDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int8_t> *ticket = nullptr,
     const std::vector<int8_t> *columns = nullptr,
     const std::vector<int8_t> *viewport = nullptr,
-    ::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSubscriptionOptions> subscription_options = 0,
+    flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSubscriptionOptions> subscription_options = 0,
     bool reverse_viewport = false) {
   auto ticket__ = ticket ? _fbb.CreateVector<int8_t>(*ticket) : 0;
   auto columns__ = columns ? _fbb.CreateVector<int8_t>(*columns) : 0;
@@ -611,7 +611,7 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageSubscriptionRequest>
       reverse_viewport);
 }
 
-struct BarrageSnapshotOptions FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct BarrageSnapshotOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef BarrageSnapshotOptionsBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_COLUMN_CONVERSION_MODE = 4,
@@ -633,7 +633,7 @@ struct BarrageSnapshotOptions FLATBUFFERS_FINAL_CLASS : private ::deephaven::thi
   int32_t batch_size() const {
     return GetField<int32_t>(VT_BATCH_SIZE, 0);
   }
-  bool Verify (::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_COLUMN_CONVERSION_MODE, 1) &&
            VerifyField<uint8_t>(verifier, VT_USE_DEEPHAVEN_NULLS, 1) &&
@@ -644,8 +644,8 @@ struct BarrageSnapshotOptions FLATBUFFERS_FINAL_CLASS : private ::deephaven::thi
 
 struct BarrageSnapshotOptionsBuilder {
   typedef BarrageSnapshotOptions Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
   void add_column_conversion_mode(io::deephaven::barrage::flatbuf::ColumnConversionMode column_conversion_mode) {
     fbb_.AddElement<int8_t>(BarrageSnapshotOptions::VT_COLUMN_CONVERSION_MODE, static_cast<int8_t>(column_conversion_mode), 1);
   }
@@ -655,19 +655,19 @@ struct BarrageSnapshotOptionsBuilder {
   void add_batch_size(int32_t batch_size) {
     fbb_.AddElement<int32_t>(BarrageSnapshotOptions::VT_BATCH_SIZE, batch_size, 0);
   }
-  explicit BarrageSnapshotOptionsBuilder (::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit BarrageSnapshotOptionsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<BarrageSnapshotOptions> Finish() {
+  flatbuffers::Offset<BarrageSnapshotOptions> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<BarrageSnapshotOptions>(end);
+    auto o = flatbuffers::Offset<BarrageSnapshotOptions>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageSnapshotOptions> CreateBarrageSnapshotOptions(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<BarrageSnapshotOptions> CreateBarrageSnapshotOptions(
+    flatbuffers::FlatBufferBuilder &_fbb,
     io::deephaven::barrage::flatbuf::ColumnConversionMode column_conversion_mode = io::deephaven::barrage::flatbuf::ColumnConversionMode_Stringify,
     bool use_deephaven_nulls = false,
     int32_t batch_size = 0) {
@@ -679,7 +679,7 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageSnapshotOptions> Cre
 }
 
 /// Describes the snapshot the client would like to acquire.
-struct BarrageSnapshotRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct BarrageSnapshotRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef BarrageSnapshotRequestBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_TICKET = 4,
@@ -689,17 +689,17 @@ struct BarrageSnapshotRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::thi
     VT_REVERSE_VIEWPORT = 12
   };
   /// Ticket for the source data set.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *ticket() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_TICKET);
+  const flatbuffers::Vector<int8_t> *ticket() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_TICKET);
   }
   /// The bitset of columns to request. If not provided then all columns are requested.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *columns() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_COLUMNS);
+  const flatbuffers::Vector<int8_t> *columns() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_COLUMNS);
   }
   /// This is an encoded and compressed RowSet in position-space to subscribe to. If not provided then the entire
   /// table is requested.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *viewport() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_VIEWPORT);
+  const flatbuffers::Vector<int8_t> *viewport() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_VIEWPORT);
   }
   /// Options to configure your subscription.
   const io::deephaven::barrage::flatbuf::BarrageSnapshotOptions *snapshot_options() const {
@@ -710,7 +710,7 @@ struct BarrageSnapshotRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::thi
   bool reverse_viewport() const {
     return GetField<uint8_t>(VT_REVERSE_VIEWPORT, 0) != 0;
   }
-  bool Verify (::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_TICKET) &&
            verifier.VerifyVector(ticket()) &&
@@ -727,40 +727,40 @@ struct BarrageSnapshotRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::thi
 
 struct BarrageSnapshotRequestBuilder {
   typedef BarrageSnapshotRequest Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
-  void add_ticket (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> ticket) {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_ticket(flatbuffers::Offset<flatbuffers::Vector<int8_t>> ticket) {
     fbb_.AddOffset(BarrageSnapshotRequest::VT_TICKET, ticket);
   }
-  void add_columns (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> columns) {
+  void add_columns(flatbuffers::Offset<flatbuffers::Vector<int8_t>> columns) {
     fbb_.AddOffset(BarrageSnapshotRequest::VT_COLUMNS, columns);
   }
-  void add_viewport (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> viewport) {
+  void add_viewport(flatbuffers::Offset<flatbuffers::Vector<int8_t>> viewport) {
     fbb_.AddOffset(BarrageSnapshotRequest::VT_VIEWPORT, viewport);
   }
-  void add_snapshot_options (::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSnapshotOptions> snapshot_options) {
+  void add_snapshot_options(flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSnapshotOptions> snapshot_options) {
     fbb_.AddOffset(BarrageSnapshotRequest::VT_SNAPSHOT_OPTIONS, snapshot_options);
   }
   void add_reverse_viewport(bool reverse_viewport) {
     fbb_.AddElement<uint8_t>(BarrageSnapshotRequest::VT_REVERSE_VIEWPORT, static_cast<uint8_t>(reverse_viewport), 0);
   }
-  explicit BarrageSnapshotRequestBuilder (::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit BarrageSnapshotRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<BarrageSnapshotRequest> Finish() {
+  flatbuffers::Offset<BarrageSnapshotRequest> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<BarrageSnapshotRequest>(end);
+    auto o = flatbuffers::Offset<BarrageSnapshotRequest>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageSnapshotRequest> CreateBarrageSnapshotRequest(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> ticket = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> columns = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> viewport = 0,
-    ::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSnapshotOptions> snapshot_options = 0,
+inline flatbuffers::Offset<BarrageSnapshotRequest> CreateBarrageSnapshotRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> ticket = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> columns = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> viewport = 0,
+    flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSnapshotOptions> snapshot_options = 0,
     bool reverse_viewport = false) {
   BarrageSnapshotRequestBuilder builder_(_fbb);
   builder_.add_snapshot_options(snapshot_options);
@@ -771,12 +771,12 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageSnapshotRequest> Cre
   return builder_.Finish();
 }
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageSnapshotRequest> CreateBarrageSnapshotRequestDirect(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<BarrageSnapshotRequest> CreateBarrageSnapshotRequestDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int8_t> *ticket = nullptr,
     const std::vector<int8_t> *columns = nullptr,
     const std::vector<int8_t> *viewport = nullptr,
-    ::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSnapshotOptions> snapshot_options = 0,
+    flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageSnapshotOptions> snapshot_options = 0,
     bool reverse_viewport = false) {
   auto ticket__ = ticket ? _fbb.CreateVector<int8_t>(*ticket) : 0;
   auto columns__ = columns ? _fbb.CreateVector<int8_t>(*columns) : 0;
@@ -790,7 +790,7 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageSnapshotRequest> Cre
       reverse_viewport);
 }
 
-struct BarragePublicationOptions FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct BarragePublicationOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef BarragePublicationOptionsBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_USE_DEEPHAVEN_NULLS = 4
@@ -800,7 +800,7 @@ struct BarragePublicationOptions FLATBUFFERS_FINAL_CLASS : private ::deephaven::
   bool use_deephaven_nulls() const {
     return GetField<uint8_t>(VT_USE_DEEPHAVEN_NULLS, 0) != 0;
   }
-  bool Verify (::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_USE_DEEPHAVEN_NULLS, 1) &&
            verifier.EndTable();
@@ -809,24 +809,24 @@ struct BarragePublicationOptions FLATBUFFERS_FINAL_CLASS : private ::deephaven::
 
 struct BarragePublicationOptionsBuilder {
   typedef BarragePublicationOptions Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
   void add_use_deephaven_nulls(bool use_deephaven_nulls) {
     fbb_.AddElement<uint8_t>(BarragePublicationOptions::VT_USE_DEEPHAVEN_NULLS, static_cast<uint8_t>(use_deephaven_nulls), 0);
   }
-  explicit BarragePublicationOptionsBuilder (::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit BarragePublicationOptionsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<BarragePublicationOptions> Finish() {
+  flatbuffers::Offset<BarragePublicationOptions> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<BarragePublicationOptions>(end);
+    auto o = flatbuffers::Offset<BarragePublicationOptions>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarragePublicationOptions> CreateBarragePublicationOptions(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<BarragePublicationOptions> CreateBarragePublicationOptions(
+    flatbuffers::FlatBufferBuilder &_fbb,
     bool use_deephaven_nulls = false) {
   BarragePublicationOptionsBuilder builder_(_fbb);
   builder_.add_use_deephaven_nulls(use_deephaven_nulls);
@@ -836,21 +836,21 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarragePublicationOptions> 
 /// Describes the table update stream the client would like to push to. This is similar to a DoPut but the client
 /// will send BarrageUpdateMetadata to explicitly describe the row key space. The updates sent adhere to the table
 /// update model semantics; thus BarragePublication enables the client to upload a ticking table.
-struct BarragePublicationRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct BarragePublicationRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef BarragePublicationRequestBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_TICKET = 4,
     VT_PUBLISH_OPTIONS = 6
   };
   /// The destination Ticket.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *ticket() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_TICKET);
+  const flatbuffers::Vector<int8_t> *ticket() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_TICKET);
   }
   /// Options to configure your request.
   const io::deephaven::barrage::flatbuf::BarragePublicationOptions *publish_options() const {
     return GetPointer<const io::deephaven::barrage::flatbuf::BarragePublicationOptions *>(VT_PUBLISH_OPTIONS);
   }
-  bool Verify (::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_TICKET) &&
            verifier.VerifyVector(ticket()) &&
@@ -862,39 +862,39 @@ struct BarragePublicationRequest FLATBUFFERS_FINAL_CLASS : private ::deephaven::
 
 struct BarragePublicationRequestBuilder {
   typedef BarragePublicationRequest Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
-  void add_ticket (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> ticket) {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_ticket(flatbuffers::Offset<flatbuffers::Vector<int8_t>> ticket) {
     fbb_.AddOffset(BarragePublicationRequest::VT_TICKET, ticket);
   }
-  void add_publish_options (::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarragePublicationOptions> publish_options) {
+  void add_publish_options(flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarragePublicationOptions> publish_options) {
     fbb_.AddOffset(BarragePublicationRequest::VT_PUBLISH_OPTIONS, publish_options);
   }
-  explicit BarragePublicationRequestBuilder (::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit BarragePublicationRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<BarragePublicationRequest> Finish() {
+  flatbuffers::Offset<BarragePublicationRequest> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<BarragePublicationRequest>(end);
+    auto o = flatbuffers::Offset<BarragePublicationRequest>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarragePublicationRequest> CreateBarragePublicationRequest(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> ticket = 0,
-    ::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarragePublicationOptions> publish_options = 0) {
+inline flatbuffers::Offset<BarragePublicationRequest> CreateBarragePublicationRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> ticket = 0,
+    flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarragePublicationOptions> publish_options = 0) {
   BarragePublicationRequestBuilder builder_(_fbb);
   builder_.add_publish_options(publish_options);
   builder_.add_ticket(ticket);
   return builder_.Finish();
 }
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarragePublicationRequest> CreateBarragePublicationRequestDirect(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<BarragePublicationRequest> CreateBarragePublicationRequestDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int8_t> *ticket = nullptr,
-    ::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarragePublicationOptions> publish_options = 0) {
+    flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarragePublicationOptions> publish_options = 0) {
   auto ticket__ = ticket ? _fbb.CreateVector<int8_t>(*ticket) : 0;
   return io::deephaven::barrage::flatbuf::CreateBarragePublicationRequest(
       _fbb,
@@ -903,17 +903,17 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarragePublicationRequest> 
 }
 
 /// Holds all of the index data structures for the column being modified.
-struct BarrageModColumnMetadata FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct BarrageModColumnMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef BarrageModColumnMetadataBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_MODIFIED_ROWS = 4
   };
   /// This is an encoded and compressed RowSet for this column (within the viewport) that were modified.
   /// There is no notification for modifications outside of the viewport.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *modified_rows() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_MODIFIED_ROWS);
+  const flatbuffers::Vector<int8_t> *modified_rows() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_MODIFIED_ROWS);
   }
-  bool Verify (::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_MODIFIED_ROWS) &&
            verifier.VerifyVector(modified_rows()) &&
@@ -923,32 +923,32 @@ struct BarrageModColumnMetadata FLATBUFFERS_FINAL_CLASS : private ::deephaven::t
 
 struct BarrageModColumnMetadataBuilder {
   typedef BarrageModColumnMetadata Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
-  void add_modified_rows (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> modified_rows) {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_modified_rows(flatbuffers::Offset<flatbuffers::Vector<int8_t>> modified_rows) {
     fbb_.AddOffset(BarrageModColumnMetadata::VT_MODIFIED_ROWS, modified_rows);
   }
-  explicit BarrageModColumnMetadataBuilder (::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit BarrageModColumnMetadataBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<BarrageModColumnMetadata> Finish() {
+  flatbuffers::Offset<BarrageModColumnMetadata> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<BarrageModColumnMetadata>(end);
+    auto o = flatbuffers::Offset<BarrageModColumnMetadata>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageModColumnMetadata> CreateBarrageModColumnMetadata(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> modified_rows = 0) {
+inline flatbuffers::Offset<BarrageModColumnMetadata> CreateBarrageModColumnMetadata(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> modified_rows = 0) {
   BarrageModColumnMetadataBuilder builder_(_fbb);
   builder_.add_modified_rows(modified_rows);
   return builder_.Finish();
 }
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageModColumnMetadata> CreateBarrageModColumnMetadataDirect(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<BarrageModColumnMetadata> CreateBarrageModColumnMetadataDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int8_t> *modified_rows = nullptr) {
   auto modified_rows__ = modified_rows ? _fbb.CreateVector<int8_t>(*modified_rows) : 0;
   return io::deephaven::barrage::flatbuf::CreateBarrageModColumnMetadata(
@@ -958,7 +958,7 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageModColumnMetadata> C
 
 /// A data header describing the shared memory layout of a "record" or "row"
 /// batch for a ticking barrage table.
-struct BarrageUpdateMetadata FLATBUFFERS_FINAL_CLASS : private ::deephaven::third_party::flatbuffers::Table {
+struct BarrageUpdateMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef BarrageUpdateMetadataBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NUM_ADD_BATCHES = 4,
@@ -998,41 +998,41 @@ struct BarrageUpdateMetadata FLATBUFFERS_FINAL_CLASS : private ::deephaven::thir
   }
   /// If this is a snapshot and the subscription is a viewport, then the effectively subscribed viewport
   /// will be included in the payload. It is an encoded and compressed RowSet.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *effective_viewport() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_EFFECTIVE_VIEWPORT);
+  const flatbuffers::Vector<int8_t> *effective_viewport() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_EFFECTIVE_VIEWPORT);
   }
   /// If this is a snapshot, then the effectively subscribed column set will be included in the payload.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *effective_column_set() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_EFFECTIVE_COLUMN_SET);
+  const flatbuffers::Vector<int8_t> *effective_column_set() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_EFFECTIVE_COLUMN_SET);
   }
   /// This is an encoded and compressed RowSet that was added in this update.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *added_rows() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_ADDED_ROWS);
+  const flatbuffers::Vector<int8_t> *added_rows() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_ADDED_ROWS);
   }
   /// This is an encoded and compressed RowSet that was removed in this update.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *removed_rows() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_REMOVED_ROWS);
+  const flatbuffers::Vector<int8_t> *removed_rows() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_REMOVED_ROWS);
   }
   /// This is an encoded and compressed IndexShiftData describing how the keyspace of unmodified rows changed.
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *shift_data() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_SHIFT_DATA);
+  const flatbuffers::Vector<int8_t> *shift_data() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_SHIFT_DATA);
   }
   /// This is an encoded and compressed RowSet that was included with this update.
   /// (the server may include rows not in addedRows if this is a viewport subscription to refresh
   ///  unmodified rows that were scoped into view)
-  const ::deephaven::third_party::flatbuffers::Vector<int8_t> *added_rows_included() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector<int8_t> *>(VT_ADDED_ROWS_INCLUDED);
+  const flatbuffers::Vector<int8_t> *added_rows_included() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_ADDED_ROWS_INCLUDED);
   }
   /// The list of modified column data are in the same order as the field nodes on the schema.
-  const ::deephaven::third_party::flatbuffers::Vector <::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>> *mod_column_nodes() const {
-    return GetPointer<const ::deephaven::third_party::flatbuffers::Vector <::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>> *>(VT_MOD_COLUMN_NODES);
+  const flatbuffers::Vector<flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>> *mod_column_nodes() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>> *>(VT_MOD_COLUMN_NODES);
   }
   /// When this is set the viewport RowSet will be inverted against the length of the table. That is to say
   /// every position value is converted from `i` to `n - i - 1` if the table has `n` rows.
   bool effective_reverse_viewport() const {
     return GetField<uint8_t>(VT_EFFECTIVE_REVERSE_VIEWPORT, 0) != 0;
   }
-  bool Verify (::deephaven::third_party::flatbuffers::Verifier &verifier) const {
+  bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint16_t>(verifier, VT_NUM_ADD_BATCHES, 2) &&
            VerifyField<uint16_t>(verifier, VT_NUM_MOD_BATCHES, 2) &&
@@ -1061,8 +1061,8 @@ struct BarrageUpdateMetadata FLATBUFFERS_FINAL_CLASS : private ::deephaven::thir
 
 struct BarrageUpdateMetadataBuilder {
   typedef BarrageUpdateMetadata Table;
-  ::deephaven::third_party::flatbuffers::FlatBufferBuilder &fbb_;
-  ::deephaven::third_party::flatbuffers::uoffset_t start_;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
   void add_num_add_batches(uint16_t num_add_batches) {
     fbb_.AddElement<uint16_t>(BarrageUpdateMetadata::VT_NUM_ADD_BATCHES, num_add_batches, 0);
   }
@@ -1078,55 +1078,55 @@ struct BarrageUpdateMetadataBuilder {
   void add_is_snapshot(bool is_snapshot) {
     fbb_.AddElement<uint8_t>(BarrageUpdateMetadata::VT_IS_SNAPSHOT, static_cast<uint8_t>(is_snapshot), 0);
   }
-  void add_effective_viewport (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> effective_viewport) {
+  void add_effective_viewport(flatbuffers::Offset<flatbuffers::Vector<int8_t>> effective_viewport) {
     fbb_.AddOffset(BarrageUpdateMetadata::VT_EFFECTIVE_VIEWPORT, effective_viewport);
   }
-  void add_effective_column_set (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> effective_column_set) {
+  void add_effective_column_set(flatbuffers::Offset<flatbuffers::Vector<int8_t>> effective_column_set) {
     fbb_.AddOffset(BarrageUpdateMetadata::VT_EFFECTIVE_COLUMN_SET, effective_column_set);
   }
-  void add_added_rows (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> added_rows) {
+  void add_added_rows(flatbuffers::Offset<flatbuffers::Vector<int8_t>> added_rows) {
     fbb_.AddOffset(BarrageUpdateMetadata::VT_ADDED_ROWS, added_rows);
   }
-  void add_removed_rows (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> removed_rows) {
+  void add_removed_rows(flatbuffers::Offset<flatbuffers::Vector<int8_t>> removed_rows) {
     fbb_.AddOffset(BarrageUpdateMetadata::VT_REMOVED_ROWS, removed_rows);
   }
-  void add_shift_data (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> shift_data) {
+  void add_shift_data(flatbuffers::Offset<flatbuffers::Vector<int8_t>> shift_data) {
     fbb_.AddOffset(BarrageUpdateMetadata::VT_SHIFT_DATA, shift_data);
   }
-  void add_added_rows_included (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> added_rows_included) {
+  void add_added_rows_included(flatbuffers::Offset<flatbuffers::Vector<int8_t>> added_rows_included) {
     fbb_.AddOffset(BarrageUpdateMetadata::VT_ADDED_ROWS_INCLUDED, added_rows_included);
   }
-  void add_mod_column_nodes (::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector <::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>>> mod_column_nodes) {
+  void add_mod_column_nodes(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>>> mod_column_nodes) {
     fbb_.AddOffset(BarrageUpdateMetadata::VT_MOD_COLUMN_NODES, mod_column_nodes);
   }
   void add_effective_reverse_viewport(bool effective_reverse_viewport) {
     fbb_.AddElement<uint8_t>(BarrageUpdateMetadata::VT_EFFECTIVE_REVERSE_VIEWPORT, static_cast<uint8_t>(effective_reverse_viewport), 0);
   }
-  explicit BarrageUpdateMetadataBuilder (::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit BarrageUpdateMetadataBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::deephaven::third_party::flatbuffers::Offset<BarrageUpdateMetadata> Finish() {
+  flatbuffers::Offset<BarrageUpdateMetadata> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::deephaven::third_party::flatbuffers::Offset<BarrageUpdateMetadata>(end);
+    auto o = flatbuffers::Offset<BarrageUpdateMetadata>(end);
     return o;
   }
 };
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageUpdateMetadata> CreateBarrageUpdateMetadata(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<BarrageUpdateMetadata> CreateBarrageUpdateMetadata(
+    flatbuffers::FlatBufferBuilder &_fbb,
     uint16_t num_add_batches = 0,
     uint16_t num_mod_batches = 0,
     int64_t first_seq = 0,
     int64_t last_seq = 0,
     bool is_snapshot = false,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> effective_viewport = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> effective_column_set = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> added_rows = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> removed_rows = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> shift_data = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector<int8_t>> added_rows_included = 0,
-    ::deephaven::third_party::flatbuffers::Offset <::deephaven::third_party::flatbuffers::Vector <::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>>> mod_column_nodes = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> effective_viewport = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> effective_column_set = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> added_rows = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> removed_rows = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> shift_data = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> added_rows_included = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>>> mod_column_nodes = 0,
     bool effective_reverse_viewport = false) {
   BarrageUpdateMetadataBuilder builder_(_fbb);
   builder_.add_last_seq(last_seq);
@@ -1145,8 +1145,8 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageUpdateMetadata> Crea
   return builder_.Finish();
 }
 
-inline ::deephaven::third_party::flatbuffers::Offset<BarrageUpdateMetadata> CreateBarrageUpdateMetadataDirect(
-    ::deephaven::third_party::flatbuffers::FlatBufferBuilder &_fbb,
+inline flatbuffers::Offset<BarrageUpdateMetadata> CreateBarrageUpdateMetadataDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
     uint16_t num_add_batches = 0,
     uint16_t num_mod_batches = 0,
     int64_t first_seq = 0,
@@ -1158,7 +1158,7 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageUpdateMetadata> Crea
     const std::vector<int8_t> *removed_rows = nullptr,
     const std::vector<int8_t> *shift_data = nullptr,
     const std::vector<int8_t> *added_rows_included = nullptr,
-    const std::vector <::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>> *mod_column_nodes = nullptr,
+    const std::vector<flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>> *mod_column_nodes = nullptr,
     bool effective_reverse_viewport = false) {
   auto effective_viewport__ = effective_viewport ? _fbb.CreateVector<int8_t>(*effective_viewport) : 0;
   auto effective_column_set__ = effective_column_set ? _fbb.CreateVector<int8_t>(*effective_column_set) : 0;
@@ -1166,7 +1166,7 @@ inline ::deephaven::third_party::flatbuffers::Offset<BarrageUpdateMetadata> Crea
   auto removed_rows__ = removed_rows ? _fbb.CreateVector<int8_t>(*removed_rows) : 0;
   auto shift_data__ = shift_data ? _fbb.CreateVector<int8_t>(*shift_data) : 0;
   auto added_rows_included__ = added_rows_included ? _fbb.CreateVector<int8_t>(*added_rows_included) : 0;
-  auto mod_column_nodes__ = mod_column_nodes ? _fbb.CreateVector <::deephaven::third_party::flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>>(*mod_column_nodes) : 0;
+  auto mod_column_nodes__ = mod_column_nodes ? _fbb.CreateVector<flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>>(*mod_column_nodes) : 0;
   return io::deephaven::barrage::flatbuf::CreateBarrageUpdateMetadata(
       _fbb,
       num_add_batches,

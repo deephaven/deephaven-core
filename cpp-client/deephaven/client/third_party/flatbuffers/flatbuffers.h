@@ -33,6 +33,10 @@
 #include "flatbuffers/vector_downward.h"
 #include "flatbuffers/verifier.h"
 
+// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
+// with the flatbuffers namespace compiled into Arrow.
+namespace deephaven::third_party::flatbuffers {}
+namespace flatbuffers = deephaven::third_party::flatbuffers;
 namespace deephaven::third_party::flatbuffers {
 
 /// @brief This can compute the start of a FlatBuffer from a root pointer, i.e.

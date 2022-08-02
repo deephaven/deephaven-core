@@ -21,6 +21,10 @@
 #include "flatbuffers/base.h"
 #include "flatbuffers/default_allocator.h"
 
+// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
+// with the flatbuffers namespace compiled into Arrow.
+namespace deephaven::third_party::flatbuffers {}
+namespace flatbuffers = deephaven::third_party::flatbuffers;
 namespace deephaven::third_party::flatbuffers {
 
 // DetachedBuffer is a finished flatbuffer memory region, detached from its

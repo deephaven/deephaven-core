@@ -56,6 +56,10 @@
 #endif // defined(FLATBUFFERS_USE_STD_SPAN)
 
 // This header provides backwards compatibility for older versions of the STL.
+// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
+// with the flatbuffers namespace compiled into Arrow.
+namespace deephaven::third_party::flatbuffers {}
+namespace flatbuffers = deephaven::third_party::flatbuffers;
 namespace deephaven::third_party::flatbuffers {
 
 #if defined(FLATBUFFERS_TEMPLATES_ALIASES)
