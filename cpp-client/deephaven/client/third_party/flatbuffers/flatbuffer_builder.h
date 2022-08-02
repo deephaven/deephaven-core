@@ -33,6 +33,10 @@
 #include "flatbuffers/vector_downward.h"
 #include "flatbuffers/verifier.h"
 
+// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
+// with the flatbuffers namespace compiled into Arrow.
+namespace deephaven::third_party::flatbuffers {}
+namespace flatbuffers = deephaven::third_party::flatbuffers;
 namespace deephaven::third_party::flatbuffers {
 
 // Converts a Field ID to a virtual table offset.
@@ -1087,7 +1091,7 @@ class FlatBufferBuilder {
 
   /// @brief The length of a FlatBuffer file header.
   static const size_t kFileIdentifierLength =
-      ::deephaven::third_party::flatbuffers::kFileIdentifierLength;
+      ::flatbuffers::kFileIdentifierLength;
 
  protected:
   // You shouldn't really be copying instances of this class.

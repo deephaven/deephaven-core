@@ -7,8 +7,6 @@
 #include <flatbuffers/flatbuffers.h>
 #include "deephaven/client/container/row_sequence.h"
 
-namespace flatbuffers = deephaven::third_party::flatbuffers;
-
 namespace deephaven::client::subscription {
 constexpr const uint32_t deephavenMagicNumber = 0x6E687064U;
 
