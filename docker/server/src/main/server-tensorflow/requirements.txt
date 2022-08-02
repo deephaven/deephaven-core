@@ -16,10 +16,11 @@ importlib-metadata==4.12.0
 jpy==0.11.0
 keras==2.7.0
 Keras-Preprocessing==1.1.2
-libclang==14.0.1
-llvmlite==0.38.1
+libclang==14.0.6
+llvmlite==0.39.0
 Markdown==3.4.1
-numba==0.55.2
+MarkupSafe==2.1.1
+numba==0.56.0
 numpy==1.21.6
 oauthlib==3.2.0
 opt-einsum==3.3.0
@@ -41,7 +42,7 @@ tensorflow-estimator==2.7.0
 tensorflow-io-gcs-filesystem==0.26.0
 termcolor==1.1.0
 typing_extensions==4.3.0
-urllib3==1.26.10
-Werkzeug==2.1.2
+urllib3==1.26.11
+Werkzeug==2.2.1
 wrapt==1.14.1
 zipp==3.8.1
