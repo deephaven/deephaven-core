@@ -106,7 +106,7 @@ openssl genpkey -algorithm RSA -out client.key
 openssl req \
   -new \
   -key client.key \
-  -subj '/CN=local-client' \
+  -subj '/CN=insert-name-here/UID=1234/emailAddress=user@deephaven.io/O=my-company' \
   -out client.csr
   
 openssl x509 \

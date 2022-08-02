@@ -24,7 +24,7 @@ public class TrivialAuthContextProvider implements AuthContextProvider {
     public AuthContext authenticate(final long protocolVersion, final ByteString payload) {
         List<X509Certificate> x509Certificates = MTlsCertificate.CLIENT_CERTIFICATES.get();
         if (x509Certificates != null && !x509Certificates.isEmpty()) {
-            System.out.println(x509Certificates);
+            System.out.println(x509Certificates.get(0).getSubjectDN());
             return new AuthContext.SuperUser();
         }
         if (!supportsProtocol(protocolVersion)) {
