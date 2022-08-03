@@ -121,7 +121,8 @@ public class Main {
         if (needsIdentity && identity.isEmpty()) {
             return Optional.empty();
         }
-        final Builder builder = SSLConfig.builder().identity(identity.get());
+        final Builder builder = SSLConfig.builder();
+        identity.ifPresent(builder::identity);
         parseTrustConfig(prefix, config).ifPresent(builder::trust);
         parseClientAuth(prefix, config).ifPresent(builder::clientAuthentication);
         return Optional.of(builder.build());
