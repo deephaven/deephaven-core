@@ -422,9 +422,10 @@ public abstract class FlightMessageRoundTripTest {
 
                 final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
+                // use 0 for batch size and max message size to use server-side defaults
                 int optOffset =
                         BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
-                                false, 1000, 4 * 1024 * 1024);
+                                false, 0, 0);
 
                 final int ticOffset =
                         BarrageSnapshotRequest.createTicketVector(metadata,
