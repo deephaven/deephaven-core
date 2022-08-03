@@ -1,15 +1,14 @@
 package io.deephaven.lang.completion
 
+import io.deephaven.engine.context.ExecutionContext
+import io.deephaven.engine.table.Table
 import io.deephaven.engine.table.TableDefinition
-import io.deephaven.engine.util.ExecutionContextImpl
 import io.deephaven.engine.util.VariableProvider
 import io.deephaven.internal.log.LoggerFactory
 import io.deephaven.io.logger.Logger
+import io.deephaven.lang.parse.CompletionParser
 import io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest.TextDocumentContentChangeEvent
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
-import io.deephaven.engine.table.Table
-import io.deephaven.lang.parse.CompletionParser
-import io.deephaven.util.ExecutionContext
 import io.deephaven.util.SafeCloseable
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -38,7 +37,7 @@ class ChunkerCompletionHandlerTest extends Specification implements ChunkerCompl
     private SafeCloseable executionContext;
 
     void setup() {
-        executionContext = ExecutionContextImpl.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests();
     }
 
     void cleanup() {

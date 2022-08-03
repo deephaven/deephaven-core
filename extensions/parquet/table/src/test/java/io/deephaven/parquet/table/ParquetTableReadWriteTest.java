@@ -14,11 +14,13 @@ import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -36,6 +38,9 @@ public class ParquetTableReadWriteTest {
     private static final String ROOT_FILENAME = ParquetTableReadWriteTest.class.getName() + "_root";
 
     private static File rootFile;
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     @Before
     public void setUp() {
