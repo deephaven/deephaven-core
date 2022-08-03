@@ -14,13 +14,16 @@
 package io.grpc.servlet.jakarta;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.grpc.Attributes;
 import io.grpc.BindableService;
 import io.grpc.ExperimentalApi;
+import io.grpc.Grpc;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.security.cert.X509Certificate;
 import java.util.List;
 
 /**
@@ -33,6 +36,10 @@ import java.util.List;
  */
 @ExperimentalApi("https://github.com/grpc/grpc-java/issues/5066")
 public class GrpcServlet extends HttpServlet {
+    @Grpc.TransportAttr
+    public static final Attributes.Key<List<X509Certificate>> MTLS_CERTIFICATE_KEY =
+            Attributes.Key.create("dh-mtls-peer-certificate-chain");
+
     private static final long serialVersionUID = 1L;
 
     private final ServletAdapter servletAdapter;
