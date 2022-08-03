@@ -96,24 +96,39 @@ public class Main {
      * Parses the configuration properties {@value SSL_IDENTITY_TYPE}, {@value SSL_IDENTITY_CERT_CHAIN_PATH},
      * {@value SSL_IDENTITY_PRIVATE_KEY_PATH}, {@value SSL_TRUST_TYPE}, {@value SSL_TRUST_PATH}, and
      * {@value SSL_CLIENT_AUTH}. Currently, the only valid identity type is {@value PRIVATEKEY}, and the only valid
-     * trust type is {@value CERTS}.
+     * trust type is {@value CERTS}. If no identity is present, empty will be returned.
      *
      * @param config the config
      * @return the optional SSL config
      */
     public static Optional<SSLConfig> parseSSLConfig(Configuration config) {
-        final Optional<Identity> identity = parseIdentityConfig(config);
-        if (identity.isEmpty()) {
+        return parseSSLConfig(null, config, true);
+    }
+
+    /**
+     * Parser the same properties as {@link #parseSSLConfig(Configuration)}, except with property keys prefixed with
+     * "outbound.". Identity configuration is not required.
+     *
+     * @param config the config
+     * @return the optional outbound SSL config
+     */
+    public static Optional<SSLConfig> parseOutboundSSLConfig(Configuration config) {
+        return parseSSLConfig("outbound.", config, false);
+    }
+
+    private static Optional<SSLConfig> parseSSLConfig(String prefix, Configuration config, boolean needsIdentity) {
+        final Optional<Identity> identity = parseIdentityConfig(prefix, config);
+        if (needsIdentity && identity.isEmpty()) {
             return Optional.empty();
         }
         final Builder builder = SSLConfig.builder().identity(identity.get());
-        parseTrustConfig(config).ifPresent(builder::trust);
-        parseClientAuth(config).ifPresent(builder::clientAuthentication);
+        parseTrustConfig(prefix, config).ifPresent(builder::trust);
+        parseClientAuth(prefix, config).ifPresent(builder::clientAuthentication);
         return Optional.of(builder.build());
     }
 
-    private static Optional<Identity> parseIdentityConfig(Configuration config) {
-        final String identityType = config.getStringWithDefault(SSL_IDENTITY_TYPE, null);
+    private static Optional<Identity> parseIdentityConfig(String prefix, Configuration config) {
+        final String identityType = config.getStringWithDefault(prefix(prefix, SSL_IDENTITY_TYPE), null);
         if (identityType == null) {
             return Optional.empty();
         }
@@ -121,17 +136,17 @@ public class Main {
             throw new IllegalArgumentException(
                     String.format("Only support `%s` identity type through Configuration", PRIVATEKEY));
         }
-        final String identityCa = config.getStringWithDefault(SSL_IDENTITY_CERT_CHAIN_PATH, null);
-        final String identityKey = config.getStringWithDefault(SSL_IDENTITY_PRIVATE_KEY_PATH, null);
+        final String identityCa = config.getStringWithDefault(prefix(prefix, SSL_IDENTITY_CERT_CHAIN_PATH), null);
+        final String identityKey = config.getStringWithDefault(prefix(prefix, SSL_IDENTITY_PRIVATE_KEY_PATH), null);
         if (identityCa == null || identityKey == null) {
-            throw new IllegalArgumentException(String.format("Must specify `%s` and `%s`", SSL_IDENTITY_CERT_CHAIN_PATH,
-                    SSL_IDENTITY_PRIVATE_KEY_PATH));
+            throw new IllegalArgumentException(String.format("Must specify `%s` and `%s`",
+                    prefix(prefix, SSL_IDENTITY_CERT_CHAIN_PATH), prefix(prefix, SSL_IDENTITY_PRIVATE_KEY_PATH)));
         }
         return Optional.of(IdentityPrivateKey.builder().certChainPath(identityCa).privateKeyPath(identityKey).build());
     }
 
-    private static Optional<Trust> parseTrustConfig(Configuration config) {
-        final String trustType = config.getStringWithDefault(SSL_TRUST_TYPE, null);
+    private static Optional<Trust> parseTrustConfig(String prefix, Configuration config) {
+        final String trustType = config.getStringWithDefault(prefix(prefix, SSL_TRUST_TYPE), null);
         if (trustType == null) {
             return Optional.empty();
         }
@@ -139,18 +154,22 @@ public class Main {
             throw new IllegalArgumentException(
                     String.format("Only support `%s` trust type through Configuration", CERTS));
         }
-        final String trustPath = config.getStringWithDefault(SSL_TRUST_PATH, null);
+        final String trustPath = config.getStringWithDefault(prefix(prefix, SSL_TRUST_PATH), null);
         if (trustPath == null) {
-            throw new IllegalArgumentException(String.format("Must specify `%s`", SSL_TRUST_PATH));
+            throw new IllegalArgumentException(String.format("Must specify `%s`", prefix(prefix, SSL_TRUST_PATH)));
         }
         return Optional.of(TrustCertificates.of(trustPath));
     }
 
-    private static Optional<ClientAuth> parseClientAuth(Configuration config) {
-        final String clientAuth = config.getStringWithDefault(SSL_CLIENT_AUTH, null);
+    private static Optional<ClientAuth> parseClientAuth(String prefix, Configuration config) {
+        final String clientAuth = config.getStringWithDefault(prefix(prefix, SSL_CLIENT_AUTH), null);
         if (clientAuth == null) {
             return Optional.empty();
         }
         return Optional.of(ClientAuth.valueOf(clientAuth));
+    }
+
+    private static String prefix(String prefix, String key) {
+        return prefix != null ? prefix + key : key;
     }
 }
