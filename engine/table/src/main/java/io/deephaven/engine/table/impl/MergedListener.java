@@ -49,7 +49,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     private Throwable upstreamError;
     private TableListener.Entry errorSourceEntry;
 
-    private final ExecutionContext executionContext = ExecutionContext.getThreadLocal();
+    private final ExecutionContext executionContext = ExecutionContext.getContextToRecord();
 
     protected MergedListener(
             Iterable<? extends ListenerRecorder> recorders,

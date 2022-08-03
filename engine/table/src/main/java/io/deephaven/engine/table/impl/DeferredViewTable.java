@@ -14,7 +14,6 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -43,7 +42,7 @@ public class DeferredViewTable extends RedefinableTable {
             @Nullable final SelectColumn[] deferredViewColumns,
             @Nullable final WhereFilter[] deferredFilters) {
         super(definition, description);
-        this.deferredExecutionContext = ExecutionContextImpl.makeSystemicExecutionContext();
+        this.deferredExecutionContext = ExecutionContext.makeSystemicExecutionContext();
         this.tableReference = tableReference;
         this.deferredDropColumns =
                 deferredDropColumns == null ? CollectionUtil.ZERO_LENGTH_STRING_ARRAY : deferredDropColumns;
@@ -75,7 +74,7 @@ public class DeferredViewTable extends RedefinableTable {
 
     @Override
     public Table where(Collection<? extends Filter> filters) {
-        final ExecutionContext whereExecutionContext = ExecutionContextImpl.makeSystemicExecutionContext();
+        final ExecutionContext whereExecutionContext = ExecutionContext.makeSystemicExecutionContext();
         WhereFilter[] whereFilters = WhereFilter.from(filters);
         final ExecutionContext[] executionContexts = new ExecutionContext[whereFilters.length];
         Arrays.fill(executionContexts, whereExecutionContext);

@@ -13,6 +13,7 @@ import java.util.Map;
 
 public class PoisonedCompilerToolsContext implements CompilerTools.Context {
     private static final Logger logger = LoggerFactory.getLogger(PoisonedCompilerToolsContext.class);
+    public static final PoisonedCompilerToolsContext INSTANCE = new PoisonedCompilerToolsContext();
 
     @Override
     public Hashtable<String, CompilerTools.SimplePromise<Class<?>>> getKnownClasses() {

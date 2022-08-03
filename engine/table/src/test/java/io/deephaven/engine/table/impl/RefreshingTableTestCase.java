@@ -9,7 +9,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.context.ExecutionContextImpl;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -60,7 +60,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
 
         // initialize the unit test's execution context
-        executionContext = ExecutionContextImpl.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests();
 
         oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
         oldCheckLtm = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);

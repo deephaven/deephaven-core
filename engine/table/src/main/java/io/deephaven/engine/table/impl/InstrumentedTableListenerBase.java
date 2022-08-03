@@ -8,7 +8,6 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
@@ -55,7 +54,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     private volatile long lastCompletedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile long lastEnqueuedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
 
-    protected final ExecutionContext executionContext = ExecutionContextImpl.getCurrentContext();
+    protected final ExecutionContext executionContext = ExecutionContext.getContextToRecord();
 
     InstrumentedTableListenerBase(@Nullable String description, boolean terminalListener) {
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(description);

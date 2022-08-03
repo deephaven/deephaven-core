@@ -374,41 +374,32 @@ public class CompilerTools {
         }
     }
 
-    private static volatile Context defaultContext = null;
-
-    public static Context getDefaultContext() {
-        if (defaultContext == null) {
-            synchronized (CompilerTools.class) {
-                if (defaultContext == null) {
-                    defaultContext = new PoisonedCompilerToolsContext();
-                }
-            }
-        }
-        return defaultContext;
-    }
-
-    private static final ThreadLocal<Context> currContext = ThreadLocal.withInitial(CompilerTools::getDefaultContext);
-
     @VisibleForTesting
     public static void setContextForUnitTests() {
-        setContext(new ContextImpl(new File(Configuration.getInstance().getWorkspacePath() +
-                File.separator + "cache" + File.separator + "classes")));
+        setContext(createContextForUnitTests());
+    }
+
+    @VisibleForTesting
+    public static Context createContextForUnitTests() {
+        return new ContextImpl(new File(Configuration.getInstance().getWorkspacePath() +
+                File.separator + "cache" + File.separator + "classes"));
     }
 
     public static void resetContext() {
-        setContext(getDefaultContext());
+        setContext(null);
     }
 
     public static void setContext(@Nullable Context context) {
-        if (context == null) {
-            currContext.remove();
-        } else {
-            currContext.set(context);
-        }
+        ExecutionContext.setContext(ExecutionContext.newBuilder()
+                .setCompilerContext(context == null ? PoisonedCompilerToolsContext.INSTANCE : context)
+                .captureMutableQueryScope()
+                .captureQueryLibrary()
+                .markSystemic()
+                .build());
     }
 
     public static Context getContext() {
-        return currContext.get();
+        return ExecutionContext.getContext().getCompilerContext();
     }
 
     public static <RETURN_TYPE> RETURN_TYPE doWithContext(@NotNull final Context context,

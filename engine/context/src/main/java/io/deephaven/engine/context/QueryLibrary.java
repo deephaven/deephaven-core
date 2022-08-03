@@ -30,21 +30,6 @@ public abstract class QueryLibrary {
         void importStatic(Class<?> aClass);
     }
 
-    private static volatile Context defaultLibrary = null;
-    private final static ThreadLocal<Context> currLibrary =
-            ThreadLocal.withInitial(QueryLibrary::getDefaultLibrary);
-
-    public static Context getDefaultLibrary() {
-        if (defaultLibrary == null) {
-            synchronized (QueryLibrary.class) {
-                if (defaultLibrary == null) {
-                    defaultLibrary = new PoisonedQueryLibrary();
-                }
-            }
-        }
-        return defaultLibrary;
-    }
-
     public static QueryLibrary.Context makeNewLibrary() {
         return new QueryLibrary.ContextImpl(IMPORTS_INSTANCE);
     }
@@ -57,15 +42,20 @@ public abstract class QueryLibrary {
     }
 
     public static void resetLibrary() {
-        setLibrary(makeNewLibrary());
+        setLibrary(null);
     }
 
     public static void setLibrary(QueryLibrary.Context library) {
-        currLibrary.set(library);
+        ExecutionContext.setContext(ExecutionContext.newBuilder()
+                .setQueryLibrary(library == null ? PoisonedQueryLibrary.INSTANCE : library)
+                .captureMutableQueryScope()
+                .captureCompilerContext()
+                .markSystemic()
+                .build());
     }
 
     public static QueryLibrary.Context getLibrary() {
-        return currLibrary.get();
+        return ExecutionContext.getContext().getQueryLibrary();
     }
 
     public static void importPackage(Package aPackage) {

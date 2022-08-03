@@ -4,7 +4,7 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.context.ExecutionContextImpl;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.gui.color.Color;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.QueryConstants;
@@ -21,7 +21,7 @@ public class TestColorUtil extends BaseArrayTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContextImpl.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests();
         t1 = TableTools.emptyTable(size).updateView("X = i", "Y = 2*i");
     }
 

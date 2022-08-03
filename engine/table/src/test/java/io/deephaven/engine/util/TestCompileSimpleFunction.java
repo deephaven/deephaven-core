@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.context.ExecutionContextImpl;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
@@ -16,7 +16,7 @@ public class TestCompileSimpleFunction extends TestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContextImpl.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests();
     }
 
     @Override

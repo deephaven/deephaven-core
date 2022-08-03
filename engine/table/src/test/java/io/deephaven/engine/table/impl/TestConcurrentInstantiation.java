@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.context.ExecutionContextImpl;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -23,7 +23,6 @@ import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 import junit.framework.TestCase;
@@ -57,7 +56,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        final ExecutionContext executionContext = ExecutionContextImpl.makeSystemicExecutionContext();
+        final ExecutionContext executionContext = ExecutionContext.makeSystemicExecutionContext();
         final ThreadFactory threadFactory = runnable -> {
             Thread thread = new Thread(() -> {
                 try (final SafeCloseable ignored = executionContext.open()) {

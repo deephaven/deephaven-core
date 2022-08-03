@@ -9,7 +9,6 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.CompilerTools;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.PartitionedTable;
@@ -61,7 +60,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     private final File classCacheDirectory;
 
-    protected final ExecutionContextImpl executionContext;
+    protected final ExecutionContext executionContext;
 
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
@@ -93,7 +92,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                         return classCacheDirectory.getAbsolutePath() + File.pathSeparatorChar + super.getClassPath();
                     }
                 };
-        executionContext = ExecutionContextImpl.newBuilder()
+        executionContext = ExecutionContext.newBuilder()
                 .markSystemic()
                 .setQueryLibrary(queryLibrary)
                 .setQueryScope(queryScope)

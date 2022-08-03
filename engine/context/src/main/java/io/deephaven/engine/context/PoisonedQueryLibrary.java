@@ -8,6 +8,7 @@ import java.util.Collection;
 
 public class PoisonedQueryLibrary implements QueryLibrary.Context {
     private static final Logger logger = LoggerFactory.getLogger(PoisonedQueryScope.class);
+    public static final PoisonedQueryLibrary INSTANCE = new PoisonedQueryLibrary();
 
     @Override
     public void updateVersionString() {

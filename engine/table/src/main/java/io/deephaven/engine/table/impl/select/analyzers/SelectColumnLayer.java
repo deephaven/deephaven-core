@@ -9,7 +9,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.ObjectChunkIterator;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
@@ -79,7 +78,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.parentRowSet = parentRowSet;
         this.writableSource = (WritableColumnSource) ReinterpretUtils.maybeConvertToPrimitive(ws);
         this.isRedirected = isRedirected;
-        this.executionContext = ExecutionContextImpl.getCurrentContext();
+        this.executionContext = ExecutionContext.getContextToRecord();
 
         dependencyBitSet = new BitSet();
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);

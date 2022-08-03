@@ -3,7 +3,7 @@
  */
 package io.deephaven.test.junit4;
 
-import io.deephaven.engine.context.ExecutionContextImpl;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.QueryTableTestBase;
 import io.deephaven.engine.table.impl.RefreshingTableTestCase;
 import io.deephaven.util.SafeCloseable;
@@ -22,7 +22,7 @@ public class EngineCleanup extends QueryTableTestBase implements TestRule {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContextImpl.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests();
     }
 
     @Override

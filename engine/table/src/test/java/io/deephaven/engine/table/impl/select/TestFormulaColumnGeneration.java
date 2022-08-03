@@ -45,11 +45,6 @@ public class TestFormulaColumnGeneration {
         QueryLibrary.setLibrary(QueryLibrary.makeNewLibrary("DEFAULT"));
     }
 
-    @After
-    public void tearDown() {
-        QueryLibrary.resetLibrary();
-    }
-
     @Test
     public void validateFiles() throws IOException {
         final DhFormulaColumn fc = (DhFormulaColumn) getFormulaColumn();

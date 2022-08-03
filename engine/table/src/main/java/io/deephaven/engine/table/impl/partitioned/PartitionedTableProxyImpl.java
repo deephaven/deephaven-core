@@ -10,7 +10,6 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
@@ -126,7 +125,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     private PartitionedTable.Proxy basicTransform(@NotNull final UnaryOperator<Table> transformer) {
-        final ExecutionContext context = ExecutionContextImpl.makeSystemicExecutionContext();
+        final ExecutionContext context = ExecutionContext.makeSystemicExecutionContext();
         return new PartitionedTableProxyImpl(
                 target.transform(context, transformer),
                 requireMatchingKeys,
@@ -137,7 +136,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             @NotNull final TableOperations<?, ?> other,
             @NotNull final BinaryOperator<Table> transformer,
             @Nullable final Collection<? extends JoinMatch> joinMatches) {
-        final ExecutionContext context = ExecutionContextImpl.makeSystemicExecutionContext();
+        final ExecutionContext context = ExecutionContext.makeSystemicExecutionContext();
         if (other instanceof Table) {
             final Table otherTable = (Table) other;
             if ((target.table().isRefreshing() || otherTable.isRefreshing()) && joinMatches != null) {

@@ -10,7 +10,7 @@ import io.deephaven.engine.exceptions.NotSortableException;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.context.ExecutionContextImpl;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.test.types.OutOfBandTest;
@@ -46,7 +46,7 @@ public class TestSort extends BaseArrayTestCase {
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
         lastMemoize = QueryTable.setMemoizeResults(false);
         oldCompilerToolsLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
-        executionContext = ExecutionContextImpl.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests();
     }
 
     @Override

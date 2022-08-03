@@ -9,7 +9,6 @@ import io.deephaven.base.Pair;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessManager;
@@ -242,7 +241,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     @ConcurrentMethod
     @Override
     public PartitionedTable transform(@NotNull UnaryOperator<Table> transformer) {
-        return transform(ExecutionContextImpl.getCurrentContext(), transformer);
+        return transform(ExecutionContext.getContextToRecord(), transformer);
     }
 
     @Override
@@ -280,7 +279,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     public PartitionedTableImpl partitionedTransform(
             @NotNull final PartitionedTable other,
             @NotNull final BinaryOperator<Table> transformer) {
-        return partitionedTransform(other, ExecutionContextImpl.getCurrentContext(), transformer);
+        return partitionedTransform(other, ExecutionContext.getContextToRecord(), transformer);
     }
 
     @Override

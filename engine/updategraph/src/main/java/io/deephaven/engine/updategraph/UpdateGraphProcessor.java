@@ -1744,7 +1744,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         private final WeakReference<Runnable> updateSourceRef;
 
         // TODO: ExecutionContextImpl is inaccessible from here, but is preferred over the thread local.
-        private final ExecutionContext executionContext = ExecutionContext.getThreadLocal();
+        private final ExecutionContext executionContext = ExecutionContext.getContextToRecord();
 
         private UpdateSourceRefreshNotification(@NotNull final Runnable updateSource) {
             super(false);

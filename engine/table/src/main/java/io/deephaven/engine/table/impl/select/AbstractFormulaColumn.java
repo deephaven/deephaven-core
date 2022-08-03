@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
@@ -72,7 +71,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         this.formulaString = Require.neqNull(formulaString, "formulaString");
         this.columnName = NameValidator.validateColumnName(columnName);
         this.useKernelFormulas = useKernelFormulas;
-        this.executionContext = ExecutionContextImpl.getCurrentContext();
+        this.executionContext = ExecutionContext.getContextToRecord();
     }
 
     @Override

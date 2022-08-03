@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.liveness;
 
-import io.deephaven.engine.context.ExecutionContextImpl;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
@@ -29,7 +29,7 @@ public class TestLiveness {
         oldCheckUgp = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
         scope = new LivenessScope();
         LivenessScopeStack.push(scope);
-        executionContext = ExecutionContextImpl.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests();
     }
 
     @After

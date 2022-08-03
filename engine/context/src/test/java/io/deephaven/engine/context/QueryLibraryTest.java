@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public class QueryLibraryTest {
     @Before
     public void setUp() {
-        QueryLibrary.resetLibrary();
+        QueryLibrary.setLibrary(QueryLibrary.makeNewLibrary());
     }
 
     @After

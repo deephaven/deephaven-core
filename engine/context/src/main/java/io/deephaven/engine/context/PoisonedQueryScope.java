@@ -11,6 +11,7 @@ import java.util.Set;
 
 public class PoisonedQueryScope extends QueryScope {
     private static final Logger logger = LoggerFactory.getLogger(PoisonedQueryScope.class);
+    public static final PoisonedQueryScope INSTANCE = new PoisonedQueryScope();
 
     @Override
     public Set<String> getParamNames() {

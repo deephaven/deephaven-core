@@ -10,7 +10,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.ExecutionContextImpl;
 import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSet;
@@ -246,7 +245,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         final PartitionedTable partitionedTable = sourceTable.partitionBy("Key");
 
-        final ExecutionContext executionContext = ExecutionContextImpl.makeSystemicExecutionContext();
+        final ExecutionContext executionContext = ExecutionContext.makeSystemicExecutionContext();
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     @Override
@@ -464,7 +463,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         pauseHelper.release();
         pauseHelper2.release();
 
-        final ExecutionContext executionContext = ExecutionContextImpl.newBuilder()
+        final ExecutionContext executionContext = ExecutionContext.newBuilder()
                 .captureQueryScopeVars("pauseHelper2")
                 .captureQueryLibrary()
                 .captureCompilerContext()
@@ -551,7 +550,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         pauseHelper.release();
 
-        final ExecutionContext executionContext = ExecutionContextImpl.newBuilder()
+        final ExecutionContext executionContext = ExecutionContext.newBuilder()
                 .captureQueryScopeVars("pauseHelper")
                 .captureQueryLibrary()
                 .captureCompilerContext()
@@ -755,7 +754,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         QueryLibrary.importStatic(TableTools.class);
 
         final Table underlying;
-        try (final SafeCloseable ignored = ExecutionContextImpl.newBuilder()
+        try (final SafeCloseable ignored = ExecutionContext.newBuilder()
                 .captureQueryLibrary()
                 .captureCompilerContext()
                 .captureMutableQueryScope()

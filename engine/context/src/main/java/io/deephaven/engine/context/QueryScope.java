@@ -23,37 +23,19 @@ import java.util.*;
  */
 public abstract class QueryScope implements LogOutputAppendable {
 
-    // -----------------------------------------------------------------------------------------------------------------
-    // ThreadLocal Management
-    // -----------------------------------------------------------------------------------------------------------------
-
-    private static volatile QueryScope defaultScope = null;
-    private static final ThreadLocal<QueryScope> currentScope = ThreadLocal.withInitial(QueryScope::getDefaultScope);
-
-    public static QueryScope getDefaultScope() {
-        if (defaultScope == null) {
-            synchronized (QueryScope.class) {
-                if (defaultScope == null) {
-                    defaultScope = new PoisonedQueryScope();
-                }
-            }
-        }
-        return defaultScope;
-    }
-
     /**
-     * Sets the default {@link QueryScope} to be used in the current context. By default there is a
-     * {@link PoisonedQueryScope} created by the static initializer and set as the defaultInstance. The method allows
+     * Sets the default {@link QueryScope} to be used in the current context. The method allows
      * the use of a new or separate instance as the default instance for static methods.
      *
-     * @param queryScope {@link QueryScope} to set as the new default instance; null clears the scope.
+     * @param queryScope {@link QueryScope} to set as the new instance; null clears the scope.
      */
-    public static synchronized void setScope(final QueryScope queryScope) {
-        if (queryScope == null) {
-            currentScope.remove();
-        } else {
-            currentScope.set(queryScope);
-        }
+    public static synchronized void setScope(QueryScope queryScope) {
+        ExecutionContext.setContext(ExecutionContext.newBuilder()
+                .setQueryScope(queryScope == null ? PoisonedQueryScope.INSTANCE : queryScope)
+                .captureQueryLibrary()
+                .captureCompilerContext()
+                .markSystemic()
+                .build());
     }
 
     /**
@@ -62,11 +44,11 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @return {@link QueryScope}
      */
     public static QueryScope getScope() {
-        return currentScope.get();
+        return ExecutionContext.getContext().getQueryScope();
     }
 
     /**
-     * Resets the {@link QueryScope} back to a PoisonedQueryScope.
+     * Resets the {@link QueryScope} back to its default value.
      */
     public static void resetScope() {
         setScope(null);
