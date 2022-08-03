@@ -32,37 +32,37 @@ public class MTlsCertificate {
      * Default implementation for use with Grpc's own TRANSPORT_ATTR_SSL_SESSION, to easily convert to non-deprecated
      * x509 certs.
      */
-    public static ServerInterceptor DEFAULT_INTERCEPTOR = new AbstractMtlsClientCertificateInterceptor() {
+    public final static ServerInterceptor DEFAULT_INTERCEPTOR = new AbstractMtlsClientCertificateInterceptor() {
         @Override
         protected <ReqT, RespT> Optional<List<X509Certificate>> getTransportCertificates(ServerCall<ReqT, RespT> call) {
             SSLSession sslSession = call.getAttributes().get(Grpc.TRANSPORT_ATTR_SSL_SESSION);
-            if (sslSession != null) {
-                try {
-                    Certificate[] javaxCerts = sslSession.getPeerCertificates();
-                    if (javaxCerts == null || javaxCerts.length == 0) {
-                        return Optional.empty();
-                    }
-
-                    int length = javaxCerts.length;
-                    List<X509Certificate> javaCerts = new ArrayList<>(length);
-
-                    CertificateFactory cf = CertificateFactory.getInstance("X.509");
-
-                    for (Certificate javaxCert : javaxCerts) {
-                        byte[] bytes = javaxCert.getEncoded();
-                        ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
-                        javaCerts.add((X509Certificate) cf.generateCertificate(stream));
-                    }
-
-                    return Optional.of(Collections.unmodifiableList(javaCerts));
-                } catch (SSLPeerUnverifiedException pue) {
-                    return Optional.empty();
-                } catch (CertificateException e) {
-                    logger.log(Level.WARNING, "Unable to read X509CertChain due to certificate exception", e);
+            if (sslSession == null) {
+                return Optional.empty();
+            }
+            try {
+                Certificate[] javaxCerts = sslSession.getPeerCertificates();
+                if (javaxCerts == null || javaxCerts.length == 0) {
                     return Optional.empty();
                 }
+
+                int length = javaxCerts.length;
+                List<X509Certificate> javaCerts = new ArrayList<>(length);
+
+                CertificateFactory cf = CertificateFactory.getInstance("X.509");
+
+                for (Certificate javaxCert : javaxCerts) {
+                    byte[] bytes = javaxCert.getEncoded();
+                    ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
+                    javaCerts.add((X509Certificate) cf.generateCertificate(stream));
+                }
+
+                return Optional.of(Collections.unmodifiableList(javaCerts));
+            } catch (SSLPeerUnverifiedException pue) {
+                return Optional.empty();
+            } catch (CertificateException e) {
+                logger.log(Level.WARNING, "Unable to read X509CertChain due to certificate exception", e);
+                return Optional.empty();
             }
-            return Optional.empty();
         }
     };
 }
