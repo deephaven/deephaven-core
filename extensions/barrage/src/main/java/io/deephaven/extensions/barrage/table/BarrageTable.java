@@ -399,7 +399,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             final LinkedHashMap<String, ColumnSource<?>> finalColumns =
                     makeColumns(columns, writableSources, rowRedirection);
             table = new BarrageRedirectedTable(
-                    registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, initialViewPortRows);
+                    registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes,
+                    initialViewPortRows);
         }
 
         // Even if this source table will eventually be static, the data isn't here already. Static tables need to

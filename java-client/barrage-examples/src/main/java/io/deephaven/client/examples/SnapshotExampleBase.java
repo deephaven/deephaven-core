@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.qst.TableCreationLogic;
 import picocli.CommandLine;

@@ -120,7 +120,9 @@ public class ArrowFlightUtil {
     }
 
 
-    private static void createAndSendStaticSnapshot(BaseTable table, BitSet columns, RowSet viewport, boolean reverseViewport, BarrageSnapshotOptions snapshotRequestOptions, StreamObserver<BarrageStreamGenerator.View> listener, BarragePerformanceLog.SnapshotMetricsHelper metrics) {
+    private static void createAndSendStaticSnapshot(BaseTable table, BitSet columns, RowSet viewport,
+            boolean reverseViewport, BarrageSnapshotOptions snapshotRequestOptions,
+            StreamObserver<BarrageStreamGenerator.View> listener, BarragePerformanceLog.SnapshotMetricsHelper metrics) {
         // start with small value and grow
         long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
         double snapshotNanosPerCell = 0.0;
@@ -129,7 +131,7 @@ public class ArrowFlightUtil {
                 Math.max(1, columns != null ? columns.cardinality() : table.getDefinition().getColumns().size());
 
         try (final WritableRowSet snapshotViewport = RowSetFactory.empty();
-             final WritableRowSet targetViewport = RowSetFactory.empty()) {
+                final WritableRowSet targetViewport = RowSetFactory.empty()) {
             // compute the target viewport
             if (viewport == null) {
                 targetViewport.insertRange(0, table.size() - 1);
@@ -138,7 +140,7 @@ public class ArrowFlightUtil {
             } else {
                 // compute the forward version of the reverse viewport
                 try (final RowSet rowKeys = table.getRowSet().subSetForReversePositions(viewport);
-                    final RowSet inverted = table.getRowSet().invert(rowKeys)) {
+                        final RowSet inverted = table.getRowSet().invert(rowKeys)) {
                     targetViewport.insert(inverted);
                 }
             }
@@ -152,9 +154,9 @@ public class ArrowFlightUtil {
 
                     final RowSequence snapshotPartialViewport = rsIt.getNextRowSequenceWithLength(cellCount);
                     // add these ranges to the running total
-                    snapshotPartialViewport.forEachRowKeyRange( (start,end) -> {
-                            snapshotViewport.insertRange(start, end);
-                            return true;
+                    snapshotPartialViewport.forEachRowKeyRange((start, end) -> {
+                        snapshotViewport.insertRange(start, end);
+                        return true;
                     });
 
                     // grab the snapshot and measure elapsed time for next projections
@@ -216,7 +218,8 @@ public class ArrowFlightUtil {
         // if the table is static or append-only and a full snapshot is requested, we can make and send multiple
         // snapshots to save memory and operate more efficiently
         if (!table.isRefreshing()) {
-            createAndSendStaticSnapshot(table, columns, viewport, reverseViewport, snapshotRequestOptions, listener, metrics);
+            createAndSendStaticSnapshot(table, columns, viewport, reverseViewport, snapshotRequestOptions, listener,
+                    metrics);
             return;
         }
 
@@ -237,10 +240,10 @@ public class ArrowFlightUtil {
 
         // translate the viewport to keyspace and make the call
         try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, metrics);
-             final RowSet keySpaceViewport =
-                     viewport != null
-                             ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
-                             : null) {
+                final RowSet keySpaceViewport =
+                        viewport != null
+                                ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
+                                : null) {
             listener.onNext(
                     bsg.getSnapshotView(snapshotRequestOptions, viewport,
                             reverseViewport, keySpaceViewport, columns));
