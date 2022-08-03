@@ -17,7 +17,7 @@ jobs:
         gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
         test-jvm-version: ['11', '17', '18']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3

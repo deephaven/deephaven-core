@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.widget.plot.enums;
 
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.ChartDescriptor;
@@ -12,4 +15,5 @@ public class JsChartType {
     public static final int CATEGORY = ChartDescriptor.ChartType.getCATEGORY();
     public static final int XYZ = ChartDescriptor.ChartType.getXYZ();
     public static final int CATEGORY_3D = ChartDescriptor.ChartType.getCATEGORY_3D();
+    public static final int TREEMAP = ChartDescriptor.ChartType.getTREEMAP();
 }

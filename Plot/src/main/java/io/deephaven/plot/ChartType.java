@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot;
 
 /**
@@ -26,5 +25,10 @@ public enum ChartType {
     /**
      * Has one discrete axis.
      */
-    CATEGORY
+    CATEGORY,
+
+    /**
+     * A category axis for hierarchy, and a numeric axis for values.
+     */
+    TREEMAP,
 }

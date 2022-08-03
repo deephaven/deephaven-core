@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.remote;
 
 import io.deephaven.base.verify.Assert;
@@ -18,6 +17,7 @@ import io.deephaven.engine.table.impl.util.*;
 
 import java.util.BitSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class InitialSnapshotTable extends QueryTable {
@@ -179,22 +179,23 @@ public class InitialSnapshotTable extends QueryTable {
     }
 
     public static InitialSnapshotTable setupInitialSnapshotTable(TableDefinition definition, InitialSnapshot snapshot) {
-        BitSet allColumns = new BitSet(definition.getColumns().length);
-        allColumns.set(0, definition.getColumns().length);
+        BitSet allColumns = new BitSet(definition.numColumns());
+        allColumns.set(0, definition.numColumns());
         return setupInitialSnapshotTable(definition, snapshot, allColumns);
     }
 
-    public static InitialSnapshotTable setupInitialSnapshotTable(TableDefinition definition, InitialSnapshot snapshot,
-            BitSet subscribedColumns) {
-        final ColumnDefinition<?>[] columns = definition.getColumns();
-        WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.length];
+    public static InitialSnapshotTable setupInitialSnapshotTable(
+            TableDefinition definition, InitialSnapshot snapshot, BitSet subscribedColumns) {
+        final List<ColumnDefinition<?>> columns = definition.getColumns();
+        WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.size()];
         WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
         LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>();
-        for (int i = 0; i < columns.length; i++) {
-            writableSources[i] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[i].getDataType(),
-                    columns[i].getComponentType());
-            finalColumns.put(columns[i].getName(),
-                    new WritableRedirectedColumnSource<>(rowRedirection, writableSources[i], 0));
+        for (int ci = 0; ci < writableSources.length; ci++) {
+            final ColumnDefinition<?> column = columns.get(ci);
+            writableSources[ci] = ArrayBackedColumnSource.getMemoryColumnSource(
+                    0, column.getDataType(), column.getComponentType());
+            finalColumns.put(column.getName(),
+                    new WritableRedirectedColumnSource<>(rowRedirection, writableSources[ci], 0));
         }
         // This table does not run, so we don't need to tell our row redirection or column source to start
         // tracking

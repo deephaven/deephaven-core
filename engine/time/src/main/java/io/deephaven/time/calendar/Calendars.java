@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.time.calendar;
 
 import io.deephaven.base.verify.Require;
@@ -155,9 +154,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
 
     private void addCalendar(final BusinessCalendar cal) {
         final String name = cal.name().toUpperCase();
-        try {
-            NameValidator.validateQueryParameterName(name);
-        } catch (NameValidator.InvalidNameException e) {
+        if (!NameValidator.isValidQueryParameterName(name)) {
             throw new IllegalArgumentException("Invalid name for calendar: name='" + name + "'");
         }
 

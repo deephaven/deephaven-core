@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.io.logger.SystemStreamAdapter",
- "methods": {
-  "sendSystemErrToLogger": "Redirect System.err to the specified logger, at level STDERR.\n\n:param logger: (io.deephaven.io.logger.Logger) -",
-  "sendSystemOutToLogger": "Redirect System.out to the specified logger, at level STDOUT.\n\n:param logger: (io.deephaven.io.logger.Logger) -"
- },
- "path": "io.deephaven.io.logger.SystemStreamAdapter",
- "typeName": "class"
-}

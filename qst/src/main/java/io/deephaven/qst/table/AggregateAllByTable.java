@@ -1,8 +1,10 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import org.immutables.value.Value.Immutable;
@@ -31,7 +33,7 @@ public abstract class AggregateAllByTable extends ByTableBase {
      * @return the aggregation, if non-empty
      */
     public static Optional<Aggregation> singleAggregation(
-            AggSpec spec, Collection<? extends Selectable> groupByColumns,
+            AggSpec spec, Collection<? extends ColumnName> groupByColumns,
             Collection<? extends ColumnName> tableColumns) {
         Set<ColumnName> exclusions = AggAllByExclusions.of(spec, groupByColumns);
         List<ColumnName> columnsToAgg = new ArrayList<>(tableColumns.size());

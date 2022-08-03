@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.qst;
 
 import io.deephaven.annotations.BuildableStyle;
@@ -17,12 +20,12 @@ public abstract class TableAdapterResults<TOPS extends TableOperations<TOPS, TAB
 
     public interface Output<TOPS extends TableOperations<TOPS, TABLE>, TABLE> {
 
-        <V extends Visitor<TOPS, TABLE>> V walk(V visitor);
+        <T, V extends Visitor<T, TOPS, TABLE>> T walk(V visitor);
 
-        interface Visitor<TOPS extends TableOperations<TOPS, TABLE>, TABLE> {
-            void visit(TOPS tops);
+        interface Visitor<T, TOPS extends TableOperations<TOPS, TABLE>, TABLE> {
+            T visit(TOPS tops);
 
-            void visit(TABLE table);
+            T visit(TABLE table);
         }
     }
 
@@ -31,16 +34,11 @@ public abstract class TableAdapterResults<TOPS extends TableOperations<TOPS, TAB
      *
      * @param <T> the table operations and table type
      */
-    public static class GetOutput<T extends TableOperations<T, T>> implements Visitor<T, T> {
-        private T out;
-
-        public T out() {
-            return Objects.requireNonNull(out);
-        }
+    public static final class GetOutput<T extends TableOperations<T, T>> implements Visitor<T, T, T> {
 
         @Override
-        public void visit(T t) {
-            out = t;
+        public T visit(T t) {
+            return t;
         }
     }
 }

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.agg.Partition;
@@ -13,6 +16,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -81,7 +85,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     private final QueryTable parentTable;
     private final String resultName;
-    private final AttributeCopier attributeCopier;
+    private final Map<String, Object> subTableAttributes;
 
     private final String callSite;
 
@@ -135,7 +139,6 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             @NotNull final String... keyColumnNames) {
         this.parentTable = parentTable;
         this.resultName = resultName;
-        this.attributeCopier = attributeCopier;
 
         callSite = QueryPerformanceRecorder.getCallerLine();
 
@@ -145,6 +148,14 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         // Note: Sub-tables always share their ColumnSource map with the parent table, so they can all use this result
         // MCS.
         resultModifiedColumnSet = new ModifiedColumnSet(parentTable.getModifiedColumnSetForUpdates());
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            // noinspection resource
+            final QueryTable attributeDestination = parentTable.getSubTable(RowSetFactory.empty().toTracking());
+            // NB: Sub-table inherits "systemicness" from current thread at construction
+            attributeCopier.copyAttributes(parentTable, attributeDestination);
+            subTableAttributes = attributeDestination.getAttributes();
+        }
 
         if (parentTable.isRefreshing()) {
             removedRowSets = new ObjectArraySource<>(WritableRowSet.class);
@@ -711,10 +722,9 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     private QueryTable makeSubTable(@NotNull final WritableRowSet initialRowSetToInsert) {
         initialRowSetToInsert.compact();
-        final QueryTable subTable =
-                parentTable.getSubTable(initialRowSetToInsert.toTracking(), resultModifiedColumnSet);
+        final QueryTable subTable = parentTable.getSubTable(
+                initialRowSetToInsert.toTracking(), resultModifiedColumnSet, subTableAttributes);
         subTable.setRefreshing(parentTable.isRefreshing());
-        attributeCopier.copyAttributes(parentTable, subTable);
         return subTable;
     }
 

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.arrow;
 
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -44,9 +47,9 @@ import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.validation.constraints.NotNull;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -123,7 +126,7 @@ public class ArrowFlightUtil {
         double snapshotNanosPerCell = 0.0;
 
         final long columnCount =
-                Math.max(1, columns != null ? columns.cardinality() : table.getDefinition().getColumns().length);
+                Math.max(1, columns != null ? columns.cardinality() : table.getDefinition().getColumns().size());
 
         try (final WritableRowSet snapshotViewport = RowSetFactory.empty();
              final WritableRowSet targetViewport = RowSetFactory.empty()) {
@@ -257,6 +260,7 @@ public class ArrowFlightUtil {
 
         private BarrageTable resultTable;
         private SessionState.ExportBuilder<Table> resultExportBuilder;
+        private Flight.FlightDescriptor flightDescriptor;
 
         private ChunkType[] columnChunkTypes;
         private int[] columnConversionFactors;
@@ -287,14 +291,18 @@ public class ArrowFlightUtil {
             GrpcUtil.rpcWrapper(log, observer, () -> {
                 final BarrageProtoUtil.MessageInfo mi = BarrageProtoUtil.parseProtoMessage(request);
                 if (mi.descriptor != null) {
-                    if (resultExportBuilder != null) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Only one descriptor definition allowed");
+                    if (flightDescriptor != null) {
+                        if (!flightDescriptor.equals(mi.descriptor)) {
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "additional flight descriptor sent does not match original descriptor");
+                        }
+                    } else {
+                        flightDescriptor = mi.descriptor;
+                        resultExportBuilder = ticketRouter
+                                .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
+                                .onError(observer);
+                        manage(resultExportBuilder.getExport());
                     }
-                    resultExportBuilder = ticketRouter
-                            .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
-                            .onError(observer);
-                    manage(resultExportBuilder.getExport());
                 }
 
                 if (mi.app_metadata != null

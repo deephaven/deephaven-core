@@ -1,9 +1,10 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
-
-import java.util.Collection;
 
 /**
  * Specifies an aggregation that outputs each group of input values as a Deephaven vector (io.deephaven.vector.Vector).

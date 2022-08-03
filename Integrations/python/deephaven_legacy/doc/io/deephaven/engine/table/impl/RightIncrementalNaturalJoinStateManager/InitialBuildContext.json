@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager$InitialBuildContext",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager.InitialBuildContext",
- "typeName": "interface"
-}

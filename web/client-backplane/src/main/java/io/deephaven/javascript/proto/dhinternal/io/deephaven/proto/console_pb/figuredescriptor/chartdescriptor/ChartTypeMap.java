@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.chartdescriptor;
 
 import jsinterop.annotations.JsOverlay;
@@ -29,6 +32,9 @@ public interface ChartTypeMap {
     @JsProperty(name = "PIE")
     int getPIE();
 
+    @JsProperty(name = "TREEMAP")
+    int getTREEMAP();
+
     @JsProperty(name = "XY")
     int getXY();
 
@@ -46,6 +52,9 @@ public interface ChartTypeMap {
 
     @JsProperty(name = "PIE")
     void setPIE(int PIE);
+
+    @JsProperty(name = "TREEMAP")
+    void setTREEMAP(int TREEMAP);
 
     @JsProperty(name = "XY")
     void setXY(int XY);

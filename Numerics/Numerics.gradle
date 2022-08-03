@@ -1,15 +1,17 @@
 plugins {
     id 'io.deephaven.project.register'
+    id 'java-library'
 }
 
 configurations {
-    compile.extendsFrom dhNumerics
-    testCompile.extendsFrom fishBaseTest
+    implementation.extendsFrom dhNumerics
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {
-    compile project(':engine-table'),
-            project(':engine-function')
+    api project(':engine-time')
+    implementation project(':engine-function')
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
 }

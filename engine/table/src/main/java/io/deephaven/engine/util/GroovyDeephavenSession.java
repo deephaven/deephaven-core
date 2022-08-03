@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.util;
 
 import com.google.auto.service.AutoService;
@@ -520,6 +519,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import io.deephaven.api.filter.*;\n" +
                 "import io.deephaven.engine.table.DataColumn;\n" +
                 "import io.deephaven.engine.table.Table;\n" +
+                "import io.deephaven.engine.table.TableFactory;\n" +
+                "import io.deephaven.engine.table.PartitionedTable;\n" +
+                "import io.deephaven.engine.table.PartitionedTableFactory;\n" +
                 "import java.lang.reflect.Array;\n" +
                 "import io.deephaven.util.type.TypeUtils;\n" +
                 "import io.deephaven.util.type.ArrayTypeUtils;\n" +
@@ -539,6 +541,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.time.TimeZone.*;\n" +
                 "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
+                "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
+
                 StringUtils.joinStrings(scriptImports, "\n") + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command
                 + "\n\n// this final true prevents Groovy from interpreting a trailing class definition as something to execute\n;\ntrue;\n");
@@ -663,6 +667,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         public GroovySnapshot(Map<String, Object> existingScope) {
             this.scope = Objects.requireNonNull(existingScope);
+        }
+
+        @Override
+        public void close() {
+            // no-op
         }
     }
 

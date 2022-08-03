@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Assert;
@@ -236,8 +235,8 @@ public class TestFormulaColumn {
             result = Arrays.asList("varargTest1", "varargTest2", "varargTest3");
             checkPrimitive(row, expression, result);
 
-            expression = "io.deephaven.engine.table.ColumnDefinition.COLUMNTYPE_NORMAL";
-            result = ColumnDefinition.COLUMNTYPE_NORMAL;
+            expression = "io.deephaven.engine.table.ColumnDefinition.ColumnType.Normal";
+            result = ColumnDefinition.ColumnType.Normal;
             checkPrimitive(row, expression, result);
 
             expression = "CountDownLatch.class"; // (testing a package import)

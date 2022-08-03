@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.FunctionalInterfaces$ThrowingTriConsumer",
- "methods": {
-  "accept": ":param t: FunctionalInterfaces.ThrowingTriConsumer.T\n:param u: FunctionalInterfaces.ThrowingTriConsumer.U\n:param v: FunctionalInterfaces.ThrowingTriConsumer.V"
- },
- "path": "io.deephaven.util.FunctionalInterfaces.ThrowingTriConsumer",
- "typeName": "interface"
-}

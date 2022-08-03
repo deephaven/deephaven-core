@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.Base64;
@@ -14,16 +17,18 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.function.BiConsumer;
 
 /**
- * Expands {@link TableUpdateListener#onUpdate(TableUpdate)}'s Update into a backward compatible ARM (added, removed,
- * modified) by expanding keyspace shifts.
+ * Converts {@link TableUpdate table updates} used for {@link TableUpdateListener#onUpdate(TableUpdate) standard table
+ * update listeners}'s into {@link RowSet row sets} compatible with legacy-style
+ * {@link io.deephaven.engine.table.ShiftObliviousListener shift-oblivious listeners} by expanding keyspace shifts.
  *
- * Using this is almost always less efficient than using the Update directly.
+ * Using this is almost always less efficient than using the {@link TableUpdate} directly.
  */
 public class RowSetShiftDataExpander implements SafeCloseable {
 
@@ -36,7 +41,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
     /**
      * Generates the backwards compatible ARM from an ARMS update.
      * 
-     * @param update The usptream update.
+     * @param update The upstream update.
      */
     public RowSetShiftDataExpander(final TableUpdate update, final TrackingRowSet sourceRowSet) {
         // do we even need changes?
@@ -55,12 +60,12 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             }
 
             // Conceptually we can group modifies into two: a) modifies that were not part of any shift, and b) modifies
-            // that are now at a shift destination. Group A is in upstream's modified set already. Group B indices
+            // that are now at a shift destination. Group A is in upstream's modified set already. Group B row sets
             // either existed last cycle or it did not. If it existed last cycle, then it should remain in the modified
             // set.
             // If it did not exist last cycle then it is accounted for in `this.update.added`. The is one more group of
-            // modified rows. These are rows that existed in both previous and current indexes but were shifted.
-            // Thus we need to add mods for shifted rows and remove any rows that are added (by old definition).
+            // modified rows. These are rows that existed in both previous and current row sets but were shifted.
+            // Thus, we need to add mods for shifted rows and remove any rows that are added (by old definition).
             modified = update.modified().copy();
 
             // Expand shift destinations to paint rows that might need to be considered modified.
@@ -90,6 +95,9 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             modified.remove(added);
         } catch (Exception e) {
             throw new RuntimeException("Could not expand update: " + update, e);
+        }
+        if (BaseTable.VALIDATE_UPDATE_OVERLAPS) {
+            validate(update, sourceRowSet);
         }
     }
 
@@ -147,14 +155,15 @@ public class RowSetShiftDataExpander implements SafeCloseable {
      * @param update The update originally passed at construction time, used only for logging debug info on error
      * @param sourceRowSet The underlying RowSet that applies to added/removed/modified
      */
-    public void validate(final TableUpdate update, final TrackingRowSet sourceRowSet) {
+    @VisibleForTesting
+    void validate(final TableUpdate update, final TrackingRowSet sourceRowSet) {
         final boolean previousContainsAdds;
         final boolean previousMissingRemovals;
         final boolean previousMissingModifications;
-        try (final RowSet prevIndex = sourceRowSet.copyPrev()) {
-            previousContainsAdds = added.overlaps(prevIndex);
-            previousMissingRemovals = !removed.subsetOf(prevIndex);
-            previousMissingModifications = !modified.subsetOf(prevIndex);
+        try (final RowSet prevRowSet = sourceRowSet.copyPrev()) {
+            previousContainsAdds = added.overlaps(prevRowSet);
+            previousMissingRemovals = !removed.subsetOf(prevRowSet);
+            previousMissingModifications = !modified.subsetOf(prevRowSet);
         }
         final boolean currentMissingAdds = !added.subsetOf(sourceRowSet);
         final boolean currentContainsRemovals = removed.overlaps(sourceRowSet);
@@ -209,11 +218,11 @@ public class RowSetShiftDataExpander implements SafeCloseable {
         final RowSet removedIntersectCurrent = removed.intersect(sourceRowSet);
         final RowSet modifiedMinusCurrent = modified.minus(sourceRowSet);
 
-        // Everything is messed up for this table, print out the indices in an easy to understand way
-        final String indexUpdateErrorMessage = new LogOutputStringImpl()
+        // Everything is messed up for this table, print out the row sets in an easy-to-understand way
+        final String rowSetUpdateErrorMessage = new LogOutputStringImpl()
                 .append("RowSet update error detected: ")
-                .append(LogOutput::nl).append("\t          previousIndex=").append(sourceRowSet.copyPrev())
-                .append(LogOutput::nl).append("\t           currentIndex=").append(sourceRowSet)
+                .append(LogOutput::nl).append("\t         previousRowSet=").append(sourceRowSet.copyPrev())
+                .append(LogOutput::nl).append("\t          currentRowSet=").append(sourceRowSet)
                 .append(LogOutput::nl).append("\t         updateToExpand=").append(update)
                 .append(LogOutput::nl).append("\t         shifted.size()=").append(update.shifted().size())
                 .append(LogOutput::nl).append("\t                  added=").append(added)
@@ -226,7 +235,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
                 .append(LogOutput::nl).append("\tremovedIntersectCurrent=").append(removedIntersectCurrent)
                 .append(LogOutput::nl).append("\t    modifiedMinusCurrent=").append(modifiedMinusCurrent).toString();
 
-        log.error().append(indexUpdateErrorMessage).endl();
+        log.error().append(rowSetUpdateErrorMessage).endl();
 
         if (serializedIndices != null) {
             log.error().append("RowSet update error detected: serialized data=")
@@ -235,6 +244,6 @@ public class RowSetShiftDataExpander implements SafeCloseable {
 
         Assert.assertion(false, "!(previousContainsAdds || previousMissingRemovals || " +
                 "previousMissingModifications || currentMissingAdds || currentContainsRemovals || " +
-                "currentMissingModifications)", indexUpdateErrorMessage);
+                "currentMissingModifications)", rowSetUpdateErrorMessage);
     }
 }

@@ -1,0 +1,83 @@
+import io.deephaven.tools.docker.DiffTask
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
+}
+
+evaluationDependsOn Docker.registryProject('go')
+
+
+// The Go convention is to check in generated sources - while there is a "central repo server" for Go, it is a proxy
+// that merely polls each proxy several times an hour, but doesn't allow contents to be deployed to it. As such,
+// any generated code must exist in git, and will be downloaded from there. As part of the build then, we generate and
+// compare/overwrite protobuf sources.
+configurations {
+    go {}
+}
+dependencies {
+    go project(path: ':proto:proto-backplane-grpc', configuration: 'go')
+}
+def compare = tasks.register('compareProtobuf', DiffTask) {
+    expectedContents.set configurations.go
+    actualContents.set layout.projectDirectory
+    generateTask.set ':go:updateProtobuf'
+
+    ignore {
+        exclude 'internal/proto/**'
+    }
+}
+// fail a "check" build if these are out of date
+tasks.getByName('quick').dependsOn(compare)
+
+tasks.register('updateProtobuf', Sync) {
+    finalizedBy compare
+    from configurations.go
+    into layout.projectDirectory
+    preserve {
+        exclude 'internal/proto/**'
+    }
+}
+
+
+// start a grpc-api server
+String randomSuffix = UUID.randomUUID().toString();
+deephavenDocker {
+    containerName.set "dh-server-for-go-${randomSuffix}"
+    networkName.set "go-test-network-${randomSuffix}"
+}
+def testGoClient = Docker.registerDockerTask(project, 'testGoClient') {
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'pkg/**'
+            include 'internal/**'
+            include 'go.mod'
+            include 'go.sum'
+            include 'go-test-to-junit.sh'
+        }
+    }
+    copyOut {
+        into layout.buildDirectory.dir('test-results')
+    }
+    dockerfile {
+        from('deephaven/go:local-build')
+        workingDir('/project')
+        copyFile('go.*', '/project/')
+        runCommand('''set -eux; \\
+                      mkdir /out; \\
+                      go mod download; \\
+                      go mod verify; \\
+                      go install github.com/jstemmer/go-junit-report/v2@latest
+                      ''')
+        copyFile('.', '/project/')
+        environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
+        environmentVariable 'DH_PORT', '8080'
+    }
+    containerDependencies.dependsOn = [deephavenDocker.healthyTask]
+    containerDependencies.finalizedBy = deephavenDocker.endTask
+    network = deephavenDocker.networkName.get()
+    parentContainers = [ Docker.registryTask(project, 'go') ]
+    entrypoint = ['./go-test-to-junit.sh', '/out/go-test.xml', '/out/go.log']
+}
+tasks.check.dependsOn(testGoClient)

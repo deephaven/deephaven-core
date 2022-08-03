@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.sources.deltaaware;
 
 import io.deephaven.engine.table.*;
@@ -444,6 +443,12 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     public void set(final long key, final T value) {
         final long translatedKey = lookupOrCreateIndexInDeltaSpace(key);
         chunkAdapter.get().set(translatedKey, value);
+    }
+
+    @Override
+    public void setNull(final long key) {
+        final long translatedKey = lookupOrCreateIndexInDeltaSpace(key);
+        chunkAdapter.get().setNull(translatedKey);
     }
 
     @Override

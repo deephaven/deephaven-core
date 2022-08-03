@@ -1,12 +1,11 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterSparseArraySource and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.impl.AbstractColumnSource;
@@ -96,6 +95,26 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     public void ensureCapacity(long capacity, boolean nullFill) {
         // Nothing to do here. Sparse array sources allocate on-demand and always null-fill.
     }
+
+    // region setNull
+    @Override
+    public void setNull(long key) {
+        final byte [] blocks2 = blocks.getInnermostBlockByKeyOrNull(key);
+        if (blocks2 == null) {
+            return;
+        }
+        final int indexWithinBlock = (int) (key & INDEX_MASK);
+        if (blocks2[indexWithinBlock] == NULL_BOOLEAN_AS_BYTE) {
+            return;
+        }
+
+        final byte [] prevBlocksInner = shouldRecordPrevious(key);
+        if (prevBlocksInner != null) {
+            prevBlocksInner[indexWithinBlock] = blocks2[indexWithinBlock];
+        }
+        blocks2[indexWithinBlock] = NULL_BOOLEAN_AS_BYTE;
+    }
+    // endregion setNull
 
     @Override
     public final void set(long key, byte value) {
@@ -825,12 +844,21 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource.ReinterpretedAsByte(this);
     }
 
-    private static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte> {
+    public static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte> {
         private final BooleanSparseArraySource wrapped;
 
         private ReinterpretedAsByte(BooleanSparseArraySource wrapped) {
             super(byte.class);
             this.wrapped = wrapped;
+        }
+
+        public void shift(final RowSet keysToShift, final long shiftDelta) {
+            this.wrapped.shift(keysToShift, shiftDelta);
+        }
+
+        @Override
+        public void startTrackingPrevValues() {
+            wrapped.startTrackingPrevValues();
         }
 
         @Override
@@ -841,6 +869,11 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         @Override
         public byte getPrevByte(long rowKey) {
             return wrapped.getPrevByte(rowKey);
+        }
+
+        @Override
+        public void setNull(long key) {
+            wrapped.setNull(key);
         }
 
         @Override

@@ -4,7 +4,6 @@ plugins {
   id 'idea'
 }
 
-evaluationDependsOn ':deephaven-jpy'
 evaluationDependsOn ':docker-runtime-base'
 
 sourceSets {
@@ -25,6 +24,8 @@ sourceSets {
     resources {
       srcDirs = ['src/javaToPython/python']
     }
+    compileClasspath += sourceSets.test.output
+    runtimeClasspath += sourceSets.test.output
   }
 
   pythonToJava {
@@ -34,25 +35,28 @@ sourceSets {
     resources {
       srcDirs = ['src/pythonToJava/python']
     }
+    compileClasspath += sourceSets.test.output
+    runtimeClasspath += sourceSets.test.output
   }
 }
 
 configurations {
-  testCompile.extendsFrom junit
+  javaToPythonJar
 
-  javaToPythonCompile.extendsFrom testCompile
-  pythonToJavaCompile.extendsFrom testCompile
+  testImplementation.extendsFrom junit
 
-  javaToPythonRuntime.extendsFrom testRuntime
-  pythonToJavaRuntime.extendsFrom testRuntime
+  javaToPythonImplementation.extendsFrom testImplementation
+  pythonToJavaImplementation.extendsFrom testImplementation
+
+  javaToPythonRuntimeOnly.extendsFrom testRuntimeOnly
+  pythonToJavaRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 dependencies {
   // todo: consider running tests where JPY is *not* on the classpath, which is a completely acceptable use case
-  testCompile project(':deephaven-jpy')
-  testCompile project(':deephaven-jpy-ext')
-  javaToPythonCompile sourceSets.test.output
-  pythonToJavaCompile sourceSets.test.output
+  testImplementation project(':deephaven-jpy-ext')
+  javaToPythonImplementation sourceSets.test.output
+  pythonToJavaImplementation sourceSets.test.output
 }
 
 test {
@@ -67,7 +71,7 @@ task javaToPythonJar(type: Jar) {
 
 // And then we need to attach it to the appropriate configuration
 artifacts {
-  javaToPythonRuntime tasks.javaToPythonJar
+  javaToPythonJar tasks.javaToPythonJar
 }
 
 // must be explicit about marking these as test source directories in IntelliJ when not delegating builds to gradle
@@ -194,7 +198,6 @@ Sync jpyConfigTask = tasks.create 'createPythonToJavaConfig', Sync, {
   rename { file -> 'jpyconfig.py' }
   doFirst {
     expand(
-            javaHome:'/opt/java/openjdk',
             jvmMaxMem:'32m',
             jvmClasspath:'/classpath:' + sourceSets.pythonToJava.runtimeClasspath.asList().collect { '/classpath/' + it.name }.join(':')
     )
@@ -223,7 +226,6 @@ Closure<TaskProvider<Task>> pyExec = { String taskName, List<String> command, bo
       runCommand '''set -eux; \\
                       pip3 install unittest-xml-reporting==3.0.4;\\
                       mkdir /out;'''
-      environmentVariable 'JDK_HOME', '/opt/java/openjdk'
       environmentVariable 'JAVA_VERSION', '1.8'
       environmentVariable 'JPY_PY_CONFIG', '/python/jpyconfig.py'
 

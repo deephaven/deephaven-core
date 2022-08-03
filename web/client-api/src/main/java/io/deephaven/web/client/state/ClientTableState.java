@@ -1,18 +1,18 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.state;
 
 import elemental2.core.JsMap;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
+import elemental2.core.Uint8Array;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Field;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.KeyValue;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.barrage.BarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
@@ -29,11 +29,11 @@ import jsinterop.base.Js;
 
 import java.util.*;
 import java.util.function.BinaryOperator;
-import java.util.function.DoubleFunction;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import static io.deephaven.web.client.api.barrage.BarrageUtils.keyValuePairs;
 import static io.deephaven.web.client.fu.JsItr.iterate;
 
 /**
@@ -354,20 +354,29 @@ public final class ClientTableState extends TableConfig {
         }
         this.size = size;
 
+        JsConsumer<JsTable> doSetSize = table -> {
+            long localSize = size;
+            final ActiveTableBinding binding = getActiveBinding(table);
+            if (binding != null && table.isStreamTable()) {
+                localSize = Math.min(size, binding.getRows().size());
+            }
+            table.setSize(localSize);
+        };
+
         if (isRunning()) {
             if (log) {
                 JsLog.debug("CTS immediate size update ", this.size, " actives: ", active);
             }
-            forActiveTables(table -> table.setSize(size));
+            forActiveTables(doSetSize);
         } else {
             if (queuedSize == null) {
                 JsLog.debug("Queuing size changed until RUNNING STATE; ", size);
                 onRunning(self -> {
                     JsLog.debug("Firing queued size change event (", queuedSize, ")");
                     forActiveTables(table -> {
-                        table.setSize(queuedSize);
+                        doSetSize.apply(table);
+                        queuedSize = null;
                     });
-                    queuedSize = null;
                 }, JsRunnable.doNothing());
             }
             queuedSize = (double) size;
@@ -1030,48 +1039,14 @@ public final class ClientTableState extends TableConfig {
         handle.setState(TableTicket.State.EXPORTED);
         handle.setConnected(true);
 
-        // we conform to flight's schema representation of:
-        // - IPC_CONTINUATION_TOKEN (4-byte int of -1)
-        // - message size (4-byte int)
-        // - a Message wrapping the schema
-        ByteBuffer bb = new ByteBuffer(def.getSchemaHeader_asU8());
-        bb.setPosition(bb.position() + 8);
-        Message headerMessage = Message.getRootAsMessage(bb);
+        Uint8Array flightSchemaMessage = def.getSchemaHeader_asU8();
+        Schema schema = BarrageUtils.readSchemaMessage(flightSchemaMessage);
 
-        assert headerMessage.headerType() == MessageHeader.Schema;
-        Schema schema = headerMessage.header(new Schema());
-
-        ColumnDefinition[] cols = new ColumnDefinition[(int) schema.fieldsLength()];
-        for (int i = 0; i < schema.fieldsLength(); i++) {
-            cols[i] = new ColumnDefinition();
-            Field f = schema.fields(i);
-            Map<String, String> fieldMetadata =
-                    keyValuePairs("deephaven:", f.customMetadataLength(), f::customMetadata);
-            cols[i].setName(f.name().asString());
-            cols[i].setColumnIndex(i);
-            cols[i].setType(fieldMetadata.get("type"));
-            cols[i].setStyleColumn("true".equals(fieldMetadata.get("isStyle")));
-            cols[i].setFormatColumn("true".equals(fieldMetadata.get("isDateFormat"))
-                    || "true".equals(fieldMetadata.get("isNumberFormat")));
-            cols[i].setForRow("true".equals(fieldMetadata.get("isRowStyle")));
-
-            String formatColumnName = fieldMetadata.get("dateFormatColumn");
-            if (formatColumnName == null) {
-                formatColumnName = fieldMetadata.get("numberFormatColumn");
-            }
-            cols[i].setFormatColumnName(formatColumnName);
-
-            cols[i].setStyleColumnName(fieldMetadata.get("styleColumn"));
-
-            if (fieldMetadata.containsKey("inputtable.isKey")) {
-                cols[i].setInputTableKeyColumn(Boolean.parseBoolean(fieldMetadata.get("inputtable.isKey")));
-            }
-
-            cols[i].setDescription(fieldMetadata.get("description"));
-        }
+        ColumnDefinition[] cols = BarrageUtils.readColumnDefinitions(schema);
 
         TableAttributesDefinition attributes = new TableAttributesDefinition(
                 keyValuePairs("deephaven:attribute.", schema.customMetadataLength(), schema::customMetadata),
+                keyValuePairs("deephaven:attribute_type.", schema.customMetadataLength(), schema::customMetadata),
                 keyValuePairs("deephaven:unsent.attribute.", schema.customMetadataLength(), schema::customMetadata)
                         .keySet());
         setTableDef(new InitialTableDefinition()
@@ -1080,21 +1055,6 @@ public final class ClientTableState extends TableConfig {
 
         setResolution(ResolutionState.RUNNING);
         setSize(Long.parseLong(def.getSize()));
-    }
-
-    private static Map<String, String> keyValuePairs(String filterPrefix, double count,
-            DoubleFunction<KeyValue> accessor) {
-        Map<String, String> map = new HashMap<>();
-        for (int i = 0; i < count; i++) {
-            KeyValue pair = accessor.apply(i);
-            String key = pair.key().asString();
-            if (key.startsWith(filterPrefix)) {
-                key = key.substring(filterPrefix.length());
-                String oldValue = map.put(key, pair.value().asString());
-                assert oldValue == null : key + " had " + oldValue + ", replaced with " + pair.value();
-            }
-        }
-        return map;
     }
 
     public boolean isAncestor(ClientTableState was) {

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.table.PartitionedTableFactory$CreatorProvider",
- "methods": {
-  "get": ":return: io.deephaven.engine.table.PartitionedTableFactory.Creator"
- },
- "path": "io.deephaven.engine.table.PartitionedTableFactory.CreatorProvider",
- "text": "Creator provider to supply the implementation at runtime.",
- "typeName": "interface"
-}

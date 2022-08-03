@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.widget.plot.enums;
 
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
@@ -17,4 +20,5 @@ public class JsSeriesPlotStyle {
     public static final int SCATTER = FigureDescriptor.SeriesPlotStyle.getSCATTER();
     public static final int STEP = FigureDescriptor.SeriesPlotStyle.getSTEP();
     public static final int ERROR_BAR = FigureDescriptor.SeriesPlotStyle.getERROR_BAR();
+    public static final int TREEMAP = FigureDescriptor.SeriesPlotStyle.getTREEMAP();
 }

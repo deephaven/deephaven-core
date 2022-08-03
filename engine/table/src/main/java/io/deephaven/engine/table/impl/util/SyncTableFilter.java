@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2020 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.util;
 
 import gnu.trove.list.array.TLongArrayList;
@@ -150,7 +149,7 @@ public class SyncTableFilter {
             idSources.add(std.table.getColumnSource(std.idColumn, long.class));
             // noinspection resource
             resultRowSet[ii] = RowSetFactory.empty().toTracking();
-            results[ii] = ((QueryTable) std.table).getSubTable(resultRowSet[ii], null, mergedListener);
+            results[ii] = ((QueryTable) std.table).getSubTable(resultRowSet[ii], null, null, mergedListener);
 
             final ListenerRecorder listenerRecorder =
                     new ListenerRecorder("SyncTableFilter(" + std.name + ")", std.table, results[ii]);

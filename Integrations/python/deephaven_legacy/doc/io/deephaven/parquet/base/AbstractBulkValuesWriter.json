@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.parquet.base.AbstractBulkValuesWriter",
- "methods": {
-  "writeBulkVector": ":param bulkValues: AbstractBulkValuesWriter.T\n:param repeatCount: java.nio.IntBuffer\n:param rlEncoder: org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder\n:param dlEncoder: org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder\n:param nonNullValueCount: int\n:param nullValue: AbstractBulkValuesWriter.L\n:return: int"
- },
- "path": "io.deephaven.parquet.base.AbstractBulkValuesWriter",
- "typeName": "class"
-}

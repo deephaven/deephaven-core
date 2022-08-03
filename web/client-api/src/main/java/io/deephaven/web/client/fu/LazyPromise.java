@@ -1,5 +1,9 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.fu;
 
+import com.google.gwt.core.client.GWT;
 import elemental2.core.JsArray;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
@@ -20,6 +24,9 @@ import jsinterop.base.Js;
  *
  */
 public class LazyPromise<T> implements PromiseLike<T> {
+    public static native Throwable ofObject(Object obj) /*-{
+      return @java.lang.Throwable::of(*)(obj);
+    }-*/;
 
     private T succeeded;
     private boolean isSuccess;
@@ -34,6 +41,9 @@ public class LazyPromise<T> implements PromiseLike<T> {
     public static void runLater(JsRunnable task) {
         Promise.resolve((Object) null).then(ignored -> {
             task.run();
+            return null;
+        }).catch_(e -> {
+            GWT.reportUncaughtException(ofObject(e));
             return null;
         });
     }

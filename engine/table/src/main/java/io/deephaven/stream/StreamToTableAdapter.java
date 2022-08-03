@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.stream;
 
 import gnu.trove.list.array.TLongArrayList;
@@ -127,7 +130,7 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
      * @return the ChunkType for the specified column
      */
     public ChunkType chunkTypeForIndex(int idx) {
-        return chunkTypeForColumn(tableDefinition.getColumns()[idx]);
+        return chunkTypeForColumn(tableDefinition.getColumns().get(idx));
     }
 
     /**
@@ -193,23 +196,24 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
     private static SwitchColumnSource<?>[] makeSwitchSources(TableDefinition definition,
             NullValueColumnSource<?>[] wrapped, Map<String, ColumnSource<?>> visibleSourcesMap) {
         final SwitchColumnSource<?>[] switchSources = new SwitchColumnSource[wrapped.length];
-        final ColumnDefinition<?>[] columns = definition.getColumns();
+        final List<ColumnDefinition<?>> columns = definition.getColumns();
         for (int ii = 0; ii < wrapped.length; ++ii) {
+            final ColumnDefinition<?> columnDefinition = columns.get(ii);
             final SwitchColumnSource<?> switchSource =
                     new SwitchColumnSource<>(wrapped[ii], StreamToTableAdapter::maybeClearChunkColumnSource);
 
             final ColumnSource<?> visibleSource;
-            if (columns[ii].getDataType() == DateTime.class) {
+            if (columnDefinition.getDataType() == DateTime.class) {
                 // noinspection unchecked
                 visibleSource = new LongAsDateTimeColumnSource((ColumnSource<Long>) switchSource);
-            } else if (columns[ii].getDataType() == Boolean.class) {
+            } else if (columnDefinition.getDataType() == Boolean.class) {
                 // noinspection unchecked
                 visibleSource = new ByteAsBooleanColumnSource((ColumnSource<Byte>) switchSource);
             } else {
                 visibleSource = switchSource;
             }
             switchSources[ii] = switchSource;
-            visibleSourcesMap.put(columns[ii].getName(), visibleSource);
+            visibleSourcesMap.put(columnDefinition.getName(), visibleSource);
         }
         return switchSources;
     }

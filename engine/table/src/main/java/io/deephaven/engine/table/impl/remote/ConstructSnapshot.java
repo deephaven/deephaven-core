@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.remote;
 
 import io.deephaven.base.formatters.FormatBitSet;
@@ -1488,8 +1487,8 @@ public class ConstructSnapshot {
      * @return the estimated snapshot size in bytes.
      */
     public static long estimateSnapshotSize(Table table) {
-        final BitSet columns = new BitSet(table.getColumns().length);
-        columns.set(0, table.getColumns().length);
+        final BitSet columns = new BitSet(table.numColumns());
+        columns.set(0, table.numColumns());
         return estimateSnapshotSize(table.getDefinition(), columns, table.size());
     }
 
@@ -1506,15 +1505,16 @@ public class ConstructSnapshot {
         long sizePerRow = 0;
         long totalSize = 0;
 
-        final ColumnDefinition[] columnDefinitions = tableDefinition.getColumns();
-        for (int ii = 0; ii < columnDefinitions.length; ++ii) {
+        final int numColumns = tableDefinition.numColumns();
+        final List<ColumnDefinition<?>> columnDefinitions = tableDefinition.getColumns();
+        for (int ii = 0; ii < numColumns; ++ii) {
             if (!columns.get(ii)) {
                 continue;
             }
 
             totalSize += 44; // for an array
 
-            final ColumnDefinition definition = columnDefinitions[ii];
+            final ColumnDefinition<?> definition = columnDefinitions.get(ii);
             if (definition.getDataType() == byte.class || definition.getDataType() == char.class
                     || definition.getDataType() == Boolean.class) {
                 sizePerRow += 1;

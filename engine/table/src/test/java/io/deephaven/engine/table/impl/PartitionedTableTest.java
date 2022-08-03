@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
@@ -388,7 +391,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             // view table in this case
             final boolean flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
-            TestCase.assertTrue(((QueryTable) aa2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(aa2.satisfied(LogicalClock.DEFAULT.currentStep()));
         });
     }
 
@@ -765,5 +768,20 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final Table matching = TableTools.merge(tables);
             assertTableEquals(matching, merged);
         }
+    }
+
+    public void testMergeStaticAndRefreshing() {
+        final Table staticTable;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            staticTable = emptyTable(100).update("II=ii");
+        }
+        final Table refreshingTable = emptyTable(100).update("II=100 + ii");
+        refreshingTable.setRefreshing(true);
+        final Table mergedTable = PartitionedTableFactory.ofTables(staticTable, refreshingTable).merge();
+        assertTableEquals(mergedTable, emptyTable(200).update("II=ii"));
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            mergedTable.getRowSet().writableCast().removeRange(0, 1);
+            ((BaseTable) mergedTable).notifyListeners(i(), ir(0, 1), i());
+        });
     }
 }

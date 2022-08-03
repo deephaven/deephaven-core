@@ -45,11 +45,11 @@ InputTableService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& 
   return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::AddTableRequest, ::io::deephaven::proto::backplane::grpc::AddTableResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_AddTableToInputTable_, context, request, response);
 }
 
-void InputTableService::Stub::experimental_async::AddTableToInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response, std::function<void(::grpc::Status)> f) {
+void InputTableService::Stub::async::AddTableToInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::AddTableRequest, ::io::deephaven::proto::backplane::grpc::AddTableResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_AddTableToInputTable_, context, request, response, std::move(f));
 }
 
-void InputTableService::Stub::experimental_async::AddTableToInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void InputTableService::Stub::async::AddTableToInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_AddTableToInputTable_, context, request, response, reactor);
 }
 
@@ -68,11 +68,11 @@ void InputTableService::Stub::experimental_async::AddTableToInputTable(::grpc::C
   return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::DeleteTableRequest, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_DeleteTableFromInputTable_, context, request, response);
 }
 
-void InputTableService::Stub::experimental_async::DeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response, std::function<void(::grpc::Status)> f) {
+void InputTableService::Stub::async::DeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response, std::function<void(::grpc::Status)> f) {
   ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::DeleteTableRequest, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_DeleteTableFromInputTable_, context, request, response, std::move(f));
 }
 
-void InputTableService::Stub::experimental_async::DeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+void InputTableService::Stub::async::DeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_DeleteTableFromInputTable_, context, request, response, reactor);
 }
 

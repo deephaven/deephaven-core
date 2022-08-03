@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.engine.table.impl;
 
@@ -187,6 +187,8 @@ class RightIncrementalChunkedCrossJoinStateManager
     public static final long LEFT_MAPPING_MISSING = RowSequence.NULL_ROW_KEY;
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     RightIncrementalChunkedCrossJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
                                                  // region constructor arguments

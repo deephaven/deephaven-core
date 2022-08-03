@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.*;
@@ -24,6 +23,11 @@ public class WritableByteAsBooleanColumnSource extends ByteAsBooleanColumnSource
     public WritableByteAsBooleanColumnSource(@NotNull final WritableColumnSource<Byte> alternateColumnSource) {
         super(alternateColumnSource);
         this.alternateColumnSource = alternateColumnSource;
+    }
+
+    @Override
+    public void setNull(long key) {
+        alternateColumnSource.set(key, BooleanUtils.NULL_BOOLEAN_AS_BYTE);
     }
 
     @Override

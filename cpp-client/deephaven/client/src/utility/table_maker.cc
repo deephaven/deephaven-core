@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2016-2020 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/client/utility/utility.h"
 
-using deephaven::client::highlevel::TableHandle;
+using deephaven::client::TableHandle;
 using deephaven::client::utility::okOrThrow;
 using deephaven::client::utility::valueOrThrow;
 
@@ -25,9 +25,9 @@ void TableMaker::finishAddColumn(std::string name, internal::TypeConverter info)
   if (columns_.empty()) {
     numRows_ = info.column()->length();
   } else if (numRows_ != info.column()->length()) {
-    auto message = stringf("Column sizes not consistent: expected %o, have %o", numRows_,
-        info.column()->length());
-    throw std::runtime_error(message);
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(
+        stringf("Column sizes not consistent: expected %o, have %o", numRows_,
+        info.column()->length())));
   }
 
   columns_.push_back(std::move(info.column()));

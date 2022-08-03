@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
@@ -49,10 +52,6 @@ public class ReplicateSortKernelTests {
     private static void fixupObject(String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-
-        final int packageIndex = lines.indexOf("package io.deephaven.engine.table.impl.sort;");
-
-        lines.add(packageIndex + 2, "import java.util.Objects;");
 
         lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<Any>", "ObjectChunk<Object, Any>"))
                 .collect(Collectors.toList());

@@ -1,8 +1,13 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.api.updateby.UpdateByControl;
 
 import java.util.Collection;
 
@@ -158,6 +163,12 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS update(String... columns);
 
     TOPS update(Collection<? extends Selectable> columns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS lazyUpdate(String... columns);
+
+    TOPS lazyUpdate(Collection<? extends Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
 
@@ -486,7 +497,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS groupBy(String... groupByColumns);
 
-    TOPS groupBy(Collection<? extends Selectable> groupByColumns);
+    TOPS groupBy(Collection<? extends ColumnName> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
@@ -494,7 +505,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS aggAllBy(AggSpec spec, String... groupByColumns);
 
-    TOPS aggAllBy(AggSpec spec, Selectable... groupByColumns);
+    TOPS aggAllBy(AggSpec spec, ColumnName... groupByColumns);
 
     TOPS aggAllBy(AggSpec spec, Collection<String> groupByColumns);
 
@@ -504,23 +515,40 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS aggBy(Aggregation aggregation, String... groupByColumns);
 
-    TOPS aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns);
+    TOPS aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns);
 
     TOPS aggBy(Collection<? extends Aggregation> aggregations);
 
     TOPS aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns);
 
-    TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS updateBy(UpdateByOperation operation);
+
+    TOPS updateBy(Collection<? extends UpdateByOperation> operations);
+
+    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations);
+
+    TOPS updateBy(UpdateByOperation operation, final String... byColumns);
+
+    TOPS updateBy(Collection<? extends UpdateByOperation> operations, final String... byColumns);
+
+    TOPS updateBy(Collection<? extends UpdateByOperation> operations, Collection<? extends ColumnName> byColumns);
+
+    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
+            Collection<? extends ColumnName> byColumns);
 
     // -------------------------------------------------------------------------------------------
 
     TOPS selectDistinct();
 
-    TOPS selectDistinct(String... groupByColumns);
+    TOPS selectDistinct(String... columns);
 
-    TOPS selectDistinct(Selectable... groupByColumns);
+    TOPS selectDistinct(Selectable... columns);
 
-    TOPS selectDistinct(Collection<? extends Selectable> groupByColumns);
+    TOPS selectDistinct(Collection<? extends Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
 
@@ -528,7 +556,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS countBy(String countColumnName, String... groupByColumns);
 
-    TOPS countBy(String countColumnName, Selectable... groupByColumns);
+    TOPS countBy(String countColumnName, ColumnName... groupByColumns);
 
     TOPS countBy(String countColumnName, Collection<String> groupByColumns);
 
@@ -538,7 +566,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS firstBy(String... groupByColumns);
 
-    TOPS firstBy(Selectable... groupByColumns);
+    TOPS firstBy(ColumnName... groupByColumns);
 
     TOPS firstBy(Collection<String> groupByColumns);
 
@@ -548,7 +576,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS lastBy(String... groupByColumns);
 
-    TOPS lastBy(Selectable... groupByColumns);
+    TOPS lastBy(ColumnName... groupByColumns);
 
     TOPS lastBy(Collection<String> groupByColumns);
 
@@ -558,7 +586,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS minBy(String... groupByColumns);
 
-    TOPS minBy(Selectable... groupByColumns);
+    TOPS minBy(ColumnName... groupByColumns);
 
     TOPS minBy(Collection<String> groupByColumns);
 
@@ -568,7 +596,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS maxBy(String... groupByColumns);
 
-    TOPS maxBy(Selectable... groupByColumns);
+    TOPS maxBy(ColumnName... groupByColumns);
 
     TOPS maxBy(Collection<String> groupByColumns);
 
@@ -578,7 +606,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS sumBy(String... groupByColumns);
 
-    TOPS sumBy(Selectable... groupByColumns);
+    TOPS sumBy(ColumnName... groupByColumns);
 
     TOPS sumBy(Collection<String> groupByColumns);
 
@@ -588,7 +616,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS avgBy(String... groupByColumns);
 
-    TOPS avgBy(Selectable... groupByColumns);
+    TOPS avgBy(ColumnName... groupByColumns);
 
     TOPS avgBy(Collection<String> groupByColumns);
 
@@ -598,7 +626,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS medianBy(String... groupByColumns);
 
-    TOPS medianBy(Selectable... groupByColumns);
+    TOPS medianBy(ColumnName... groupByColumns);
 
     TOPS medianBy(Collection<String> groupByColumns);
 
@@ -608,7 +636,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS stdBy(String... groupByColumns);
 
-    TOPS stdBy(Selectable... groupByColumns);
+    TOPS stdBy(ColumnName... groupByColumns);
 
     TOPS stdBy(Collection<String> groupByColumns);
 
@@ -618,7 +646,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS varBy(String... groupByColumns);
 
-    TOPS varBy(Selectable... groupByColumns);
+    TOPS varBy(ColumnName... groupByColumns);
 
     TOPS varBy(Collection<String> groupByColumns);
 
@@ -628,7 +656,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS absSumBy(String... groupByColumns);
 
-    TOPS absSumBy(Selectable... groupByColumns);
+    TOPS absSumBy(ColumnName... groupByColumns);
 
     TOPS absSumBy(Collection<String> groupByColumns);
 
@@ -638,7 +666,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS wsumBy(String weightColumn, String... groupByColumns);
 
-    TOPS wsumBy(String weightColumn, Selectable... groupByColumns);
+    TOPS wsumBy(String weightColumn, ColumnName... groupByColumns);
 
     TOPS wsumBy(String weightColumn, Collection<String> groupByColumns);
 
@@ -648,7 +676,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS wavgBy(String weightColumn, String... groupByColumns);
 
-    TOPS wavgBy(String weightColumn, Selectable... groupByColumns);
+    TOPS wavgBy(String weightColumn, ColumnName... groupByColumns);
 
     TOPS wavgBy(String weightColumn, Collection<String> groupByColumns);
 

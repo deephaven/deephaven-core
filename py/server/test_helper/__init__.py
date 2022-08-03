@@ -1,6 +1,7 @@
 #
-#   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ This module supports bootstrapping a Deephaven Python Script session from Python."""
 
 import os
@@ -9,11 +10,12 @@ import warnings
 from glob import glob
 from typing import Dict
 
-import jpy
-import jpyutil
-
+from deephaven_internal import jvm
 
 def start_jvm(jvm_props: Dict[str, str] = None):
+    jvm.preload_jvm_dll()
+    import jpy
+
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
     Script session. """
     if not jpy.has_jvm():
@@ -83,7 +85,7 @@ def start_jvm(jvm_props: Dict[str, str] = None):
 
         # Start up the JVM
         jpy.VerboseExceptions.enabled = True
-        jpyutil.init_jvm(
+        jvm.init_jvm(
             jvm_classpath=_expandWildcardsInList(jvm_classpath.split(os.path.pathsep)),
             jvm_properties=jvm_properties,
             jvm_options=jvm_options
@@ -91,7 +93,7 @@ def start_jvm(jvm_props: Dict[str, str] = None):
 
         # Set up a Deephaven Python session
         py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
-        py_dh_session = jpy.get_type("io.deephaven.engine.util.PythonDeephavenSession")(py_scope_jpy)
+        py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
         jpy.get_type("io.deephaven.engine.table.lang.QueryScope").setScope(py_dh_session.newQueryScope())
 
 

@@ -1,9 +1,9 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
@@ -149,7 +149,8 @@ public class PartitionAwareSourceTable extends SourceTable {
         }
 
         @Override
-        public Table selectDistinct(SelectColumn[] selectColumns) {
+        public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
+            final SelectColumn[] selectColumns = SelectColumn.from(columns);
             for (final SelectColumn selectColumn : selectColumns) {
                 try {
                     selectColumn.initDef(getDefinition().getColumnNameMap());
@@ -161,7 +162,6 @@ public class PartitionAwareSourceTable extends SourceTable {
                     return null;
                 }
             }
-
             return table.selectDistinct(selectColumns);
         }
     }
@@ -172,7 +172,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             // Nothing changed - we have the same columns in the same order.
             return this;
         }
-        if (newDefinition.getColumns().length == definition.getColumns().length
+        if (newDefinition.numColumns() == definition.numColumns()
                 || newDefinition.getPartitioningColumns().size() == partitioningColumnDefinitions.size()) {
             // Nothing changed except ordering, *or* some columns were dropped but the partitioning column was retained.
             return newInstance(newDefinition,
@@ -181,7 +181,7 @@ public class PartitionAwareSourceTable extends SourceTable {
                     partitioningColumnFilters);
         }
         // Some partitioning columns are gone - defer dropping them.
-        final List<ColumnDefinition<?>> newColumnDefinitions = new ArrayList<>(newDefinition.getColumnList());
+        final List<ColumnDefinition<?>> newColumnDefinitions = new ArrayList<>(newDefinition.getColumns());
         final Map<String, ColumnDefinition<?>> retainedPartitioningColumnDefinitions =
                 extractPartitioningColumnDefinitions(newDefinition);
         final Collection<ColumnDefinition<?>> droppedPartitioningColumnDefinitions =
@@ -189,7 +189,7 @@ public class PartitionAwareSourceTable extends SourceTable {
                         .stream().filter(cd -> !retainedPartitioningColumnDefinitions.containsKey(cd.getName()))
                         .collect(Collectors.toList());
         newColumnDefinitions.addAll(droppedPartitioningColumnDefinitions);
-        final PartitionAwareSourceTable redefined = newInstance(new TableDefinition(newColumnDefinitions),
+        final PartitionAwareSourceTable redefined = newInstance(TableDefinition.of(newColumnDefinitions),
                 description + "-retainColumns",
                 componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                 partitioningColumnFilters);
@@ -288,8 +288,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             }
         }
 
-        // if there was nothing that actually required the partition, defer the result. This is different than V1, and
-        // is actually different than the old behavior as well.
+        // if there was nothing that actually required the partition, defer the result.
         if (partitionFilters.isEmpty()) {
             DeferredViewTable deferredViewTable =
                     new DeferredViewTable(definition, description + "-withDeferredFilters",
@@ -319,12 +318,14 @@ public class PartitionAwareSourceTable extends SourceTable {
     }
 
     @Override
-    public final Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
-        final SelectColumn[] selectColumns = SelectColumn.from(groupByColumns);
+    public final Table selectDistinct(Collection<? extends Selectable> columns) {
+        final SelectColumn[] selectColumns = SelectColumn.from(columns);
         for (SelectColumn selectColumn : selectColumns) {
             selectColumn.initDef(definition.getColumnNameMap());
             if (!isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
-                return super.selectDistinct(selectColumns);
+                // Be sure to invoke the super-class version of this method, rather than the array-based one that
+                // delegates to this method.
+                return super.selectDistinct(Arrays.asList(selectColumns));
             }
         }
         initializeAvailableLocations();
@@ -354,5 +355,9 @@ public class PartitionAwareSourceTable extends SourceTable {
             return false;
         }
         return columnNames.stream().allMatch(partitioningColumnDefinitions::containsKey);
+    }
+
+    private boolean isValidAgainstColumnPartitionTable(Collection<ColumnName> columns) {
+        return columns.stream().map(ColumnName::name).allMatch(partitioningColumnDefinitions::containsKey);
     }
 }

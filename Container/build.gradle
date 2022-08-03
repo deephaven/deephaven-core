@@ -4,5 +4,5 @@ plugins {
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.13.2'
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }

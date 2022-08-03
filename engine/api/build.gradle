@@ -6,12 +6,17 @@ plugins {
 description 'Engine API: Engine API module, suitable as a compile-time dependency for most queries'
 
 dependencies {
-    api project(':qst'),
-            project(':engine-chunk'),
-            project(':engine-vector'),
-            project(':engine-time'),
-            project(':engine-updategraph'),
-            project(':engine-rowset')
+    api project(':qst')
+    api project(':engine-chunk')
+    api project(':engine-vector')
+    api project(':engine-time')
+    api project(':engine-updategraph')
+    api project(':engine-rowset')
+
+    implementation project(':DataStructures')
+    implementation depTrove3
+
+    Classpaths.inheritImmutables(project)
 
     implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
 
@@ -19,7 +24,7 @@ dependencies {
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    testImplementation 'junit:junit:4.13.2'
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
 
 spotless {

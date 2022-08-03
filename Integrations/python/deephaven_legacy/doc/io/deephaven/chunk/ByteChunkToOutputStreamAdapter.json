@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.chunk.ByteChunkToOutputStreamAdapter",
- "methods": {
-  "write": ":param stream: java.io.OutputStream\n:param chunk: io.deephaven.chunk.ByteChunk<? extendsio.deephaven.chunk.attributes.Any>\n:param srcOffset: int\n:param length: int"
- },
- "path": "io.deephaven.chunk.ByteChunkToOutputStreamAdapter",
- "typeName": "class"
-}

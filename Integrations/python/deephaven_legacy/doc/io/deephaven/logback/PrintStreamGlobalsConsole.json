@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.logback.PrintStreamGlobalsConsole",
- "methods": {},
- "path": "io.deephaven.logback.PrintStreamGlobalsConsole",
- "text": "Logs events out to PrintStreamGlobals.getOut().",
- "typeName": "class"
-}

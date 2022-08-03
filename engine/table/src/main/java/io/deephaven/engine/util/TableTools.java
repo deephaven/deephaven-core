@@ -1,14 +1,12 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.util;
 
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -20,7 +18,6 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeProvider;
 import io.deephaven.time.TimeZone;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.table.impl.replay.Replayer;
@@ -510,52 +507,6 @@ public class TableTools {
     }
 
     /**
-     * Returns a SmartKey for the specified row from a set of ColumnSources.
-     *
-     * @param groupByColumnSources a set of ColumnSources from which to retrieve the data
-     * @param row the row number for which to retrieve data
-     * @return a Deephaven SmartKey object
-     */
-    public static Object getKey(ColumnSource<?>[] groupByColumnSources, long row) {
-        Object key;
-        if (groupByColumnSources.length == 0) {
-            return SmartKey.EMPTY;
-        } else if (groupByColumnSources.length == 1) {
-            key = C14nUtil.maybeCanonicalize(groupByColumnSources[0].get(row));
-        } else {
-            Object[] keyData = new Object[groupByColumnSources.length];
-            for (int col = 0; col < groupByColumnSources.length; col++) {
-                keyData[col] = groupByColumnSources[col].get(row);
-            }
-            key = C14nUtil.makeSmartKey(keyData);
-        }
-        return key;
-    }
-
-    /**
-     * Returns a SmartKey for the row previous to the specified row from a set of ColumnSources.
-     *
-     * @param groupByColumnSources a set of ColumnSources from which to retrieve the data
-     * @param row the row number for which to retrieve the previous row's data
-     * @return a Deephaven SmartKey object
-     */
-    public static Object getPrevKey(ColumnSource<?>[] groupByColumnSources, long row) {
-        Object key;
-        if (groupByColumnSources.length == 0) {
-            return SmartKey.EMPTY;
-        } else if (groupByColumnSources.length == 1) {
-            key = C14nUtil.maybeCanonicalize(groupByColumnSources[0].getPrev(row));
-        } else {
-            Object[] keyData = new Object[groupByColumnSources.length];
-            for (int col = 0; col < groupByColumnSources.length; col++) {
-                keyData[col] = groupByColumnSources[col].getPrev(row);
-            }
-            key = C14nUtil.makeSmartKey(keyData);
-        }
-        return key;
-    }
-
-    /**
      * Returns a ColumnHolder that can be used when creating in-memory tables.
      *
      * @param name name of the column
@@ -762,7 +713,7 @@ public class TableTools {
      */
     public static Table newTable(TableDefinition definition) {
         Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
-        for (ColumnDefinition<?> columnDefinition : definition.getColumnList()) {
+        for (ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0,
                     columnDefinition.getDataType(), columnDefinition.getComponentType()));
         }
@@ -1089,8 +1040,9 @@ public class TableTools {
      */
     @ScriptApi
     public static Table roundDecimalColumns(Table table) {
-        Set<String> columnsToRound = new HashSet<>(table.getColumns().length);
-        for (ColumnDefinition<?> columnDefinition : table.getDefinition().getColumns()) {
+        final List<ColumnDefinition<?>> columnDefinitions = table.getDefinition().getColumns();
+        Set<String> columnsToRound = new HashSet<>(columnDefinitions.size());
+        for (ColumnDefinition<?> columnDefinition : columnDefinitions) {
             Class<?> type = columnDefinition.getDataType();
             if (type.equals(double.class) || type.equals(float.class)) {
                 columnsToRound.add(columnDefinition.getName());
@@ -1112,8 +1064,9 @@ public class TableTools {
         Set<String> columnsNotToRoundSet = new HashSet<>(columnsNotToRound.length * 2);
         Collections.addAll(columnsNotToRoundSet, columnsNotToRound);
 
-        Set<String> columnsToRound = new HashSet<>(table.getColumns().length);
-        for (ColumnDefinition<?> columnDefinition : table.getDefinition().getColumns()) {
+        final List<ColumnDefinition<?>> columnDefinitions = table.getDefinition().getColumns();
+        Set<String> columnsToRound = new HashSet<>(columnDefinitions.size());
+        for (ColumnDefinition<?> columnDefinition : columnDefinitions) {
             Class<?> type = columnDefinition.getDataType();
             String colName = columnDefinition.getName();
             if ((type.equals(double.class) || type.equals(float.class)) && !columnsNotToRoundSet.contains(colName)) {
@@ -1139,7 +1092,7 @@ public class TableTools {
         }
         List<String> updateDescriptions = new LinkedList<>();
         for (String colName : columns) {
-            Class<?> colType = table.getColumn(colName).getType();
+            Class<?> colType = table.getDefinition().getColumn(colName).getDataType();
             if (!(colType.equals(double.class) || colType.equals(float.class)))
                 throw new IllegalArgumentException("Column \"" + colName + "\" is not a decimal column!");
             updateDescriptions.add(colName + "=round(" + colName + ')');
@@ -1177,7 +1130,7 @@ public class TableTools {
 
         // Now add in the Table definition
         final TableDefinition def = source.getDefinition();
-        for (final ColumnDefinition<?> cd : def.getColumnList()) {
+        for (final ColumnDefinition<?> cd : def.getColumns()) {
             osw.writeChars(cd.getName());
             osw.writeChars(cd.getDataType().getName());
         }

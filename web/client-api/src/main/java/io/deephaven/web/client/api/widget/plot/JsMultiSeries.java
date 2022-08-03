@@ -1,9 +1,12 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
-import io.deephaven.web.client.api.TableMap;
+import io.deephaven.web.client.api.JsPartitionedTable;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 
@@ -25,27 +28,27 @@ public class JsMultiSeries {
     }
 
     @JsIgnore
-    public void initSources(Map<Integer, TableMap> plotHandlesToTableMaps) {
-        descriptor.getDataSourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getTableMapId)
+    public void initSources(Map<Integer, JsPartitionedTable> plotHandlesToPartitionedTables) {
+        descriptor.getDataSourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getPartitionedTableId)
                 .distinct()
                 // TODO assert only one at this stage
                 .forEach(plotHandle -> {
-                    TableMap tableMap = plotHandlesToTableMaps.get(plotHandle);
-                    tableMap.getKeys().forEach((p0, p1, p2) -> {
-                        requestTable(tableMap, p0);
+                    JsPartitionedTable partitionedTable = plotHandlesToPartitionedTables.get(plotHandle);
+                    partitionedTable.getKeys().forEach((p0, p1, p2) -> {
+                        requestTable(partitionedTable, p0);
                         return null;
                     });
-                    tableMap.addEventListener(TableMap.EVENT_KEYADDED, event -> {
-                        requestTable(tableMap, ((CustomEvent) event).detail);
+                    partitionedTable.addEventListener(JsPartitionedTable.EVENT_KEYADDED, event -> {
+                        requestTable(partitionedTable, ((CustomEvent) event).detail);
                     });
 
                 });
     }
 
-    private void requestTable(TableMap tableMap, Object key) {
+    private void requestTable(JsPartitionedTable partitionedTable, Object key) {
         // TODO ask the server in parallel for the series name
         String seriesName = descriptor.getName() + ": " + key;
-        tableMap.getTable(key).then(table -> {
+        partitionedTable.getTable(key).then(table -> {
             SeriesDescriptor seriesInstance = new SeriesDescriptor();
 
             seriesInstance.setName(seriesName);

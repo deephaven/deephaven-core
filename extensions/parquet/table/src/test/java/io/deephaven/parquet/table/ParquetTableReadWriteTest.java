@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.table;
 
 import io.deephaven.api.Selectable;
@@ -15,6 +18,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -83,7 +87,7 @@ public class ParquetTableReadWriteTest {
         Table t = getOneColumnTableFlat(size);
         QueryLibrary.importClass(ArrayStringSet.class);
         QueryLibrary.importClass(StringSet.class);
-        Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)");
+        Table result = t.updateView("groupKey = i % 100 + (int)(i/10)").groupBy("groupKey");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name
@@ -129,7 +133,7 @@ public class ParquetTableReadWriteTest {
         Table t = getTableFlat(size, includeSerializable);
         QueryLibrary.importClass(ArrayStringSet.class);
         QueryLibrary.importClass(StringSet.class);
-        Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)");
+        Table result = t.updateView("groupKey = i % 100 + (int)(i/10)").groupBy("groupKey");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name
@@ -281,6 +285,7 @@ public class ParquetTableReadWriteTest {
         compressionCodecTestHelper("LZ4");
     }
 
+    @Ignore("See BrotliParquetReadWriteTest instead")
     @Test
     public void testParquetBrotliCompressionCodec() {
         compressionCodecTestHelper("BROTLI");
@@ -294,5 +299,12 @@ public class ParquetTableReadWriteTest {
     @Test
     public void testParquetGzipCompressionCodec() {
         compressionCodecTestHelper("GZIP");
+    }
+
+    @Test
+    public void testParquetSnappyCompressionCodec() {
+        // while Snappy is covered by other tests, this is a very fast test to quickly confirm that it works in the same
+        // way as the other similar codec tests.
+        compressionCodecTestHelper("SNAPPY");
     }
 }

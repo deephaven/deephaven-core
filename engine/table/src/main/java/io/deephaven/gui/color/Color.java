@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.gui.color;
 
 import java.io.Serializable;
@@ -131,6 +130,9 @@ public class Color implements Paint, Serializable {
         color = new java.awt.Color(r, g, b, a);
     }
 
+    public String toHex() {
+        return String.format("#%02X%02X%02X", color.getRed(), color.getGreen(), color.getBlue());
+    }
 
     ////////////////////////// internal functionality //////////////////////////
 

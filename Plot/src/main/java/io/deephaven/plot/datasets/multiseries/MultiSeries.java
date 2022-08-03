@@ -1,13 +1,11 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.plot.Series;
 import io.deephaven.plot.datasets.DataSeries;
 import groovy.lang.Closure;
-import io.deephaven.engine.table.Table;
 
 import java.util.function.Function;
 
@@ -19,16 +17,20 @@ public interface MultiSeries extends Series {
     // add functions to modify multiseries here (e.g. color)
 
     /**
-     * Defines the procedure to name a generated series. The input of the naming function is the partitioned table key
-     * corresponding to the new series.
+     * Defines the procedure to name a generated series. If there is only one key column defining the series, the input
+     * to the naming function is the singular key column value as an {@code Object}. If there are multiple key columns
+     * defining the series, the input to the naming function will be an {@code Object[]} containing the key column
+     * values in order.
      *
      * @param namingFunction series naming function
      */
     MultiSeries seriesNamingFunction(final Function<Object, String> namingFunction);
 
     /**
-     * Defines the procedure to name a generated series. The input of the naming function is the partitioned table key
-     * corresponding to the new series.
+     * Defines the procedure to name a generated series. If there is only one key column defining the series, the input
+     * to the naming function is the singular key column value as an {@code Object}. If there are multiple key columns
+     * defining the series, the input to the naming function will be an {@code Object[]} containing the key column
+     * values in order.
      *
      * @param namingFunction series naming closure
      */

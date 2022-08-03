@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.properties.PropertySetParser",
- "methods": {
-  "parse": ":param properties: io.deephaven.properties.PropertySet\n:return: PropertySetParser.T"
- },
- "path": "io.deephaven.properties.PropertySetParser",
- "typeName": "interface"
-}

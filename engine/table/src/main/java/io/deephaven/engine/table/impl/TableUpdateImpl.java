@@ -1,11 +1,16 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.util.RowSetShiftDataExpander;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,8 +31,16 @@ public class TableUpdateImpl implements TableUpdate {
 
     public ModifiedColumnSet modifiedColumnSet;
 
-    // Cached version of prevModified RowSet.
+    /**
+     * Cached version of {@link #modified} with {@link #shifted} {@link RowSetShiftData#unapply(WritableRowSet)
+     * unapplied}.
+     */
     private volatile WritableRowSet prevModified;
+
+    /**
+     * Cached copy of a {@link RowSetShiftDataExpander} for this update.
+     */
+    private volatile RowSetShiftDataExpander expander;
 
     // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for
     // each instance.
@@ -93,6 +106,25 @@ public class TableUpdateImpl implements TableUpdate {
         return localPrevModified;
     }
 
+    /**
+     * Get a cached {@link RowSetShiftDataExpander expander} for this TableUpdateImpl.
+     *
+     * @param sourceRowSet The {@link TrackingRowSet row set} to use for expansion purposes. Must match that of the
+     *        table that this update was created for.
+     * @return The expander
+     */
+    RowSetShiftDataExpander getExpander(final TrackingRowSet sourceRowSet) {
+        RowSetShiftDataExpander localExpander;
+        if ((localExpander = expander) == null) {
+            synchronized (this) {
+                if ((localExpander = expander) == null) {
+                    expander = localExpander = new RowSetShiftDataExpander(this, sourceRowSet);
+                }
+            }
+        }
+        return localExpander;
+    }
+
     public void reset() {
         if (added() != null) {
             added().close();
@@ -106,13 +138,19 @@ public class TableUpdateImpl implements TableUpdate {
             modified().close();
             modified = null;
         }
-        if (prevModified != null) {
-            prevModified.close();
-        }
         shifted = null;
         modifiedColumnSet = null;
-        // This doubles as a memory barrier write prior to the read in acquire(). It must remain last.
-        prevModified = null;
+
+        if (prevModified != null) {
+            prevModified.close();
+            // This doubles as a memory barrier write prior to the read in acquire(). It must remain last, but for
+            // the expander.
+            prevModified = null;
+        }
+        if (expander != null) {
+            expander.close();
+            expander = null;
+        }
     }
 
     /**

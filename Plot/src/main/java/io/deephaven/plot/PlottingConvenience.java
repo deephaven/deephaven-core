@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 /****************************************************************************************************************************
  ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GeneratePlottingConvenience or "./gradlew :Generators:generatePlottingConvenience" to regenerate
  ****************************************************************************************************************************/
@@ -2692,6 +2691,13 @@ public class PlottingConvenience {
     **/
     public static  io.deephaven.plot.Figure plotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String x, java.lang.String y, java.lang.String... byColumns ) {
         return FigureFactory.figure().plotBy( seriesName, sds, x, y, byColumns );
+    }
+
+    /**
+    * See {@link io.deephaven.plot.Figure#treemapPlot} 
+    **/
+    public static  io.deephaven.plot.Figure treemapPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String ids, java.lang.String parents, java.lang.String values, java.lang.String labels, java.lang.String hoverTexts, java.lang.String colors ) {
+        return FigureFactory.figure().treemapPlot( seriesName, t, ids, parents, values, labels, hoverTexts, colors );
     }
 
 }

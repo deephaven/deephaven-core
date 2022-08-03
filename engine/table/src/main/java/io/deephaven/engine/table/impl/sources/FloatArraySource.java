@@ -1,12 +1,11 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterArraySource and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
@@ -77,6 +76,11 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
             prevBlocks[block][indexWithinBlock] = blocks[block][indexWithinBlock];
         }
         blocks[block][indexWithinBlock] = value;
+    }
+
+    @Override
+    public void setNull(long key) {
+        set(key, NULL_FLOAT);
     }
 
     @Override

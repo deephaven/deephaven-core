@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ColumnDefinition;
@@ -13,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -45,7 +45,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
     public ColumnSourceManager createColumnSourceManager(
             final boolean isRefreshing,
             @NotNull final ColumnToCodecMappings codecMappings,
-            @NotNull final ColumnDefinition<?>... columnDefinitions) {
+            @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
         return new RegionedColumnSourceManager(isRefreshing, this, codecMappings, columnDefinitions);
     }
 

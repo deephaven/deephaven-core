@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.csv;
 
 import io.deephaven.base.FileUtils;
@@ -157,26 +160,26 @@ public class TestCsvTools {
 
             TableDefinition definition = table.getDefinition();
 
-            Assert.assertEquals("colA", definition.getColumnList().get(0).getName());
-            Assert.assertEquals(String.class, definition.getColumnList().get(0).getDataType());
+            Assert.assertEquals("colA", definition.getColumns().get(0).getName());
+            Assert.assertEquals(String.class, definition.getColumns().get(0).getDataType());
 
-            Assert.assertEquals("colB", definition.getColumnList().get(1).getName());
-            Assert.assertEquals(int.class, definition.getColumnList().get(1).getDataType());
+            Assert.assertEquals("colB", definition.getColumns().get(1).getName());
+            Assert.assertEquals(int.class, definition.getColumns().get(1).getDataType());
 
-            Assert.assertEquals("colC", definition.getColumnList().get(2).getName());
-            Assert.assertEquals(double.class, definition.getColumnList().get(2).getDataType());
+            Assert.assertEquals("colC", definition.getColumns().get(2).getName());
+            Assert.assertEquals(double.class, definition.getColumns().get(2).getDataType());
 
-            Assert.assertEquals("colD", definition.getColumnList().get(3).getName());
-            Assert.assertEquals(String.class, definition.getColumnList().get(3).getDataType());
+            Assert.assertEquals("colD", definition.getColumns().get(3).getName());
+            Assert.assertEquals(String.class, definition.getColumns().get(3).getDataType());
 
-            Assert.assertEquals("colE", definition.getColumnList().get(4).getName());
-            Assert.assertEquals(String.class, definition.getColumnList().get(4).getDataType());
+            Assert.assertEquals("colE", definition.getColumns().get(4).getName());
+            Assert.assertEquals(String.class, definition.getColumns().get(4).getDataType());
 
-            Assert.assertEquals("colF", definition.getColumnList().get(5).getName());
-            Assert.assertEquals(String.class, definition.getColumnList().get(5).getDataType());
+            Assert.assertEquals("colF", definition.getColumns().get(5).getName());
+            Assert.assertEquals(String.class, definition.getColumns().get(5).getDataType());
 
-            Assert.assertEquals("colG", definition.getColumnList().get(6).getName());
-            Assert.assertEquals(Boolean.class, definition.getColumnList().get(6).getDataType());
+            Assert.assertEquals("colG", definition.getColumns().get(6).getName());
+            Assert.assertEquals(Boolean.class, definition.getColumns().get(6).getDataType());
 
             Assert.assertEquals(String.format("mark1%smark2", separator), table.getColumn("colA").get(0));
             Assert.assertEquals(1, table.getColumn("colB").getInt(0));

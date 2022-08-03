@@ -1,11 +1,9 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.util;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -125,9 +123,8 @@ class TableShowTools {
             len = Math.max(len, 33);
         } else if (columnSource.getType() == java.util.Date.class) {
             len = Math.max(len, 33);
-        } else if (columnSource.getType() == SmartKey.class) {
-            len = Math.max(len, 40);
         } else {
+            // noinspection unchecked
             final Annotation annotation = columnSource.getType().getAnnotation(TableToolsShowControl.class);
             if (annotation != null) {
                 len = Math.max(len, ((TableToolsShowControl) annotation).getWidth());

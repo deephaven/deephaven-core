@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table;
 
 import io.deephaven.chunk.*;
@@ -44,6 +43,12 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
 
     default void set(long key, short value) {
         throw new UnsupportedOperationException();
+    }
+
+    void setNull(long key);
+
+    default void setNull(RowSequence orderedKeys) {
+        orderedKeys.forAllRowKeys(this::setNull);
     }
 
     /**

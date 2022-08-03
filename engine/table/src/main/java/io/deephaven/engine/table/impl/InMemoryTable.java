@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -52,8 +51,8 @@ public class InMemoryTable extends QueryTable {
     public InMemoryTable(TableDefinition definition, final int size) {
         super(RowSetFactory.flat(size).toTracking(),
                 createColumnsMap(
-                        definition.getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                        Arrays.stream(definition.getColumns()).map(
+                        definition.getColumnNamesArray(),
+                        definition.getColumnStream().map(
                                 x -> Array.newInstance(x.getDataType(), size)).toArray(Object[]::new)));
     }
 

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.util;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
@@ -85,8 +88,7 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
 
 
     public void testScript() throws IOException, InterruptedException, TimeoutException {
-        final StreamLoggerImpl log = new StreamLoggerImpl();
-        JpyInit.init(log);
+        JpyInit.init();
         final PythonEvaluator evaluator = PythonEvaluatorJpy.withGlobalCopy();
         final String filename = "/tmp/_not_existent_file.py";
 

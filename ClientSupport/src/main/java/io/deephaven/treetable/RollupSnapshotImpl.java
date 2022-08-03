@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.treetable;
 
 import io.deephaven.base.verify.Require;
@@ -135,7 +138,7 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
                                 return false;
                             }
 
-                            if (currentColumn.getType() != baseTable.getColumn(colName).getType()) {
+                            if (currentColumn.getType() != baseTable.getDefinition().getColumn(colName).getDataType()) {
                                 return false;
                             }
                         }
@@ -157,11 +160,10 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
         if (filters.length == 0) {
             return table;
         }
-
         final Table source = Require.neqNull(table.getSourceTable(), "Hierarchical source table");
         final RollupInfo info = getInfo();
         return (HierarchicalTable) source.where(filters).rollup(info.aggregations,
-                info.getLeafType() == RollupInfo.LeafType.Constituent, info.getSelectColumns());
+                info.getLeafType() == RollupInfo.LeafType.Constituent, info.getGroupByColumns());
     }
 
     @Override

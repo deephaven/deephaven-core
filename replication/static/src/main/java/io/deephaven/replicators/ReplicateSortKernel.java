@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
@@ -257,7 +260,7 @@ public class ReplicateSortKernel {
                 .map(x -> x.replaceAll(
                         "static class LongIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Keys> implements SortKernel<ATTR, KEY_INDICES>",
                         "static class LongIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements AutoCloseable"))
-                .map(x -> x.replaceAll("IntChunk<KeyIndices>", "IntChunk"))
+                .map(x -> x.replaceAll("IntChunk<RowKeys>", "IntChunk"))
                 .collect(Collectors.toList());
 
         lines = applyFixup(lines, "Context", "\\s+@Override", (m) -> Collections.singletonList(""));
@@ -277,7 +280,7 @@ public class ReplicateSortKernel {
                 .map(x -> x.replaceAll(
                         "static class IntIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Keys> implements SortKernel<ATTR, KEY_INDICES>",
                         "static class IntIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements AutoCloseable"))
-                .map(x -> x.replaceAll("IntChunk<KeyIndices>", "IntChunk"))
+                .map(x -> x.replaceAll("IntChunk<RowKeys>", "IntChunk"))
                 .collect(Collectors.toList());
 
         lines = applyFixup(lines, "Context", "\\s+@Override", (m) -> Collections.singletonList(""));
@@ -319,7 +322,19 @@ public class ReplicateSortKernel {
 
         lines = globalReplacements(fixupCharNullComparisons(lines, ascending), oldName, newName);
 
-        lines.addAll(0, Arrays.asList(
+        // preserve the first comment of the file; typically the copyright
+        int insertionPoint = 0;
+        if (lines.size() > 0 && lines.get(0).startsWith("/*")) {
+            for (int ii = 0; ii < lines.size(); ++ii) {
+                final int offset = lines.get(ii).indexOf("*/");
+                if (offset != -1) {
+                    insertionPoint = ii + 1;
+                    break;
+                }
+            }
+        }
+
+        lines.addAll(insertionPoint, Arrays.asList(
                 "/* ---------------------------------------------------------------------------------------------------------------------",
                 " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + oldName
                         + " and regenerate",

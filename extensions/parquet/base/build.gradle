@@ -8,9 +8,13 @@ description 'Parquet Base: Libraries for working with Parquet files'
 dependencies {
     api project(':ParquetHadoop')
 
+    implementation project(':extensions-parquet-compression')
+    implementation project(':Base')
     implementation project(':Util')
+    implementation depCommonsIo
 
-    testImplementation 'junit:junit:4.13.2'
+    compileOnly depAnnotations
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
 
 spotless {

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.AssertionFailure;
@@ -19,10 +22,7 @@ import org.jmock.lib.action.CustomAction;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -49,10 +49,10 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
     private RegionedTableComponentFactory componentFactory;
 
-    private ColumnDefinition[] columnDefinitions;
-    private ColumnDefinition partitioningColumnDefinition;
-    private ColumnDefinition groupingColumnDefinition;
-    private ColumnDefinition normalColumnDefinition;
+    private List<ColumnDefinition<?>> columnDefinitions;
+    private ColumnDefinition<?> partitioningColumnDefinition;
+    private ColumnDefinition<?> groupingColumnDefinition;
+    private ColumnDefinition<?> normalColumnDefinition;
 
     private RegionedColumnSource[] columnSources;
     private RegionedColumnSource partitioningColumnSource;
@@ -92,11 +92,10 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         groupingColumnDefinition = ColumnDefinition.ofString("RCS_1").withGrouping();
         normalColumnDefinition = ColumnDefinition.ofString("RCS_2");
 
-        columnDefinitions =
-                new ColumnDefinition[] {partitioningColumnDefinition, groupingColumnDefinition, normalColumnDefinition};
+        columnDefinitions = List.of(partitioningColumnDefinition, groupingColumnDefinition, normalColumnDefinition);
 
-        columnSources = IntStream.range(0, NUM_COLUMNS)
-                .mapToObj(ci -> mock(RegionedColumnSource.class, columnDefinitions[ci].getName()))
+        columnSources = columnDefinitions.stream()
+                .map(cd -> mock(RegionedColumnSource.class, cd.getName()))
                 .toArray(RegionedColumnSource[]::new);
         partitioningColumnSource = columnSources[PARTITIONING_INDEX];
         groupingColumnSource = columnSources[GROUPING_INDEX];
@@ -122,7 +121,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
             checking(new Expectations() {
                 {
                     allowing((cl)).getName();
-                    will(returnValue(columnDefinitions[ci].getName()));
+                    will(returnValue(columnDefinitions.get(ci).getName()));
                 }
             });
         }));
@@ -185,7 +184,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
             final ColumnLocation cl = columnLocations[li][ci];
             checking(new Expectations() {
                 {
-                    allowing((tl)).getColumnLocation(with(columnDefinitions[ci].getName()));
+                    allowing((tl)).getColumnLocation(with(columnDefinitions.get(ci).getName()));
                     will(returnValue(cl));
                     allowing(cl).getTableLocation();
                     will(returnValue(tl));
@@ -197,8 +196,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
     private Map<String, ColumnSource> makeColumnSourceMap() {
         final Map<String, ColumnSource> result = new LinkedHashMap<>();
-        IntStream.range(0, columnDefinitions.length)
-                .forEachOrdered(ci -> result.put(columnDefinitions[ci].getName(), columnSources[ci]));
+        IntStream.range(0, columnDefinitions.size())
+                .forEachOrdered(ci -> result.put(columnDefinitions.get(ci).getName(), columnSources[ci]));
         return result;
     }
 
@@ -316,7 +315,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                     locationIndexToRegionIndex.put(li, regionIndex);
                     IntStream.range(0, NUM_COLUMNS).forEach(ci -> checking(new Expectations() {
                         {
-                            oneOf(columnSources[ci]).addRegion(with(columnDefinitions[ci]),
+                            oneOf(columnSources[ci]).addRegion(with(columnDefinitions.get(ci)),
                                     with(columnLocations[li][ci]));
                             will(returnValue(regionIndex));
                         }

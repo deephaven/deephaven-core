@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.benchmarking.impl;
 
 import io.deephaven.engine.table.ColumnDefinition;
@@ -25,7 +28,7 @@ public abstract class AbstractGeneratedTable extends AbstractBenchmarkTable {
                 .map(ColumnGenerator::getDefinition)
                 .map(ColumnDefinition::withNormal)
                 .collect(Collectors.toList());
-        definition = new TableDefinition(definitions);
+        definition = TableDefinition.of(definitions);
     }
 
     protected Table generateTable() {

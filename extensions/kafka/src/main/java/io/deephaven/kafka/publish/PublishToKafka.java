@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.kafka.publish;
 
 import io.deephaven.base.verify.Assert;
@@ -119,10 +122,11 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
     }
 
     private void publishMessages(@NotNull final RowSet rowsToPublish, final boolean usePrevious,
-            final boolean publishValues, @NotNull final Callback callback) {
+            final boolean publishValues, @NotNull final PublicationGuard guard) {
         if (rowsToPublish.isEmpty()) {
             return;
         }
+        guard.onSend(rowsToPublish.size());
 
         final int chunkSize = (int) Math.min(CHUNK_SIZE, rowsToPublish.size());
         try (final RowSequence.Iterator rowsIterator = rowsToPublish.getRowSequenceIterator();
@@ -150,7 +154,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
                 for (int ii = 0; ii < chunkRowKeys.intSize(); ++ii) {
                     final ProducerRecord<K, V> record = new ProducerRecord<>(topic,
                             keyChunk != null ? keyChunk.get(ii) : null, valueChunk != null ? valueChunk.get(ii) : null);
-                    producer.send(record, callback);
+                    producer.send(record, guard);
                 }
             }
         }
@@ -170,14 +174,24 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      */
     private class PublicationGuard implements Callback, SafeCloseable {
 
-        private long sentCount;
+        private final AtomicLong sentCount = new AtomicLong();
         private final AtomicLong completedCount = new AtomicLong();
         private final AtomicReference<Exception> sendException = new AtomicReference<>();
 
+        private volatile boolean closed;
+
         private void reset() {
-            sentCount = 0;
+            sentCount.set(0);
             completedCount.set(0);
             sendException.set(null);
+            closed = false;
+        }
+
+        private void onSend(final long messagesToSend) {
+            if (closed) {
+                throw new IllegalStateException("Tried to send using a guard that is no longer open");
+            }
+            sentCount.addAndGet(messagesToSend);
         }
 
         @Override
@@ -190,8 +204,10 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
         @Override
         public void close() {
+            closed = true;
             try {
-                if (sentCount == 0) {
+                final long localSentCount = sentCount.get();
+                if (localSentCount == 0) {
                     return;
                 }
                 try {
@@ -204,9 +220,9 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
                     throw new KafkaPublisherException("KafkaProducer reported send failure", localSendException);
                 }
                 final long localCompletedCount = completedCount.get();
-                if (sentCount != localCompletedCount) {
+                if (localSentCount != localCompletedCount) {
                     throw new KafkaPublisherException(String.format("Sent count %d does not match completed count %d",
-                            sentCount, localCompletedCount));
+                            localSentCount, localCompletedCount));
                 }
             } finally {
                 reset();
@@ -241,6 +257,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
             try (final SafeCloseable ignored = guard) {
                 if (isStream) {
+                    // noinspection resource
                     Assert.assertion(upstream.modified().isEmpty(), "upstream.modified.empty()");
                     // We always ignore removes on streams, and expect no modifies or shifts
                     publishMessages(upstream.added(), false, true, guard);
@@ -250,6 +267,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
                 // Regular table, either keyless, add-only, or aggregated
                 publishMessages(upstream.removed(), true, false, guard);
                 if (valuesModified.containsAny(upstream.modifiedColumnSet())) {
+                    // noinspection resource
                     try (final RowSet addedAndModified = upstream.added().union(upstream.modified())) {
                         publishMessages(addedAndModified, false, true, guard);
                     }

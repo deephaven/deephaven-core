@@ -1,5 +1,9 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -8,11 +12,8 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.table.impl.util.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import javax.naming.ldap.PagedResultsControl;
 
 /**
  * A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a
@@ -60,7 +61,9 @@ public class ListenerRecorder extends InstrumentedTableUpdateListener {
     @Override
     public void onUpdate(final TableUpdate upstream) {
         this.update = upstream.acquire();
-        this.notificationStep = LogicalClock.DEFAULT.currentStep();
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        Assert.lt(this.notificationStep, "this.notificationStep", currentStep, "currentStep");
+        this.notificationStep = currentStep;
 
         // notify the downstream listener merger
         if (mergedListener == null) {
@@ -128,15 +131,5 @@ public class ListenerRecorder extends InstrumentedTableUpdateListener {
 
     public TableUpdate getUpdate() {
         return recordedVariablesAreValid() ? update : null;
-    }
-
-    /**
-     * The caller is responsible for closing the {@link RowSetShiftDataExpander}.
-     * 
-     * @return a backwards compatible version of added / removed / modified that account for shifting
-     */
-    public RowSetShiftDataExpander getExpandedARM() {
-        return recordedVariablesAreValid() ? new RowSetShiftDataExpander(update, getParent().getRowSet())
-                : RowSetShiftDataExpander.EMPTY;
     }
 }

@@ -12,13 +12,15 @@
 
 plugins {
   id 'io.deephaven.project.register'
+  id 'java-library'
 }
 
 configurations {
-  compile.extendsFrom fishBase
+  implementation.extendsFrom fishBase
 }
 
 dependencies {
-  compile project(':deephaven-jpy')
-  compile project(':deephaven-jpy-config')
+  api 'org.jpyconsortium:jpy:0.11.0'
+  api project(':deephaven-jpy-config')
+  api project(':Base')
 }

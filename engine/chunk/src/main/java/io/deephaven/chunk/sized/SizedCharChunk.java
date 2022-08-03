@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.chunk.sized;
 
 import io.deephaven.chunk.WritableCharChunk;
@@ -11,6 +14,12 @@ import io.deephaven.util.SafeCloseable;
  */
 public final class SizedCharChunk<T extends Any> implements SafeCloseable {
     private WritableCharChunk<T> chunk;
+
+    public SizedCharChunk(){}
+
+    public SizedCharChunk(final int initialSize) {
+        chunk = WritableCharChunk.makeWritableChunk(initialSize);
+    }
 
     /**
      * Get the underlying chunk.

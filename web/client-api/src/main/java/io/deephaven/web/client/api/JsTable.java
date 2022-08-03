@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api;
 
 import elemental2.core.Global;
@@ -6,6 +9,9 @@ import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
@@ -14,9 +20,12 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunC
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.batch.RequestBatcher;
+import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
@@ -29,6 +38,7 @@ import io.deephaven.web.client.api.subscription.ViewportRow;
 import io.deephaven.web.client.api.tree.JsRollupConfig;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.tree.JsTreeTableConfig;
+import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsData;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
@@ -100,6 +110,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     private boolean hasInputTable;
 
+    private boolean isStreamTable;
+
     private final List<JsRunnable> onClosed;
 
     private double size = ClientTableState.SIZE_UNINITIALIZED;
@@ -125,13 +137,14 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     /**
      * Copy-constructor, used to build a new table instance based on the current handle/state of the current one,
      * allowing not only sharing state, but also actual handle and viewport subscriptions.
-     * 
+     *
      * @param table the original table to copy settings from
      */
     private JsTable(JsTable table) {
         this.subscriptionId = nextSubscriptionId++;
         this.workerConnection = table.workerConnection;
         this.hasInputTable = table.hasInputTable;
+        this.isStreamTable = table.isStreamTable;
         this.currentState = table.currentState;
         this.lastVisibleState = table.lastVisibleState;
         this.size = table.size;
@@ -210,6 +223,11 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     @JsProperty(name = "hasInputTable")
     public boolean hasInputTable() {
         return hasInputTable;
+    }
+
+    @JsMethod
+    public boolean isStreamTable() {
+        return isStreamTable;
     }
 
     @JsMethod
@@ -635,9 +653,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                     final RemoverFn remover = addEventListener(
                             INTERNAL_EVENT_STATECHANGED,
                             e -> {
-                                if (wrapped.isClosed()) {
-                                    return;
-                                }
                                 // eat superfluous changes (wait until event loop settles before firing requests).
                                 // IDS-2684 If you disable downsampling, you can lock up the entire websocket with some
                                 // rapid
@@ -650,6 +665,9 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                                 if (downsample[0]) {
                                     downsample[0] = false;
                                     LazyPromise.runLater(() -> {
+                                        if (wrapped.isClosed()) {
+                                            return;
+                                        }
                                         downsample[0] = true;
                                         // IDS-2684 - comment out the four lines above to reproduce
                                         // when ever the main table changes its state, reload the totals table from the
@@ -918,7 +936,12 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
-    public Promise<TableMap> partitionBy(Object keys, @JsOptional Boolean dropKeys) {
+    public Promise<JsPartitionedTable> byExternal(Object keys, @JsOptional Boolean dropKeys) {
+        return partitionBy(keys, dropKeys);
+    }
+
+    @JsMethod
+    public Promise<JsPartitionedTable> partitionBy(Object keys, @JsOptional Boolean dropKeys) {
         final String[] actualKeys;
         if (keys instanceof String) {
             actualKeys = new String[] {(String) keys};
@@ -927,14 +950,39 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         } else {
             throw new IllegalArgumentException("Can't use keys argument as either a string or array of strings");
         }
-        // we don't validate that the keys are non-empty, since that is allowed, but ensure they are all columns
+        // We don't validate that the keys are non-empty, since that is allowed, but ensure they are all columns
         findColumns(actualKeys);
 
-        return new TableMap(workerConnection, c -> {
-            // workerConnection.getServer().partitionBy(state().getHandle(), dropKeys == null ? false : dropKeys,
-            // actualKeys, c);
-            throw new UnsupportedOperationException("partitionBy");
-        }).refetch();
+        // Start the partitionBy on the server - we want to get the error from here, but we'll race the fetch against
+        // this to avoid an extra round-trip
+        Ticket partitionedTableTicket = workerConnection.getConfig().newTicket();
+        Promise<PartitionByResponse> partitionByPromise = Callbacks.<PartitionByResponse, Object>grpcUnaryPromise(c -> {
+            PartitionByRequest partitionBy = new PartitionByRequest();
+            partitionBy.setTableId(state().getHandle().makeTicket());
+            partitionBy.setResultId(partitionedTableTicket);
+            partitionBy.setKeyColumnNamesList(actualKeys);
+            if (dropKeys != null) {
+                partitionBy.setDropKeys(dropKeys);
+            }
+            workerConnection.partitionedTableServiceClient().partitionBy(partitionBy, workerConnection.metadata(),
+                    c::apply);
+        });
+        // construct the partitioned table around the ticket created above
+        Promise<JsPartitionedTable> fetchPromise =
+                new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, c -> {
+                    FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+                    partitionedTableRequest.setSourceId(new TypedTicket());
+                    partitionedTableRequest.getSourceId().setType(JsVariableChanges.PARTITIONEDTABLE);
+                    partitionedTableRequest.getSourceId().setTicket(partitionedTableTicket);
+                    workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
+                            workerConnection.metadata(), (fail, success) -> {
+                                c.handleResponse(fail, success, partitionedTableTicket);
+                            });
+                })).refetch();
+
+        // Ensure that the partition failure propagates first, but the result of the fetch will be returned - both
+        // are running concurrently.
+        return partitionByPromise.then(ignore -> fetchPromise);
     }
 
     // TODO: #697: Column statistic support
@@ -1359,6 +1407,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             if (state == currentState) {
                 lastVisibleState = state;
                 hasInputTable = s.getTableDef().getAttributes().isInputTable();
+                isStreamTable = s.getTableDef().getAttributes().isStreamTable();
+
                 // defer the size change so that is there is a viewport sub also waiting for onRunning, it gets it first
                 LazyPromise.runLater(() -> {
                     if (state == state()) {

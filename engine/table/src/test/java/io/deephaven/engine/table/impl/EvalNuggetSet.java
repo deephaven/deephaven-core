@@ -1,14 +1,13 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.tuple.ArrayTuple;
 import org.junit.Assert;
 
 import java.util.*;
@@ -28,8 +27,8 @@ public abstract class EvalNuggetSet extends EvalNugget {
             e.printStackTrace();
         }
         Collection<? extends ColumnSource> sources = originalValue.getColumnSources();
-        // TODO create a smart key for each row and go from there
-        Map<SmartKey, Long> originalSet = new HashMap<>();
+        // TODO create a key for each row and go from there
+        Map<ArrayTuple, Long> originalSet = new HashMap<>();
         Assert.assertEquals(expected.size(), originalValue.size());
         for (RowSet.Iterator iterator = originalValue.getRowSet().iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
@@ -38,7 +37,7 @@ public abstract class EvalNuggetSet extends EvalNugget {
             for (ColumnSource source : sources) {
                 key[i++] = source.get(next);
             }
-            final SmartKey k = new SmartKey(key);
+            final ArrayTuple k = new ArrayTuple(key);
 
             Assert.assertEquals(msg + " k = " + k, originalSet.put(k, next), null);
         }
@@ -50,7 +49,7 @@ public abstract class EvalNuggetSet extends EvalNugget {
             for (ColumnSource source : sources) {
                 key[i++] = source.get(next);
             }
-            Assert.assertNotSame(msg, originalSet.remove(new SmartKey(key)), null);
+            Assert.assertNotSame(msg, originalSet.remove(new ArrayTuple(key)), null);
         }
 
     }

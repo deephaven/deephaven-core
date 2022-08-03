@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.asofjoin;
 
 import io.deephaven.base.verify.Require;
@@ -69,7 +72,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         // endregion constructor
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
-            chunkTypes[ii] = keySourcesForErrorMessages[ii].getChunkType();
+            chunkTypes[ii] = tableKeySources[ii].getChunkType();
             mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
                     tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }

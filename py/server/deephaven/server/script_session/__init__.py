@@ -1,13 +1,11 @@
+#
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+#
+
 # Implementation utilities for io.deephaven.engine.util.PythonDeephavenSession
-try:
-    from deephaven_legacy.Plot import FigureWrapper
-except ImportError:
-    FigureWrapper = None
 from jpy import JType
 
 from deephaven._wrapper import JObjectWrapper
-from deephaven.plot import Figure
-import deephaven.table
 
 
 def create_change_list(from_snapshot, to_snapshot):
@@ -50,7 +48,5 @@ def unwrap_to_java_type(object):
         return object
     if isinstance(object, JObjectWrapper):
         return object.j_object
-    if FigureWrapper is not None and isinstance(object, FigureWrapper):
-        return object.figure
-    # add more here when/if necessary
+     # add more here when/if necessary
     return None

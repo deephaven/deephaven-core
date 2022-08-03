@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor;
 
 import elemental2.core.JsArray;
@@ -306,7 +309,7 @@ public class ChartDescriptor {
                 String getColumnName();
 
                 @JsProperty
-                double getTableMapId();
+                double getPartitionedTableId();
 
                 @JsProperty
                 double getType();
@@ -318,7 +321,7 @@ public class ChartDescriptor {
                 void setColumnName(String columnName);
 
                 @JsProperty
-                void setTableMapId(double tableMapId);
+                void setPartitionedTableId(double partitionedTableId);
 
                 @JsProperty
                 void setType(double type);
@@ -592,10 +595,10 @@ public class ChartDescriptor {
                 ChartDescriptor.ToObjectReturnType.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType getOneClick();
 
                 @JsProperty
-                double getTableId();
+                double getPartitionedTableId();
 
                 @JsProperty
-                double getTableMapId();
+                double getTableId();
 
                 @JsProperty
                 double getType();
@@ -614,10 +617,10 @@ public class ChartDescriptor {
                         ChartDescriptor.ToObjectReturnType.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType oneClick);
 
                 @JsProperty
-                void setTableId(double tableId);
+                void setPartitionedTableId(double partitionedTableId);
 
                 @JsProperty
-                void setTableMapId(double tableMapId);
+                void setTableId(double tableId);
 
                 @JsProperty
                 void setType(double type);
@@ -1121,7 +1124,7 @@ public class ChartDescriptor {
                 String getColumnName();
 
                 @JsProperty
-                double getTableMapId();
+                double getPartitionedTableId();
 
                 @JsProperty
                 double getType();
@@ -1133,7 +1136,7 @@ public class ChartDescriptor {
                 void setColumnName(String columnName);
 
                 @JsProperty
-                void setTableMapId(double tableMapId);
+                void setPartitionedTableId(double partitionedTableId);
 
                 @JsProperty
                 void setType(double type);
@@ -1407,10 +1410,10 @@ public class ChartDescriptor {
                 ChartDescriptor.ToObjectReturnType0.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType getOneClick();
 
                 @JsProperty
-                double getTableId();
+                double getPartitionedTableId();
 
                 @JsProperty
-                double getTableMapId();
+                double getTableId();
 
                 @JsProperty
                 double getType();
@@ -1429,10 +1432,10 @@ public class ChartDescriptor {
                         ChartDescriptor.ToObjectReturnType0.SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType oneClick);
 
                 @JsProperty
-                void setTableId(double tableId);
+                void setPartitionedTableId(double partitionedTableId);
 
                 @JsProperty
-                void setTableMapId(double tableMapId);
+                void setTableId(double tableId);
 
                 @JsProperty
                 void setType(double type);

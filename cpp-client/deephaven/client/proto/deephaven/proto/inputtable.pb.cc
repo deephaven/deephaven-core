@@ -16,69 +16,73 @@
 #include <google/protobuf/port_def.inc>
 
 PROTOBUF_PRAGMA_INIT_SEG
+
+namespace _pb = ::PROTOBUF_NAMESPACE_ID;
+namespace _pbi = _pb::internal;
+
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
-constexpr AddTableRequest::AddTableRequest(
-  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
+PROTOBUF_CONSTEXPR AddTableRequest::AddTableRequest(
+    ::_pbi::ConstantInitialized)
   : input_table_(nullptr)
   , table_to_add_(nullptr){}
 struct AddTableRequestDefaultTypeInternal {
-  constexpr AddTableRequestDefaultTypeInternal()
-    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR AddTableRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
   ~AddTableRequestDefaultTypeInternal() {}
   union {
     AddTableRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT AddTableRequestDefaultTypeInternal _AddTableRequest_default_instance_;
-constexpr AddTableResponse::AddTableResponse(
-  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized){}
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AddTableRequestDefaultTypeInternal _AddTableRequest_default_instance_;
+PROTOBUF_CONSTEXPR AddTableResponse::AddTableResponse(
+    ::_pbi::ConstantInitialized){}
 struct AddTableResponseDefaultTypeInternal {
-  constexpr AddTableResponseDefaultTypeInternal()
-    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR AddTableResponseDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
   ~AddTableResponseDefaultTypeInternal() {}
   union {
     AddTableResponse _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT AddTableResponseDefaultTypeInternal _AddTableResponse_default_instance_;
-constexpr DeleteTableRequest::DeleteTableRequest(
-  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AddTableResponseDefaultTypeInternal _AddTableResponse_default_instance_;
+PROTOBUF_CONSTEXPR DeleteTableRequest::DeleteTableRequest(
+    ::_pbi::ConstantInitialized)
   : input_table_(nullptr)
   , table_to_remove_(nullptr){}
 struct DeleteTableRequestDefaultTypeInternal {
-  constexpr DeleteTableRequestDefaultTypeInternal()
-    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR DeleteTableRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
   ~DeleteTableRequestDefaultTypeInternal() {}
   union {
     DeleteTableRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT DeleteTableRequestDefaultTypeInternal _DeleteTableRequest_default_instance_;
-constexpr DeleteTableResponse::DeleteTableResponse(
-  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized){}
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DeleteTableRequestDefaultTypeInternal _DeleteTableRequest_default_instance_;
+PROTOBUF_CONSTEXPR DeleteTableResponse::DeleteTableResponse(
+    ::_pbi::ConstantInitialized){}
 struct DeleteTableResponseDefaultTypeInternal {
-  constexpr DeleteTableResponseDefaultTypeInternal()
-    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR DeleteTableResponseDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
   ~DeleteTableResponseDefaultTypeInternal() {}
   union {
     DeleteTableResponse _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT DeleteTableResponseDefaultTypeInternal _DeleteTableResponse_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DeleteTableResponseDefaultTypeInternal _DeleteTableResponse_default_instance_;
 }  // namespace grpc
 }  // namespace backplane
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
-static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_deephaven_2fproto_2finputtable_2eproto[4];
-static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_deephaven_2fproto_2finputtable_2eproto = nullptr;
-static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_deephaven_2fproto_2finputtable_2eproto = nullptr;
+static ::_pb::Metadata file_level_metadata_deephaven_2fproto_2finputtable_2eproto[4];
+static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_deephaven_2fproto_2finputtable_2eproto = nullptr;
+static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_deephaven_2fproto_2finputtable_2eproto = nullptr;
 
-const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_deephaven_2fproto_2finputtable_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+const uint32_t TableStruct_deephaven_2fproto_2finputtable_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AddTableRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -108,18 +112,18 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_deephaven_2fproto_2finputtable
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
 };
-static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AddTableRequest)},
   { 8, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AddTableResponse)},
   { 14, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::DeleteTableRequest)},
   { 22, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::DeleteTableResponse)},
 };
 
-static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::io::deephaven::proto::backplane::grpc::_AddTableRequest_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::io::deephaven::proto::backplane::grpc::_AddTableResponse_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::io::deephaven::proto::backplane::grpc::_DeleteTableRequest_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::io::deephaven::proto::backplane::grpc::_DeleteTableResponse_default_instance_),
+static const ::_pb::Message* const file_default_instances[] = {
+  &::io::deephaven::proto::backplane::grpc::_AddTableRequest_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_AddTableResponse_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_DeleteTableRequest_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_DeleteTableResponse_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_deephaven_2fproto_2finputtable_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -143,22 +147,24 @@ const char descriptor_table_protodef_deephaven_2fproto_2finputtable_2eproto[] PR
   "quest\0326.io.deephaven.proto.backplane.grp"
   "c.DeleteTableResponse\"\000B\004H\001P\001b\006proto3"
   ;
-static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_deephaven_2fproto_2finputtable_2eproto_deps[1] = {
+static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2finputtable_2eproto_deps[1] = {
   &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
 };
-static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_deephaven_2fproto_2finputtable_2eproto_once;
-const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_deephaven_2fproto_2finputtable_2eproto = {
-  false, false, 757, descriptor_table_protodef_deephaven_2fproto_2finputtable_2eproto, "deephaven/proto/inputtable.proto", 
-  &descriptor_table_deephaven_2fproto_2finputtable_2eproto_once, descriptor_table_deephaven_2fproto_2finputtable_2eproto_deps, 1, 4,
-  schemas, file_default_instances, TableStruct_deephaven_2fproto_2finputtable_2eproto::offsets,
-  file_level_metadata_deephaven_2fproto_2finputtable_2eproto, file_level_enum_descriptors_deephaven_2fproto_2finputtable_2eproto, file_level_service_descriptors_deephaven_2fproto_2finputtable_2eproto,
+static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2finputtable_2eproto_once;
+const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2finputtable_2eproto = {
+    false, false, 757, descriptor_table_protodef_deephaven_2fproto_2finputtable_2eproto,
+    "deephaven/proto/inputtable.proto",
+    &descriptor_table_deephaven_2fproto_2finputtable_2eproto_once, descriptor_table_deephaven_2fproto_2finputtable_2eproto_deps, 1, 4,
+    schemas, file_default_instances, TableStruct_deephaven_2fproto_2finputtable_2eproto::offsets,
+    file_level_metadata_deephaven_2fproto_2finputtable_2eproto, file_level_enum_descriptors_deephaven_2fproto_2finputtable_2eproto,
+    file_level_service_descriptors_deephaven_2fproto_2finputtable_2eproto,
 };
-PROTOBUF_ATTRIBUTE_WEAK const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable* descriptor_table_deephaven_2fproto_2finputtable_2eproto_getter() {
+PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_deephaven_2fproto_2finputtable_2eproto_getter() {
   return &descriptor_table_deephaven_2fproto_2finputtable_2eproto;
 }
 
 // Force running AddDescriptors() at dynamic initialization time.
-PROTOBUF_ATTRIBUTE_INIT_PRIORITY static ::PROTOBUF_NAMESPACE_ID::internal::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2finputtable_2eproto(&descriptor_table_deephaven_2fproto_2finputtable_2eproto);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2finputtable_2eproto(&descriptor_table_deephaven_2fproto_2finputtable_2eproto);
 namespace io {
 namespace deephaven {
 namespace proto {
@@ -197,9 +203,6 @@ AddTableRequest::AddTableRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor();
-  if (!is_message_owned) {
-    RegisterArenaDtor(arena);
-  }
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.AddTableRequest)
 }
 AddTableRequest::AddTableRequest(const AddTableRequest& from)
@@ -218,7 +221,7 @@ AddTableRequest::AddTableRequest(const AddTableRequest& from)
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.AddTableRequest)
 }
 
-void AddTableRequest::SharedCtor() {
+inline void AddTableRequest::SharedCtor() {
 ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
     reinterpret_cast<char*>(&input_table_) - reinterpret_cast<char*>(this)),
     0, static_cast<size_t>(reinterpret_cast<char*>(&table_to_add_) -
@@ -227,9 +230,11 @@ void AddTableRequest::SharedCtor() {
 
 AddTableRequest::~AddTableRequest() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.AddTableRequest)
-  if (GetArenaForAllocation() != nullptr) return;
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
   SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 inline void AddTableRequest::SharedDtor() {
@@ -238,19 +243,13 @@ inline void AddTableRequest::SharedDtor() {
   if (this != internal_default_instance()) delete table_to_add_;
 }
 
-void AddTableRequest::ArenaDtor(void* object) {
-  AddTableRequest* _this = reinterpret_cast< AddTableRequest* >(object);
-  (void)_this;
-}
-void AddTableRequest::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
 void AddTableRequest::SetCachedSize(int size) const {
   _cached_size_.Set(size);
 }
 
 void AddTableRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.AddTableRequest)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
@@ -265,15 +264,15 @@ void AddTableRequest::Clear() {
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* AddTableRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* AddTableRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
-    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // .io.deephaven.proto.backplane.grpc.Ticket input_table = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_input_table(), ptr);
           CHK_(ptr);
         } else
@@ -281,7 +280,7 @@ const char* AddTableRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPAC
         continue;
       // .io.deephaven.proto.backplane.grpc.Ticket table_to_add = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           ptr = ctx->ParseMessage(_internal_mutable_table_to_add(), ptr);
           CHK_(ptr);
         } else
@@ -310,30 +309,28 @@ failure:
 #undef CHK_
 }
 
-::PROTOBUF_NAMESPACE_ID::uint8* AddTableRequest::_InternalSerialize(
-    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+uint8_t* AddTableRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.AddTableRequest)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   // .io.deephaven.proto.backplane.grpc.Ticket input_table = 1;
   if (this->_internal_has_input_table()) {
-    target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(
-        1, _Internal::input_table(this), target, stream);
+      InternalWriteMessage(1, _Internal::input_table(this),
+        _Internal::input_table(this).GetCachedSize(), target, stream);
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket table_to_add = 2;
   if (this->_internal_has_table_to_add()) {
-    target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(
-        2, _Internal::table_to_add(this), target, stream);
+      InternalWriteMessage(2, _Internal::table_to_add(this),
+        _Internal::table_to_add(this).GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.AddTableRequest)
@@ -344,7 +341,7 @@ size_t AddTableRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.AddTableRequest)
   size_t total_size = 0;
 
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
@@ -381,7 +378,7 @@ void AddTableRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
 void AddTableRequest::MergeFrom(const AddTableRequest& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.AddTableRequest)
   GOOGLE_DCHECK_NE(&from, this);
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (from._internal_has_input_table()) {
@@ -416,7 +413,7 @@ void AddTableRequest::InternalSwap(AddTableRequest* other) {
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata AddTableRequest::GetMetadata() const {
-  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+  return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2finputtable_2eproto_getter, &descriptor_table_deephaven_2fproto_2finputtable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2finputtable_2eproto[0]);
 }
@@ -455,7 +452,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AddTableResponse::GetClassData
 
 
 ::PROTOBUF_NAMESPACE_ID::Metadata AddTableResponse::GetMetadata() const {
-  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+  return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2finputtable_2eproto_getter, &descriptor_table_deephaven_2fproto_2finputtable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2finputtable_2eproto[1]);
 }
@@ -492,9 +489,6 @@ DeleteTableRequest::DeleteTableRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor();
-  if (!is_message_owned) {
-    RegisterArenaDtor(arena);
-  }
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.DeleteTableRequest)
 }
 DeleteTableRequest::DeleteTableRequest(const DeleteTableRequest& from)
@@ -513,7 +507,7 @@ DeleteTableRequest::DeleteTableRequest(const DeleteTableRequest& from)
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.DeleteTableRequest)
 }
 
-void DeleteTableRequest::SharedCtor() {
+inline void DeleteTableRequest::SharedCtor() {
 ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
     reinterpret_cast<char*>(&input_table_) - reinterpret_cast<char*>(this)),
     0, static_cast<size_t>(reinterpret_cast<char*>(&table_to_remove_) -
@@ -522,9 +516,11 @@ void DeleteTableRequest::SharedCtor() {
 
 DeleteTableRequest::~DeleteTableRequest() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.DeleteTableRequest)
-  if (GetArenaForAllocation() != nullptr) return;
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
   SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 inline void DeleteTableRequest::SharedDtor() {
@@ -533,19 +529,13 @@ inline void DeleteTableRequest::SharedDtor() {
   if (this != internal_default_instance()) delete table_to_remove_;
 }
 
-void DeleteTableRequest::ArenaDtor(void* object) {
-  DeleteTableRequest* _this = reinterpret_cast< DeleteTableRequest* >(object);
-  (void)_this;
-}
-void DeleteTableRequest::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
 void DeleteTableRequest::SetCachedSize(int size) const {
   _cached_size_.Set(size);
 }
 
 void DeleteTableRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.DeleteTableRequest)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
@@ -560,15 +550,15 @@ void DeleteTableRequest::Clear() {
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* DeleteTableRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* DeleteTableRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
-    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
       // .io.deephaven.proto.backplane.grpc.Ticket input_table = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_input_table(), ptr);
           CHK_(ptr);
         } else
@@ -576,7 +566,7 @@ const char* DeleteTableRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMES
         continue;
       // .io.deephaven.proto.backplane.grpc.Ticket table_to_remove = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           ptr = ctx->ParseMessage(_internal_mutable_table_to_remove(), ptr);
           CHK_(ptr);
         } else
@@ -605,30 +595,28 @@ failure:
 #undef CHK_
 }
 
-::PROTOBUF_NAMESPACE_ID::uint8* DeleteTableRequest::_InternalSerialize(
-    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+uint8_t* DeleteTableRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.DeleteTableRequest)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   // .io.deephaven.proto.backplane.grpc.Ticket input_table = 1;
   if (this->_internal_has_input_table()) {
-    target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(
-        1, _Internal::input_table(this), target, stream);
+      InternalWriteMessage(1, _Internal::input_table(this),
+        _Internal::input_table(this).GetCachedSize(), target, stream);
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket table_to_remove = 2;
   if (this->_internal_has_table_to_remove()) {
-    target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(
-        2, _Internal::table_to_remove(this), target, stream);
+      InternalWriteMessage(2, _Internal::table_to_remove(this),
+        _Internal::table_to_remove(this).GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.DeleteTableRequest)
@@ -639,7 +627,7 @@ size_t DeleteTableRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.DeleteTableRequest)
   size_t total_size = 0;
 
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
@@ -676,7 +664,7 @@ void DeleteTableRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
 void DeleteTableRequest::MergeFrom(const DeleteTableRequest& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.DeleteTableRequest)
   GOOGLE_DCHECK_NE(&from, this);
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (from._internal_has_input_table()) {
@@ -711,7 +699,7 @@ void DeleteTableRequest::InternalSwap(DeleteTableRequest* other) {
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata DeleteTableRequest::GetMetadata() const {
-  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+  return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2finputtable_2eproto_getter, &descriptor_table_deephaven_2fproto_2finputtable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2finputtable_2eproto[2]);
 }
@@ -750,7 +738,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*DeleteTableResponse::GetClassD
 
 
 ::PROTOBUF_NAMESPACE_ID::Metadata DeleteTableResponse::GetMetadata() const {
-  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+  return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2finputtable_2eproto_getter, &descriptor_table_deephaven_2fproto_2finputtable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2finputtable_2eproto[3]);
 }
@@ -762,16 +750,20 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*DeleteTableResponse::GetClassD
 }  // namespace deephaven
 }  // namespace io
 PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::AddTableRequest* Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AddTableRequest >(Arena* arena) {
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::AddTableRequest*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AddTableRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::AddTableRequest >(arena);
 }
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::AddTableResponse* Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AddTableResponse >(Arena* arena) {
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::AddTableResponse*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AddTableResponse >(Arena* arena) {
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::AddTableResponse >(arena);
 }
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::DeleteTableRequest >(Arena* arena) {
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::DeleteTableRequest*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::DeleteTableRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::DeleteTableRequest >(arena);
 }
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::DeleteTableResponse >(Arena* arena) {
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::DeleteTableResponse*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::DeleteTableResponse >(Arena* arena) {
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::DeleteTableResponse >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE

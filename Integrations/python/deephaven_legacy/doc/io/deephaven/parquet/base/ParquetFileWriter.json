@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.parquet.base.ParquetFileWriter",
- "methods": {
-  "addRowGroup": ":param size: long\n:return: io.deephaven.parquet.base.RowGroupWriter"
- },
- "path": "io.deephaven.parquet.base.ParquetFileWriter",
- "typeName": "class"
-}

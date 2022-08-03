@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb;
 
 import elemental2.core.Uint8Array;
@@ -27,7 +30,7 @@ public class LogSubscriptionData {
         String getMessage();
 
         @JsProperty
-        double getMicros();
+        String getMicros();
 
         @JsProperty
         void setLogLevel(String logLevel);
@@ -36,7 +39,7 @@ public class LogSubscriptionData {
         void setMessage(String message);
 
         @JsProperty
-        void setMicros(double micros);
+        void setMicros(String micros);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -53,7 +56,7 @@ public class LogSubscriptionData {
         String getMessage();
 
         @JsProperty
-        double getMicros();
+        String getMicros();
 
         @JsProperty
         void setLogLevel(String logLevel);
@@ -62,7 +65,7 @@ public class LogSubscriptionData {
         void setMessage(String message);
 
         @JsProperty
-        void setMicros(double micros);
+        void setMicros(String micros);
     }
 
     public static native LogSubscriptionData deserializeBinary(Uint8Array bytes);
@@ -79,7 +82,7 @@ public class LogSubscriptionData {
 
     public native String getMessage();
 
-    public native double getMicros();
+    public native String getMicros();
 
     public native Uint8Array serializeBinary();
 
@@ -87,7 +90,7 @@ public class LogSubscriptionData {
 
     public native void setMessage(String value);
 
-    public native void setMicros(double value);
+    public native void setMicros(String value);
 
     public native LogSubscriptionData.ToObjectReturnType0 toObject();
 

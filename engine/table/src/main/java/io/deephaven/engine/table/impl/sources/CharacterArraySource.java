@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
@@ -72,6 +71,11 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
             prevBlocks[block][indexWithinBlock] = blocks[block][indexWithinBlock];
         }
         blocks[block][indexWithinBlock] = value;
+    }
+
+    @Override
+    public void setNull(long key) {
+        set(key, NULL_CHAR);
     }
 
     @Override

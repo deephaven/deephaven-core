@@ -1,0 +1,26 @@
+plugins {
+    id 'io.deephaven.python-wheel'
+    id 'java-library'
+}
+
+configurations {
+    classpath
+}
+wheel {
+    contents {
+        include 'deephaven_server/', 'setup.py', 'README.md'
+        from(configurations.classpath) {
+            include '*'
+            into('deephaven_server/jars')
+        }
+    }
+    src 'deephaven_server'
+}
+
+dependencies {
+    classpath project(path: ':py-embedded-server-java-runtime', targetConfiguration: 'fullClasspath')
+    pythonWheel project(':py-server')
+    api(project(':Integrations')) {
+        because 'downstream dagger compile'
+    }
+}

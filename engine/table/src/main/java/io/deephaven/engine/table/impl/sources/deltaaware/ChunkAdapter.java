@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.sources.deltaaware;
 
 import io.deephaven.chunk.attributes.Values;
@@ -135,6 +138,11 @@ public class ChunkAdapter<T> {
 
     final void set(final long index, final short value) {
         baseChunk.asWritableShortChunk().set(0, value);
+        finishSet(index);
+    }
+
+    final void setNull(long index) {
+        baseChunk.fillWithNullValue(0, 1);
         finishSet(index);
     }
 

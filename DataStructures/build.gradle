@@ -1,7 +1,8 @@
 plugins {
     id 'io.deephaven.project.register'
+    id 'java-library'
 }
 
 dependencies {
-    compile project(':Base')
+    implementation project(':Base')
 }

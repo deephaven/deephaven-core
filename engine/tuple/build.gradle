@@ -6,11 +6,12 @@ plugins {
 description 'Engine Tuples: Value sequences for use in aggregations, joins, and indexing'
 
 dependencies {
-    api 'net.sf.trove4j:trove4j:3.0.3',
-            project(':Util'),
-            project(':engine-time')
+    api 'net.sf.trove4j:trove4j:3.0.3'
+    api project(':Util')
+    api project(':engine-time')
+    implementation project(':DataStructures')
 
-    testImplementation 'junit:junit:4.13.2'
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
 
 spotless {

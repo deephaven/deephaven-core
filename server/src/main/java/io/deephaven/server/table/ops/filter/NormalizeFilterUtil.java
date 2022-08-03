@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.table.ops.filter;
 
 import io.deephaven.proto.backplane.grpc.AndCondition;
@@ -94,6 +97,13 @@ public class NormalizeFilterUtil {
         return Condition.newBuilder().setInvoke(InvokeCondition.newBuilder()
                 .setMethod(method)
                 .setTarget(target)
+                .addAllArguments(argumentsList)
+                .build()).build();
+    }
+
+    public static Condition doInvoke(String method, List<Value> argumentsList) {
+        return Condition.newBuilder().setInvoke(InvokeCondition.newBuilder()
+                .setMethod(method)
                 .addAllArguments(argumentsList)
                 .build()).build();
     }

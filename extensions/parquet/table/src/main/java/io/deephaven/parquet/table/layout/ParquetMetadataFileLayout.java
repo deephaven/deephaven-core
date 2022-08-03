@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.table.layout;
 
 import gnu.trove.list.TIntList;
@@ -117,10 +120,10 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                             metadataFile, commonMetadataFile, fullDefinition.getName(), differences));
                 }
             }
-            definition = new TableDefinition(adjustedColumnDefinitions);
+            definition = TableDefinition.of(adjustedColumnDefinitions);
             instructions = fullSchemaInfo.getSecond();
         } else {
-            definition = new TableDefinition(leafSchemaInfo.getFirst());
+            definition = TableDefinition.of(leafSchemaInfo.getFirst());
             instructions = leafSchemaInfo.getSecond();
         }
 
@@ -210,12 +213,12 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
     private static ColumnDefinition<?> adjustPartitionDefinition(@NotNull final ColumnDefinition<?> columnDefinition) {
         if (columnDefinition.getComponentType() != null) {
             return ColumnDefinition.fromGenericType(columnDefinition.getName(), String.class,
-                    ColumnDefinition.COLUMNTYPE_PARTITIONING, null);
+                    null, ColumnDefinition.ColumnType.Partitioning);
         }
         final Class<?> dataType = columnDefinition.getDataType();
         if (dataType == boolean.class) {
             return ColumnDefinition.fromGenericType(columnDefinition.getName(), Boolean.class,
-                    ColumnDefinition.COLUMNTYPE_PARTITIONING, null);
+                    null, ColumnDefinition.ColumnType.Partitioning);
         }
         if (dataType.isPrimitive()) {
             return columnDefinition.withPartitioning();
@@ -223,7 +226,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         final Class<?> unboxedType = TypeUtils.getUnboxedType(dataType);
         if (unboxedType != null && unboxedType.isPrimitive()) {
             return ColumnDefinition.fromGenericType(columnDefinition.getName(), unboxedType,
-                    ColumnDefinition.COLUMNTYPE_PARTITIONING, null);
+                    null, ColumnDefinition.ColumnType.Partitioning);
         }
         if (dataType == Boolean.class || dataType == String.class || dataType == BigDecimal.class
                 || dataType == BigInteger.class) {
@@ -232,7 +235,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         // NB: This fallback includes any kind of timestamp; we don't have a strong grasp of required parsing support at
         // this time, and preserving the contents as a String allows the user full control.
         return ColumnDefinition.fromGenericType(columnDefinition.getName(), String.class,
-                ColumnDefinition.COLUMNTYPE_PARTITIONING, null);
+                null, ColumnDefinition.ColumnType.Partitioning);
     }
 
     private static final Map<Class<?>, Function<String, Comparable<?>>> CONVERSION_FUNCTIONS;

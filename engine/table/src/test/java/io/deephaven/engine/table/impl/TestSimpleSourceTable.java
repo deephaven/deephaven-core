@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
@@ -22,10 +21,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -127,24 +123,26 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         super.tearDown();
     }
 
-    private static ColumnDefinition<?>[] getIncludedColumnDefs(final int... indices) {
-        return IntStream.of(indices).mapToObj(ci -> TABLE_DEFINITION.getColumns()[ci]).toArray(ColumnDefinition[]::new);
+    private static List<ColumnDefinition<?>> getIncludedColumnDefs(final int... indices) {
+        return IntStream.of(indices).mapToObj(ci -> TABLE_DEFINITION.getColumns().get(ci))
+                .collect(Collectors.toList());
     }
 
     private static String[] getIncludedColumnNames(final int... indices) {
-        return IntStream.of(indices).mapToObj(ci -> TABLE_DEFINITION.getColumns()[ci].getName()).toArray(String[]::new);
+        return IntStream.of(indices).mapToObj(ci -> TABLE_DEFINITION.getColumns().get(ci).getName())
+                .toArray(String[]::new);
     }
 
     private static String[] getExcludedColumnNames(final TableDefinition currentDef, final int... indices) {
         final Set<String> includedNames = IntStream.of(indices)
-                .mapToObj(ci -> TABLE_DEFINITION.getColumns()[ci].getName()).collect(Collectors.toSet());
+                .mapToObj(ci -> TABLE_DEFINITION.getColumns().get(ci).getName()).collect(Collectors.toSet());
         return currentDef.getColumnStream().map(ColumnDefinition::getName).filter(n -> !includedNames.contains(n))
                 .toArray(String[]::new);
     }
 
     private Map<String, ? extends DeferredGroupingColumnSource<?>> getIncludedColumnsMap(final int... indices) {
         return IntStream.of(indices)
-                .mapToObj(ci -> new Pair<>(TABLE_DEFINITION.getColumns()[ci].getName(), columnSources[ci]))
+                .mapToObj(ci -> new Pair<>(TABLE_DEFINITION.getColumns().get(ci).getName(), columnSources[ci]))
                 .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, Assert::neverInvoked, LinkedHashMap::new));
     }
 

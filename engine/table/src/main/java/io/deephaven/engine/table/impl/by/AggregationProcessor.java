@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.ColumnName;
@@ -1968,7 +1971,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
                 // TODO (https://github.com/deephaven/deephaven-core/issues/65):
                 // Make rollups work with partitioned tables instead of table maps. Empty PartitionedTable here?
-                null);
+                "placeholder");
         table.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
     }
 }

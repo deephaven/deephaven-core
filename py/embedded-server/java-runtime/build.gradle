@@ -1,0 +1,41 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+configurations {
+    fullClasspath
+}
+
+dependencies {
+    implementation project(':server-jetty')
+
+    Classpaths.inheritDagger(project)
+
+    Classpaths.inheritGrpcPlatform(project)
+
+    implementation project(':grpc-java:grpc-servlet-jakarta')
+    implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
+
+    runtimeOnly project(':log-to-slf4j')
+    runtimeOnly project(':logback-print-stream-globals')
+    runtimeOnly project(':logback-logbuffer')
+    Classpaths.inheritLogbackClassic(project)
+
+    if (!hasProperty('excludeHotspotImpl')) {
+        runtimeOnly project(':hotspot-impl')
+    }
+}
+
+// making a dir here isn't optimal, but without it we need to make py-embedded-server be a java and a python
+// project, and the ProjectType enum/convention is mutually exclusive, so that probably doesn't make sense
+def serverClasspath = tasks.register('serverClasspath', Sync) {
+    from configurations.runtimeClasspath
+    from jar
+    from tasks.named('createCompilerDirectives')
+    into layout.buildDirectory.dir('classpath')
+}
+
+artifacts {
+    fullClasspath serverClasspath
+}

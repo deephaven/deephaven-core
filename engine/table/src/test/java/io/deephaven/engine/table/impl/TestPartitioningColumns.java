@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.chunk.attributes.Values;
@@ -61,7 +64,7 @@ public class TestPartitioningColumns {
             recordingLocationKeyFinder.accept(new SimpleTableLocationKey(partitions));
         });
 
-        final TableDefinition resultDefinition = new TableDefinition(input.getDefinition().getColumnStream()
+        final TableDefinition resultDefinition = TableDefinition.of(input.getDefinition().getColumnStream()
                 .map(ColumnDefinition::withPartitioning).collect(Collectors.toList()));
         final Table result = new PartitionAwareSourceTable(resultDefinition, "TestPartitioningColumns",
                 RegionedTableComponentFactoryImpl.INSTANCE,

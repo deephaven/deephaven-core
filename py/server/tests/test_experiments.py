@@ -1,10 +1,11 @@
 #
-#  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 import unittest
 
 from deephaven import time_table
-from deephaven._ugp import ugp_exclusive_lock
+from deephaven.ugp import exclusive_lock
 from deephaven.experimental import time_window
 from tests.testbase import BaseTestCase
 
@@ -12,7 +13,7 @@ from tests.testbase import BaseTestCase
 class ExperimentalTestCase(BaseTestCase):
 
     def test_time_window(self):
-        with ugp_exclusive_lock():
+        with exclusive_lock():
             source_table = time_table("00:00:00.01").update(["TS=currentTime()"])
             t = time_window(source_table, ts_col="TS", window=10**8, bool_col="InWindow")
 

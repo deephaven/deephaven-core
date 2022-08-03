@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.chunk.*;
@@ -89,6 +92,11 @@ public class Immutable2DCharArraySource extends AbstractDeferredGroupingColumnSo
 
     public final char getUnsafe(long key) {
         return data[keyToSegment(key)][keyToOffset(key)];
+    }
+
+    @Override
+    public final void setNull(long key) {
+        data[keyToSegment(key)][keyToOffset(key)] = NULL_CHAR;
     }
 
     @Override

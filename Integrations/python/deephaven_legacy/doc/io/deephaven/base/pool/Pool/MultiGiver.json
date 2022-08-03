@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.base.pool.Pool$MultiGiver",
- "methods": {},
- "path": "io.deephaven.base.pool.Pool.MultiGiver",
- "text": "Must implement at least: Multiple threads may call give(), one thread may call take()",
- "typeName": "interface"
-}

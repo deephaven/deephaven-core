@@ -1,7 +1,6 @@
-/*
+/**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.extensions.barrage;
 
 import io.deephaven.engine.table.TableDefinition;
@@ -142,7 +141,7 @@ public class BarrageSubscriptionPerformanceLogger
         flush(setter);
     }
 
-    private static final TableDefinition TABLE_DEFINITION = TableDefinition.tableDefinition(columnDbTypes, columnNames);
+    private static final TableDefinition TABLE_DEFINITION = TableDefinition.from(columnNames, columnDbTypes);
 
     public static TableDefinition getTableDefinition() {
         return TABLE_DEFINITION;

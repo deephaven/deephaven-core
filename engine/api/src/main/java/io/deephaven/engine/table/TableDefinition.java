@@ -1,39 +1,43 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table;
 
-import io.deephaven.base.Copyable;
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
+import io.deephaven.base.cache.OpenAddressedCanonicalizationCache;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
-import io.deephaven.datastructures.util.HashCodeUtil;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.qst.column.header.ColumnHeader;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
 import java.util.Map.Entry;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
  * Table definition for all Deephaven tables.
  */
-public class TableDefinition implements Externalizable, LogOutputAppendable, Copyable<TableDefinition> {
-    private static final long serialVersionUID = -120432133075760976L;
+public class TableDefinition implements LogOutputAppendable {
 
-    private static final String NEW_LINE = System.getProperty("line.separator");
+    private static final OpenAddressedCanonicalizationCache INTERNED_DEFINITIONS =
+            new OpenAddressedCanonicalizationCache();
 
     public static TableDefinition of(ColumnDefinition<?>... columnDefinitions) {
-        return new TableDefinition(columnDefinitions);
+        return new TableDefinition(new ArrayList<>(Arrays.asList(columnDefinitions)));
     }
 
-    public static TableDefinition inferFrom(Map<String, ? extends ColumnSource<?>> sources) {
-        List<ColumnDefinition<?>> definitions = new ArrayList<>(sources.size());
+    public static TableDefinition of(Collection<ColumnDefinition<?>> columnDefinitions) {
+        return new TableDefinition(new ArrayList<>(columnDefinitions));
+    }
+
+    public static TableDefinition inferFrom(@NotNull final Map<String, ? extends ColumnSource<?>> sources) {
+        final List<ColumnDefinition<?>> definitions = new ArrayList<>(sources.size());
         for (Entry<String, ? extends ColumnSource<?>> e : sources.entrySet()) {
             final String name = e.getKey();
             final ColumnSource<?> source = e.getValue();
@@ -44,8 +48,8 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         return new TableDefinition(definitions);
     }
 
-    public static TableDefinition from(Iterable<ColumnHeader<?>> headers) {
-        List<ColumnDefinition<?>> definitions = new ArrayList<>();
+    public static TableDefinition from(@NotNull final Iterable<ColumnHeader<?>> headers) {
+        final List<ColumnDefinition<?>> definitions = new ArrayList<>();
         for (ColumnHeader<?> columnHeader : headers) {
             final ColumnDefinition<?> columnDefinition = ColumnDefinition.from(columnHeader);
             definitions.add(columnDefinition);
@@ -53,76 +57,144 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         return new TableDefinition(definitions);
     }
 
-    private transient Map<String, ColumnDefinition<?>> columnNameMap;
-
-    public TableDefinition() {}
-
-    public TableDefinition(@NotNull final List<Class<?>> types, @NotNull final List<String> columnNames) {
-        this(getColumnDefinitions(types, columnNames));
+    /**
+     * Convenience factory method for use with parallel arrays of column names and data types. All
+     * {@link ColumnDefinition column definitions} will have default {@link ColumnDefinition#getColumnType() component
+     * type} and {@link ColumnDefinition.ColumnType#Normal normal column type}.
+     *
+     * @param columnNames An array of column names to use, parallel to {@code columnDataTypes}
+     * @param columnDataTypes An array of column data types to use, parallel to {@code columnNames}
+     * @return The resulting TableDefinition
+     */
+    public static TableDefinition from(
+            @NotNull final String[] columnNames,
+            @NotNull final Class<?>[] columnDataTypes) {
+        if (columnNames.length != columnDataTypes.length) {
+            throw new IllegalArgumentException(String.format(
+                    "Input size mismatch: columnNames is of length %d, but columnDataTypes is of length %d",
+                    columnNames.length, columnDataTypes.length));
+        }
+        return new TableDefinition(IntStream.range(0, columnNames.length)
+                .mapToObj(ci -> ColumnDefinition.fromGenericType(columnNames[ci], columnDataTypes[ci]))
+                .toArray(ColumnDefinition[]::new));
     }
 
-    public TableDefinition(@NotNull final List<ColumnDefinition<?>> columnDefs) {
-        this.setColumns(columnDefs.toArray(new ColumnDefinition[0]));
+    /**
+     * Convenience factory method for use with parallel structures of column names and data types. All
+     * {@link ColumnDefinition column definitions} will have default {@link ColumnDefinition#getColumnType() component
+     * type} and {@link ColumnDefinition.ColumnType#Normal normal column type}.
+     *
+     * @param columnNames Column names to use, parallel to {@code columnDataTypes}
+     * @param columnDataTypes Column data types to use, parallel to {@code columnNames}
+     * @return The resulting TableDefinition
+     */
+    public static TableDefinition from(
+            @NotNull final Iterable<String> columnNames,
+            @NotNull final Iterable<Class<?>> columnDataTypes) {
+        final Iterator<String> cn = columnNames.iterator();
+        final Iterator<Class<?>> cdt = columnDataTypes.iterator();
+        final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>();
+        while (cn.hasNext() && cdt.hasNext()) {
+            columnDefinitions.add(ColumnDefinition.fromGenericType(cn.next(), cdt.next()));
+        }
+        if (cn.hasNext() || cdt.hasNext()) {
+            throw new IllegalArgumentException(
+                    "Input size mismatch: columnNames and columnDataTypes are not the same size");
+        }
+        return new TableDefinition(columnDefinitions);
     }
 
-    public TableDefinition(@NotNull final ColumnDefinition<?>[] columnDefs) {
-        this.setColumns(columnDefs);
+    private final List<ColumnDefinition<?>> columns;
+
+    private int cachedHashCode;
+    private Map<String, ColumnDefinition<?>> columnNameMap;
+
+    private TableDefinition(@NotNull final ColumnDefinition<?>[] columnDefinitions) {
+        this(Arrays.asList(columnDefinitions));
     }
 
-    public TableDefinition(@NotNull final TableDefinition other) {
-        this.setColumns(other.columns);
-        this.columnNameMap = other.columnNameMap;
+    private TableDefinition(@NotNull final Collection<ColumnDefinition<?>> columnDefinitions) {
+        final List<ColumnDefinition<?>> columns = new ArrayList<>(columnDefinitions);
+        this.columns = Collections.unmodifiableList(checkForNullOrDuplicates(columns));
     }
 
-    public static TableDefinition tableDefinition(@NotNull final Class<?>[] types,
-            @NotNull final String[] columnNames) {
-        return new TableDefinition(getColumnDefinitions(types, columnNames));
+    private static List<ColumnDefinition<?>> checkForNullOrDuplicates(
+            @NotNull final List<ColumnDefinition<?>> columns) {
+        if (columns.stream().anyMatch(Objects::isNull)) {
+            throw new IllegalArgumentException("Supplied ColumnDefinitions include one or more null values");
+        }
+        final Set<String> columnNames = new HashSet<>(columns.size());
+        final List<String> duplicateNames = columns.stream().map(ColumnDefinition::getName)
+                .filter((final String columnName) -> !columnNames.add(columnName))
+                .collect(Collectors.toList());
+        if (!duplicateNames.isEmpty()) {
+            throw new IllegalArgumentException("Supplied ColumnDefinitions include duplicate names " + duplicateNames);
+        }
+        return columns;
+    }
+
+    /**
+     * Intern {@code this} TableDefinition in order to avoid storing many identical instances. Useful (for example) in
+     * heavily partitioned workloads.
+     *
+     * @return An interned TableDefinition that is equal to {@code this}
+     */
+    public TableDefinition intern() {
+        return INTERNED_DEFINITIONS.getCachedItem(this);
     }
 
     @Override
     public String toString() {
-        return super.toString() + "|columns=" + Arrays.deepToString(columns);
+        return new LogOutputStringImpl().append(this).toString();
     }
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        logOutput.append("TableDefinition");
-        logOutput.append("|columns=[");
+        logOutput.append("TableDefinition {");
+        logOutput.append("columns=[");
+        boolean first = true;
         for (final ColumnDefinition<?> column : columns) {
+            if (first) {
+                first = false;
+            } else {
+                logOutput.append(", ");
+            }
             logOutput.append(column);
         }
-        logOutput.append(']');
+        logOutput.append("]}");
         return logOutput;
     }
 
-    public void setColumns(final ColumnDefinition<?>[] columns) {
-        Require.elementsNeqNull(columns, "columns");
-        final Set<String> columnNames = new HashSet<>();
-        for (final ColumnDefinition<?> column : columns) {
-            if (!columnNames.add(column.getName())) {
-                throw new IllegalArgumentException("Duplicate definition for column \"" + column.getName() + "\"");
-            }
-        }
-        columnNameMap = null;
-        this.columns = columns;
-    }
-
     /**
-     * @return A list view of the column definition array for this table definition.
+     * @return The number of columns for this table definition
      */
-    public List<ColumnDefinition<?>> getColumnList() {
-        return Collections.unmodifiableList(Arrays.asList(columns));
+    public int numColumns() {
+        return columns.size();
     }
 
     /**
-     * @return A stream of the column definition array for this table definition
+     * @return An unmodifiable list of the column definitions for this table definition
+     */
+    public List<ColumnDefinition<?>> getColumns() {
+        return columns;
+    }
+
+    /**
+     * @return An array of the column definitions for this table definition
+     */
+    public ColumnDefinition<?>[] getColumnsArray() {
+        return columns.toArray(ColumnDefinition.ZERO_LENGTH_COLUMN_DEFINITION_ARRAY);
+    }
+
+    /**
+     * @return A stream of the column definitions for this table definition
      */
     public Stream<ColumnDefinition<?>> getColumnStream() {
-        return Arrays.stream(columns);
+        return columns.stream();
     }
 
     /**
-     * @return A freshly-allocated, unmodifiable map from column name to column definition.
+     * @return An unmodifiable map from column name to column definition
      */
     public Map<String, ColumnDefinition<?>> getColumnNameMap() {
         if (columnNameMap != null) {
@@ -133,24 +205,25 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     }
 
     /**
-     * @return A freshly-allocated list of column definitions for all partitioning columns, in the same relative order
-     *         as in the column definitions array.
+     * @return A list of {@link ColumnDefinition column definitions} for all
+     *         {@link ColumnDefinition.ColumnType#Partitioning partitioning} columns in the same relative order as the
+     *         column definitions list
      */
     public List<ColumnDefinition<?>> getPartitioningColumns() {
         return getColumnStream().filter(ColumnDefinition::isPartitioning).collect(Collectors.toList());
     }
 
     /**
-     * @return A freshly-allocated list of column definitions for all grouping columns, in the same relative order as in
-     *         the column definitions array.
+     * @return A list of {@link ColumnDefinition column definitions} for all {@link ColumnDefinition.ColumnType#Grouping
+     *         grouping} columns in the same relative order as the column definitions list
      */
     public List<ColumnDefinition<?>> getGroupingColumns() {
         return getColumnStream().filter(ColumnDefinition::isGrouping).collect(Collectors.toList());
     }
 
     /**
-     * @return A freshly-allocated array of column names for all grouping columns, in the same relative order as in the
-     *         column definitions array.
+     * @return An array containing the names of all {@link ColumnDefinition.ColumnType#Grouping grouping} columns in the
+     *         same relative order as the column definitions list
      */
     public String[] getGroupingColumnNamesArray() {
         return getColumnStream().filter(ColumnDefinition::isGrouping).map(ColumnDefinition::getName)
@@ -158,37 +231,47 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     }
 
     /**
-     * @return A freshly-allocated list of column names in the same order as the column definitions array.
+     * @return The column names as a list in the same order as {@link #getColumns()}
      */
     public List<String> getColumnNames() {
         return getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toList());
     }
 
     /**
-     * @return A freshly-allocated array of column names in the same order as the column definitions array.
+     * @return The {@link ColumnName column names} as a list in the same order as {@link #getColumns()}
+     */
+    public List<ColumnName> getTypedColumnNames() {
+        return getColumnStream().map(ColumnDefinition::getName).map(ColumnName::of).collect(Collectors.toList());
+    }
+
+    /**
+     * @return The column names as an array in the same order as {@link #getColumns()}
      */
     public String[] getColumnNamesArray() {
         return getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
     }
 
     /**
-     * @return A freshly-allocated list of column types in the same order as the column definitions array.
+     * @return The column {@link ColumnDefinition#getDataType() data types} as a list in the same order as
+     *         {@link #getColumns()}
      */
     public List<Class<?>> getColumnTypes() {
         return getColumnStream().map(ColumnDefinition::getDataType).collect(Collectors.toList());
     }
 
     /**
-     * @return A freshly-allocated array of column types in the same order as the column definitions array.
+     * @return The column {@link ColumnDefinition#getDataType() data types} as an array in the same order as
+     *         {@link #getColumns()}
      */
     public Class<?>[] getColumnTypesArray() {
         return getColumnStream().map(ColumnDefinition::getDataType).toArray(Class[]::new);
     }
 
     /**
-     * @param columnName the column name to search for
-     * @param <T> The target type, as a type parameter. Inferred from context.
-     * @return The column definition for the supplied name, or null if no such column exists in this table definition.
+     * @param columnName The column name to search for
+     * @param <T> The column {@link ColumnDefinition#getDataType() data types}, as a type parameter
+     * @return The {@link ColumnDefinition} for the supplied name, or {@code null} if no such column exists in this
+     *         table definition
      */
     public <T> ColumnDefinition<T> getColumn(@NotNull final String columnName) {
         // noinspection unchecked
@@ -196,32 +279,20 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     }
 
     /**
-     * @param column the ColumnDefinition to search for
-     * @return The index of the column for the supplied name, or -1 if no such column exists in this table definition.
-     *         <b>Note:</b> This is an O(columns.length) lookup.
+     * @param column The {@link ColumnDefinition} to search for
+     * @return The index of {@code column}, or {@code -1} if no such column exists in this table definition
+     * @apiNote This is an O({@link #numColumns()}) lookup.
      */
     public int getColumnIndex(@NotNull final ColumnDefinition<?> column) {
-        for (int ci = 0; ci < columns.length; ++ci) {
-            if (column.equals(columns[ci])) {
-                return ci;
-            }
-        }
-        return -1;
+        return columns.indexOf(column);
     }
 
     /**
-     * @return A freshly-allocated String of column names joined with ','.
+     * @return A String of column names joined with {@code ','}
      */
     @SuppressWarnings("unused")
     public String getColumnNamesAsString() {
-        final StringBuilder sb = new StringBuilder();
-        for (final ColumnDefinition<?> column : columns) {
-            if (sb.length() > 0) {
-                sb.append(',');
-            }
-            sb.append(column.getName());
-        }
-        return sb.toString();
+        return getColumnStream().map(ColumnDefinition::getName).collect(Collectors.joining(","));
     }
 
     /**
@@ -252,6 +323,9 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
             @NotNull final TableDefinition other,
             @NotNull final String lhsName,
             @NotNull final String rhsName) {
+        if (equals(other)) {
+            return this;
+        }
         final TableDefinition result = checkCompatibilityInternal(other, false);
         if (result == null || other.checkCompatibilityInternal(this, false) == null) {
             final List<String> differences = describeCompatibilityDifferences(other, lhsName, rhsName);
@@ -299,6 +373,9 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     public TableDefinition checkCompatibility(
             @NotNull final TableDefinition other,
             final boolean ignorePartitioningColumns) {
+        if (equals(other)) {
+            return this;
+        }
         final TableDefinition minimized = checkCompatibilityInternal(other, ignorePartitioningColumns);
         if (minimized != null) {
             return minimized;
@@ -377,6 +454,9 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     private List<String> describeDifferences(
             @NotNull final TableDefinition other, @NotNull final String lhs, @NotNull final String rhs,
             @NotNull final ColumnDefinitionEqualityTest test, final boolean includeColumnType) {
+        if (this == other) {
+            return Collections.emptyList();
+        }
         final List<String> differences = new ArrayList<>();
 
         final Map<String, ColumnDefinition<?>> otherColumns = other.getColumnNameMap();
@@ -426,7 +506,10 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean equalsIgnoreOrder(@NotNull final TableDefinition other) {
-        if (columns.length != other.columns.length) {
+        if (this == other) {
+            return true;
+        }
+        if (columns.size() != other.columns.size()) {
             return false;
         }
         final Iterator<ColumnDefinition<?>> thisColumns =
@@ -457,66 +540,16 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
             return false;
         }
         final TableDefinition otherTD = (TableDefinition) other;
-        if (columns.length != otherTD.columns.length) {
-            return false;
-        }
-        for (int cdi = 0; cdi < columns.length; ++cdi) {
-            if (!columns[cdi].equals(otherTD.columns[cdi])) {
-                return false;
-            }
-        }
-        return true;
+        return columns.equals(otherTD.columns);
     }
 
     @Override
     public int hashCode() {
-        return HashCodeUtil.combineHashCodes((Object[]) columns);
-    }
-
-
-    /**
-     * Factory helper function for column definitions.
-     *
-     * @param columnTypes List of column types
-     * @param columnNames List of column names, parallel to columnTypes
-     * @return A new array of column definitions from the supplied lists of types and names.
-     */
-    private static ColumnDefinition<?>[] getColumnDefinitions(@NotNull final List<Class<?>> columnTypes,
-            @NotNull final List<String> columnNames) {
-        Require.eq(columnTypes.size(), "types.size()", columnNames.size(), "columnNames.size()");
-
-        final ColumnDefinition<?>[] result = new ColumnDefinition[columnTypes.size()];
-        for (int ci = 0; ci < result.length; ++ci) {
-            result[ci] = ColumnDefinition.fromGenericType(columnNames.get(ci), columnTypes.get(ci));
+        if (cachedHashCode != 0) {
+            return cachedHashCode;
         }
-
-        return result;
-    }
-
-    /**
-     * Factory helper function for column definitions.
-     *
-     * @param columnTypes Array of column types
-     * @param columnNames Array of column names, parallel to columnTypes
-     * @param additionalColumnDefs optional additional column definitions to add at the beginning.
-     * @return A new array of column definitions from the supplied lists of types and names.
-     */
-    private static ColumnDefinition<?>[] getColumnDefinitions(
-            @NotNull final Class<?>[] columnTypes, @NotNull final String[] columnNames,
-            ColumnDefinition<?>... additionalColumnDefs) {
-        Require.eq(columnTypes.length, "types.length", columnNames.length, "columnNames.length");
-
-        final ColumnDefinition<?>[] result = new ColumnDefinition[columnTypes.length + additionalColumnDefs.length];
-        int ri = 0;
-        for (ColumnDefinition<?> additionalColumnDef : additionalColumnDefs) {
-            result[ri++] = additionalColumnDef;
-        }
-
-        for (int ci = 0; ci < columnTypes.length; ++ci) {
-            result[ri++] = ColumnDefinition.fromGenericType(columnNames[ci], columnTypes[ci]);
-        }
-
-        return result;
+        final int columnsHashCode = columns.hashCode();
+        return cachedHashCode = columnsHashCode == 0 ? 31 : columnsHashCode;
     }
 
     /**
@@ -534,7 +567,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      * @param partitioningToNormal Whether partitioning columns should be preserved as normal columns, or excluded
      */
     public TableDefinition getWritable(final boolean partitioningToNormal) {
-        final ColumnDefinition<?>[] writableColumns = getWritableColumns(partitioningToNormal);
+        final List<ColumnDefinition<?>> writableColumns = getWritableColumns(partitioningToNormal);
         if (writableColumns == columns) {
             return this;
         }
@@ -547,90 +580,33 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      *         columns to normal columns.
      * @param partitioningToNormal Whether partitioning columns should be preserved as normal columns, or excluded
      */
-    public ColumnDefinition<?>[] getWritableColumns(final boolean partitioningToNormal) {
+    private List<ColumnDefinition<?>> getWritableColumns(final boolean partitioningToNormal) {
         if (getColumnStream().anyMatch(c -> !c.isDirect())) {
             if (partitioningToNormal) {
-                return getColumnStream().filter(c -> c.isDirect() || c.isPartitioning()).map(c -> {
-                    if (c.isPartitioning()) {
-                        return c.withNormal();
-                    }
-                    return c;
-                }).toArray(ColumnDefinition[]::new);
+                return getColumnStream()
+                        .filter(c -> c.isDirect() || c.isPartitioning())
+                        .map(c -> c.isPartitioning() ? c.withNormal() : c)
+                        .collect(Collectors.toList());
             }
-            return getColumnStream().filter(ColumnDefinition::isDirect).toArray(ColumnDefinition[]::new);
+            return getColumnStream().filter(ColumnDefinition::isDirect).collect(Collectors.toList());
         }
         return columns;
-    }
-
-    // TODO: Keep cleaning up. ImmutableColumnDefinition, or ImmutableADO? Builder pattern?
-
-    /**
-     * Helper method to assist with definition creation for user-namespace partitioned tables. This version
-     * automatically converts grouping columns to normal columns.
-     *
-     * @param partitioningColumnName The name of the column to use for partitioning
-     * @param baseDefinition The definition to work from
-     * @return A new definition suitable for writing partitioned tables with
-     */
-    public static TableDefinition createUserPartitionedTableDefinition(@NotNull final String partitioningColumnName,
-            @NotNull final TableDefinition baseDefinition) {
-        return createUserPartitionedTableDefinition(partitioningColumnName, baseDefinition, true);
-    }
-
-    /**
-     * Helper method to assist with definition creation for user-namespace partitioned tables.
-     *
-     * @param partitioningColumnName The name of the column to use for partitioning
-     * @param baseDefinition The definition to work from
-     * @param groupingColumnsAsNormal Whether grouping columns should be converted to normal columns
-     * @return A new definition suitable for writing partitioned tables with
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static TableDefinition createUserPartitionedTableDefinition(@NotNull final String partitioningColumnName,
-            @NotNull final TableDefinition baseDefinition,
-            final boolean groupingColumnsAsNormal) {
-        final List<ColumnDefinition<?>> columnDefs = new ArrayList<>();
-        columnDefs.add(ColumnDefinition.ofShort(partitioningColumnName).withPartitioning());
-        final List<ColumnDefinition<?>> baseDefs = new ArrayList<>(baseDefinition.getColumnList());
-        for (final ListIterator<ColumnDefinition<?>> iter = baseDefs.listIterator(); iter.hasNext();) {
-            final ColumnDefinition<?> current = iter.next();
-            if (current.getName().equals(partitioningColumnName)) {
-                iter.remove();
-                continue;
-            }
-            if (current.getColumnType() != ColumnDefinition.COLUMNTYPE_NORMAL &&
-                    (current.getColumnType() != ColumnDefinition.COLUMNTYPE_GROUPING || groupingColumnsAsNormal)) {
-                iter.set(current.withNormal());
-            }
-        }
-        columnDefs.addAll(baseDefs);
-
-        return new TableDefinition(columnDefs);
-    }
-
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        columns = (ColumnDefinition<?>[]) in.readObject();
-    }
-
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(columns);
     }
 
     /**
      * Runtime exception representing an incompatibility between table definitions.
      */
-    @SuppressWarnings("WeakerAccess")
-    public static class IncompatibleTableDefinitionException extends IllegalStateException {
+    @SuppressWarnings({"WeakerAccess", "unused"})
+    public static class IncompatibleTableDefinitionException extends UncheckedDeephavenException {
+
         private static final long serialVersionUID = 7668080323885707687L;
 
         public IncompatibleTableDefinitionException() {
             super();
         }
 
-        public IncompatibleTableDefinitionException(String s) {
-            super(s);
+        public IncompatibleTableDefinitionException(String message) {
+            super(message);
         }
 
         public IncompatibleTableDefinitionException(String message, Throwable cause) {
@@ -640,27 +616,5 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         public IncompatibleTableDefinitionException(Throwable cause) {
             super(cause);
         }
-    }
-
-    protected ColumnDefinition<?>[] columns;
-
-    public ColumnDefinition<?>[] getColumns() {
-        return columns;
-    }
-
-    @SuppressWarnings("MethodDoesntCallSuperMethod")
-    @Override
-    public TableDefinition clone() {
-        return new TableDefinition(this);
-    }
-
-    @Override
-    public void copyValues(final TableDefinition other) {
-        this.columns = other.columns;
-    }
-
-    @Override
-    public TableDefinition safeClone() {
-        return clone();
     }
 }

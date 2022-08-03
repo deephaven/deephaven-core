@@ -9,6 +9,13 @@ dependencies {
     implementation project(':extensions-parquet-table')
     implementation project(':extensions-jdbc')
     implementation project(':Util');
+    implementation project(':Integrations')
+    implementation project(':FishUtil')
+    implementation depCommonsLang3
+    Classpaths.inheritCommonsText(project, 'implementation')
+
+    Classpaths.inheritJavaParser(project, 'implementation')
+    implementation project(':open-api-lang-parser')
 
     api(project(':java-client-barrage-dagger')) {
         because 'downstream dagger compile, see deephaven-core#1722'
@@ -17,7 +24,9 @@ dependencies {
 
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':open-api-lang-tools')
-    implementation project(':log-factory')
+    api(project(':log-factory')) {
+        because 'downstream dagger compile, see deephaven-core#1722'
+    }
     Classpaths.inheritSlf4j(project, 'jul-to-slf4j', 'implementation')
     api(project(':application-mode')) {
         because 'downstream dagger compile, see deephaven-core#1722'
@@ -28,6 +37,8 @@ dependencies {
         because 'jetty/netty implementations will access the configuration in their main()s'
     }
 
+    api project(':ssl-config')
+
     Classpaths.inheritFlatbuffer(project, 'implementation')
 
     Classpaths.inheritDagger(project)
@@ -35,6 +46,8 @@ dependencies {
 
     Classpaths.inheritAutoService(project)
     Classpaths.inheritAutoService(project, /* test */ true)
+
+    Classpaths.inheritImmutables(project)
 
     implementation project(':Plot')
 
@@ -55,6 +68,7 @@ dependencies {
     }
 
     runtimeOnly project(':plugin-figure')
+    runtimeOnly project(':plugin-partitionedtable')
 
     Classpaths.inheritGrpcPlatform(project, 'api')
 
@@ -69,9 +83,11 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'engine-table'),
             TestTools.projectDependency(project, 'Util')
 
-    runtimeOnly project(':Numerics'), project(':Integrations'), project(':extensions-kafka')
+    runtimeOnly project(':Numerics'), project(':extensions-kafka')
     Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
+
+TestTools.addEngineOutOfBandTest(project)

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.web.shared.fu.JsBiConsumer",
- "methods": {
-  "apply": ":param one: JsBiConsumer.T1\n:param two: JsBiConsumer.T2"
- },
- "path": "io.deephaven.web.shared.fu.JsBiConsumer",
- "text": "A js-friendly BiConsumer FunctionalInterface",
- "typeName": "interface"
-}

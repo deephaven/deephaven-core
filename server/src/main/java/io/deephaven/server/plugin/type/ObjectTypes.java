@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.plugin.type;
 
 import io.deephaven.plugin.type.ObjectType;
@@ -27,7 +30,7 @@ import java.util.Set;
 @Singleton
 public final class ObjectTypes implements ObjectTypeLookup, ObjectTypeRegistration {
 
-    private static final Set<String> RESERVED_TYPE_NAMES_LOWERCASE = Set.of("table", "tablemap", "treetable", "");
+    private static final Set<String> RESERVED_TYPE_NAMES_LOWERCASE = Set.of("table", "treetable", "");
 
     private final Set<String> namesLowercase;
     private final Map<Class<?>, ObjectType> classTypes;

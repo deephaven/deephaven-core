@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.SharedContext;
@@ -27,6 +26,11 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
 
     public DateTimeArraySource() {
         super(DateTime.class);
+    }
+
+    @Override
+    public void setNull(long key) {
+        set(key, NULL_LONG);
     }
 
     @Override
@@ -212,6 +216,11 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
                 @NotNull final WritableChunk<? super Values> destination,
                 @NotNull final LongChunk<? extends RowKeys> keyIndices) {
             fillSparsePrevLongChunkUnordered(destination, keyIndices);
+        }
+
+        @Override
+        public void setNull(long key) {
+            set(key, NULL_LONG);
         }
 
         @Override

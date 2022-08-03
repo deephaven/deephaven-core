@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.*;
@@ -9,7 +8,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.qst.TableCreationLogic;
 import picocli.CommandLine;
@@ -48,7 +46,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             // expect this to block until all reading complete
             final BarrageTable table = snapshot.entireTable();
 
-            System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
+            System.out.println("Table info: rows = " + table.size()
+                    + ", cols = " + table.numColumns());
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
@@ -64,7 +63,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             final RowSet viewport = RowSetFactory.fromRange(0, 5); // range inclusive
             final BarrageTable table = snapshot.partialTable(viewport, null);
 
-            System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
+            System.out.println("Table info: rows = " + table.size()
+                    + ", cols = " + table.numColumns());
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
@@ -80,7 +80,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             final RowSet viewport = RowSetFactory.fromRange(6, 10); // range inclusive
             final BarrageTable table = snapshot.partialTable(viewport, null);
 
-            System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
+            System.out.println("Table info: rows = " + table.size()
+                    + ", cols = " + table.numColumns());
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
@@ -98,7 +99,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
 
             final BarrageTable table = snapshot.partialTable(null, columns);
 
-            System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
+            System.out.println("Table info: rows = " + table.size()
+                    + ", cols = " + table.numColumns());
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
@@ -117,7 +119,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
 
             final BarrageTable table = snapshot.partialTable(viewport, columns);
 
-            System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
+            System.out.println("Table info: rows = " + table.size()
+                    + ", cols = " + table.numColumns());
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
@@ -134,7 +137,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             // expect this to block until all reading complete
             final BarrageTable table = snapshot.partialTable(viewport, null, true);
 
-            System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
+            System.out.println("Table info: rows = " + table.size()
+                    + ", cols = " + table.numColumns());
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
@@ -153,7 +157,8 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             // expect this to block until all reading complete
             final BarrageTable table = snapshot.partialTable(viewport, columns, true);
 
-            System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
+            System.out.println("Table info: rows = " + table.size()
+                    + ", cols = " + table.numColumns());
             TableTools.show(table);
             System.out.println("");
             System.out.println("");

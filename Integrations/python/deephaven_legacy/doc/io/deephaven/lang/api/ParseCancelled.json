@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.lang.api.ParseCancelled",
- "methods": {},
- "path": "io.deephaven.lang.api.ParseCancelled",
- "text": "Thrown from the parser if the thread interrupt status is set.\n\n We don't want to deal with a checked exception from generated code, so we'll just use this, which can be thrown\n freely.",
- "typeName": "class"
-}

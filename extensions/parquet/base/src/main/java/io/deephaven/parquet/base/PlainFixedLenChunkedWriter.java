@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
@@ -26,7 +29,7 @@ public class PlainFixedLenChunkedWriter extends AbstractBulkValuesWriter<ByteBuf
     public PlainFixedLenChunkedWriter(int pageSize, int fixedLength, ByteBufferAllocator allocator) {
         innerBuffer = allocator.allocate(pageSize);
         this.allocator = allocator;
-        this.initialPosition = innerBuffer.position();
+        initialPosition = innerBuffer.position();
         originalLimit = innerBuffer.limit();
         this.fixedLength = fixedLength;
     }

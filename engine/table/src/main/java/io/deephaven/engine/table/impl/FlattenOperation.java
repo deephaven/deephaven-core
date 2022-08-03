@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.*;
@@ -82,8 +81,8 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         final long newSize = rowSet.size();
 
         final TableUpdateImpl downstream = new TableUpdateImpl();
-        downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
-        mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
+        downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+        mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
 
         // Check to see if we can simply invert and pass-down.
         downstream.modified = rowSet.invert(upstream.modified());

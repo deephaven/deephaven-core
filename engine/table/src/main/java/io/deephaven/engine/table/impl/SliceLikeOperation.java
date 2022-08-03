@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
@@ -140,8 +139,8 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         // propagate an empty MCS if modified is empty
         downstream.modifiedColumnSet = upstream.modifiedColumnSet();
         if (downstream.modified().isEmpty()) {
-            downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
-            downstream.modifiedColumnSet().clear();
+            downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+            downstream.modifiedColumnSet.clear();
         }
 
         resultTable.notifyListeners(downstream);

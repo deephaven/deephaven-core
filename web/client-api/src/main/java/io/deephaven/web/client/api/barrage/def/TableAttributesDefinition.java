@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.barrage.def;
 
 import io.deephaven.web.shared.data.RollupDefinition;
@@ -13,6 +16,7 @@ public class TableAttributesDefinition {
             HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE = "HierarchicalSourceTable",
             HIERARCHICAL_SOURCE_INFO_ATTRIBUTE = "HierarchicalSourceTableInfo",
             LAYOUT_HINTS_ATTRIBUTE = "LayoutHints",
+            STREAM_TABLE_ATTRIBUTE = "StreamTable",
             PLUGIN_NAME = "PluginName";
 
     private static final String HIERARCHICAL_COLUMN_NAME =
@@ -24,10 +28,13 @@ public class TableAttributesDefinition {
     private RollupDefinition rollupDefinition;// rollup subtype of "HierarchicalSourceTableInfo"
 
     private final Map<String, String> map;
+    private final Map<String, String> typeMap;
     private final Set<String> remainingAttributeKeys;
 
-    public TableAttributesDefinition(Map<String, String> keys, Set<String> remainingAttributes) {
+    public TableAttributesDefinition(
+            Map<String, String> keys, Map<String, String> keyTypes, Set<String> remainingAttributes) {
         map = keys;
+        typeMap = keyTypes;
         this.remainingAttributeKeys = remainingAttributes;
         if (map.containsKey(HIERARCHICAL_COLUMN_NAME)) {
             // marker present for tree table metadata
@@ -39,6 +46,10 @@ public class TableAttributesDefinition {
 
     public boolean isInputTable() {
         return remainingAttributeKeys.contains(INPUT_TABLE_ATTRIBUTE);
+    }
+
+    public boolean isStreamTable() {
+        return "true".equals(map.get(STREAM_TABLE_ATTRIBUTE));
     }
 
     public RollupDefinition getRollupDefinition() {
@@ -59,6 +70,10 @@ public class TableAttributesDefinition {
 
     public String getValue(String key) {
         return map.get(key);
+    }
+
+    public String getValueType(String key) {
+        return typeMap.getOrDefault(key, "java.lang.String");
     }
 
     public Set<String> getRemainingAttributeKeys() {

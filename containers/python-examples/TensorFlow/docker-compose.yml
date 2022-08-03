@@ -10,6 +10,8 @@ services:
       - api-cache:/cache
     environment:
       - JAVA_TOOL_OPTIONS=-Xmx4g -Ddeephaven.console.type=python
+    ports:
+      - 6006:6006
 
   web:
     image: ghcr.io/deephaven/web:${VERSION:-latest}

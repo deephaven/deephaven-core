@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
@@ -22,11 +25,11 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, N
     private final ByteBuffer innerBuffer;
 
     PlainIntChunkedWriter(int pageSize, ByteBufferAllocator allocator) {
-        this.innerBuffer = allocator.allocate(pageSize);
+        innerBuffer = allocator.allocate(pageSize);
         innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        this.originalLimit = innerBuffer.limit();
+        originalLimit = innerBuffer.limit();
         this.allocator = allocator;
-        this.targetBuffer = innerBuffer.asIntBuffer();
+        targetBuffer = innerBuffer.asIntBuffer();
         targetBuffer.mark();
         innerBuffer.mark();
     }

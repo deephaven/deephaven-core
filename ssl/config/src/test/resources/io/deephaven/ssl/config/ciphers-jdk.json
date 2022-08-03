@@ -1,0 +1,5 @@
+{
+  "ciphers": {
+    "type": "jdk"
+  }
+}

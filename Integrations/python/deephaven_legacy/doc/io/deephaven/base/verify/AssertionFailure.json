@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.base.verify.AssertionFailure",
- "methods": {},
- "path": "io.deephaven.base.verify.AssertionFailure",
- "text": "RuntimeException to be thrown on assertion failures.",
- "typeName": "class"
-}

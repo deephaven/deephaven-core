@@ -34,7 +34,6 @@ configurations {
 dependencies {
     serverApplicationDist project(path: ':server-netty-app', configuration: 'applicationDist')
 
-    pythonWheel project(':deephaven-legacy-wheel')
     pythonWheel project(':py-server')
 }
 

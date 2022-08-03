@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
@@ -139,6 +142,8 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(UpdateTable updateTable);
 
+        void visit(LazyUpdateTable lazyUpdateTable);
+
         void visit(AggregationTable aggregationTable);
 
         void visit(AggregateAllByTable aggAllByTable);
@@ -150,5 +155,7 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
         void visit(SelectDistinctTable selectDistinctTable);
 
         void visit(CountByTable countByTable);
+
+        void visit(UpdateByTable updateByTable);
     }
 }

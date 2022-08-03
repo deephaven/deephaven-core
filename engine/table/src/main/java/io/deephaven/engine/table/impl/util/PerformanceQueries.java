@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.Table;
@@ -273,7 +276,7 @@ public class PerformanceQueries {
      */
     @ScriptApi
     public static Table serverState() {
-        final long maxMemoryBytes = RuntimeMemory.getInstance().getMaxMemory();
+        final long maxMemoryBytes = RuntimeMemory.getInstance().maxMemory();
         final int maxMemoryMiB = (int) Math.ceil(maxMemoryBytes / (1024 * 1024.0));
         final Table pml = TableLoggers.serverStateLog().updateView("MaxMemMiB = " + maxMemoryMiB);
         Table pm = pml.view(

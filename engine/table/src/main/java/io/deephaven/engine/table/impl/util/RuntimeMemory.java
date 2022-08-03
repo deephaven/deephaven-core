@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.configuration.Configuration;
@@ -13,10 +16,10 @@ import java.util.List;
  * Cache memory utilization.
  *
  * <p>
- * >Calling Runtime.getRuntime().getFreeMemory() is expensive; and we may do it a lot when we have automatically
- * computed tables, such as in a partitionBy. Instead of calling the runtime directly from the performance
- * instrumentation framework, we call this class's methods; which cache the result for a configurable number of
- * milliseconds to avoid repeated calls that are not likely any different./p>
+ * >Calling Runtime.getRuntime().freeMemory() is expensive; and we may do it a lot when we have automatically computed
+ * tables, such as in a partitionBy. Instead of calling the runtime directly from the performance instrumentation
+ * framework, we call this class's methods; which cache the result for a configurable number of milliseconds to avoid
+ * repeated calls that are not likely any different./p>
  *
  * <p>
  * Additionally, we log our JVM heap usage on a regular basis; to enable users to quickly examine their worker logs and
@@ -186,9 +189,23 @@ public class RuntimeMemory {
     }
 
     /**
+     * See {@link Runtime#freeMemory()}.
+     */
+    public long freeMemory() {
+        return currSnapshot.lastFreeMemory;
+    }
+
+    /**
+     * See {@link Runtime#totalMemory()}.
+     */
+    public long totalMemory() {
+        return currSnapshot.lastTotalMemory;
+    }
+
+    /**
      * See {@link Runtime#maxMemory()}.
      */
-    long getMaxMemory() {
+    public long maxMemory() {
         return maxMemory;
     }
 }

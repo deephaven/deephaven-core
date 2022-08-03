@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.table.ops.filter;
 
 import io.deephaven.proto.backplane.grpc.*;
@@ -101,6 +104,9 @@ public class FilterTestUtils {
     }
 
     public static Condition invoke(String method, Value target, Value... filterDescriptors) {
+        if (target == null) {
+            return NormalizeFilterUtil.doInvoke(method, Arrays.asList(filterDescriptors));
+        }
         return NormalizeFilterUtil.doInvoke(method, target, Arrays.asList(filterDescriptors));
     }
 }

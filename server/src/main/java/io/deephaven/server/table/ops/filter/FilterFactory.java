@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.table.ops.filter;
 
 import io.deephaven.engine.table.Table;
@@ -24,6 +27,7 @@ import io.deephaven.proto.backplane.grpc.Value;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.TimeZone;
 
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Set;
@@ -121,7 +125,8 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
                 valueString = value.getStringValue();
                 break;
             case DOUBLE_VALUE:
-                DecimalFormat format = new DecimalFormat("##0");
+                // doubles can hold up to 16 decimal places of precision
+                DecimalFormat format = new DecimalFormat("##0.################");
                 format.setDecimalSeparatorAlwaysShown(false);
                 format.setGroupingUsed(false);
                 valueString = format.format(value.getDoubleValue());

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.clock.Clock$Factory",
- "methods": {
-  "getClock": ":return: io.deephaven.base.clock.Clock"
- },
- "path": "io.deephaven.base.clock.Clock.Factory",
- "typeName": "interface"
-}

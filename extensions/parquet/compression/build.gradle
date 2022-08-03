@@ -1,0 +1,26 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    api project(':ParquetHadoop')
+    implementation project(':Configuration')
+
+    implementation depCommonsIo
+
+    implementation 'com.google.guava:guava:19.0'
+
+    runtimeOnly('org.lz4:lz4-java:1.8.0') {
+        // also consider lz4-pure-java to avoid native code
+        because 'hadoop-common required dependency for LZ4Codec'
+    }
+    // Pick up default jvm-compatible compression codecs
+    implementation('io.airlift:aircompressor:0.21') {
+        because 'Provides Lz4, LZO, Zstd compression support for parquet'
+    }
+
+    implementation('org.xerial.snappy:snappy-java:1.1.8.4') {
+        because 'Provides snappy compression for parquet, with native support for all platforms deephaven works on'
+    }
+}

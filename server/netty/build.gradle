@@ -5,12 +5,19 @@ plugins {
 
 dependencies {
     api project(':server')
+    api(project(':Integrations')) {
+        because 'downstream dagger compile'
+    }
 
     Classpaths.inheritDagger(project)
     Classpaths.inheritDagger(project, /* test */ true)
 
     Classpaths.inheritGrpcPlatform(project)
     implementation 'io.grpc:grpc-netty'
+
+    Classpaths.inheritImmutables(project)
+    implementation project(':ssl-kickstart')
+    Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-netty')
 
     testImplementation project(':server-test')
 

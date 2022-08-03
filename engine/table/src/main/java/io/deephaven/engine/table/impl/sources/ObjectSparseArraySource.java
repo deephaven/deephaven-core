@@ -1,12 +1,11 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterSparseArraySource and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.impl.DefaultGetContext;
@@ -79,7 +78,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region constructor
 
-    ObjectSparseArraySource(Class<T> type) {
+    public ObjectSparseArraySource(Class<T> type) {
         super(type);
         blocks = new ObjectOneOrN.Block0<>();
     }
@@ -94,6 +93,26 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     public void ensureCapacity(long capacity, boolean nullFill) {
         // Nothing to do here. Sparse array sources allocate on-demand and always null-fill.
     }
+
+    // region setNull
+    @Override
+    public void setNull(long key) {
+        final T [] blocks2 = blocks.getInnermostBlockByKeyOrNull(key);
+        if (blocks2 == null) {
+            return;
+        }
+        final int indexWithinBlock = (int) (key & INDEX_MASK);
+        if (blocks2[indexWithinBlock] == null) {
+            return;
+        }
+
+        final T [] prevBlocksInner = shouldRecordPrevious(key);
+        if (prevBlocksInner != null) {
+            prevBlocksInner[indexWithinBlock] = blocks2[indexWithinBlock];
+        }
+        blocks2[indexWithinBlock] = null;
+    }
+    // endregion setNull
 
     @Override
     public final void set(long key, T value) {

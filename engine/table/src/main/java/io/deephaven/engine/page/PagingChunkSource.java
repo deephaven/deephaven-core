@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.page;
 
 import io.deephaven.chunk.attributes.Any;
@@ -64,13 +67,13 @@ public interface PagingChunkSource<ATTR extends Any> extends ChunkSource<ATTR> {
      *
      * <p>
      * The values to fill into {@code destination} are specified by {@code RowSequenceIterator}, whose
-     * {@link RowSequence.Iterator#firstRowKey()} must exist, and must be represented by this {@code PagingChunkSource}
-     * (modulo {#link @mask}), otherwise results are undefined.
+     * {@link RowSequence#firstRowKey()} must exist, and must be represented by this {@code PagingChunkSource} (modulo
+     * {#link @mask}), otherwise results are undefined.
      * </p>
      *
      * <p>
      * No more than the elements in {@code RowSequenceIterator}, which are on the same page as
-     * {@link RowSequence.Iterator#firstRowKey()}, have their values appended to {@code destination}, and consumed from
+     * {@link RowSequence#firstRowKey()}, have their values appended to {@code destination}, and consumed from
      * {@code RowSequenceIterator}. Indices are on the same page when the bits outside of {@link #mask()} are identical.
      *
      * @param context A context containing all mutable/state related data used in retrieving the Chunk. In particular,

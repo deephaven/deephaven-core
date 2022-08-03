@@ -24,17 +24,17 @@ be sure to first set `PYTHON_CONFIGURE_OPTS="--enabled-shared"`.
     ```shell
     $ python -m pip install --upgrade pip # First upgrade pip
     $ pip install wheel
-    $ export DEEPHAVEN_VERSION=0.12.0 # this should match the current version of your git repo
+    $ export DEEPHAVEN_VERSION=0.16.0 # this should match the current version of your git repo
 
     $ cd py/jpy
     $ export JAVA_HOME=/path/to/your/java/home # Customize this to fit your computer
     $ python setup.py bdist_wheel
-    $ pip install dist/deephaven_jpy-0.12.0-cp39-cp39-linux_x86_64.whl # This will vary by version/platform
+    $ pip install dist/deephaven_jpy-0.16.0-cp39-cp39-linux_x86_64.whl # This will vary by version/platform
     $ cd -
 
     $ cd Integrations/python
     $ python setup.py bdist_wheel
-    $ pip install dist/deephaven-0.12.0-py2.py3-none-any.whl
+    $ pip install dist/deephaven-0.16.0-py2.py3-none-any.whl
     $ cd -
     ```
 
@@ -81,3 +81,17 @@ Finally, Gradle can be used to update the build and run the application in a sin
 `server-jetty-app` is configured by default to include code that depends on JVM internals via
 `--add-opens java.management/sun.management=ALL-UNNAMED`. To disable this, set the gradle property `includeHotspotImpl`
 to `false`.
+
+### Configuration / SSL
+
+By default, the server starts up on all interfaces with plaintext port 10000 (port 443 when SSL is enabled), a token
+expiration duration of 5 minutes, a scheduler pool size of 4, and a max inbound message size of 100 MiB.
+
+To bring up a SSL-enabled server on port 8443 with a development key and certificate, you can run:
+```shell
+./gradlew server-jetty-app:run -Pgroovy -PdevCerts
+```
+
+SSL configuration can be applied manually with the properties "ssl.identity.type", "ssl.identity.certChainPath", and
+"ssl.identity.privateKeyPath". See the javadocs on `io.deephaven.server.jetty.JettyConfig` and
+`io.deephaven.server.runner.Main.parseSSLConfig` for more information.

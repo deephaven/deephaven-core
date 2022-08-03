@@ -1,11 +1,9 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plot.*;
@@ -17,15 +15,16 @@ import io.deephaven.plot.errors.PlotRuntimeException;
 import io.deephaven.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.functions.ClosureFunction;
-import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.impl.*;
 import groovy.lang.Closure;
 
 import io.deephaven.internal.log.LoggerFactory;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 
 import static io.deephaven.engine.util.TableTools.emptyTable;
 
@@ -51,8 +50,13 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
     private final transient java.util.function.Function<Object, String> DEFAULT_NAMING_FUNCTION = key -> {
         final String keyString;
-        if (key instanceof SmartKey) {
-            keyString = Arrays.toString(((SmartKey) key).values_);
+        if (key instanceof Object[]) {
+            final Object[] keyArray = (Object[]) key;
+            if (keyArray.length == 1) {
+                keyString = Objects.toString(keyArray[0]);
+            } else {
+                keyString = Arrays.toString(keyArray);
+            }
         } else {
             keyString = Objects.toString(key);
         }
@@ -136,7 +140,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
     @Override
     public AbstractMultiSeries<SERIES> seriesNamingFunction(
-            final java.util.function.Function<Object, String> namingFunction) {
+            final Function<Object, String> namingFunction) {
         if (namingFunction == null) {
             this.namingFunction = DEFAULT_NAMING_FUNCTION;
         } else {
@@ -161,40 +165,33 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
     private void applyNamingFunction(final java.util.function.Function<Object, String> namingFunction) {
         ArgumentValidations.assertNotNull(namingFunction, "namingFunction", getPlotInfo());
-        seriesNameColumnName =
-                seriesNameColumnName == null ? ColumnNameConstants.SERIES_NAME + this.hashCode() : seriesNameColumnName;
-        applyFunction(namingFunction, seriesNameColumnName, String.class);
+        seriesNameColumnName = seriesNameColumnName == null
+                ? ColumnNameConstants.SERIES_NAME + this.hashCode()
+                : seriesNameColumnName;
+        final String functionInput = byColumns.length > 1
+                ? "new Object[] {" + String.join(", ", byColumns) + "}"
+                : byColumns[0];
+        applyFunction(namingFunction, seriesNameColumnName, functionInput, String.class);
     }
 
     /**
-     * Applies the {@code function} to the given input of the underlying table to create a new column
+     * Applies the {@code function} to the {@code byColumns} of the underlying table to create a new column named
      * {@code columnName}.
+     *
+     * @param function The function to apply
+     * @param columnName The column name to create
+     * @param functionInput The formula string to use for gathering input to {@code function}
+     * @param resultClass The expected result type of {@code function}
      */
-    protected void applyFunction(final java.util.function.Function function, final String columnName,
-            final Class resultClass) {
-        final String functionInput;
-        if (byColumns.length > 1) {
-            QueryLibrary.importClass(SmartKey.class);
-            functionInput = "new SmartKey(" + String.join(",", byColumns) + ")";
-        } else {
-            functionInput = byColumns[0];
-        }
-
-        applyFunction(function, columnName, functionInput, resultClass);
-    }
-
-    /**
-     * Applies the {@code function} to the byColumns of the underlying table to create a new column {@code columnName}.
-     */
-    protected void applyFunction(final java.util.function.Function function, final String columnName,
-            final String functionInput, final Class resultClass) {
+    protected <T, R> void applyFunction(final java.util.function.Function<? super T, ? extends R> function,
+                                        final String columnName, final String functionInput, final Class<R> resultClass) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";
         final Map<String, Object> params = new HashMap<>();
         params.put(queryFunction, function);
 
-        final String update = columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction + ".apply("
-                + functionInput + ")";
+        final String update = columnName + " = (" + resultClass.getSimpleName() + ") "
+                + queryFunction + ".apply(" + functionInput + ")";
 
         applyTransform(columnName, update, new Class[] {resultClass}, params, true);
     }

@@ -1,9 +1,9 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot.util;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.verify.Require;
@@ -723,7 +723,7 @@ public class PlotUtils {
         lastColumns.removeAll(Arrays.asList(catColumns));
         final Table result = t.aggBy(
                 createCategoryAggs(AggLast(lastColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))),
-                Selectable.from(catColumns));
+                ColumnName.from(catColumns));
 
         // We must explicitly copy attributes because we are doing a modified manual first/lastBy which will not
         // automatically do the copy.
@@ -732,7 +732,7 @@ public class PlotUtils {
     }
 
     public static Table createCategoryHistogramTable(final Table t, final String... byColumns) {
-        return t.aggBy(createCategoryAggs(AggCount(IntervalXYDataSeriesArray.COUNT)), Selectable.from(byColumns));
+        return t.aggBy(createCategoryAggs(AggCount(IntervalXYDataSeriesArray.COUNT)), ColumnName.from(byColumns));
 
     }
 

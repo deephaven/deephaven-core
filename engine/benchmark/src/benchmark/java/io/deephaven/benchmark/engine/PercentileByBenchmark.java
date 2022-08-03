@@ -1,12 +1,12 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.benchmark.engine;
 
-import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.benchmarking.*;
@@ -197,10 +197,9 @@ public class PercentileByBenchmark {
     private Function<Table, Table> getFunction() {
         final Function<Table, Table> fut;
         if (percentileMode.equals("normal")) {
-            fut = t -> t.aggAllBy(AggSpec.percentile(0.99), SelectColumn.from(Selectable.from(keyColumnNames)));
+            fut = t -> t.aggAllBy(AggSpec.percentile(0.99), keyColumnNames);
         } else if (percentileMode.equals("tdigest")) {
-            fut = (t) -> t.aggAllBy(AggSpec.approximatePercentile(0.99, 100.0),
-                    SelectColumnFactory.getExpressions(keyColumnNames));
+            fut = (t) -> t.aggAllBy(AggSpec.approximatePercentile(0.99, 100.0), keyColumnNames);
         } else {
             throw new IllegalArgumentException("Bad mode: " + percentileMode);
         }

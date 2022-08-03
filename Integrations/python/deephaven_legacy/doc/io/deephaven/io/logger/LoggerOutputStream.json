@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.io.logger.LoggerOutputStream",
- "methods": {
-  "write": ":param b: int"
- },
- "path": "io.deephaven.io.logger.LoggerOutputStream",
- "text": "OutputStream implementation for outputting data to a Logger. Expects that each appended byte represents a char (1:1,\n so only ASCII/LATIN-1 and similar charsets are supported). flush() events are ignored - we end() log entries on\n newlines.",
- "typeName": "class"
-}

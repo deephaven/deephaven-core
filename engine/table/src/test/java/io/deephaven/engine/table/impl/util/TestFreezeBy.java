@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.api.Selectable;
@@ -36,16 +39,16 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         tuv.getResultTable().listenForUpdates(failureListener);
 
         assertTableEquals(inputUpdated, frozen);
-        assertEquals(String.class, frozen.getColumn("SStr").getType());
-        assertEquals(byte.class, frozen.getColumn("SByte").getType());
-        assertEquals(short.class, frozen.getColumn("SShort").getType());
-        assertEquals(char.class, frozen.getColumn("SChar").getType());
-        assertEquals(int.class, frozen.getColumn("Sentinel").getType());
-        assertEquals(long.class, frozen.getColumn("SLong").getType());
-        assertEquals(float.class, frozen.getColumn("SFloat").getType());
-        assertEquals(double.class, frozen.getColumn("SDouble").getType());
-        assertEquals(DateTime.class, frozen.getColumn("SDateTime").getType());
-        assertEquals(Boolean.class, frozen.getColumn("SBoolean").getType());
+        assertEquals(String.class, frozen.getDefinition().getColumn("SStr").getDataType());
+        assertEquals(byte.class, frozen.getDefinition().getColumn("SByte").getDataType());
+        assertEquals(short.class, frozen.getDefinition().getColumn("SShort").getDataType());
+        assertEquals(char.class, frozen.getDefinition().getColumn("SChar").getDataType());
+        assertEquals(int.class, frozen.getDefinition().getColumn("Sentinel").getDataType());
+        assertEquals(long.class, frozen.getDefinition().getColumn("SLong").getDataType());
+        assertEquals(float.class, frozen.getDefinition().getColumn("SFloat").getDataType());
+        assertEquals(double.class, frozen.getDefinition().getColumn("SDouble").getDataType());
+        assertEquals(DateTime.class, frozen.getDefinition().getColumn("SDateTime").getDataType());
+        assertEquals(Boolean.class, frozen.getDefinition().getColumn("SBoolean").getDataType());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(input, i(0));

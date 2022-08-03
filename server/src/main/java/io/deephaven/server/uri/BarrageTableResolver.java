@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.uri;
 
 import io.deephaven.client.impl.*;
@@ -287,9 +290,14 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     private BarrageSession newSession(DeephavenTarget target) {
-        return newSession(ChannelHelper.channelBuilder(target)
+        return newSession(ClientConfig.builder()
+                .target(target)
                 .maxInboundMessageSize(MAX_INBOUND_MESSAGE_SIZE)
                 .build());
+    }
+
+    private BarrageSession newSession(ClientConfig config) {
+        return newSession(ChannelHelper.channel(config));
     }
 
     private BarrageSession newSession(ManagedChannel channel) {

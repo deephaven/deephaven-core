@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Procedure$UnaryChar",
- "methods": {
-  "call": ":param arg: char"
- },
- "path": "io.deephaven.base.Procedure.UnaryChar",
- "typeName": "interface"
-}

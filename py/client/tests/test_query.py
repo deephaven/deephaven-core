@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
 import time
@@ -20,15 +20,6 @@ class QueryTestCase(BaseTestCase):
         time.sleep(1)
         result_table2 = query.exec()
         self.assertEqual(result_table.size, result_table2.size)
-
-    def test_tail_update_ticking_fail(self):
-        table = self.session.time_table(period=100000)
-        query = self.session.query(table).update(formulas=["Col1 = i + 1"]) \
-            .tail(5).update(formulas=["Col2 = i * i"])
-
-        with self.assertRaises(DHError):
-            result_table = query.exec()
-            self.assertFalse(result_table.is_static)
 
     def test_tail_update_join_fail(self):
         pa_table = csv.read_csv(self.csv_file)

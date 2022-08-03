@@ -1,6 +1,7 @@
 #
-#     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """This module gives the users a finer degree of control over when to clean up unreferenced nodes in the query update
 graph instead of solely relying on garbage collection."""
 import contextlib

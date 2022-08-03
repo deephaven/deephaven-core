@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.qst.table;
 
 public abstract class TableVisitorGeneric implements TableSpec.Visitor {
@@ -110,6 +113,11 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
+    public void visit(LazyUpdateTable lazyUpdateTable) {
+        accept(lazyUpdateTable);
+    }
+
+    @Override
     public void visit(AggregateAllByTable aggAllByTable) {
         accept(aggAllByTable);
     }
@@ -137,5 +145,10 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     @Override
     public void visit(CountByTable countByTable) {
         accept(countByTable);
+    }
+
+    @Override
+    public void visit(UpdateByTable updateByTable) {
+        accept(updateByTable);
     }
 }

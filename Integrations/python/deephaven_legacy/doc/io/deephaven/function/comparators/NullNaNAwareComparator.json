@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.function.comparators.NullNaNAwareComparator",
- "methods": {
-  "compare": ":param o1: NullNaNAwareComparator.T\n:param o2: NullNaNAwareComparator.T\n:return: int"
- },
- "path": "io.deephaven.function.comparators.NullNaNAwareComparator",
- "text": "Comparator which is aware of NaN and Null values, in the Deephaven convention.",
- "typeName": "class"
-}

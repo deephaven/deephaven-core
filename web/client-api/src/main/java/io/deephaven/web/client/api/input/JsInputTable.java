@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.input;
 
 import elemental2.core.JsObject;
@@ -84,6 +87,7 @@ public class JsInputTable {
             data[i] = columnArray;
         }
 
+        // TODO deephaven-core#2529 parallelize this
         return table.getConnection().newTable(names, types, data, userTimeZone, null)
                 .then(this::addTable);
     }

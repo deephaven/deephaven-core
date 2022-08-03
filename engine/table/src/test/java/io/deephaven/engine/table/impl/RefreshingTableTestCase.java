@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
@@ -131,7 +130,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         }, errorsAcceptable);
     }
 
-    protected static void simulateShiftAwareStep(int targetUpdateSize, Random random, QueryTable table,
+    public static void simulateShiftAwareStep(int targetUpdateSize, Random random, QueryTable table,
             TstUtils.ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
         simulateShiftAwareStep("", targetUpdateSize, random, table, columnInfo, en);
     }

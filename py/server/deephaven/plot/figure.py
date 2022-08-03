@@ -1,9 +1,10 @@
 #
-#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 ######################################################################################################################
 #               This code is auto generated. DO NOT EDIT FILE!
-# Run generatePythonFigureWrapper2 or "./gradlew :Generators:generatePythonFigureWrapper2" to generate
+# Run generatePythonFigureWrapper or "./gradlew :Generators:generatePythonFigureWrapper" to generate
 ######################################################################################################################
 """ This module implements the Figure class for creating plots, charts, line, axis, color, etc. """
 
@@ -1198,6 +1199,75 @@ class Figure(JObjectWrapper):
             return Figure(self.j_figure.piePlot(series_name, category, y))
         elif non_null_args == {"series_name", "t", "category", "y"}:
             return Figure(self.j_figure.piePlot(series_name, t, category, y))
+        else:
+            raise DHError(f"unsupported parameter combination: {non_null_args}")
+
+    def plot_treemap(
+        self,
+        series_name: str,
+        t: Union[Table, SelectableDataSet],
+        id: str,
+        parent: str,
+        value: str = None,
+        label: str = None,
+        hover_text: str = None,
+        color: str = None,
+    ) -> Figure:
+        """Creates a treemap. Must have only one root.
+
+        Args:
+            series_name (str): name of the data series
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            id (str): column name containing IDs
+            parent (str): column name containing parent IDs
+            value (str): column name containing values
+            label (str): column name containing labels
+            hover_text (str): column name containing hover text
+            color (str): column name containing color
+
+        Returns:
+            a new Figure
+
+        Raises:
+            DHError
+        """
+        if not series_name:
+            raise DHError("required parameter is not set: series_name")
+        if not t:
+            raise DHError("required parameter is not set: t")
+        if not id:
+            raise DHError("required parameter is not set: id")
+        if not parent:
+            raise DHError("required parameter is not set: parent")
+        non_null_args = set()
+
+        if series_name is not None:
+            non_null_args.add("series_name")
+            series_name = _convert_j("series_name", series_name, [str])
+        if t is not None:
+            non_null_args.add("t")
+            t = _convert_j("t", t, [Table, SelectableDataSet])
+        if id is not None:
+            non_null_args.add("id")
+            id = _convert_j("id", id, [str])
+        if parent is not None:
+            non_null_args.add("parent")
+            parent = _convert_j("parent", parent, [str])
+        if value is not None:
+            non_null_args.add("value")
+            value = _convert_j("value", value, [str])
+        if label is not None:
+            non_null_args.add("label")
+            label = _convert_j("label", label, [str])
+        if hover_text is not None:
+            non_null_args.add("hover_text")
+            hover_text = _convert_j("hover_text", hover_text, [str])
+        if color is not None:
+            non_null_args.add("color")
+            color = _convert_j("color", color, [str])
+
+        if set({"series_name", "t", "id", "parent"}).issubset(non_null_args):
+            return Figure(self.j_figure.treemapPlot(series_name, t, id, parent, value, label, hover_text, color))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 

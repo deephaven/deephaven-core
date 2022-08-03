@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
@@ -8,7 +11,7 @@ import java.util.stream.Collectors;
 
 public class TestMoveColumns extends TestCase {
     private static final Table table = TableTools.emptyTable(1).update("a=1", "b=2", "c=3", "d=4", "e=5");
-    private static final int numCols = table.getColumns().length;
+    private static final int numCols = table.numColumns();
 
     public void testMoveColumns() {
         // Basic moving

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.lang.completion.CompletionHandler",
- "methods": {
-  "runCompletion": ":param doc: io.deephaven.lang.parse.ParsedDocument\n:param pos: io.deephaven.proto.backplane.script.grpc.Position\n:param offset: int\n:return: java.util.Collection<io.deephaven.proto.backplane.script.grpc.CompletionItem.Builder>"
- },
- "path": "io.deephaven.lang.completion.CompletionHandler",
- "text": "General API for returning a list of completion results from a given offset in a source command.",
- "typeName": "interface"
-}

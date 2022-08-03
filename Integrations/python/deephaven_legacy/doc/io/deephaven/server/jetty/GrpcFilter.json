@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.server.jetty.GrpcFilter",
- "methods": {
-  "create": "Note: Java generics information - <T>\n\n:param constructor: io.grpc.servlet.jakarta.ServletAdapter.AdapterConstructor<T>\n:return: T",
-  "doFilter": ":param request: jakarta.servlet.ServletRequest\n:param response: jakarta.servlet.ServletResponse\n:param chain: jakarta.servlet.FilterChain"
- },
- "path": "io.deephaven.server.jetty.GrpcFilter",
- "typeName": "class"
-}

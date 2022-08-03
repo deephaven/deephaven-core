@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.util;
 
 import io.deephaven.api.agg.Aggregation;
@@ -536,12 +539,10 @@ public class TotalsTableBuilder {
     public static Table makeTotalsTable(Table source, TotalsTableBuilder builder, String... groupByColumns) {
         final Collection<? extends Aggregation> aggregations = makeAggregations(source, builder);
         final String[] formatSpecs = makeColumnFormats(source, builder);
-
-        Table totalsTable = source.aggBy(aggregations, List.of(SelectColumnFactory.getExpressions(groupByColumns)));
+        Table totalsTable = source.aggBy(aggregations, groupByColumns);
         if (formatSpecs.length > 0) {
             totalsTable = totalsTable.formatColumns(makeColumnFormats(source, builder));
         }
-
         return totalsTable;
     }
 

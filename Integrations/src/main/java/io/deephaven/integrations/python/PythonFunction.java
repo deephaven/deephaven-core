@@ -1,13 +1,13 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.integrations.python;
 
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
+
 import java.util.function.Function;
-import io.deephaven.util.QueryConstants;
+import java.util.function.UnaryOperator;
 
 import static io.deephaven.integrations.python.PythonUtils.pyApplyFunc;
 
@@ -16,141 +16,47 @@ import static io.deephaven.integrations.python.PythonUtils.pyApplyFunc;
  * 
  * @param <T> input argument class
  */
+@SuppressWarnings("unused")
 @ScriptApi
-public class PythonFunction<T> implements Function<T, Object> {
+public class PythonFunction<T, R> implements Function<T, R> {
     private final PyObject pyCallable;
-    private final Function<PyObject, Object> getter;
+    private final Class<R> classOut;
 
     /**
      * Creates a {@link Function} which calls a Python function.
      *
-     * @param pyObjectIn the python object providing the function - must either be callable or have an `apply` attribute
-     *        which is callable.
-     * @param classOut the specific java class to interpret the return for the method. Note that this is probably only
-     *        really useful if `classOut` is one of String, double, float, long, int, short, byte, or boolean.
-     *        Otherwise, the return element will likely just remain PyObject, and not be particularly usable inside
-     *        Java.
+     * @param pyCallable The python object providing the function - must either be callable or have an {@code apply}
+     *        attribute which is callable.
+     * @param classOut The specific Java class expected to be returned by the {@link #apply(Object)} method. This should
+     *        be the result of converting or unwrapping the output of {@code pyCallable}.
+     * 
      */
-    public PythonFunction(final PyObject pyObjectIn, final Class classOut) {
+    public PythonFunction(final PyObject pyCallable, final Class<R> classOut) {
 
-        pyCallable = pyApplyFunc(pyObjectIn);
+        this.pyCallable = pyApplyFunc(pyCallable);
+        this.classOut = classOut;
 
-        // Note: Potentially important types omitted -simply because handling from python is not super clear:
-        // Character/char, BigInteger, BigDecimal
-        if (CharSequence.class.isAssignableFrom(classOut)) {
-            getter = new StringValueGetter();
-        } else if (classOut.equals(Double.class) || classOut.equals(double.class)) {
-            getter = new DoubleValueGetter();
-        } else if (classOut.equals(Float.class) || classOut.equals(float.class)) {
-            getter = new FloatValueGetter();
-        } else if (classOut.equals(Long.class) || classOut.equals(long.class)) {
-            getter = new LongValueGetter();
-        } else if (classOut.equals(Integer.class) || classOut.equals(int.class)) {
-            getter = new IntValueGetter();
-        } else if (classOut.equals(Short.class) || classOut.equals(short.class)) {
-            getter = new ShortValueGetter();
-        } else if (classOut.equals(Byte.class) || classOut.equals(byte.class)) {
-            getter = new ByteValueGetter();
-        } else if (classOut.equals(Boolean.class) || classOut.equals(boolean.class)) {
-            getter = new BoolValueGetter();
-        } else {
-            getter = new ObjectValueGetter(); // warning or something? This will likely be useless.
-        }
     }
 
     @Override
-    public Object apply(T t) {
-        PyObject out = pyCallable.call("__call__", t);
-        return getter.apply(out);
+    public R apply(T t) {
+        PyObject wrapped = PythonObjectWrapper.wrap(t);
+        PyObject out = pyCallable.call("__call__", wrapped);
+        return PythonValueGetter.getValue(out, classOut);
     }
 
-    static class ObjectValueGetter implements Function<PyObject, Object> {
-        @Override
-        public Object apply(PyObject valueIn) {
-            if (valueIn == null) {
-                return null;
-            }
-            return valueIn.getObjectValue();
-        }
-    }
+    public static class PythonUnaryOperator<T> extends PythonFunction<T, T> implements UnaryOperator<T> {
 
-    static class StringValueGetter implements Function<PyObject, Object> {
-        @Override
-        public Object apply(PyObject valueIn) {
-            if (valueIn == null) {
-                return null;
-            }
-            return valueIn.getStringValue();
-        }
-    }
-
-    static class DoubleValueGetter implements Function<PyObject, Object> {
-        @Override
-        public Object apply(PyObject valueIn) {
-            if (valueIn == null) {
-                return QueryConstants.NULL_DOUBLE;
-            }
-            return valueIn.getDoubleValue();
-        }
-    }
-
-    static class FloatValueGetter implements Function<PyObject, Object> {
-        @Override
-        public Object apply(PyObject valueIn) {
-            if (valueIn == null) {
-                return QueryConstants.NULL_FLOAT;
-            }
-            return (float) valueIn.getDoubleValue(); // NB: should there be a getFloatValue() in jpy?
-        }
-    }
-
-    static class LongValueGetter implements Function<PyObject, Object> {
-        @Override
-        public Object apply(PyObject valueIn) {
-            if (valueIn == null) {
-                return QueryConstants.NULL_LONG;
-            }
-            return valueIn.getLongValue();
-        }
-    }
-
-    static class IntValueGetter implements Function<PyObject, Object> {
-        @Override
-        public Object apply(PyObject valueIn) {
-            if (valueIn == null) {
-                return QueryConstants.NULL_INT;
-            }
-            return valueIn.getIntValue();
-        }
-    }
-
-    static class ShortValueGetter implements Function<PyObject, Object> {
-        @Override
-        public Object apply(PyObject valueIn) {
-            if (valueIn == null) {
-                return QueryConstants.NULL_SHORT;
-            }
-            return (short) valueIn.getIntValue(); // NB: should there be a getShortValue() in jpy?
-        }
-    }
-
-    static class ByteValueGetter implements Function<PyObject, Object> {
-        @Override
-        public Object apply(PyObject valueIn) {
-            if (valueIn == null) {
-                return QueryConstants.NULL_BYTE; // NB: should there be a getByteValue() in jpy?
-            }
-            return (byte) valueIn.getIntValue();
-        }
-    }
-
-    static class BoolValueGetter implements Function<PyObject, Object> {
-        @Override
-        public Object apply(PyObject valueIn) {
-            if (valueIn == null) {
-                return null;
-            }
-            return valueIn.getBooleanValue();
+        /**
+         * Creates a {@link UnaryOperator} which calls a Python function.
+         *
+         * @param pyCallable The python object providing the function - must either be callable or have an {@code apply}
+         *        attribute which is callable.
+         * @param classOut The specific Java class expected to be returned by the {@link #apply(Object)} method. This
+         *        should be the result of converting or unwrapping the output of {@code pyCallable}.
+         */
+        public PythonUnaryOperator(PyObject pyCallable, Class<T> classOut) {
+            super(pyCallable, classOut);
         }
     }
 }

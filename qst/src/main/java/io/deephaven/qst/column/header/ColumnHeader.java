@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.qst.column.header;
 
 import io.deephaven.annotations.SimpleStyle;
@@ -195,6 +198,6 @@ public abstract class ColumnHeader<T1> implements TableHeader.Buildable {
 
     @Check
     void checkName() {
-        NameValidator.isValidColumnName(name());
+        NameValidator.validateColumnName(name());
     }
 }

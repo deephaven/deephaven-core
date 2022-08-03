@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor;
 
 import elemental2.core.JsArray;
@@ -104,6 +107,8 @@ public class BoolMapWithDefault {
 
     public native boolean addValues(boolean value);
 
+    public native void clearDefaultBool();
+
     public native void clearKeysList();
 
     public native void clearValuesList();
@@ -113,6 +118,8 @@ public class BoolMapWithDefault {
     public native JsArray<String> getKeysList();
 
     public native JsArray<Boolean> getValuesList();
+
+    public native boolean hasDefaultBool();
 
     public native Uint8Array serializeBinary();
 

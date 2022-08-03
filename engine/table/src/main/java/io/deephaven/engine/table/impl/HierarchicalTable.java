@@ -1,5 +1,9 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
@@ -157,7 +161,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table countBy(String countColumnName, Selectable... groupByColumns) {
+    public Table countBy(String countColumnName, ColumnName... groupByColumns) {
         return throwUnsupported("countBy()");
     }
 
@@ -177,13 +181,13 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public Table aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return throwUnsupported("aggAllBy(" + spec + ")");
     }
 
     @Override
     public Table aggBy(Collection<? extends Aggregation> aggregations,
-            Collection<? extends Selectable> groupByColumns) {
+            Collection<? extends ColumnName> groupByColumns) {
         return throwUnsupported("aggBy()");
     }
 
@@ -249,7 +253,7 @@ public class HierarchicalTable extends QueryTable {
 
     @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Selectable... columns) {
+            ColumnName... groupByColumns) {
         return throwUnsupported("rollup()");
     }
 
@@ -284,7 +288,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public QueryTable getSubTable(TrackingRowSet rowSet) {
+    public QueryTable getSubTable(@NotNull TrackingRowSet rowSet) {
         return throwUnsupported("getSubTable()");
     }
 

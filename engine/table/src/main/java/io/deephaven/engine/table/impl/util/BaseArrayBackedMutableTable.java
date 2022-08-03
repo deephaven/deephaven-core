@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
@@ -288,7 +291,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
             }
 
-            final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumnList();
+            final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumns();
             final Map<String, ArrayBackedColumnSource<Object>> sources =
                     buildSourcesMap(valueArray.length, columnDefinitions);
             final String[] kabmtColumns =
@@ -338,7 +341,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         @Override
         public void addRows(Map<String, Object>[] valueArray, boolean allowEdits, InputTableStatusListener listener) {
-            final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumnList();
+            final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumns();
             final Map<String, ArrayBackedColumnSource<Object>> sources =
                     buildSourcesMap(valueArray.length, columnDefinitions);
 

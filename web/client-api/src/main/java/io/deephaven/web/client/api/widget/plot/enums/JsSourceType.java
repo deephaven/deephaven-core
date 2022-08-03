@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.widget.plot.enums;
 
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
@@ -22,4 +25,6 @@ public class JsSourceType {
     public static final int SIZE = FigureDescriptor.SourceType.getSIZE();
     public static final int LABEL = FigureDescriptor.SourceType.getLABEL();
     public static final int COLOR = FigureDescriptor.SourceType.getCOLOR();
+    public static final int PARENT = FigureDescriptor.SourceType.getPARENT();
+    public static final int HOVER_TEXT = FigureDescriptor.SourceType.getHOVER_TEXT();
 }

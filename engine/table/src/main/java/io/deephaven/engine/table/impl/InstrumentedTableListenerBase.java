@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
@@ -31,11 +30,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         implements TableListener, NotificationQueue.Dependency {
 
-    private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
+    private static final AtomicLongFieldUpdater<InstrumentedTableListenerBase> LAST_COMPLETED_STEP_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(InstrumentedTableListenerBase.class, "lastCompletedStep");
+    private static final AtomicLongFieldUpdater<InstrumentedTableListenerBase> LAST_ENQUEUED_STEP_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(InstrumentedTableListenerBase.class, "lastEnqueuedStep");
+
+    private static final Logger log = LoggerFactory.getLogger(InstrumentedTableListenerBase.class);
 
     private final PerformanceEntry entry;
     private final boolean terminalListener;
@@ -43,7 +48,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     private boolean failed = false;
     private static volatile boolean verboseLogging = Configuration
             .getInstance()
-            .getBooleanWithDefault("ShiftObliviousInstrumentedListener.verboseLogging", false);
+            .getBooleanWithDefault("InstrumentedTableListenerBase.verboseLogging", false);
 
     private volatile long lastCompletedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile long lastEnqueuedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
@@ -75,7 +80,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        return logOutput.append("ShiftObliviousInstrumentedListener:(identity=").append(System.identityHashCode(this))
+        return logOutput.append("InstrumentedTableListenerBase:(identity=").append(System.identityHashCode(this))
                 .append(", ")
                 .append(entry).append(")");
     }
@@ -86,26 +91,60 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     @Override
     public boolean satisfied(final long step) {
+        // Check and see if we've already been completed.
         if (lastCompletedStep == step) {
-            UpdateGraphProcessor.DEFAULT.logDependencies().append("Already completed notification for ").append(this)
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("Already completed notification for ").append(this).append(", step=").append(step).endl();
+            return true;
+        }
+
+        // This notification could be enqueued during the course of canExecute, but checking if we're enqueued is a very
+        // cheap check that may let us avoid recursively checking all the dependencies.
+        if (lastEnqueuedStep == step) {
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("Enqueued notification for ").append(this).append(", step=").append(step).endl();
+            return false;
+        }
+
+        // Recursively check to see if our dependencies have been satisfied.
+        if (!canExecute(step)) {
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("Dependencies not yet satisfied for ").append(this).append(", step=").append(step).endl();
+            return false;
+        }
+
+        // Let's check again and see if we got lucky and another thread completed us while we were checking our
+        // dependencies.
+        if (lastCompletedStep == step) {
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("Already completed notification during dependency check for ").append(this)
+                    .append(", step=").append(step)
                     .endl();
             return true;
         }
 
+        // We check the queued notification step again after the dependency check. It is possible that something
+        // enqueued us while we were evaluating the dependencies, and we must not miss that race.
         if (lastEnqueuedStep == step) {
-            UpdateGraphProcessor.DEFAULT.logDependencies().append("Enqueued notification for ").append(this).endl();
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("Enqueued notification during dependency check for ").append(this)
+                    .append(", step=").append(step)
+                    .endl();
             return false;
         }
 
-        if (canExecute(step)) {
-            UpdateGraphProcessor.DEFAULT.logDependencies().append("Dependencies satisfied for ").append(this).endl();
-            lastCompletedStep = step;
-            return true;
-        }
-
-        UpdateGraphProcessor.DEFAULT.logDependencies().append("Dependencies not yet satisfied for ").append(this)
+        UpdateGraphProcessor.DEFAULT.logDependencies()
+                .append("Dependencies satisfied for ").append(this)
+                .append(", lastCompleted=").append(lastCompletedStep)
+                .append(", lastQueued=").append(lastEnqueuedStep)
+                .append(", step=").append(step)
                 .endl();
-        return false;
+
+        // Mark this node as completed. All our dependencies have been satisfied, but we are not enqueued, so we can
+        // never actually execute.
+        final long oldLastCompletedStep = LAST_COMPLETED_STEP_UPDATER.getAndSet(this, step);
+        Assert.lt(oldLastCompletedStep, "oldLastCompletedStep", step, "step");
+        return true;
     }
 
     @Override
@@ -177,11 +216,17 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         NotificationBase(final TableUpdate update) {
             super(terminalListener);
             this.update = update.acquire();
-            if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
-                throw Assert.statementNeverExecuted(
-                        "Enqueued after lastCompletedStep already set to current step: " + toString());
+
+            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            if (lastCompletedStep == currentStep) {
+                // noinspection ThrowableNotThrown
+                Assert.statementNeverExecuted("Enqueued after lastCompletedStep already set to current step: " + this
+                        + ", step=" + currentStep + ", lastCompletedStep=" + lastCompletedStep);
             }
-            lastEnqueuedStep = LogicalClock.DEFAULT.currentStep();
+
+            final long oldLastEnqueuedStep =
+                    LAST_ENQUEUED_STEP_UPDATER.getAndSet(InstrumentedTableListenerBase.this, currentStep);
+            Assert.lt(oldLastEnqueuedStep, "oldLastEnqueuedStep", currentStep, "currentStep");
         }
 
         @Override
@@ -222,10 +267,13 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
             entry.onUpdateStart(update.added(), update.removed(), update.modified(), update.shifted());
 
+            final long currentStep = LogicalClock.DEFAULT.currentStep();
             try {
-                if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
+                Assert.eq(lastEnqueuedStep, "lastEnqueuedStep", currentStep, "currentStep");
+                if (lastCompletedStep >= currentStep) {
                     throw new IllegalStateException(
-                            "Executed after lastCompletedStep already set to current step: " + this);
+                            "Execution began after lastCompletedStep already set to current step: " + this
+                                    + ", step=" + currentStep + ", lastCompletedStep=" + lastCompletedStep);
                 }
 
                 invokeOnUpdate.run();
@@ -249,7 +297,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 if (useVerboseLogging) {
                     // This is a failure and shouldn't happen, so it is OK to be verbose here. Particularly as it is not
                     // clear what is actually going on in some cases of assertion failure related to the indices.
-                    log.error().append("ShiftObliviousListener is: ").append(this.toString()).endl();
+                    log.error().append("InstrumentedTableListenerBase is: ").append(this.toString()).endl();
                     log.error().append("Added: ").append(update.added().toString()).endl();
                     log.error().append("Modified: ").append(update.modified().toString()).endl();
                     log.error().append("Removed: ").append(update.removed().toString()).endl();
@@ -261,7 +309,9 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 onFailureInternal(e, entry);
             } finally {
                 entry.onUpdateEnd();
-                lastCompletedStep = LogicalClock.DEFAULT.currentStep();
+                final long oldLastCompletedStep =
+                        LAST_COMPLETED_STEP_UPDATER.getAndSet(InstrumentedTableListenerBase.this, currentStep);
+                Assert.lt(oldLastCompletedStep, "oldLastCompletedStep", currentStep, "currentStep");
             }
         }
     }

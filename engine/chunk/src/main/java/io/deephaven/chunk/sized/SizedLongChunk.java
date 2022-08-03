@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit SizedCharChunk and regenerate
@@ -16,6 +19,12 @@ import io.deephaven.util.SafeCloseable;
  */
 public final class SizedLongChunk<T extends Any> implements SafeCloseable {
     private WritableLongChunk<T> chunk;
+
+    public SizedLongChunk(){}
+
+    public SizedLongChunk(final int initialSize) {
+        chunk = WritableLongChunk.makeWritableChunk(initialSize);
+    }
 
     /**
      * Get the underlying chunk.

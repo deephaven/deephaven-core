@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.table.ops.filter;
 
 import io.deephaven.proto.backplane.grpc.CaseSensitivity;
@@ -6,6 +9,7 @@ import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.MatchType;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -22,7 +26,7 @@ public interface FilterVisitor<R> {
 
     R onIsNull(Reference reference);
 
-    R onInvoke(String method, Value target, List<Value> argumentsList);
+    R onInvoke(String method, @Nullable Value target, List<Value> argumentsList);
 
     R onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType);
 
@@ -46,7 +50,8 @@ public interface FilterVisitor<R> {
                 return visitor.onIn(condition.getIn().getTarget(), condition.getIn().getCandidatesList(),
                         condition.getIn().getCaseSensitivity(), condition.getIn().getMatchType());
             case INVOKE:
-                return visitor.onInvoke(condition.getInvoke().getMethod(), condition.getInvoke().getTarget(),
+                return visitor.onInvoke(condition.getInvoke().getMethod(),
+                        condition.getInvoke().hasTarget() ? condition.getInvoke().getTarget() : null,
                         condition.getInvoke().getArgumentsList());
             case IS_NULL:
                 return visitor.onIsNull(condition.getIsNull().getReference());

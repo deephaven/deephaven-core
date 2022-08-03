@@ -6,7 +6,7 @@ plugins {
 evaluationDependsOn ':docker-runtime-base' // runtimeBase
 
 configurations {
-  testCompile.extendsFrom fishIoTest
+  testImplementation.extendsFrom fishIoTest
 }
 
 test {
@@ -15,26 +15,27 @@ test {
 }
 
 dependencies {
-  testCompile project(':CompilerTools'),
-          project(':engine-table'),
-          TestTools.projectDependency(project, 'engine-table')
+  testImplementation project(':CompilerTools')
+  testImplementation project(':engine-table')
+  testImplementation project(':Integrations')
+  testImplementation TestTools.projectDependency(project, 'engine-table')
 
   // This allows us to access jpy-integration javaToPython code around setting up python
   // for testing purposes
-  testCompile project.dependencies.project([
+  testImplementation project.dependencies.project([
       path: ':jpy-integration',
-      configuration: 'javaToPythonRuntime'
+      configuration: 'javaToPythonJar'
   ])
 
   // needed for access to dh-tests.prop
-  testRuntime project(path: ':test-configs'),
-          project(path: ':configs'),
-          project(':Integrations'),
-          project(':engine-table')
+  testRuntimeOnly project(path: ':test-configs')
+  testRuntimeOnly project(path: ':configs')
+  testRuntimeOnly project(':Integrations')
+  testRuntimeOnly project(':engine-table')
 
   // todo: IDO-322 (io.deephaven.numerics.suanshu.SuanShuIntegration)
-  testRuntime project(':Numerics')
-  testRuntime project(':extensions-suanshu')
+  testRuntimeOnly  project(':Numerics')
+  testRuntimeOnly  project(':extensions-suanshu')
 }
 
 def gradleWrapper = tasks.register("dockerGradleInit", Wrapper.class) { wrapper ->

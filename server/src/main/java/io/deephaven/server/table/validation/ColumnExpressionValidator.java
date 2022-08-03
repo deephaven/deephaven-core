@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.table.validation;
 
 import com.github.javaparser.JavaParser;
@@ -6,17 +9,13 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
-import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
+import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.SelectValidationResult;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
-import io.deephaven.engine.table.impl.lang.QueryLanguageParser.Result;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -24,8 +23,6 @@ import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
-import io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.libs.GroovyStaticImports;
 import io.deephaven.time.DateTime;
@@ -36,10 +33,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -51,7 +45,7 @@ import java.util.stream.Stream;
  * This must be an early pass at the AST on the server, as the server's stricter validation will not function without
  * it.
  */
-public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void> {
+public class ColumnExpressionValidator extends VoidVisitorAdapter<Object> {
     private static final Set<String> whitelistedStaticMethods;
     private static final Set<String> whitelistedInstanceMethods;
     static {
@@ -100,36 +94,25 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         return whereFilters;
     }
 
-    public static void validateColumnExpressions(final SelectColumn[] selectColumns,
-            final String[] originalExpressions,
+    public static void validateColumnExpressions(final SelectColumn[] selectColumns, final String[] originalExpressions,
             final Table table) {
+        // It's unfortunate that we have to validateSelect which does a bunch of analysis, just to get throw-away cloned
+        // columns back, so we can check here for disallowed methods. (We need to make sure SwitchColumns get
+        // initialized.)
+        final SelectColumn[] clonedColumns =
+                ((QueryTable) table.coalesce()).validateSelect(selectColumns).getClonedColumns();
+        validateColumnExpressions(clonedColumns, originalExpressions);
+    }
+
+    private static void validateColumnExpressions(final SelectColumn[] selectColumns,
+            final String[] originalExpressions) {
         assert (selectColumns.length == originalExpressions.length);
-
-        final SelectValidationResult validationResult = ((QueryTable) table.coalesce()).validateSelect(selectColumns);
-        SelectAndViewAnalyzer top = validationResult.getAnalyzer();
-        // We need the cloned columns because the SelectAndViewAnalyzer has left state behind in them
-        // (namely the "realColumn" of the SwitchColumn) that we want to look at in validateSelectColumnHelper.
-        final SelectColumn[] clonedColumns = validationResult.getClonedColumns();
-        // Flatten and reverse the analyzer stack
-        final List<SelectAndViewAnalyzer> analyzers = new ArrayList<>();
-        while (top != null) {
-            analyzers.add(top);
-            top = top.getInner();
-        }
-        Collections.reverse(analyzers);
-        assert (analyzers.size() == clonedColumns.length + 1);
-
-        final Map<String, ColumnDefinition<?>> availableColumns = new LinkedHashMap<>();
-        for (int ii = 0; ii < clonedColumns.length; ++ii) {
-            analyzers.get(ii).updateColumnDefinitionsFromTopLayer(availableColumns);
-            validateSelectColumnHelper(clonedColumns[ii], originalExpressions[ii], availableColumns, table);
+        for (int ii = 0; ii < selectColumns.length; ++ii) {
+            validateSelectColumnHelper(selectColumns[ii], originalExpressions[ii]);
         }
     }
 
-    private static void validateSelectColumnHelper(SelectColumn selectColumn,
-            final String originalExpression,
-            final Map<String, ColumnDefinition<?>> availableColumns,
-            final Table table) {
+    private static void validateSelectColumnHelper(SelectColumn selectColumn, final String originalExpression) {
         while (selectColumn instanceof SwitchColumn) {
             selectColumn = ((SwitchColumn) selectColumn).getRealColumn();
         }
@@ -142,28 +125,13 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         final int indexOfEquals = originalExpression.indexOf('=');
         Assert.assertion(indexOfEquals != -1, "Expected formula expression");
         final String formulaString = originalExpression.substring(indexOfEquals + 1);
-
-        final Result compiledFormula;
         final DateTimeUtils.Result timeConversionResult;
         try {
             timeConversionResult = DateTimeUtils.convertExpression(formulaString);
-            compiledFormula = FormulaAnalyzer.getCompiledFormula(availableColumns, timeConversionResult, null);
         } catch (final Exception e) {
             // in theory not possible, since we already parsed it once
             throw new IllegalStateException("Error occurred while re-compiling formula for whitelist", e);
         }
-        final boolean isAddOnly = table instanceof BaseTable && ((BaseTable) table).isAddOnly();
-        if (table.isRefreshing() && !(isAddOnly && table.isFlat())) {
-            final Set<String> disallowedVariables = new HashSet<>();
-            disallowedVariables.add("i");
-            disallowedVariables.add("ii");
-            // TODO walk QueryScope.getInstance() and remove them too?
-
-            if (compiledFormula.getVariablesUsed().stream().anyMatch(disallowedVariables::contains)) {
-                throw new IllegalStateException("Formulas involving live tables are not permitted to use i or ii");
-            }
-        }
-
         // we pass the formula itself, since this has undergone the time conversion
         validateInvocations(timeConversionResult.getConvertedFormula());
     }
@@ -197,9 +165,9 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
     }
 
     @Override
-    public Void visit(final MethodCallExpr n, final Void arg) {
+    public void visit(final MethodCallExpr n, final Object arg) {
         // verify that this is a call on a supported instance, or is one of the supported static methods
-        if (!n.getScope().isPresent()) {
+        if (n.getScope().isEmpty()) {
             if (!whitelistedStaticMethods.contains(n.getNameAsString())) {
                 throw new IllegalStateException(
                         "User expressions are not permitted to use method " + n.getNameAsString());
@@ -212,11 +180,11 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
                         "User expressions are not permitted to use method " + n.getNameAsString());
             }
         }
-        return super.visit(n, arg);
+        super.visit(n, arg);
     }
 
     @Override
-    public Void visit(final ObjectCreationExpr n, final Void arg) {
+    public void visit(final ObjectCreationExpr n, final Object arg) {
         throw new IllegalStateException("Can't instantiate " + n.getType());
     }
 }

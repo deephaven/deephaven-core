@@ -4,8 +4,8 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom irisDb
-    testCompile.extendsFrom irisDbTest
+    implementation.extendsFrom irisDb
+    testImplementation.extendsFrom irisDbTest
 }
 
 description = 'The Deephaven Barrage Client'
@@ -13,6 +13,7 @@ description = 'The Deephaven Barrage Client'
 dependencies {
     api project(':java-client-flight')
     api project(':extensions-barrage')
+    implementation project(':log-factory')
 
     compileOnly 'javax.inject:javax.inject:1'
 

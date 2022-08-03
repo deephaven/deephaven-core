@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.server.runner.DeephavenApiServerComponent",
- "methods": {
-  "getServer": ":return: io.deephaven.server.runner.DeephavenApiServer"
- },
- "path": "io.deephaven.server.runner.DeephavenApiServerComponent",
- "typeName": "interface"
-}

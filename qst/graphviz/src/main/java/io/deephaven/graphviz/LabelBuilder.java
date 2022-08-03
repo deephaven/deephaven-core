@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.graphviz;
 
 import io.deephaven.api.Strings;
@@ -13,6 +16,7 @@ import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.Join;
 import io.deephaven.qst.table.JoinTable;
+import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.SelectDistinctTable;
@@ -23,6 +27,7 @@ import io.deephaven.qst.table.TableVisitorGeneric;
 import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.UpdateByTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
 import io.deephaven.qst.table.ViewTable;
@@ -124,6 +129,11 @@ public class LabelBuilder extends TableVisitorGeneric {
     }
 
     @Override
+    public void visit(LazyUpdateTable lazyUpdateTable) {
+        selectable("lazyUpdate", lazyUpdateTable);
+    }
+
+    @Override
     public void visit(WhereTable whereTable) {
         sb.append("where(");
         append(Strings::of, whereTable.filters(), sb);
@@ -169,7 +179,7 @@ public class LabelBuilder extends TableVisitorGeneric {
     @Override
     public void visit(SelectDistinctTable selectDistinctTable) {
         sb.append("selectDistinct(");
-        append(Strings::of, selectDistinctTable.groupByColumns(), sb);
+        append(Strings::of, selectDistinctTable.columns(), sb);
         sb.append(')');
     }
 
@@ -178,6 +188,14 @@ public class LabelBuilder extends TableVisitorGeneric {
         sb.append("countBy(").append(countByTable.countName()).append(',');
         append(Strings::of, countByTable.groupByColumns(), sb);
         sb.append(')');
+    }
+
+    @Override
+    public void visit(UpdateByTable updateByTable) {
+        // TODO(deephaven-core#1116): Add labeling, or structuring, for qst graphviz aggregations
+        sb.append("updateBy([");
+        append(Strings::of, updateByTable.groupByColumns(), sb);
+        sb.append("],[ todo ])");
     }
 
     private void join(String name, Join j) {

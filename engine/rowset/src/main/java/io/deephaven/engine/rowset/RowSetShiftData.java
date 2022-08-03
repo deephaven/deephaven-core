@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.rowset;
 
 import gnu.trove.list.TIntList;
@@ -53,7 +52,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      *
      * @return the number of shifts
      */
-    public final int size() {
+    public int size() {
         return payload.size() / 3;
     }
 
@@ -64,7 +63,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      *
      * @return number of keys affected by shifts
      */
-    public final long getEffectiveSize() {
+    public long getEffectiveSize() {
         if (cachedEffectiveSize < 0) {
             long cc = 0;
             final int size = size();
@@ -82,7 +81,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param clamp the maximum size to return
      * @return number of keys affected by shifts
      */
-    public final long getEffectiveSizeClamped(long clamp) {
+    public long getEffectiveSizeClamped(long clamp) {
         if (cachedEffectiveSize < 0) {
             long cc = 0;
             final int size = size();
@@ -103,7 +102,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param idx which pair to get offset for
      * @return the offset
      */
-    public final long getBeginRange(int idx) {
+    public long getBeginRange(int idx) {
         return payload.get(idx * NUM_ATTR + BEGIN_RANGE_ATTR);
     }
 
@@ -113,7 +112,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param idx which pair to get offset for
      * @return the offset
      */
-    public final long getEndRange(int idx) {
+    public long getEndRange(int idx) {
         return payload.get(idx * NUM_ATTR + END_RANGE_ATTR);
     }
 
@@ -123,14 +122,14 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param idx which pair to get shift for
      * @return the shift
      */
-    public final long getShiftDelta(int idx) {
+    public long getShiftDelta(int idx) {
         return payload.get(idx * NUM_ATTR + SHIFT_DELTA_ATTR);
     }
 
     /**
      * Verify invariants of internal data structures hold.
      */
-    public final void validate() {
+    public void validate() {
         int polarOffset = 0;
         final int size = size();
         for (int idx = 0; idx < size; ++idx) {
@@ -166,7 +165,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      *
      * @return true if the size() of this is zero, false if the size is greater than zero
      */
-    public final boolean empty() {
+    public boolean empty() {
         return size() == 0;
     }
 
@@ -175,7 +174,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      *
      * @return true if the size() of this TrackingWritableRowSet greater than zero, false if the size is zero
      */
-    public final boolean nonempty() {
+    public boolean nonempty() {
         return !empty();
     }
 
@@ -292,7 +291,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param rowSet The {@link WritableRowSet} to shift
      * @return {@code rowSet}
      */
-    public WritableRowSet apply(final WritableRowSet rowSet) {
+    public boolean apply(final WritableRowSet rowSet) {
         final RowSetBuilderSequential toRemove = RowSetFactory.builderSequential();
         final RowSetBuilderSequential toInsert = RowSetFactory.builderSequential();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
@@ -316,8 +315,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                 final RowSet insert = toInsert.build()) {
             rowSet.remove(remove);
             rowSet.insert(insert);
+
+            return remove.isNonempty() || insert.isNonempty();
         }
-        return rowSet;
     }
 
     /**

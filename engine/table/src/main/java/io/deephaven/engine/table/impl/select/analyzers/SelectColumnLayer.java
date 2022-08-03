@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.log.LogOutput;
@@ -14,7 +17,9 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -33,7 +38,7 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.LARGEST_POOLED_CH
 
 final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     /**
-     * The same reference as super.columnSource, but as a WritableColumnSource
+     * The same reference as super.columnSource, but as a WritableColumnSource and maybe reinterpretted
      */
     private final WritableColumnSource writableSource;
     /**
@@ -64,7 +69,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             boolean flattenedResult, boolean alreadyFlattenedSources) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.parentRowSet = parentRowSet;
-        this.writableSource = ws;
+        this.writableSource = (WritableColumnSource) ReinterpretUtils.maybeConvertToPrimitive(ws);
         this.isRedirected = isRedirected;
 
         dependencyBitSet = new BitSet();
@@ -99,7 +104,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private ChunkSource<Values> getChunkSource() {
         if (chunkSource == null) {
-            chunkSource = selectColumn.getDataView();
+            chunkSource = ReinterpretUtils.maybeConvertToPrimitive(selectColumn.getDataView());
             if (selectColumnHoldsVector) {
                 chunkSource = new VectorChunkAdapter<>(chunkSource);
             }
@@ -415,6 +420,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         return null;
     }
 
+    private static void maybeManage(
+            @NotNull final LivenessNode liveResultOwner,
+            @Nullable final LivenessReferent value) {
+        if (value != null && DynamicNode.notDynamicOrIsRefreshing(value)) {
+            liveResultOwner.manage(value);
+        }
+    }
+
     private <CT extends Chunk<?>> CT maybeManageAdds(
             @NotNull final CT resultChunk,
             @Nullable final LivenessNode liveResultOwner) {
@@ -423,7 +436,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                     resultChunk.asObjectChunk().asTypedObjectChunk();
             final int chunkSize = typedChunk.size();
             for (int ii = 0; ii < chunkSize; ++ii) {
-                liveResultOwner.manage(typedChunk.get(ii));
+                maybeManage(liveResultOwner, typedChunk.get(ii));
             }
         }
         return resultChunk;
@@ -464,7 +477,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 prevModifiedResults.set(ci, null);
                 ++sameCount;
             } else {
-                liveResultOwner.manage(typedModifiedResults.get(ci));
+                maybeManage(liveResultOwner, typedModifiedResults.get(ci));
             }
         }
         if (prevModifiedResults.size() == sameCount) {
@@ -494,7 +507,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         liveResultOwner.tryUnmanage(prevValueChunksToUnmanage.stream()
                 .flatMap(pvc -> StreamSupport.stream(Spliterators.spliterator(
                         new ObjectChunkIterator<>(pvc), pvc.size(), Spliterator.ORDERED), false))
-                .filter(Objects::nonNull));
+                .filter(Objects::nonNull)
+                .filter(DynamicNode::notDynamicOrIsRefreshing));
         prevValueChunksToUnmanage.forEach(SafeCloseable::closeSingle);
         prevValueChunksToUnmanage.clear();
     }

@@ -1,9 +1,12 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationPairs;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.select.SelectColumn;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,7 +20,7 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
     public final Set<String> byColumnNames;
 
     public final transient Collection<? extends Aggregation> aggregations;
-    public final transient SelectColumn[] selectColumns;
+    public final transient Collection<? extends ColumnName> groupByColumns;
 
     /**
      * The type of leaf nodes the rollup has.
@@ -33,20 +36,21 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
         Constituent
     }
 
-    public RollupInfo(Collection<? extends Aggregation> aggregations, SelectColumn[] selectColumns, LeafType leafType) {
-        this(aggregations, selectColumns, leafType, null);
+    public RollupInfo(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns,
+            LeafType leafType) {
+        this(aggregations, groupByColumns, leafType, null);
     }
 
-    public RollupInfo(Collection<? extends Aggregation> aggregations, SelectColumn[] selectColumns, LeafType leafType,
+    public RollupInfo(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns,
+            LeafType leafType,
             String[] columnFormats) {
         super(columnFormats);
         this.aggregations = aggregations;
-        this.selectColumns = selectColumns;
+        this.groupByColumns = groupByColumns;
         this.matchPairs = AggregationPairs.of(aggregations).map(MatchPair::of).collect(Collectors.toList());
         this.leafType = leafType;
-
-        final Set<String> tempSet = Arrays.stream(selectColumns).map(SelectColumn::getName)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        final Set<String> tempSet =
+                groupByColumns.stream().map(ColumnName::name).collect(Collectors.toCollection(LinkedHashSet::new));
         this.byColumnNames = Collections.unmodifiableSet(tempSet);
     }
 
@@ -55,12 +59,8 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
      *
      * @return a copy of selectColumns
      */
-    public SelectColumn[] getSelectColumns() {
-        final SelectColumn[] copiedColumns = new SelectColumn[selectColumns.length];
-        for (int ii = 0; ii < selectColumns.length; ++ii) {
-            copiedColumns[ii] = selectColumns[ii].copy();
-        }
-        return copiedColumns;
+    public ColumnName[] getGroupByColumns() {
+        return groupByColumns.toArray(ColumnName[]::new);
     }
 
     /**
@@ -77,7 +77,7 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
 
     @Override
     public HierarchicalTableInfo withColumnFormats(String[] columnFormats) {
-        return new RollupInfo(aggregations, selectColumns, leafType, columnFormats);
+        return new RollupInfo(aggregations, groupByColumns, leafType, columnFormats);
     }
 
     public LeafType getLeafType() {

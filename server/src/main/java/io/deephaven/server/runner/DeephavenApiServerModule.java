@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.runner;
 
 import dagger.Module;
@@ -8,6 +11,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.object.ObjectServiceModule;
+import io.deephaven.server.partitionedtable.PartitionedTableServiceModule;
 import io.deephaven.server.plugin.PluginsModule;
 import io.deephaven.server.appmode.AppMode;
 import io.deephaven.server.appmode.AppModeModule;
@@ -58,6 +62,7 @@ import java.util.concurrent.TimeUnit;
         ConsoleModule.class,
         ObjectServiceModule.class,
         PluginsModule.class,
+        PartitionedTableServiceModule.class,
         GroovyConsoleSessionModule.class,
         PythonConsoleSessionModule.class
 })

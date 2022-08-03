@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
@@ -5,8 +8,8 @@ import elemental2.core.JsMap;
 import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.OneClickDescriptor;
+import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
-import io.deephaven.web.client.api.TableMap;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
@@ -22,7 +25,7 @@ public class OneClick {
 
     private final JsMap<String, Any> values = new JsMap<>();
 
-    private TableMap tableMap;
+    private JsPartitionedTable partitionedTable;
 
     private Object[] currentKeys;
     private RemoverFn keyAddedListener;
@@ -34,12 +37,12 @@ public class OneClick {
         this.jsSeries = jsSeries;
     }
 
-    public void setTableMap(TableMap tableMap) {
+    public void setPartitionedTable(JsPartitionedTable partitionedTable) {
         if (keyAddedListener != null) {
             keyAddedListener.remove();
         }
-        this.tableMap = tableMap;
-        keyAddedListener = tableMap.addEventListener(TableMap.EVENT_KEYADDED, e -> {
+        this.partitionedTable = partitionedTable;
+        keyAddedListener = partitionedTable.addEventListener(JsPartitionedTable.EVENT_KEYADDED, e -> {
             if (currentKeys != null) {
                 // Fetch the table will only do something if the keys have actually changed
                 fetchTable();
@@ -56,7 +59,7 @@ public class OneClick {
         JsPropertyMap<Object>[] fakeColumns = new JsPropertyMap[oneClick.getColumnsList().length];
         for (int i = 0; i < fakeColumns.length; i++) {
             fakeColumns[i] = JsPropertyMap.of("name", oneClick.getColumnsList().getAt(i), "type",
-                    oneClick.getColumnsList().getAt(i));
+                    oneClick.getColumnTypesList().getAt(i));
         }
         return fakeColumns;
     }
@@ -119,7 +122,7 @@ public class OneClick {
         }
 
         // Some of the values aren't set, need to iterate through all the table map keys and select the ones that match
-        return JsArray.from(tableMap.getKeys()).filter((tableKey, index, all) -> {
+        return JsArray.from(partitionedTable.getKeys()).filter((tableKey, index, all) -> {
             if (!(tableKey instanceof String[])) {
                 return false;
             }
@@ -139,19 +142,19 @@ public class OneClick {
     }
 
     private Promise<JsTable> doFetchTable(Object[] keys) {
-        if (keys == null) {
-            return tableMap.getMergedTable();
+        if (keys == null || keys.length == 0) {
+            return partitionedTable.getMergedTable();
         } else if (keys.length == 1) {
-            return tableMap.getTable(keys[0]);
+            return partitionedTable.getTable(keys[0]);
         } else {
             Promise<JsTable>[] promises =
-                    Arrays.stream(keys).map(key -> tableMap.getTable(key)).toArray(Promise[]::new);
+                    Arrays.stream(keys).map(key -> partitionedTable.getTable(key)).toArray(Promise[]::new);
             return Promise.all(promises)
                     .then(resolved -> {
                         JsTable[] tables =
                                 Arrays.stream(resolved).filter(table -> table != null).toArray(JsTable[]::new);
                         if (tables.length > 1) {
-                            return tables[0].getConnection().mergeTables(tables, tableMap);
+                            return tables[0].getConnection().mergeTables(tables, partitionedTable);
                         } else if (tables.length == 1) {
                             return Promise.resolve(tables[0]);
                         } else {
@@ -189,8 +192,8 @@ public class OneClick {
                 } else {
                     // Subscribe to this key and wait for it...
                     currentTable = table;
-                    jsFigure.enqueueSubscriptionCheck();
                 }
+                jsFigure.enqueueSubscriptionCheck();
             }
             return null;
         });

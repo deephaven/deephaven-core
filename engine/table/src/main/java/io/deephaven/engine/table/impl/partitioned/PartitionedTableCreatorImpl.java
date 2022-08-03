@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.partitioned;
 
 import com.google.auto.service.AutoService;
@@ -42,7 +45,7 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
     @Override
     public PartitionedTable of(
             @NotNull final Table table,
-            @NotNull final Set<String> keyColumnNames,
+            @NotNull final Collection<String> keyColumnNames,
             final boolean uniqueKeys,
             @NotNull final String constituentColumnName,
             @NotNull final TableDefinition constituentDefinition,

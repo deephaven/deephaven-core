@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.TableHandle.Lifecycle;
@@ -55,7 +58,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
             tracker.closeAllExceptAndRemoveAll(Collections.emptySet());
             throw t;
         }
-        final TableHandle out = results.map().get(table).walk(new GetOutput<>()).out();
+        final TableHandle out = results.map().get(table).walk(new GetOutput<>());
         tracker.closeAllExceptAndRemoveAll(Collections.singleton(out));
         return out;
     }
@@ -74,7 +77,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
         }
         final List<TableHandle> newRefs = new ArrayList<>();
         for (TableSpec table : tables) {
-            TableHandle handle = results.map().get(table).walk(new GetOutput<>()).out();
+            TableHandle handle = results.map().get(table).walk(new GetOutput<>());
             // each needs to be a newRef because the caller may double up on the same TableSpec
             newRefs.add(handle.newRef());
         }

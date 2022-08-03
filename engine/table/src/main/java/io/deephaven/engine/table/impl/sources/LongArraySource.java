@@ -1,11 +1,9 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.table.ColumnSource;
-
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.util.type.TypeUtils.box;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
@@ -16,6 +14,11 @@ public class LongArraySource extends AbstractLongArraySource<Long> {
 
     public LongArraySource() {
         super(long.class);
+    }
+
+    @Override
+    public void setNull(long key) {
+        set(key, NULL_LONG);
     }
 
     @Override

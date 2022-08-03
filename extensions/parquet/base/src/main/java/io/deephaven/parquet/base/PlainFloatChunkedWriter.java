@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PlainIntChunkedWriter and regenerate
@@ -28,11 +31,11 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
     private final ByteBuffer innerBuffer;
 
     PlainFloatChunkedWriter(int pageSize, ByteBufferAllocator allocator) {
-        this.innerBuffer = allocator.allocate(pageSize);
+        innerBuffer = allocator.allocate(pageSize);
         innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        this.originalLimit = innerBuffer.limit();
+        originalLimit = innerBuffer.limit();
         this.allocator = allocator;
-        this.targetBuffer = innerBuffer.asFloatBuffer();
+        targetBuffer = innerBuffer.asFloatBuffer();
         targetBuffer.mark();
         innerBuffer.mark();
     }

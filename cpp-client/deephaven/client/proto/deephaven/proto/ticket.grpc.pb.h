@@ -3,15 +3,13 @@
 // source: deephaven/proto/ticket.proto
 // Original file comments:
 //
-// Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
-//
+// Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #ifndef GRPC_deephaven_2fproto_2fticket_2eproto__INCLUDED
 #define GRPC_deephaven_2fproto_2fticket_2eproto__INCLUDED
 
 #include "deephaven/proto/ticket.pb.h"
 
 #include <functional>
-#include <grpc/impl/codegen/port_platform.h>
 #include <grpcpp/impl/codegen/async_generic_service.h>
 #include <grpcpp/impl/codegen/async_stream.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>

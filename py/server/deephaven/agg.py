@@ -1,6 +1,7 @@
 #
-#  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 from __future__ import annotations
 
 from typing import List, Union
@@ -21,26 +22,24 @@ class Aggregation:
     Note: It should not be instantiated directly by user code but rather through the static methods on the class.
     """
 
-    def __init__(self, j_agg_spec, cols: Union[str, List[str]] = None):
+    def __init__(self, j_agg_spec: jpy.JType = None, j_aggregation: jpy.JType = None,
+                 cols: Union[str, List[str]] = None):
         self._j_agg_spec = j_agg_spec
+        self._j_aggregation = j_aggregation
         self._cols = to_sequence(cols)
 
     @property
     def j_aggregation(self):
-        if self._cols:
-            if not self._j_agg_spec:
-                # special case for count()
-                return _JAggregation.AggCount(self._cols[0])
-
-            return self._j_agg_spec.aggregation(
-                *[_JPair.parse(col) for col in self._cols]
-            )
+        if self._j_aggregation:
+            return self._j_aggregation
         else:
-            raise DHError(message="No columns specified for the aggregation operation.")
+            if not self._cols:
+                raise DHError(message="No columns specified for the aggregation operation.")
+            return self._j_agg_spec.aggregation(*[_JPair.parse(col) for col in self._cols])
 
     @property
     def j_agg_spec(self):
-        if not self._j_agg_spec:
+        if self._j_aggregation:
             raise DHError(message="unsupported aggregation operation.")
         return self._j_agg_spec
 
@@ -106,7 +105,20 @@ def count_(col: str) -> Aggregation:
     Returns:
         an aggregation
     """
-    return Aggregation(j_agg_spec=None, cols=col)
+    return Aggregation(j_aggregation=_JAggregation.AggCount(col))
+
+
+def partition(col: str, include_by_columns: bool = True) -> Aggregation:
+    """Create a Partition aggregation. This is not supported in 'Table.agg_all_by'.
+
+    Args:
+        col (str): the column to hold the sub tables
+        include_by_columns (bool): whether to include the group by columns in the result, default is True
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggPartition(col, include_by_columns))
 
 
 def count_distinct(cols: Union[str, List[str]] = None) -> Aggregation:

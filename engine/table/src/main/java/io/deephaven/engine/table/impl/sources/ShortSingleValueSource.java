@@ -1,12 +1,11 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterSingleValueSource and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.attributes.Values;
@@ -21,6 +20,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
@@ -39,8 +39,8 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
     // region Constructor
     public ShortSingleValueSource() {
         super(short.class);
-        current = QueryConstants.NULL_SHORT;
-        prev = QueryConstants.NULL_SHORT;
+        current = NULL_SHORT;
+        prev = NULL_SHORT;
     }
     // endregion Constructor
 
@@ -73,6 +73,13 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
     @Override
     public final void set(long key, short value) {
         set(value);
+    }
+
+    @Override
+    public final void setNull(long key) {
+        // region null set
+        set(NULL_SHORT);
+        // endregion null set
     }
 
     @Override

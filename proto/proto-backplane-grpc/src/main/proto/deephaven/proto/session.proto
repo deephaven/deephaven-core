@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 syntax = "proto3";
 
 package io.deephaven.proto.backplane.grpc;
@@ -10,6 +9,7 @@ import "deephaven/proto/ticket.proto";
 
 option java_multiple_files = true;
 option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/session";
 
 /*
  * User supplied Flight.Ticket(s) should begin with 'e' byte followed by an signed little-endian int. The client is only

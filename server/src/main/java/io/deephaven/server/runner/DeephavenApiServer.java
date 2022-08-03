@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.runner;
 
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -9,9 +12,9 @@ import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.server.plugin.PluginRegistration;
 import io.deephaven.server.appmode.ApplicationInjector;
 import io.deephaven.server.log.LogInit;
+import io.deephaven.server.plugin.PluginRegistration;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.uri.resolver.UriResolver;
 import io.deephaven.uri.resolver.UriResolvers;
@@ -74,16 +77,14 @@ public class DeephavenApiServer {
 
 
     /**
-     * Starts the various server components, and blocks until the gRPC server has shut down. That shutdown is mediated
-     * by the ShutdownManager, and will call the gRPC server to shut it down when the process is itself shutting down.
-     * Only once that is complete will this method return.
+     * Starts the various server components, and returns without blocking. Shutdown is mediated by the ShutdownManager,
+     * who will call the gRPC server to shut it down when the process is itself shutting down.
      *
      * @throws IOException thrown in event of an error with logging, finding and running an application, and starting
      *         the gRPC service.
      * @throws ClassNotFoundException thrown if a class can't be found while finding and running an application.
-     * @throws InterruptedException thrown if this thread is interrupted while blocking for the server to halt.
      */
-    public void run() throws IOException, ClassNotFoundException, InterruptedException, TimeoutException {
+    public DeephavenApiServer run() throws IOException, ClassNotFoundException, TimeoutException {
         // Stop accepting new gRPC requests.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
                 () -> server.stopWithTimeout(10, TimeUnit.SECONDS));
@@ -103,17 +104,18 @@ public class DeephavenApiServer {
         log.info().append("Configuring logging...").endl();
         logInit.run();
 
-        MemoryTableLoggers.maybeStartStatsCollection();
-
         log.info().append("Creating/Clearing Script Cache...").endl();
         AbstractScriptSession.createScriptCache();
 
         log.info().append("Initializing Script Session...").endl();
+
         scriptSessionProvider.get();
         pluginRegistration.registerAll();
 
         log.info().append("Starting UGP...").endl();
         ugp.start();
+
+        MemoryTableLoggers.maybeStartStatsCollection();
 
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
@@ -131,8 +133,19 @@ public class DeephavenApiServer {
 
         log.info().append("Starting server...").endl();
         server.start();
+        log.info().append("Server started on port ").append(server.getPort()).endl();
+        return this;
+    }
+
+    /**
+     * Blocks until the server exits.
+     * 
+     * @throws InterruptedException thrown if this thread is interrupted while blocking for the server to halt.
+     */
+    public void join() throws InterruptedException {
         server.join();
     }
+
 
     void startForUnitTests() throws Exception {
         pluginRegistration.registerAll();

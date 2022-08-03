@@ -1,10 +1,13 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.by;
 
 import com.tdunning.math.stats.TDigest;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.vector.ObjectVector;
 
 /**
@@ -95,7 +98,7 @@ public class ApproximatePercentile {
      * @return a with the groupByColumns and double columns representing the approximate percentile for each remaining
      *         column of the input table
      */
-    public static Table approximatePercentileBy(Table input, double percentile, SelectColumn... groupByColumns) {
+    public static Table approximatePercentileBy(Table input, double percentile, ColumnName... groupByColumns) {
         return input.aggAllBy(AggSpecApproximatePercentile.of(percentile), groupByColumns);
     }
 
@@ -110,7 +113,7 @@ public class ApproximatePercentile {
      *         column of the input table
      */
     public static Table approximatePercentileBy(Table input, double compression, double percentile,
-            SelectColumn... groupByColumns) {
+            ColumnName... groupByColumns) {
         return input.aggAllBy(AggSpecApproximatePercentile.of(percentile, compression), groupByColumns);
     }
 

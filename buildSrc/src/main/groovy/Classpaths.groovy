@@ -40,8 +40,6 @@ class Classpaths {
     static final String JETTY_GROUP = 'org.eclipse.jetty'
     static final String JETTY_VERSION = '9.4.20.v20190813'
 
-    static final String JGIT_VERSION = '5.8.1.202007141445-r'
-
     static final String JS_INTEROP_GROUP = 'com.google.jsinterop'
     static final String JS_INTEROP_VERSION = '2.0.0'
 
@@ -75,6 +73,15 @@ class Classpaths {
     static final String JUNIT_NAME = 'junit-bom'
     static final String JUNIT_VERSION = '5.7.2'
 
+    static final String JUNIT_CLASSIC_GROUP = 'junit'
+    static final String JUNIT_CLASSIC_NAME = 'junit'
+    static final String JUNIT_CLASSIC_VERSION = '4.13.2'
+
+    static final String JMOCK_GROUP = 'org.jmock'
+    static final String JMOCK_JUNIT_NAME = 'jmock-junit4'
+    static final String JMOCK_IMPORSTERS_NAME = 'jmock-imposters'
+    static final String JMOCK_VERSION = '2.12.0'
+
     static final String ASSERTJ_GROUP = 'org.assertj'
     static final String ASSERTJ_NAME = 'assertj-core'
     static final String ASSERTJ_VERSION = '3.19.0'
@@ -100,6 +107,17 @@ class Classpaths {
     static final String BORINGSSL_NAME = 'netty-tcnative-boringssl-static'
     static final String BORINGSSL_VERSION = '2.0.46.Final'
 
+    static final String JACKSON_GROUP = 'com.fasterxml.jackson'
+    static final String JACKSON_NAME = 'jackson-bom'
+    static final String JACKSON_VERSION = '2.13.3'
+
+    static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
+    static final String SSLCONTEXT_VERSION = '7.4.3'
+
+    static final String JETTY11_GROUP = 'org.eclipse.jetty'
+    static final String JETTY11_NAME = 'jetty-bom'
+    static final String JETTY11_VERSION = '11.0.8'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -118,11 +136,7 @@ class Classpaths {
         new DefaultExternalModuleDependency(group, name, version)
     }
 
-    static Configuration compile(Project p) {
-        p.configurations.findByName('api') ?: p.configurations.getByName('compile')
-    }
-
-    static void inheritGwt(Project p, String name = 'gwt-user', String configName = 'compileOnly') {
+    static void inheritGwt(Project p, String name, String configName) {
         Configuration config = p.configurations.getByName(configName)
         if (addDependency(config, GWT_GROUP, name, GWT_VERSION)) {
             // when we add gwt-dev, lets also force asm version, just to be safe.
@@ -134,32 +148,32 @@ class Classpaths {
         }
     }
 
-    static void inheritJavaParser(Project p, String name = JAVA_PARSER_NAME) {
-        Configuration compile = compile p
-        addDependency compile, JAVA_PARSER_GROUP, name, JAVA_PARSER_VERSION
+    static void inheritJavaParser(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, JAVA_PARSER_GROUP, JAVA_PARSER_NAME, JAVA_PARSER_VERSION
     }
 
-    static void inheritJavaxAnnotations(Project p) {
-        Configuration compile = compile p
-        addDependency compile, JAVAX_ANNOTATIONS_GROUP, JAVAX_ANNOTATIONS_NAME, JAVAX_ANNOTATIONS_VERSION
+    static void inheritJavaxAnnotations(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, JAVAX_ANNOTATIONS_GROUP, JAVAX_ANNOTATIONS_NAME, JAVAX_ANNOTATIONS_VERSION
     }
 
-    static void inheritJsInterop(Project p, String name = 'base') {
-        Configuration compile = compile p
-        addDependency compile, JS_INTEROP_GROUP, name,
+    static void inheritJsInterop(Project p, String name, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, JS_INTEROP_GROUP, name,
                 // google is annoying, and have different versions released for the same groupId
                 // :base: is the only one that is different, so we'll use it in the ternary.
                 name == 'base'? '1.0.0' : JS_INTEROP_VERSION
     }
 
-    static void inheritElemental(Project p, String name = 'elemental2-core') {
-        Configuration compile = compile p
-        addDependency compile, ELEMENTAL_GROUP, name, ELEMENTAL_VERSION
+    static void inheritElemental(Project p, String name, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, ELEMENTAL_GROUP, name, ELEMENTAL_VERSION
     }
 
-    static void inheritCommonsText(Project p) {
-        Configuration compile = compile p
-        addDependency compile, COMMONS_GROUP, 'commons-text', "1.6", {
+    static void inheritCommonsText(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, COMMONS_GROUP, 'commons-text', "1.6", {
             // commons-text depends on commons-lang3; sadly, our version of lang3 is so old,
             // there is no version of commons-text which depends on it.  So, we just exclude it.
             // we only want some small, self-contained classes in commons-text anyway.
@@ -202,6 +216,17 @@ class Classpaths {
         p.getDependencies().add('compileOnly', p.project(':util-immutables'))
     }
 
+    static void inheritJUnitClassic(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, JUNIT_CLASSIC_GROUP, JUNIT_CLASSIC_NAME, JUNIT_CLASSIC_VERSION)
+    }
+
+    static void inheritJMock(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, JMOCK_GROUP, JMOCK_JUNIT_NAME, JMOCK_VERSION)
+        addDependency(config, JMOCK_GROUP, JMOCK_IMPORSTERS_NAME, JMOCK_VERSION)
+    }
+
     static void inheritJUnitPlatform(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, p.getDependencies().platform(JUNIT_GROUP + ":" + JUNIT_NAME + ":" + JUNIT_VERSION))
@@ -240,5 +265,20 @@ class Classpaths {
     static void inheritBoringSsl(Project p, String configName = JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, BORINGSSL_GROUP, BORINGSSL_NAME, BORINGSSL_VERSION)
+    }
+
+    static void inheritJacksonPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform("${JACKSON_GROUP}:${JACKSON_NAME}:${JACKSON_VERSION}"))
+    }
+
+    static void inheritSSLContext(Project p, String name, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, SSLCONTEXT_GROUP, name, SSLCONTEXT_VERSION)
+    }
+
+    static void inheritJetty11Platform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform("${JETTY11_GROUP}:${JETTY11_NAME}:${JETTY11_VERSION}"))
     }
 }

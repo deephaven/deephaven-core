@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ShiftObliviousListener;
@@ -34,7 +37,6 @@ public class ShiftObliviousSwapListener extends SwapListenerBase<ShiftObliviousL
     public void destroy() {
         super.destroy();
         sourceTable.removeUpdateListener(this);
-        sourceTable.removeDirectUpdateListener(this);
     }
 
     @Override

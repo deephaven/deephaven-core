@@ -1,6 +1,7 @@
 #
-#  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 import unittest
 
 from pyarrow import csv
@@ -19,11 +20,16 @@ class ConsoleTestCase(BaseTestCase):
         self.session.run_script(server_script)
         self.assertIn('t2', self.session.tables)
 
+        # verify that Python variable 't' refers to an instance of the wrapper class: deephaven.table.Table
+        server_script = '''t3 = t.meta_table'''
+        self.session.run_script(server_script)
+        self.assertIn('t3', self.session.tables)
+
     def test_run_script_and_open_table(self):
         server_script = '''
 import time
 import math
-from deephaven_legacy import TableTools
+from deephaven import empty_table
 from numba import vectorize, int32, float64
 
 ##########################
@@ -33,12 +39,12 @@ def vectorized_func(x, y):
 
 table_size = 1000
 start_time = time.time()
-demo_table = TableTools.emptyTable(table_size) \
-    .view("I=(int)i", "J=(int)(i * 2)") \
-    .view("K = vectorized_func(I, J)")
+demo_table = (empty_table(table_size) 
+    .view(["I=(int)i", "J=(int)(i * 2)"]) 
+    .view("K = vectorized_func(I, J)"))
         '''
         self.session.run_script(server_script)
-        for t_name in self.session.tables:
-            pa_table = self.session.open_table(t_name).snapshot()
-            df = pa_table.to_pandas()
-            self.assertEquals(1000, len(df.index))
+        self.assertIn('demo_table', self.session.tables)
+        pa_table = self.session.open_table('demo_table').snapshot()
+        df = pa_table.to_pandas()
+        self.assertEquals(1000, len(df.index))

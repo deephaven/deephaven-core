@@ -1,5 +1,5 @@
 #
-#     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -8,13 +8,13 @@ from deephaven.pandas import to_pandas
 
 from deephaven import time_table
 
-from deephaven._ugp import ugp_exclusive_lock
+from deephaven.ugp import exclusive_lock
 from deephaven.liveness_scope import liveness_scope
 from tests.testbase import BaseTestCase
 
 
 def create_table():
-    with ugp_exclusive_lock():
+    with exclusive_lock():
         return time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
 
 

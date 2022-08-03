@@ -1,8 +1,9 @@
 #
-#   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 """ This module provides various ways to make a Deephaven table. """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 
 import jpy
 
@@ -10,7 +11,9 @@ from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import InputColumn
 from deephaven.dtypes import DType
+from deephaven.jcompat import to_sequence
 from deephaven.table import Table
+from deephaven.ugp import auto_locking_ctx
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -35,11 +38,12 @@ def empty_table(size: int) -> Table:
         raise DHError(e, "failed to create an empty table.") from e
 
 
-def time_table(period: str, start_time: str = None) -> Table:
+def time_table(period: Union[str, int], start_time: str = None) -> Table:
     """Creates a table that adds a new row on a regular interval.
 
     Args:
-        period (str): time interval between new row additions
+        period (Union[str, int]): time interval between new row additions, can be expressed as an integer in
+            nanoseconds or a time interval string, e.g. "00:00:00.001"
         start_time (str): start time for adding new rows
 
     Returns:
@@ -90,7 +94,8 @@ def merge(tables: List[Table]):
         DHError
     """
     try:
-        return Table(j_table=_JTableTools.merge([t.j_table for t in tables]))
+        with auto_locking_ctx(*tables):
+            return Table(j_table=_JTableTools.merge([t.j_table for t in tables]))
     except Exception as e:
         raise DHError(e, "merge tables operation failed.") from e
 
@@ -111,7 +116,8 @@ def merge_sorted(tables: List[Table], order_by: str) -> Table:
         DHError
     """
     try:
-        return Table(j_table=_JTableTools.mergeSorted(order_by, *[t.j_table for t in tables]))
+        with auto_locking_ctx(*tables):
+            return Table(j_table=_JTableTools.mergeSorted(order_by, *[t.j_table for t in tables]))
     except Exception as e:
         raise DHError(e, "merge sorted operation failed.") from e
 
@@ -176,6 +182,7 @@ class DynamicTableWriter(JObjectWrapper):
              DHError
         """
         try:
-            self._j_table_writer.logRowPermissive(*values)
+            values = to_sequence(values)
+            self._j_table_writer.logRowPermissive(values)
         except Exception as e:
             raise DHError(e, "failed to write a row.") from e

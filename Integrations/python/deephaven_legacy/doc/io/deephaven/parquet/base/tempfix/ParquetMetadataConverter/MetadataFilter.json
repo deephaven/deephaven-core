@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.parquet.base.tempfix.ParquetMetadataConverter$MetadataFilter",
- "methods": {},
- "path": "io.deephaven.parquet.base.tempfix.ParquetMetadataConverter.MetadataFilter",
- "typeName": "class"
-}

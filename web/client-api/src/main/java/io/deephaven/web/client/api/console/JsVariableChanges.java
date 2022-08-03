@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.console;
 
 import elemental2.core.JsArray;
@@ -12,9 +15,11 @@ public class JsVariableChanges {
     public static final String TABLE = "Table",
             TREETABLE = "TreeTable",
             TABLEMAP = "TableMap",
+            PARTITIONEDTABLE = "PartitionedTable",
             FIGURE = "Figure",
             OTHERWIDGET = "OtherWidget",
-            PANDAS = "pandas.DataFrame";
+            PANDAS = "pandas.DataFrame",
+            TREEMAP = "Treemap";
 
     private final JsVariableDefinition[] created;
     private final JsVariableDefinition[] updated;

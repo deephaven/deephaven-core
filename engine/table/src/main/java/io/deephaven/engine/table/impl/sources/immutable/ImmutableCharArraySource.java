@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.engine.table.impl.sources.immutable;
 
@@ -75,6 +75,11 @@ public class ImmutableCharArraySource extends AbstractDeferredGroupingColumnSour
         char oldValue = data[(int)index];
         data[(int)index] = newValue;
         return oldValue;
+    }
+
+    @Override
+    public final void setNull(long key) {
+        data[(int)key] = NULL_CHAR;
     }
 
     @Override

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.lang.shared.lsp.DiagnosticCode",
- "methods": {},
- "path": "io.deephaven.lang.shared.lsp.DiagnosticCode",
- "text": "A collection of int constants used for diagnostic messages.",
- "typeName": "interface"
-}

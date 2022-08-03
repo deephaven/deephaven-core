@@ -2,31 +2,57 @@ plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
 }
+import io.deephaven.tools.docker.Architecture
 
 description 'Parquet Table: Integrating Engine tables with Parquet'
 
-dependencies {
-    api project(':engine-api'),
-            project(':engine-stringset')
+configurations {
+    brotliTestImplementation.extendsFrom(testImplementation)
+}
 
-    implementation project(':extensions-parquet-base'),
-            project(':engine-base'),
-            project(':engine-table'),
-            project(':extensions-csv'),
-            'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.0',
-            'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.13.0'
+sourceSets {
+    brotliTest {}
+}
+
+dependencies {
+    api project(':engine-api')
+    api project(':engine-stringset')
+
+    implementation project(':extensions-parquet-base')
+    implementation project(':engine-base')
+    implementation project(':engine-table')
+    implementation project(':extensions-csv')
+    implementation project(':log-factory')
+    implementation project(':Configuration')
+    implementation depCommonsLang3
+
+    Classpaths.inheritCommonsText(project, 'implementation')
+
+    Classpaths.inheritJacksonPlatform(project)
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
 
     Classpaths.inheritImmutables(project)
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    testImplementation TestTools.projectDependency(project, 'engine-table'),
-            'junit:junit:4.13.2'
+    testImplementation TestTools.projectDependency(project, 'engine-table')
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+
+    brotliTestImplementation('com.github.rdblue:brotli-codec:0.1.1')
+}
+
+// if architecture is x86, run the brotli test
+if (Architecture.fromHost() == Architecture.AMD64) {
+    check.dependsOn(tasks.register('brotliTest', Test) {
+        classpath = sourceSets.brotliTest.runtimeClasspath
+        testClassesDirs = sourceSets.brotliTest.output.classesDirs
+    })
 }
 
 spotless {

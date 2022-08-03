@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.FileUtils;
@@ -218,11 +221,8 @@ public class TestChunkedRegionedOperations {
         dataDirectory = Files.createTempDirectory(Paths.get(""), "TestChunkedRegionedOperations-").toFile();
         dataDirectory.deleteOnExit();
 
-        final TableDefinition partitionedDataDefinition = new TableDefinition(inputData.getDefinition());
-
-        final TableDefinition partitionedMissingDataDefinition =
-                new TableDefinition(inputData.view("PC", "II").getDefinition());
-
+        final TableDefinition partitionedDataDefinition = inputData.getDefinition();
+        final TableDefinition partitionedMissingDataDefinition = inputData.view("PC", "II").getDefinition();
         final String tableName = "TestTable";
 
         final PartitionedTable partitionedInputData = inputData.partitionBy("PC");

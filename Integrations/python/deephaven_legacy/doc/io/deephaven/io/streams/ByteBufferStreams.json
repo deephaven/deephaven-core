@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.io.streams.ByteBufferStreams",
- "methods": {},
- "path": "io.deephaven.io.streams.ByteBufferStreams",
- "text": "A pair of stream implementations which write to and read from sequences of byte buffers. They are guaranteed to be\n \"compatible\", that is, a stream of buffers written by the Output stream is guaranteed to be readable by the Input\n stream - given that the client correctly implements the source and sink interfaces.",
- "typeName": "class"
-}

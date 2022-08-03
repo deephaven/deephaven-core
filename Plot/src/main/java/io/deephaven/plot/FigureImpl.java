@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 /****************************************************************************************************************************
  ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GenerateFigureImmutable or "./gradlew :Generators:generateFigureImmutable" to regenerate
  ****************************************************************************************************************************/
@@ -2730,6 +2729,12 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         final BaseFigureImpl fc = this.figure.copy();
         final AxisImpl axis = (AxisImpl) axis(fc).transform( transform);
         return make(null, axis);
+    }
+
+    @Override public  FigureImpl treemapPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String ids, java.lang.String parents, java.lang.String values, java.lang.String labels, java.lang.String hoverTexts, java.lang.String colors ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).treemapPlot( seriesName, t, ids, parents, values, labels, hoverTexts, colors);
+        return make(series);
     }
 
     @Override public  FigureImpl twin( ) {

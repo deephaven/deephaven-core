@@ -7,13 +7,18 @@ description 'Engine RowSets: Data structures for working with row keys'
 
 dependencies {
     api project(':engine-chunk')
+    api project(':Base')
 
-    implementation project(':Container'),
-            project(':engine-updategraph')
+    implementation project(':Container')
+    implementation project(':engine-updategraph')
+    implementation project(':Configuration')
+    implementation depCommonsLang3
+    implementation depTrove3
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly depAnnotations
 
-    testImplementation 'junit:junit:4.13.2'
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

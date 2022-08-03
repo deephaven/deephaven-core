@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.partitioned;
 
 import io.deephaven.api.SortColumn;
@@ -56,7 +59,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private volatile WeakReference<Table> memoizedMerge;
 
     /**
-     * @see PartitionedTableFactory#of(Table, Set, boolean, String, TableDefinition, boolean) Factory method that
+     * @see PartitionedTableFactory#of(Table, Collection, boolean, String, TableDefinition, boolean) Factory method that
      *      delegates to this method
      * @apiNote Only engine-internal tools should call this constructor directly
      */
@@ -459,9 +462,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 final RowSequence rowsToCheck = usePrev ? prevRows : parent.getRowSet();
                 validateConstituents(constituentDefinition, constituentColumnSource, rowsToCheck);
             }
-            final QueryTable child = parent.getSubTable(parent.getRowSet(), parent.getModifiedColumnSetForUpdates());
+            final QueryTable child = parent.getSubTable(
+                    parent.getRowSet(), parent.getModifiedColumnSetForUpdates(), parent.getAttributes());
             parent.propagateFlatness(child);
-            parent.copyAttributes(child, a -> true);
             return new Result<>(child, new BaseTable.ListenerImpl(getDescription(), parent, child) {
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {

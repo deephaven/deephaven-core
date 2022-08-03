@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.base.Function$Long",
- "methods": {
-  "call": ":return: long"
- },
- "path": "io.deephaven.base.Function.Long",
- "typeName": "interface"
-}

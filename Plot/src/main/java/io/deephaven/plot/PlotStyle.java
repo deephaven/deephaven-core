@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot;
 
 import java.util.Arrays;
@@ -73,8 +72,12 @@ public enum PlotStyle {
      *
      * Points are not displayed by default.
      */
-    ERROR_BAR;
+    ERROR_BAR,
 
+    /**
+     * A treemap plot.
+     */
+    TREEMAP;
 
     /**
      * Returns the requested plot style.

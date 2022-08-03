@@ -1,11 +1,12 @@
 #
-#   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
 import unittest
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
-    var, formula
+    var, formula, partition
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -107,7 +108,7 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(cm.exception.root_cause)
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
-    def test_usv(self):
+    def test_USV(self):
         ops = [
             Table.update,
             Table.lazy_update,
@@ -335,6 +336,7 @@ class TableTestCase(BaseTestCase):
             Table.first_by,
             Table.last_by,
             Table.sum_by,
+            Table.abs_sum_by,
             Table.avg_by,
             Table.std_by,
             Table.var_by,
@@ -358,6 +360,18 @@ class TableTestCase(BaseTestCase):
             with self.subTest(op=op):
                 result_table = op(self.test_table, by=[])
                 self.assertEqual(result_table.size, 1)
+
+        wops = [Table.weighted_avg_by,
+                Table.weighted_sum_by,
+                ]
+
+        for wop in wops:
+            with self.subTest(wop):
+                result_table = wop(self.test_table, wcol='e', by=["a", "b"])
+                self.assertEqual(len(result_table.columns), len(self.test_table.columns) - 1)
+
+                result_table = wop(self.test_table, wcol='e')
+                self.assertEqual(len(result_table.columns), len(self.test_table.columns) - 1)
 
     def test_count_by(self):
         num_distinct_a = self.test_table.select_distinct(formulas=["a"]).size
@@ -390,6 +404,7 @@ class TableTestCase(BaseTestCase):
             group(["aggGroup=var"]),
             avg(["aggAvg=var"]),
             count_("aggCount"),
+            partition("aggPartition"),
             first(["aggFirst=var"]),
             last(["aggLast=var"]),
             max_(["aggMax=var"]),
@@ -510,7 +525,22 @@ class TableTestCase(BaseTestCase):
         self.assertIsNotNone(t)
 
     def test_layout_hints(self):
-        t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d")
+        t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d", column_groups=[
+            {
+                "name": "Group1",
+                "children": ["a", "b"]
+            },
+            {
+                "name": "Group2",
+                "children": ["c", "d"],
+                "color": "#123456"
+            },
+            {
+                "name": "Group3",
+                "children": ["e", "f"],
+                "color": "RED"
+            }
+        ])
         self.assertIsNotNone(t)
 
         t = self.test_table.layout_hints(front=["d", "e"], back=["a", "b"], freeze=["c"], hide=["d"])

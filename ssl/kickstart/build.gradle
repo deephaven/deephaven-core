@@ -1,0 +1,17 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description = 'The internal Deephaven ssl-kickstart integration'
+
+dependencies {
+    api project(':ssl-config')
+
+    Classpaths.inheritSSLContext(project, 'sslcontext-kickstart', 'api')
+
+    Classpaths.inheritGrpcPlatform(project)
+    compileOnly('io.grpc:grpc-core') {
+        because 'we need access to CertificateUtils'
+    }
+}

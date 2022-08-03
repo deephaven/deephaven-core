@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.base.Procedure$ThrowingNullary",
- "methods": {},
- "path": "io.deephaven.base.Procedure.ThrowingNullary",
- "typeName": "interface"
-}

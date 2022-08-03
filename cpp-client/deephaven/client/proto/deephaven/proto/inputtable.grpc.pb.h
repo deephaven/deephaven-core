@@ -3,15 +3,13 @@
 // source: deephaven/proto/inputtable.proto
 // Original file comments:
 //
-// Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
-//
+// Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #ifndef GRPC_deephaven_2fproto_2finputtable_2eproto__INCLUDED
 #define GRPC_deephaven_2fproto_2finputtable_2eproto__INCLUDED
 
 #include "deephaven/proto/inputtable.pb.h"
 
 #include <functional>
-#include <grpc/impl/codegen/port_platform.h>
 #include <grpcpp/impl/codegen/async_generic_service.h>
 #include <grpcpp/impl/codegen/async_stream.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>
@@ -66,36 +64,24 @@ class InputTableService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::DeleteTableResponse>> PrepareAsyncDeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::DeleteTableResponse>>(PrepareAsyncDeleteTableFromInputTableRaw(context, request, cq));
     }
-    class experimental_async_interface {
+    class async_interface {
      public:
-      virtual ~experimental_async_interface() {}
+      virtual ~async_interface() {}
       //
       // Adds the provided table to the specified input table. The new data to add must only have
       // columns (name, types, and order) which match the given input table's columns.
       virtual void AddTableToInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response, std::function<void(::grpc::Status)>) = 0;
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       virtual void AddTableToInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void AddTableToInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
       //
       // Removes the provided table from the specified input tables. The tables indicating which rows
       // to remove are expected to only have columns that match the key columns of the input table.
       virtual void DeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response, std::function<void(::grpc::Status)>) = 0;
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       virtual void DeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void DeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
     };
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-    typedef class experimental_async_interface async_interface;
-    #endif
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-    async_interface* async() { return experimental_async(); }
-    #endif
-    virtual class experimental_async_interface* experimental_async() { return nullptr; }
-  private:
+    typedef class async_interface experimental_async_interface;
+    virtual class async_interface* async() { return nullptr; }
+    class async_interface* experimental_async() { return async(); }
+   private:
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::AddTableResponse>* AsyncAddTableToInputTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::AddTableResponse>* PrepareAsyncAddTableToInputTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::DeleteTableResponse>* AsyncDeleteTableFromInputTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest& request, ::grpc::CompletionQueue* cq) = 0;
@@ -118,32 +104,24 @@ class InputTableService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::DeleteTableResponse>> PrepareAsyncDeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::DeleteTableResponse>>(PrepareAsyncDeleteTableFromInputTableRaw(context, request, cq));
     }
-    class experimental_async final :
-      public StubInterface::experimental_async_interface {
+    class async final :
+      public StubInterface::async_interface {
      public:
       void AddTableToInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response, std::function<void(::grpc::Status)>) override;
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       void AddTableToInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void AddTableToInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
       void DeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response, std::function<void(::grpc::Status)>) override;
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       void DeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void DeleteTableFromInputTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
      private:
       friend class Stub;
-      explicit experimental_async(Stub* stub): stub_(stub) { }
+      explicit async(Stub* stub): stub_(stub) { }
       Stub* stub() { return stub_; }
       Stub* stub_;
     };
-    class experimental_async_interface* experimental_async() override { return &async_stub_; }
+    class async* async() override { return &async_stub_; }
 
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
-    class experimental_async async_stub_{this};
+    class async async_stub_{this};
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::AddTableResponse>* AsyncAddTableToInputTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::AddTableResponse>* PrepareAsyncAddTableToInputTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::DeleteTableResponse>* AsyncDeleteTableFromInputTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest& request, ::grpc::CompletionQueue* cq) override;
@@ -208,36 +186,22 @@ class InputTableService final {
   };
   typedef WithAsyncMethod_AddTableToInputTable<WithAsyncMethod_DeleteTableFromInputTable<Service > > AsyncService;
   template <class BaseClass>
-  class ExperimentalWithCallbackMethod_AddTableToInputTable : public BaseClass {
+  class WithCallbackMethod_AddTableToInputTable : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    ExperimentalWithCallbackMethod_AddTableToInputTable() {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::Service::
-    #else
-      ::grpc::Service::experimental().
-    #endif
-        MarkMethodCallback(0,
+    WithCallbackMethod_AddTableToInputTable() {
+      ::grpc::Service::MarkMethodCallback(0,
           new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::AddTableRequest, ::io::deephaven::proto::backplane::grpc::AddTableResponse>(
             [this](
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                   ::grpc::CallbackServerContext*
-    #else
-                   ::grpc::experimental::CallbackServerContext*
-    #endif
-                     context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response) { return this->AddTableToInputTable(context, request, response); }));}
+                   ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* request, ::io::deephaven::proto::backplane::grpc::AddTableResponse* response) { return this->AddTableToInputTable(context, request, response); }));}
     void SetMessageAllocatorFor_AddTableToInputTable(
-        ::grpc::experimental::MessageAllocator< ::io::deephaven::proto::backplane::grpc::AddTableRequest, ::io::deephaven::proto::backplane::grpc::AddTableResponse>* allocator) {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+        ::grpc::MessageAllocator< ::io::deephaven::proto::backplane::grpc::AddTableRequest, ::io::deephaven::proto::backplane::grpc::AddTableResponse>* allocator) {
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
-    #else
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(0);
-    #endif
       static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::AddTableRequest, ::io::deephaven::proto::backplane::grpc::AddTableResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
-    ~ExperimentalWithCallbackMethod_AddTableToInputTable() override {
+    ~WithCallbackMethod_AddTableToInputTable() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
@@ -245,46 +209,26 @@ class InputTableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
     virtual ::grpc::ServerUnaryReactor* AddTableToInputTable(
-      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::AddTableResponse* /*response*/)
-    #else
-    virtual ::grpc::experimental::ServerUnaryReactor* AddTableToInputTable(
-      ::grpc::experimental::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::AddTableResponse* /*response*/)
-    #endif
-      { return nullptr; }
+      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::AddTableRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::AddTableResponse* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class ExperimentalWithCallbackMethod_DeleteTableFromInputTable : public BaseClass {
+  class WithCallbackMethod_DeleteTableFromInputTable : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    ExperimentalWithCallbackMethod_DeleteTableFromInputTable() {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::Service::
-    #else
-      ::grpc::Service::experimental().
-    #endif
-        MarkMethodCallback(1,
+    WithCallbackMethod_DeleteTableFromInputTable() {
+      ::grpc::Service::MarkMethodCallback(1,
           new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::DeleteTableRequest, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse>(
             [this](
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                   ::grpc::CallbackServerContext*
-    #else
-                   ::grpc::experimental::CallbackServerContext*
-    #endif
-                     context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response) { return this->DeleteTableFromInputTable(context, request, response); }));}
+                   ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* request, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* response) { return this->DeleteTableFromInputTable(context, request, response); }));}
     void SetMessageAllocatorFor_DeleteTableFromInputTable(
-        ::grpc::experimental::MessageAllocator< ::io::deephaven::proto::backplane::grpc::DeleteTableRequest, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse>* allocator) {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+        ::grpc::MessageAllocator< ::io::deephaven::proto::backplane::grpc::DeleteTableRequest, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse>* allocator) {
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
-    #else
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(1);
-    #endif
       static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::DeleteTableRequest, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
-    ~ExperimentalWithCallbackMethod_DeleteTableFromInputTable() override {
+    ~WithCallbackMethod_DeleteTableFromInputTable() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
@@ -292,20 +236,11 @@ class InputTableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
     virtual ::grpc::ServerUnaryReactor* DeleteTableFromInputTable(
-      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* /*response*/)
-    #else
-    virtual ::grpc::experimental::ServerUnaryReactor* DeleteTableFromInputTable(
-      ::grpc::experimental::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* /*response*/)
-    #endif
-      { return nullptr; }
+      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::DeleteTableRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::DeleteTableResponse* /*response*/)  { return nullptr; }
   };
-  #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-  typedef ExperimentalWithCallbackMethod_AddTableToInputTable<ExperimentalWithCallbackMethod_DeleteTableFromInputTable<Service > > CallbackService;
-  #endif
-
-  typedef ExperimentalWithCallbackMethod_AddTableToInputTable<ExperimentalWithCallbackMethod_DeleteTableFromInputTable<Service > > ExperimentalCallbackService;
+  typedef WithCallbackMethod_AddTableToInputTable<WithCallbackMethod_DeleteTableFromInputTable<Service > > CallbackService;
+  typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_AddTableToInputTable : public BaseClass {
    private:
@@ -381,27 +316,17 @@ class InputTableService final {
     }
   };
   template <class BaseClass>
-  class ExperimentalWithRawCallbackMethod_AddTableToInputTable : public BaseClass {
+  class WithRawCallbackMethod_AddTableToInputTable : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    ExperimentalWithRawCallbackMethod_AddTableToInputTable() {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::Service::
-    #else
-      ::grpc::Service::experimental().
-    #endif
-        MarkMethodRawCallback(0,
+    WithRawCallbackMethod_AddTableToInputTable() {
+      ::grpc::Service::MarkMethodRawCallback(0,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                   ::grpc::CallbackServerContext*
-    #else
-                   ::grpc::experimental::CallbackServerContext*
-    #endif
-                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->AddTableToInputTable(context, request, response); }));
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->AddTableToInputTable(context, request, response); }));
     }
-    ~ExperimentalWithRawCallbackMethod_AddTableToInputTable() override {
+    ~WithRawCallbackMethod_AddTableToInputTable() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
@@ -409,37 +334,21 @@ class InputTableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
     virtual ::grpc::ServerUnaryReactor* AddTableToInputTable(
-      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
-    #else
-    virtual ::grpc::experimental::ServerUnaryReactor* AddTableToInputTable(
-      ::grpc::experimental::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
-    #endif
-      { return nullptr; }
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class ExperimentalWithRawCallbackMethod_DeleteTableFromInputTable : public BaseClass {
+  class WithRawCallbackMethod_DeleteTableFromInputTable : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    ExperimentalWithRawCallbackMethod_DeleteTableFromInputTable() {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::Service::
-    #else
-      ::grpc::Service::experimental().
-    #endif
-        MarkMethodRawCallback(1,
+    WithRawCallbackMethod_DeleteTableFromInputTable() {
+      ::grpc::Service::MarkMethodRawCallback(1,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                   ::grpc::CallbackServerContext*
-    #else
-                   ::grpc::experimental::CallbackServerContext*
-    #endif
-                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->DeleteTableFromInputTable(context, request, response); }));
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->DeleteTableFromInputTable(context, request, response); }));
     }
-    ~ExperimentalWithRawCallbackMethod_DeleteTableFromInputTable() override {
+    ~WithRawCallbackMethod_DeleteTableFromInputTable() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
@@ -447,14 +356,8 @@ class InputTableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
     virtual ::grpc::ServerUnaryReactor* DeleteTableFromInputTable(
-      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
-    #else
-    virtual ::grpc::experimental::ServerUnaryReactor* DeleteTableFromInputTable(
-      ::grpc::experimental::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
-    #endif
-      { return nullptr; }
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_AddTableToInputTable : public BaseClass {

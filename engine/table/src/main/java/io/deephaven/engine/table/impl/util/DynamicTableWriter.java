@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
@@ -12,7 +11,6 @@ import io.deephaven.qst.type.Type;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.QueryConstants;
@@ -392,19 +390,20 @@ public class DynamicTableWriter implements TableWriter {
         this.columnNames = new String[nCols];
         this.arrayColumnSources = new ArrayBackedColumnSource[nCols];
         int ii = 0;
-        final DataColumn[] columns = table.getColumns();
         for (Map.Entry<String, ColumnSource<?>> entry : sources.entrySet()) {
-            columnNames[ii] = entry.getKey();
-            ColumnSource<?> source = entry.getValue();
-            if (source instanceof ArrayBackedColumnSource) {
-                arrayColumnSources[ii] = (ArrayBackedColumnSource) source;
-            }
-            if (constantValues.containsKey(columnNames[ii])) {
+            final String columnName = columnNames[ii] = entry.getKey();
+            final ColumnSource<?> source = entry.getValue();
+            if (constantValues.containsKey(columnName)) {
                 continue;
             }
-            final int index = ii;
-            factoryMap.put(columns[index].getName(),
-                    (currentRow) -> createRowSetter(columns[index].getType(), arrayColumnSources[index]));
+            if (source instanceof ArrayBackedColumnSource) {
+                arrayColumnSources[ii] = (ArrayBackedColumnSource) source;
+            } else {
+                throw new IllegalStateException(
+                        "Expected ArrayBackedColumnSource, instead found " + source.getClass());
+            }
+            factoryMap.put(columnName,
+                    (currentRow) -> createRowSetter(source.getType(), (ArrayBackedColumnSource) source));
             ++ii;
         }
         UpdateGraphProcessor.DEFAULT.addSource(table);

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Require;
@@ -183,7 +186,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                     recorder.getRemoved().copy(),
                     recorder.getModified().copy(),
                     recorder.getShifted(),
-                    resultTable.modifiedColumnSet);
+                    resultTable.getModifiedColumnSetForUpdates());
 
             transformer.clearAndTransform(recorder.getModifiedColumnSet(), downstream.modifiedColumnSet());
 
@@ -232,7 +235,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                                         RowSetFactory.empty(),
                                         RowSetFactory.empty(),
                                         RowSetShiftData.EMPTY,
-                                        resultTable.modifiedColumnSet);
+                                        resultTable.getModifiedColumnSetForUpdates());
                     }
 
                     downstream.modifiedColumnSet().setAll(holder.getColumnName());

@@ -3,14 +3,15 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom configurations.dhUtil, commonsLang3
-    testCompile.extendsFrom fishBaseTest
+    implementation.extendsFrom configurations.dhUtil, commonsLang3
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {
-    compile project(':log-factory')
+    implementation project(':log-factory')
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

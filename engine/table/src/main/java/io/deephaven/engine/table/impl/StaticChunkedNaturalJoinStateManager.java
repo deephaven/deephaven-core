@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.engine.table.impl;
 
@@ -106,6 +106,8 @@ class StaticChunkedNaturalJoinStateManager
     // region extra variables
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     StaticChunkedNaturalJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
      // region constructor arguments

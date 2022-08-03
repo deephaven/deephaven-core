@@ -12,9 +12,14 @@ dependencies {
   Classpaths.inheritGrpcPlatform(project, 'api')
   api 'io.grpc:grpc-api'
   implementation 'io.grpc:grpc-core'
+  implementation 'io.grpc:grpc-netty'
 
   // TODO(deephaven-core#1783): Make proto-backplane-grpc implementation dependency
   api project(':proto:proto-backplane-grpc')
+
+  api project(':ssl-config')
+  implementation project(':ssl-kickstart')
+  Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-netty')
 
   Classpaths.inheritImmutables(project)
   Classpaths.inheritAutoService(project)
@@ -25,7 +30,7 @@ dependencies {
   testImplementation 'org.junit.jupiter:junit-jupiter'
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
   testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
-  testImplementation 'junit:junit:4.13.2'
+  Classpaths.inheritJUnitClassic(project, 'testImplementation')
   testImplementation 'io.grpc:grpc-testing'
 
   Classpaths.inheritAssertJ(project)

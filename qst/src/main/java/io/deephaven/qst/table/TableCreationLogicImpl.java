@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
@@ -21,6 +24,6 @@ final class TableCreationLogicImpl implements TableCreationLogic {
     public <T extends TableOperations<T, T>> T create(TableCreator<T> creation) {
         // noinspection RedundantTypeArguments
         return TableCreator.<T, T>create(creation, i -> i, i -> i, table).map().get(table)
-                .walk(new GetOutput<>()).out();
+                .walk(new GetOutput<>());
     }
 }

@@ -1,9 +1,9 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.plot;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -48,6 +48,7 @@ import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.time.calendar.BusinessCalendar;
 import groovy.lang.Closure;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.*;
@@ -214,6 +215,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
                 return PlotStyle.OHLC;
             case PIE:
                 return PlotStyle.PIE;
+            case TREEMAP:
+                return PlotStyle.TREEMAP;
             default:
                 throw new PlotUnsupportedOperationException(
                         "No default plot style for chart type: " + chart.getChartType(), this);
@@ -252,6 +255,14 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         initialize();
     }
 
+    private void configureTreemapPlot() {
+        this.setDimension(2);
+        chart.setChartType(ChartType.TREEMAP);
+        xAxis().setType(AxisImpl.Type.CATEGORY);
+        yAxis().setType(AxisImpl.Type.NUMBER);
+        initialize();
+    }
+
     private void initialize() {
         chart.setInitialized(true);
     }
@@ -267,12 +278,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         if (sds instanceof SelectableDataSetOneClick) {
             Collections.addAll(cols, ((SelectableDataSetOneClick) sds).getByColumns());
         }
-
         final Collection<? extends Aggregation> aggs = aggSupplier.get();
-        final Collection<? extends Selectable> selectableCols = Selectable.from(cols);
-        final SelectColumn[] gbsColumns = SelectColumn.from(selectableCols);
-        final Function<Table, Table> applyAggs = t -> t.aggBy(aggs, selectableCols);
-        return sds.transform(MemoizedOperationKey.aggBy(aggs, gbsColumns), applyAggs);
+        final Collection<? extends ColumnName> columnNames = ColumnName.from(cols);
+        final Function<Table, Table> applyAggs = t -> t.aggBy(aggs, columnNames);
+        return sds.transform(MemoizedOperationKey.aggBy(aggs, columnNames), applyAggs);
     }
 
     private static SelectableDataSet getLastBySelectableDataSet(final SelectableDataSet sds, final String... columns) {
@@ -1853,6 +1862,37 @@ public class AxesImpl implements Axes, PlotExceptionCause {
                 new CategoryDataSeriesSwappablePartitionedTable(this, dataSeries.nextId(), seriesName, t, categories, y),
                 null, new SwappableTable[] {t});
     }
+    // endregion
+
+    // region Tree Map
+
+    private CategoryDataSeriesInternal treemapPlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles,
+                                               final SwappableTable[] swappableTables) {
+        configureTreemapPlot();
+
+        if (tableHandles != null) {
+            for (TableHandle tableHandle : tableHandles) {
+                ds.addTableHandle(tableHandle);
+            }
+        }
+
+        if (swappableTables != null) {
+            for (SwappableTable swappableTable : swappableTables) {
+                ds.addSwappableTable(swappableTable);
+            }
+        }
+
+        registerDataSeries(SeriesCollection.SeriesType.CATEGORY, false, ds);
+        return ds;
+    }
+
+
+    @Override
+    public CategoryDataSeries treemapPlot(Comparable seriesName, Table t, String ids, String parents, @Nullable String values, @Nullable String labels, @Nullable String hoverText, @Nullable String color) {
+        final TableHandle h = PlotUtils.createCategoryTableHandle(t, new String[] { ids }, parents, values, labels, hoverText, color);
+        return treemapPlot(new CategoryTreemapDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, ids, parents, values, labels, hoverText, color), new TableHandle[]{h}, null);
+    }
+
     // endregion
 
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////

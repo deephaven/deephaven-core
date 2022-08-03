@@ -1,18 +1,19 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.SelectColumn;
-import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.server.table.validation.ColumnExpressionValidator;
 import io.grpc.StatusRuntimeException;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,6 +42,12 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         if (request.getAggregatesCount() == 0) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "ComboAggregateRequest incorrectly has zero aggregates provided");
+        }
+        for (String groupByColumn : request.getGroupByColumnsList()) {
+            if (!NameValidator.isValidColumnName(groupByColumn)) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "ComboAggregateRequest group by");
+            }
         }
         if (isSimpleAggregation(request)) {
             // this is a simple aggregation, make sure the user didn't mistakenly set extra properties
@@ -105,12 +112,11 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
     public Table create(final ComboAggregateRequest request,
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
-
         final Table parent = sourceTables.get(0).get();
-        final String[] groupBySpecs = request.getGroupByColumnsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-        final SelectColumn[] groupByColumns = SelectColumnFactory.getExpressions(groupBySpecs);
-        ColumnExpressionValidator.validateColumnExpressions(groupByColumns, groupBySpecs, parent);
-
+        final ColumnName[] groupByColumns = request.getGroupByColumnsList()
+                .stream()
+                .map(ColumnName::of)
+                .toArray(ColumnName[]::new);
         final Table result;
         if (isSimpleAggregation(request)) {
             // This is a special case with a special operator that can be invoked right off of the table api.
@@ -121,7 +127,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         return result;
     }
 
-    private static Table singleAggregateHelper(final Table parent, final SelectColumn[] groupByColumns,
+    private static Table singleAggregateHelper(final Table parent, final ColumnName[] groupByColumns,
             final ComboAggregateRequest.Aggregate aggregate) {
         switch (aggregate.getType()) {
             case SUM:
@@ -155,10 +161,10 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         }
     }
 
-    private static Table comboAggregateHelper(final Table parent, final SelectColumn[] groupByColumns,
+    private static Table comboAggregateHelper(final Table parent, final ColumnName[] groupByColumns,
             final List<ComboAggregateRequest.Aggregate> aggregates) {
         final Set<String> groupByColumnSet =
-                Arrays.stream(groupByColumns).map(SelectColumn::getName).collect(Collectors.toSet());
+                Arrays.stream(groupByColumns).map(ColumnName::name).collect(Collectors.toSet());
         final Function<ComboAggregateRequest.Aggregate, String[]> getPairs =
                 agg -> getColumnPairs(parent, groupByColumnSet, agg);
 
@@ -171,6 +177,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
     private static String[] getColumnPairs(@NotNull final Table parent,
             @NotNull final Set<String> groupByColumnSet,
             @NotNull final ComboAggregateRequest.Aggregate agg) {
+        // See io.deephaven.qst.table.AggAllByExclusions
         if (agg.getMatchPairsCount() == 0) {
             // If not specified, we apply the aggregate to all columns not "otherwise involved"
             return parent.getDefinition().getColumnStream()

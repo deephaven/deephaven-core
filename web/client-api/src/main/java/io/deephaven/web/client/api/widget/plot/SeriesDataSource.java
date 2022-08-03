@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.web.client.api.widget.plot;
 
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
@@ -21,7 +24,7 @@ public class SeriesDataSource {
         if (sourceDescriptor.getTableId() != -1) {
             columnType =
                     tables.get(sourceDescriptor.getTableId()).findColumn(sourceDescriptor.getColumnName()).getType();
-        } else if (sourceDescriptor.getTableMapId() != -1) {
+        } else if (sourceDescriptor.getPartitionedTableId() != -1) {
             columnType = sourceDescriptor.getColumnType();
         } else {
             throw new SeriesDataSourceException(this, "No table available for source");

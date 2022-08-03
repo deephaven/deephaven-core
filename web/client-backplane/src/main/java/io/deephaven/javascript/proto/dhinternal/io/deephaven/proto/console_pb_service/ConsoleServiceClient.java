@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service;
 
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
@@ -12,6 +15,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Ex
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ExecuteCommandResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetHeapInfoRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetHeapInfoResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.StartConsoleRequest;
@@ -398,6 +403,97 @@ public class ConsoleServiceClient {
         @JsOverlay
         default boolean isGetConsoleTypesMetadata_or_callbackFn() {
             return (Object) this instanceof ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackFn;
+        }
+    }
+
+    @JsFunction
+    public interface GetHeapInfoCallbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static ConsoleServiceClient.GetHeapInfoCallbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(ConsoleServiceClient.GetHeapInfoCallbackFn.P0Type p0, GetHeapInfoResponse p1);
+    }
+
+    @JsFunction
+    public interface GetHeapInfoMetadata_or_callbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static ConsoleServiceClient.GetHeapInfoMetadata_or_callbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                ConsoleServiceClient.GetHeapInfoMetadata_or_callbackFn.P0Type p0, GetHeapInfoResponse p1);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface GetHeapInfoMetadata_or_callbackUnionType {
+        @JsOverlay
+        static ConsoleServiceClient.GetHeapInfoMetadata_or_callbackUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default BrowserHeaders asBrowserHeaders() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default ConsoleServiceClient.GetHeapInfoMetadata_or_callbackFn asGetHeapInfoMetadata_or_callbackFn() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isBrowserHeaders() {
+            return (Object) this instanceof BrowserHeaders;
+        }
+
+        @JsOverlay
+        default boolean isGetHeapInfoMetadata_or_callbackFn() {
+            return (Object) this instanceof ConsoleServiceClient.GetHeapInfoMetadata_or_callbackFn;
         }
     }
 
@@ -803,6 +899,58 @@ public class ConsoleServiceClient {
     public native UnaryResponse getConsoleTypes(
             GetConsoleTypesRequest requestMessage,
             ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType metadata_or_callback);
+
+    @JsOverlay
+    public final UnaryResponse getHeapInfo(
+            GetHeapInfoRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.GetHeapInfoCallbackFn callback) {
+        return getHeapInfo(
+                requestMessage,
+                Js.<ConsoleServiceClient.GetHeapInfoMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse getHeapInfo(
+            GetHeapInfoRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return getHeapInfo(
+                requestMessage,
+                Js.<ConsoleServiceClient.GetHeapInfoMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
+    public final UnaryResponse getHeapInfo(
+            GetHeapInfoRequest requestMessage,
+            ConsoleServiceClient.GetHeapInfoMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.GetHeapInfoCallbackFn callback) {
+        return getHeapInfo(
+                requestMessage,
+                Js.<ConsoleServiceClient.GetHeapInfoMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse getHeapInfo(
+            GetHeapInfoRequest requestMessage,
+            ConsoleServiceClient.GetHeapInfoMetadata_or_callbackFn metadata_or_callback) {
+        return getHeapInfo(
+                requestMessage,
+                Js.<ConsoleServiceClient.GetHeapInfoMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse getHeapInfo(
+            GetHeapInfoRequest requestMessage,
+            ConsoleServiceClient.GetHeapInfoMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.GetHeapInfoCallbackFn callback);
+
+    public native UnaryResponse getHeapInfo(
+            GetHeapInfoRequest requestMessage,
+            ConsoleServiceClient.GetHeapInfoMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse nextAutoCompleteStream(

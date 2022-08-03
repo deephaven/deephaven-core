@@ -1,13 +1,13 @@
 /*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 syntax = "proto3";
 
 package io.deephaven.proto.backplane.grpc;
 
 option java_multiple_files = true;
 option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/table";
 
 import "deephaven/proto/ticket.proto";
 
@@ -26,11 +26,6 @@ service TableService {
    * Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
    */
   rpc FetchPandasTable(FetchPandasTableRequest) returns (ExportedTableCreationResponse) {}
-
-  /*
-   * Fetches a TableMap from an existing source ticket and exports it to the local session result ticket.
-   */
-  rpc FetchTableMap(FetchTableMapRequest) returns (FetchTableMapResponse) {}
 
   /*
    * Create a table that has preview columns applied to an existing source table.
@@ -244,15 +239,6 @@ message ApplyPreviewColumnsRequest {
 message FetchPandasTableRequest {
   TableReference source_id = 1;
   Ticket result_id = 2;
-}
-
-message FetchTableMapRequest {
-  TableReference source_id = 1;
-  Ticket result_id = 2;
-}
-
-message FetchTableMapResponse {
-  // TODO (core#62): Implement Table Maps
 }
 
 message ExportedTableUpdatesRequest {

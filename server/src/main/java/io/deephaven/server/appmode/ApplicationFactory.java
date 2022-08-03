@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.appmode;
 
 import com.google.rpc.Code;
@@ -9,9 +12,9 @@ import io.deephaven.appmode.QSTApplication;
 import io.deephaven.appmode.ScriptApplication;
 import io.deephaven.appmode.StaticClassApplication;
 import io.deephaven.engine.util.GroovyDeephavenSession;
-import io.deephaven.engine.util.PythonDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.integrations.python.PythonDeephavenSession;
 
 import java.nio.file.Path;
 import java.util.List;

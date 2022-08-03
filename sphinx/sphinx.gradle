@@ -128,7 +128,6 @@ def pythonDocs = makePyDocTask('pythonDocs', 'dh-python-docs', [("$projectDir/so
 project.tasks.named('pythonDocsPrepareDocker').configure {
     dependsOn ':Generators:generateFigureImmutable'
     dependsOn ':Generators:generatePythonFigureWrapper'
-    dependsOn ':Generators:generatePythonIntegrationStaticMethods'
 }
 
 makePyDocTask('pydeephavenDocs', 'pydeephaven', [

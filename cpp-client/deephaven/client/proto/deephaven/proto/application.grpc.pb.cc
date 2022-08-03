@@ -43,7 +43,7 @@ ApplicationService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>&
   return ::grpc::internal::ClientReaderFactory< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>::Create(channel_.get(), rpcmethod_ListFields_, context, request);
 }
 
-void ApplicationService::Stub::experimental_async::ListFields(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest* request, ::grpc::experimental::ClientReadReactor< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* reactor) {
+void ApplicationService::Stub::async::ListFields(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ListFieldsRequest* request, ::grpc::ClientReadReactor< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>* reactor) {
   ::grpc::internal::ClientCallbackReaderFactory< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate>::Create(stub_->channel_.get(), stub_->rpcmethod_ListFields_, context, request, reactor);
 }
 

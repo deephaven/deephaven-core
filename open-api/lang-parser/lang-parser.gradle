@@ -10,14 +10,11 @@ plugins {
 apply from: "$rootDir/gradle/web-common.gradle"
 
 dependencies {
-    compile project(':open-api-shared-ide')
-    compile project(':open-api-shared-fu')
-    compile project(':log-factory')
-    compile project(':proto:proto-backplane-grpc')
+    api project(':open-api-shared-fu')
+    implementation project(':log-factory')
+    api project(':proto:proto-backplane-grpc')
 }
-Classpaths.inheritJsInterop project, 'jsinterop-annotations'
-Classpaths.inheritJavaParser project
-GwtTools.gwtLib project
+Classpaths.inheritJavaParser(project, 'implementation')
 
 // All javacc plugin configuration disabled to avoid weird IntelliJ breakage
 // when we try to manually patch the plugin.  Will reinstate once upstream

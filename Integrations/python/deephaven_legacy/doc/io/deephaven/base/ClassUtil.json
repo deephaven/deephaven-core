@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.base.ClassUtil",
- "methods": {
-  "generify": "Note: Java generics information - <T>\n\n:param c: java.lang.Class\n:return: java.lang.Class<T>",
-  "lookupClass": "Finds and caches Class instances based on name. This implementation can handle the strings created by\n Class.getName() and Class.getCanonicalName(), and some mixture of the two. JNI names are not\n supported.\n\n:param name: (java.lang.String) - the name of the class to lookup.\n:return: (java.lang.Class<?>) A class instance"
- },
- "path": "io.deephaven.base.ClassUtil",
- "typeName": "class"
-}

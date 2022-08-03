@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.integrations.python.PythonThrowingRunnable",
- "methods": {},
- "path": "io.deephaven.integrations.python.PythonThrowingRunnable",
- "text": "A FunctionalInterfaces.ThrowingRunnable implementation which executes a Python callable.",
- "typeName": "class"
-}

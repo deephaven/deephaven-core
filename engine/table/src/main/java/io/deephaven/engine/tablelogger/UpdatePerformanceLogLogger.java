@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2019 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-
 package io.deephaven.engine.tablelogger;
 
 import java.io.IOException;
@@ -189,7 +188,7 @@ public class UpdatePerformanceLogLogger
         flush(setter);
     }
 
-    private static final TableDefinition TABLE_DEFINITION = TableDefinition.tableDefinition(columnDbTypes, columnNames);
+    private static final TableDefinition TABLE_DEFINITION = TableDefinition.from(columnNames, columnDbTypes);
 
     public static TableDefinition getTableDefinition() {
         return TABLE_DEFINITION;

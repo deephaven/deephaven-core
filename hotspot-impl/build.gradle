@@ -14,3 +14,7 @@ tasks.withType(JavaCompile).configureEach {
     // Explicitly set the source compatibility so gradle will invoke javac with `-source 11` instead of `--release`
     sourceCompatibility = 11
 }
+
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('-add-exports', 'java.management/sun.management=ALL-UNNAMED')
+}

@@ -2,69 +2,39 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
     id 'com.avast.gradle.docker-compose'
-    id 'idea'
 }
 
 evaluationDependsOn ':docker-server'
 
 configurations {
-    compile.extendsFrom dhIntegrations
-    testCompile.extendsFrom fishBaseTest
+    implementation.extendsFrom dhIntegrations
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {
 
-    compile project(':engine-table')
+    implementation project(':engine-table')
+    implementation project(':plugin')
+    implementation project(':Configuration')
+    implementation project(':log-factory')
+
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
-    testRuntime project(':configs'),
-            project(':test-configs'),
-            // need these projects so session default imports / generated type wrappers resolve correctly
-            project(':Numerics'),
-            project(':Plot'),
-            project(':extensions-kafka'),
-            project(':extensions-parquet-table')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
+    // need these projects so session default imports / generated type wrappers resolve correctly
+    testRuntimeOnly project(':Numerics')
+    testRuntimeOnly project(':Plot')
+    testRuntimeOnly project(':extensions-kafka')
+    testRuntimeOnly project(':extensions-parquet-table')
 }
 
 sourceSets {
-    main {
-        java {
-            srcDir 'src/main/java'
-        }
-        // For gradle, we _probably_ do not want to put r into the jar,
-        // and definitely do not want to put in python, which is delivered as a wheel.
-        // This used to be `resources.srcDirs '.'` with inclusions for 'r' and 'python'
-        // We can't use srcDirs '.' and expect IntelliJ to like it, so we'll just remove
-        // the sourceSet resources entirely, and then manually staple r into the jar
-        // until we can verify that it is safe to remove (and then we'll just remove the jar {} block below)
-        resources.srcDirs = ['src/main/resources']
-    }
     test {
-        java.srcDirs = ['src/test/java']
-        resources.srcDirs = ['test_python', 'src/test/resources']
-    }
-}
-
-// Even though we don't want gradle to treat these directories as resources (for jar packing),
-// we do want IntelliJ to treat them as resources in IDE.
-idea {
-    module {
-        resourceDirs += [file('r'), file('python')]
-        testResourceDirs += [file('python/test')]
-    }
-}
-
-// This wiring is probably not needed.
-// It only exists to maintain legacy jar structure
-// (we changed the sourceSets.main.resources srcDirs,
-// which affects where files would normally be packed into the jar).
-// TODO: verify nobody pulls r from the Integrations jar, then delete this)
-(tasks.jar as Jar).configure {
-    Jar j ->
-        j.from('r') {
-            CopySpec c->
-                c.into 'r'
+        resources {
+            srcDirs += ['test_python']
         }
+    }
 }
 
 JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
@@ -131,19 +101,8 @@ Closure composeConfig = { task ->
     task.containerDependencies.finalizedBy = dockerCompose.downTask
 }
 
-def pyTestLegacy = runInDocker("test-py-37-legacy", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'], composeConfig)
-def pyFunctionalTestLegacy = runInDocker('py-functional-test-legacy', 'python', ['/bin/bash', 'run-functional-tests.sh'])
 def pyTest = runInDocker('test-py-deephaven', '../py/server', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)
 def pyTestIntegration = runInDocker('test-py-deephaven-integration', '../py/server', ['/bin/bash', '-c', 'PYTHONPATH=/python integration-tests/run-tests.sh'], composeConfig)
-pyTestLegacy.configure({
-    onlyIf { TestTools.shouldRunTests(project) }
-})
-tasks.getByName('check').dependsOn(pyTestLegacy)
-
-pyFunctionalTestLegacy.configure({
-    onlyIf { TestTools.shouldRunTests(project) }
-})
-tasks.getByName('check').dependsOn(pyFunctionalTestLegacy)
 
 pyTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }

@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit Immutable2DCharArraySource and regenerate
@@ -94,6 +97,11 @@ public class Immutable2DDoubleArraySource extends AbstractDeferredGroupingColumn
 
     public final double getUnsafe(long key) {
         return data[keyToSegment(key)][keyToOffset(key)];
+    }
+
+    @Override
+    public final void setNull(long key) {
+        data[keyToSegment(key)][keyToOffset(key)] = NULL_DOUBLE;
     }
 
     @Override

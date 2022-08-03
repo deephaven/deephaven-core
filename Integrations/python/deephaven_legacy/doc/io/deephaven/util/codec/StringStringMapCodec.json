@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.codec.StringStringMapCodec",
- "methods": {},
- "path": "io.deephaven.util.codec.StringStringMapCodec",
- "text": "ObjectCodec implementation for Maps of String to String.\n\n Each map is encoded as an integer length, followed by UTF-8 encoded strings for each key and value.\n\n A null map is represented as an array of zero bytes.",
- "typeName": "class"
-}

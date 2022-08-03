@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.engine.table.impl.by;
 
@@ -160,6 +160,8 @@ class IncrementalChunkedOperatorAggregationStateManager
     private final WritableRowRedirection resultIndexToHashSlot = new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
     // endregion extra variables
 
+    // region constructor visibility
+    // endregion constructor visibility
     IncrementalChunkedOperatorAggregationStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
                                                       // region constructor arguments

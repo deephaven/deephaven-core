@@ -1,12 +1,11 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterSingleValueSource and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.attributes.Values;
@@ -21,6 +20,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
@@ -39,8 +39,8 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
     // region Constructor
     public IntegerSingleValueSource() {
         super(int.class);
-        current = QueryConstants.NULL_INT;
-        prev = QueryConstants.NULL_INT;
+        current = NULL_INT;
+        prev = NULL_INT;
     }
     // endregion Constructor
 
@@ -73,6 +73,13 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
     @Override
     public final void set(long key, int value) {
         set(value);
+    }
+
+    @Override
+    public final void setNull(long key) {
+        // region null set
+        set(NULL_INT);
+        // endregion null set
     }
 
     @Override
