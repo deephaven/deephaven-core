@@ -37,7 +37,8 @@ import java.util.List;
 @ExperimentalApi("https://github.com/grpc/grpc-java/issues/5066")
 public class GrpcServlet extends HttpServlet {
     @Grpc.TransportAttr
-    public static final Attributes.Key<List<X509Certificate>> MTLS_CERTIFICATE_KEY = Attributes.Key.create("dh-mtls-peer-certificate-chain");
+    public static final Attributes.Key<List<X509Certificate>> MTLS_CERTIFICATE_KEY =
+            Attributes.Key.create("dh-mtls-peer-certificate-chain");
 
     private static final long serialVersionUID = 1L;
 

@@ -9,23 +9,28 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import java.io.ByteArrayInputStream;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Provides access to the Context key to read the current client cert, if any.
  */
 public class MTlsCertificate {
+    private static final Logger logger = Logger.getLogger(MTlsCertificate.class.getName());
 
-    public static final Context.Key<List<X509Certificate>> CLIENT_CERTIFICATES = Context.key("mtls-client-certificates");
+    public static final Context.Key<List<X509Certificate>> CLIENT_CERTIFICATES =
+            Context.key("mtls-client-certificates");
 
     /**
-     * Default implementation for use with Grpc's own TRANSPORT_ATTR_SSL_SESSION, to easily convert to
-     * non-deprecated x509 certs.
+     * Default implementation for use with Grpc's own TRANSPORT_ATTR_SSL_SESSION, to easily convert to non-deprecated
+     * x509 certs.
      */
     public static ServerInterceptor DEFAULT_INTERCEPTOR = new AbstractMtlsClientCertificateInterceptor() {
         @Override
@@ -52,8 +57,8 @@ public class MTlsCertificate {
                     return Optional.of(Collections.unmodifiableList(javaCerts));
                 } catch (SSLPeerUnverifiedException pue) {
                     return Optional.empty();
-                } catch (Exception e) {
-//                    LOG.warn("Unable to get X509CertChain", e);
+                } catch (CertificateException e) {
+                    logger.log(Level.WARNING, "Unable to read X509CertChain due to certificate exception", e);
                     return Optional.empty();
                 }
             }

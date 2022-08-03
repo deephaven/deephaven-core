@@ -16,16 +16,17 @@ import java.util.Optional;
  */
 public abstract class AbstractMtlsClientCertificateInterceptor implements ServerInterceptor {
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
+            ServerCallHandler<ReqT, RespT> next) {
         return getTransportCertificates(call)
                 .map(x509Certificates -> Contexts.interceptCall(
                         Context.current().withValue(MTlsCertificate.CLIENT_CERTIFICATES, x509Certificates),
                         call,
                         headers,
-                        next)
-                )
+                        next))
                 .orElseGet(() -> next.startCall(call, headers));
     }
 
-    protected abstract <ReqT, RespT> Optional<List<X509Certificate>> getTransportCertificates(ServerCall<ReqT, RespT> call);
+    protected abstract <ReqT, RespT> Optional<List<X509Certificate>> getTransportCertificates(
+            ServerCall<ReqT, RespT> call);
 }
