@@ -424,7 +424,7 @@ public abstract class FlightMessageRoundTripTest {
 
                 int optOffset =
                         BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
-                                false, 1000);
+                                false, 1000, 4 * 1024 * 1024);
 
                 final int ticOffset =
                         BarrageSnapshotRequest.createTicketVector(metadata,

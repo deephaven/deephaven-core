@@ -45,7 +45,7 @@ class DoExchange extends FlightExampleBase {
 
             int optOffset =
                     BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
-                            false, 1000, 100 * 1024);
+                            false, 1000, 4 * 1024 * 1024);
 
             final int ticOffset =
                     BarrageSnapshotRequest.createTicketVector(metadata,
