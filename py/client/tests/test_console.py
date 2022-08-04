@@ -6,6 +6,7 @@ import unittest
 
 from pyarrow import csv
 
+from pydeephaven import DHError
 from tests.testbase import BaseTestCase
 
 
@@ -48,3 +49,7 @@ demo_table = (empty_table(table_size)
         pa_table = self.session.open_table('demo_table').snapshot()
         df = pa_table.to_pandas()
         self.assertEquals(1000, len(df.index))
+    
+    def test_open_invalid_table(self):
+        with self.assertRaises(DHError):
+            self.session.open_table('thistablereallyreallydoesnotexist')

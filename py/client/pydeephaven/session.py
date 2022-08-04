@@ -151,19 +151,6 @@ class Session:
                 raise DHError("could not cancel ListFields subscription")
             return resp.created if resp.created else []
     
-    def _fetch_named_table(self, name: str):
-        """ Returns the table with the given name on the server, or None if not found.
-        
-        Raises:
-            DHError
-        """
-        with self._r_lock:
-            fields = self._fetch_fields()
-            for field in fields:
-                if field.typed_ticket.type == 'Table' and field.application_id == 'scope' and field.field_name == name:
-                    return Table(session=self, ticket=field.typed_ticket.ticket)
-            return None
-    
     def _connect(self):
         with self._r_lock:
             self.grpc_channel, self.session_token, self._timeout = self.session_service.connect()
@@ -248,11 +235,19 @@ class Session:
             DHError
         """
         with self._r_lock:
-            table = self._fetch_named_table(name)
-            if table is None:
-                raise DHError(f"no table by the name {name}")
-            table_op = FetchTableOp()
-            return self.table_service.grpc_table_op(table, table_op)
+            ticket = ticket_pb2.Ticket(ticket=f's/{name}'.encode(encoding='ascii'))
+
+            faketable = Table(session=self, ticket=ticket)
+
+            try:
+                table_op = FetchTableOp()
+                return self.table_service.grpc_table_op(faketable, table_op)
+            except Exception as e:
+                if isinstance(e.__cause__, grpc.RpcError):
+                    if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
+                        raise DHError(f"no table by the name {name}") from None
+                
+                raise e
 
     def bind_table(self, name: str, table: Table) -> None:
         """ Bind a table to the given name on the server so that it can be referenced by that name.
