@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
+import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
@@ -33,7 +34,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public abstract class BaseDoubleUpdateByOperator implements UpdateByOperator {
+public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOperator {
     protected final WritableColumnSource<Double> outputSource;
     protected final WritableColumnSource<Double> maybeInnerSource;
 
@@ -49,7 +50,7 @@ public abstract class BaseDoubleUpdateByOperator implements UpdateByOperator {
 
     protected boolean initialized = false;
 
-    protected class Context implements UpdateContext {
+    protected class Context extends UpdateCumulativeContext {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
         public final SizedDoubleChunk<Values> outputValues;
         public boolean canProcessDirectly;

@@ -127,7 +127,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
         /** A Long Chunk for previous keys */
         WritableLongChunk<OrderedRowKeys> prevKeyChunk;
 
-        final long smallestModifiedKey;
+        final RowSet affectedRows;
 
         @SuppressWarnings("resource")
         UpdateContext(@NotNull final TableUpdate upstream,
@@ -158,8 +158,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
             final boolean upstreamAppendOnly =
                     isInitializeStep || UpdateByOperator.isAppendOnly(upstream, source.getRowSet().lastRowKeyPrev());
-            smallestModifiedKey = upstreamAppendOnly ? Long.MAX_VALUE
-                    : UpdateByOperator.determineSmallestVisitedKey(upstream, source.getRowSet());
 
             // noinspection unchecked
             this.postWorkingChunks = new SizedSafeCloseable[operators.length];
@@ -198,6 +196,20 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 operators[opIdx].initializeForUpdate(opContext[opIdx], upstream, source.getRowSet(), false,
                         upstreamAppendOnly);
             }
+
+            // retrieve the affected rows from all operator update contexts
+            WritableRowSet tmp = RowSetFactory.empty();
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (!opAffected[opIdx]) {
+                    continue;
+                }
+                // trigger the operator to determine its own set of affected rows (window-specific)
+                opContext[opIdx].determineAffectedRows(upstream, source.getRowSet(), upstreamAppendOnly);
+
+                // union the operator rowsets together to get a global set
+                tmp.insert(opContext[opIdx].getAffectedRows());
+            }
+            affectedRows = tmp;
         }
 
         public SharedContext getSharedContext() {
@@ -267,6 +279,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
         public void close() {
             sharedContext.close();
             keyChunk.close();
+            affectedRows.close();
 
             if (prevKeyChunk != null) {
                 prevKeyChunk.close();
@@ -380,23 +393,23 @@ class ZeroKeyUpdateBy extends UpdateBy {
                                     postWorkingChunks[slotPosition].get(),
                                     0);
                         } else if (type == UpdateType.Reprocess) {
-                            // TODO: When we reprocess rows, we are basically re-adding the entire table starting at the
-                            // lowest key.
-                            // Since every operator might start at a different key, we could try to be efficient and not
-                            // replay
-                            // chunks of rows to operators that don't actually need them.
-                            //
-                            // At the time of writing, any op that reprocesses uses the same logic to decide when,
-                            // so there is no need for fancyness deciding if we need to push this particular set
-                            // of RowSequence through.
-                            prepareValuesChunkFor(opIdx, slotPosition, false, true, chunkOk, null,
-                                    null, postWorkingChunks[slotPosition].get(),
-                                    null, fillContexts[slotPosition].get());
-                            currentOp.reprocessChunk(opContext[opIdx],
-                                    chunkOk,
-                                    keyChunk.get(),
-                                    postWorkingChunks[slotPosition].get(),
-                                    source.getRowSet());
+                            // is this chunk relevant to this operator? If so, then intersect and process only the
+                            // relevant rows
+                            if (chunkOk.firstRowKey() <= opContext[opIdx].getAffectedRows().lastRowKey()
+                                    && chunkOk.lastRowKey() >= opContext[opIdx].getAffectedRows().firstRowKey()) {
+                                try (final RowSet rs = chunkOk.asRowSet();
+                                     final RowSet intersect = rs.intersect(opContext[opIdx].getAffectedRows())) {
+
+                                    prepareValuesChunkFor(opIdx, slotPosition, false, true, intersect, intersect,
+                                            null, postWorkingChunks[slotPosition].get(),
+                                            null, fillContexts[slotPosition].get());
+                                    currentOp.reprocessChunk(opContext[opIdx],
+                                            intersect,
+                                            keyChunk.get(),
+                                            postWorkingChunks[slotPosition].get(),
+                                            source.getRowSet());
+                                }
+                            }
                         }
                     }
                 }
@@ -410,42 +423,41 @@ class ZeroKeyUpdateBy extends UpdateBy {
          */
         private void reprocessRows(RowSetShiftData shifted) {
             // Get a sub-index of the source from that minimum reprocessing index and make sure we update our
+            // Get a sub-index of the source from that minimum reprocessing index and make sure we update our
             // contextual chunks and FillContexts to an appropriate size for this step.
             final RowSet sourceRowSet = source.getRowSet();
-            try (final RowSet indexToReprocess =
-                    sourceRowSet.subSetByKeyRange(smallestModifiedKey, sourceRowSet.lastRowKey())) {
-                final int newChunkSize = (int) Math.min(control.chunkCapacityOrDefault(), indexToReprocess.size());
-                setChunkSize(newChunkSize);
 
-                final long keyBefore;
-                try (final RowSet.SearchIterator sit = sourceRowSet.searchIterator()) {
-                    keyBefore = sit.binarySearchValue(
-                            (compareTo, ignored) -> Long.compare(smallestModifiedKey - 1, compareTo), 1);
-                }
+            final int newChunkSize = (int) Math.min(control.chunkCapacityOrDefault(), affectedRows.size());
+            setChunkSize(newChunkSize);
 
-                for (int opRowSet = 0; opRowSet < operators.length; opRowSet++) {
-                    if (opAffected[opRowSet]) {
-                        operators[opRowSet].resetForReprocess(opContext[opRowSet], sourceRowSet, keyBefore);
+            for (int opIndex = 0; opIndex < operators.length; opIndex++) {
+                if (opAffected[opIndex]) {
+                    final long keyStart = opContext[opIndex].getAffectedRows().firstRowKey();
+                    final long keyBefore;
+                    try (final RowSet.SearchIterator sit = sourceRowSet.searchIterator()) {
+                        keyBefore = sit.binarySearchValue(
+                                (compareTo, ignored) -> Long.compare(keyStart - 1, compareTo), 1);
                     }
+                    operators[opIndex].resetForReprocess(opContext[opIndex], sourceRowSet, keyBefore);
                 }
-
-                // We will not mess with shifts if we are using a redirection because we'll have applied the shift
-                // to the redirection index already by now.
-                if (rowRedirection == null && shifted.nonempty()) {
-                    try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
-                        shifted.apply((begin, end, delta) -> {
-                            try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
-                                for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                                    operators[opIdx].applyOutputShift(opContext[opIdx], subRowSet, delta);
-                                }
-                            }
-                        });
-                    }
-                }
-
-                // Now iterate index to reprocess.
-                doUpdate(indexToReprocess, indexToReprocess, UpdateType.Reprocess);
             }
+
+            // We will not mess with shifts if we are using a redirection because we'll have applied the shift
+            // to the redirection index already by now.
+            if (rowRedirection == null && shifted.nonempty()) {
+                try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
+                    shifted.apply((begin, end, delta) -> {
+                        try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
+                            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                                operators[opIdx].applyOutputShift(opContext[opIdx], subRowSet, delta);
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Now iterate rowset to reprocess.
+            doUpdate(affectedRows, affectedRows, UpdateType.Reprocess);
         }
 
         /**

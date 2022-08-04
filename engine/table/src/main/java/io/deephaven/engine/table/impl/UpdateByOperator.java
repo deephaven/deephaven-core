@@ -92,20 +92,6 @@ public interface UpdateByOperator {
     /**
      * Find the smallest valued key that participated in the upstream {@link TableUpdate}.
      *
-     * @param upstream the update
-     * @return the smallest key that participated in any part of the update.
-     */
-    static long determineSmallestVisitedKey(@NotNull final TableUpdate upstream, @NotNull final RowSet affected) {
-        return determineSmallestVisitedKey(upstream.added(),
-                upstream.modified(),
-                upstream.removed(),
-                upstream.shifted(),
-                affected);
-    }
-
-    /**
-     * Find the smallest valued key that participated in the upstream {@link TableUpdate}.
-     *
      * @param added the added rows
      * @param modified the modified rows
      * @param removed the removed rows
@@ -113,7 +99,7 @@ public interface UpdateByOperator {
      *
      * @return the smallest key that participated in any part of the update.
      */
-    static long determineSmallestVisitedKey(@NotNull final RowSet added,
+    static long smallestAffectedKey(@NotNull final RowSet added,
             @NotNull final RowSet modified,
             @NotNull final RowSet removed,
             @NotNull final RowSetShiftData shifted,
@@ -181,6 +167,33 @@ public interface UpdateByOperator {
      * updates.
      */
     interface UpdateContext extends SafeCloseable {
+        /**
+         * Determine all the rows affected by the {@link TableUpdate} that need to be recomputed
+         *
+         * @param upstream the update
+         * @param source the rowset of the parent table (affected rows will be a subset)
+         */
+        default void determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final RowSet source,
+                                           final boolean upstreamAppendOnly) {
+            throw (new IllegalStateException("A raw UpdateContext cannot execute determineAffectedRows()"));
+        }
+
+        /**
+         * Return the rows computed by the {@Code determineAffectedRows()}
+         */
+        default RowSet getAffectedRows() {
+            throw (new IllegalStateException("A raw UpdateContext cannot execute getAffectedRows()"));
+        }
+
+        /**
+         * Set all the rows that need to be computed by this operator
+         *
+         * @param affected the rowset of the parent table (affected is subset)
+         */
+        default void setAffectedRows(@NotNull final RowSet affected) {
+            throw (new IllegalStateException("A raw UpdateContext cannot execute setAffectedRows()"));
+
+        }
     }
 
     /**

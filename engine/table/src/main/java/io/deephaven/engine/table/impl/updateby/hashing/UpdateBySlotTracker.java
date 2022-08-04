@@ -174,7 +174,7 @@ public class UpdateBySlotTracker {
                 wasAppendOnly = false;
             }
 
-            this.smallestModifiedKey = UpdateByOperator.determineSmallestVisitedKey(added,
+            this.smallestModifiedKey = UpdateByOperator.smallestAffectedKey(added,
                     modified,
                     removed,
                     shifts,

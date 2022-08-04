@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.UpdateBy;
+import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +29,7 @@ import java.util.Map;
 /**
  * An operator that simply remembers the current chunks during the add and reprocess phases.
  */
-public class LongRecordingUpdateByOperator implements UpdateByOperator {
+public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
     private final String inputColumnName;
     private final String[] affectingColumns;
     private final ColumnSource<?> columnSource;
@@ -42,7 +43,7 @@ public class LongRecordingUpdateByOperator implements UpdateByOperator {
         this.columnSource = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
     }
 
-    private class RecordingContext implements UpdateContext {
+    private class RecordingContext extends UpdateCumulativeContext {
         private LongChunk<Values> addedChunk;
 
         @Override

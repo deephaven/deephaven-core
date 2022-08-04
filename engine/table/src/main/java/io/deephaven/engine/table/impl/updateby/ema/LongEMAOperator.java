@@ -5,12 +5,12 @@
  */
 package io.deephaven.engine.table.impl.updateby.ema;
 
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;

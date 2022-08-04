@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
+import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -30,7 +31,7 @@ import java.util.Map;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
-public abstract class BaseObjectUpdateByOperator<T> implements UpdateByOperator {
+public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOperator {
     protected final WritableColumnSource<T> outputSource;
     protected final WritableColumnSource<T> maybeInnerSource;
     protected final MatchPair pair;
@@ -49,7 +50,7 @@ public abstract class BaseObjectUpdateByOperator<T> implements UpdateByOperator 
     private final Class<T> colType;
     // endregion extra-fields
 
-    protected class Context implements UpdateContext {
+    protected class Context extends UpdateCumulativeContext {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
         public final SizedObjectChunk<T, Values> outputValues;
         public boolean canProcessDirectly;
