@@ -95,7 +95,7 @@ def start_jvm(jvm_props: Dict[str, str] = None):
         py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
         py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
         py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
-        py_dh_session.getSystemicExecutionContext().open()
+        py_dh_session.getExecutionContext().open()
 
 
 def _expandWildcardsInList(elements):

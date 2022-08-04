@@ -57,10 +57,10 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     VariableProvider getVariableProvider();
 
     /**
-     * Obtain an {@link ExecutionContext} instance for the current script session; as it is systemic it will not be
-     * recorded as a dependency to new operations while used.
+     * Obtain an {@link ExecutionContext} instance for the current script session. This is the execution context
+     * that is used when executing scripts.
      */
-    ExecutionContext getSystemicExecutionContext();
+    ExecutionContext getExecutionContext();
 
     class Changes {
         public RuntimeException error = null;

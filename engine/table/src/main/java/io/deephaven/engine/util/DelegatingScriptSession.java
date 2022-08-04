@@ -57,8 +57,8 @@ public class DelegatingScriptSession implements ScriptSession {
     }
 
     @Override
-    public ExecutionContext getSystemicExecutionContext() {
-        return delegate.getSystemicExecutionContext();
+    public ExecutionContext getExecutionContext() {
+        return delegate.getExecutionContext();
     }
 
     @Override

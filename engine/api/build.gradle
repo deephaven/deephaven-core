@@ -8,7 +8,7 @@ description 'Engine API: Engine API module, suitable as a compile-time dependenc
 dependencies {
     api project(':qst')
     api project(':engine-chunk')
-    api project(':engine-context'),
+    api project(':engine-context')
     api project(':engine-vector')
     api project(':engine-time')
     api project(':engine-updategraph')

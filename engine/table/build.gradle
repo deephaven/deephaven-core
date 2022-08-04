@@ -32,7 +32,7 @@ dependencies {
     api project(':IO')
 
     implementation project(':DHProcess')
-    implementation project(':engine-context'),
+    implementation project(':engine-context')
     implementation project(':engine-function')
     implementation project(':engine-tuple')
     implementation project(':Configuration')

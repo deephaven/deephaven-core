@@ -5,7 +5,7 @@ package io.deephaven.engine.context;
 
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.NoExecutionContextRegistered;
+import io.deephaven.util.NoExecutionContextRegisteredException;
 
 import java.util.Set;
 
@@ -16,42 +16,42 @@ public class PoisonedQueryScope extends QueryScope {
     @Override
     public Set<String> getParamNames() {
         logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegistered();
+        throw new NoExecutionContextRegisteredException();
     }
 
     @Override
     public boolean hasParamName(String name) {
         logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegistered();
+        throw new NoExecutionContextRegisteredException();
     }
 
     @Override
     protected <T> QueryScopeParam<T> createParam(String name) throws MissingVariableException {
         logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegistered();
+        throw new NoExecutionContextRegisteredException();
     }
 
     @Override
     public <T> T readParamValue(String name) throws MissingVariableException {
         logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegistered();
+        throw new NoExecutionContextRegisteredException();
     }
 
     @Override
     public <T> T readParamValue(String name, T defaultValue) {
         logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegistered();
+        throw new NoExecutionContextRegisteredException();
     }
 
     @Override
     public <T> void putParam(String name, T value) {
         logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegistered();
+        throw new NoExecutionContextRegisteredException();
     }
 
     @Override
     public void putObjectFields(Object object) {
         logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegistered();
+        throw new NoExecutionContextRegisteredException();
     }
 }

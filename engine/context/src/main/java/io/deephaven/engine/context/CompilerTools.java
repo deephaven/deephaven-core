@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.context;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.configuration.Configuration;
@@ -30,6 +31,8 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
@@ -146,7 +149,7 @@ public class CompilerTools {
     public static final String DYNAMIC_GROOVY_CLASS_PREFIX = "io.deephaven.dynamic";
 
     public interface Context {
-        Hashtable<String, SimplePromise<Class<?>>> getKnownClasses();
+        Hashtable<String, CompletableFuture<Class<?>>> getKnownClasses();
 
         ClassLoader getClassLoaderForFormula(Map<String, Class<?>> parameterClasses);
 
@@ -159,11 +162,29 @@ public class CompilerTools {
         void setParentClassLoader(ClassLoader parentClassLoader);
     }
 
-    public static class ContextImpl implements Context {
-        private final Hashtable<String, SimplePromise<Class<?>>> knownClasses = new Hashtable<>();
+    public static Context newContext(File cacheDirectory, ClassLoader classLoader) {
+        return new CompilerTools.ContextImpl(cacheDirectory, classLoader) {
+            {
+                addClassSource(getFakeClassDestination());
+            }
+
+            @Override
+            public File getFakeClassDestination() {
+                return cacheDirectory;
+            }
+
+            @Override
+            public String getClassPath() {
+                return cacheDirectory.getAbsolutePath() + File.pathSeparatorChar + super.getClassPath();
+            }
+        };
+    }
+
+    private static class ContextImpl implements Context {
+        private final Hashtable<String, CompletableFuture<Class<?>>> knownClasses = new Hashtable<>();
 
         @Override
-        public Hashtable<String, SimplePromise<Class<?>>> getKnownClasses() {
+        public Hashtable<String, CompletableFuture<Class<?>>> getKnownClasses() {
             return knownClasses;
         }
 
@@ -295,11 +316,11 @@ public class CompilerTools {
         private final Set<File> additionalClassLocations;
         private volatile WritableURLClassLoader ucl;
 
-        public ContextImpl(File classDestination) {
+        private ContextImpl(File classDestination) {
             this(classDestination, Context.class.getClassLoader());
         }
 
-        public ContextImpl(File classDestination, ClassLoader parentClassLoader) {
+        private ContextImpl(File classDestination, ClassLoader parentClassLoader) {
             this.classDestination = classDestination;
             ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
                     classDestination.getAbsolutePath());
@@ -443,7 +464,7 @@ public class CompilerTools {
             @NotNull final String packageNameRoot,
             @Nullable final StringBuilder codeLog,
             @NotNull final Map<String, Class<?>> parameterClasses) {
-        SimplePromise<Class<?>> promise;
+        CompletableFuture<Class<?>> promise;
         final boolean promiseAlreadyMade;
 
         final Context context = getContext();
@@ -453,7 +474,7 @@ public class CompilerTools {
             if (promise != null) {
                 promiseAlreadyMade = true;
             } else {
-                promise = new SimplePromise<>();
+                promise = new CompletableFuture<>();
                 context.getKnownClasses().put(classBody, promise);
                 promiseAlreadyMade = false;
             }
@@ -461,14 +482,18 @@ public class CompilerTools {
 
         // Someone else has already made the promise. I'll just wait for the answer.
         if (promiseAlreadyMade) {
-            return promise.getResult();
+            try {
+                return promise.get();
+            } catch (InterruptedException | ExecutionException error) {
+                throw new UncheckedDeephavenException(error);
+            }
         }
 
         // It's my job to fulfill the promise
         try {
             return compileHelper(className, classBody, packageNameRoot, codeLog, parameterClasses, context);
         } catch (RuntimeException e) {
-            promise.setException(e);
+            promise.completeExceptionally(e);
             throw e;
         }
     }
@@ -538,18 +563,18 @@ public class CompilerTools {
                 // member of the class we just loaded. This should be easier on the garbage collector because we are
                 // replacing a calculated value with a classloaded value and so in effect we are "canonicalizing" the
                 // string. This is important because these long strings stay in knownClasses forever.
-                SimplePromise<Class<?>> p = context.getKnownClasses().remove(identifyingFieldValue);
+                CompletableFuture<Class<?>> p = context.getKnownClasses().remove(identifyingFieldValue);
                 if (p == null) {
                     // If we encountered a different class than the one we're looking for, make a fresh promise and
                     // immediately fulfill it. This is for the purpose of populating the cache in case someone comes
                     // looking for that class later. Rationale: we already did all the classloading work; no point in
                     // throwing it away now, even though this is not the class we're looking for.
-                    p = new SimplePromise<>();
+                    p = new CompletableFuture<>();
                 }
                 context.getKnownClasses().put(identifyingFieldValue, p);
                 // It's also possible that some other code has already fulfilled this promise with exactly the same
                 // class. That's ok though: the promise code does not reject multiple sets to the identical value.
-                p.setResultFriendly(result);
+                p.complete(result);
             }
 
             // If the class we found was indeed the class we were looking for, then return it
@@ -935,54 +960,5 @@ public class CompilerTools {
             }
         }
         return javaClasspath;
-    }
-
-    public static class SimplePromise<R> {
-        private R result;
-        private RuntimeException exception;
-
-        public synchronized R getResult() {
-            while (true) {
-                if (result != null) {
-                    return result;
-                }
-                if (exception != null) {
-                    throw exception;
-                }
-                try {
-                    wait();
-                } catch (InterruptedException ie) {
-                    throw new IllegalStateException("Interrupted while waiting", ie);
-                }
-            }
-        }
-
-        public synchronized void setResultFriendly(R newResult) {
-            if (newResult == null) {
-                throw new IllegalStateException("null result not allowed");
-            }
-            // We are "friendly" in the sense that we don't reject multiple sets to the same value.
-            if (result == newResult) {
-                return;
-            }
-            checkState();
-            result = newResult;
-            notifyAll();
-        }
-
-        public synchronized void setException(RuntimeException newException) {
-            if (newException == null) {
-                throw new IllegalStateException("null exception not allowed");
-            }
-            checkState();
-            exception = newException;
-            notifyAll();
-        }
-
-        private void checkState() {
-            if (result != null || exception != null) {
-                throw new IllegalStateException("State is already set");
-            }
-        }
     }
 }

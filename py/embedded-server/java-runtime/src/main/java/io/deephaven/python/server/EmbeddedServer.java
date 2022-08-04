@@ -86,7 +86,7 @@ public class EmbeddedServer {
         System.out.println("Server started on port " + server.server().getPort());
 
         // We need to open the systemic execution context to permanently install the contexts for this thread.
-        scriptSession.getSystemicExecutionContext().open();
+        scriptSession.getExecutionContext().open();
     }
 
     private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {

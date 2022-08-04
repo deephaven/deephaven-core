@@ -336,7 +336,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             SessionState.ExportObject<ScriptSession> exportedConsole, CompletionParser parser,
             StreamObserver<AutoCompleteResponse> responseObserver) {
         final ScriptSession scriptSession = exportedConsole.get();
-        try (final SafeCloseable ignored = scriptSession.getSystemicExecutionContext().open()) {
+        try (final SafeCloseable ignored = scriptSession.getExecutionContext().open()) {
             final VersionedTextDocumentIdentifier doc = request.getTextDocument();
             final VariableProvider vars = scriptSession.getVariableProvider();
             final CompletionLookups h = CompletionLookups.preload(scriptSession);

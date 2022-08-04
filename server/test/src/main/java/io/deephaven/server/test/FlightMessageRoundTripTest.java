@@ -154,7 +154,7 @@ public abstract class FlightMessageRoundTripTest {
 
         scriptSession = component.scriptSession();
         sessionService = component.sessionService();
-        executionContext = scriptSession.getSystemicExecutionContext().open();
+        executionContext = scriptSession.getExecutionContext().open();
 
         client = FlightClient.builder().location(Location.forGrpcInsecure("localhost", actualPort))
                 .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {

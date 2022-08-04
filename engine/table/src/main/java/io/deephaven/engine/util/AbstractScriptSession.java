@@ -77,21 +77,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         final QueryScope queryScope = newQueryScope();
         final QueryLibrary.Context queryLibrary = QueryLibrary.makeNewLibrary();
         final CompilerTools.Context compilerContext =
-                new CompilerTools.ContextImpl(classCacheDirectory, getClass().getClassLoader()) {
-                    {
-                        addClassSource(getFakeClassDestination());
-                    }
+                CompilerTools.newContext(classCacheDirectory, getClass().getClassLoader());
 
-                    @Override
-                    public File getFakeClassDestination() {
-                        return classCacheDirectory;
-                    }
-
-                    @Override
-                    public String getClassPath() {
-                        return classCacheDirectory.getAbsolutePath() + File.pathSeparatorChar + super.getClassPath();
-                    }
-                };
         executionContext = ExecutionContext.newBuilder()
                 .markSystemic()
                 .setQueryLibrary(queryLibrary)
@@ -101,7 +88,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
     @Override
-    public ExecutionContext getSystemicExecutionContext() {
+    public ExecutionContext getExecutionContext() {
         return executionContext;
     }
 

@@ -142,7 +142,7 @@ public class SessionState {
         this.logPrefix = "SessionState{" + sessionId + "}: ";
         this.scheduler = scheduler;
         this.authContext = authContext;
-        this.executionContext = scriptSessionProvider.get().getSystemicExecutionContext();
+        this.executionContext = scriptSessionProvider.get().getExecutionContext();
         log.info().append(logPrefix).append("session initialized").endl();
     }
 
