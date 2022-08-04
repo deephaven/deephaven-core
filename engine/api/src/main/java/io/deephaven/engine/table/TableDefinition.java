@@ -4,6 +4,7 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
 import io.deephaven.base.cache.OpenAddressedCanonicalizationCache;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
@@ -234,6 +235,13 @@ public class TableDefinition implements LogOutputAppendable {
      */
     public List<String> getColumnNames() {
         return getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toList());
+    }
+
+    /**
+     * @return The {@link ColumnName column names} as a list in the same order as {@link #getColumns()}
+     */
+    public List<ColumnName> getTypedColumnNames() {
+        return getColumnStream().map(ColumnDefinition::getName).map(ColumnName::of).collect(Collectors.toList());
     }
 
     /**

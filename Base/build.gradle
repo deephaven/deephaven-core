@@ -1,19 +1,18 @@
 plugins {
     id 'io.deephaven.project.register'
+    id 'java-library'
 }
 
 dependencies {
 
-    compile depTrove3, depAnnotations, depCommonsCompress
+    implementation depTrove3
+    compileOnlyApi depAnnotations
+    implementation depCommonsLang3
 
-    compile depCommonsLang3
+    api 'io.deephaven:hash:0.1.0'
 
-    compile 'io.deephaven:hash:0.1.0'
-
-    testCompile 'junit:junit:4.13.2'
-    testCompile 'org.jmock:jmock-junit4:2.12.0'
-    testCompile 'org.jmock:jmock-imposters:2.12.0'
-
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    Classpaths.inheritJMock(project, 'testImplementation')
 }
 
 sourceSets {
@@ -36,7 +35,7 @@ task jarTests(type: Jar, dependsOn: testClasses) {
 }
 configurations {
     tests {
-        extendsFrom testRuntime
+
     }
 }
 artifacts {

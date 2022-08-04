@@ -2731,9 +2731,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
-    @Override public  FigureImpl treeMapPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String values, java.lang.String ids, java.lang.String parents, java.lang.String labels, java.lang.String text, java.lang.String color, java.lang.String hoverText ) {
+    @Override public  FigureImpl treemapPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String ids, java.lang.String parents, java.lang.String values, java.lang.String labels, java.lang.String hoverTexts, java.lang.String colors ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).treeMapPlot( seriesName, t, values, ids, parents, labels, text, color, hoverText);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).treemapPlot( seriesName, t, ids, parents, values, labels, hoverTexts, colors);
         return make(series);
     }
 

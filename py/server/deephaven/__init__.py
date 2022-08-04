@@ -7,7 +7,13 @@ unlocks the unique power of Deephaven to the Python community.
 
 """
 
-__version__ = "0.15.0"
+__version__ = "0.16.0"
+
+from deephaven_internal import jvm
+try:
+    jvm.check_ready()
+finally:
+    del jvm
 
 from .dherror import DHError
 from .table import SortDirection, AsOfMatchRule

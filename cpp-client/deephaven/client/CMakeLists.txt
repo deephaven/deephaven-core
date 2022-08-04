@@ -8,79 +8,103 @@ include(GNUInstallDirs)
 
 find_package(Arrow REQUIRED)
 find_package(ArrowFlight REQUIRED HINTS ${Arrow_DIR})
-find_package(Flatbuffers REQUIRED)
+find_package(Boost REQUIRED)
+find_package(Immer REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Threads REQUIRED)
 
 set(ALL_FILES
-    src/lowlevel/server.cc
+    src/server/server.cc
+    include/private/deephaven/client/server/server.h
 
-    include/private/deephaven/client/lowlevel/server.h
+    src/impl/aggregate_impl.cc
+    src/impl/boolean_expression_impl.cc
+    src/impl/client_impl.cc
+    src/impl/columns_impl.cc
+    src/impl/datetime_expression_impl.cc
+    src/impl/escape_utils.cc
+    src/impl/expression_impl.cc
+    src/impl/numeric_expression_impl.cc
+    src/impl/string_expression_impl.cc
+    src/impl/table_handle_impl.cc
+    src/impl/table_handle_manager_impl.cc
 
-    src/highlevel/impl/aggregate_impl.cc
-    src/highlevel/impl/boolean_expression_impl.cc
-    src/highlevel/impl/client_impl.cc
-    src/highlevel/impl/columns_impl.cc
-    src/highlevel/impl/datetime_expression_impl.cc
-    src/highlevel/impl/escape_utils.cc
-    src/highlevel/impl/expression_impl.cc
-    src/highlevel/impl/numeric_expression_impl.cc
-    src/highlevel/impl/string_expression_impl.cc
-    src/highlevel/impl/table_handle_impl.cc
-    src/highlevel/impl/table_handle_manager_impl.cc
+    include/private/deephaven/client/impl/aggregate_impl.h
+    include/private/deephaven/client/impl/boolean_expression_impl.h
+    include/private/deephaven/client/impl/client_impl.h
+    include/private/deephaven/client/impl/columns_impl.h
+    include/private/deephaven/client/impl/datetime_expression_impl.h
+    include/private/deephaven/client/impl/escape_utils.h
+    include/private/deephaven/client/impl/expression_impl.h
+    include/private/deephaven/client/impl/numeric_expression_impl.h
+    include/private/deephaven/client/impl/string_expression_impl.h
+    include/private/deephaven/client/impl/table_handle_impl.h
+    include/private/deephaven/client/impl/table_handle_manager_impl.h
+    include/private/deephaven/client/impl/util.h
 
-    include/private/deephaven/client/highlevel/impl/aggregate_impl.h
-    include/private/deephaven/client/highlevel/impl/boolean_expression_impl.h
-    include/private/deephaven/client/highlevel/impl/client_impl.h
-    include/private/deephaven/client/highlevel/impl/columns_impl.h
-    include/private/deephaven/client/highlevel/impl/datetime_expression_impl.h
-    include/private/deephaven/client/highlevel/impl/escape_utils.h
-    include/private/deephaven/client/highlevel/impl/expression_impl.h
-    include/private/deephaven/client/highlevel/impl/numeric_expression_impl.h
-    include/private/deephaven/client/highlevel/impl/string_expression_impl.h
-    include/private/deephaven/client/highlevel/impl/table_handle_impl.h
-    include/private/deephaven/client/highlevel/impl/table_handle_manager_impl.h
-    include/private/deephaven/client/highlevel/impl/util.h
+    include/private/deephaven/client/arrowutil/arrow_visitors.h
 
-    src/highlevel/columns.cc
-    src/highlevel/expressions.cc
-    src/highlevel/client.cc
-    src/highlevel/ticking.cc
-    src/highlevel/types.cc
-    src/highlevel/sad/chunk_filler.cc
-    src/highlevel/sad/chunk_maker.cc
-    src/highlevel/sad/sad_chunk.cc
-    src/highlevel/sad/sad_column_source.cc
-    src/highlevel/sad/sad_context.cc
-    src/highlevel/sad/sad_row_sequence.cc
-    src/highlevel/sad/sad_table.cc
-    src/highlevel/sad/sad_ticking_table.cc
-    src/highlevel/sad/sad_unwrapped_table.cc
+    src/columns.cc
+    src/expressions.cc
+    src/client.cc
+    src/ticking.cc
+    src/types.cc
+    src/chunk/chunk.cc
+    src/chunk/chunk_filler.cc
+    src/chunk/chunk_maker.cc
+    src/column/column_source.cc
+    src/container/row_sequence.cc
+    src/table/table.cc
 
-    include/public/deephaven/client/highlevel/columns.h
-    include/public/deephaven/client/highlevel/expressions.h
-    include/public/deephaven/client/highlevel/client.h
-    include/public/deephaven/client/highlevel/ticking.h
-    include/public/deephaven/client/highlevel/types.h
-    include/public/deephaven/client/highlevel/sad/chunk_filler.h
-    include/public/deephaven/client/highlevel/sad/chunk_maker.h
-    include/public/deephaven/client/highlevel/sad/sad_chunk.h
-    include/public/deephaven/client/highlevel/sad/sad_column_source.h
-    include/public/deephaven/client/highlevel/sad/sad_context.h
-    include/public/deephaven/client/highlevel/sad/sad_row_sequence.h
-    include/public/deephaven/client/highlevel/sad/sad_table.h
-    include/public/deephaven/client/highlevel/sad/sad_ticking_table.h
-    include/public/deephaven/client/highlevel/sad/sad_unwrapped_table.h
+    include/public/deephaven/client/columns.h
+    include/public/deephaven/client/expressions.h
+    include/public/deephaven/client/client.h
+    include/public/deephaven/client/ticking.h
+    include/public/deephaven/client/types.h
+    include/public/deephaven/client/chunk/chunk.h
+    include/public/deephaven/client/chunk/chunk_filler.h
+    include/public/deephaven/client/chunk/chunk_maker.h
+    include/public/deephaven/client/column/column_source.h
+    include/public/deephaven/client/container/row_sequence.h
+    include/public/deephaven/client/table/table.h
+
+    include/private/deephaven/client/subscription/batch_parser.h
+    include/private/deephaven/client/subscription/classic_table_state.h
+    include/private/deephaven/client/subscription/immer_table_state.h
+    include/private/deephaven/client/subscription/index_decoder.h
+    include/private/deephaven/client/subscription/shift_processor.h
+    include/private/deephaven/client/subscription/space_mapper.h
+    include/private/deephaven/client/subscription/subscribe_thread.h
+    include/private/deephaven/client/subscription/subscription_handle.h
+    include/private/deephaven/client/subscription/update_processor.h
+    src/subscription/batch_parser.cc
+    src/subscription/classic_table_state.cc
+    src/subscription/immer_table_state.cc
+    src/subscription/index_decoder.cc
+    src/subscription/shift_processor.cc
+    src/subscription/space_mapper.cc
+    src/subscription/subscribe_thread.cc
+    src/subscription/update_processor.cc
+
+
+    src/immerutil/abstract_flex_vector.cc
+    src/immerutil/immer_column_source.cc
+    include/private/deephaven/client/immerutil/abstract_flex_vector.h
+    include/private/deephaven/client/immerutil/immer_column_source.h
 
     src/utility/executor.cc
+    src/utility/misc.cc
     include/private/deephaven/client/utility/executor.h
+    include/private/deephaven/client/utility/misc.h
 
     src/utility/cbfuture.cc
+    src/utility/misc.cc
     src/utility/table_maker.cc
     src/utility/utility.cc
     include/public/deephaven/client/utility/callbacks.h
     include/public/deephaven/client/utility/cbfuture.h
+    include/private/deephaven/client/utility/misc.h
     include/public/deephaven/client/utility/table_maker.h
     include/public/deephaven/client/utility/utility.h
 
@@ -92,6 +116,18 @@ set(ALL_FILES
     proto/deephaven/proto/console.grpc.pb.h
     proto/deephaven/proto/console.pb.cc
     proto/deephaven/proto/console.pb.h
+    proto/deephaven/proto/inputtable.grpc.pb.cc
+    proto/deephaven/proto/inputtable.grpc.pb.h
+    proto/deephaven/proto/inputtable.pb.cc
+    proto/deephaven/proto/inputtable.pb.h
+    proto/deephaven/proto/object.grpc.pb.cc
+    proto/deephaven/proto/object.grpc.pb.h
+    proto/deephaven/proto/object.pb.cc
+    proto/deephaven/proto/object.pb.h
+    proto/deephaven/proto/partitionedtable.grpc.pb.cc
+    proto/deephaven/proto/partitionedtable.grpc.pb.h
+    proto/deephaven/proto/partitionedtable.pb.cc
+    proto/deephaven/proto/partitionedtable.pb.h
     proto/deephaven/proto/session.grpc.pb.cc
     proto/deephaven/proto/session.grpc.pb.h
     proto/deephaven/proto/session.pb.cc
@@ -114,7 +150,9 @@ add_library(client ${ALL_FILES})
 add_library(deephaven::client ALIAS client)
 target_compile_options(client PRIVATE -Wall -Werror)
 
+target_include_directories(client PRIVATE ${Boost_INCLUDE_DIR})
 target_include_directories(client PRIVATE include/private)
+target_include_directories(client PRIVATE third_party)
 target_include_directories(client PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
 # Protos and flatbuf are doing their own thing.
@@ -123,7 +161,9 @@ target_include_directories(client PRIVATE "./flatbuf")
 
 target_link_libraries(client PUBLIC arrow_flight_static)
 target_link_libraries(client PUBLIC arrow_static)
+target_link_libraries(client PUBLIC Boost::boost)
+target_link_libraries(client PUBLIC immer)
 target_link_libraries(client PUBLIC protobuf::libprotobuf)
-target_link_libraries(client PUBLIC flatbuffers::flatbuffers)
 target_link_libraries(client PUBLIC gRPC::grpc++)
 target_link_libraries(client PUBLIC Threads::Threads)
+

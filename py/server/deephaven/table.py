@@ -18,7 +18,8 @@ from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
 from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator
-from deephaven.ugp import auto_locking_op
+from deephaven.ugp import auto_locking_ctx
+from deephaven.updateby import UpdateByOperation
 
 # Table
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -165,7 +166,6 @@ class Table(JObjectWrapper):
         """Returns a coalesced child table."""
         return Table(j_table=self.j_table.coalesce())
 
-    @auto_locking_op
     def snapshot(self, source_table: Table, do_init: bool = False, cols: Union[str, List[str]] = None) -> Table:
         """Produces an in-memory copy of a source table that refreshes when this table changes.
 
@@ -185,11 +185,11 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            return Table(j_table=self.j_table.snapshot(source_table.j_table, do_init, *cols))
+            with auto_locking_ctx(self, source_table):
+                return Table(j_table=self.j_table.snapshot(source_table.j_table, do_init, *cols))
         except Exception as e:
             raise DHError(message="failed to create a snapshot table.") from e
 
-    @auto_locking_op
     def snapshot_history(self, source_table: Table) -> Table:
         """Produces an in-memory history of a source table that adds a new snapshot when this table (trigger table)
         changes.
@@ -212,7 +212,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            return Table(j_table=self.j_table.snapshotHistory(source_table.j_table))
+            with auto_locking_ctx(self, source_table):
+                return Table(j_table=self.j_table.snapshotHistory(source_table.j_table))
         except Exception as e:
             raise DHError(message="failed to create a snapshot history table.") from e
 
@@ -296,7 +297,6 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table move_columns_up operation failed.") from e
 
-    @auto_locking_op
     def rename_columns(self, cols: Union[str, Sequence[str]]) -> Table:
         """The rename_columns method creates a new table with the specified columns renamed.
 
@@ -311,11 +311,11 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            return Table(j_table=self.j_table.renameColumns(*cols))
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_table.renameColumns(*cols))
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
 
-    @auto_locking_op
     def update(self, formulas: Union[str, Sequence[str]]) -> Table:
         """The update method creates a new table containing a new, in-memory column for each formula.
 
@@ -330,11 +330,11 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return Table(j_table=self.j_table.update(*formulas))
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_table.update(*formulas))
         except Exception as e:
             raise DHError(e, "table update operation failed.") from e
 
-    @auto_locking_op
     def lazy_update(self, formulas: Union[str, Sequence[str]]) -> Table:
         """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
 
@@ -349,7 +349,8 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return Table(j_table=self.j_table.lazyUpdate(*formulas))
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_table.lazyUpdate(*formulas))
         except Exception as e:
             raise DHError(e, "table lazy_update operation failed.") from e
 
@@ -389,7 +390,6 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
 
-    @auto_locking_op
     def select(self, formulas: Union[str, Sequence[str]] = None) -> Table:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
@@ -404,10 +404,11 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            if not formulas:
-                return Table(j_table=self.j_table.select())
-            formulas = to_sequence(formulas)
-            return Table(j_table=self.j_table.select(*formulas))
+            with auto_locking_ctx(self):
+                if not formulas:
+                    return Table(j_table=self.j_table.select())
+                formulas = to_sequence(formulas)
+                return Table(j_table=self.j_table.select(*formulas))
         except Exception as e:
             raise DHError(e, "table select operation failed.") from e
 
@@ -458,7 +459,6 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
-    @auto_locking_op
     def where_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> Table:
         """The where_in method creates a new table containing rows from the source table, where the rows match
         values in the filter table. The filter is updated whenever either table changes.
@@ -475,11 +475,11 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            return Table(j_table=self.j_table.whereIn(filter_table.j_table, *cols))
+            with auto_locking_ctx(self, filter_table):
+                return Table(j_table=self.j_table.whereIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_in operation failed.") from e
 
-    @auto_locking_op
     def where_not_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> Table:
         """The where_not_in method creates a new table containing rows from the source table, where the rows do not
         match values in the filter table.
@@ -496,7 +496,8 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            return Table(j_table=self.j_table.whereNotIn(filter_table.j_table, *cols))
+            with auto_locking_ctx(self, filter_table):
+                return Table(j_table=self.j_table.whereNotIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_not_in operation failed.") from e
 
@@ -680,7 +681,7 @@ class Table(JObjectWrapper):
     # Table operation category: Join
     #
     # region Join
-    @auto_locking_op
+
     def natural_join(self, table: Table, on: Union[str, Sequence[str]],
                      joins: Union[str, Sequence[str]] = None) -> Table:
         """The natural_join method creates a new table containing all of the rows and columns of this table,
@@ -704,20 +705,20 @@ class Table(JObjectWrapper):
         try:
             on = to_sequence(on)
             joins = to_sequence(joins)
-            if joins:
-                return Table(
-                    j_table=self.j_table.naturalJoin(
-                        table.j_table, ",".join(on), ",".join(joins)
+            with auto_locking_ctx(self, table):
+                if joins:
+                    return Table(
+                        j_table=self.j_table.naturalJoin(
+                            table.j_table, ",".join(on), ",".join(joins)
+                        )
                     )
-                )
-            else:
-                return Table(
-                    j_table=self.j_table.naturalJoin(table.j_table, ",".join(on))
-                )
+                else:
+                    return Table(
+                        j_table=self.j_table.naturalJoin(table.j_table, ",".join(on))
+                    )
         except Exception as e:
             raise DHError(e, "table natural_join operation failed.") from e
 
-    @auto_locking_op
     def exact_join(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
         """The exact_join method creates a new table containing all of the rows and columns of this table plus
         additional columns containing data from the right table. For columns appended to the left table (joins),
@@ -740,20 +741,20 @@ class Table(JObjectWrapper):
         try:
             on = to_sequence(on)
             joins = to_sequence(joins)
-            if joins:
-                return Table(
-                    j_table=self.j_table.exactJoin(
-                        table.j_table, ",".join(on), ",".join(joins)
+            with auto_locking_ctx(self, table):
+                if joins:
+                    return Table(
+                        j_table=self.j_table.exactJoin(
+                            table.j_table, ",".join(on), ",".join(joins)
+                        )
                     )
-                )
-            else:
-                return Table(
-                    j_table=self.j_table.exactJoin(table.j_table, ",".join(on))
-                )
+                else:
+                    return Table(
+                        j_table=self.j_table.exactJoin(table.j_table, ",".join(on))
+                    )
         except Exception as e:
             raise DHError(e, "table exact_join operation failed.") from e
 
-    @auto_locking_op
     def join(self, table: Table, on: Union[str, Sequence[str]] = None,
              joins: Union[str, Sequence[str]] = None) -> Table:
         """The join method creates a new table containing rows that have matching values in both tables. Rows that
@@ -777,18 +778,18 @@ class Table(JObjectWrapper):
         try:
             on = to_sequence(on)
             joins = to_sequence(joins)
-            if joins:
-                return Table(
-                    j_table=self.j_table.join(
-                        table.j_table, ",".join(on), ",".join(joins)
+            with auto_locking_ctx(self, table):
+                if joins:
+                    return Table(
+                        j_table=self.j_table.join(
+                            table.j_table, ",".join(on), ",".join(joins)
+                        )
                     )
-                )
-            else:
-                return Table(j_table=self.j_table.join(table.j_table, ",".join(on)))
+                else:
+                    return Table(j_table=self.j_table.join(table.j_table, ",".join(on)))
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
-    @auto_locking_op
     def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
            match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> Table:
         """The aj (as-of join) method creates a new table containing all of the rows and columns of the left table,
@@ -818,11 +819,11 @@ class Table(JObjectWrapper):
                 on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
             if joins:
                 joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
-            return Table(j_table=self.j_table.aj(table.j_table, on, joins, match_rule.value))
+            with auto_locking_ctx(self, table):
+                return Table(j_table=self.j_table.aj(table.j_table, on, joins, match_rule.value))
         except Exception as e:
             raise DHError(e, "table as-of join operation failed.") from e
 
-    @auto_locking_op
     def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
             match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> Table:
         """The reverse-as-of join method creates a new table containing all of the rows and columns of the left table,
@@ -855,7 +856,8 @@ class Table(JObjectWrapper):
                 on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
             if joins:
                 joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
-            return Table(j_table=self.j_table.raj(table.j_table, on, joins, match_rule.value))
+            with auto_locking_ctx(self, table):
+                return Table(j_table=self.j_table.raj(table.j_table, on, joins, match_rule.value))
         except Exception as e:
             raise DHError(e, "table reverse-as-of join operation failed.") from e
 
@@ -864,7 +866,7 @@ class Table(JObjectWrapper):
     #
     # Table operation category: Aggregation
     # region Aggregation
-    @auto_locking_op
+
     def head_by(self, num_rows: int, by: Union[str, Sequence[str]] = None) -> Table:
         """The head_by method creates a new table containing the first number of rows for each group.
 
@@ -880,11 +882,11 @@ class Table(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            return Table(j_table=self.j_table.headBy(num_rows, *by))
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_table.headBy(num_rows, *by))
         except Exception as e:
             raise DHError(e, "table head_by operation failed.") from e
 
-    @auto_locking_op
     def tail_by(self, num_rows: int, by: Union[str, Sequence[str]] = None) -> Table:
         """The tail_by method creates a new table containing the last number of rows for each group.
 
@@ -900,7 +902,8 @@ class Table(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            return Table(j_table=self.j_table.tailBy(num_rows, *by))
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_table.tailBy(num_rows, *by))
         except Exception as e:
             raise DHError(e, "table tail_by operation failed.") from e
 
@@ -926,7 +929,6 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table group-by operation failed.") from e
 
-    @auto_locking_op
     def ungroup(self, cols: Union[str, Sequence[str]] = None) -> Table:
         """The ungroup method creates a new table in which array columns from the source table are unwrapped into
         separate rows.
@@ -943,10 +945,11 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            if cols:
-                return Table(j_table=self.j_table.ungroup(*cols))
-            else:
-                return Table(j_table=self.j_table.ungroup())
+            with auto_locking_ctx(self):
+                if cols:
+                    return Table(j_table=self.j_table.ungroup(*cols))
+                else:
+                    return Table(j_table=self.j_table.ungroup())
         except Exception as e:
             raise DHError(e, "table ungroup operation failed.") from e
 
@@ -1013,6 +1016,49 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table sum_by operation failed.") from e
 
+    def abs_sum_by(self, by: Union[str, Sequence[str]] = None) -> Table:
+        """The abs_sum_by method creates a new table containing the absolute sum for each group.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return Table(j_table=self.j_table.absSumBy(*by))
+            else:
+                return Table(j_table=self.j_table.absSumBy())
+        except Exception as e:
+            raise DHError(e, "table asb_sum_by operation failed.") from e
+
+    def weighted_sum_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> Table:
+        """The weighted_sum_by method creates a new table containing the weighted sum for each group.
+
+        Args:
+            wcol (str): the name of the weight column
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return Table(j_table=self.j_table.wsumBy(wcol, *by))
+            else:
+                return Table(j_table=self.j_table.wsumBy(wcol))
+        except Exception as e:
+            raise DHError(e, "table weighted_sum_by operation failed.") from e
+
     def avg_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The avg_by method creates a new table containing the average for each group.
 
@@ -1031,6 +1077,28 @@ class Table(JObjectWrapper):
                 return Table(j_table=self.j_table.avgBy(*by))
             else:
                 return Table(j_table=self.j_table.avgBy())
+        except Exception as e:
+            raise DHError(e, "table avg_by operation failed.") from e
+
+    def weighted_avg_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> Table:
+        """The weighted_avg_by method creates a new table containing the weighted average for each group.
+
+        Args:
+            wcol (str): the name of the weight column
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            if by:
+                return Table(j_table=self.j_table.wavgBy(wcol, *by))
+            else:
+                return Table(j_table=self.j_table.wavgBy(wcol))
         except Exception as e:
             raise DHError(e, "table avg_by operation failed.") from e
 
@@ -1267,15 +1335,22 @@ class Table(JObjectWrapper):
             raise DHError(e, "failed to color format rows conditionally.") from e
 
     def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
-                     freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None) -> Table:
+                     freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,
+                     column_groups: List[dict] = None) -> Table:
         """ Sets layout hints on the Table
 
         Args:
-            front (Union[str, List[str]]): the columns to show at the front
-            back (Union[str, List[str]]): the columns to show at the back
+            front (Union[str, List[str]]): the columns to show at the front.
+            back (Union[str, List[str]]): the columns to show at the back.
             freeze (Union[str, List[str]]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
-            hide (Union[str, List[str]]): the columns to hide
+            hide (Union[str, List[str]]): the columns to hide.
+            column_groups (List[Dict]): A list of dicts specifying which columns should be grouped in the UI
+                The dicts can specify the following:
+
+                name (str): The group name
+                children (List[str]): The
+                color (Optional[str]): The hex color string or Deephaven color name
 
         Returns:
             a new table with the layout hints set
@@ -1290,13 +1365,18 @@ class Table(JObjectWrapper):
                 _j_layout_hint_builder.atFront(to_sequence(front))
 
             if back is not None:
-                _j_layout_hint_builder.atEnd(to_sequence(back))
+                _j_layout_hint_builder.atBack(to_sequence(back))
 
             if freeze is not None:
                 _j_layout_hint_builder.freeze(to_sequence(freeze))
 
             if hide is not None:
                 _j_layout_hint_builder.hide(to_sequence(hide))
+
+            if column_groups is not None:
+                for group in column_groups:
+                    _j_layout_hint_builder.columnGroup(group.get("name"), j_array_list(group.get("children")),
+                                                       group.get("color", ""))
         except Exception as e:
             raise DHError(e, "failed to create layout hints") from e
 
@@ -1323,6 +1403,30 @@ class Table(JObjectWrapper):
             return PartitionedTable(j_partitioned_table=self.j_table.partitionBy(drop_keys, *by))
         except Exception as e:
             raise DHError(e, "failed to create a partitioned table.") from e
+
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]],
+                  by: Union[str, List[str]] = None) -> Table:
+        """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
+        The aggregations are defined by the provided operations, which support incremental aggregations over the
+        corresponding rows in the this table. The aggregations will apply position or time-based windowing and
+        compute the results over the entire table or each row group as identified by the provided key columns.
+
+        Args:
+            ops (Union[UpdateByOperation, List[UpdateByOperation]]): the update-by operation definition(s)
+            by (Union[str, List[str]]): the key column name(s) to group the rows of the table
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            ops = to_sequence(ops)
+            by = to_sequence(by)
+            return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
+        except Exception as e:
+            raise DHError(e, "table update-by operation failed.") from e
 
 
 class PartitionedTable(JObjectWrapper):
@@ -1515,7 +1619,6 @@ class PartitionedTable(JObjectWrapper):
             self._constituent_changes_permitted = self.j_partitioned_table.constituentChangesPermitted()
         return self._constituent_changes_permitted
 
-    @auto_locking_op
     def merge(self) -> Table:
         """Makes a new Table that contains all the rows from all the constituent tables. In the merged result,
         data from a constituent table is contiguous, and data from constituent tables appears in the same order the
@@ -1529,7 +1632,8 @@ class PartitionedTable(JObjectWrapper):
             DHError
         """
         try:
-            return Table(j_table=self.j_partitioned_table.merge())
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_partitioned_table.merge())
         except Exception as e:
             raise DHError(e, "failed to merge all the constituent tables.")
 
@@ -1615,7 +1719,6 @@ class PartitionedTable(JObjectWrapper):
         """Returns all the current constituent tables."""
         return list(map(Table, self.j_partitioned_table.constituents()))
 
-    @auto_locking_op
     def transform(self, func: Callable[[Table], Table]) -> PartitionedTable:
         """Apply the provided function to all constituent Tables and produce a new PartitionedTable with the results
         as its constituents, with the same data for all other columns in the underlying partitioned Table. Note that
@@ -1632,12 +1735,12 @@ class PartitionedTable(JObjectWrapper):
         """
         try:
             j_operator = j_unary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
-            j_pt = self.j_partitioned_table.transform(j_operator)
-            return PartitionedTable(j_partitioned_table=j_pt)
+            with auto_locking_ctx(self):
+                j_pt = self.j_partitioned_table.transform(j_operator)
+                return PartitionedTable(j_partitioned_table=j_pt)
         except Exception as e:
             raise DHError(e, "failed to transform the PartitionedTable.") from e
 
-    @auto_locking_op
     def partitioned_transform(self, other: PartitionedTable, func: Callable[[Table, Table], Table]) -> PartitionedTable:
         """Join the underlying partitioned Tables from this PartitionedTable and other on the key columns, then apply
         the provided function to all pairs of constituent Tables with the same keys in order to produce a new
@@ -1660,8 +1763,9 @@ class PartitionedTable(JObjectWrapper):
         """
         try:
             j_operator = j_binary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
-            j_pt = self.j_partitioned_table.partitionedTransform(other.j_partitioned_table, j_operator)
-            return PartitionedTable(j_partitioned_table=j_pt)
+            with auto_locking_ctx(self, other):
+                j_pt = self.j_partitioned_table.partitionedTransform(other.j_partitioned_table, j_operator)
+                return PartitionedTable(j_partitioned_table=j_pt)
         except Exception as e:
             raise DHError(e, "failed to transform the PartitionedTable with another PartitionedTable.") from e
 
@@ -1727,7 +1831,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.head(num_rows))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.head(num_rows))
         except Exception as e:
             raise DHError(e, "head operation on the PartitionedTableProxy failed.") from e
 
@@ -1746,7 +1851,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.tail(num_rows))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.tail(num_rows))
         except Exception as e:
             raise DHError(e, "tail operation on the PartitionedTableProxy failed.") from e
 
@@ -1762,11 +1868,11 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.reverse())
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.reverse())
         except Exception as e:
             raise DHError(e, "reverse operation on the PartitionedTableProxy failed.") from e
 
-    @auto_locking_op
     def snapshot(self, source_table: Union[Table, PartitionedTableProxy], do_init: bool = False,
                  cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.snapshot` table operation to all constituent tables of the underlying
@@ -1793,7 +1899,8 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             cols = to_sequence(cols)
             table_op = jpy.cast(source_table.j_object, _JTableOperations)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot(table_op, do_init, *cols))
+            with auto_locking_ctx(self, source_table):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot(table_op, do_init, *cols))
         except Exception as e:
             raise DHError(e, "snapshot operation on the PartitionedTableProxy failed.") from e
 
@@ -1820,11 +1927,12 @@ class PartitionedTableProxy(JObjectWrapper):
                 order = (SortDirection.ASCENDING,) * len(order_by)
             order = to_sequence(order)
             if len(order_by) != len(order):
-                raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
+                raise ValueError("The number of sort columns must be the same as the number of sort directions.")
 
             sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
             j_sc_list = j_array_list(sort_columns)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sort(j_sc_list))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sort(j_sc_list))
         except Exception as e:
             raise DHError(e, "sort operation on the PartitionedTableProxy failed.") from e
 
@@ -1844,7 +1952,8 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             order_by = to_sequence(order_by)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sortDescending(*order_by))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sortDescending(*order_by))
         except Exception as e:
             raise DHError(e, "sort_descending operation on the PartitionedTableProxy failed.") from e
 
@@ -1865,11 +1974,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             filters = to_sequence(filters)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(*filters))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(*filters))
         except Exception as e:
             raise DHError(e, "where operation on the PartitionedTableProxy failed.") from e
 
-    @auto_locking_op
     def where_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.where_in` table operation to all constituent tables of the underlying
         partitioned table with the provided filter table, and produces a new PartitionedTableProxy with the result
@@ -1887,11 +1996,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.whereIn(filter_table.j_table, *cols))
+            with auto_locking_ctx(self, filter_table):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.whereIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "where_in operation on the PartitionedTableProxy failed.") from e
 
-    @auto_locking_op
     def where_not_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.where_not_in` table operation to all constituent tables of the underlying
         partitioned table with the provided filter table, and produces a new PartitionedTableProxy with the result
@@ -1909,7 +2018,8 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.whereNotIn(filter_table.j_table, *cols))
+            with auto_locking_ctx(self, filter_table):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.whereNotIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "where_not_in operation on the PartitionedTableProxy failed.") from e
 
@@ -1929,7 +2039,8 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.view(*formulas))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.view(*formulas))
         except Exception as e:
             raise DHError(e, "view operation on the PartitionedTableProxy failed.") from e
 
@@ -1949,11 +2060,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateView(*formulas))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateView(*formulas))
         except Exception as e:
             raise DHError(e, "update_view operation on the PartitionedTableProxy failed.") from e
 
-    @auto_locking_op
     def update(self, formulas: Union[str, Sequence[str]]) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.update` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -1970,11 +2081,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(*formulas))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(*formulas))
         except Exception as e:
             raise DHError(e, "update operation on the PartitionedTableProxy failed.") from e
 
-    @auto_locking_op
     def select(self, formulas: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.select` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -1991,7 +2102,8 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(*formulas))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(*formulas))
         except Exception as e:
             raise DHError(e, "select operation on the PartitionedTableProxy failed.") from e
 
@@ -2011,11 +2123,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.selectDistinct(*formulas))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.selectDistinct(*formulas))
         except Exception as e:
             raise DHError(e, "select_distinct operation on the PartitionedTableProxy failed.") from e
 
-    @auto_locking_op
     def natural_join(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
                      joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.natural_join` table operation to all constituent tables of the underlying
@@ -2042,16 +2154,16 @@ class PartitionedTableProxy(JObjectWrapper):
             on = to_sequence(on)
             joins = to_sequence(joins)
             table_op = jpy.cast(table.j_object, _JTableOperations)
-            if joins:
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, ",".join(on), ",".join(joins)))
-            else:
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, ",".join(on)))
+            with auto_locking_ctx(self, table):
+                if joins:
+                    return PartitionedTableProxy(
+                        j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, ",".join(on), ",".join(joins)))
+                else:
+                    return PartitionedTableProxy(
+                        j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, ",".join(on)))
         except Exception as e:
             raise DHError(e, "natural_join operation on the PartitionedTableProxy failed.") from e
 
-    @auto_locking_op
     def exact_join(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
                    joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.exact_join` table operation to all constituent tables of the underlying
@@ -2078,16 +2190,16 @@ class PartitionedTableProxy(JObjectWrapper):
             on = to_sequence(on)
             joins = to_sequence(joins)
             table_op = jpy.cast(table.j_object, _JTableOperations)
-            if joins:
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, ",".join(on), ",".join(joins)))
-            else:
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, ",".join(on)))
+            with auto_locking_ctx(self, table):
+                if joins:
+                    return PartitionedTableProxy(
+                        j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, ",".join(on), ",".join(joins)))
+                else:
+                    return PartitionedTableProxy(
+                        j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, ",".join(on)))
         except Exception as e:
             raise DHError(e, "exact_join operation on the PartitionedTableProxy failed.") from e
 
-    @auto_locking_op
     def join(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]] = None,
              joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.join` table operation to all constituent tables of the underlying partitioned
@@ -2114,16 +2226,16 @@ class PartitionedTableProxy(JObjectWrapper):
             on = to_sequence(on)
             joins = to_sequence(joins)
             table_op = jpy.cast(table.j_object, _JTableOperations)
-            if joins:
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.join(table_op, ",".join(on), ",".join(joins)))
-            else:
-                return PartitionedTableProxy(
-                    j_pt_proxy=self.j_pt_proxy.join(table_op, ",".join(on)))
+            with auto_locking_ctx(self, table):
+                if joins:
+                    return PartitionedTableProxy(
+                        j_pt_proxy=self.j_pt_proxy.join(table_op, ",".join(on), ",".join(joins)))
+                else:
+                    return PartitionedTableProxy(
+                        j_pt_proxy=self.j_pt_proxy.join(table_op, ",".join(on)))
         except Exception as e:
             raise DHError(e, "join operation on the PartitionedTableProxy failed.") from e
 
-    @auto_locking_op
     def aj(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
            joins: Union[str, Sequence[str]] = None,
            match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> PartitionedTableProxy:
@@ -2165,11 +2277,12 @@ class PartitionedTableProxy(JObjectWrapper):
                 match_rule = _JAsOfJoinRule.LESS_THAN
             else:
                 raise ValueError("invalid match_rule value")
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aj(table_op, on, joins, match_rule))
+
+            with auto_locking_ctx(self, table):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aj(table_op, on, joins, match_rule))
         except Exception as e:
             raise DHError(e, "as-of join operation on the PartitionedTableProxy failed.") from e
 
-    @auto_locking_op
     def raj(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
             joins: Union[str, Sequence[str]] = None,
             match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> PartitionedTableProxy:
@@ -2212,7 +2325,8 @@ class PartitionedTableProxy(JObjectWrapper):
             else:
                 raise ValueError("invalid match_rule value")
 
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.raj(table_op, on, joins, match_rule))
+            with auto_locking_ctx(self, table):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.raj(table_op, on, joins, match_rule))
         except Exception as e:
             raise DHError(e, "reverse as-of join operation on the PartitionedTableProxy failed.") from e
 
@@ -2232,10 +2346,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.groupBy(*by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.groupBy())
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.groupBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.groupBy())
         except Exception as e:
             raise DHError(e, "group-by operation on the PartitionedTableProxy failed.") from e
 
@@ -2259,7 +2374,8 @@ class PartitionedTableProxy(JObjectWrapper):
             aggs = to_sequence(aggs)
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "agg_by operation on the PartitionedTableProxy failed.") from e
 
@@ -2283,7 +2399,8 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggAllBy(agg.j_agg_spec, *by))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggAllBy(agg.j_agg_spec, *by))
         except Exception as e:
             raise DHError(e, "agg_all_by operation on the PartitionedTableProxy failed.") from e
 
@@ -2304,10 +2421,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.countBy(col, *by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.countBy(col))
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.countBy(col, *by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.countBy(col))
         except Exception as e:
             raise DHError(e, "count_by operation on the PartitionedTableProxy failed.") from e
 
@@ -2327,10 +2445,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.firstBy(*by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.firstBy())
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.firstBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.firstBy())
         except Exception as e:
             raise DHError(e, "first_by operation on the PartitionedTableProxy failed.") from e
 
@@ -2350,10 +2469,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.lastBy(*by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.lastBy())
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.lastBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.lastBy())
         except Exception as e:
             raise DHError(e, "last_by operation on the PartitionedTableProxy failed.") from e
 
@@ -2373,10 +2493,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.minBy(*by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.minBy())
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.minBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.minBy())
         except Exception as e:
             raise DHError(e, "min_by operation on the PartitionedTableProxy failed.") from e
 
@@ -2396,10 +2517,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.maxBy(*by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.maxBy())
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.maxBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.maxBy())
         except Exception as e:
             raise DHError(e, "max_by operation on the PartitionedTableProxy failed.") from e
 
@@ -2419,10 +2541,60 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sumBy(*by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sumBy())
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sumBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sumBy())
+        except Exception as e:
+            raise DHError(e, "sum_by operation on the PartitionedTableProxy failed.") from e
+
+    def abs_sum_by(self, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.abs_sum_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.absSumBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.absSumBy())
+        except Exception as e:
+            raise DHError(e, "sum_by operation on the PartitionedTableProxy failed.") from e
+
+    def weighted_sum_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.weighted_sum_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            wcol (str): the name of the weight column
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.wsumBy(wcol, *by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.wsumBy(wcol))
         except Exception as e:
             raise DHError(e, "sum_by operation on the PartitionedTableProxy failed.") from e
 
@@ -2442,10 +2614,36 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy(*by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy())
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy())
+        except Exception as e:
+            raise DHError(e, "avg_by operation on the PartitionedTableProxy failed.") from e
+
+    def weighted_avg_by(self, wcol: str, by: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.weighted_avg_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            wcol (str): the name of the weight column
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            by = to_sequence(by)
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.wavgBy(wcol, *by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy(wcol))
         except Exception as e:
             raise DHError(e, "avg_by operation on the PartitionedTableProxy failed.") from e
 
@@ -2465,10 +2663,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.medianBy(*by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.medianBy())
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.medianBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.medianBy())
         except Exception as e:
             raise DHError(e, "median_by operation on the PartitionedTableProxy failed.") from e
 
@@ -2488,10 +2687,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.stdBy(*by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.stdBy())
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.stdBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.stdBy())
         except Exception as e:
             raise DHError(e, "std_by operation on the PartitionedTableProxy failed.") from e
 
@@ -2511,9 +2711,34 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            if by:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.varBy(*by))
-            else:
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.varBy())
+            with auto_locking_ctx(self):
+                if by:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.varBy(*by))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.varBy())
         except Exception as e:
             raise DHError(e, "var_by operation on the PartitionedTableProxy failed.") from e
+
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]],
+                  by: Union[str, List[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.update_by` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            ops (Union[UpdateByOperation, List[UpdateByOperation]]): the update-by operation definition(s)
+            by (Union[str, List[str]]): the key column name(s) to group the rows of the table
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            ops = to_sequence(ops)
+            by = to_sequence(by)
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateBy(j_array_list(ops), *by))
+        except Exception as e:
+            raise DHError(e, "update-by operation on the PartitionedTableProxy failed.") from e

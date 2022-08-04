@@ -10,16 +10,41 @@
 #include "arrow/csv/api.h"
 #include "arrow/status.h"
 #include "arrow/pretty_print.h"
-#include "deephaven/client/highlevel/client.h"
+#include "deephaven/client/client.h"
 #include "deephaven/client/utility/utility.h"
 
-using deephaven::client::highlevel::TableHandleManager;
-using deephaven::client::highlevel::Client;
+using deephaven::client::TableHandleManager;
+using deephaven::client::Client;
 using deephaven::client::utility::okOrThrow;
 using deephaven::client::utility::valueOrThrow;
 
 namespace {
+arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn);
+}  // namespace
 
+int main(int argc, char* argv[]) {
+  if (argc != 2) {
+    std::cerr << "Usage: " << argv[0] << " filename" << std::endl;
+    std::exit(1);
+  }
+
+  const char *server = "localhost:10000";
+
+  try {
+    auto client = Client::connect(server);
+    auto manager = client.getManager();
+    auto st = doit(manager, argv[1]);
+    if (!st.ok()) {
+      std::cerr << "Failed with status " << st << std::endl;
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "Caught exception: " << e.what() << '\n';
+  }
+
+  return 0;
+}
+
+namespace {
 arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn) {
   auto input_file = valueOrThrow(
       DEEPHAVEN_EXPR_MSG(arrow::io::ReadableFile::Open(csvfn)));
@@ -49,10 +74,10 @@ arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn) 
 
   const auto &srcColumns = arrow_table->columns();
   const size_t ncols = srcColumns.size();
-  const size_t nchunks = srcColumns[0]->num_chunks();
+  const int nchunks = srcColumns[0]->num_chunks();
   std::vector<std::shared_ptr<arrow::Array>> destColumns(ncols);
-  for (size_t chunkIndex = 0; chunkIndex < nchunks; ++chunkIndex) {
-    for (size_t colIndex = 0; colIndex < ncols; ++colIndex) {
+  for (int chunkIndex = 0; chunkIndex < nchunks; ++chunkIndex) {
+    for (int colIndex = 0; colIndex < ncols; ++colIndex) {
       destColumns[colIndex] = srcColumns[colIndex]->chunk(chunkIndex);
     }
     auto batch = arrow::RecordBatch::Make(arrow_table->schema(), destColumns[0]->length(), destColumns);
@@ -66,30 +91,7 @@ arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn) 
   okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
 
   std::cout << "table is:\n" << table_handle.stream(true) << std::endl;
+  table_handle.bindToVariable("showme");
   return arrow::Status::OK();
 }
-
 }  // namespace
-
-int main(int argc, char* argv[]) {
-
-  if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " filename" << std::endl;
-    std::exit(1);
-  }
-  
-  const char *server = "localhost:10000";
-
-  try {
-    auto client = Client::connect(server);
-    auto manager = client.getManager();
-    auto st = doit(manager, argv[1]);
-    if (!st.ok()) {
-      std::cerr << "Failed with status " << st << std::endl;
-    }
-  } catch (const std::exception &e) {
-    std::cerr << "Caught exception: " << e.what() << '\n';
-  }
-
-  return 0;
-}

@@ -16,6 +16,7 @@ import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.Join;
 import io.deephaven.qst.table.JoinTable;
+import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.SelectDistinctTable;
@@ -128,6 +129,11 @@ public class LabelBuilder extends TableVisitorGeneric {
     }
 
     @Override
+    public void visit(LazyUpdateTable lazyUpdateTable) {
+        selectable("lazyUpdate", lazyUpdateTable);
+    }
+
+    @Override
     public void visit(WhereTable whereTable) {
         sb.append("where(");
         append(Strings::of, whereTable.filters(), sb);
@@ -173,7 +179,7 @@ public class LabelBuilder extends TableVisitorGeneric {
     @Override
     public void visit(SelectDistinctTable selectDistinctTable) {
         sb.append("selectDistinct(");
-        append(Strings::of, selectDistinctTable.groupByColumns(), sb);
+        append(Strings::of, selectDistinctTable.columns(), sb);
         sb.append(')');
     }
 

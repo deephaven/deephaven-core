@@ -73,29 +73,29 @@ public class SwitchColumn implements SelectColumn {
 
     @Override
     public Class<?> getReturnedType() {
-        return realColumn.getReturnedType();
+        return getRealColumn().getReturnedType();
     }
 
     @Override
     public List<String> getColumns() {
-        return realColumn.getColumns();
+        return getRealColumn().getColumns();
     }
 
     @Override
     public List<String> getColumnArrays() {
-        return realColumn.getColumnArrays();
+        return getRealColumn().getColumnArrays();
     }
 
     @NotNull
     @Override
     public ColumnSource<?> getDataView() {
-        return realColumn.getDataView();
+        return getRealColumn().getDataView();
     }
 
     @NotNull
     @Override
     public ColumnSource<?> getLazyView() {
-        return realColumn.getLazyView();
+        return getRealColumn().getLazyView();
     }
 
     @Override
@@ -110,12 +110,12 @@ public class SwitchColumn implements SelectColumn {
 
     @Override
     public WritableColumnSource<?> newDestInstance(long size) {
-        return realColumn.newDestInstance(size);
+        return getRealColumn().newDestInstance(size);
     }
 
     @Override
     public WritableColumnSource<?> newFlatDestInstance(long size) {
-        return realColumn.newFlatDestInstance(size);
+        return getRealColumn().newFlatDestInstance(size);
     }
 
     @Override
@@ -129,17 +129,21 @@ public class SwitchColumn implements SelectColumn {
     }
 
     public SelectColumn getRealColumn() {
+        if (realColumn == null) {
+            throw new IllegalStateException(
+                    "getRealColumn() is not available until this SwitchColumn is initialized; ensure that initInputs or initDef has been called first");
+        }
         return realColumn;
     }
 
     @Override
     public boolean disallowRefresh() {
-        return Require.neqNull(realColumn, "realColumn").disallowRefresh();
+        return getRealColumn().disallowRefresh();
     }
 
     @Override
     public boolean isStateless() {
-        return Require.neqNull(realColumn, "realColumn").isStateless();
+        return getRealColumn().isStateless();
     }
 
     @Override

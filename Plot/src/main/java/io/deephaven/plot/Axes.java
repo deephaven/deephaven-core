@@ -1367,20 +1367,18 @@ public interface Axes extends Serializable {
     ////////////////////////// tree map plot //////////////////////////
 
     /**
-     * Creates a treemap plot. Required columns are values, ids, and parents, the rest can be null.
-     * @param seriesName
-     * @param t
-     * @param values
-     * @param ids
-     * @param parents
-     * @param labels
-     * @param text
-     * @param color
-     * @param hoverText
-     * @return
+     * Creates a treemap plot. Required columns are ids and parents, the rest can be null.
+     * @param seriesName name of the created dataset
+     * @param t table
+     * @param ids column in {@code t} holding ID data
+     * @param parents column in {@code t} holding parent ID data
+     * @param values column in {@code t} holding value data
+     * @param labels column in {@code t} holding label data
+     * @param hoverTexts column in {@code t} holding hover text data
+     * @param colors column in {@code t} holding color data
+     * @return dataset created for plot
      */
-    CategoryDataSeries treeMapPlot(Comparable seriesName, Table t, String values, String ids, String parents, @Nullable String labels, @Nullable String text, @Nullable String color, @Nullable String hoverText);
-
+    CategoryDataSeries treemapPlot(Comparable seriesName, Table t, String ids, String parents, @Nullable String values, @Nullable String labels, @Nullable String hoverTexts, @Nullable String colors);
 
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateAxesPlotMethods //////////////////////////////

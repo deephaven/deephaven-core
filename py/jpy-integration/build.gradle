@@ -24,6 +24,8 @@ sourceSets {
     resources {
       srcDirs = ['src/javaToPython/python']
     }
+    compileClasspath += sourceSets.test.output
+    runtimeClasspath += sourceSets.test.output
   }
 
   pythonToJava {
@@ -33,24 +35,28 @@ sourceSets {
     resources {
       srcDirs = ['src/pythonToJava/python']
     }
+    compileClasspath += sourceSets.test.output
+    runtimeClasspath += sourceSets.test.output
   }
 }
 
 configurations {
-  testCompile.extendsFrom junit
+  javaToPythonJar
 
-  javaToPythonCompile.extendsFrom testCompile
-  pythonToJavaCompile.extendsFrom testCompile
+  testImplementation.extendsFrom junit
 
-  javaToPythonRuntime.extendsFrom testRuntime
-  pythonToJavaRuntime.extendsFrom testRuntime
+  javaToPythonImplementation.extendsFrom testImplementation
+  pythonToJavaImplementation.extendsFrom testImplementation
+
+  javaToPythonRuntimeOnly.extendsFrom testRuntimeOnly
+  pythonToJavaRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 dependencies {
   // todo: consider running tests where JPY is *not* on the classpath, which is a completely acceptable use case
-  testCompile project(':deephaven-jpy-ext')
-  javaToPythonCompile sourceSets.test.output
-  pythonToJavaCompile sourceSets.test.output
+  testImplementation project(':deephaven-jpy-ext')
+  javaToPythonImplementation sourceSets.test.output
+  pythonToJavaImplementation sourceSets.test.output
 }
 
 test {
@@ -65,7 +71,7 @@ task javaToPythonJar(type: Jar) {
 
 // And then we need to attach it to the appropriate configuration
 artifacts {
-  javaToPythonRuntime tasks.javaToPythonJar
+  javaToPythonJar tasks.javaToPythonJar
 }
 
 // must be explicit about marking these as test source directories in IntelliJ when not delegating builds to gradle

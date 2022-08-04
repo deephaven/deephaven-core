@@ -3,9 +3,12 @@
  */
 package io.deephaven.server.table.ops.filter;
 
+import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.Literal;
 import org.junit.Test;
 
+import static io.deephaven.server.table.ops.filter.FilterPrinter.print;
+import static io.deephaven.server.table.ops.filter.FilterTestUtils.reference;
 import static org.junit.Assert.*;
 
 public class FilterPrinterTest {
@@ -98,5 +101,18 @@ public class FilterPrinterTest {
 
     private static Literal lit(double doubleValue) {
         return Literal.newBuilder().setDoubleValue(doubleValue).build();
+    }
+
+    @Test
+    public void testInvoke() {
+        Condition hello = FilterTestUtils.invoke("hello", null);
+        assertEquals("hello()", print(hello));
+        hello = FilterTestUtils.invoke("hello", reference("foo"));
+        assertEquals("foo.hello()", print(hello));
+
+        Condition helloWorld = FilterTestUtils.invoke("helloWorld", null, reference("someColumn"));
+        assertEquals("helloWorld(someColumn)", print(helloWorld));
+        helloWorld = FilterTestUtils.invoke("helloWorld", reference("foo"), reference("someColumn"));
+        assertEquals("foo.helloWorld(someColumn)", print(helloWorld));
     }
 }

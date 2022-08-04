@@ -5,7 +5,7 @@ package io.deephaven.qst.table;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.qst.examples.EmployeesExample;
 import io.deephaven.qst.column.Column;
 
@@ -111,11 +111,11 @@ public class TableCreatorImplTest {
     }
 
     static TableSpec updateByFooCumSum(TableSpec table) {
-        return table.updateBy(UpdateByClause.CumSum("Foo"));
+        return table.updateBy(UpdateByOperation.CumSum("Foo"));
     }
 
     static TableSpec updateByFooCumSumByBar(TableSpec table) {
-        return table.updateBy(UpdateByClause.CumSum("Foo"), "Bar");
+        return table.updateBy(UpdateByOperation.CumSum("Foo"), "Bar");
     }
 
     static TableSpec selectFoo(TableSpec table) {

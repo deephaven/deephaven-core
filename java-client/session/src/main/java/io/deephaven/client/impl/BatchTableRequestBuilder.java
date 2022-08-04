@@ -76,6 +76,7 @@ import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
 import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
+import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
@@ -383,6 +384,11 @@ class BatchTableRequestBuilder {
         }
 
         @Override
+        public void visit(LazyUpdateTable v) {
+            out = op(Builder::setLazyUpdate, selectOrUpdate(v, v.columns()));
+        }
+
+        @Override
         public void visit(SelectTable v) {
             out = op(Builder::setSelect, selectOrUpdate(v, v.columns()));
         }
@@ -490,7 +496,7 @@ class BatchTableRequestBuilder {
             SelectDistinctRequest.Builder builder = SelectDistinctRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(selectDistinctTable.parent()));
-            for (Selectable column : selectDistinctTable.groupByColumns()) {
+            for (Selectable column : selectDistinctTable.columns()) {
                 builder.addColumnNames(Strings.of(column));
             }
             return builder.build();

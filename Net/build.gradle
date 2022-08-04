@@ -3,10 +3,14 @@ plugins {
 }
 
 dependencies {
-    compile project(':Base'), project(':DataStructures'), project(':IO'), project(':Configuration'),
-            project(':FishUtil')
+    implementation project(':Base')
+    implementation project(':DataStructures')
+    implementation project(':IO')
+    implementation project(':Configuration')
+    implementation project(':FishUtil')
+    implementation project(':log-factory')
 
-    testCompile project(path: ':Base', configuration: 'tests')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

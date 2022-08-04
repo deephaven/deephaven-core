@@ -242,6 +242,7 @@ public class GeneratePyV2FigureAPI {
         private final boolean isStatic;
         private final boolean isPublic;
 
+
         public Key(final Method m) {
             this.name = m.getName();
             this.isStatic = Modifier.isStatic(m.getModifiers());
@@ -370,22 +371,35 @@ public class GeneratePyV2FigureAPI {
         private final FunctionCallType functionCallType;
         private final String[] javaFuncs;
         private final String[] requiredParams;
+        private final String[] nullableParams;
         private final String pydoc;
         private final boolean generate;
 
         public PyFunc(final String name, final FunctionCallType functionCallType, final String[] javaFuncs,
-                final String[] requiredParams, final String pydoc, final boolean generate) {
+                final String[] requiredParams, final String[] nullableParams, final String pydoc,
+                final boolean generate) {
             this.name = name;
             this.functionCallType = functionCallType;
             this.javaFuncs = javaFuncs;
             this.requiredParams = requiredParams == null ? new String[] {} : requiredParams;
+            this.nullableParams = nullableParams == null ? new String[] {} : nullableParams;
             this.pydoc = pydoc;
             this.generate = generate;
         }
 
         public PyFunc(final String name, final FunctionCallType functionCallType, final String[] javaFuncs,
+                final String[] requiredParams, final String pydoc, final boolean generate) {
+            this(name, functionCallType, javaFuncs, requiredParams, null, pydoc, generate);
+        }
+
+        public PyFunc(final String name, final FunctionCallType functionCallType, final String[] javaFuncs,
                 final String[] requiredParams, final String pydoc) {
             this(name, functionCallType, javaFuncs, requiredParams, pydoc, true);
+        }
+
+        public PyFunc(final String name, final FunctionCallType functionCallType, final String[] javaFuncs,
+                final String[] requiredParams, final String[] nullableParams, final String pydoc) {
+            this(name, functionCallType, javaFuncs, requiredParams, nullableParams, pydoc, true);
         }
 
         @Override
@@ -443,10 +457,20 @@ public class GeneratePyV2FigureAPI {
          * Is the parameter required for the function?
          *
          * @param parameter python parameter
-         * @return is the parameter requried for the function?
+         * @return is the parameter required for the function?
          */
         public boolean isRequired(final PyArg parameter) {
             return Arrays.asList(requiredParams).contains(parameter.name);
+        }
+
+        /**
+         * Is the parameter nullable for the function?
+         *
+         * @param parameter python parameter
+         * @return is the parameter nullable for the function?
+         */
+        public boolean isNullable(final PyArg parameter) {
+            return Arrays.asList(nullableParams).contains(parameter.name);
         }
 
         /**
@@ -476,15 +500,30 @@ public class GeneratePyV2FigureAPI {
          * Gets the valid Python method argument name combinations.
          *
          * @param signatures java functions with the same name.
+         * @param pyArgMap possible python function arguments
          * @return valid Java method argument name combinations.
          */
         private static List<String[]> pyArgNames(final ArrayList<JavaFunction> signatures,
                 final Map<String, PyArg> pyArgMap) {
-            final Set<Set<String>> seen = new HashSet<>();
+            return pyArgNames(signatures, pyArgMap, new String[] {});
+        }
 
+        /**
+         * Gets the valid Python method argument name combinations.
+         *
+         * @param signatures java functions with the same name.
+         * @param pyArgMap possible python function arguments
+         * @param excludeArgs arguments to exclude from the output
+         * @return valid Java method argument name combinations.
+         */
+        private static List<String[]> pyArgNames(final ArrayList<JavaFunction> signatures,
+                final Map<String, PyArg> pyArgMap, String[] excludeArgs) {
+            final Set<Set<String>> seen = new HashSet<>();
             return javaArgNames(signatures)
                     .stream()
-                    .map(an -> Arrays.stream(an).map(s -> pyArgMap.get(s).name).toArray(String[]::new))
+                    .map(an -> Arrays.stream(an).map(s -> pyArgMap.get(s).name)
+                            .filter(s -> !Arrays.stream(excludeArgs).anyMatch(ex -> ex.equals(s)))
+                            .toArray(String[]::new))
                     .filter(an -> seen.add(new HashSet<>(Arrays.asList(an))))
                     .sorted((first, second) -> {
                         final int c1 = Integer.compare(first.length, second.length);
@@ -766,42 +805,51 @@ public class GeneratePyV2FigureAPI {
             for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
                 final Key key = entry.getKey();
                 final ArrayList<JavaFunction> sigs = entry.getValue();
-                final List<String[]> argNames = pyArgNames(sigs, pyArgMap);
+                final List<String[]> argNameList = pyArgNames(sigs, pyArgMap);
+                final List<String[]> nonNullableArgNameList = pyArgNames(sigs, pyArgMap, nullableParams);
 
-                for (final String[] an : argNames) {
-                    validateArgNames(an, alreadyGenerated, signatures, pyArgMap);
-                    final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
+                if (argNameList.size() != nonNullableArgNameList.size()) {
+                    throw new RuntimeException(
+                            "Full argument list size " + argNameList.size() + " and non-nullable list size "
+                                    + nonNullableArgNameList.size() + " do not match for " + key);
+                }
 
-                    if (quoted_an.length == 0) {
+                for (int i = 0; i < nonNullableArgNameList.size(); i++) {
+                    final String[] argNames = argNameList.get(i);
+                    final String[] nonNullableArgNames = nonNullableArgNameList.get(i);
+                    validateArgNames(argNames, alreadyGenerated, signatures, pyArgMap);
+                    final String[] quotedNonNullableArgNames =
+                            Arrays.stream(nonNullableArgNames).map(s -> "\"" + s + "\"").toArray(String[]::new);
+                    final boolean hasNullables = nonNullableArgNames.length < argNames.length;
+
+                    if (argNames.length == 0) {
                         sb.append(INDENT)
                                 .append(INDENT)
                                 .append(isFirst ? "if" : "elif")
-                                .append(" not non_null_args:\n")
+                                .append(" not non_null_args:\n");
+                    } else if (hasNullables) {
+                        sb.append(INDENT)
                                 .append(INDENT)
-                                .append(INDENT)
-                                .append(INDENT)
-                                .append("return Figure(self.j_figure.")
-                                .append(key.name)
-                                .append("(")
-                                .append(String.join(", ", an))
-                                .append("))\n");
+                                .append(isFirst ? "if" : "elif")
+                                .append(" set({")
+                                .append(String.join(", ", quotedNonNullableArgNames))
+                                .append("}).issubset(non_null_args):\n");
                     } else {
                         sb.append(INDENT)
                                 .append(INDENT)
                                 .append(isFirst ? "if" : "elif")
                                 .append(" non_null_args == {")
-                                .append(String.join(", ", quoted_an))
-                                .append("}:\n")
-                                .append(INDENT)
-                                .append(INDENT)
-                                .append(INDENT)
-                                .append("return Figure(self.j_figure.")
-                                .append(key.name)
-                                .append("(")
-                                .append(String.join(", ", an))
-                                .append("))\n");
-
+                                .append(String.join(", ", quotedNonNullableArgNames))
+                                .append("}:\n");
                     }
+                    sb.append(INDENT)
+                            .append(INDENT)
+                            .append(INDENT)
+                            .append("return Figure(self.j_figure.")
+                            .append(key.name)
+                            .append("(")
+                            .append(String.join(", ", argNames))
+                            .append("))\n");
                     isFirst = false;
                 }
             }
@@ -824,7 +872,6 @@ public class GeneratePyV2FigureAPI {
          */
         private void generatePyFuncCallSequential(final StringBuilder sb,
                 final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyArgMap) {
-
             sb.append(INDENT)
                     .append(INDENT)
                     .append("f_called = False\n")
@@ -1112,12 +1159,12 @@ public class GeneratePyV2FigureAPI {
         rst.put("pointSizes", rst.get("pointSize"));
         rst.put("pointLabelFormat", new PyArg(84, "label_format", taStr, "point label format.", null));
         rst.put("visible", new PyArg(85, "visible", taInt, "true to draw the design element; false otherwise.", null));
-        rst.put("values", new PyArg(10, "values_column", taStr, "", null));
-        rst.put("ids", new PyArg(10, "ids_column", taStr, "", null));
-        rst.put("parents", new PyArg(10, "parents_column", taStr, "", null));
-        rst.put("labels", new PyArg(10, "labels_column", taStr, "", null));
-        rst.put("text", new PyArg(10, "text_column", taStr, "", null));
-        rst.put("hoverText", new PyArg(10, "hover_text_column", taStr, "", null));
+        rst.put("ids", new PyArg(86, "id", taStr, "column name containing IDs", null));
+        rst.put("parents", new PyArg(87, "parent", taStr, "column name containing parent IDs", null));
+        rst.put("values", new PyArg(88, "value", taStr, "column name containing values", null));
+        rst.put("labels", new PyArg(89, "label", taStr, "column name containing labels", null));
+        rst.put("hoverTexts", new PyArg(90, "hover_text", taStr, "column name containing hover text", null));
+        rst.put("colors", new PyArg(91, "color", taStr, "column name containing color", null));
 
         ////////////////////////////////////////////////////////////////
 
@@ -1226,8 +1273,10 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[] {"ohlcPlot", "ohlcPlotBy"},
                 new String[] {"series_name"},
                 "Creates an open-high-low-close plot."));
-        rst.add(new PyFunc("plot_tree_map", SINGLETON, new String[] {"treeMapPlot"},
-                new String[] {"t", "ids", "parents"}, ""));
+        rst.add(new PyFunc("plot_treemap", SINGLETON, new String[] {"treemapPlot"},
+                new String[] {"series_name", "t", "id", "parent"},
+                new String[] {"value", "label", "hover_text", "color"},
+                "Creates a treemap. Must have only one root."));
 
         ////////////////////////////////////////////////////////////////
 

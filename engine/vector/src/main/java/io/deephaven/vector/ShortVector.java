@@ -6,10 +6,6 @@
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVector and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
 package io.deephaven.vector;
 
 import io.deephaven.qst.type.ShortType;
