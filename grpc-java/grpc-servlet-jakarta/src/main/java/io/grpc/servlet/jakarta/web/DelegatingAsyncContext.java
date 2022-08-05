@@ -8,10 +8,10 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 
 /**
- * Util class to allow the complete() call to get some work done (writing trailers as a payload) before
- * calling the actual container implementation. The container will finish closing the stream before
- * invoking the async listener and formally informing the filter that the stream has closed, making
- * this our last chance to intercept the closing of the stream before it happens.
+ * Util class to allow the complete() call to get some work done (writing trailers as a payload) before calling the
+ * actual container implementation. The container will finish closing the stream before invoking the async listener and
+ * formally informing the filter that the stream has closed, making this our last chance to intercept the closing of the
+ * stream before it happens.
  */
 public class DelegatingAsyncContext implements AsyncContext {
     private final AsyncContext delegate;
@@ -67,7 +67,7 @@ public class DelegatingAsyncContext implements AsyncContext {
 
     @Override
     public void addListener(AsyncListener listener, ServletRequest servletRequest,
-                            ServletResponse servletResponse) {
+            ServletResponse servletResponse) {
         delegate.addListener(listener, servletRequest, servletResponse);
     }
 

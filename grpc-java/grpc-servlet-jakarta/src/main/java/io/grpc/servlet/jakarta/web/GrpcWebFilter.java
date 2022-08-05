@@ -13,21 +13,24 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
- * Servlet filter that translates grpc-web on the fly to match what is expected by GrpcServlet.
- * This work is done in-process with no addition copies to the request or response data - only
- * the content type header and the trailer content is specially treated at this time.
+ * Servlet filter that translates grpc-web on the fly to match what is expected by GrpcServlet. This work is done
+ * in-process with no addition copies to the request or response data - only the content type header and the trailer
+ * content is specially treated at this time.
  *
  * Note that grpc-web-text is not yet supported.
  */
 public class GrpcWebFilter extends HttpFilter {
+    private static final Logger logger = Logger.getLogger(GrpcWebFilter.class.getName());
+
     public static final String CONTENT_TYPE_GRPC_WEB = GrpcUtil.CONTENT_TYPE_GRPC + "-web";
 
     @Override
@@ -64,7 +67,8 @@ public class GrpcWebFilter extends HttpFilter {
                                     if (map != null) {
                                         // write a payload, even for an empty set of trailers, but not for
                                         // the absence of trailers.
-                                        int trailerLength = map.entrySet().stream().mapToInt(e -> e.getKey().length() + e.getValue().length() + 4).sum();
+                                        int trailerLength = map.entrySet().stream()
+                                                .mapToInt(e -> e.getKey().length() + e.getValue().length() + 4).sum();
                                         ByteBuffer payload = ByteBuffer.allocate(5 + trailerLength);
                                         payload.put((byte) 0x80);
                                         payload.putInt(trailerLength);
@@ -78,8 +82,10 @@ public class GrpcWebFilter extends HttpFilter {
                                     }
                                 }
                             } catch (IOException e) {
-                                // TODO reconsider this, find a better way to report
-                                throw new UncheckedIOException(e);
+                                // complete() should not throw, but instead just log the error. In this case,
+                                // the connection has likely been lost, so there is no way to send the trailers,
+                                // so we just let the exception slide.
+                                logger.log(Level.FINE, "Error sending grpc-web trailers", e);
                             }
 
                             // Let the superclass complete the stream so we formally close it
