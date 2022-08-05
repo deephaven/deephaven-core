@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
+import jpy
 import unittest
 
 from deephaven import time_table, DHError, merge, merge_sorted
@@ -206,6 +207,14 @@ class UgpTestCase(BaseTestCase):
             test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         pt = test_table.partition_by(by="Y")
 
+        _ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+        _context = _ExecutionContext.newBuilder() \
+          .captureCompilerContext() \
+          .captureQueryLibrary() \
+          .emptyQueryScope() \
+          .build() \
+          .open()
+
         with self.subTest("Merge"):
             ugp.auto_locking = False
             with self.assertRaises(DHError) as cm:
@@ -232,6 +241,8 @@ class UgpTestCase(BaseTestCase):
 
             ugp.auto_locking = True
             pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
+
+        _context.close()
 
     def test_auto_locking_table_factory(self):
         with ugp.shared_lock():

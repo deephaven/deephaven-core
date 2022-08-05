@@ -10,7 +10,7 @@ import jpy
 from deephaven import DHError
 
 _JPackage = jpy.get_type("java.lang.Package")
-_JQueryLibrary = jpy.get_type("io.deephaven.engine.table.lang.QueryLibrary")
+_JQueryLibrary = jpy.get_type("io.deephaven.engine.context.QueryLibrary")
 _JClass = jpy.get_type("java.lang.Class")
 
 

@@ -194,6 +194,11 @@ public class ExecutionContext {
             return this;
         }
 
+        public Builder emptyQueryScope() {
+            this.queryScope = EmptyQueryScope.INSTANCE;
+            return this;
+        }
+
         public Builder newQueryScope() {
             this.queryScope = new QueryScope.StandaloneImpl();
             return this;

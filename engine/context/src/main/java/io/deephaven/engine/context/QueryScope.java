@@ -24,8 +24,8 @@ import java.util.*;
 public abstract class QueryScope implements LogOutputAppendable {
 
     /**
-     * Sets the default {@link QueryScope} to be used in the current context. The method allows
-     * the use of a new or separate instance as the default instance for static methods.
+     * Sets the default {@link QueryScope} to be used in the current context. The method allows the use of a new or
+     * separate instance as the default instance for static methods.
      *
      * @param queryScope {@link QueryScope} to set as the new instance; null clears the scope.
      */
