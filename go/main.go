@@ -19,10 +19,15 @@ func main() {
 		return
 	}
 
-	_, err = cl.Subscribe(ctx, tbl)
+	tickingTbl, updateChan, err := cl.Subscribe(ctx, tbl)
 	if err != nil {
 		fmt.Println(err)
 		return
+	}
+
+	for update := range updateChan {
+		tickingTbl.ApplyUpdate(update)
+		fmt.Println(tickingTbl)
 	}
 
 	err = tbl.Release(ctx)

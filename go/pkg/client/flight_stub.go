@@ -21,7 +21,7 @@ import (
 	flatbuf_b "github.com/deephaven/deephaven-core/go/internal/barrage/flatbuf"
 	flatbuf_a "github.com/deephaven/deephaven-core/go/org/apache/arrow/flatbuf"
 
-	"github.com/deephaven/deephaven-core/go/pkg/client/barrage"
+	"github.com/deephaven/deephaven-core/go/pkg/client/ticking"
 )
 
 // flightStub wraps Arrow Flight gRPC calls.
@@ -140,19 +140,18 @@ func (fs *flightStub) Close() error {
 	return nil
 }
 
-func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle) (*int, error) {
+func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle) (*ticking.TickingTable, <-chan ticking.TickingUpdate, error) {
 	ctx, err := fs.client.withToken(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	doExchg, err := fs.stub.DoExchange(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	defer doExchg.CloseSend()
 
-	/*ser := barrage.NewRowSetSerializer()
+	/*ser := ticking.NewRowSetSerializer()
 	ser.AddRowRange(0, 9)
 	viewportSet := ser.Finish()*/
 
@@ -218,203 +217,121 @@ func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle) (*int,
 
 	err = doExchg.Send(data)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	reader, err := flight.NewRecordReader(doExchg)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	tbl, err := barrage.NewTickingTable(handle.schema)
+	tbl, err := ticking.NewTickingTable(handle.schema)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	for reader.Next() {
-		if reader.Err() != nil {
-			return nil, err
-		}
+	updateChan := make(chan ticking.TickingUpdate, 1)
 
-		record := reader.Record()
+	go func() {
+		defer doExchg.CloseSend()
 
-		fmt.Println(record)
-
-		resp := reader.LatestAppMetadata()
-
-		if len(resp) > 0 {
-			meta := resp
-			msgWrapper := flatbuf_b.GetRootAsBarrageMessageWrapper(meta, 0)
-
-			payload := make([]byte, msgWrapper.MsgPayloadLength())
-			for i := 0; i < msgWrapper.MsgPayloadLength(); i++ {
-				payload[i] = byte(msgWrapper.MsgPayload(i))
+		for reader.Next() {
+			if reader.Err() != nil {
+				// TODO:
+				fmt.Println("error! ", err)
+				return
 			}
 
-			fmt.Println(msgWrapper.MsgType())
-			if msgWrapper.MsgType() == flatbuf_b.BarrageMessageTypeBarrageUpdateMetadata {
-				updateMeta := flatbuf_b.GetRootAsBarrageUpdateMetadata(payload, 0)
-				fmt.Println()
-				fmt.Println("first_seq:", updateMeta.FirstSeq())
-				fmt.Println("last_seq:", updateMeta.LastSeq())
-				fmt.Println("is_snapshot", updateMeta.IsSnapshot())
+			record := reader.Record()
 
-				addedRows := make([]byte, updateMeta.AddedRowsLength())
-				for i := 0; i < updateMeta.AddedRowsLength(); i++ {
-					addedRows[i] = byte(updateMeta.AddedRows(i))
+			fmt.Println(record)
+
+			resp := reader.LatestAppMetadata()
+
+			if len(resp) > 0 {
+				meta := resp
+				msgWrapper := flatbuf_b.GetRootAsBarrageMessageWrapper(meta, 0)
+
+				payload := make([]byte, msgWrapper.MsgPayloadLength())
+				for i := 0; i < msgWrapper.MsgPayloadLength(); i++ {
+					payload[i] = byte(msgWrapper.MsgPayload(i))
 				}
 
-				removedRows := make([]byte, updateMeta.RemovedRowsLength())
-				for i := 0; i < updateMeta.RemovedRowsLength(); i++ {
-					removedRows[i] = byte(updateMeta.RemovedRows(i))
-				}
+				fmt.Println(msgWrapper.MsgType())
+				if msgWrapper.MsgType() == flatbuf_b.BarrageMessageTypeBarrageUpdateMetadata {
+					updateMeta := flatbuf_b.GetRootAsBarrageUpdateMetadata(payload, 0)
+					fmt.Println()
+					fmt.Println("first_seq:", updateMeta.FirstSeq())
+					fmt.Println("last_seq:", updateMeta.LastSeq())
+					fmt.Println("is_snapshot", updateMeta.IsSnapshot())
 
-				addedRowsIncluded := make([]byte, updateMeta.AddedRowsIncludedLength())
-				for i := 0; i < updateMeta.AddedRowsIncludedLength(); i++ {
-					addedRowsIncluded[i] = byte(updateMeta.AddedRowsIncluded(i))
-				}
-
-				shiftData := make([]byte, updateMeta.ShiftDataLength())
-				for i := 0; i < updateMeta.ShiftDataLength(); i++ {
-					shiftData[i] = byte(updateMeta.ShiftData(i))
-				}
-
-				rowidx := 0
-
-				fmt.Print("removed rows: ")
-				removedRowsDec, err := barrage.DecodeRowSet(removedRows)
-				fmt.Println()
-				if err != nil {
-					fmt.Println(err)
-					continue
-				}
-				barrage.ConsumeRowSet(removedRowsDec,
-					func(start int64, end int64) {
-						tbl.DeleteKeyRange(start, end)
-					},
-					func(offset int64) {
-						tbl.DeleteKeyRange(offset, offset)
-					})
-
-				makeAppender := func(arr *[]int64) (func(start int64, end int64), func(offset int64)) {
-					rangeApp := func(start int64, end int64) {
-						for i := start; i <= end; i++ {
-							*arr = append(*arr, i)
-						}
+					addedRows := make([]byte, updateMeta.AddedRowsLength())
+					for i := 0; i < updateMeta.AddedRowsLength(); i++ {
+						addedRows[i] = byte(updateMeta.AddedRows(i))
 					}
-					offsetApp := func(offset int64) {
-						*arr = append(*arr, offset)
+
+					removedRows := make([]byte, updateMeta.RemovedRowsLength())
+					for i := 0; i < updateMeta.RemovedRowsLength(); i++ {
+						removedRows[i] = byte(updateMeta.RemovedRows(i))
 					}
-					return rangeApp, offsetApp
-				}
 
-				fmt.Print("shift data: ")
-				starts, ends, dests, err := barrage.DecodeRowSetShiftData(shiftData)
-				fmt.Println()
-				if err != nil {
-					fmt.Println(err)
-					continue
-				}
-
-				var startSet []int64
-				ssA, ssB := makeAppender(&startSet)
-				barrage.ConsumeRowSet(starts, ssA, ssB)
-
-				var endSet []int64
-				esA, esB := makeAppender(&endSet)
-				barrage.ConsumeRowSet(ends, esA, esB)
-
-				var destSet []int64
-				dsA, dsB := makeAppender(&destSet)
-				barrage.ConsumeRowSet(dests, dsA, dsB)
-
-				fmt.Println("starts: ", startSet)
-				fmt.Println("ends: ", endSet)
-				fmt.Println("dests: ", destSet)
-
-				if len(startSet) != len(endSet) || len(endSet) != len(destSet) {
-					panic("mismatched sets")
-				}
-
-				// Negative deltas get applied low-to-high keyspace order
-				for i := 0; i < len(startSet); i++ {
-					start := startSet[i]
-					end := endSet[i]
-					dest := destSet[i]
-
-					if dest < start {
-						tbl.ShiftKeyRange(start, end, dest)
+					addedRowsIncluded := make([]byte, updateMeta.AddedRowsIncludedLength())
+					for i := 0; i < updateMeta.AddedRowsIncludedLength(); i++ {
+						addedRowsIncluded[i] = byte(updateMeta.AddedRowsIncluded(i))
 					}
-				}
 
-				// Positive deltas get applied high-to-low keyspace order
-				for i := len(startSet) - 1; i >= 0; i-- {
-					start := startSet[i]
-					end := endSet[i]
-					dest := destSet[i]
-
-					if dest > start {
-						tbl.ShiftKeyRange(start, end, dest)
+					shiftData := make([]byte, updateMeta.ShiftDataLength())
+					for i := 0; i < updateMeta.ShiftDataLength(); i++ {
+						shiftData[i] = byte(updateMeta.ShiftData(i))
 					}
-				}
 
-				if len(addedRowsIncluded) != 0 {
-					fmt.Print("added rows inc: ")
-					keys, err := barrage.DeserializeRowSet(addedRowsIncluded)
-					if err != nil {
-						fmt.Println("(err) ", err)
-					} else {
-						fmt.Println(keys)
-					}
-				}
-
-				if len(addedRowsIncluded) > 0 {
-					// I have no idea what I'm doing with the addedRowsIncluded field
-
-					fmt.Print("added rows: ")
-					addedRowsIncDec, err := barrage.DecodeRowSet(addedRowsIncluded)
+					fmt.Print("removed rows: ")
+					removedRowsDec, err := ticking.DeserializeRowSet(removedRows)
 					fmt.Println()
 					if err != nil {
+						// TODO:
 						fmt.Println(err)
+						return
 					}
-					barrage.ConsumeRowSet(addedRowsIncDec,
-						func(start int64, end int64) {
-							for i := start; i <= end; i++ {
-								tbl.AddRow(i, record, rowidx)
-								rowidx++
-							}
-						},
-						func(offset int64) {
-							tbl.AddRow(offset, record, rowidx)
-							rowidx++
-						})
 
-					fmt.Println(&tbl)
-				} else {
-					fmt.Print("added rows: ")
-					addedRowsDec, err := barrage.DecodeRowSet(addedRows)
+					fmt.Print("shift data: ")
+					startSet, endSet, destSet, err := ticking.DeserializeRowSetShiftData(shiftData)
 					fmt.Println()
 					if err != nil {
+						// TODO:
 						fmt.Println(err)
+						return
 					}
-					barrage.ConsumeRowSet(addedRowsDec,
-						func(start int64, end int64) {
-							fmt.Printf("start: %d end: %d\n", start, end)
-							for i := start; i <= end; i++ {
-								tbl.AddRow(i, record, rowidx)
-								rowidx++
-							}
-						},
-						func(offset int64) {
-							tbl.AddRow(offset, record, rowidx)
-							rowidx++
-						})
 
-					fmt.Println(&tbl)
+					fmt.Print("added rows: ")
+					addedRowsDec, err := ticking.DeserializeRowSet(addedRows)
+					fmt.Println()
+					if err != nil {
+						// TODO:
+						fmt.Println(err)
+						return
+					}
+
+					record.Retain()
+
+					update := ticking.TickingUpdate{
+						Record:     record,
+						IsSnapshot: updateMeta.IsSnapshot(),
+
+						AddedRows:         addedRowsDec,
+						AddedRowsIncluded: ticking.RowSet{}, // TODO:
+						RemovedRows:       removedRowsDec,
+
+						ShiftDataStarts: startSet,
+						ShiftDataEnds:   endSet,
+						ShiftDataDests:  destSet,
+					}
+
+					updateChan <- update
 				}
 			}
 		}
-	}
+	}()
 
-	return nil, err
+	return tbl, updateChan, err
 }

@@ -1,4 +1,4 @@
-package barrage
+package ticking
 
 import (
 	"errors"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/apache/arrow/go/v8/arrow/array"
+	"github.com/apache/arrow/go/v8/arrow/memory"
 )
 
 type tickingColumn interface {
@@ -24,7 +25,7 @@ type TickingTable struct {
 
 var ErrUnsupportedType = errors.New("unsupported data type for ticking table")
 
-func NewTickingTable(schema *arrow.Schema) (TickingTable, error) {
+func NewTickingTable(schema *arrow.Schema) (*TickingTable, error) {
 	var columns []tickingColumn
 	for _, field := range schema.Fields() {
 		var newColumn tickingColumn
@@ -35,13 +36,13 @@ func NewTickingTable(schema *arrow.Schema) (TickingTable, error) {
 		case arrow.FixedWidthTypes.Timestamp_ns.ID(): // TODO: There has to be a better way to compare these.
 			newColumn = &TimestampColumn{}
 		default:
-			return TickingTable{}, fmt.Errorf("unsupported data type for ticking table %v %T", field.Type, field.Type)
+			return nil, fmt.Errorf("unsupported data type for ticking table %v %T", field.Type, field.Type)
 		}
 
 		columns = append(columns, newColumn)
 	}
 
-	return TickingTable{schema: schema, columns: columns, redirectIndex: make(map[int64]int)}, nil
+	return &TickingTable{schema: schema, columns: columns, redirectIndex: make(map[int64]int)}, nil
 }
 
 func (tt *TickingTable) DeleteKeyRange(start int64, end int64) {
@@ -115,6 +116,99 @@ func (tt *TickingTable) getDataIndices() []int {
 	return indices
 }
 
+func (tt *TickingTable) ApplyUpdate(update TickingUpdate) {
+	var rowidx = 0
+
+	for _, rowRange := range update.RemovedRows.Ranges {
+		tt.DeleteKeyRange(rowRange.Begin, rowRange.End)
+	}
+
+	var startSet []int64
+	for r := range update.ShiftDataStarts.GetAllRows() {
+		startSet = append(startSet, r)
+	}
+
+	var endSet []int64
+	for r := range update.ShiftDataEnds.GetAllRows() {
+		endSet = append(endSet, r)
+	}
+
+	var destSet []int64
+	for r := range update.ShiftDataDests.GetAllRows() {
+		destSet = append(destSet, r)
+	}
+
+	fmt.Println("starts: ", startSet)
+	fmt.Println("ends: ", endSet)
+	fmt.Println("dests: ", destSet)
+
+	// Negative deltas get applied low-to-high keyspace order
+	for i := 0; i < len(startSet); i++ {
+		start := startSet[i]
+		end := endSet[i]
+		dest := destSet[i]
+
+		if dest < start {
+			tt.ShiftKeyRange(start, end, dest)
+		}
+	}
+
+	// Positive deltas get applied high-to-low keyspace order
+	for i := len(startSet) - 1; i >= 0; i-- {
+		start := startSet[i]
+		end := endSet[i]
+		dest := destSet[i]
+
+		if dest > start {
+			tt.ShiftKeyRange(start, end, dest)
+		}
+	}
+
+	// TODO:
+	/*if len(addedRowsIncluded) != 0 {
+		fmt.Print("added rows inc: ")
+		keys, err := barrage.DeserializeRowSet(addedRowsIncluded)
+		if err != nil {
+			fmt.Println("(err) ", err)
+		} else {
+			fmt.Println(keys)
+		}
+	}
+
+	if len(addedRowsIncluded) != 0 {
+		// I have no idea what I'm doing with the addedRowsIncluded field
+
+		fmt.Print("added rows: ")
+		addedRowsIncDec, err := DecodeRowSet(addedRowsIncluded)
+		fmt.Println()
+		if err != nil {
+			fmt.Println(err)
+		}
+		barrage.ConsumeRowSet(addedRowsIncDec,
+			func(start int64, end int64) {
+				for i := start; i <= end; i++ {
+					tbl.AddRow(i, record, rowidx)
+					rowidx++
+				}
+			},
+			func(offset int64) {
+				tbl.AddRow(offset, record, rowidx)
+				rowidx++
+			})
+
+		fmt.Println(&tbl)
+	}*/
+
+	for r := range update.AddedRows.GetAllRows() {
+		tt.AddRow(r, update.Record, rowidx)
+		rowidx++
+	}
+
+	// Should this method release the Record automatically?
+	// Users can call Retain if they want to keep it around afterwards.
+	update.Record.Release()
+}
+
 func (tt *TickingTable) String() string {
 	idxs := tt.getDataIndices()
 
@@ -134,6 +228,35 @@ func (tt *TickingTable) String() string {
 	}
 
 	return o.String()
+}
+
+// The returned record must be eventually released
+func (tt *TickingTable) ToRecord() arrow.Record {
+	idxs := tt.getDataIndices()
+
+	b := array.NewRecordBuilder(memory.DefaultAllocator, tt.schema)
+	defer b.Release()
+
+	for fieldIdx := 0; fieldIdx < len(tt.columns); fieldIdx++ {
+		switch tt.schema.Field(fieldIdx).Type.ID() {
+		case arrow.PrimitiveTypes.Int32.ID():
+			sourceData := tt.columns[fieldIdx].(*Int32Column)
+			orderedData := make([]int32, len(idxs))
+			for i, idx := range idxs {
+				orderedData[i] = sourceData.values[idx]
+			}
+			b.Field(fieldIdx).(*array.Int32Builder).AppendValues(orderedData, nil)
+		case arrow.FixedWidthTypes.Timestamp_ns.ID(): // TODO: There has to be a better way to compare this
+			sourceData := tt.columns[fieldIdx].(*TimestampColumn)
+			orderedData := make([]arrow.Timestamp, len(idxs))
+			for i, idx := range idxs {
+				orderedData[i] = sourceData.values[idx]
+			}
+			b.Field(fieldIdx).(*array.TimestampBuilder).AppendValues(orderedData, nil)
+		}
+	}
+
+	return b.NewRecord()
 }
 
 // TODO: This could be optimized by having it add an entire range at a time.
@@ -200,4 +323,18 @@ type TimestampColumn struct {
 
 func (col *TimestampColumn) Get(row int) interface{} {
 	return col.values[row]
+}
+
+type TickingUpdate struct {
+	Record arrow.Record
+
+	IsSnapshot bool
+
+	AddedRows         RowSet
+	AddedRowsIncluded RowSet
+	RemovedRows       RowSet
+
+	ShiftDataStarts RowSet
+	ShiftDataEnds   RowSet
+	ShiftDataDests  RowSet
 }

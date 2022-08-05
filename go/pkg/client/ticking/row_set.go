@@ -1,4 +1,4 @@
-package barrage
+package ticking
 
 import (
 	"encoding/binary"
@@ -6,6 +6,30 @@ import (
 	"fmt"
 	"math"
 )
+
+type RowRange struct {
+	Begin int64
+	End   int64
+}
+
+type RowSet struct {
+	Ranges []RowRange
+}
+
+func (rs *RowSet) GetAllRows() <-chan int64 {
+	ch := make(chan int64)
+
+	go func() {
+		for _, r := range rs.Ranges {
+			for i := r.Begin; i <= r.End; i++ {
+				ch <- i
+			}
+		}
+		close(ch)
+	}()
+
+	return ch
+}
 
 func ConsumeRowSet(offsets []int64, addRowsInRange func(start int64, end int64), addRowAt func(offset int64)) {
 	pending := int64(-1)
@@ -231,47 +255,37 @@ func DecodeRowSetShiftData(bytes []byte) (starts []int64, ends []int64, dests []
 // Converts a serialized RowSet into an array of row keys.
 // Note that this is not as efficient as using ConsumeRowSet
 // since it has to represent the entire set of keys in memory.
-func DeserializeRowSet(bytes []byte) ([]int64, error) {
+func DeserializeRowSet(bytes []byte) (RowSet, error) {
 	decoded, err := DecodeRowSet(bytes)
 	if err != nil {
-		return nil, err
+		return RowSet{}, err
 	}
 
-	makeAppender := func(arr *[]int64) (func(start int64, end int64), func(offset int64)) {
-		rangeApp := func(start int64, end int64) {
-			for i := start; i <= end; i++ {
-				*arr = append(*arr, i)
-			}
-		}
-		offsetApp := func(offset int64) {
-			*arr = append(*arr, offset)
-		}
-		return rangeApp, offsetApp
-	}
+	var result []RowRange
+	ConsumeRowSet(decoded, func(start int64, end int64) {
+		result = append(result, RowRange{Begin: start, End: end})
+	}, func(index int64) {
+		result = append(result, RowRange{Begin: index, End: index})
+	})
 
-	var result []int64
-	ra, rb := makeAppender(&result)
-	ConsumeRowSet(decoded, ra, rb)
-	return result, nil
+	return RowSet{Ranges: result}, nil
 }
 
 // Converts a serialized RowSetShiftData into 3 arrays of row keys.
 // Note that this is not as efficient as using ConsumeRowSet
 // since it has to represent the entire set of keys in memory.
-func DeserializeRowSetShiftData(bytes []byte) (starts []int64, ends []int64, dests []int64, err error) {
+func DeserializeRowSetShiftData(bytes []byte) (starts RowSet, ends RowSet, dests RowSet, err error) {
 	startsDec, endsDec, destsDec, err := DecodeRowSetShiftData(bytes)
 	if err != nil {
-		return nil, nil, nil, err
+		return RowSet{}, RowSet{}, RowSet{}, err
 	}
 
-	makeAppender := func(arr *[]int64) (func(start int64, end int64), func(offset int64)) {
+	makeAppender := func(arr *RowSet) (func(start int64, end int64), func(offset int64)) {
 		rangeApp := func(start int64, end int64) {
-			for i := start; i <= end; i++ {
-				*arr = append(*arr, i)
-			}
+			arr.Ranges = append(arr.Ranges, RowRange{Begin: start, End: end})
 		}
 		offsetApp := func(offset int64) {
-			*arr = append(*arr, offset)
+			arr.Ranges = append(arr.Ranges, RowRange{Begin: offset, End: offset})
 		}
 		return rangeApp, offsetApp
 	}
