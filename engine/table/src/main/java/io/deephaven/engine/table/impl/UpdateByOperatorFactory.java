@@ -11,8 +11,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.WindowMangerUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
+import io.deephaven.engine.table.impl.updateby.rollingsum.ShortRollingSumOperator;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.time.DateTime;
@@ -207,22 +209,28 @@ public class UpdateByOperatorFactory {
 
         @Override
         public Void visit(@NotNull final RollingSumSpec rs) {
-            final LongRecordingUpdateByOperator timeStampRecorder;
+            final WindowMangerUpdateByOperator windowManager;
             final boolean isTimeBased = rs.prevTimeScale().isTimeBased();
-            final String timestampCol = rs.prevTimeScale().timestampCol();
 
+            final String timestampCol = rs.prevTimeScale().timestampCol();
             if (isTimeBased) {
-                timeStampRecorder = makeLongRecordingOperator(source, timestampCol);
-                ops.add(timeStampRecorder);
+                windowManager = makeWindowManagerUpdateByOperator(source,
+                        timestampCol,
+                        rs.prevTimeScale().timescaleUnits(),
+                        rs.fwdTimeScale().timescaleUnits());
             } else {
-                timeStampRecorder = null;
+                windowManager = makeWindowManagerUpdateByOperator(source,
+                        null,
+                        rs.prevTimeScale().timescaleUnits(),
+                        rs.fwdTimeScale().timescaleUnits());
             }
+            ops.add(windowManager);
 
             Arrays.stream(pairs)
                     .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
                     .map(fc -> makeRollingSumOperator(fc,
                             source,
-                            timeStampRecorder,
+                            windowManager,
                             rs))
                     .forEach(ops::add);
             return null;
@@ -388,16 +396,42 @@ public class UpdateByOperatorFactory {
             }
         }
 
+        private WindowMangerUpdateByOperator makeWindowManagerUpdateByOperator(TableWithDefaults source,
+                                                                               String colName,
+                                                                               final long reverseTimeScaleUnits,
+                                                                               final long forwardTimeScaleUnits) {
+            if (colName == null) {
+                // not using a time source, this will manage our fixed offset calcs
+                final String[] inputColumns = Arrays.stream(pairs).map(MatchPair::rightColumn).toArray(String[]::new);
+                return new WindowMangerUpdateByOperator(colName, inputColumns, reverseTimeScaleUnits, forwardTimeScaleUnits, null);
+            } else {
+                final ColumnSource<?> columnSource = source.getColumnSource(colName);
+                final Class<?> colType = columnSource.getType();
+                if (colType != long.class &&
+                        colType != Long.class &&
+                        colType != DateTime.class &&
+                        colType != Instant.class &&
+                        !columnSource.allowsReinterpret(long.class)) {
+                    throw new IllegalArgumentException("Column " + colName + " cannot be interpreted as a long");
+                }
+
+                final String[] inputColumns = Stream.concat(Stream.of(colName),
+                        Arrays.stream(pairs).map(MatchPair::rightColumn)).toArray(String[]::new);
+
+                return new WindowMangerUpdateByOperator(colName, inputColumns, reverseTimeScaleUnits, forwardTimeScaleUnits, columnSource);
+            }
+        }
+
         private UpdateByOperator makeRollingSumOperator(@NotNull final MatchPair pair,
                                                         @NotNull final TableWithDefaults source,
-                                                        @Nullable final LongRecordingUpdateByOperator recorder,
+                                                        @NotNull final WindowMangerUpdateByOperator windowManager,
                                                         @NotNull final RollingSumSpec rs) {
             // noinspection rawtypes
             final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
             final Class<?> csType = columnSource.getType();
 
             final String[] affectingColumns;
-            if (recorder == null) {
+            if (!windowManager.isTimeBased()) {
                 affectingColumns = new String[] {pair.rightColumn};
             } else {
                 affectingColumns = new String[] {rs.prevTimeScale().timestampCol(), pair.rightColumn};
@@ -407,6 +441,10 @@ public class UpdateByOperatorFactory {
             final long prevTimeScaleUnits = rs.prevTimeScale().timescaleUnits();
             final long fwdTimeScaleUnits = rs.fwdTimeScale().timescaleUnits();
 
+            if (csType == short.class || csType == Short.class) {
+                return new ShortRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), windowManager, prevTimeScaleUnits, fwdTimeScaleUnits,
+                        columnSource, rowRedirection);
+            }
 //            if (csType == Boolean.class || csType == boolean.class) {
 //                return new ByteRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
 //                        columnSource, rowRedirection, NULL_BOOLEAN_AS_BYTE);

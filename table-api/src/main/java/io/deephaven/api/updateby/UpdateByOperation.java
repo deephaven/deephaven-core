@@ -215,6 +215,31 @@ public interface UpdateByOperation {
         return EmaSpec.ofTime(control, timestampColumn, emaDuration).clause(pairs);
     }
 
+    /**
+     * Create an {@link RollingSumSpec rolling sum} for the supplied column name pairs, using ticks as
+     * the windowing unit. Uses the default OperationControl settings.
+     *
+     * @param prevTimeTicks the look-behind window size (in rows/ticks)
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingSum(long prevTimeTicks, String... pairs) {
+        return RollingSumSpec.ofTicks(prevTimeTicks).clause(pairs);
+    }
+
+    /**
+     * Create an {@link RollingSumSpec rolling sum} for the supplied column name pairs, using ticks as
+     * the windowing unit. Uses the default OperationControl settings.
+     *
+     * @param prevTimeTicks the look-behind window size (in rows/ticks)
+     * @param fwdTimeTicks the look-ahead window size (in rows/ticks)
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingSum(long prevTimeTicks, long fwdTimeTicks, String... pairs) {
+        return RollingSumSpec.ofTicks(prevTimeTicks, fwdTimeTicks).clause(pairs);
+    }
+
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {

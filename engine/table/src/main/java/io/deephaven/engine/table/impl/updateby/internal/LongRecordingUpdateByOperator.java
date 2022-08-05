@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * An operator that simply remembers the current chunks during the add and reprocess phases.
  */
-public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
+public class LongRecordingUpdateByOperator implements UpdateByOperator {
     private final String inputColumnName;
     private final String[] affectingColumns;
     private final ColumnSource<?> columnSource;
@@ -43,7 +43,7 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
         this.columnSource = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
     }
 
-    private class RecordingContext extends UpdateCumulativeContext {
+    private class RecordingContext implements UpdateContext {
         private LongChunk<Values> addedChunk;
 
         @Override

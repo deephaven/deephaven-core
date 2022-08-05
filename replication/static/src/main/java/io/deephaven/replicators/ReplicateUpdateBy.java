@@ -80,6 +80,32 @@ public class ReplicateUpdateBy {
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/ShortEMAOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/FloatEMAOperator.java");
+
+
+
+        // Replicate the rolling versions of UpdateByOperations
+        files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseWindowedCharUpdateByOperator.java",
+                exemptions);
+        for (final String f : files) {
+            if (f.contains("Int")) {
+                fixupInteger(f);
+            }
+
+            if (f.contains("Byte")) {
+                fixupByteBase(f);
+            }
+        }
+//        objectResult = ReplicatePrimitiveCode.charToObject(
+//                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseWindowedCharUpdateByOperator.java");
+//        fixupStandardObject(objectResult, "BaseWindowedObjectUpdateByOperator", true);
+//        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+//                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseWindowedFloatUpdateByOperator.java",
+//                exemptions);
+//
+//        replicateNumericOperator(
+//                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",
+//                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/FloatRollingSumOperator.java");
     }
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)
