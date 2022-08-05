@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
@@ -173,6 +174,19 @@ class AggregationContext {
         for (final IterativeChunkedAggregationOperator operator : operators) {
             operator.startTrackingPrevValues();
         }
+    }
+
+    /**
+     * Get any single count operator present.
+     *
+     * @return Any single count operator present
+     * @throws io.deephaven.base.verify.AssertionFailure If there is no count operator present
+     */
+    CountAggregationOperator getCountOperator() {
+        return (CountAggregationOperator) Arrays.stream(operators)
+                .filter(op -> op instanceof CountAggregationOperator)
+                .findAny()
+                .orElseThrow(Assert::statementNeverExecuted);
     }
 
     /**
