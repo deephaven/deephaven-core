@@ -140,7 +140,7 @@ public class ExecutionContext {
         ExecutionContext.setContext(this);
 
         return () -> {
-            // restore pointers to query scope static variables
+            // restore the old context
             ExecutionContext.setContext(oldExecutionContext);
         };
     }

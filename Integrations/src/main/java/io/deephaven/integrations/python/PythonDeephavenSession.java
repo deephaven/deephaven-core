@@ -108,7 +108,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
             }
         }
 
-        executionContext.apply(() -> QueryLibrary.importClass(org.jpy.PyObject.class));
+        executionContext.getQueryLibrary().importClass(org.jpy.PyObject.class);
     }
 
     /**

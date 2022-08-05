@@ -50,8 +50,8 @@ import static io.deephaven.engine.table.impl.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class TestConcurrentInstantiation extends QueryTableTestBase {
-    private ExecutorService pool = Executors.newFixedThreadPool(1);
-    private ExecutorService dualPool = Executors.newFixedThreadPool(2);
+    private ExecutorService pool;
+    private ExecutorService dualPool;
 
     @Override
     protected void setUp() throws Exception {

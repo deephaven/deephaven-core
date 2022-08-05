@@ -4,16 +4,16 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.context.CompilerTools;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.CompilerTools;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
