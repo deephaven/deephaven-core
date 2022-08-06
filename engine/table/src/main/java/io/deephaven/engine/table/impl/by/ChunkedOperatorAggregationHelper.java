@@ -1629,9 +1629,10 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final String[] keyColumnNames,
             @NotNull final AggregationContext ac,
             @NotNull final MutableInt outputPosition,
-            @NotNull final Supplier<OperatorAggregationStateManager > stateManagerSupplier) {
-
-        //ConstructSnapshot.callDataSnapshotFunction("Initial Key Table Addition",);
+            @NotNull final Supplier<OperatorAggregationStateManager> stateManagerSupplier) {
+        // This logic is duplicative of the logic in the main aggregation function, but it's hard to consolidate
+        // further. A better strategy might be to do a selectDistinct first, but that would result in more hash table
+        // inserts.
         final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)
                 .map(initialKeys::getColumnSource)
                 .toArray(ColumnSource[]::new);
@@ -1639,15 +1640,53 @@ public class ChunkedOperatorAggregationHelper {
                 .map(initialKeys::getColumnSource)
                 .map(ReinterpretUtils::maybeConvertToPrimitive)
                 .toArray(ColumnSource[]::new);
-        final boolean useGrouping = control.considerGrouping(initialKeys, keySources) && !initialKeys.isRefreshing();
+        final boolean useGroupingAllowed = control.considerGrouping(initialKeys, keySources)
+                && keySources.length == 1
+                && reinterpretedKeySources[0] == keySources[0];
 
-        // TODO-RWC: Implement key initialization and then handle initial row set construction.
+        if (initialKeys.isRefreshing()) {
+            final MutableObject<OperatorAggregationStateManager> stateManagerHolder = new MutableObject<>();
+            ConstructSnapshot.callDataSnapshotFunction(
+                    "InitialKeyTableSnapshot-" + System.identityHashCode(initialKeys) + ": ",
+                    ConstructSnapshot.makeSnapshotControl(false, true, (NotificationStepSource) initialKeys),
+                    (final boolean usePrev, final long beforeClockValue) -> {
+                        stateManagerHolder.setValue(makeInitializedStateManager(initialKeys, reinterpretedKeySources,
+                                ac, outputPosition, stateManagerSupplier, useGroupingAllowed, usePrev));
+                        return true;
+                    });
+            return stateManagerHolder.getValue();
+        } else {
+            return makeInitializedStateManager(initialKeys, reinterpretedKeySources,
+                    ac, outputPosition, stateManagerSupplier, useGroupingAllowed, false);
+        }
+    }
 
-        return null;
-// Hash and add groups, or values
+    private static OperatorAggregationStateManager makeInitializedStateManager(
+            @NotNull final Table initialKeys,
+            @NotNull ColumnSource<?>[] reinterpretedKeySources,
+            @NotNull final AggregationContext ac,
+            @NotNull final MutableInt outputPosition,
+            @NotNull final Supplier<OperatorAggregationStateManager> stateManagerSupplier,
+            final boolean useGroupingAllowed,
+            final boolean usePrev) {
+        outputPosition.setValue(0);
+        final OperatorAggregationStateManager stateManager = stateManagerSupplier.get();
+        final RowSequence rowsToInsert;
+        final ColumnSource<?>[] keyColumnsToInsert;
+        if (useGroupingAllowed && (!initialKeys.isRefreshing() || !usePrev)
+                && RowSetIndexer.of(initialKeys.getRowSet()).hasGrouping(reinterpretedKeySources[0])) {
+            final ColumnSource groupedSource = reinterpretedKeySources[0];
+            final Map<Object, RowSet> grouping = RowSetIndexer.of(initialKeys.getRowSet()).getGrouping(groupedSource);
+            rowsToInsert = RowSequenceFactory.forRange(0, grouping.size() - 1);
+            //noinspection unchecked
+            keyColumnsToInsert = new ColumnSource<?>[] {
+                    GroupingUtils.groupingKeysToImmutableFlatSource(groupedSource, grouping)};
+        } else {
+            rowsToInsert = initialKeys.getRowSet();
+            keyColumnsToInsert = reinterpretedKeySources;
+        }
 
-// Correct row counts
-
+        // Hash and add keys
 
         // Initialize empty states
 //        final ColumnSource.GetContext[] getContexts = new ColumnSource.GetContext[ac.size()];
@@ -1688,9 +1727,11 @@ public class ChunkedOperatorAggregationHelper {
 //                }
 //            } while (rsIt.hasMore());
 //        }
+
+        return stateManager;
     }
 
-    private static void initialBucketedKeyAddition(QueryTable withView,
+    private static void initialBucketedKeyAddition(QueryTable input,
             ColumnSource<?>[] reinterpretedKeySources,
             AggregationContext ac,
             PermuteKernel[] permuteKernels,
@@ -1714,7 +1755,7 @@ public class ChunkedOperatorAggregationHelper {
             buildSources = reinterpretedKeySources;
         }
 
-        final RowSet rowSet = usePrev ? withView.getRowSet().copyPrev() : withView.getRowSet();
+        final RowSet rowSet = usePrev ? input.getRowSet().copyPrev() : input.getRowSet();
 
         if (rowSet.isEmpty()) {
             return;
@@ -1789,14 +1830,14 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static void initialGroupedKeyAddition(QueryTable withView,
+    private static void initialGroupedKeyAddition(QueryTable input,
             ColumnSource<?>[] reinterpretedKeySources,
             AggregationContext ac,
             OperatorAggregationStateManager stateManager,
             MutableInt outputPosition,
             boolean usePrev) {
         final Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
-        final RowSetIndexer indexer = RowSetIndexer.of(withView.getRowSet());
+        final RowSetIndexer indexer = RowSetIndexer.of(input.getRowSet());
         final Map<Object, RowSet> grouping = usePrev ? indexer.getPrevGrouping(reinterpretedKeySources[0])
                 : indexer.getGrouping(reinterpretedKeySources[0]);
         // noinspection unchecked
