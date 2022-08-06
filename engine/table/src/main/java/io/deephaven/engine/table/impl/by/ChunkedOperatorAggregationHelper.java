@@ -48,6 +48,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.LongFunction;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -1555,7 +1556,7 @@ public class ChunkedOperatorAggregationHelper {
         resultColumnSourceMap.put(keyName, groupKeyIndexTable.first);
         ac.getResultColumns(resultColumnSourceMap);
 
-        doGroupedAddition(ac, groupKeyIndexTable, responsiveGroups);
+        doGroupedAddition(ac, groupKeyIndexTable.second::get, responsiveGroups, CHUNK_SIZE);
 
         final QueryTable result = new QueryTable(RowSetFactory.flat(responsiveGroups).toTracking(),
                 resultColumnSourceMap);
@@ -1567,8 +1568,11 @@ public class ChunkedOperatorAggregationHelper {
         return ac.transformResult(result);
     }
 
-    private static void doGroupedAddition(AggregationContext ac,
-            Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable, int responsiveGroups) {
+    private static void doGroupedAddition(
+            @NotNull final AggregationContext ac,
+            @NotNull final LongFunction<RowSet> groupIndexToRowSet,
+            final int responsiveGroups,
+            final int chunkSize) {
         final boolean indicesRequired = ac.requiresIndices();
 
         final ColumnSource.GetContext[] getContexts = new ColumnSource.GetContext[ac.size()];
@@ -1578,31 +1582,28 @@ public class ChunkedOperatorAggregationHelper {
                 final SafeCloseable ignored2 = new SafeCloseableArray<>(operatorContexts);
                 final SharedContext sharedContext = SharedContext.makeSharedContext()) {
             ac.ensureCapacity(responsiveGroups);
-            // we don't know how many things are in the groups, so we have to allocate a large chunk
-            ac.initializeGetContexts(sharedContext, getContexts, CHUNK_SIZE);
-            ac.initializeSingletonContexts(operatorContexts, CHUNK_SIZE);
+            ac.initializeGetContexts(sharedContext, getContexts, chunkSize);
+            ac.initializeSingletonContexts(operatorContexts, chunkSize);
 
             final boolean unchunked = !ac.requiresInputs() && ac.unchunkedIndices();
             if (unchunked) {
                 for (int ii = 0; ii < responsiveGroups; ++ii) {
-                    final RowSet rowSet = groupKeyIndexTable.second.get(ii);
+                    final RowSet rowSet = groupIndexToRowSet.apply(ii);
                     for (int oi = 0; oi < ac.size(); ++oi) {
                         ac.operators[oi].addRowSet(operatorContexts[oi], rowSet, ii);
                     }
                 }
             } else {
+                // noinspection unchecked
+                final Chunk<? extends Values>[] workingChunks = new Chunk[ac.size()];
                 for (int ii = 0; ii < responsiveGroups; ++ii) {
-                    final RowSet rowSet = groupKeyIndexTable.second.get(ii);
-                    // noinspection ConstantConditions
+                    final RowSet rowSet = groupIndexToRowSet.apply(ii);
                     try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
-                        // noinspection unchecked
-                        final Chunk<? extends Values>[] workingChunks = new Chunk[ac.size()];
-
                         while (rsIt.hasMore()) {
-                            final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
-                            final int chunkSize = chunkOk.intSize();
+                            final RowSequence chunkRows = rsIt.getNextRowSequenceWithLength(chunkSize);
+                            final int chunkRowsSize = chunkRows.intSize();
                             final LongChunk<OrderedRowKeys> keyIndices =
-                                    indicesRequired ? chunkOk.asRowKeyChunk() : null;
+                                    indicesRequired ? chunkRows.asRowKeyChunk() : null;
                             sharedContext.reset();
 
                             Arrays.fill(workingChunks, null);
@@ -1611,9 +1612,9 @@ public class ChunkedOperatorAggregationHelper {
                                 final int inputSlot = ac.inputSlot(oi);
                                 if (inputSlot == oi) {
                                     workingChunks[inputSlot] = ac.inputColumns[oi] == null ? null
-                                            : ac.inputColumns[oi].getChunk(getContexts[oi], chunkOk);
+                                            : ac.inputColumns[oi].getChunk(getContexts[oi], chunkRows);
                                 }
-                                ac.operators[oi].addChunk(operatorContexts[oi], chunkSize,
+                                ac.operators[oi].addChunk(operatorContexts[oi], chunkRowsSize,
                                         inputSlot < 0 ? null : workingChunks[inputSlot], keyIndices, ii);
                             }
                         }
@@ -1644,6 +1645,7 @@ public class ChunkedOperatorAggregationHelper {
                 && keySources.length == 1
                 && reinterpretedKeySources[0] == keySources[0];
 
+        final OperatorAggregationStateManager stateManager;
         if (initialKeys.isRefreshing()) {
             final MutableObject<OperatorAggregationStateManager> stateManagerHolder = new MutableObject<>();
             ConstructSnapshot.callDataSnapshotFunction(
@@ -1654,11 +1656,15 @@ public class ChunkedOperatorAggregationHelper {
                                 ac, outputPosition, stateManagerSupplier, useGroupingAllowed, usePrev));
                         return true;
                     });
-            return stateManagerHolder.getValue();
+            stateManager = stateManagerHolder.getValue();
         } else {
-            return makeInitializedStateManager(initialKeys, reinterpretedKeySources,
+            stateManager = makeInitializedStateManager(initialKeys, reinterpretedKeySources,
                     ac, outputPosition, stateManagerSupplier, useGroupingAllowed, false);
         }
+        try (final RowSet empty = RowSetFactory.empty()) {
+            doGroupedAddition(ac, gi -> empty, outputPosition.intValue(), 0);
+        }
+        return stateManager;
     }
 
     private static OperatorAggregationStateManager makeInitializedStateManager(
@@ -1671,63 +1677,37 @@ public class ChunkedOperatorAggregationHelper {
             final boolean usePrev) {
         outputPosition.setValue(0);
         final OperatorAggregationStateManager stateManager = stateManagerSupplier.get();
-        final RowSequence rowsToInsert;
+
         final ColumnSource<?>[] keyColumnsToInsert;
-        if (useGroupingAllowed && (!initialKeys.isRefreshing() || !usePrev)
-                && RowSetIndexer.of(initialKeys.getRowSet()).hasGrouping(reinterpretedKeySources[0])) {
+        final boolean closeRowsToInsert;
+        final RowSequence rowsToInsert;
+        final RowSetIndexer groupingIndexer = useGroupingAllowed && (!initialKeys.isRefreshing() || !usePrev)
+                ? RowSetIndexer.of(initialKeys.getRowSet()) : null;
+        if (groupingIndexer != null && groupingIndexer.hasGrouping(reinterpretedKeySources[0])) {
             final ColumnSource groupedSource = reinterpretedKeySources[0];
-            final Map<Object, RowSet> grouping = RowSetIndexer.of(initialKeys.getRowSet()).getGrouping(groupedSource);
-            rowsToInsert = RowSequenceFactory.forRange(0, grouping.size() - 1);
+            final Map<Object, RowSet> grouping = groupingIndexer.getGrouping(groupedSource);
             //noinspection unchecked
-            keyColumnsToInsert = new ColumnSource<?>[] {
+            keyColumnsToInsert = new ColumnSource<?>[]{
                     GroupingUtils.groupingKeysToImmutableFlatSource(groupedSource, grouping)};
+            closeRowsToInsert = true;
+            //noinspection resource
+            rowsToInsert = RowSequenceFactory.forRange(0, grouping.size() - 1);
         } else {
-            rowsToInsert = initialKeys.getRowSet();
             keyColumnsToInsert = reinterpretedKeySources;
+            closeRowsToInsert = usePrev;
+            rowsToInsert = usePrev ? initialKeys.getRowSet().copyPrev() : initialKeys.getRowSet();
         }
 
-        // Hash and add keys
-
-        // Initialize empty states
-//        final ColumnSource.GetContext[] getContexts = new ColumnSource.GetContext[ac.size()];
-//        final boolean indicesRequired = ac.requiresIndices(operatorsToProcess);
-//
-//        try (final SafeCloseableArray ignored = new SafeCloseableArray<>(getContexts);
-//             final SharedContext sharedContext = SharedContext.makeSharedContext();
-//             final RowSequence.Iterator rsIt = index.getRowSequenceIterator()) {
-//            ac.initializeGetContexts(sharedContext, getContexts, index.size(), operatorsToProcess);
-//
-//            // noinspection unchecked
-//            final Chunk<? extends Values>[] workingChunks = new Chunk[ac.size()];
-//
-//            // on an empty initial pass we want to go through the operator anyway, so that we initialize things
-//            // correctly for the aggregation of zero keys
-//            do {
-//                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
-//                sharedContext.reset();
-//
-//                final LongChunk<OrderedRowKeys> keyIndices = indicesRequired ? chunkOk.asRowKeyChunk() : null;
-//
-//                Arrays.fill(workingChunks, null);
-//
-//                for (int ii = 0; ii < ac.size(); ++ii) {
-//                    if (!operatorsToProcess[ii]) {
-//                        continue;
-//                    }
-//                    final int inputSlot = ac.inputSlot(ii);
-//
-//                    if (inputSlot >= 0 && workingChunks[inputSlot] == null) {
-//                        workingChunks[inputSlot] =
-//                                fetchValues(usePrev, chunkOk, ac.inputColumns[inputSlot], getContexts[inputSlot]);
-//                    }
-//
-//                    modifiedOperators[ii] |=
-//                            processColumnNoKey(remove, chunkOk, inputSlot >= 0 ? workingChunks[inputSlot] : null,
-//                                    ac.operators[ii], opContexts[ii], keyIndices);
-//                }
-//            } while (rsIt.hasMore());
-//        }
-
+        final int chunkSize = chunkSize(rowsToInsert.size());
+        try (final SafeCloseable ignored = closeRowsToInsert ? rowsToInsert : null;
+             final SafeCloseable bc = stateManager.makeAggregationStateBuildContext(keyColumnsToInsert, chunkSize);
+             final RowSequence.Iterator rowsIterator = rowsToInsert.getRowSequenceIterator();
+             final WritableIntChunk<RowKeys> outputPositions = WritableIntChunk.makeWritableChunk(chunkSize)) {
+            while (rowsIterator.hasMore()) {
+                final RowSequence chunkRows = rowsIterator.getNextRowSequenceWithLength(chunkSize);
+                stateManager.add(bc, chunkRows, keyColumnsToInsert, outputPosition, outputPositions);
+            }
+        }
         return stateManager;
     }
 
@@ -1866,7 +1846,7 @@ public class ChunkedOperatorAggregationHelper {
             Assert.eq(outputPosition.intValue(), "outputPosition.intValue()", responsiveGroups, "responsiveGroups");
         }
 
-        doGroupedAddition(ac, groupKeyIndexTable, responsiveGroups);
+        doGroupedAddition(ac, groupKeyIndexTable.second::get, responsiveGroups, CHUNK_SIZE);
     }
 
     private static RowSet makeNewStatesRowSet(final int first, final int last) {
