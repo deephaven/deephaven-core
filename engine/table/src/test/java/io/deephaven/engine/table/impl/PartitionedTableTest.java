@@ -32,6 +32,7 @@ import junit.framework.TestCase;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -139,16 +140,18 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                         new TstUtils.IntGenerator(0, 20),
                         new TstUtils.DoubleGenerator(0, 100)));
 
-        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-add key initialization
         final EvalNugget en[] = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        return table.partitionBy("Sym").merge().sort("Sym");
+                        return table.partitionedAggBy(List.of(), true, testTable(c("Sym", syms)), "Sym")
+                                .merge().sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.partitionBy("intCol").merge().sort("intCol");
+                        return table.partitionedAggBy(List.of(), true,
+                                        testTable(intCol("intCol", IntStream.rangeClosed(0, 20).toArray())), "intCol")
+                                .merge().sort("intCol");
                     }
                 },
         };
@@ -201,21 +204,19 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
                 new TstUtils.IntGenerator(100, 200)));
 
-        final PartitionedTable leftPT = withK.partitionBy("Sym");
-        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-add key initialization
-        // leftPT.populateKeys("aa", "bb", "cc", "dd");
+        final PartitionedTable leftPT =
+                withK.partitionedAggBy(List.of(), true, testTable(c("Sym", "aa", "bb", "cc", "dd")), "Sym");
         final PartitionedTable.Proxy leftProxy = leftPT.proxy(false, false);
 
-        final PartitionedTable rightPT = rightTable.partitionBy("Sym");
-        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-add key initialization
-        // rightPT.populateKeys("aa", "bb", "cc", "dd");
+        final PartitionedTable rightPT =
+                rightTable.partitionedAggBy(List.of(), true, testTable(c("Sym", "aa", "bb", "cc", "dd")), "Sym");
         final PartitionedTable.Proxy rightProxy = rightPT.proxy(false, false);
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return table.update("K=Indices").partitionBy("Sym")
-                                // .populateKeys("aa", "bb", "cc", "dd")
+                        return table.update("K=Indices")
+                                .partitionedAggBy(List.of(), true, testTable(c("Sym", "aa", "bb", "cc", "dd")), "Sym")
                                 .proxy(false, false)
                                 .update("K2=Indices*2")
                                 .select("K", "K2", "Half=doubleCol/2", "Sq=doubleCol*doubleCol",
