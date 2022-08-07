@@ -48,6 +48,11 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
         this.maximumLoadFactor = maximumLoadFactor;
     }
 
+    @Override
+    public final int maxTableSize() {
+        return Math.toIntExact(MAX_TABLE_SIZE);
+    }
+
     protected abstract void build(RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
 
     BuildContext makeBuildContext(ColumnSource<?>[] buildSources, long maxSize) {

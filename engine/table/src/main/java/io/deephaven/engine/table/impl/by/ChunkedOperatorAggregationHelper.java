@@ -152,11 +152,14 @@ public class ChunkedOperatorAggregationHelper {
                     stateManagerSupplier);
         }
 
+        final RowSetBuilderRandom initialRowsBuilder = initialKeys != null && !preserveEmpty ?
+                new BitmapRandomBuilder(stateManager.maxTableSize() - 1) : null;
         if (useGrouping) {
-            initialGroupedKeyAddition(input, reinterpretedKeySources, ac, stateManager, outputPosition, usePrev);
+            initialGroupedKeyAddition(input, reinterpretedKeySources, ac, stateManager, outputPosition,
+                    initialRowsBuilder, usePrev);
         } else {
             initialBucketedKeyAddition(input, reinterpretedKeySources, ac, permuteKernels, stateManager,
-                    outputPosition, usePrev);
+                    outputPosition, initialRowsBuilder, usePrev);
         }
 
         // Construct and return result table
@@ -185,8 +188,10 @@ public class ChunkedOperatorAggregationHelper {
         }
         ac.getResultColumns(resultColumnSourceMap);
 
-        final TrackingWritableRowSet resultRowSet =
-                RowSetFactory.flat(outputPosition.intValue()).toTracking();
+        final TrackingWritableRowSet resultRowSet = (initialRowsBuilder == null
+                ? RowSetFactory.flat(outputPosition.intValue())
+                : initialRowsBuilder.build()
+        ).toTracking();
         if (input.isRefreshing()) {
             copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
         }
@@ -1712,12 +1717,13 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void initialBucketedKeyAddition(QueryTable input,
-            ColumnSource<?>[] reinterpretedKeySources,
-            AggregationContext ac,
-            PermuteKernel[] permuteKernels,
-            OperatorAggregationStateManager stateManager,
-            MutableInt outputPosition,
-            boolean usePrev) {
+                                                   ColumnSource<?>[] reinterpretedKeySources,
+                                                   AggregationContext ac,
+                                                   PermuteKernel[] permuteKernels,
+                                                   OperatorAggregationStateManager stateManager,
+                                                   MutableInt outputPosition,
+                                                   RowSetBuilderRandom initialRowsBuilder,
+                                                   boolean usePrev) {
         final boolean findRuns = ac.requiresRunFinds(SKIP_RUN_FIND);
 
         final ChunkSource.GetContext[] getContexts = new ChunkSource.GetContext[ac.size()];
@@ -1773,6 +1779,9 @@ public class ChunkedOperatorAggregationHelper {
                 sharedContext.reset();
 
                 stateManager.add(bc, chunkOk, buildSources, outputPosition, outputPositions);
+                if (initialRowsBuilder != null) {
+                    initialRowsBuilder.addRowKeysChunk(outputPositions);
+                }
 
                 ac.ensureCapacity(outputPosition.intValue());
 
@@ -1811,11 +1820,12 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void initialGroupedKeyAddition(QueryTable input,
-            ColumnSource<?>[] reinterpretedKeySources,
-            AggregationContext ac,
-            OperatorAggregationStateManager stateManager,
-            MutableInt outputPosition,
-            boolean usePrev) {
+                                                  ColumnSource<?>[] reinterpretedKeySources,
+                                                  AggregationContext ac,
+                                                  OperatorAggregationStateManager stateManager,
+                                                  MutableInt outputPosition,
+                                                  RowSetBuilderRandom initialRowsBuilder,
+                                                  boolean usePrev) {
         final Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
         final RowSetIndexer indexer = RowSetIndexer.of(input.getRowSet());
         final Map<Object, RowSet> grouping = usePrev ? indexer.getPrevGrouping(reinterpretedKeySources[0])
@@ -1842,6 +1852,9 @@ public class ChunkedOperatorAggregationHelper {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                 stateManager.add(bc, chunkOk, groupedFlatKeySource, outputPosition, outputPositions);
+                if (initialRowsBuilder != null) {
+                    initialRowsBuilder.addRowKeysChunk(outputPositions);
+                }
             }
             Assert.eq(outputPosition.intValue(), "outputPosition.intValue()", responsiveGroups, "responsiveGroups");
         }
