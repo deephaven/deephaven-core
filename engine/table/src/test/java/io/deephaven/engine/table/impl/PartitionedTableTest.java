@@ -89,29 +89,35 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testMergePopulate() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-implement once populate keys is replaced
-        /*
-         * final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(), c("Sym", "aa", "bb",
-         * "aa", "bb"), c("intCol", 10, 20, 40, 60), c("doubleCol", 0.1, 0.2, 0.4, 0.6));
-         * 
-         * final Table withK = queryTable.update("K=k");
-         * 
-         * final PartitionedTable partitionedTable = withK.partitionBy("Sym"); partitionedTable.populateKeys("cc",
-         * "dd");
-         * 
-         * final Table merged = partitionedTable.merge(); final Table mergedByK = merged.sort("K");
-         * 
-         * if (printTableUpdates) { TableTools.show(withK); TableTools.show(mergedByK); }
-         * 
-         * assertEquals("", TableTools.diff(mergedByK, withK, 10));
-         * 
-         * UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> { addToTable(queryTable, i(3, 9), c("Sym", "cc",
-         * "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9)); queryTable.notifyListeners(i(3, 9), i(), i()); });
-         * 
-         * if (printTableUpdates) { TableTools.show(withK); TableTools.show(mergedByK); }
-         * 
-         * assertEquals("", TableTools.diff(mergedByK, withK, 10));
-         */
+         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+                 c("Sym", "aa", "bb", "aa", "bb"), c("intCol", 10, 20, 40, 60), c("doubleCol", 0.1, 0.2, 0.4, 0.6));
+
+         final Table withK = queryTable.update("K=k");
+
+         final QueryTable keyTable = TstUtils.testTable(c("Sym", "cc", "dd"));
+         final PartitionedTable partitionedTable = withK.partitionedAggBy(List.of(), true, keyTable, "Sym");
+
+         final Table merged = partitionedTable.merge();
+         final Table mergedByK = merged.sort("K");
+
+         if (printTableUpdates) {
+             TableTools.show(withK);
+             TableTools.show(mergedByK);
+         }
+
+         assertEquals("", TableTools.diff(mergedByK, withK, 10));
+
+         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+             addToTable(queryTable, i(3, 9), c("Sym", "cc", "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9));
+             queryTable.notifyListeners(i(3, 9), i(), i());
+         });
+
+         if (printTableUpdates) {
+             TableTools.show(withK);
+             TableTools.show(mergedByK);
+         }
+
+         assertEquals("", TableTools.diff(mergedByK, withK, 10));
     }
 
     public void testMergeIncremental() {
