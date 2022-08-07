@@ -247,6 +247,12 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
+    public PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
+            Table initialGroups, String... keyColumnNames) {
+        return throwUnsupported("partitionedAggBy()");
+    }
+
+    @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             ColumnName... groupByColumns) {
         return throwUnsupported("rollup()");

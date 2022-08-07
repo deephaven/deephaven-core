@@ -478,6 +478,34 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
+    public PartitionedTable partitionedAggBy(final Collection<? extends Aggregation> aggregations,
+            final boolean preserveEmpty, @Nullable final Table initialGroups, final String... keyColumnNames) {
+        if (isStream()) {
+            throw streamUnsupported("partitionedAggBy");
+        }
+        final Optional<Partition> includedPartition = aggregations.stream()
+                .filter(agg -> agg instanceof Partition)
+                .map(agg -> (Partition) agg)
+                .findFirst();
+        final Partition partition = includedPartition.orElseGet(() -> Partition.of(CONSTITUENT));
+        final Collection<? extends Aggregation> aggregationsToUse = includedPartition.isPresent()
+                ? aggregations
+                : Stream.concat(aggregations.stream(), Stream.of(partition)).collect(Collectors.toList());
+        final Table aggregated = aggBy(aggregationsToUse, preserveEmpty, initialGroups, ColumnName.from(keyColumnNames));
+        final Set<String> keyColumnNamesSet =
+                Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
+        final TableDefinition constituentDefinition;
+        if (partition.includeGroupByColumns()) {
+            constituentDefinition = definition;
+        } else {
+            constituentDefinition = TableDefinition.of(definition.getColumnStream()
+                    .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
+        }
+        return new PartitionedTableImpl(aggregated, keyColumnNamesSet, true, partition.column().name(),
+                constituentDefinition, isRefreshing(), false);
+    }
+
+    @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             ColumnName... groupByColumns) {
         throw new UnsupportedOperationException("rollup is not yet implemented in community");

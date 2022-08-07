@@ -379,6 +379,13 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
+    public PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
+            Table initialGroups, String... keyColumnNames) {
+        return coalesce().partitionedAggBy(aggregations, preserveEmpty, initialGroups, keyColumnNames);
+    }
+
+    @Override
+    @ConcurrentMethod
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             ColumnName... groupByColumns) {
         return coalesce().rollup(aggregations, includeConstituents, groupByColumns);
