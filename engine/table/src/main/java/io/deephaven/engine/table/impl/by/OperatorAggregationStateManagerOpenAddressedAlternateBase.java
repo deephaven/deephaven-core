@@ -38,8 +38,8 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
     protected long numEntries = 0;
 
     /**
-     * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
-     * or if it falls below minimum load factor we will instead contract the table. TODO
+     * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor or if
+     * it falls below minimum load factor we will instead contract the table.
      */
     private final double maximumLoadFactor;
 

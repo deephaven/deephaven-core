@@ -608,7 +608,7 @@ public class QueryTable extends BaseTable {
         final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, groupByList);
         return tableToUse.memoizeResult(aggKey, () -> {
             final QueryTable result =
-tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, groupByList);
+                    tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, groupByList);
             spec.walk(new AggAllByCopyAttributes(this, result));
             return result;
         });
@@ -627,8 +627,8 @@ tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, gro
         }
         final List<? extends Aggregation> optimized = AggregationOptimizer.of(aggregations);
         final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, groupByColumns);
-        final Table aggregationTable = memoizeResult(aggKey, () ->                 aggNoMemo(
-                        AggregationProcessor.forAggregation(optimized), preserveEmpty, initialGroups, groupByColumns));
+        final Table aggregationTable = memoizeResult(aggKey, () -> aggNoMemo(
+                AggregationProcessor.forAggregation(optimized), preserveEmpty, initialGroups, groupByColumns));
 
         final List<ColumnName> optimizedOrder = AggregationPairs.outputsOf(optimized).collect(Collectors.toList());
         final List<ColumnName> userOrder = AggregationPairs.outputsOf(aggregations).collect(Collectors.toList());

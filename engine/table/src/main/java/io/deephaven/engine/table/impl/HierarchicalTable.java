@@ -182,7 +182,7 @@ public class HierarchicalTable extends QueryTable {
 
     @Override
     public Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups,
-                       Collection<? extends ColumnName> groupByColumns) {
+            Collection<? extends ColumnName> groupByColumns) {
         return throwUnsupported("aggBy()");
     }
 

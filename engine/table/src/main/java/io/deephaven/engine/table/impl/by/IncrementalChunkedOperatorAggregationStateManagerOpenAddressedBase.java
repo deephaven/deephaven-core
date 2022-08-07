@@ -57,8 +57,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     protected AlternatingColumnSource[] alternatingColumnSources;
 
     /**
-     * The mask for insertion into the main table (this tells our alternating column sources which of the two sources
-     * to access for a given key).
+     * The mask for insertion into the main table (this tells our alternating column sources which of the two sources to
+     * access for a given key).
      */
     protected int mainInsertMask = 0;
 

@@ -1022,7 +1022,7 @@ public interface Table extends
     @Override
     @ConcurrentMethod
     Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups,
-                        Collection<? extends ColumnName> groupByColumns);
+            Collection<? extends ColumnName> groupByColumns);
 
     Table headBy(long nRows, Collection<String> groupByColumnNames);
 

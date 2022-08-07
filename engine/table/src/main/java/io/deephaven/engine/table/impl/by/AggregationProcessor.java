@@ -1352,8 +1352,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             return new AggregationContext(
                     new IterativeChunkedAggregationOperator[] {new CountAggregationOperator(null)},
                     ZERO_LENGTH_STRING_ARRAY_ARRAY,
-                    ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY
-            );
+                    ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
         }
         // noinspection unchecked
         return new AggregationContext(

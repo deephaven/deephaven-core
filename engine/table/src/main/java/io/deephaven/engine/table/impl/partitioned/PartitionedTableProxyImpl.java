@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 /**
  * {@link PartitionedTable.Proxy} implementation.
  */
- class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedTable.Proxy {
+class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedTable.Proxy {
 
     /**
      * Make a {@link PartitionedTable.Proxy proxy} to the supplied {@code target}.
