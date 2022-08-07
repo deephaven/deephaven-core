@@ -1614,10 +1614,10 @@ public interface Table extends
     PartitionedTable partitionBy(String... keyColumnNames);
 
     /**
-     * Convenience method that performs an {@link #aggBy(Collection, boolean, Table, Collection)} and wraps the
-     * result in a {@link PartitionedTable}. If {@code aggregations} does not include a
-     * {@link io.deephaven.api.agg.Partition partition}, one will be added automatically with the default constituent
-     * column name and behavior used in {@link #partitionBy(String...)}.
+     * Convenience method that performs an {@link #aggBy(Collection, boolean, Table, Collection)} and wraps the result
+     * in a {@link PartitionedTable}. If {@code aggregations} does not include a {@link io.deephaven.api.agg.Partition
+     * partition}, one will be added automatically with the default constituent column name and behavior used in
+     * {@link #partitionBy(String...)}.
      *
      * @param aggregations The {@link Aggregation aggregations} to apply
      * @param preserveEmpty Whether to keep result rows for groups that are initially empty or become empty as a result

@@ -491,7 +491,8 @@ public class QueryTable extends BaseTable {
         final Collection<? extends Aggregation> aggregationsToUse = includedPartition.isPresent()
                 ? aggregations
                 : Stream.concat(aggregations.stream(), Stream.of(partition)).collect(Collectors.toList());
-        final Table aggregated = aggBy(aggregationsToUse, preserveEmpty, initialGroups, ColumnName.from(keyColumnNames));
+        final Table aggregated =
+                aggBy(aggregationsToUse, preserveEmpty, initialGroups, ColumnName.from(keyColumnNames));
         final Set<String> keyColumnNamesSet =
                 Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
         final TableDefinition constituentDefinition;
