@@ -84,9 +84,32 @@ public class ChunkedOperatorAggregationHelper {
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
-        if (groupByColumns.isEmpty() && initialKeys != null) {
-            throw new IllegalArgumentException(
-                    "aggregation: initial groups must not be specified if no group-by columns are specified");
+        final String[] keyNames = groupByColumns.stream().map(ColumnName::name).toArray(String[]::new);
+        if (!input.hasColumns(keyNames)) {
+            throw new IllegalArgumentException("aggregation: not all group-by columns " + Arrays.toString(keyNames)
+                    + " are present in input table with columns "
+                    + Arrays.toString(input.getDefinition().getColumnNamesArray()));
+        }
+        if (initialKeys != null) {
+            if (keyNames.length == 0) {
+                throw new IllegalArgumentException(
+                        "aggregation: initial groups must not be specified if no group-by columns are specified");
+            }
+            if (!initialKeys.hasColumns(keyNames)) {
+                throw new IllegalArgumentException("aggregation: not all group-by columns " + Arrays.toString(keyNames)
+                        + " are present in initial groups table with columns "
+                        + Arrays.toString(initialKeys.getDefinition().getColumnNamesArray()));
+            }
+            for (final String keyName : keyNames) {
+                final ColumnDefinition<?> inputDef = input.getDefinition().getColumn(keyName);
+                final ColumnDefinition<?> initialKeysDef = initialKeys.getDefinition().getColumn(keyName);
+                if (!inputDef.isCompatible(initialKeysDef)) {
+                    throw new IllegalArgumentException(
+                            "aggregation: column definition mismatch between input table and initial groups table for "
+                                    + keyName + " input has " + inputDef.describeForCompatibility()
+                                    + ", initial groups has " + initialKeysDef.describeForCompatibility());
+                }
+            }
         }
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
         final SwapListener swapListener = input.createSwapListenerIfRefreshing(SwapListener::new);
@@ -94,7 +117,7 @@ public class ChunkedOperatorAggregationHelper {
                 "by(" + aggregationContextFactory + ", " + groupByColumns + ")", swapListener,
                 (usePrev, beforeClockValue) -> {
                     resultHolder.setValue(aggregation(control, swapListener, aggregationContextFactory,
-                            input, preserveEmpty, initialKeys, groupByColumns, usePrev));
+                            input, preserveEmpty, initialKeys, keyNames, usePrev));
                     return true;
                 });
         return resultHolder.getValue();
@@ -107,16 +130,15 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final QueryTable input,
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
-            @NotNull final Collection<? extends ColumnName> groupByColumns,
+            @NotNull final String[] keyNames,
             final boolean usePrev) {
-        if (groupByColumns.isEmpty()) {
+        if (keyNames.length == 0) {
             // This should be checked before this method is called, but let's verify here in case an additional
             // entry point is added incautiously.
             Assert.eqNull(initialKeys, "initialKeys");
             return noKeyAggregation(swapListener, aggregationContextFactory, input, preserveEmpty, usePrev);
         }
 
-        final String[] keyNames = groupByColumns.stream().map(ColumnName::name).toArray(String[]::new);
         final ColumnSource<?>[] keySources =
                 Arrays.stream(keyNames).map(input::getColumnSource).toArray(ColumnSource[]::new);
         final ColumnSource<?>[] reinterpretedKeySources = Arrays.stream(keySources)
