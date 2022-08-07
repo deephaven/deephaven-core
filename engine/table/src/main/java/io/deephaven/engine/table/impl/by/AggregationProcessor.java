@@ -1351,8 +1351,8 @@ public class AggregationProcessor implements AggregationContextFactory {
             // noinspection unchecked
             return new AggregationContext(
                     new IterativeChunkedAggregationOperator[] {new CountAggregationOperator(null)},
-                    ZERO_LENGTH_STRING_ARRAY_ARRAY,
-                    ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
+                    new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                    new ChunkSource.WithPrev[] {null});
         }
         // noinspection unchecked
         return new AggregationContext(
