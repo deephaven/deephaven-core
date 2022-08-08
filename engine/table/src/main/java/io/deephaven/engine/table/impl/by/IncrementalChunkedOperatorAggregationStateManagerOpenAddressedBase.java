@@ -11,7 +11,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
@@ -45,9 +44,6 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
      * alternate values.
      */
     protected final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
-
-    /** How many values are in each state, addressed by output row key. */
-    protected final LongArraySource rowCountSource = new LongArraySource();
 
     /** State variables that exist as part of the update. */
     protected MutableInt nextOutputPosition;
@@ -124,7 +120,6 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     @Override
     public void onNextChunk(int size) {
         outputPositionToHashSlot.ensureCapacity(nextOutputPosition.intValue() + size, false);
-        rowCountSource.ensureCapacity(nextOutputPosition.intValue() + size, false);
     }
 
     @Override
