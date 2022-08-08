@@ -41,8 +41,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     private long enqueuedSequence = 0L;
     /**
      * The most recently processed change sequence. Only written under <em>both</em> the monitor lock for
-     * {@code pendingChanges} <em>and</em> from an update thread. Only read under either the UPG's exclusive lock
-     * or the monitor lock on {@code pendingChanges}.
+     * {@code pendingChanges} <em>and</em> from an update thread. Only read under either the UPG's exclusive lock or the
+     * monitor lock on {@code pendingChanges}.
      */
     private long processedSequence = 0L;
 
