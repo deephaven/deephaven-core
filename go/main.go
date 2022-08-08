@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	doStuff3()
+	doStuff1()
 }
 
 func doStuff3() {
@@ -29,7 +29,7 @@ func doStuff3() {
 		return
 	}
 
-	tickingTbl, updateChan, err := cl.Subscribe(ctx, tbl)
+	tickingTbl, updateChan, err := tbl.Subscribe(ctx)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -86,7 +86,7 @@ func doStuff2() {
 	tbl := tbls[0]
 	defer tbl.Release(ctx)
 
-	tickingTbl, updateCh, err := cl.Subscribe(ctx, tbl)
+	tickingTbl, updateCh, err := tbl.Subscribe(ctx)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -139,7 +139,7 @@ func doStuff1() {
 	//tbl3node := tbl.Query().Join(tbl2.Query().Update("FOO = V1 + V2"), []string{"K"}, []string{"W1 = V1", "W2 = V2", "FOO"}, 10)
 
 	// Uncomment this line to just test modifies instead.
-	tbl3node := tbl.Query()
+	/*tbl3node := tbl.Query()
 
 	tbls, err := cl.ExecBatch(ctx, tbl3node)
 	if err != nil {
@@ -147,7 +147,7 @@ func doStuff1() {
 		return
 	}
 	tbl3 := tbls[0]
-	defer tbl3.Release(ctx)
+	defer tbl3.Release(ctx)*/
 
 	/*tbl, err := cl.OpenTable(ctx, "t")
 	if err != nil {
@@ -155,13 +155,15 @@ func doStuff1() {
 		return
 	}*/
 
-	tickingTbl, updateChan, err := cl.Subscribe(ctx, tbl3)
+	/*tickingTbl, updateChan, err := cl.Subscribe(ctx, tbl3)
 	if err != nil {
 		fmt.Println(err)
 		return
-	}
+	}*/
 
 	//mySum := 0
+
+	startTime := time.Now()
 
 	go func() {
 		b := array.NewRecordBuilder(memory.DefaultAllocator, schema)
@@ -182,7 +184,12 @@ func doStuff1() {
 
 			rec2 := b.NewRecord()
 
+			fmt.Println("uploaded ", i)
+
 			i++
+
+			dur := time.Since(startTime)
+			fmt.Println("average time: ", float64(dur.Milliseconds())/float64(i-1))
 
 			recTbl1, err := cl.ImportTable(ctx, rec1)
 			if err != nil {
@@ -223,7 +230,11 @@ func doStuff1() {
 		}
 	}()
 
-	for update := range updateChan {
+	for {
+		time.Sleep(time.Second)
+	}
+
+	/*for update := range updateChan {
 		if update.Err != nil {
 			fmt.Println("oh no! ", update.Err)
 			break
@@ -245,7 +256,7 @@ func doStuff1() {
 		// do some calculations on the changed table
 
 		fmt.Println(tickingTbl)
-	}
+	}*/
 
 	err = tbl.Release(ctx)
 	if err != nil {

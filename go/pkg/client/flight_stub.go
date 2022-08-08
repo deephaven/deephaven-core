@@ -16,7 +16,9 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	ticketpb2 "github.com/deephaven/deephaven-core/go/internal/proto/ticket"
 
@@ -201,7 +203,7 @@ func WithBatchSize(batchSize int32) SubscribeOption {
 	}}
 }
 
-func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle, options ...SubscribeOption) (*ticking.TickingTable, <-chan ticking.TickingStatus, error) {
+func (fs *flightStub) subscribe(ctx context.Context, handle *TableHandle, options ...SubscribeOption) (*ticking.TickingTable, <-chan ticking.TickingStatus, error) {
 	opts := newSubscribeOptions(options...)
 
 	ctx, err := fs.client.withToken(ctx)
@@ -214,6 +216,7 @@ func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle, option
 		return nil, nil, err
 	}
 
+	// TODO: Viewport support
 	/*ser := ticking.NewRowSetSerializer()
 	//ser.AddRowRange(0, 9)
 	ser.AddRowRange(0, 4)
@@ -301,11 +304,6 @@ func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle, option
 		defer close(updateChan)
 
 		for reader.Next() {
-			if reader.Err() != nil {
-				updateChan <- ticking.TickingStatus{Err: reader.Err()}
-				return
-			}
-
 			resp := reader.LatestAppMetadata()
 
 			if len(resp) > 0 {
@@ -433,6 +431,15 @@ func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle, option
 			} else {
 				fmt.Println("NO METADATA")
 			}
+		}
+
+		err = reader.Err()
+		if err != nil {
+			// Cancellation errors are ignored, since that's the usual way to stop a subscription.
+			if err, ok := status.FromError(err); !ok || err.Code() != codes.Canceled {
+				updateChan <- ticking.TickingStatus{Err: reader.Err()}
+			}
+			return
 		}
 	}()
 
