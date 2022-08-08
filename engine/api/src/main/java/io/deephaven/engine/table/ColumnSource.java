@@ -111,11 +111,6 @@ public interface ColumnSource<T>
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException;
 
     @Override
-    default List<ColumnSource> getColumnSources() {
-        return Collections.singletonList(this);
-    }
-
-    @Override
     default T createTuple(final long rowKey) {
         return get(rowKey);
     }
