@@ -1625,7 +1625,7 @@ public class ChunkedOperatorAggregationHelper {
                 for (int ii = 0; ii < responsiveGroups; ++ii) {
                     final RowSet rowSet = groupIndexToRowSet.apply(ii);
                     try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
-                        while (rsIt.hasMore()) {
+                        do {
                             final RowSequence chunkRows = rsIt.getNextRowSequenceWithLength(chunkSize);
                             final int chunkRowsSize = chunkRows.intSize();
                             final LongChunk<OrderedRowKeys> keyIndices =
@@ -1643,7 +1643,7 @@ public class ChunkedOperatorAggregationHelper {
                                 ac.operators[oi].addChunk(operatorContexts[oi], chunkRowsSize,
                                         inputSlot < 0 ? null : workingChunks[inputSlot], keyIndices, ii);
                             }
-                        }
+                        } while (rsIt.hasMore());
                     }
                 }
             }
