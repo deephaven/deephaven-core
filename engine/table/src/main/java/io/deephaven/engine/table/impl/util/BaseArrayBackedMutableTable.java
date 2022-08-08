@@ -27,23 +27,32 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
     private static final Object[] BOOLEAN_ENUM_ARRAY = new Object[] {true, false, null};
 
-    private final List<PendingChange> pendingChanges = Collections.synchronizedList(new ArrayList<>());
-    private final AtomicLong nextSequence = new AtomicLong(0);
-    private final AtomicLong processedSequence = new AtomicLong(0);
+    /**
+     * Queue of pending changes. Only synchronized access is permitted.
+     */
+    private final List<PendingChange> pendingChanges = new ArrayList<>();
+    /** The most recently enqueue change sequence. Only accessed under the monitor lock for {@code pendingChanges}. */
+    private long enqueuedSequence = 0L;
+    /**
+     * The most recently processed change sequence. Only written under <em>both</em> the monitor lock for
+     * {@code pendingChanges} <em>and</em> from an update thread. Only read under either the UPG's exclusive lock or the
+     * monitor lock on {@code pendingChanges}.
+     */
+    private long processedSequence = 0L;
+
     private final Map<String, Object[]> enumValues;
 
     private String description = getDefaultDescription();
     private Runnable onPendingChange = () -> UpdateGraphProcessor.DEFAULT.requestRefresh();
 
     long nextRow = 0;
-    private long pendingProcessed = NULL_NOTIFICATION_STEP;
+    private long pendingProcessed = -1L;
 
     public BaseArrayBackedMutableTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
             Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
@@ -136,8 +145,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     public void run() {
         super.run();
         synchronized (pendingChanges) {
-            processedSequence.set(pendingProcessed);
-            pendingProcessed = NULL_NOTIFICATION_STEP;
+            processedSequence = pendingProcessed;
+            pendingProcessed = -1L;
             pendingChanges.notifyAll();
         }
     }
@@ -172,10 +181,11 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         String error;
 
         private PendingChange(Table table, boolean delete, boolean allowEdits) {
+            Assert.holdsLock(pendingChanges, "pendingChanges");
             this.table = table;
             this.delete = delete;
             this.allowEdits = allowEdits;
-            this.sequence = nextSequence.incrementAndGet();
+            this.sequence = ++enqueuedSequence;
         }
     }
 
@@ -222,8 +232,12 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             validateAddOrModify(newData);
             // we want to get a clean copy of the table; that can not change out from under us or result in long reads
             // during our UGP run
-            final PendingChange pendingChange = new PendingChange(doSnap(newData), false, allowEdits);
-            pendingChanges.add(pendingChange);
+            final Table newDataSnapshot = doSnap(newData);
+            final PendingChange pendingChange;
+            synchronized (pendingChanges) {
+                pendingChange = new PendingChange(newDataSnapshot, false, allowEdits);
+                pendingChanges.add(pendingChange);
+            }
             onPendingChange.run();
             return pendingChange;
         }
@@ -243,10 +257,14 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         @Override
-        public void delete(Table table, TrackingRowSet rowSet) throws IOException {
+        public void delete(Table table, TrackingRowSet rowsToDelete) throws IOException {
             validateDelete(table);
-            final PendingChange pendingChange = new PendingChange(doSnap(table, rowSet), true, false);
-            pendingChanges.add(pendingChange);
+            final Table oldDataSnapshot = doSnap(table, rowsToDelete);
+            final PendingChange pendingChange;
+            synchronized (pendingChanges) {
+                pendingChange = new PendingChange(oldDataSnapshot, true, false);
+                pendingChanges.add(pendingChange);
+            }
             onPendingChange.run();
             waitForSequence(pendingChange.sequence);
 
@@ -264,7 +282,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
                 // We're holding the lock. currentTable had better be refreshing. Wait on its UGP condition
                 // in order to allow updates.
-                while (processedSequence.longValue() < sequence) {
+                while (processedSequence < sequence) {
                     try {
                         BaseArrayBackedMutableTable.this.awaitUpdate();
                     } catch (InterruptedException ignored) {
@@ -273,7 +291,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             } else {
                 // we are not holding the lock, so should wait for the next run
                 synchronized (pendingChanges) {
-                    while (processedSequence.longValue() < sequence) {
+                    while (processedSequence < sequence) {
                         try {
                             pendingChanges.wait();
                         } catch (InterruptedException ignored) {
