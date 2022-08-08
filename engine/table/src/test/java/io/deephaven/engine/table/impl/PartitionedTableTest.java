@@ -90,35 +90,35 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testMergePopulate() {
-         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
-                 c("Sym", "aa", "bb", "aa", "bb"), c("intCol", 10, 20, 40, 60), c("doubleCol", 0.1, 0.2, 0.4, 0.6));
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+                c("Sym", "aa", "bb", "aa", "bb"), c("intCol", 10, 20, 40, 60), c("doubleCol", 0.1, 0.2, 0.4, 0.6));
 
-         final Table withK = queryTable.update("K=k");
+        final Table withK = queryTable.update("K=k");
 
-         final QueryTable keyTable = TstUtils.testTable(c("Sym", "cc", "dd"));
-         final PartitionedTable partitionedTable = withK.partitionedAggBy(List.of(), true, keyTable, "Sym");
+        final QueryTable keyTable = TstUtils.testTable(c("Sym", "cc", "dd"));
+        final PartitionedTable partitionedTable = withK.partitionedAggBy(List.of(), true, keyTable, "Sym");
 
-         final Table merged = partitionedTable.merge();
-         final Table mergedByK = merged.sort("K");
+        final Table merged = partitionedTable.merge();
+        final Table mergedByK = merged.sort("K");
 
-         if (printTableUpdates) {
-             TableTools.show(withK);
-             TableTools.show(mergedByK);
-         }
+        if (printTableUpdates) {
+            TableTools.show(withK);
+            TableTools.show(mergedByK);
+        }
 
-         assertEquals("", TableTools.diff(mergedByK, withK, 10));
+        assertEquals("", TableTools.diff(mergedByK, withK, 10));
 
-         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-             addToTable(queryTable, i(3, 9), c("Sym", "cc", "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9));
-             queryTable.notifyListeners(i(3, 9), i(), i());
-         });
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            addToTable(queryTable, i(3, 9), c("Sym", "cc", "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9));
+            queryTable.notifyListeners(i(3, 9), i(), i());
+        });
 
-         if (printTableUpdates) {
-             TableTools.show(withK);
-             TableTools.show(mergedByK);
-         }
+        if (printTableUpdates) {
+            TableTools.show(withK);
+            TableTools.show(mergedByK);
+        }
 
-         assertEquals("", TableTools.diff(mergedByK, withK, 10));
+        assertEquals("", TableTools.diff(mergedByK, withK, 10));
     }
 
     public void testMergeIncremental() {
@@ -150,7 +150,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 new EvalNugget() {
                     public Table e() {
                         return table.partitionedAggBy(List.of(), true,
-                                        testTable(intCol("intCol", IntStream.rangeClosed(0, 20).toArray())), "intCol")
+                                testTable(intCol("intCol", IntStream.rangeClosed(0, 20).toArray())), "intCol")
                                 .merge().sort("intCol");
                     }
                 },

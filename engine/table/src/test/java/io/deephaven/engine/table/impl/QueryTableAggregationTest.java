@@ -3630,14 +3630,13 @@ public class QueryTableAggregationTest {
                 AggSum("SumI=I"),
                 AggMax("MaxI=I"),
                 AggMin("MinI=I"),
-                AggGroup("GroupS=S")
-        );
+                AggGroup("GroupS=S"));
 
         final TrackingWritableRowSet inputRows = ir(0, 9).toTracking();
         final QueryTable input = testRefreshingTable(inputRows,
                 c("S", "A", "B", "C", "D", "E", "F", "G", "H", "I", "K"),
                 c("C", 'A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'E', 'E'),
-                c("I",  0,   1,   2,   3,   4,   5,   6,   7,   8,   9));
+                c("I", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
         inputRows.removeRange(0, 8);
 
         final Table initialKeys = testRefreshingTable(c("C", 'A', 'B', 'C', 'D', 'E'));
