@@ -8,16 +8,16 @@ import (
 )
 
 type RowRange struct {
-	Begin int64
-	End   int64
+	Begin uint64
+	End   uint64
 }
 
 type RowSet struct {
 	Ranges []RowRange
 }
 
-func (rs *RowSet) GetAllRows() <-chan int64 {
-	ch := make(chan int64)
+func (rs *RowSet) GetAllRows() <-chan uint64 {
+	ch := make(chan uint64)
 
 	go func() {
 		for _, r := range rs.Ranges {
@@ -31,7 +31,7 @@ func (rs *RowSet) GetAllRows() <-chan int64 {
 	return ch
 }
 
-func ConsumeRowSet(offsets []int64, addRowsInRange func(start int64, end int64), addRowAt func(offset int64)) {
+func ConsumeRowSet(offsets []int64, addRowsInRange func(start uint64, end uint64), addRowAt func(offset uint64)) {
 	pending := int64(-1)
 	lastValue := int64(0)
 
@@ -41,11 +41,11 @@ func ConsumeRowSet(offsets []int64, addRowsInRange func(start int64, end int64),
 				panic("consecutive negative values")
 			}
 			lastValue = lastValue - nextOffset
-			addRowsInRange(pending, lastValue)
+			addRowsInRange(uint64(pending), uint64(lastValue))
 			pending = -1
 		} else {
 			if pending != -1 {
-				addRowAt(pending)
+				addRowAt(uint64(pending))
 			}
 			lastValue += nextOffset
 			pending = lastValue
@@ -57,7 +57,7 @@ func ConsumeRowSet(offsets []int64, addRowsInRange func(start int64, end int64),
 	}
 
 	if pending != -1 {
-		addRowAt(pending)
+		addRowAt(uint64(pending))
 	}
 }
 
@@ -262,9 +262,9 @@ func DeserializeRowSet(bytes []byte) (RowSet, error) {
 	}
 
 	var result []RowRange
-	ConsumeRowSet(decoded, func(start int64, end int64) {
+	ConsumeRowSet(decoded, func(start uint64, end uint64) {
 		result = append(result, RowRange{Begin: start, End: end})
-	}, func(index int64) {
+	}, func(index uint64) {
 		result = append(result, RowRange{Begin: index, End: index})
 	})
 
@@ -280,11 +280,11 @@ func DeserializeRowSetShiftData(bytes []byte) (starts RowSet, ends RowSet, dests
 		return RowSet{}, RowSet{}, RowSet{}, err
 	}
 
-	makeAppender := func(arr *RowSet) (func(start int64, end int64), func(offset int64)) {
-		rangeApp := func(start int64, end int64) {
+	makeAppender := func(arr *RowSet) (func(start uint64, end uint64), func(offset uint64)) {
+		rangeApp := func(start uint64, end uint64) {
 			arr.Ranges = append(arr.Ranges, RowRange{Begin: start, End: end})
 		}
-		offsetApp := func(offset int64) {
+		offsetApp := func(offset uint64) {
 			arr.Ranges = append(arr.Ranges, RowRange{Begin: offset, End: offset})
 		}
 		return rangeApp, offsetApp

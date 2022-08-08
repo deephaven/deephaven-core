@@ -3,9 +3,10 @@ package ticking
 import (
 	"errors"
 	"fmt"
-	"sort"
+	"math"
 	"strings"
 
+	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/apache/arrow/go/v8/arrow/array"
 	"github.com/apache/arrow/go/v8/arrow/memory"
@@ -26,8 +27,10 @@ type TickingTable struct {
 	schema  *arrow.Schema
 	columns []tickingColumn
 
-	redirectIndex map[int64]int // Maps from key-space IDs to an index in the column data.
-	freeRows      []int         // A list of column data indices that are no longer needed.
+	keys *roaring64.Bitmap
+
+	redirectIndex map[uint64]int // Maps from key-space IDs to an index in the column data.
+	freeRows      []int          // A list of column data indices that are no longer needed.
 }
 
 var ErrUnsupportedType = errors.New("unsupported data type for ticking table")
@@ -49,78 +52,59 @@ func NewTickingTable(schema *arrow.Schema) (*TickingTable, error) {
 		columns = append(columns, newColumn)
 	}
 
-	return &TickingTable{schema: schema, columns: columns, redirectIndex: make(map[int64]int)}, nil
+	return &TickingTable{schema: schema, columns: columns, keys: roaring64.New(), redirectIndex: make(map[uint64]int)}, nil
 }
 
-func (tt *TickingTable) DeleteKeyRange(start int64, end int64) {
-	for key := start; key <= end; key++ {
-		if dataIndex, ok := tt.redirectIndex[key]; ok {
-			tt.freeRows = append(tt.freeRows, dataIndex)
-			delete(tt.redirectIndex, key)
-		}
+func inclusiveRange(start uint64, end uint64) *roaring64.Bitmap {
+	keyRange := roaring64.New()
+	if end == math.MaxUint64 {
+		keyRange.AddRange(start, end)
+		keyRange.Add(math.MaxUint64)
+	} else {
+		keyRange.AddRange(start, end+1)
 	}
+	return keyRange
 }
 
-func (tt *TickingTable) ShiftKeyRange(start int64, end int64, dest int64) {
+func (tt *TickingTable) DeleteKeyRange(start uint64, end uint64) {
+	keyRange := inclusiveRange(start, end)
+	keyRange.And(tt.keys)
+	iter := keyRange.Iterator()
+
+	for iter.HasNext() {
+		key := iter.Next()
+		storageIndex := tt.redirectIndex[key]
+		tt.freeRows = append(tt.freeRows, storageIndex)
+		delete(tt.redirectIndex, key)
+	}
+
+	tt.keys.RemoveRange(start, end+1)
+}
+
+func (tt *TickingTable) ShiftKeyRange(start uint64, end uint64, dest uint64) {
+	keyRange := inclusiveRange(start, end)
+	keyRange.And(tt.keys)
+
+	var iter roaring64.IntIterable64
 	if dest < start {
 		// Negative deltas get applied in low-to-high keyspace order.
-		for off := int64(0); off <= end-start; off++ {
-			src := start + off
-			dst := dest + off
-
-			if dataIndex, ok := tt.redirectIndex[src]; ok {
-				delete(tt.redirectIndex, src)
-				tt.redirectIndex[dst] = dataIndex
-			}
-		}
-	} else if dest > start {
+		iter = keyRange.Iterator()
+	} else {
 		// Positive deltas get applied in high-to-low keyspace order.
-		for off := end - start; off >= 0; off-- {
-			src := start + off
-			dst := dest + off
-
-			if dataIndex, ok := tt.redirectIndex[src]; ok {
-				delete(tt.redirectIndex, src)
-				tt.redirectIndex[dst] = dataIndex
-			}
-		}
+		iter = keyRange.ReverseIterator()
 	}
-}
 
-type idPair struct {
-	key  int64
-	data int
-}
+	for iter.HasNext() {
+		src := iter.Next()
+		dst := dest + (src - start)
 
-type idPairSorter struct {
-	pairs []idPair
-}
+		storageIdx := tt.redirectIndex[src]
+		delete(tt.redirectIndex, src)
+		tt.redirectIndex[dst] = storageIdx
 
-func (ips *idPairSorter) Len() int {
-	return len(ips.pairs)
-}
-
-func (ips *idPairSorter) Swap(i, j int) {
-	ips.pairs[i], ips.pairs[j] = ips.pairs[j], ips.pairs[i]
-}
-
-func (ips *idPairSorter) Less(i, j int) bool {
-	return ips.pairs[i].key < ips.pairs[j].key
-}
-
-func (tt *TickingTable) getDataIndices() []int {
-	var pairs []idPair
-	for key, data := range tt.redirectIndex {
-		pairs = append(pairs, idPair{key: key, data: data})
+		tt.keys.Remove(src)
+		tt.keys.Add(dst)
 	}
-	sorter := idPairSorter{pairs: pairs}
-	sort.Sort(&sorter)
-
-	var indices []int
-	for _, pair := range sorter.pairs {
-		indices = append(indices, pair.data)
-	}
-	return indices
 }
 
 func (tt *TickingTable) ApplyUpdate(update TickingUpdate) {
@@ -130,17 +114,17 @@ func (tt *TickingTable) ApplyUpdate(update TickingUpdate) {
 		tt.DeleteKeyRange(rowRange.Begin, rowRange.End)
 	}
 
-	var startSet []int64
+	var startSet []uint64
 	for r := range update.ShiftDataStarts.GetAllRows() {
 		startSet = append(startSet, r)
 	}
 
-	var endSet []int64
+	var endSet []uint64
 	for r := range update.ShiftDataEnds.GetAllRows() {
 		endSet = append(endSet, r)
 	}
 
-	var destSet []int64
+	var destSet []uint64
 	for r := range update.ShiftDataDests.GetAllRows() {
 		destSet = append(destSet, r)
 	}
@@ -201,17 +185,19 @@ func (tt *TickingTable) ApplyUpdate(update TickingUpdate) {
 }
 
 func (tt *TickingTable) String() string {
-	idxs := tt.getDataIndices()
-
 	o := new(strings.Builder)
 	fmt.Fprintf(o, "ticking table:\n")
 	fmt.Fprintf(o, "  %v\n", tt.schema)
 	for idx, column := range tt.columns {
 		name := tt.schema.Field(idx).Name
 		fmt.Fprintf(o, "col[%d][%s]: [", idx, name)
-		for iIdx, dataIdx := range idxs {
-			fmt.Fprintf(o, "%v", column.Get(dataIdx))
-			if iIdx != len(idxs)-1 {
+
+		iter := tt.keys.Iterator()
+		for iter.HasNext() {
+			key := iter.Next()
+			storage := tt.redirectIndex[key]
+			fmt.Fprintf(o, "%v", column.Get(storage))
+			if iter.HasNext() {
 				fmt.Fprintf(o, ", ")
 			}
 		}
@@ -223,25 +209,33 @@ func (tt *TickingTable) String() string {
 
 // The returned record must be eventually released
 func (tt *TickingTable) ToRecord() arrow.Record {
-	idxs := tt.getDataIndices()
-
 	b := array.NewRecordBuilder(memory.DefaultAllocator, tt.schema)
 	defer b.Release()
+
+	iter := tt.keys.Iterator()
 
 	for fieldIdx := 0; fieldIdx < len(tt.columns); fieldIdx++ {
 		switch tt.schema.Field(fieldIdx).Type.ID() {
 		case arrow.PrimitiveTypes.Int32.ID():
 			sourceData := tt.columns[fieldIdx].(*Int32Column)
-			orderedData := make([]int32, len(idxs))
-			for i, idx := range idxs {
-				orderedData[i] = sourceData.values[idx]
+			orderedData := make([]int32, tt.keys.GetCardinality())
+			i := 0
+			for iter.HasNext() {
+				key := iter.Next()
+				storage := tt.redirectIndex[key]
+				orderedData[i] = sourceData.values[storage]
+				i++
 			}
 			b.Field(fieldIdx).(*array.Int32Builder).AppendValues(orderedData, nil)
 		case arrow.FixedWidthTypes.Timestamp_ns.ID(): // TODO: There has to be a better way to compare this
 			sourceData := tt.columns[fieldIdx].(*TimestampColumn)
-			orderedData := make([]arrow.Timestamp, len(idxs))
-			for i, idx := range idxs {
-				orderedData[i] = sourceData.values[idx]
+			orderedData := make([]arrow.Timestamp, tt.keys.GetCardinality())
+			i := 0
+			for iter.HasNext() {
+				key := iter.Next()
+				storage := tt.redirectIndex[key]
+				orderedData[i] = sourceData.values[storage]
+				i++
 			}
 			b.Field(fieldIdx).(*array.TimestampBuilder).AppendValues(orderedData, nil)
 		}
@@ -250,7 +244,7 @@ func (tt *TickingTable) ToRecord() arrow.Record {
 	return b.NewRecord()
 }
 
-func (tt *TickingTable) ModifyEntry(column int, key int64, sourceRecord arrow.Record, sourceRow int) {
+func (tt *TickingTable) ModifyEntry(column int, key uint64, sourceRecord arrow.Record, sourceRow int) {
 	if !tt.schema.Equal(sourceRecord.Schema()) {
 		panic("mismatched schema")
 	}
@@ -280,9 +274,12 @@ func (tt *TickingTable) ModifyEntry(column int, key int64, sourceRecord arrow.Re
 }
 
 // TODO: This could be optimized by having it add an entire range at a time.
-func (tt *TickingTable) AddRow(key int64, sourceRecord arrow.Record, sourceRow int) {
+func (tt *TickingTable) AddRow(key uint64, sourceRecord arrow.Record, sourceRow int) {
 	if !tt.schema.Equal(sourceRecord.Schema()) {
 		panic("mismatched schema")
+	}
+	if tt.keys.Contains(key) {
+		panic("trying to add a row with a key that already exists")
 	}
 
 	freeIndex := -1
@@ -323,6 +320,7 @@ func (tt *TickingTable) AddRow(key int64, sourceRecord arrow.Record, sourceRow i
 			panic("unsupported type")
 		}
 
+		tt.keys.Add(key)
 		tt.redirectIndex[key] = destIdx
 	}
 }

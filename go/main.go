@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	doStuff1()
+	doStuff3()
 }
 
 func doStuff3() {
@@ -23,7 +23,7 @@ func doStuff3() {
 	fmt.Println(err)
 	defer cl.Close()
 
-	tbl, err := cl.OpenTable(ctx, "t4")
+	tbl, err := cl.OpenTable(ctx, "t")
 	if err != nil {
 		fmt.Println(err)
 		return
