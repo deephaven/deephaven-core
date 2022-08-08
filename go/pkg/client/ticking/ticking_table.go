@@ -30,7 +30,8 @@ type TickingTable struct {
 	keys *roaring64.Bitmap
 
 	redirectIndex map[uint64]int // Maps from key-space IDs to an index in the column data.
-	freeRows      []int          // A list of column data indices that are no longer needed.
+
+	freeRows *roaring64.Bitmap // A list of column data indices that are no longer needed.
 }
 
 var ErrUnsupportedType = errors.New("unsupported data type for ticking table")
@@ -52,7 +53,7 @@ func NewTickingTable(schema *arrow.Schema) (*TickingTable, error) {
 		columns = append(columns, newColumn)
 	}
 
-	return &TickingTable{schema: schema, columns: columns, keys: roaring64.New(), redirectIndex: make(map[uint64]int)}, nil
+	return &TickingTable{schema: schema, columns: columns, keys: roaring64.New(), freeRows: roaring64.New(), redirectIndex: make(map[uint64]int)}, nil
 }
 
 func inclusiveRange(start uint64, end uint64) *roaring64.Bitmap {
@@ -74,7 +75,7 @@ func (tt *TickingTable) DeleteKeyRange(start uint64, end uint64) {
 	for iter.HasNext() {
 		key := iter.Next()
 		storageIndex := tt.redirectIndex[key]
-		tt.freeRows = append(tt.freeRows, storageIndex)
+		tt.freeRows.Add(uint64(storageIndex))
 		delete(tt.redirectIndex, key)
 	}
 
@@ -283,9 +284,9 @@ func (tt *TickingTable) AddRow(key uint64, sourceRecord arrow.Record, sourceRow 
 	}
 
 	freeIndex := -1
-	if len(tt.freeRows) > 0 {
-		freeIndex = tt.freeRows[0]
-		tt.freeRows = tt.freeRows[1:]
+	if !tt.freeRows.IsEmpty() {
+		freeIndex = int(tt.freeRows.Maximum())
+		tt.freeRows.Remove(uint64(freeIndex))
 	}
 
 	for colIdx := 0; colIdx < len(tt.columns); colIdx++ {
