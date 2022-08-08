@@ -6,11 +6,13 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.qst.table.AggregateAllByTable;
@@ -3585,5 +3587,77 @@ public class QueryTableAggregationTest {
         final Table result = emptyTable(100).updateView("K=ii%10", "V=ii/10").groupBy("K").ungroup();
         final Table prevResult = prevTableColumnSources(result);
         assertTableEquals(result, prevResult);
+    }
+
+    @Test
+    public void testInitialGroupsOrdering() {
+        // Tests bucketed addition for static tables and static initial groups
+
+        final Table data = testTable(c("S", "A", "B", "C", "D"), c("I", 10, 20, 30, 40));
+        final Table distinct = data.selectDistinct();
+        assertTableEquals(data, distinct);
+
+        final Table reversed = data.reverse();
+        final Table initializedDistinct =
+                data.aggBy(List.of(Count.of("C")), false, reversed, ColumnName.from("S", "I")).dropColumns("C");
+        assertTableEquals(reversed, initializedDistinct);
+    }
+
+    @Test
+    public void testInitialGroupsWithGrouping() {
+        // Tests grouped addition for static tables and static initial groups
+
+        final Table data = testTable(c("S", "A", "A", "B", "B"), c("I", 10, 20, 30, 40));
+        final RowSetIndexer dataIndexer = RowSetIndexer.of(data.getRowSet());
+        dataIndexer.getGrouping(data.getColumnSource("S"));
+        final Table distinct = data.selectDistinct("S");
+        assertTableEquals(testTable(c("S", "A", "B")), distinct);
+
+        final Table reversed = data.reverse();
+        final RowSetIndexer reversedIndexer = RowSetIndexer.of(reversed.getRowSet());
+        reversedIndexer.getGrouping(reversed.getColumnSource("S"));
+        final Table initializedDistinct =
+                data.aggBy(List.of(Count.of("C")), false, reversed, ColumnName.from("S")).dropColumns("C");
+        assertTableEquals(testTable(c("S", "B", "A")), initializedDistinct);
+    }
+
+    @Test
+    public void testInitialGroupsRefreshing() {
+        // Tests bucketed addition for refreshing tables and refreshing initial groups
+
+        final Collection<? extends Aggregation> aggs = List.of(
+                AggCount("Count"),
+                AggSum("SumI=I"),
+                AggMax("MaxI=I"),
+                AggMin("MinI=I"),
+                AggGroup("GroupS=S")
+        );
+
+        final TrackingWritableRowSet inputRows = ir(0, 9).toTracking();
+        final QueryTable input = testRefreshingTable(inputRows,
+                c("S", "A", "B", "C", "D", "E", "F", "G", "H", "I", "K"),
+                c("C", 'A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'E', 'E'),
+                c("I",  0,   1,   2,   3,   4,   5,   6,   7,   8,   9));
+        inputRows.removeRange(0, 8);
+
+        final Table initialKeys = testRefreshingTable(c("C", 'A', 'B', 'C', 'D', 'E'));
+
+        final Table aggregated = input.aggBy(aggs, true, initialKeys, ColumnName.from("C"));
+        final Table initialState = emptyTable(0).snapshot(aggregated);
+        TestCase.assertEquals(5, aggregated.size());
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            inputRows.insertRange(0, 8);
+            input.notifyListeners(ir(0, 8), i(), i());
+        });
+        TestCase.assertEquals(5, aggregated.size());
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            inputRows.removeRange(0, 8);
+            input.notifyListeners(i(), ir(0, 8), i());
+        });
+        TestCase.assertEquals(5, aggregated.size());
+
+        assertTableEquals(initialState, aggregated);
     }
 }
