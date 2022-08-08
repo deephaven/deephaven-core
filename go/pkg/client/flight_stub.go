@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/apache/arrow/go/v8/arrow/flight"
@@ -140,7 +142,68 @@ func (fs *flightStub) Close() error {
 	return nil
 }
 
-func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle) (*ticking.TickingTable, <-chan ticking.TickingUpdate, error) {
+type subscribeOptions struct {
+	useDeephavenNulls bool
+	minUpdateInterval time.Duration
+	batchSize         int32
+}
+
+func newSubscribeOptions(opts ...SubscribeOption) subscribeOptions {
+	options := subscribeOptions{
+		useDeephavenNulls: false,
+		minUpdateInterval: time.Duration(0),
+		batchSize:         4096, // recommended in BarrageSubscriptionOptions
+	}
+
+	for _, opt := range opts {
+		opt.apply(&options)
+	}
+
+	return options
+}
+
+type SubscribeOption interface {
+	apply(opts *subscribeOptions)
+}
+
+type funcSubscribeOption struct {
+	f func(opts *subscribeOptions)
+}
+
+func (opt funcSubscribeOption) apply(opts *subscribeOptions) {
+	opt.f(opts)
+}
+
+func WithDeephavenNulls() SubscribeOption {
+	return funcSubscribeOption{f: func(opts *subscribeOptions) {
+		opts.useDeephavenNulls = true
+	}}
+}
+
+// Duration only has a resolution of milliseconds.
+func WithMinUpdateInterval(interval time.Duration) SubscribeOption {
+	if interval.Milliseconds() == 0 {
+		panic("interval too short (must be at least one millisecond!)")
+	}
+
+	if interval.Milliseconds() > math.MaxInt32 {
+		panic("interval too long (must fit within an int32)")
+	}
+
+	return funcSubscribeOption{f: func(opts *subscribeOptions) {
+		opts.minUpdateInterval = interval
+	}}
+}
+
+func WithBatchSize(batchSize int32) SubscribeOption {
+	return funcSubscribeOption{f: func(opts *subscribeOptions) {
+		opts.batchSize = batchSize
+	}}
+}
+
+func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle, options ...SubscribeOption) (*ticking.TickingTable, <-chan ticking.TickingStatus, error) {
+	opts := newSubscribeOptions(options...)
+
 	ctx, err := fs.client.withToken(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -152,15 +215,18 @@ func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle) (*tick
 	}
 
 	/*ser := ticking.NewRowSetSerializer()
-	ser.AddRowRange(0, 9)
+	//ser.AddRowRange(0, 9)
+	ser.AddRowRange(0, 4)
+	ser.AddRowRange(10, 14)
 	viewportSet := ser.Finish()*/
 
 	builder_b := flatbuffers.NewBuilder(0)
-	/*flatbuf_b.BarrageSubscriptionOptionsStart(builder_b)
-	flatbuf_b.BarrageSubscriptionOptionsAddUseDeephavenNulls(builder_b, false)
-	flatbuf_b.BarrageSubscriptionOptionsAddBatchSize(builder_b, 4096)
-	flatbuf_b.BarrageSubscriptionOptionsAddMaxMessageSize(builder_b, 2000000000)
-	opts := flatbuf_b.BarrageSubscriptionOptionsEnd(builder_b)*/
+
+	flatbuf_b.BarrageSubscriptionOptionsStart(builder_b)
+	flatbuf_b.BarrageSubscriptionOptionsAddUseDeephavenNulls(builder_b, opts.useDeephavenNulls)
+	flatbuf_b.BarrageSubscriptionOptionsAddBatchSize(builder_b, opts.batchSize)
+	flatbuf_b.BarrageSubscriptionOptionsAddMinUpdateIntervalMs(builder_b, int32(opts.minUpdateInterval.Milliseconds()))
+	barrageOpts := flatbuf_b.BarrageSubscriptionOptionsEnd(builder_b)
 
 	flatbuf_b.BarrageSubscriptionRequestStartTicketVector(builder_b, len(handle.ticket.Ticket))
 	for i := len(handle.ticket.Ticket) - 1; i >= 0; i-- {
@@ -179,11 +245,9 @@ func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle) (*tick
 	flatbuf_b.BarrageSubscriptionRequestStart(builder_b)
 	flatbuf_b.BarrageSubscriptionRequestAddTicket(builder_b, ticketVec)
 	//flatbuf_b.BarrageSubscriptionRequestAddColumns(builder_b, columnVec)
-
 	//flatbuf_b.BarrageSubscriptionRequestAddViewport(builder_b, viewportVec)
-
 	flatbuf_b.BarrageSubscriptionRequestAddReverseViewport(builder_b, false)
-	//flatbuf_b.BarrageSubscriptionRequestAddSubscriptionOptions(builder_b, opts)
+	flatbuf_b.BarrageSubscriptionRequestAddSubscriptionOptions(builder_b, barrageOpts)
 	bsrOff := flatbuf_b.BarrageSubscriptionRequestEnd(builder_b)
 	builder_b.Finish(bsrOff)
 	bsrPayload := builder_b.FinishedBytes()
@@ -230,21 +294,17 @@ func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle) (*tick
 		return nil, nil, err
 	}
 
-	updateChan := make(chan ticking.TickingUpdate, 1)
+	updateChan := make(chan ticking.TickingStatus, 1)
 
 	go func() {
 		defer doExchg.CloseSend()
+		defer close(updateChan)
 
 		for reader.Next() {
 			if reader.Err() != nil {
-				// TODO:
-				fmt.Println("error! ", err)
+				updateChan <- ticking.TickingStatus{Err: reader.Err()}
 				return
 			}
-
-			record := reader.Record()
-
-			fmt.Println(record)
 
 			resp := reader.LatestAppMetadata()
 
@@ -285,12 +345,30 @@ func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle) (*tick
 						shiftData[i] = byte(updateMeta.ShiftData(i))
 					}
 
+					var modifiedRows []ticking.RowSet
+					for i := 0; i < updateMeta.ModColumnNodesLength(); i++ {
+						modMeta := new(flatbuf_b.BarrageModColumnMetadata)
+						updateMeta.ModColumnNodes(modMeta, i)
+
+						modifiedRowSet := make([]byte, modMeta.ModifiedRowsLength())
+						for j := 0; j < modMeta.ModifiedRowsLength(); j++ {
+							modifiedRowSet[j] = byte(modMeta.ModifiedRows(j))
+						}
+
+						modifiedRowSetDe, err := ticking.DeserializeRowSet(modifiedRowSet)
+						if err != nil {
+							updateChan <- ticking.TickingStatus{Err: err}
+							return
+						}
+						fmt.Println("modified: ", modifiedRowSetDe)
+						modifiedRows = append(modifiedRows, modifiedRowSetDe)
+					}
+
 					fmt.Print("removed rows: ")
 					removedRowsDec, err := ticking.DeserializeRowSet(removedRows)
 					fmt.Println()
 					if err != nil {
-						// TODO:
-						fmt.Println(err)
+						updateChan <- ticking.TickingStatus{Err: err}
 						return
 					}
 
@@ -298,37 +376,62 @@ func (fs *flightStub) Subscribe(ctx context.Context, handle *TableHandle) (*tick
 					startSet, endSet, destSet, err := ticking.DeserializeRowSetShiftData(shiftData)
 					fmt.Println()
 					if err != nil {
-						// TODO:
-						fmt.Println(err)
+						updateChan <- ticking.TickingStatus{Err: err}
 						return
+					}
+
+					hasIncludedRows := len(addedRowsIncluded) > 0
+
+					var addedRowsIncSet ticking.RowSet
+					if hasIncludedRows {
+						fmt.Print("added rows included: ")
+						addedRowsIncSet, err = ticking.DeserializeRowSet(addedRowsIncluded)
+						fmt.Println()
+						if err != nil {
+							updateChan <- ticking.TickingStatus{Err: err}
+							return
+						}
 					}
 
 					fmt.Print("added rows: ")
 					addedRowsDec, err := ticking.DeserializeRowSet(addedRows)
 					fmt.Println()
 					if err != nil {
-						// TODO:
-						fmt.Println(err)
+						updateChan <- ticking.TickingStatus{Err: err}
 						return
 					}
 
+					// FIXME: Barrage likes to send Arrow records where not all the columns are the same length.
+					// The Go Arrow library has a check against this and panics when it receives such a record.
+					// Solutions:
+					// - Copy/paste the entirety of the reader code from Apache Arrow so we can remove the check
+					// - Make a barrage subscription option that pads records so that all columns are the same length
+					record := reader.Record()
 					record.Retain()
 
 					update := ticking.TickingUpdate{
 						Record:     record,
 						IsSnapshot: updateMeta.IsSnapshot(),
 
-						AddedRows:         addedRowsDec,
-						AddedRowsIncluded: ticking.RowSet{}, // TODO:
-						RemovedRows:       removedRowsDec,
+						AddedRows:   addedRowsDec,
+						RemovedRows: removedRowsDec,
+
+						AddedRowsIncluded: addedRowsIncSet,
+						HasIncludedRows:   hasIncludedRows,
 
 						ShiftDataStarts: startSet,
 						ShiftDataEnds:   endSet,
 						ShiftDataDests:  destSet,
+
+						ModifiedRows: modifiedRows,
 					}
 
-					updateChan <- update
+					updateChan <- ticking.TickingStatus{Update: update}
+				} else {
+					fmt.Println("OTHER MESSAGE TYPE")
 				}
+			} else {
+				fmt.Println("NO METADATA")
 			}
 		}
 	}()

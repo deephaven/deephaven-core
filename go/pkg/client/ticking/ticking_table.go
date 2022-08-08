@@ -11,11 +11,18 @@ import (
 	"github.com/apache/arrow/go/v8/arrow/memory"
 )
 
+type TickingStatus struct {
+	Update TickingUpdate // Not present if err is non-nil
+	Err    error
+}
+
 type tickingColumn interface {
 	Get(row int) interface{}
 }
 
 type TickingTable struct {
+	// FIXME: this doesn't handle nulls!
+
 	schema  *arrow.Schema
 	columns []tickingColumn
 
@@ -164,44 +171,28 @@ func (tt *TickingTable) ApplyUpdate(update TickingUpdate) {
 		}
 	}
 
-	// TODO:
-	/*if len(addedRowsIncluded) != 0 {
-		fmt.Print("added rows inc: ")
-		keys, err := barrage.DeserializeRowSet(addedRowsIncluded)
-		if err != nil {
-			fmt.Println("(err) ", err)
-		} else {
-			fmt.Println(keys)
+	if update.HasIncludedRows {
+		for r := range update.AddedRowsIncluded.GetAllRows() {
+			tt.AddRow(r, update.Record, rowidx)
+			rowidx++
+		}
+	} else {
+		for r := range update.AddedRows.GetAllRows() {
+			tt.AddRow(r, update.Record, rowidx)
+			rowidx++
 		}
 	}
 
-	if len(addedRowsIncluded) != 0 {
-		// I have no idea what I'm doing with the addedRowsIncluded field
-
-		fmt.Print("added rows: ")
-		addedRowsIncDec, err := DecodeRowSet(addedRowsIncluded)
-		fmt.Println()
-		if err != nil {
-			fmt.Println(err)
+	var modifiedRows [][]int64 = make([][]int64, len(tt.columns))
+	if len(modifiedRows) != len(update.ModifiedRows) {
+		panic("modified rows wrong length")
+	}
+	for i, m := range update.ModifiedRows {
+		rowoffset := 0
+		for r := range m.GetAllRows() { // be wary of goroutine leaks
+			tt.ModifyEntry(i, r, update.Record, rowidx+rowoffset)
+			rowoffset += 1
 		}
-		barrage.ConsumeRowSet(addedRowsIncDec,
-			func(start int64, end int64) {
-				for i := start; i <= end; i++ {
-					tbl.AddRow(i, record, rowidx)
-					rowidx++
-				}
-			},
-			func(offset int64) {
-				tbl.AddRow(offset, record, rowidx)
-				rowidx++
-			})
-
-		fmt.Println(&tbl)
-	}*/
-
-	for r := range update.AddedRows.GetAllRows() {
-		tt.AddRow(r, update.Record, rowidx)
-		rowidx++
 	}
 
 	// Should this method release the Record automatically?
@@ -257,6 +248,35 @@ func (tt *TickingTable) ToRecord() arrow.Record {
 	}
 
 	return b.NewRecord()
+}
+
+func (tt *TickingTable) ModifyEntry(column int, key int64, sourceRecord arrow.Record, sourceRow int) {
+	if !tt.schema.Equal(sourceRecord.Schema()) {
+		panic("mismatched schema")
+	}
+
+	if column >= len(tt.columns) {
+		panic("attempt to modify a nonexistent column")
+	}
+
+	storagePos, ok := tt.redirectIndex[key]
+	if !ok {
+		panic("attempt to modify a nonexistent row")
+	}
+
+	sourceColumn := sourceRecord.Column(column)
+	destColumn := tt.columns[column]
+
+	switch tt.schema.Field(column).Type.ID() {
+	case arrow.PrimitiveTypes.Int32.ID():
+		sourceData := sourceColumn.(*array.Int32)
+		destData := destColumn.(*Int32Column)
+		destData.values[storagePos] = sourceData.Value(sourceRow)
+	case arrow.FixedWidthTypes.Timestamp_ns.ID(): // TODO: There has to be a better way to compare these
+		sourceData := sourceColumn.(*array.Timestamp)
+		destData := destColumn.(*TimestampColumn)
+		destData.values[storagePos] = sourceData.Value(sourceRow)
+	}
 }
 
 // TODO: This could be optimized by having it add an entire range at a time.
@@ -330,11 +350,15 @@ type TickingUpdate struct {
 
 	IsSnapshot bool
 
-	AddedRows         RowSet
+	AddedRows   RowSet
+	RemovedRows RowSet
+
 	AddedRowsIncluded RowSet
-	RemovedRows       RowSet
+	HasIncludedRows   bool
 
 	ShiftDataStarts RowSet
 	ShiftDataEnds   RowSet
 	ShiftDataDests  RowSet
+
+	ModifiedRows []RowSet
 }
