@@ -634,7 +634,7 @@ public class QueryTable extends BaseTable {
         }
         final QueryTable tableToUse = (QueryTable) AggAllByUseTable.of(this, spec);
         final List<? extends Aggregation> aggs = List.of(agg.get());
-        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, groupByList);
+        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, false, null, groupByList);
         return tableToUse.memoizeResult(aggKey, () -> {
             final QueryTable result =
                     tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, groupByList);
@@ -655,7 +655,8 @@ public class QueryTable extends BaseTable {
                             + toString(groupByColumns));
         }
         final List<? extends Aggregation> optimized = AggregationOptimizer.of(aggregations);
-        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, groupByColumns);
+        final MemoizedOperationKey aggKey =
+                MemoizedOperationKey.aggBy(optimized, preserveEmpty, initialGroups, groupByColumns);
         final Table aggregationTable = memoizeResult(aggKey, () -> aggNoMemo(
                 AggregationProcessor.forAggregation(optimized), preserveEmpty, initialGroups, groupByColumns));
 
@@ -2890,7 +2891,7 @@ public class QueryTable extends BaseTable {
                         return view(columns).selectDistinct();
                     }
                     final MemoizedOperationKey aggKey =
-                            MemoizedOperationKey.aggBy(Collections.emptyList(), columnNames);
+                            MemoizedOperationKey.aggBy(Collections.emptyList(), false, null, columnNames);
                     return memoizeResult(aggKey,
                             () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), false, null, columnNames));
                 });
