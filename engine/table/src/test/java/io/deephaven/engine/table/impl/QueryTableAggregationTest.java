@@ -64,6 +64,7 @@ import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.api.agg.spec.AggSpec.percentile;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.util.QueryConstants.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {
@@ -1690,7 +1691,7 @@ public class QueryTableAggregationTest {
         BigInteger expected = BigInteger.valueOf(6);
         TestCase.assertEquals(expected, absSum);
         TestCase.assertEquals(expected.doubleValue(), absSumDouble);
-        TestCase.assertEquals(QueryConstants.NULL_LONG, result.getColumn("BoolCol").getLong(0));
+        TestCase.assertEquals(NULL_LONG, result.getColumn("BoolCol").getLong(0));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("BigI", BigInteger.valueOf(5)), col("DoubleCol", 5.0),
@@ -1769,14 +1770,14 @@ public class QueryTableAggregationTest {
     @Test
     public void testAbsSumByNull() {
         final QueryTable table = TstUtils.testRefreshingTable(i(2).toTracking(),
-                intCol("IntCol", QueryConstants.NULL_INT),
+                intCol("IntCol", NULL_INT),
                 floatCol("FloatCol", QueryConstants.NULL_FLOAT));
 
         final Table result = table.absSumBy();
         TableTools.show(result);
         TestCase.assertEquals(1, result.size());
         long absSum = result.getColumn("IntCol").getLong(0);
-        TestCase.assertEquals(QueryConstants.NULL_LONG, absSum);
+        TestCase.assertEquals(NULL_LONG, absSum);
         float absSumF = result.getColumn("FloatCol").getFloat(0);
         TestCase.assertEquals(QueryConstants.NULL_FLOAT, absSumF);
 
@@ -1797,14 +1798,14 @@ public class QueryTableAggregationTest {
         show(result);
         absSum = result.getColumn("IntCol").getLong(0);
         absSumF = result.getColumn("FloatCol").getFloat(0);
-        TestCase.assertEquals(QueryConstants.NULL_LONG, absSum);
+        TestCase.assertEquals(NULL_LONG, absSum);
         TestCase.assertEquals(QueryConstants.NULL_FLOAT, absSumF);
     }
 
     @Test
     public void testAvgInfinities() {
         final QueryTable table = TstUtils.testRefreshingTable(i(2).toTracking(),
-                intCol("IntCol", QueryConstants.NULL_INT),
+                intCol("IntCol", NULL_INT),
                 floatCol("FloatCol", QueryConstants.NULL_FLOAT));
 
         final Table result = table.avgBy();
@@ -1882,7 +1883,7 @@ public class QueryTableAggregationTest {
     @Test
     public void testVarInfinities() {
         final QueryTable table = TstUtils.testRefreshingTable(i(2).toTracking(),
-                intCol("IntCol", QueryConstants.NULL_INT),
+                intCol("IntCol", NULL_INT),
                 floatCol("FloatCol", QueryConstants.NULL_FLOAT));
 
         final Table result = table.varBy();
@@ -3658,5 +3659,41 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(5, aggregated.size());
 
         assertTableEquals(initialState, aggregated);
+    }
+
+    @Test
+    public void testPreserveEmptyNoKey() {
+        final Collection<? extends Aggregation> aggs = List.of(
+                AggCount("Count"),
+                AggSum("SumI=I"),
+                AggMax("MaxI=I"),
+                AggMin("MinI=I"));
+
+        final Table expectedEmpty = testTable(
+                c("Count", 0L), c("SumI", NULL_LONG_BOXED), c("MaxI", NULL_INT_BOXED), c("MinI", NULL_INT_BOXED));
+
+        final TrackingWritableRowSet inputRows = ir(0, 9).toTracking();
+        final QueryTable input = testRefreshingTable(inputRows,
+                c("S", "A", "B", "C", "D", "E", "F", "G", "H", "I", "K"),
+                c("C", 'A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'E', 'E'),
+                c("I", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        inputRows.removeRange(0, 9);
+
+        final Table aggregated = input.aggBy(aggs, true);
+        TestCase.assertEquals(1, aggregated.size());
+        assertTableEquals(expectedEmpty, aggregated);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            inputRows.insertRange(0, 9);
+            input.notifyListeners(ir(0, 9), i(), i());
+        });
+        TestCase.assertEquals(1, aggregated.size());
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            inputRows.removeRange(0, 9);
+            input.notifyListeners(i(), ir(0, 9), i());
+        });
+        TestCase.assertEquals(1, aggregated.size());
+        assertTableEquals(expectedEmpty, aggregated);
     }
 }
