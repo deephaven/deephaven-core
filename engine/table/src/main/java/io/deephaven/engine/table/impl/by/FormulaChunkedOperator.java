@@ -336,10 +336,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
                 modifiesToProcess ? makeModifiedColumnsMask(resultModifiedColumnSet) : null;
         final boolean[] columnsToFillMask = addsToProcess ? makeAllColumnsMask()
                 : removesToProcess ? makeObjectOrModifiedColumnsMask(resultModifiedColumnSet) : modifiedColumnsMask;
-        final boolean[] columnsToGetMask = addsToProcess ? columnsToFillMask /*
-                                                                              * This is the result of
-                                                                              * makeAllColumnsMask() on the line above
-                                                                              */ : modifiedColumnsMask;
+        final boolean[] columnsToGetMask = addsToProcess ? columnsToFillMask : modifiedColumnsMask;
 
         try (final DataCopyContext dataCopyContext = new DataCopyContext(columnsToFillMask, columnsToGetMask)) {
             if (removesToProcess) {

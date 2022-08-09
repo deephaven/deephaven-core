@@ -20,25 +20,25 @@ public class StateChangeRecorder {
      * @param reincarnatedDestinationCallback Consumer for destinations that have gone from empty to non-empty
      * @param emptiedDestinationCallback Consumer for destinations that have gone from non-empty to empty
      */
-    void recordStateChanges(
+    final void recordStateChanges(
             @NotNull final LongConsumer reincarnatedDestinationCallback,
             @NotNull final LongConsumer emptiedDestinationCallback) {
         this.reincarnatedDestinationCallback = reincarnatedDestinationCallback;
         this.emptiedDestinationCallback = emptiedDestinationCallback;
     }
 
-    void resetStateChangeRecording() {
+    final void resetStateChangeRecording() {
         reincarnatedDestinationCallback = null;
         emptiedDestinationCallback = null;
     }
 
-    protected void onReincarnated(final long destination) {
+    protected final void onReincarnated(final long destination) {
         if (reincarnatedDestinationCallback != null) {
             reincarnatedDestinationCallback.accept(destination);
         }
     }
 
-    protected void onEmptied(final long destination) {
+    protected final void onEmptied(final long destination) {
         if (emptiedDestinationCallback != null) {
             emptiedDestinationCallback.accept(destination);
         }
