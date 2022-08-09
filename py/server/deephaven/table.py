@@ -7,8 +7,8 @@ instruments for working with Deephaven refreshing and static data. """
 
 from __future__ import annotations
 
+import contextlib
 import inspect
-import sys
 from enum import Enum, auto
 from typing import Union, Sequence, List, Any, Optional, Callable
 
@@ -52,18 +52,35 @@ _JUnsynchronizedScriptSessionQueryScope = jpy.get_type(
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
 _j_script_session = jpy.cast(_JQueryScope.getScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
 _j_py_script_session = jpy.cast(_j_script_session, _JPythonScriptSession)
-_deephaven_pkg_prefix = __file__[:__file__.index("deephaven") + len("deephaven")]
+_deephaven_pkg_prefix = __file__
 
 
-def _set_query_scope():
-    for frame, filename, line_num, func, source_code, source_index in inspect.getouterframes(inspect.currentframe()):
-        if filename and filename.startswith(_deephaven_pkg_prefix):
-            continue
+@contextlib.contextmanager
+def _query_scope_ctx():
+    """A context manager to set/unset query scope based on the scope of the most immediate application code that invokes
+    Table operations."""
 
-        scope_dict = frame.f_globals.copy()
-        scope_dict.update(frame.f_locals)
-        _j_py_script_session.modifyScope(scope_dict)
-        return
+    # locate the innermost Deephaven frame (i.e. any of the table operation methods that use this context manager)
+    outer_frames = inspect.getouterframes(inspect.currentframe())[1:]
+    for i, (frame, filename, *_) in enumerate(outer_frames):
+        if filename and filename == __file__:
+            break
+
+    # we deem any module/function/method which calls a wrapped formula/filter-evaluating Table op as an application
+    # frame. This holds true and makes sense even when such module/function/method is part of the Deephaven package, and
+    # should not be a hurdle for developing such code as function/method parameters are now part of the query scope
+    if len(outer_frames) > i + 2:
+        app_frame, *_ = outer_frames[i + 1]
+        scope_dict = app_frame.f_globals.copy()
+        scope_dict.update(app_frame.f_locals)
+        try:
+            _j_py_script_session.pushScope(scope_dict)
+            yield
+        finally:
+            _j_py_script_session.popScope()
+    else:
+        # in the __main__ module, use the default main global scope
+        yield
 
 
 class SortDirection(Enum):
@@ -352,8 +369,7 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            _set_query_scope()
-            with auto_locking_ctx(self):
+            with auto_locking_ctx(self), _query_scope_ctx():
                 return Table(j_table=self.j_table.update(*formulas))
         except Exception as e:
             raise DHError(e, "table update operation failed.") from e
@@ -372,7 +388,7 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self):
+            with auto_locking_ctx(self), _query_scope_ctx():
                 return Table(j_table=self.j_table.lazyUpdate(*formulas))
         except Exception as e:
             raise DHError(e, "table lazy_update operation failed.") from e
@@ -391,7 +407,8 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return Table(j_table=self.j_table.view(*formulas))
+            with _query_scope_ctx():
+                return Table(j_table=self.j_table.view(*formulas))
         except Exception as e:
             raise DHError(e, "table view operation failed.") from e
 
@@ -409,7 +426,8 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return Table(j_table=self.j_table.updateView(*formulas))
+            with _query_scope_ctx():
+                return Table(j_table=self.j_table.updateView(*formulas))
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
 
@@ -427,7 +445,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            with auto_locking_ctx(self):
+            with auto_locking_ctx(self), _query_scope_ctx():
                 if not formulas:
                     return Table(j_table=self.j_table.select())
                 formulas = to_sequence(formulas)
@@ -451,7 +469,8 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return Table(j_table=self.j_table.selectDistinct(*formulas))
+            with _query_scope_ctx():
+                return Table(j_table=self.j_table.selectDistinct(*formulas))
         except Exception as e:
             raise DHError(e, "table select_distinct operation failed.") from e
 
@@ -478,7 +497,8 @@ class Table(JObjectWrapper):
         """
         try:
             filters = to_sequence(filters)
-            return Table(j_table=self.j_table.where(*filters))
+            with _query_scope_ctx():
+                return Table(j_table=self.j_table.where(*filters))
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
@@ -539,9 +559,10 @@ class Table(JObjectWrapper):
         """
         try:
             filters = to_sequence(filters)
-            return Table(
-                j_table=self.j_table.where(_JFilterOr.of(_JFilter.from_(*filters)))
-            )
+            with _query_scope_ctx():
+                return Table(
+                    j_table=self.j_table.where(_JFilterOr.of(_JFilter.from_(*filters)))
+                )
         except Exception as e:
             raise DHError(e, "table where_one_of operation failed.") from e
 
@@ -1997,7 +2018,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             filters = to_sequence(filters)
-            with auto_locking_ctx(self):
+            with auto_locking_ctx(self), _query_scope_ctx():
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(*filters))
         except Exception as e:
             raise DHError(e, "where operation on the PartitionedTableProxy failed.") from e
@@ -2062,7 +2083,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self):
+            with auto_locking_ctx(self), _query_scope_ctx():
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.view(*formulas))
         except Exception as e:
             raise DHError(e, "view operation on the PartitionedTableProxy failed.") from e
@@ -2083,7 +2104,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self):
+            with auto_locking_ctx(self), _query_scope_ctx():
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateView(*formulas))
         except Exception as e:
             raise DHError(e, "update_view operation on the PartitionedTableProxy failed.") from e
@@ -2104,7 +2125,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self):
+            with auto_locking_ctx(self), _query_scope_ctx():
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(*formulas))
         except Exception as e:
             raise DHError(e, "update operation on the PartitionedTableProxy failed.") from e
@@ -2125,7 +2146,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self):
+            with auto_locking_ctx(self), _query_scope_ctx():
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(*formulas))
         except Exception as e:
             raise DHError(e, "select operation on the PartitionedTableProxy failed.") from e
@@ -2146,7 +2167,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self):
+            with auto_locking_ctx(self), _query_scope_ctx():
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.selectDistinct(*formulas))
         except Exception as e:
             raise DHError(e, "select_distinct operation on the PartitionedTableProxy failed.") from e

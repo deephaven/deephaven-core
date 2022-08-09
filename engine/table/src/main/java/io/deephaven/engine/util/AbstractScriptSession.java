@@ -327,7 +327,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
 
         public ScriptSession scriptSession() {
-            return this.scriptSession;
+            return scriptSession;
         }
     }
 

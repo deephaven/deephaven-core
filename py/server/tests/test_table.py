@@ -566,24 +566,34 @@ class TableTestCase(BaseTestCase):
         def inner_func(arg: str):
             def local_fn() -> str:
                 return "local str"
-
-            final_str = nonlocal_str + arg
+            nonlocal nonlocal_str
             local_int = 101
             t = empty_table(1)
             formulas = ["Col1 = local_fn()",
                         "Col2 = global_fn()",
-                        "Col3 = local_int",
-                        "Col4 = global_int",
-                        "Col5 = arg",
-                        "Col6 = nonlocal_str"
+                        "Col3 = nonlocal_str",
+                        "Col4 = arg",
+                        "Col5 = local_int",
+                        "Col6 = global_int",
                         ]
             t2 = t.update(formulas)
             t2_data = t2.to_string()
             self.assertIn("local str", t2_data)
-            self.assertIn("nonlocal str", t2_data)
             self.assertIn("global str", t2_data)
+            self.assertIn("nonlocal str", t2_data)
+            self.assertIn(arg, t2_data)
             self.assertIn("101", t2_data)
-            self.assertIn("10001", t2_data)
+            self.assertIn("1001", t2_data)
+
+        inner_func("param str")
+
+    def test_nested_scopes(self):
+        def inner_func(p) -> str:
+            t = empty_table(1).update("X = p * 10")
+            return t.to_string().split()[2]
+
+        t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")
+        self.assertIn("100", t.to_string())
 
 
 def global_fn() -> str:

@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 
 /**
  * A ScriptSession that uses a JPy cpython interpreter internally.
- *
+ * <p>
  * This is used for applications or the console; Python code running remotely uses WorkerPythonEnvironment for it's
  * supporting structures.
  */
@@ -178,8 +178,12 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 .orElse(defaultValue);
     }
 
-    public void modifyScope(PyObject object) {
-        scope.modifyScope(object);
+    public void pushScope(PyObject pydict) {
+        scope.pushScope(pydict);
+    }
+
+    public void popScope() {
+        scope.popScope();
     }
 
     @Override

@@ -13,7 +13,7 @@ from tests.testbase import BaseTestCase
 
 class PartitionedTableProxyTestCase(BaseTestCase):
     def setUp(self):
-        self.test_table = read_csv("tests/data/test_table.csv")
+        self.test_table = read_csv("tests/data/test_table.csv").tail(num_rows=100)
         self.partitioned_table = self.test_table.partition_by(by=["c"])
         self.pt_proxy = self.partitioned_table.proxy()
 

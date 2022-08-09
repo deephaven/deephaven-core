@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private final PyDictWrapper dict;
 
-    private final ThreadLocal<PyDictWrapper> moduleDict = new ThreadLocal<>();
+    private static final ThreadLocal<Deque<PyDictWrapper>> threadScopeStack = new ThreadLocal<>();
     private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = getNumbaVectorizedFuncType();
 
     // this assumes that the Python interpreter won't be re-initialized during a session, if this turns out to be a
@@ -37,11 +37,11 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     }
 
     private PyDictWrapper currentScope() {
-        PyDictWrapper dict = moduleDict.get();
-        if (dict == null) {
+        Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
+        if (scopeStack == null || scopeStack.isEmpty()) {
             return this.dict;
         } else {
-            return dict;
+            return scopeStack.peek();
         }
     }
 
@@ -213,10 +213,20 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     }
 
     @Override
-    public void modifyScope(PyObject pydict) {
-        if (pydict.isNone())
-            moduleDict.set(null);
-        else
-            moduleDict.set(pydict.asDict());
+    public void pushScope(PyObject pydict) {
+        Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
+        if (scopeStack == null) {
+            scopeStack = new ArrayDeque<>();
+            threadScopeStack.set(scopeStack);
+        }
+        scopeStack.push(pydict.asDict());
+    }
+
+    @Override
+    public void popScope() {
+        Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
+        if (scopeStack != null) {
+            scopeStack.pop();
+        }
     }
 }
