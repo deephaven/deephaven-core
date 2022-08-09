@@ -509,40 +509,55 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            ColumnName... groupByColumns) {
+    public Table rollup(final Collection<? extends Aggregation> aggregations, final boolean includeConstituents,
+            final Collection<? extends ColumnName> groupByColumns) {
         throw new UnsupportedOperationException("rollup is not yet implemented in community");
         // TODO https://github.com/deephaven/deephaven-core/issues/65): Implement rollups based on PartitionedTable
-        /*
-         * if (isStream() && includeConstituents) { throw streamUnsupported("rollup with included constituents"); }
-         * final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns); final MemoizedOperationKey rollupKey =
-         * MemoizedOperationKey.rollup(aggregations, gbsColumns, includeConstituents); return memoizeResult(rollupKey,
-         * () -> { final QueryTable baseLevel = aggNoMemo( AggregationProcessor.forRollupBase(aggregations,
-         * includeConstituents), gbsColumns);
-         *
-         * final Deque<SelectColumn> gbsColumnsToReaggregate = new ArrayDeque<>(Arrays.asList(gbsColumns)); final
-         * Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.length); QueryTable lastLevel = baseLevel;
-         * while (!gbsColumnsToReaggregate.isEmpty()) {
-         * nullColumnNames.addFirst(gbsColumnsToReaggregate.removeLast().getName()); final TableDefinition
-         * lastLevelDefinition = lastLevel.getDefinition(); final Map<String, Class<?>> nullColumns =
-         * nullColumnNames.stream().collect(Collectors.toMap( Function.identity(), ncn ->
-         * lastLevelDefinition.getColumn(ncn).getDataType(), Assert::neverInvoked, LinkedHashMap::new)); lastLevel =
-         * lastLevel.aggNoMemo(AggregationProcessor.forRollupReaggregated(aggregations, nullColumns),
-         * gbsColumnsToReaggregate.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY)); }
-         *
-         * final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
-         * .map(ColumnDefinition::getName) .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
-         * final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop); final Object
-         * reverseLookup = Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE),
-         * "REVERSE_LOOKUP_ATTRIBUTE"); finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
-         *
-         * final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, gbsColumns,
-         * includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
-         * result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this); copyAttributes(result,
-         * CopyAttributeOperation.Rollup); maybeUpdateSortableColumns(result);
-         *
-         * return result; });
-         */
+//        if (isStream() && includeConstituents) {
+//            throw streamUnsupported("rollup with included constituents");
+//        }
+//        final MemoizedOperationKey rollupKey =
+//                MemoizedOperationKey.rollup(aggregations, List.of(groupByColumns), includeConstituents);
+//        return memoizeResult(rollupKey,
+//                () -> {
+//                    final QueryTable baseLevel = aggNoMemo(AggregationProcessor.forRollupBase(aggregations,
+//                            includeConstituents), gbsColumns);
+//
+//                    final Deque<SelectColumn> gbsColumnsToReaggregate = new ArrayDeque<>(Arrays.asList(gbsColumns));
+//                    final Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.length);
+//                    QueryTable lastLevel = baseLevel;
+//                    while (!gbsColumnsToReaggregate.isEmpty()) {
+//                        nullColumnNames.addFirst(gbsColumnsToReaggregate.removeLast().getName());
+//                        final TableDefinition lastLevelDefinition = lastLevel.getDefinition();
+//                        final Map<String, Class<?>> nullColumns =
+//                                nullColumnNames.stream()
+//                                        .collect(Collectors.toMap(Function.identity(),
+//                                                ncn -> lastLevelDefinition.getColumn(ncn).getDataType(),
+//                                                Assert::neverInvoked, LinkedHashMap::new));
+//                        lastLevel =
+//                                lastLevel.aggNoMemo(
+//                                        AggregationProcessor.forRollupReaggregated(aggregations, nullColumns),
+//                                        gbsColumnsToReaggregate.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+//                    }
+//
+//                    final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
+//                            .map(ColumnDefinition::getName).filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX))
+//                            .toArray(String[]::new);
+//                    final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop);
+//                    final Object reverseLookup = Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE),
+//                            "REVERSE_LOOKUP_ATTRIBUTE");
+//                    finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
+//
+//                    final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations,
+//                            gbsColumns,
+//                            includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
+//                    result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
+//                    copyAttributes(result,
+//                            CopyAttributeOperation.Rollup);
+//                    maybeUpdateSortableColumns(result);
+//
+//                    return result;
+//                });
     }
 
     @Override

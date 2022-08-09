@@ -59,8 +59,8 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
      *
      * @return a copy of selectColumns
      */
-    public ColumnName[] getGroupByColumns() {
-        return groupByColumns.toArray(ColumnName[]::new);
+    public Collection<? extends ColumnName> getGroupByColumns() {
+        return groupByColumns;
     }
 
     /**
