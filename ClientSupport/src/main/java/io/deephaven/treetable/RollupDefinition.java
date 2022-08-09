@@ -4,6 +4,7 @@
 package io.deephaven.treetable;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.api.agg.AggregationPairs;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 public class RollupDefinition {
 
     private final List<? extends Aggregation> aggregations;
-    private final List<String> groupByColumns;
+    private final List<? extends ColumnName> groupByColumns;
     private final boolean includeConstituents;
     private final boolean includeOriginalColumns;
     private final boolean includeDescriptions;
@@ -36,7 +37,7 @@ public class RollupDefinition {
      * @param includeOriginalColumns if original columns should be included
      * @param includeDescriptions if the rollup should automatically add column descriptions for the chosen aggs
      */
-    public RollupDefinition(List<? extends Aggregation> aggregations, List<String> groupByColumns,
+    public RollupDefinition(List<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns,
             boolean includeConstituents, boolean includeOriginalColumns, boolean includeDescriptions) {
         this(aggregations, groupByColumns, includeConstituents, includeOriginalColumns, includeDescriptions, "");
     }
@@ -51,7 +52,7 @@ public class RollupDefinition {
      * @param includeDescriptions if the rollup should automatically add column descriptions for the chosen aggs
      * @param name an optional name.
      */
-    public RollupDefinition(List<? extends Aggregation> aggregations, List<String> groupByColumns,
+    public RollupDefinition(List<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns,
             boolean includeConstituents, boolean includeOriginalColumns, boolean includeDescriptions, String name) {
         this.groupByColumns = new ArrayList<>(groupByColumns);
         this.aggregations = new ArrayList<>(aggregations);
@@ -85,7 +86,7 @@ public class RollupDefinition {
      *
      * @return an unmodifiable list of group-by columns
      */
-    public List<String> getGroupByColumns() {
+    public List<? extends ColumnName> getGroupByColumns() {
         return Collections.unmodifiableList(groupByColumns);
     }
 
@@ -198,7 +199,7 @@ public class RollupDefinition {
         private Set<Table> rollupCache;
 
         private final List<Aggregation> aggregations = new ArrayList<>();
-        private List<String> groupByColumns;
+        private List<? extends ColumnName> groupByColumns;
         private boolean includeConstituents;
         private boolean includeOriginalColumns;
         private boolean includeDescriptions;
@@ -222,7 +223,7 @@ public class RollupDefinition {
          * @return This builder
          */
         public Builder groupByColumns(String... columns) {
-            return groupByColumns(Arrays.asList(columns));
+            return groupByColumns(ColumnName.from(columns));
         }
 
         /**
@@ -231,7 +232,7 @@ public class RollupDefinition {
          * @param columns the group-by columns
          * @return This builder
          */
-        public Builder groupByColumns(Collection<String> columns) {
+        public Builder groupByColumns(Collection<? extends ColumnName> columns) {
             groupByColumns = new ArrayList<>(columns);
             return this;
         }

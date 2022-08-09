@@ -916,32 +916,25 @@ public interface Table extends
     /**
      * Create a rollup table.
      * <p>
-     * A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
-     * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
-     * replaced with null on each level.
+     * A rollup table aggregates all rows of the table.
      *
      * @param aggregations The aggregations to perform
-     * @param groupByColumns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> groupByColumns);
+    Table rollup(Collection<? extends Aggregation> aggregations);
 
     /**
      * Create a rollup table.
      * <p>
-     * A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
-     * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
-     * replaced with null on each level.
+     * A rollup table aggregates all rows of the table.
      *
      * @param aggregations The aggregations to perform
      * @param includeConstituents set to true to include the constituent rows at the leaf level
-     * @param groupByColumns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Collection<String> groupByColumns);
+    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents);
 
     /**
      * Create a rollup table.
@@ -984,34 +977,23 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, ColumnName... groupByColumns);
+    Table rollup(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns);
 
     /**
      * Create a rollup table.
      * <p>
-     * A rollup table aggregates all rows of the table.
-     *
-     * @param aggregations The aggregations to perform
-     * @return a hierarchical table with the rollup applied
-     */
-    @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations);
-
-    /**
-     * Create a rollup table.
-     * <p>
-     * A rollup table aggregates all rows of the table.
+     * A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
+     * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
+     * replaced with null on each level.
      *
      * @param aggregations The aggregations to perform
      * @param includeConstituents set to true to include the constituent rows at the leaf level
+     * @param groupByColumns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents);
-
-    @ConcurrentMethod
     Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            ColumnName... groupByColumns);
+            Collection<? extends ColumnName> groupByColumns);
 
     /**
      * Create a hierarchical tree table.
