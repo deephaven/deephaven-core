@@ -386,6 +386,7 @@ public class ChunkedOperatorAggregationHelper {
         private final IncrementalOperatorAggregationStateManager incrementalStateManager;
         private final ColumnSource[] reinterpretedKeySources;
         private final PermuteKernel[] permuteKernels;
+        private final StateChangeRecorder stateChangeRecorder;
         private final TableUpdate upstream; // Not to be mutated
         private final MutableInt outputPosition;
 
@@ -450,6 +451,7 @@ public class ChunkedOperatorAggregationHelper {
             this.incrementalStateManager = incrementalStateManager;
             this.reinterpretedKeySources = reinterpretedKeySources;
             this.permuteKernels = permuteKernels;
+            this.stateChangeRecorder = stateChangeRecorder;
             this.upstream = upstream;
             this.outputPosition = outputPosition;
 
@@ -478,7 +480,7 @@ public class ChunkedOperatorAggregationHelper {
             if (stateChangeRecorder != null) {
                 reincarnatedStatesBuilder = RowSetFactory.builderRandom();
                 emptiedStatesBuilder = RowSetFactory.builderRandom();
-                stateChangeRecorder.recordStateChanges(reincarnatedStatesBuilder::addKey, emptiedStatesBuilder::addKey);
+                stateChangeRecorder.startRecording(reincarnatedStatesBuilder::addKey, emptiedStatesBuilder::addKey);
             } else {
                 reincarnatedStatesBuilder = new EmptyRandomBuilder();
                 emptiedStatesBuilder = new EmptyRandomBuilder();
@@ -652,6 +654,9 @@ public class ChunkedOperatorAggregationHelper {
                 doInserts(upstream.added(), true);
             }
 
+            if (stateChangeRecorder != null) {
+                stateChangeRecorder.finishRecording();
+            }
             final TableUpdateImpl downstream = new TableUpdateImpl();
             downstream.shifted = RowSetShiftData.EMPTY;
 

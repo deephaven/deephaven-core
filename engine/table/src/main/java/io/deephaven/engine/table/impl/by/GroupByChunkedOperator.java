@@ -34,7 +34,7 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
  * {@link io.deephaven.api.agg.spec.AggSpecGroup}, and {@link io.deephaven.api.agg.Aggregation#AggGroup(String...)}.
  */
 public final class GroupByChunkedOperator
-        extends StateChangeRecorder
+        extends BasicStateChangeRecorder
         implements IterativeChunkedAggregationOperator {
 
     private final QueryTable inputTable;

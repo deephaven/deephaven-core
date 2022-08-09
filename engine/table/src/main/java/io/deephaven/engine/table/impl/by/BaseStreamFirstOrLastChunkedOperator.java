@@ -23,7 +23,7 @@ import java.util.Map;
  * Base class with shared boilerplate for {@link StreamFirstChunkedOperator} and {@link StreamLastChunkedOperator}.
  */
 public abstract class BaseStreamFirstOrLastChunkedOperator
-        extends StateChangeRecorder // Note: we can never empty or reincarnate states since we ignore removes
+        extends NoopStateChangeRecorder // We can never empty or reincarnate states since we ignore removes
         implements IterativeChunkedAggregationOperator {
 
     protected static final int COPY_CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;

@@ -16,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.Map;
 
-class CountAggregationOperator extends StateChangeRecorder implements IterativeChunkedAggregationOperator {
+class CountAggregationOperator extends BasicStateChangeRecorder implements IterativeChunkedAggregationOperator {
 
     private final String resultName;
     private final LongArraySource countColumnSource;

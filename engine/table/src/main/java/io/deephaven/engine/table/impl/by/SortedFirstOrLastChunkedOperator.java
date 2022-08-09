@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public class SortedFirstOrLastChunkedOperator
-        extends StateChangeRecorder
+        extends BasicStateChangeRecorder
         implements IterativeChunkedAggregationOperator {
     private final ChunkType chunkType;
     private final boolean isFirst;

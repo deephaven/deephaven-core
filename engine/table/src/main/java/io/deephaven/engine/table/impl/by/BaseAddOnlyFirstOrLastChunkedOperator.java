@@ -19,7 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 abstract class BaseAddOnlyFirstOrLastChunkedOperator
-        extends StateChangeRecorder // Note: we can never empty or reincarnate states since we're add-only
+        extends NoopStateChangeRecorder // We can never empty or reincarnate states since we're add-only
         implements IterativeChunkedAggregationOperator {
 
     final boolean isFirst;

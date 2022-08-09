@@ -24,7 +24,9 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class FirstOrLastChunkedOperator extends StateChangeRecorder implements IterativeChunkedAggregationOperator {
+public class FirstOrLastChunkedOperator
+        extends BasicStateChangeRecorder
+        implements IterativeChunkedAggregationOperator {
 
     private final boolean isFirst;
     private final LongArraySource redirections;
