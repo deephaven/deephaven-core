@@ -246,8 +246,12 @@ class Session:
                 if isinstance(e.__cause__, grpc.RpcError):
                     if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
                         raise DHError(f"no table by the name {name}") from None
-                
                 raise e
+            finally:
+                # Explicitly close the table without releasing it (because it isn't ours)
+                faketable.ticket = None
+                faketable.schema = None
+                
 
     def bind_table(self, name: str, table: Table) -> None:
         """ Bind a table to the given name on the server so that it can be referenced by that name.
