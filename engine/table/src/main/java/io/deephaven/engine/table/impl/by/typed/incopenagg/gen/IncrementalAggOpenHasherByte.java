@@ -8,11 +8,9 @@ import static io.deephaven.util.compare.ByteComparisons.eq;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ByteChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
@@ -62,8 +60,6 @@ final class IncrementalAggOpenHasherByte extends IncrementalChunkedOperatorAggre
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             outputPositions.set(chunkPosition, outputPosition);
-                            final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, 1);
-                            Assert.gtZero(oldRowCount, "oldRowCount");
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
@@ -76,12 +72,9 @@ final class IncrementalAggOpenHasherByte extends IncrementalChunkedOperatorAggre
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
-                    rowCountSource.set(outputPosition, 1L);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     outputPositions.set(chunkPosition, outputPosition);
-                    final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, 1);
-                    Assert.gtZero(oldRowCount, "oldRowCount");
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
@@ -91,112 +84,7 @@ final class IncrementalAggOpenHasherByte extends IncrementalChunkedOperatorAggre
         }
     }
 
-    protected void buildForUpdate(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            WritableIntChunk<RowKeys> reincarnatedPositions) {
-        final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
-        final int chunkSize = keyChunk0.size();
-        for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
-            final byte k0 = keyChunk0.get(chunkPosition);
-            final int hash = hash(k0);
-            final int firstTableLocation = hashToTableLocation(hash);
-            int tableLocation = firstTableLocation;
-            MAIN_SEARCH: while (true) {
-                int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
-                if (outputPosition == EMPTY_OUTPUT_POSITION) {
-                    final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
-                    int alternateTableLocation = firstAlternateTableLocation;
-                    while (alternateTableLocation < rehashPointer) {
-                        outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation);
-                        if (outputPosition == EMPTY_OUTPUT_POSITION) {
-                            break;
-                        } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            outputPositions.set(chunkPosition, outputPosition);
-                            final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, 1);
-                            if (oldRowCount == 0) {
-                                reincarnatedPositions.add(outputPosition);
-                            }
-                            break MAIN_SEARCH;
-                        } else {
-                            alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
-                        }
-                    }
-                    numEntries++;
-                    mainKeySource0.set(tableLocation, k0);
-                    outputPosition = nextOutputPosition.getAndIncrement();
-                    outputPositions.set(chunkPosition, outputPosition);
-                    mainOutputPosition.set(tableLocation, outputPosition);
-                    outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
-                    rowCountSource.set(outputPosition, 1L);
-                    break;
-                } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    outputPositions.set(chunkPosition, outputPosition);
-                    final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, 1);
-                    if (oldRowCount == 0) {
-                        reincarnatedPositions.add(outputPosition);
-                    }
-                    break;
-                } else {
-                    tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
-                }
-            }
-        }
-    }
-
-    protected void doRemoveProbe(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            WritableIntChunk<RowKeys> emptiedPositions) {
-        final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
-        final int chunkSize = keyChunk0.size();
-        for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
-            final byte k0 = keyChunk0.get(chunkPosition);
-            final int hash = hash(k0);
-            final int firstTableLocation = hashToTableLocation(hash);
-            boolean found = false;
-            int tableLocation = firstTableLocation;
-            int outputPosition;
-            while ((outputPosition = mainOutputPosition.getUnsafe(tableLocation)) != EMPTY_OUTPUT_POSITION) {
-                if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    outputPositions.set(chunkPosition, outputPosition);
-                    final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, -1);
-                    Assert.gtZero(oldRowCount, "oldRowCount");
-                    if (oldRowCount == 1) {
-                        emptiedPositions.add(outputPosition);
-                    }
-                    found = true;
-                    break;
-                }
-                tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
-            }
-            if (!found) {
-                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
-                boolean alternateFound = false;
-                if (firstAlternateTableLocation < rehashPointer) {
-                    int alternateTableLocation = firstAlternateTableLocation;
-                    while ((outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation)) != EMPTY_OUTPUT_POSITION) {
-                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            outputPositions.set(chunkPosition, outputPosition);
-                            final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, -1);
-                            Assert.gtZero(oldRowCount, "oldRowCount");
-                            if (oldRowCount == 1) {
-                                emptiedPositions.add(outputPosition);
-                            }
-                            alternateFound = true;
-                            break;
-                        }
-                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                        Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
-                    }
-                }
-                if (!alternateFound) {
-                    throw new IllegalStateException("Missing value in probe");
-                }
-            }
-        }
-    }
-
-    protected void doModifyProbe(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    protected void probe(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {

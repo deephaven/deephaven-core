@@ -5,11 +5,13 @@ package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
 import io.deephaven.api.agg.Aggregation;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @see io.deephaven.api.TableOperations#aggBy(Collection, Collection)
@@ -24,6 +26,13 @@ public abstract class AggregationTable extends ByTableBase {
 
     public abstract List<Aggregation> aggregations();
 
+    @Value.Default
+    public boolean preserveEmpty() {
+        return false;
+    }
+
+    public abstract Optional<TableSpec> initialGroups();
+
     @Override
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);
@@ -37,11 +46,26 @@ public abstract class AggregationTable extends ByTableBase {
         }
     }
 
+    @Check
+    final void checkInitialGroups() {
+        if (groupByColumns().isEmpty() && initialGroups().isPresent()) {
+            throw new IllegalArgumentException("InitialGroups must not be set if GroupByColumns is empty");
+        }
+    }
+
+
     public interface Builder extends ByTableBase.Builder<AggregationTable, Builder> {
         Builder addAggregations(Aggregation element);
 
         Builder addAggregations(Aggregation... elements);
 
         Builder addAllAggregations(Iterable<? extends Aggregation> elements);
+
+        Builder preserveEmpty(boolean preserveEmpty);
+
+        Builder initialGroups(TableSpec initialGroups);
+
+        Builder initialGroups(
+                @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<? extends TableSpec> initialGroups);
     }
 }

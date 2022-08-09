@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
@@ -173,6 +174,19 @@ class AggregationContext {
         for (final IterativeChunkedAggregationOperator operator : operators) {
             operator.startTrackingPrevValues();
         }
+    }
+
+    /**
+     * Get any single {@link StateChangeRecorder} present in the {@code operators} array.
+     *
+     * @return Any single {@link StateChangeRecorder} present in the {@code operators} array
+     * @throws io.deephaven.base.verify.AssertionFailure If there is no state change recorder present
+     */
+    StateChangeRecorder getStateChangeRecorder() {
+        return (StateChangeRecorder) Arrays.stream(operators)
+                .filter(op -> op instanceof StateChangeRecorder)
+                .findAny()
+                .orElseThrow(Assert::statementNeverExecuted);
     }
 
     /**

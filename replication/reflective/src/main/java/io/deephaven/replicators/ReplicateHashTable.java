@@ -117,27 +117,6 @@ public class ReplicateHashTable {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/IncrementalChunkedNaturalJoinStateManager.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/StaticChunkedCrossJoinStateManager.java",
                 allowMissingDestinations, Arrays.asList("dumpTable", "prev"));
-
-        // Incremental NJ -> Static Operator Aggregations
-        doReplicate(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/IncrementalChunkedNaturalJoinStateManager.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/StaticChunkedOperatorAggregationStateManager.java",
-                allowMissingDestinations, Arrays.asList("dumpTable", "prev", "decorationProbe"));
-        // Incremental NJ -> Incremental Operator Aggregations
-        doReplicate(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/IncrementalChunkedNaturalJoinStateManager.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/IncrementalChunkedOperatorAggregationStateManager.java",
-                allowMissingDestinations, Collections.singletonList("dumpTable"));
-
-        // Incremental NJ -> AddOnly updateBy
-        doReplicate(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/IncrementalChunkedNaturalJoinStateManager.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/hashing/AddOnlyUpdateByStateManager.java",
-                allowMissingDestinations, Arrays.asList("dumpTable", "prev", "decorationProbe"));
-        doReplicate(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/IncrementalChunkedNaturalJoinStateManager.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/hashing/IncrementalUpdateByStateManager.java",
-                allowMissingDestinations, Arrays.asList("dumpTable", "allowUpdateWriteThroughState"));
     }
 
     private static class RegionedFile {

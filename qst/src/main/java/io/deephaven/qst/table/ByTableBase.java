@@ -7,7 +7,7 @@ import io.deephaven.api.ColumnName;
 
 import java.util.List;
 
-public abstract class ByTableBase extends TableBase implements SingleParentTable {
+public abstract class ByTableBase extends TableBase {
 
     public abstract TableSpec parent();
 

@@ -24,7 +24,10 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOperator {
+public class FirstOrLastChunkedOperator
+        extends BasicStateChangeRecorder
+        implements IterativeChunkedAggregationOperator {
+
     private final boolean isFirst;
     private final LongArraySource redirections;
     private final ObjectArraySource<WritableRowSet> rowSets;
@@ -202,7 +205,12 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     private boolean addChunk(LongChunk<OrderedRowKeys> indices, int start, int length, long destination) {
         final WritableRowSet rowSet = rowSetForSlot(destination);
+
+        final boolean wasEmpty = rowSet.isEmpty();
         rowSet.insert(indices, start, length);
+        if (wasEmpty && rowSet.isNonempty()) {
+            onReincarnated(destination);
+        }
 
         return updateRedirections(destination, rowSet);
     }
@@ -214,7 +222,11 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         }
 
         final WritableRowSet rowSet = rowSetForSlot(destination);
+        final boolean wasEmpty = rowSet.isEmpty();
         rowSet.insert(addRowSet);
+        if (wasEmpty && rowSet.isNonempty()) {
+            onReincarnated(destination);
+        }
 
         return updateRedirections(destination, rowSet);
     }
@@ -229,7 +241,12 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     private boolean removeChunk(LongChunk<OrderedRowKeys> indices, int start, int length, long destination) {
         final WritableRowSet rowSet = rowSetForSlot(destination);
+
+        final boolean wasNonEmpty = rowSet.isNonempty();
         rowSet.remove(indices, start, length);
+        if (wasNonEmpty && rowSet.isEmpty()) {
+            onEmptied(destination);
+        }
 
         return updateRedirections(destination, rowSet);
     }

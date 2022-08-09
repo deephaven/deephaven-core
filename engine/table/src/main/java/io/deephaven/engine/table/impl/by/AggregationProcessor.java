@@ -273,17 +273,19 @@ public class AggregationProcessor implements AggregationContextFactory {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public AggregationContext makeAggregationContext(@NotNull final Table table,
+    public AggregationContext makeAggregationContext(
+            @NotNull final Table table,
+            final boolean requireStateChangeRecorder,
             @NotNull final String... groupByColumnNames) {
         switch (type) {
             case NORMAL:
-                return new NormalConverter(table, groupByColumnNames).build();
+                return new NormalConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
             case ROLLUP_BASE:
-                return new RollupBaseConverter(table, groupByColumnNames).build();
+                return new RollupBaseConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
             case ROLLUP_REAGGREGATED:
-                return new RollupReaggregatedConverter(table, groupByColumnNames).build();
+                return new RollupReaggregatedConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
             case SELECT_DISTINCT:
-                return makeEmptyAggregationContext();
+                return makeEmptyAggregationContext(requireStateChangeRecorder);
             default:
                 throw new UnsupportedOperationException("Unsupported type " + type);
         }
@@ -300,6 +302,7 @@ public class AggregationProcessor implements AggregationContextFactory {
     private abstract class Converter implements Aggregation.Visitor, AggSpec.Visitor {
 
         final QueryTable table;
+        private final boolean requireStateChangeRecorder;
         final String[] groupByColumnNames;
 
         final boolean isAddOnly;
@@ -315,8 +318,12 @@ public class AggregationProcessor implements AggregationContextFactory {
         int trackedFirstOrLastIndex = -1;
         boolean partitionFound;
 
-        private Converter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
+        private Converter(
+                @NotNull final Table table,
+                final boolean requireStateChangeRecorder,
+                @NotNull final String... groupByColumnNames) {
             this.table = (QueryTable) table.coalesce();
+            this.requireStateChangeRecorder = requireStateChangeRecorder;
             this.groupByColumnNames = groupByColumnNames;
             isAddOnly = this.table.isAddOnly();
             isStream = this.table.isStream();
@@ -335,6 +342,9 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @NotNull
         final AggregationContext makeAggregationContext() {
+            if (requireStateChangeRecorder && operators.stream().noneMatch(op -> op instanceof StateChangeRecorder)) {
+                addNoInputOperator(new CountAggregationOperator(null));
+            }
             // noinspection unchecked
             return new AggregationContext(
                     operators.toArray(IterativeChunkedAggregationOperator[]::new),
@@ -642,8 +652,11 @@ public class AggregationProcessor implements AggregationContextFactory {
      */
     private final class NormalConverter extends Converter {
 
-        private NormalConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
-            super(table, groupByColumnNames);
+        private NormalConverter(
+                @NotNull final Table table,
+                final boolean requireStateChangeRecorder,
+                @NotNull final String... groupByColumnNames) {
+            super(table, requireStateChangeRecorder, groupByColumnNames);
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -896,8 +909,11 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         private int nextColumnIdentifier = 0;
 
-        private RollupBaseConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
-            super(table, groupByColumnNames);
+        private RollupBaseConverter(
+                @NotNull final Table table,
+                final boolean requireStateChangeRecorder,
+                @NotNull final String... groupByColumnNames) {
+            super(table, requireStateChangeRecorder, groupByColumnNames);
         }
 
         @Override
@@ -1034,8 +1050,11 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         private int nextColumnIdentifier = 0;
 
-        private RollupReaggregatedConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
-            super(table, groupByColumnNames);
+        private RollupReaggregatedConverter(
+                @NotNull final Table table,
+                final boolean requireStateChangeRecorder,
+                @NotNull final String... groupByColumnNames) {
+            super(table, requireStateChangeRecorder, groupByColumnNames);
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1327,7 +1346,14 @@ public class AggregationProcessor implements AggregationContextFactory {
     // Basic Helpers
     // -----------------------------------------------------------------------------------------------------------------
 
-    private static AggregationContext makeEmptyAggregationContext() {
+    private static AggregationContext makeEmptyAggregationContext(final boolean requireStateChangeRecorder) {
+        if (requireStateChangeRecorder) {
+            // noinspection unchecked
+            return new AggregationContext(
+                    new IterativeChunkedAggregationOperator[] {new CountAggregationOperator(null)},
+                    new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                    new ChunkSource.WithPrev[] {null});
+        }
         // noinspection unchecked
         return new AggregationContext(
                 ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY,

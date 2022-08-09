@@ -441,23 +441,24 @@ public class TestPartitionBy extends QueryTableTestBase {
     }
 
     public void testPopulateKeysStatic() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-implement once populate keys is replaced
-        /*
-         * final Table table = emptyTable(1).update("USym=`AAPL`", "Value=1"); final PartitionedTable map =
-         * table.partitionBy("USym"); map.populateKeys("SPY"); System.out.println(Arrays.toString(map.getKeySet()));
-         * assertEquals(map.getKeySet(), new String[] {"AAPL", "SPY"}); assertFalse(((TableMapImpl)
-         * map).isRefreshing());
-         */
+        testPopulateKeys(false);
     }
 
     public void testPopulateKeysRefreshing() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-implement once populate keys is replaced
-        /*
-         * final Table table = emptyTable(1).update("USym=`AAPL`", "Value=1"); ((BaseTable) table).setRefreshing(true);
-         * final TableMap map = table.partitionBy("USym"); map.populateKeys("SPY");
-         * System.out.println(Arrays.toString(map.getKeySet())); assertEquals(map.getKeySet(), new String[] {"AAPL",
-         * "SPY"}); assertTrue(((TableMapImpl) map).isRefreshing());
-         */
+        testPopulateKeys(true);
+    }
+
+    private void testPopulateKeys(final boolean refreshing) {
+        final Table table = emptyTable(1).update("USym=`AAPL`", "Value=1");
+        if (refreshing) {
+            table.setRefreshing(true);
+        }
+        final PartitionedTable pt = table.partitionedAggBy(List.of(), true, testTable(c("USym", "SPY")), "USym");
+        final String keyColumnName = pt.keyColumnNames().stream().findFirst().get();
+        final String[] keys = (String[]) pt.table().getColumn(keyColumnName).getDirect();
+        System.out.println(Arrays.toString(keys));
+        assertEquals(keys, new String[] {"SPY", "AAPL"});
+        assertEquals(pt.table().isRefreshing(), refreshing);
     }
 
     public void testPartitionByWithShifts() {

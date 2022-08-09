@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.LongConsumer;
 import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
@@ -35,7 +36,7 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
 /**
  * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#applyToAllBy}.
  */
-class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
+class FormulaChunkedOperator implements StateChangeRecorder, IterativeChunkedAggregationOperator {
 
     private final GroupByChunkedOperator groupBy;
     private final boolean delegateToBy;
@@ -98,6 +99,16 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             // noinspection unchecked
             resultColumns[ci] = ArrayBackedColumnSource.getMemoryColumnSource(0, formulaColumn.getReturnedType());
         }
+    }
+
+    @Override
+    public void startRecording(LongConsumer reincarnatedDestinationCallback, LongConsumer emptiedDestinationCallback) {
+        groupBy.startRecording(reincarnatedDestinationCallback, emptiedDestinationCallback);
+    }
+
+    @Override
+    public void finishRecording() {
+        groupBy.finishRecording();
     }
 
     @Override
@@ -336,10 +347,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
                 modifiesToProcess ? makeModifiedColumnsMask(resultModifiedColumnSet) : null;
         final boolean[] columnsToFillMask = addsToProcess ? makeAllColumnsMask()
                 : removesToProcess ? makeObjectOrModifiedColumnsMask(resultModifiedColumnSet) : modifiedColumnsMask;
-        final boolean[] columnsToGetMask = addsToProcess ? columnsToFillMask /*
-                                                                              * This is the result of
-                                                                              * makeAllColumnsMask() on the line above
-                                                                              */ : modifiedColumnsMask;
+        final boolean[] columnsToGetMask = addsToProcess ? columnsToFillMask : modifiedColumnsMask;
 
         try (final DataCopyContext dataCopyContext = new DataCopyContext(columnsToFillMask, columnsToGetMask)) {
             if (removesToProcess) {

@@ -10,8 +10,10 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -157,5 +159,26 @@ public class GroupingUtils {
         });
 
         return new Pair<>(resultKeyColumnSource, resultIndexColumnSource);
+    }
+
+    /**
+     * Convert a group-to-RowSet map to a flat, immutable, in-memory column of keys.
+     *
+     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-RowSet map
+     *        (used for typing, only)
+     * @param groupToRowSet The group-to-RowSet map to convert
+     * @return A flat, immutable, in-memory column of keys
+     */
+    public static <TYPE> WritableColumnSource<TYPE> groupingKeysToImmutableFlatSource(
+            @NotNull final ColumnSource<TYPE> originalKeyColumnSource,
+            @NotNull final Map<TYPE, RowSet> groupToRowSet) {
+        final WritableColumnSource<TYPE> destination = InMemoryColumnSource.makeImmutableSource(
+                originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
+        destination.ensureCapacity(groupToRowSet.size());
+        int ri = 0;
+        for (final TYPE key : groupToRowSet.keySet()) {
+            destination.set(ri++, key);
+        }
+        return destination;
     }
 }

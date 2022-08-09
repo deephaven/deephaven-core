@@ -33,7 +33,9 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
  * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#groupBy},
  * {@link io.deephaven.api.agg.spec.AggSpecGroup}, and {@link io.deephaven.api.agg.Aggregation#AggGroup(String...)}.
  */
-public final class GroupByChunkedOperator implements IterativeChunkedAggregationOperator {
+public final class GroupByChunkedOperator
+        extends BasicStateChangeRecorder
+        implements IterativeChunkedAggregationOperator {
 
     private final QueryTable inputTable;
     private final boolean registeredWithHelper;
@@ -213,17 +215,30 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     private void addChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
         final WritableRowSet rowSet = rowSetForSlot(destination);
+        final boolean wasEmpty = rowSet.isEmpty();
         rowSet.insert(indices, start, length);
+        if (wasEmpty && rowSet.isNonempty()) {
+            onReincarnated(destination);
+        }
     }
 
     private void addRowsToSlot(@NotNull final RowSet addRowSet, final long destination) {
-        rowSetForSlot(destination).insert(addRowSet);
+        final WritableRowSet rowSet = rowSetForSlot(destination);
+        final boolean wasEmpty = rowSet.isEmpty();
+        rowSet.insert(addRowSet);
+        if (wasEmpty && rowSet.isNonempty()) {
+            onReincarnated(destination);
+        }
     }
 
     private void removeChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
         final WritableRowSet rowSet = rowSetForSlot(destination);
+        final boolean wasNonEmpty = rowSet.isNonempty();
         rowSet.remove(indices, start, length);
+        if (wasNonEmpty && rowSet.isEmpty()) {
+            onEmptied(destination);
+        }
     }
 
     private void doShift(@NotNull final LongChunk<OrderedRowKeys> preShiftIndices,

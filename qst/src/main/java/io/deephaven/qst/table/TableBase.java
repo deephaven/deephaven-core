@@ -21,6 +21,7 @@ import io.deephaven.qst.TableCreationLogic;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public abstract class TableBase implements TableSpec {
@@ -435,6 +436,19 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations) {
+        return AggregationTable.builder().parent(this).addAllAggregations(aggregations).build();
+    }
+
+    @Override
+    public TableSpec aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty) {
+        return AggregationTable.builder().parent(this)
+                .addAllAggregations(aggregations)
+                .preserveEmpty(preserveEmpty)
+                .build();
+    }
+
+    @Override
     public final AggregationTable aggBy(Aggregation aggregation, String... groupByColumns) {
         final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
         for (String groupByColumn : groupByColumns) {
@@ -447,11 +461,6 @@ public abstract class TableBase implements TableSpec {
     public final AggregationTable aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns) {
         return AggregationTable.builder().parent(this).addAllGroupByColumns(groupByColumns)
                 .addAggregations(aggregation).build();
-    }
-
-    @Override
-    public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations) {
-        return AggregationTable.builder().parent(this).addAllAggregations(aggregations).build();
     }
 
     @Override
@@ -468,6 +477,17 @@ public abstract class TableBase implements TableSpec {
             Collection<? extends ColumnName> groupByColumns) {
         return AggregationTable.builder().parent(this).addAllGroupByColumns(groupByColumns)
                 .addAllAggregations(aggregations).build();
+    }
+
+    @Override
+    public TableSpec aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
+            TableSpec initialGroups, Collection<? extends ColumnName> groupByColumns) {
+        return AggregationTable.builder().parent(this)
+                .addAllGroupByColumns(groupByColumns)
+                .addAllAggregations(aggregations)
+                .preserveEmpty(preserveEmpty)
+                .initialGroups(Optional.ofNullable(initialGroups))
+                .build();
     }
 
     @Override
