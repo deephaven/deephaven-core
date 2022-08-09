@@ -11,20 +11,15 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.function.LongConsumer;
 
-class CountAggregationOperator implements IterativeChunkedAggregationOperator {
+class CountAggregationOperator extends StateChangeRecorder implements IterativeChunkedAggregationOperator {
 
     private final String resultName;
     private final LongArraySource countColumnSource;
-
-    private LongConsumer reincarnatedDestinationCallback;
-    private LongConsumer emptiedDestinationCallback;
 
     /**
      * Construct a count aggregation operator.
@@ -40,37 +35,17 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
         return resultName != null;
     }
 
-    /**
-     * Set {@link LongConsumer callbacks} that should be used to record destinations that have transitioned from empty
-     * to non-empty ({@code reincarnatedDestinationCallback}) or non-empty to empty
-     * ({@code emptiedDestinationCallback}).
-     *
-     * @param reincarnatedDestinationCallback Consumer for destinations that have gone from empty to non-empty
-     * @param emptiedDestinationCallback Consumer for destinations that have gone from non-empty to empty
-     */
-    void recordStateChanges(
-            @NotNull final LongConsumer reincarnatedDestinationCallback,
-            @NotNull final LongConsumer emptiedDestinationCallback) {
-        this.reincarnatedDestinationCallback = reincarnatedDestinationCallback;
-        this.emptiedDestinationCallback = emptiedDestinationCallback;
-    }
-
-    void resetStateChangeRecording() {
-        reincarnatedDestinationCallback = null;
-        emptiedDestinationCallback = null;
-    }
-
     private void recordAdd(final long destination, final long rowsAdded) {
         final long oldCount = countColumnSource.getAndAddUnsafe(destination, rowsAdded);
-        if (reincarnatedDestinationCallback != null && oldCount == 0) {
-            reincarnatedDestinationCallback.accept(destination);
+        if (oldCount == 0) {
+            onReincarnated(destination);
         }
     }
 
     private void recordRemove(final long destination, final long rowsRemoved) {
         final long oldCount = countColumnSource.getAndAddUnsafe(destination, -rowsRemoved);
-        if (emptiedDestinationCallback != null && oldCount == rowsRemoved) {
-            emptiedDestinationCallback.accept(destination);
+        if (oldCount == rowsRemoved) {
+            onEmptied(destination);
         }
     }
 

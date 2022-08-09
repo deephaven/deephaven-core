@@ -275,17 +275,17 @@ public class AggregationProcessor implements AggregationContextFactory {
     @Override
     public AggregationContext makeAggregationContext(
             @NotNull final Table table,
-            final boolean requireCountOperator,
+            final boolean requireStateChangeRecorder,
             @NotNull final String... groupByColumnNames) {
         switch (type) {
             case NORMAL:
-                return new NormalConverter(table, requireCountOperator, groupByColumnNames).build();
+                return new NormalConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
             case ROLLUP_BASE:
-                return new RollupBaseConverter(table, requireCountOperator, groupByColumnNames).build();
+                return new RollupBaseConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
             case ROLLUP_REAGGREGATED:
-                return new RollupReaggregatedConverter(table, requireCountOperator, groupByColumnNames).build();
+                return new RollupReaggregatedConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
             case SELECT_DISTINCT:
-                return makeEmptyAggregationContext(requireCountOperator);
+                return makeEmptyAggregationContext(requireStateChangeRecorder);
             default:
                 throw new UnsupportedOperationException("Unsupported type " + type);
         }
@@ -302,7 +302,7 @@ public class AggregationProcessor implements AggregationContextFactory {
     private abstract class Converter implements Aggregation.Visitor, AggSpec.Visitor {
 
         final QueryTable table;
-        private final boolean requireCountOperator;
+        private final boolean requireStateChangeRecorder;
         final String[] groupByColumnNames;
 
         final boolean isAddOnly;
@@ -320,10 +320,10 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         private Converter(
                 @NotNull final Table table,
-                final boolean requireCountOperator,
+                final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
             this.table = (QueryTable) table.coalesce();
-            this.requireCountOperator = requireCountOperator;
+            this.requireStateChangeRecorder = requireStateChangeRecorder;
             this.groupByColumnNames = groupByColumnNames;
             isAddOnly = this.table.isAddOnly();
             isStream = this.table.isStream();
@@ -342,7 +342,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @NotNull
         final AggregationContext makeAggregationContext() {
-            if (requireCountOperator && operators.stream().noneMatch(op -> op instanceof CountAggregationOperator)) {
+            if (requireStateChangeRecorder && operators.stream().noneMatch(op -> op instanceof StateChangeRecorder)) {
                 addNoInputOperator(new CountAggregationOperator(null));
             }
             // noinspection unchecked
@@ -654,9 +654,9 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         private NormalConverter(
                 @NotNull final Table table,
-                final boolean requireCountOperator,
+                final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
-            super(table, requireCountOperator, groupByColumnNames);
+            super(table, requireStateChangeRecorder, groupByColumnNames);
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -911,9 +911,9 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         private RollupBaseConverter(
                 @NotNull final Table table,
-                final boolean requireCountOperator,
+                final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
-            super(table, requireCountOperator, groupByColumnNames);
+            super(table, requireStateChangeRecorder, groupByColumnNames);
         }
 
         @Override
@@ -1052,9 +1052,9 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         private RollupReaggregatedConverter(
                 @NotNull final Table table,
-                final boolean requireCountOperator,
+                final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
-            super(table, requireCountOperator, groupByColumnNames);
+            super(table, requireStateChangeRecorder, groupByColumnNames);
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1346,8 +1346,8 @@ public class AggregationProcessor implements AggregationContextFactory {
     // Basic Helpers
     // -----------------------------------------------------------------------------------------------------------------
 
-    private static AggregationContext makeEmptyAggregationContext(final boolean requireCountOperator) {
-        if (requireCountOperator) {
+    private static AggregationContext makeEmptyAggregationContext(final boolean requireStateChangeRecorder) {
+        if (requireStateChangeRecorder) {
             // noinspection unchecked
             return new AggregationContext(
                     new IterativeChunkedAggregationOperator[] {new CountAggregationOperator(null)},

@@ -241,7 +241,8 @@ public class ChunkedOperatorAggregationHelper {
                         final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories =
                                 ac.initializeRefreshing(result, this);
 
-                        final CountAggregationOperator countOp = preserveEmpty ? null : ac.getCountOperator();
+                        final StateChangeRecorder stateChangeRecorder =
+                                preserveEmpty ? null : ac.getStateChangeRecorder();
 
                         @Override
                         public void onUpdate(@NotNull final TableUpdate upstream) {
@@ -254,7 +255,8 @@ public class ChunkedOperatorAggregationHelper {
                             final TableUpdate downstream;
                             try (final KeyedUpdateContext kuc = new KeyedUpdateContext(ac, incrementalStateManager,
                                     reinterpretedKeySources, permuteKernels, keysUpstreamModifiedColumnSet,
-                                    operatorInputModifiedColumnSets, countOp, upstreamToUse, outputPosition)) {
+                                    operatorInputModifiedColumnSets, stateChangeRecorder, upstreamToUse,
+                                    outputPosition)) {
                                 downstream = kuc.computeDownstreamIndicesAndCopyKeys(input.getRowSet(),
                                         keyColumnsRaw,
                                         keyColumnsCopied,
@@ -441,7 +443,7 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final PermuteKernel[] permuteKernels,
                 @NotNull final ModifiedColumnSet keysUpstreamModifiedColumnSet,
                 @NotNull final ModifiedColumnSet[] operatorInputUpstreamModifiedColumnSets,
-                @Nullable final CountAggregationOperator countOp,
+                @Nullable final StateChangeRecorder stateChangeRecorder,
                 @NotNull final TableUpdate upstream,
                 @NotNull final MutableInt outputPosition) {
             this.ac = ac;
@@ -473,10 +475,10 @@ public class ChunkedOperatorAggregationHelper {
             probeChunkSize = chunkSize(probeSize);
             final int chunkSize = Math.max(buildChunkSize, probeChunkSize);
 
-            if (countOp != null) {
+            if (stateChangeRecorder != null) {
                 reincarnatedStatesBuilder = RowSetFactory.builderRandom();
                 emptiedStatesBuilder = RowSetFactory.builderRandom();
-                countOp.recordStateChanges(reincarnatedStatesBuilder::addKey, emptiedStatesBuilder::addKey);
+                stateChangeRecorder.recordStateChanges(reincarnatedStatesBuilder::addKey, emptiedStatesBuilder::addKey);
             } else {
                 reincarnatedStatesBuilder = new EmptyRandomBuilder();
                 emptiedStatesBuilder = new EmptyRandomBuilder();

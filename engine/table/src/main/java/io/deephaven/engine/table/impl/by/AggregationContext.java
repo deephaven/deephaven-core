@@ -177,14 +177,14 @@ class AggregationContext {
     }
 
     /**
-     * Get any single count operator present.
+     * Get any single {@link StateChangeRecorder} present in the {@code operators} array.
      *
-     * @return Any single count operator present
-     * @throws io.deephaven.base.verify.AssertionFailure If there is no count operator present
+     * @return Any single {@link StateChangeRecorder} present in the {@code operators} array
+     * @throws io.deephaven.base.verify.AssertionFailure If there is no state change recorder present
      */
-    CountAggregationOperator getCountOperator() {
-        return (CountAggregationOperator) Arrays.stream(operators)
-                .filter(op -> op instanceof CountAggregationOperator)
+    StateChangeRecorder getStateChangeRecorder() {
+        return (StateChangeRecorder) Arrays.stream(operators)
+                .filter(op -> op instanceof StateChangeRecorder)
                 .findAny()
                 .orElseThrow(Assert::statementNeverExecuted);
     }
