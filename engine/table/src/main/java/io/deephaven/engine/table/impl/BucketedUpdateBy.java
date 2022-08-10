@@ -9,7 +9,6 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedIntChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -690,7 +689,7 @@ public class BucketedUpdateBy extends UpdateBy {
                 for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                     opAffected[opIdx] |= bucketHasAddedOrRemoved;
                     if (opAffected[opIdx]) {
-                        operators[opIdx].resetForReprocess(opContext[opIdx], slotIndex, tracker.getSlot(), keyBefore);
+                        operators[opIdx].resetForReprocessBucketed(opContext[opIdx], slotIndex, tracker.getSlot(), keyBefore);
                     }
                 }
             }
@@ -808,7 +807,7 @@ public class BucketedUpdateBy extends UpdateBy {
                                     localPermutedWorkingChunk,
                                     fillContexts[slotPosition].get());
 
-                            operators[opIdx].reprocessChunk(opContext[opIdx],
+                            operators[opIdx].reprocessChunkBucketed(opContext[opIdx],
                                     chunkOk,
                                     permuteRequired ? localPermutedWorkingChunk : localPostWorkingChunk,
                                     permuteRequired ? localPermutedKeyChunk : localKeyChunk,
@@ -903,7 +902,7 @@ public class BucketedUpdateBy extends UpdateBy {
                                     localPermutedPostWorkingChunk,
                                     fillContexts[slotPosition].get());
 
-                            operators[opIdx].addChunk(opContext[opIdx],
+                            operators[opIdx].addChunkBucketed(opContext[opIdx],
                                     permuteRequired ? localPermutedPostWorkingChunk : localPostWorkingChunk,
                                     permuteRequired ? localPermutedKeys : localKeys,
                                     localOutputPositions,

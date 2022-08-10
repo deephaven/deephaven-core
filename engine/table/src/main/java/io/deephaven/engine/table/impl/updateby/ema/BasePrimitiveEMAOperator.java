@@ -115,9 +115,9 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
     @Override
     public void initializeFor(@NotNull final UpdateByOperator.UpdateContext updateContext,
-            @NotNull final RowSet updateIndex,
+            @NotNull final RowSet updateRowSet,
             @NotNull final UpdateBy.UpdateType type) {
-        super.initializeFor(updateContext, updateIndex, type);
+        super.initializeFor(updateContext, updateRowSet, type);
         ((EmaContext) updateContext).lastStamp = NULL_LONG;
     }
 
@@ -159,12 +159,12 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     }
 
     @Override
-    public void addChunk(@NotNull final UpdateByOperator.UpdateContext context,
-            @NotNull final Chunk<Values> values,
-            @NotNull final LongChunk<? extends RowKeys> keyChunk,
-            @NotNull final IntChunk<RowKeys> bucketPositions,
-            @NotNull final IntChunk<ChunkPositions> startPositions,
-            @NotNull final IntChunk<ChunkLengths> runLengths) {
+    public void addChunkBucketed(@NotNull final UpdateByOperator.UpdateContext context,
+                                 @NotNull final Chunk<Values> values,
+                                 @NotNull final LongChunk<? extends RowKeys> keyChunk,
+                                 @NotNull final IntChunk<RowKeys> bucketPositions,
+                                 @NotNull final IntChunk<ChunkPositions> startPositions,
+                                 @NotNull final IntChunk<ChunkLengths> runLengths) {
         final EmaContext ctx = (EmaContext) context;
         for (int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
             final int runStart = startPositions.get(runIdx);
@@ -220,10 +220,10 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     }
 
     @Override
-    public void resetForReprocess(@NotNull final UpdateByOperator.UpdateContext ctx,
-            @NotNull final RowSet bucketIndex,
-            final long bucketPosition,
-            final long firstUnmodifiedKey) {
+    public void resetForReprocessBucketed(@NotNull final UpdateByOperator.UpdateContext ctx,
+                                          @NotNull final RowSet bucketIndex,
+                                          final long bucketPosition,
+                                          final long firstUnmodifiedKey) {
         final double previousVal = firstUnmodifiedKey == NULL_ROW_KEY ? QueryConstants.NULL_DOUBLE
                 : outputSource.getDouble(firstUnmodifiedKey);
         bucketLastVal.set(bucketPosition, previousVal);

@@ -2,8 +2,6 @@ package io.deephaven.engine.table.impl;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.Strings;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.chunk.Chunk;
@@ -243,7 +241,7 @@ public abstract class UpdateBy {
     public enum UpdateType {
         /**
          * Indicates that rows are being
-         * {@link UpdateByOperator#addChunk(UpdateByOperator.UpdateContext, RowSequence, LongChunk, Chunk, long)} added}
+         * {@link UpdateByOperator#addChunkBucketed(UpdateByOperator.UpdateContext, RowSequence, LongChunk, Chunk, long)} added}
          * to the operator.
          */
         Add,

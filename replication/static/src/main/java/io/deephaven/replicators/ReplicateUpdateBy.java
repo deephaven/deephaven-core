@@ -130,6 +130,12 @@ public class ReplicateUpdateBy {
     private static void fixupByteBase(String byteResult) throws IOException {
         final File objectFile = new File(byteResult);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+
+        lines = addImport(lines, "import io.deephaven.util.QueryConstants;",
+                "import io.deephaven.engine.table.impl.sources.ByteArraySource;",
+                "import io.deephaven.engine.table.impl.sources.ByteSparseArraySource;",
+                "import io.deephaven.engine.table.WritableColumnSource;");
+
         lines = replaceRegion(lines, "extra-fields", Collections.singletonList("    final byte nullValue;"));
         lines = replaceRegion(lines, "constructor",
                 Collections.singletonList("        this.nullValue = getNullValue();"));

@@ -32,12 +32,12 @@ public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
     }
 
     @Override
-    public void addChunk(@NotNull final UpdateContext context,
-                         @NotNull final Chunk<Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                         @NotNull final IntChunk<RowKeys> bucketPositions,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> runLengths) {
+    public void addChunkBucketed(@NotNull final UpdateContext context,
+                                 @NotNull final Chunk<Values> values,
+                                 @NotNull final LongChunk<? extends RowKeys> keyChunk,
+                                 @NotNull final IntChunk<RowKeys> bucketPositions,
+                                 @NotNull final IntChunk<ChunkPositions> startPositions,
+                                 @NotNull final IntChunk<ChunkLengths> runLengths) {
         final Context ctx = (Context) context;
         for(int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
             final int runStart = startPositions.get(runIdx);

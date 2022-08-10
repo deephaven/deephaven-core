@@ -126,9 +126,9 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     @SuppressWarnings("unchecked")
     @Override
     public void initializeFor(@NotNull final UpdateContext updateContext,
-            @NotNull final RowSet updateIndex,
+            @NotNull final RowSet updateRowSet,
             @NotNull final UpdateBy.UpdateType type) {
-        super.initializeFor(updateContext, updateIndex, type);
+        super.initializeFor(updateContext, updateRowSet, type);
         ((EmaContext) updateContext).lastStamp = NULL_LONG;
     }
 
@@ -161,12 +161,12 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     }
 
     @Override
-    public void addChunk(@NotNull final UpdateContext context,
-            @NotNull final Chunk<Values> values,
-            @NotNull final LongChunk<? extends RowKeys> keyChunk,
-            @NotNull final IntChunk<RowKeys> bucketPositions,
-            @NotNull final IntChunk<ChunkPositions> startPositions,
-            @NotNull final IntChunk<ChunkLengths> runLengths) {
+    public void addChunkBucketed(@NotNull final UpdateContext context,
+                                 @NotNull final Chunk<Values> values,
+                                 @NotNull final LongChunk<? extends RowKeys> keyChunk,
+                                 @NotNull final IntChunk<RowKeys> bucketPositions,
+                                 @NotNull final IntChunk<ChunkPositions> startPositions,
+                                 @NotNull final IntChunk<ChunkLengths> runLengths) {
         final ObjectChunk<T, Values> asObjects = values.asObjectChunk();
         // noinspection unchecked
         final EmaContext ctx = (EmaContext) context;
@@ -223,10 +223,10 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     }
 
     @Override
-    public void resetForReprocess(@NotNull final UpdateContext ctx,
-            @NotNull final RowSet bucketIndex,
-            final long bucketPosition,
-            final long firstUnmodifiedKey) {
+    public void resetForReprocessBucketed(@NotNull final UpdateContext ctx,
+                                          @NotNull final RowSet bucketIndex,
+                                          final long bucketPosition,
+                                          final long firstUnmodifiedKey) {
         final BigDecimal previousVal = firstUnmodifiedKey == NULL_ROW_KEY ? null : outputSource.get(firstUnmodifiedKey);
         bucketLastVal.set(bucketPosition, previousVal);
 

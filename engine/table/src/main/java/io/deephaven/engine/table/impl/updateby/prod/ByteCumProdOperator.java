@@ -33,12 +33,12 @@ public class ByteCumProdOperator extends BaseLongUpdateByOperator {
     }
 
     @Override
-    public void addChunk(final @NotNull UpdateContext context,
-                         final @NotNull Chunk<Values> values,
-                         final @NotNull LongChunk<? extends RowKeys> keyChunk,
-                         final @NotNull IntChunk<RowKeys> bucketPositions,
-                         final @NotNull IntChunk<ChunkPositions> startPositions,
-                         final @NotNull IntChunk<ChunkLengths> runLengths) {
+    public void addChunkBucketed(final @NotNull UpdateContext context,
+                                 final @NotNull Chunk<Values> values,
+                                 final @NotNull LongChunk<? extends RowKeys> keyChunk,
+                                 final @NotNull IntChunk<RowKeys> bucketPositions,
+                                 final @NotNull IntChunk<ChunkPositions> startPositions,
+                                 final @NotNull IntChunk<ChunkLengths> runLengths) {
 
         final Context ctx = (Context) context;
         final ByteChunk<Values> asBytes = values.asByteChunk();

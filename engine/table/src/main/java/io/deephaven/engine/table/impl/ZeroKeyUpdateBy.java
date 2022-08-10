@@ -183,8 +183,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     postWorkingChunks[slotPosition].ensureCapacity(chunkSize);
 
                     // Note that these don't participate in setChunkSize() because nothing will use them. If that
-                    // changes
-                    // then these must also become SizedSafeCloseables.
+                    // changes then these must also become SizedSafeCloseables.
                     if (hasModifies) {
                         prevFillContexts[slotPosition] =
                                 inputSources[opIdx].makeFillContext(chunkSize, prevSharedContext);
@@ -203,11 +202,12 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 if (!opAffected[opIdx]) {
                     continue;
                 }
-                // trigger the operator to determine its own set of affected rows (window-specific)
-                opContext[opIdx].determineAffectedRows(upstream, source.getRowSet(), upstreamAppendOnly);
+                // trigger the operator to determine its own set of affected rows (window-specific), do not close()
+                // since this is managed by the operator context
+                final RowSet rs = opContext[opIdx].determineAffectedRows(upstream, source.getRowSet(), upstreamAppendOnly);
 
                 // union the operator rowsets together to get a global set
-                tmp.insert(opContext[opIdx].getAffectedRows());
+                tmp.insert(rs);
             }
             affectedRows = tmp;
         }
@@ -423,7 +423,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
          */
         private void reprocessRows(RowSetShiftData shifted) {
             // Get a sub-index of the source from that minimum reprocessing index and make sure we update our
-            // Get a sub-index of the source from that minimum reprocessing index and make sure we update our
             // contextual chunks and FillContexts to an appropriate size for this step.
             final RowSet sourceRowSet = source.getRowSet();
 
@@ -463,12 +462,12 @@ class ZeroKeyUpdateBy extends UpdateBy {
         /**
          * Prepare the specified chunk for use.
          *
-         * @param opRowSet the operator index
+         * @param opIdx the operator index
          * @param usePrev if previous values should be fetched
          * @param chunkOk the {@link RowSequence} for current values
          * @param prevChunkOk the {@link RowSequence} for previous values.
          */
-        private void prepareValuesChunkFor(final int opRowSet,
+        private void prepareValuesChunkFor(final int opIdx,
                 final int inputSlot,
                 final boolean usePrev,
                 final boolean useCurrent,
@@ -478,20 +477,20 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 final WritableChunk<Values> postWorkingChunk,
                 final ChunkSource.FillContext prevFillContext,
                 final ChunkSource.FillContext postFillContext) {
-            if (!operators[opRowSet].requiresValues(opContext[opRowSet])) {
+            if (!operators[opIdx].requiresValues(opContext[opIdx])) {
                 return;
             }
 
             if (!inputChunkPopulated[inputSlot]) {
-                // Using opRowSet below is OK, because if we are sharing an input slot, we are referring to the same
-                // input source. Instead of maintaining another array of sourced by slot, we'll just use the opRowSet
+                // Using opIdx below is OK, because if we are sharing an input slot, we are referring to the same
+                // input source. Instead of maintaining another array of sourced by slot, we'll just use the opIdx
                 inputChunkPopulated[inputSlot] = true;
                 if (usePrev) {
-                    inputSources[opRowSet].fillPrevChunk(prevFillContext, prevWorkingChunk, prevChunkOk);
+                    inputSources[opIdx].fillPrevChunk(prevFillContext, prevWorkingChunk, prevChunkOk);
                 }
 
                 if (useCurrent) {
-                    inputSources[opRowSet].fillChunk(postFillContext, postWorkingChunk, chunkOk);
+                    inputSources[opIdx].fillChunk(postFillContext, postWorkingChunk, chunkOk);
                 }
             }
         }

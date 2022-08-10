@@ -51,7 +51,7 @@ import java.util.Map;
  * <li>Adds
  * <ul>
  * <li>{@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
- * <li>{@link #addChunk(UpdateContext, RowSequence, LongChunk, Chunk, long)}</li>
+ * <li>{@link #addChunkBucketed(UpdateContext, RowSequence, LongChunk, Chunk, long)}</li>
  * <li>{@link #finishFor(UpdateContext, UpdateBy.UpdateType)}</li>
  * </ul>
  * </li>
@@ -60,7 +60,7 @@ import java.util.Map;
  * <ul>
  * <li>{@link #resetForReprocess(UpdateContext, RowSet, long)}</li>
  * <li>{@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
- * <li>{@link #reprocessChunk(UpdateContext, RowSequence, Chunk, LongChunk, IntChunk, IntChunk, IntChunk)}</li>
+ * <li>{@link #reprocessChunkBucketed(UpdateContext, RowSequence, Chunk, LongChunk, IntChunk, IntChunk, IntChunk)}</li>
  * <li>{@link #finishFor(UpdateContext, UpdateBy.UpdateType)}</li>
  * </ul>
  * </li>
@@ -168,32 +168,18 @@ public interface UpdateByOperator {
      */
     interface UpdateContext extends SafeCloseable {
         /**
-         * Determine all the rows affected by the {@link TableUpdate} that need to be recomputed
+         * Determine all the rows affected by the {@link TableUpdate} that need to be reprocessed
          *
          * @param upstream the update
          * @param source the rowset of the parent table (affected rows will be a subset)
          */
-        default void determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final RowSet source,
-                                           final boolean upstreamAppendOnly) {
-            throw (new IllegalStateException("A raw UpdateContext cannot execute determineAffectedRows()"));
-        }
+        RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final RowSet source,
+                                           final boolean upstreamAppendOnly);
 
         /**
          * Return the rows computed by the {@Code determineAffectedRows()}
          */
-        default RowSet getAffectedRows() {
-            throw (new IllegalStateException("A raw UpdateContext cannot execute getAffectedRows()"));
-        }
-
-        /**
-         * Set all the rows that need to be computed by this operator
-         *
-         * @param affected the rowset of the parent table (affected is subset)
-         */
-        default void setAffectedRows(@NotNull final RowSet affected) {
-            throw (new IllegalStateException("A raw UpdateContext cannot execute setAffectedRows()"));
-
-        }
+        RowSet getAffectedRows();
     }
 
     /**
@@ -271,11 +257,11 @@ public interface UpdateByOperator {
      * </p>
      *
      * @param context the context object
-     * @param updateIndex the index of rows associated with the update.
+     * @param updateRowSet the index of rows associated with the update.
      * @param type the type of update being applied
      */
     void initializeFor(@NotNull final UpdateContext context,
-            @NotNull final RowSet updateIndex,
+            @NotNull final RowSet updateRowSet,
             @NotNull final UpdateBy.UpdateType type);
 
     /**
@@ -362,10 +348,10 @@ public interface UpdateByOperator {
      * @param bucketPosition the group position
      */
     void addChunk(@NotNull final UpdateContext context,
-            @NotNull final RowSequence inputKeys,
-            @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-            @NotNull final Chunk<Values> values,
-            final long bucketPosition);
+                          @NotNull final RowSequence inputKeys,
+                          @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                          @NotNull final Chunk<Values> values,
+                          final long bucketPosition);
 
     /**
      * Add a chunk of bucketed items to the operation.
@@ -377,12 +363,12 @@ public interface UpdateByOperator {
      * @param runLengths the runLengths of each run of bucket values
      * @param startPositions the start position of a run within the chunk
      */
-    void addChunk(@NotNull final UpdateContext context,
-            @NotNull final Chunk<Values> values,
-            @NotNull final LongChunk<? extends RowKeys> keyChunk,
-            @NotNull final IntChunk<RowKeys> bucketPositions,
-            @NotNull final IntChunk<ChunkPositions> startPositions,
-            @NotNull final IntChunk<ChunkLengths> runLengths);
+    void addChunkBucketed(@NotNull final UpdateContext context,
+                          @NotNull final Chunk<Values> values,
+                          @NotNull final LongChunk<? extends RowKeys> keyChunk,
+                          @NotNull final IntChunk<RowKeys> bucketPositions,
+                          @NotNull final IntChunk<ChunkPositions> startPositions,
+                          @NotNull final IntChunk<ChunkLengths> runLengths);
 
     /**
      * Modify a chunk of values with the operation.
@@ -444,10 +430,10 @@ public interface UpdateByOperator {
      * @param postUpdateSourceIndex the resulting source index af
      */
     void reprocessChunk(@NotNull final UpdateContext context,
-            @NotNull final RowSequence inputKeys,
-            @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-            @NotNull final Chunk<Values> valuesChunk,
-            @NotNull final RowSet postUpdateSourceIndex);
+                                @NotNull final RowSequence inputKeys,
+                                @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                                @NotNull final Chunk<Values> valuesChunk,
+                                @NotNull final RowSet postUpdateSourceIndex);
 
     /**
      * Reprocess a chunk of data for a bucketed table.
@@ -461,17 +447,17 @@ public interface UpdateByOperator {
      * @param runStartPositions the starting positions of each run within the key and value chunk
      * @param runLengths the run runLengths of each run in the key and value chunks. Parallel to `runStartPositions`
      */
-    void reprocessChunk(@NotNull final UpdateContext context,
-            @NotNull final RowSequence inputKeys,
-            @NotNull final Chunk<Values> values,
-            @NotNull final LongChunk<? extends RowKeys> keyChunk,
-            @NotNull final IntChunk<RowKeys> bucketPositions,
-            @NotNull final IntChunk<ChunkPositions> runStartPositions,
-            @NotNull final IntChunk<ChunkLengths> runLengths);
+    void reprocessChunkBucketed(@NotNull final UpdateContext context,
+                                @NotNull final RowSequence inputKeys,
+                                @NotNull final Chunk<Values> values,
+                                @NotNull final LongChunk<? extends RowKeys> keyChunk,
+                                @NotNull final IntChunk<RowKeys> bucketPositions,
+                                @NotNull final IntChunk<ChunkPositions> runStartPositions,
+                                @NotNull final IntChunk<ChunkLengths> runLengths);
 
     /**
      * Reset the operator to the state at the `firstModifiedKey` for non-bucketed operation. This is invoked immediately
-     * prior to calls to {@link #reprocessChunk(UpdateContext, RowSequence, LongChunk, Chunk, RowSet)}. <br>
+     * prior to calls to {@link #resetForReprocess(UpdateContext, RowSet, long)}. <br>
      * <br>
      * A `firstUnmodifiedKey` of {@link RowSet#NULL_ROW_KEY} indicates that the entire table needs to be recomputed.
      *
@@ -486,14 +472,14 @@ public interface UpdateByOperator {
     /**
      * Reset the operator to the state at the `firstModifiedKey` for the specified bucket. This is invoked immediately
      * prior to calls to
-     * {@link #reprocessChunk(UpdateContext, RowSequence, Chunk, LongChunk, IntChunk, IntChunk, IntChunk)}.
+     * {@link #reprocessChunkBucketed(UpdateContext, RowSequence, Chunk, LongChunk, IntChunk, IntChunk, IntChunk)}.
      *
      * @param context the context object
      * @param bucketIndex the current index of the specified bucket
      * @param firstUnmodifiedKey the first unmodified key in the bucket after which we will reprocess rows.
      */
-    void resetForReprocess(@NotNull final UpdateContext context,
-            @NotNull final RowSet bucketIndex,
-            final long bucketPosition,
-            final long firstUnmodifiedKey);
+    void resetForReprocessBucketed(@NotNull final UpdateContext context,
+                                   @NotNull final RowSet bucketIndex,
+                                   final long bucketPosition,
+                                   final long firstUnmodifiedKey);
 }

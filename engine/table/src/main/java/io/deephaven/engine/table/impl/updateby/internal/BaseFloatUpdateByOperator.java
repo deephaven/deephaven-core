@@ -13,7 +13,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
-import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
 import io.deephaven.engine.table.impl.sources.FloatSparseArraySource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
@@ -233,10 +232,10 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
     // region Addition
     @Override
     public void addChunk(@NotNull final UpdateContext updateContext,
-                         @NotNull final RowSequence inputKeys,
-                         @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                         @NotNull final Chunk<Values> values,
-                         long bucketPosition) {
+                                 @NotNull final RowSequence inputKeys,
+                                 @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                                 @NotNull final Chunk<Values> values,
+                                 long bucketPosition) {
         final Context ctx = (Context) updateContext;
         if (ctx.canProcessDirectly) {
             doAddChunk(ctx, inputKeys, values, bucketPosition);
@@ -273,34 +272,34 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
 
 
     @Override
-    public void resetForReprocess(@NotNull final UpdateContext ctx,
-                                  @NotNull final RowSet bucketRowSet,
-                                  final long bucketPosition,
-                                  final long firstUnmodifiedKey) {
+    public void resetForReprocessBucketed(@NotNull final UpdateContext ctx,
+                                          @NotNull final RowSet bucketRowSet,
+                                          final long bucketPosition,
+                                          final long firstUnmodifiedKey) {
         final float previousVal = firstUnmodifiedKey == NULL_ROW_KEY ? NULL_FLOAT : outputSource.getFloat(firstUnmodifiedKey);
         bucketLastVal.set(bucketPosition, previousVal);
     }
 
     @Override
     public void reprocessChunk(@NotNull final UpdateContext updateContext,
-                               @NotNull final RowSequence inputKeys,
-                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                               @NotNull final Chunk<Values> valuesChunk,
-                               @NotNull final RowSet postUpdateSourceRowSet) {
+                                       @NotNull final RowSequence inputKeys,
+                                       @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                                       @NotNull final Chunk<Values> valuesChunk,
+                                       @NotNull final RowSet postUpdateSourceRowSet) {
         final Context ctx = (Context) updateContext;
         doAddChunk(ctx, inputKeys, valuesChunk, 0);
         ctx.getModifiedBuilder().appendRowSequence(inputKeys);
     }
 
     @Override
-    public void reprocessChunk(@NotNull UpdateContext updateContext,
-                               @NotNull final RowSequence chunkOk,
-                               @NotNull final Chunk<Values> values,
-                               @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                               @NotNull final IntChunk<RowKeys> bucketPositions,
-                               @NotNull final IntChunk<ChunkPositions> runStartPositions,
-                               @NotNull final IntChunk<ChunkLengths> runLengths) {
-        addChunk(updateContext, values, keyChunk, bucketPositions, runStartPositions, runLengths);
+    public void reprocessChunkBucketed(@NotNull UpdateContext updateContext,
+                                       @NotNull final RowSequence chunkOk,
+                                       @NotNull final Chunk<Values> values,
+                                       @NotNull final LongChunk<? extends RowKeys> keyChunk,
+                                       @NotNull final IntChunk<RowKeys> bucketPositions,
+                                       @NotNull final IntChunk<ChunkPositions> runStartPositions,
+                                       @NotNull final IntChunk<ChunkLengths> runLengths) {
+        addChunkBucketed(updateContext, values, keyChunk, bucketPositions, runStartPositions, runLengths);
         ((Context)updateContext).getModifiedBuilder().appendRowSequence(chunkOk);
     }
 

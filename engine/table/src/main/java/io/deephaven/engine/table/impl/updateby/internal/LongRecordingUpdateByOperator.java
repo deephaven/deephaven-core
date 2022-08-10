@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * An operator that simply remembers the current chunks during the add and reprocess phases.
  */
-public class LongRecordingUpdateByOperator implements UpdateByOperator {
+public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
     private final String inputColumnName;
     private final String[] affectingColumns;
     private final ColumnSource<?> columnSource;
@@ -43,7 +43,7 @@ public class LongRecordingUpdateByOperator implements UpdateByOperator {
         this.columnSource = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
     }
 
-    private class RecordingContext implements UpdateContext {
+    private class RecordingContext extends UpdateCumulativeContext {
         private LongChunk<Values> addedChunk;
 
         @Override
@@ -73,13 +73,22 @@ public class LongRecordingUpdateByOperator implements UpdateByOperator {
         return columnSource.getLong(key);
     }
 
+    /**
+     * Get the current underlying {@link ColumnSource}.
+     *
+     * @return the current value at the key within the column source.
+     */
+    public ColumnSource<?> getColumnSource() {
+        return columnSource;
+    }
+
     @Override
     public void reprocessChunk(@NotNull UpdateContext updateContext, @NotNull RowSequence inputKeys, @Nullable LongChunk<OrderedRowKeys> keyChunk, @NotNull Chunk<Values> valuesChunk, @NotNull RowSet postUpdateSourceIndex) {
         currentContext.addedChunk = valuesChunk.asLongChunk();
     }
 
     @Override
-    public void reprocessChunk(@NotNull UpdateContext updateContext, @NotNull RowSequence chunkOk, @NotNull Chunk<Values> values, @NotNull LongChunk<? extends RowKeys> keyChunk, @NotNull IntChunk<RowKeys> bucketPositions, @NotNull IntChunk<ChunkPositions> runStartPositions, @NotNull IntChunk<ChunkLengths> runLengths) {
+    public void reprocessChunkBucketed(@NotNull UpdateContext updateContext, @NotNull RowSequence chunkOk, @NotNull Chunk<Values> values, @NotNull LongChunk<? extends RowKeys> keyChunk, @NotNull IntChunk<RowKeys> bucketPositions, @NotNull IntChunk<ChunkPositions> runStartPositions, @NotNull IntChunk<ChunkLengths> runLengths) {
         currentContext.addedChunk = values.asLongChunk();
     }
 
@@ -91,27 +100,26 @@ public class LongRecordingUpdateByOperator implements UpdateByOperator {
 
     @Override
     public void addChunk(@NotNull UpdateContext updateContext,
-                         @NotNull RowSequence inputKeys,
-                         @Nullable LongChunk<OrderedRowKeys> keyChunk,
-                         @NotNull Chunk<Values> values,
-                         long bucketPosition) {
+                                 @NotNull RowSequence inputKeys,
+                                 @Nullable LongChunk<OrderedRowKeys> keyChunk,
+                                 @NotNull Chunk<Values> values,
+                                 long bucketPosition) {
         currentContext.addedChunk = values.asLongChunk();
     }
 
     @Override
-    public void addChunk(@NotNull UpdateContext context,
-                         @NotNull Chunk<Values> values,
-                         @NotNull LongChunk<? extends RowKeys> keyChunk,
-                         @NotNull IntChunk<RowKeys> bucketPositions,
-                         @NotNull IntChunk<ChunkPositions> startPositions,
-                         @NotNull IntChunk<ChunkLengths> runLengths) {
+    public void addChunkBucketed(@NotNull UpdateContext context,
+                                 @NotNull Chunk<Values> values,
+                                 @NotNull LongChunk<? extends RowKeys> keyChunk,
+                                 @NotNull IntChunk<RowKeys> bucketPositions,
+                                 @NotNull IntChunk<ChunkPositions> startPositions,
+                                 @NotNull IntChunk<ChunkLengths> runLengths) {
         currentContext.addedChunk = values.asLongChunk();
     }
 
     // region Unused methods
     @Override
     public void setBucketCapacity(int capacity) {
-
     }
 
     @NotNull
@@ -140,17 +148,14 @@ public class LongRecordingUpdateByOperator implements UpdateByOperator {
 
     @Override
     public void initializeForUpdate(@NotNull UpdateContext ctx, @NotNull TableUpdate upstream, @NotNull RowSet resultSourceIndex, boolean usingBuckets, boolean isUpstreamAppendOnly) {
-
     }
 
     @Override
-    public void initializeFor(@NotNull UpdateContext updateContext, @NotNull RowSet updateIndex, @NotNull UpdateBy.UpdateType type) {
-
+    public void initializeFor(@NotNull UpdateContext updateContext, @NotNull RowSet updateRowSet, @NotNull UpdateBy.UpdateType type) {
     }
 
     @Override
     public void finishFor(@NotNull UpdateContext updateContext, @NotNull UpdateBy.UpdateType type) {
-
     }
 
     @NotNull
@@ -166,7 +171,6 @@ public class LongRecordingUpdateByOperator implements UpdateByOperator {
 
     @Override
     public void startTrackingPrev() {
-
     }
 
     @Override
@@ -220,7 +224,7 @@ public class LongRecordingUpdateByOperator implements UpdateByOperator {
     }
 
     @Override
-    public void resetForReprocess(@NotNull UpdateContext context, @NotNull RowSet bucketIndex, long bucketPosition, long firstUnmodifiedKey) {
+    public void resetForReprocessBucketed(@NotNull UpdateContext context, @NotNull RowSet bucketIndex, long bucketPosition, long firstUnmodifiedKey) {
 
     }
 
