@@ -5,12 +5,13 @@ package io.deephaven.engine.table;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.TableOperationsWithDefaults;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.updategraph.ConcurrentMethod;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,7 +38,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     /**
      * Interface for proxies created by {@link #proxy()}.
      */
-    interface Proxy extends TableOperations<Proxy, TableOperations<?, ?>> {
+    interface Proxy extends TableOperationsWithDefaults<Proxy, TableOperations<?, ?>> {
 
         /**
          * Get the PartitionedTable instance underlying this proxy.
@@ -206,7 +207,9 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @param transformer The {@link UnaryOperator} to apply to all constituent {@link Table tables}
      * @return The new PartitionedTable containing the resulting constituents
      */
-    PartitionedTable transform(@NotNull UnaryOperator<Table> transformer);
+    default PartitionedTable transform(@NotNull UnaryOperator<Table> transformer) {
+        return transform(ExecutionContext.getContextToRecord(), transformer);
+    }
 
     /**
      * <p>
@@ -245,9 +248,11 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @param transformer The {@link BinaryOperator} to apply to all pairs of constituent {@link Table tables}
      * @return The new PartitionedTable containing the resulting constituents
      */
-    PartitionedTable partitionedTransform(
+    default PartitionedTable partitionedTransform(
             @NotNull PartitionedTable other,
-            @NotNull BinaryOperator<Table> transformer);
+            @NotNull BinaryOperator<Table> transformer) {
+        return partitionedTransform(other, ExecutionContext.getContextToRecord(), transformer);
+    }
 
     /**
      * <p>

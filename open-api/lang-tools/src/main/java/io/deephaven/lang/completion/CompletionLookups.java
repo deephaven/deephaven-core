@@ -4,6 +4,7 @@
 package io.deephaven.lang.completion;
 
 import io.deephaven.base.Lazy;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.util.ScriptSession;
@@ -28,7 +29,7 @@ public class CompletionLookups {
     private final Map<String, TableDefinition> referencedTables;
 
     public CompletionLookups() {
-        final QueryLibrary.Context ql = QueryLibrary.getLibrary();
+        final QueryLibrary ql = ExecutionContext.getContext().getQueryLibrary();
         statics = new Lazy<>(ql::getStaticImports);
         referencedTables = new ConcurrentHashMap<>();
 

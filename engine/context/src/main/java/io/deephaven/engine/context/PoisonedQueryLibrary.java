@@ -6,55 +6,52 @@ import io.deephaven.util.NoExecutionContextRegisteredException;
 
 import java.util.Collection;
 
-public class PoisonedQueryLibrary implements QueryLibrary.Context {
+public class PoisonedQueryLibrary extends QueryLibrary {
     private static final Logger logger = LoggerFactory.getLogger(PoisonedQueryScope.class);
     public static final PoisonedQueryLibrary INSTANCE = new PoisonedQueryLibrary();
 
-    @Override
-    public void updateVersionString() {
+    private <T> T fail() {
         logger.error().append("No ExecutionContext provided; cannot use QueryLibrary").endl();
         throw new NoExecutionContextRegisteredException();
+    }
+
+    @Override
+    public void updateVersionString() {
+        fail();
     }
 
     @Override
     public Collection<String> getImportStrings() {
-        logger.error().append("No ExecutionContext provided; cannot use QueryLibrary").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     public Collection<Package> getPackageImports() {
-        logger.error().append("No ExecutionContext provided; cannot use QueryLibrary").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     public Collection<Class<?>> getClassImports() {
-        logger.error().append("No ExecutionContext provided; cannot use QueryLibrary").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     public Collection<Class<?>> getStaticImports() {
-        logger.error().append("No ExecutionContext provided; cannot use QueryLibrary").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     public void importPackage(Package aPackage) {
-        logger.error().append("No ExecutionContext provided; cannot use QueryLibrary").endl();
-        throw new NoExecutionContextRegisteredException();
+        fail();
     }
 
     @Override
     public void importClass(Class<?> aClass) {
-        logger.error().append("No ExecutionContext provided; cannot use QueryLibrary").endl();
-        throw new NoExecutionContextRegisteredException();
+        fail();
     }
 
     @Override
     public void importStatic(Class<?> aClass) {
-        logger.error().append("No ExecutionContext provided; cannot use QueryLibrary").endl();
-        throw new NoExecutionContextRegisteredException();
+        fail();
     }
 }

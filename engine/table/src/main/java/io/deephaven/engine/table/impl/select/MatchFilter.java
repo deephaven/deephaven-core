@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.string.cache.CompressedString;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -113,7 +114,7 @@ public class MatchFilter extends WhereFilterImpl {
                         + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
             }
             final List<Object> valueList = new ArrayList<>();
-            final QueryScope queryScope = QueryScope.getScope();
+            final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
             final ColumnTypeConvertor convertor =
                     ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
             for (int valIdx = 0; valIdx < strValues.length; ++valIdx) {

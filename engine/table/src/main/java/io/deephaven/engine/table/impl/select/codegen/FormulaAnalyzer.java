@@ -4,13 +4,13 @@
 package io.deephaven.engine.table.impl.select.codegen;
 
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.QueryScopeParamTypeUtil;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaCompilationException;
@@ -41,7 +41,7 @@ public class FormulaAnalyzer {
             final Map<String, ColumnDefinition<?>> columnDefinitionMap,
             Map<String, Class<?>> otherVariables) throws Exception {
         final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
-        final QueryScope queryScope = QueryScope.getScope();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleParams.put(param.getName(), param);
         }
@@ -105,7 +105,7 @@ public class FormulaAnalyzer {
             }
         }
 
-        final QueryScope queryScope = QueryScope.getScope();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleVariables.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
 
@@ -137,11 +137,14 @@ public class FormulaAnalyzer {
             possibleVariables.putAll(otherVariables);
         }
 
-        final Set<Class<?>> classImports = new HashSet<>(QueryLibrary.getClassImports());
+        final Set<Class<?>> classImports =
+                new HashSet<>(ExecutionContext.getContext().getQueryLibrary().getClassImports());
         classImports.add(TrackingWritableRowSet.class);
         classImports.add(WritableColumnSource.class);
-        return new QueryLanguageParser(timeConversionResult.getConvertedFormula(), QueryLibrary.getPackageImports(),
-                classImports, QueryLibrary.getStaticImports(), possibleVariables, possibleVariableParameterizedTypes)
+        return new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
+                ExecutionContext.getContext().getQueryLibrary().getPackageImports(),
+                classImports, ExecutionContext.getContext().getQueryLibrary().getStaticImports(), possibleVariables,
+                possibleVariableParameterizedTypes)
                         .getResult();
     }
 

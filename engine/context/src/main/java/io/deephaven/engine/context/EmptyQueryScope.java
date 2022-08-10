@@ -9,6 +9,8 @@ import java.util.Set;
 public class EmptyQueryScope extends QueryScope {
     public final static EmptyQueryScope INSTANCE = new EmptyQueryScope();
 
+    private EmptyQueryScope() {}
+
     @Override
     public Set<String> getParamNames() {
         return Collections.emptySet();

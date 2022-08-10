@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.StringUtils;
+import io.deephaven.api.TableOperationsWithDefaults;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.io.logger.Logger;
@@ -205,7 +205,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             joined = leftJoinTable.naturalJoin(rightJoinTable, matchKeys, "RightSentinel");
         } else {
             joined = NaturalJoinHelper.naturalJoin((QueryTable) leftJoinTable, (QueryTable) rightJoinTable,
-                    MatchPairFactory.getExpressions(StringUtils.splitToCollection(matchKeys)),
+                    MatchPairFactory.getExpressions(TableOperationsWithDefaults.splitToCollection(matchKeys)),
                     MatchPairFactory.getExpressions("RightSentinel"), false, control);
         }
 

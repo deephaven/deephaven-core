@@ -3,12 +3,12 @@
  */
 package io.deephaven.plot.datasets.category;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.datasets.ColumnNameConstants;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.functions.FigureImplFunction;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.gui.color.Paint;
 
@@ -94,7 +94,7 @@ public abstract class AbstractTableBasedCategoryDataSeries extends AbstractCateg
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";
         QueryScope.addParam(queryFunction, function);
-        QueryLibrary.importClass(resultClass);
+        ExecutionContext.getContext().getQueryLibrary().importClass(resultClass);
         return t.update(
                 columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction + ".apply(" + onColumn + ")");
     }

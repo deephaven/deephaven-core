@@ -5,9 +5,9 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.*;
 import io.deephaven.stringset.ArrayStringSet;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.test.junit4.EngineCleanup;
@@ -131,19 +131,19 @@ public class TestChunkedRegionedOperations {
 
     @Before
     public void setUp() throws Exception {
-        final QueryScope queryScope = QueryScope.getScope();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         queryScope.putParam("nowNanos", DateTimeUtils.currentTime().getNanos());
         queryScope.putParam("letters",
                 IntStream.range('A', 'A' + 64).mapToObj(c -> new String(new char[] {(char) c})).toArray(String[]::new));
         queryScope.putParam("emptySymbolSet", new ArrayStringSet());
         queryScope.putParam("stripeSize", STRIPE_SIZE);
 
-        QueryLibrary.importClass(BigInteger.class);
-        QueryLibrary.importClass(StringSet.class);
-        QueryLibrary.importClass(ArrayStringSet.class);
-        QueryLibrary.importClass(SimpleSerializable.class);
-        QueryLibrary.importClass(SimpleExternalizable.class);
-        QueryLibrary.importStatic(BooleanUtils.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(BigInteger.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(StringSet.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(ArrayStringSet.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(SimpleSerializable.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(SimpleExternalizable.class);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(BooleanUtils.class);
 
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofLong("II"),

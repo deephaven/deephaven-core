@@ -3,13 +3,13 @@
  */
 package io.deephaven.plot.datasets.multiseries;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.datasets.DataSeriesInternal;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.PartitionedTable;
 
@@ -121,7 +121,7 @@ public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInte
         ArgumentValidations.assertNull(partitionedTable, "partitionedTable must be null", getPlotInfo());
         swappableTable.addColumn(columnName);
         final Function<Table, Table> tableTransform = t -> {
-            Arrays.stream(classesToImport).forEach(QueryLibrary::importClass);
+            Arrays.stream(classesToImport).forEach(aClass -> ExecutionContext.getContext().getQueryLibrary().importClass(aClass));
             params.forEach(QueryScope::addParam);
             return t.update(update);
         };

@@ -3,6 +3,7 @@
  */
 package io.deephaven.plot.datasets.category;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.datasets.ColumnNameConstants;
 import io.deephaven.plot.datasets.data.AssociativeDataSwappableTable;
@@ -10,7 +11,6 @@ import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.functions.FigureImplFunction;
 import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.gui.shape.NamedShape;
@@ -146,7 +146,7 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
         final String queryFunction = columnName + "Function";
         return t -> {
             QueryScope.addParam(queryFunction, function);
-            QueryLibrary.importClass(resultClass);
+            ExecutionContext.getContext().getQueryLibrary().importClass(resultClass);
             return t.update(columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction + ".apply("
                     + onColumn + ")");
         };

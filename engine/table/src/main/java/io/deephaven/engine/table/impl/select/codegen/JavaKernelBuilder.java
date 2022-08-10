@@ -4,8 +4,8 @@
 package io.deephaven.engine.table.impl.select.codegen;
 
 import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.vector.Vector;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -82,7 +82,7 @@ public class JavaKernelBuilder {
         final TypeAnalyzer ta = TypeAnalyzer.create(returnedType);
 
         final CodeGenerator g = CodeGenerator.create(
-                CodeGenerator.create(QueryLibrary.getImportStrings().toArray()), "",
+                CodeGenerator.create(ExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()), "",
                 "public class $CLASSNAME$ implements [[FORMULA_KERNEL_INTERFACE_CANONICAL]]", CodeGenerator.block(
                         generateFactoryLambda(), "",
                         CodeGenerator.repeated("instanceVar", "private final [[TYPE]] [[NAME]];"),

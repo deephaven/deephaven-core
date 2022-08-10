@@ -6,12 +6,12 @@ package io.deephaven.parquet.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.TestTableTools;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -134,9 +134,9 @@ public class TestParquetTools {
         TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();
 
-        QueryLibrary.importClass(TestEnum.class);
-        QueryLibrary.importClass(HashStringSet.class);
-        QueryLibrary.importStatic(this.getClass());
+        ExecutionContext.getContext().getQueryLibrary().importClass(TestEnum.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(HashStringSet.class);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(this.getClass());
         Table test = TableTools.emptyTable(10).select("enumC=TestEnum.values()[i]", "enumSet=newSet(" +
                 "toS(enumC_[(i + 9) % 10])," +
                 "toS(enumC_[i])," +

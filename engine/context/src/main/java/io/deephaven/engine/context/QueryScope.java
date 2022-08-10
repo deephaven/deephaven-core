@@ -24,37 +24,6 @@ import java.util.*;
 public abstract class QueryScope implements LogOutputAppendable {
 
     /**
-     * Sets the default {@link QueryScope} to be used in the current context. The method allows the use of a new or
-     * separate instance as the default instance for static methods.
-     *
-     * @param queryScope {@link QueryScope} to set as the new instance; null clears the scope.
-     */
-    public static synchronized void setScope(QueryScope queryScope) {
-        ExecutionContext.setContext(ExecutionContext.newBuilder()
-                .setQueryScope(queryScope == null ? PoisonedQueryScope.INSTANCE : queryScope)
-                .captureQueryLibrary()
-                .captureCompilerContext()
-                .markSystemic()
-                .build());
-    }
-
-    /**
-     * Retrieve the default {@link QueryScope} instance which will be used by static methods.
-     *
-     * @return {@link QueryScope}
-     */
-    public static QueryScope getScope() {
-        return ExecutionContext.getContext().getQueryScope();
-    }
-
-    /**
-     * Resets the {@link QueryScope} back to its default value.
-     */
-    public static void resetScope() {
-        setScope(null);
-    }
-
-    /**
      * Adds a parameter to the default instance {@link QueryScope}, or updates the value of an existing parameter.
      *
      * @param name String name of the parameter to add.
@@ -62,7 +31,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @param <T> type of the parameter/value.
      */
     public static <T> void addParam(final String name, final T value) {
-        getScope().putParam(name, value);
+        ExecutionContext.getContext().getQueryScope().putParam(name, value);
     }
 
     /**
@@ -71,7 +40,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @param object object whose fields will be added.
      */
     public static void addObjectFields(final Object object) {
-        getScope().putObjectFields(object);
+        ExecutionContext.getContext().getQueryScope().putObjectFields(object);
     }
 
     /**
@@ -83,7 +52,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @throws MissingVariableException variable name is not defined.
      */
     public static <T> T getParamValue(final String name) throws MissingVariableException {
-        return getScope().readParamValue(name);
+        return ExecutionContext.getContext().getQueryScope().readParamValue(name);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

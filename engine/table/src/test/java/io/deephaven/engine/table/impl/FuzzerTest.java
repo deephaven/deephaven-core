@@ -98,7 +98,7 @@ public class FuzzerTest {
 
     private GroovyDeephavenSession getGroovySession(@Nullable TimeProvider timeProvider) throws IOException {
         final GroovyDeephavenSession session = new GroovyDeephavenSession(NoOp.INSTANCE, RunScripts.serviceLoader());
-        QueryScope.setScope(session.newQueryScope());
+        session.getExecutionContext().open();
         return session;
     }
 

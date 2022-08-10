@@ -345,7 +345,6 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testView() {
-        QueryScope.setScope(new QueryScope.StandaloneImpl());
         QueryScope.addParam("indexMinEdge", 2.0);
         QueryScope.addParam("IsIndex", true);
         QueryScope.addParam("MEF", 1.0);

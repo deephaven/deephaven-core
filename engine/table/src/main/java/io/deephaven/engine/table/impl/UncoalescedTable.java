@@ -17,7 +17,7 @@ import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.iterators.*;
-import io.deephaven.engine.updategraph.ConcurrentMethod;
+import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -10,7 +10,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -751,13 +750,13 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         final MutableLong step = new MutableLong(0);
         QueryScope.addParam("step", step);
-        QueryLibrary.importStatic(TableTools.class);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(TableTools.class);
 
         final Table underlying;
         try (final SafeCloseable ignored = ExecutionContext.newBuilder()
                 .captureQueryLibrary()
                 .captureCompilerContext()
-                .captureMutableQueryScope()
+                .captureQueryScope()
                 .build().open()) {
             underlying = base.update(
                     "Constituent=emptyTable(1000 * step.longValue()).update(\"JJ=ii * \" + II + \" * step.longValue()\")");

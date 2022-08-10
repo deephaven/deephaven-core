@@ -27,12 +27,12 @@ dependencies {
     api project(':TableLogger')
     api project(':engine-stringset')
     api project(':engine-base')
+    api project(':engine-context')
     api project(':deephaven-jpy-ext')
     api project(':hotspot')
     api project(':IO')
 
     implementation project(':DHProcess')
-    implementation project(':engine-context')
     implementation project(':engine-function')
     implementation project(':engine-tuple')
     implementation project(':Configuration')

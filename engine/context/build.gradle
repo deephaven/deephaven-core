@@ -10,17 +10,17 @@ configurations {
 }
 
 dependencies {
-    api project(':Configuration')
-    api project(':DataStructures')
-    api project(':log-factory')
-    api project(':Util')
-    api project(':engine-time')
-    api project(':table-api')
-    api project(':IO')
+    implementation project(':Configuration')
+    implementation project(':DataStructures')
+    implementation project(':log-factory')
+    implementation project(':Util')
+    implementation project(':engine-time')
+    implementation project(':table-api')
+    implementation project(':IO')
 
     implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
 
-    Classpaths.inheritCommonsText(project, 'api')
+    Classpaths.inheritCommonsText(project, 'implementation')
 
     testImplementation TestTools.projectDependency(project, 'Base')
 

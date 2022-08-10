@@ -845,7 +845,7 @@ public class SessionState {
             boolean shouldLog = false;
             int evaluationNumber = -1;
             QueryProcessingResults queryProcessingResults = null;
-            try (final AutoCloseable ignored = LivenessScopeStack.open();
+            try (final SafeCloseable ignored1 = LivenessScopeStack.open();
                     final SafeCloseable ignored2 = session.executionContext.open()) {
                 queryProcessingResults = new QueryProcessingResults(
                         QueryPerformanceRecorder.getInstance());

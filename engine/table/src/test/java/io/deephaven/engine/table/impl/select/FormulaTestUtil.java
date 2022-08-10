@@ -4,12 +4,12 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.vector.ByteVectorDirect;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.vector.IntVectorDirect;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.QueryConstants;
@@ -100,12 +100,12 @@ public class FormulaTestUtil {
     }
 
     static void setUpQueryLibrary() {
-        QueryLibrary.importPackage(Package.getPackage("java.util.concurrent"));
+        ExecutionContext.getContext().getQueryLibrary().importPackage(Package.getPackage("java.util.concurrent"));
 
-        QueryLibrary.importClass(Calendar.class);
-        QueryLibrary.importClass(ArrayTypeUtils.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(Calendar.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(ArrayTypeUtils.class);
 
-        QueryLibrary.importStatic(FormulaTestUtil.class);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(FormulaTestUtil.class);
     }
 
     static void setUpQueryScope() {

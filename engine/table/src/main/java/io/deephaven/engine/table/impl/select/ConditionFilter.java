@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.Pair;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
@@ -15,7 +16,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
@@ -419,8 +419,11 @@ public class ConditionFilter extends AbstractConditionFilter {
             usedInputs.add(new Pair<>("k", long.class));
         }
         final StringBuilder classBody = new StringBuilder();
-        classBody.append(CodeGenerator.create(QueryLibrary.getImportStrings().toArray()).build()).append(
-                "\n\npublic class $CLASSNAME$ implements ")
+        classBody
+                .append(CodeGenerator
+                        .create(ExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()).build())
+                .append(
+                        "\n\npublic class $CLASSNAME$ implements ")
                 .append(FilterKernel.class.getCanonicalName()).append("<FilterKernel.Context>{\n");
         classBody.append("\n").append(timeConversionResult.getInstanceVariablesString()).append("\n");
         final Indenter indenter = new Indenter();

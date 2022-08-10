@@ -4,6 +4,7 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.util.Arrays;
@@ -23,7 +24,7 @@ public class ExecutionContext {
             return context;
         }
         return ExecutionContext.newBuilder()
-                .captureMutableQueryScope()
+                .captureQueryScope()
                 .captureQueryLibrary()
                 .captureCompilerContext()
                 .markSystemic()
@@ -48,14 +49,15 @@ public class ExecutionContext {
     private static volatile ExecutionContext defaultContext = null;
 
     private static ExecutionContext getDefaultContext() {
-        if (defaultContext == null) {
+        ExecutionContext localContext;
+        if ((localContext = defaultContext) == null) {
             synchronized (ExecutionContext.class) {
-                if (defaultContext == null) {
-                    defaultContext = newBuilder().markSystemic().build();
+                if ((localContext = defaultContext) == null) {
+                    localContext = defaultContext = newBuilder().markSystemic().build();
                 }
             }
         }
-        return defaultContext;
+        return localContext;
     }
 
     private static final ThreadLocal<ExecutionContext> currentContext =
@@ -82,7 +84,7 @@ public class ExecutionContext {
     /**
      * Installs the executionContext to be used for the current thread.
      */
-    public static void setContext(final ExecutionContext context) {
+    static void setContext(final ExecutionContext context) {
         currentContext.set(context);
     }
 
@@ -93,13 +95,13 @@ public class ExecutionContext {
     /** True if this execution context is supplied by the system and not the user. */
     private final boolean isSystemic;
 
-    private final QueryLibrary.Context queryLibrary;
+    private final QueryLibrary queryLibrary;
     private final QueryScope queryScope;
     private final CompilerTools.Context compilerContext;
 
     private ExecutionContext(
             final boolean isSystemic,
-            final QueryLibrary.Context queryLibrary,
+            final QueryLibrary queryLibrary,
             final QueryScope queryScope,
             final CompilerTools.Context compilerContext) {
         this.isSystemic = isSystemic;
@@ -145,7 +147,7 @@ public class ExecutionContext {
         };
     }
 
-    public QueryLibrary.Context getQueryLibrary() {
+    public QueryLibrary getQueryLibrary() {
         return queryLibrary;
     }
 
@@ -157,67 +159,129 @@ public class ExecutionContext {
         return compilerContext;
     }
 
+    @SuppressWarnings("unused")
     public static class Builder {
         private boolean isSystemic = false;
 
-        private QueryLibrary.Context queryLibrary = PoisonedQueryLibrary.INSTANCE;
+        private QueryLibrary queryLibrary = PoisonedQueryLibrary.INSTANCE;
         private QueryScope queryScope = PoisonedQueryScope.INSTANCE;
         private CompilerTools.Context compilerContext = PoisonedCompilerToolsContext.INSTANCE;
 
+        /**
+         * A systemic execution context is one that is supplied by the system and not the user. A systemic context will
+         * not be recorded when work is deferred
+         */
+        @ScriptApi
         public Builder markSystemic() {
             isSystemic = true;
             return this;
         }
 
+        /**
+         * Instantiate an empty query library.
+         */
+        @ScriptApi
         public Builder newQueryLibrary() {
             queryLibrary = QueryLibrary.makeNewLibrary();
             return this;
         }
 
-        public Builder setQueryLibrary(final QueryLibrary.Context queryLibrary) {
+        /**
+         * Instantiate an empty query library using the provided libraryVersion. This is useful for testing.
+         */
+        @ScriptApi
+        public Builder newQueryLibrary(String libraryVersion) {
+            queryLibrary = QueryLibrary.makeNewLibrary(libraryVersion);
+            return this;
+        }
+
+        /**
+         * Use the provided QueryLibrary.
+         */
+        @ScriptApi
+        public Builder setQueryLibrary(final QueryLibrary queryLibrary) {
             this.queryLibrary = queryLibrary;
             return this;
         }
 
+        /**
+         * Use the current ExecutionContext's QueryLibrary instance.
+         */
+        @ScriptApi
         public Builder captureQueryLibrary() {
             queryLibrary = currentContext.get().getQueryLibrary();
             return this;
         }
 
+        /**
+         * Use the provided CompilerTools.Context.
+         */
+        @ScriptApi
         public Builder setCompilerContext(final CompilerTools.Context compilerContext) {
             this.compilerContext = compilerContext;
             return this;
         }
 
+        /**
+         * Use the current ExecutionContext's CompilerTools.Context instance.
+         */
+        @ScriptApi
         public Builder captureCompilerContext() {
             compilerContext = currentContext.get().getCompilerContext();
             return this;
         }
 
+        /**
+         * Use a query scope that is immutably empty.
+         */
+        @ScriptApi
         public Builder emptyQueryScope() {
             this.queryScope = EmptyQueryScope.INSTANCE;
             return this;
         }
 
+        /**
+         * Instantiate a new query scope.
+         */
+        @ScriptApi
         public Builder newQueryScope() {
             this.queryScope = new QueryScope.StandaloneImpl();
             return this;
         }
 
+        /**
+         * Use the provided QueryScope.
+         */
+        @ScriptApi
         public Builder setQueryScope(final QueryScope queryScope) {
             this.queryScope = queryScope;
             return this;
         }
 
-        public Builder captureMutableQueryScope() {
+        /**
+         * Use the current ExecutionContext's QueryScope instance.
+         */
+        @ScriptApi
+        public Builder captureQueryScope() {
             this.queryScope = currentContext.get().getQueryScope();
             return this;
         }
 
+        /**
+         * Instantiate a new QueryScope and initialize with values from the current ExecutionContext.
+         *
+         * @param vars the variable names to copy from the current ExecutionContext's QueryScope
+         */
+        @ScriptApi
         public Builder captureQueryScopeVars(String... vars) {
+            if (vars.length == 0) {
+                this.queryScope = EmptyQueryScope.INSTANCE;
+                return this;
+            }
+
             this.queryScope = new QueryScope.StandaloneImpl();
 
-            final QueryScopeParam<?>[] params = QueryScope.getScope().getParams(Arrays.asList(vars));
+            final QueryScopeParam<?>[] params = getContext().getQueryScope().getParams(Arrays.asList(vars));
             for (final QueryScopeParam<?> param : params) {
                 this.queryScope.putParam(param.getName(), param.getValue());
             }
@@ -225,6 +289,10 @@ public class ExecutionContext {
             return this;
         }
 
+        /**
+         * @return the newly instantiated ExecutionContext
+         */
+        @ScriptApi
         public ExecutionContext build() {
             return new ExecutionContext(isSystemic, queryLibrary, queryScope, compilerContext);
         }

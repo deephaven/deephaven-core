@@ -10,7 +10,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -149,7 +148,7 @@ public class CompilerTools {
     public static final String DYNAMIC_GROOVY_CLASS_PREFIX = "io.deephaven.dynamic";
 
     public interface Context {
-        Hashtable<String, CompletableFuture<Class<?>>> getKnownClasses();
+        Map<String, CompletableFuture<Class<?>>> getKnownClasses();
 
         ClassLoader getClassLoaderForFormula(Map<String, Class<?>> parameterClasses);
 
@@ -163,28 +162,14 @@ public class CompilerTools {
     }
 
     public static Context newContext(File cacheDirectory, ClassLoader classLoader) {
-        return new CompilerTools.ContextImpl(cacheDirectory, classLoader) {
-            {
-                addClassSource(getFakeClassDestination());
-            }
-
-            @Override
-            public File getFakeClassDestination() {
-                return cacheDirectory;
-            }
-
-            @Override
-            public String getClassPath() {
-                return cacheDirectory.getAbsolutePath() + File.pathSeparatorChar + super.getClassPath();
-            }
-        };
+        return new CompilerTools.ContextImpl(cacheDirectory, classLoader, true);
     }
 
     private static class ContextImpl implements Context {
-        private final Hashtable<String, CompletableFuture<Class<?>>> knownClasses = new Hashtable<>();
+        private final Map<String, CompletableFuture<Class<?>>> knownClasses = new HashMap<>();
 
         @Override
-        public Hashtable<String, CompletableFuture<Class<?>>> getKnownClasses() {
+        public Map<String, CompletableFuture<Class<?>>> getKnownClasses() {
             return knownClasses;
         }
 
@@ -313,15 +298,17 @@ public class CompilerTools {
         }
 
         private final File classDestination;
+        private final boolean isCacheDirectory;
         private final Set<File> additionalClassLocations;
         private volatile WritableURLClassLoader ucl;
 
         private ContextImpl(File classDestination) {
-            this(classDestination, Context.class.getClassLoader());
+            this(classDestination, Context.class.getClassLoader(), false);
         }
 
-        private ContextImpl(File classDestination, ClassLoader parentClassLoader) {
+        private ContextImpl(File classDestination, ClassLoader parentClassLoader, boolean isCacheDirectory) {
             this.classDestination = classDestination;
+            this.isCacheDirectory = isCacheDirectory;
             ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
                     classDestination.getAbsolutePath());
             additionalClassLocations = new LinkedHashSet<>();
@@ -336,6 +323,10 @@ public class CompilerTools {
             // that does not have sufficient security permissions.
             this.ucl = doPrivileged((PrivilegedAction<WritableURLClassLoader>) () -> new WritableURLClassLoader(urls,
                     parentClassLoader));
+
+            if (isCacheDirectory) {
+                addClassSource(getFakeClassDestination());
+            }
         }
 
         protected void addClassSource(File classSourceDirectory) {
@@ -359,7 +350,7 @@ public class CompilerTools {
             // We don't want the regular runtime class loader to find them, because then they get "stuck" in there
             // even if the class itself changes, and we can't forget it. So instead we use a single-use class loader
             // for each formula, that will always read the class from disk.
-            return null;
+            return isCacheDirectory ? classDestination : null;
         }
 
         @Override
@@ -369,6 +360,11 @@ public class CompilerTools {
 
         public String getClassPath() {
             StringBuilder sb = new StringBuilder();
+            if (isCacheDirectory) {
+                // TODO: why two copies of classDestination in the generated path?
+                sb.append(classDestination.getAbsolutePath()).append(File.pathSeparatorChar);
+            }
+
             sb.append(classDestination.getAbsolutePath());
             synchronized (additionalClassLocations) {
                 for (File classLoc : additionalClassLocations) {
@@ -395,43 +391,13 @@ public class CompilerTools {
         }
     }
 
-    @VisibleForTesting
-    public static void setContextForUnitTests() {
-        setContext(createContextForUnitTests());
-    }
-
-    @VisibleForTesting
-    public static Context createContextForUnitTests() {
+    static Context createContextForUnitTests() {
         return new ContextImpl(new File(Configuration.getInstance().getWorkspacePath() +
                 File.separator + "cache" + File.separator + "classes"));
     }
 
-    public static void resetContext() {
-        setContext(null);
-    }
-
-    public static void setContext(@Nullable Context context) {
-        ExecutionContext.setContext(ExecutionContext.newBuilder()
-                .setCompilerContext(context == null ? PoisonedCompilerToolsContext.INSTANCE : context)
-                .captureMutableQueryScope()
-                .captureQueryLibrary()
-                .markSystemic()
-                .build());
-    }
-
     public static Context getContext() {
         return ExecutionContext.getContext().getCompilerContext();
-    }
-
-    public static <RETURN_TYPE> RETURN_TYPE doWithContext(@NotNull final Context context,
-            @NotNull final Supplier<RETURN_TYPE> action) {
-        final Context originalContext = getContext();
-        try {
-            setContext(context);
-            return action.get();
-        } finally {
-            setContext(originalContext);
-        }
     }
 
     private static boolean logEnabled = Configuration.getInstance().getBoolean("CompilerTools.logEnabledDefault");

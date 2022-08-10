@@ -13,45 +13,45 @@ public class PoisonedQueryScope extends QueryScope {
     private static final Logger logger = LoggerFactory.getLogger(PoisonedQueryScope.class);
     public static final PoisonedQueryScope INSTANCE = new PoisonedQueryScope();
 
-    @Override
-    public Set<String> getParamNames() {
+    private PoisonedQueryScope() {}
+
+    private <T> T fail() {
         logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
         throw new NoExecutionContextRegisteredException();
+    }
+
+    @Override
+    public Set<String> getParamNames() {
+        return fail();
     }
 
     @Override
     public boolean hasParamName(String name) {
-        logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     protected <T> QueryScopeParam<T> createParam(String name) throws MissingVariableException {
-        logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     public <T> T readParamValue(String name) throws MissingVariableException {
-        logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     public <T> T readParamValue(String name, T defaultValue) {
-        logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     public <T> void putParam(String name, T value) {
-        logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegisteredException();
+        fail();
     }
 
     @Override
     public void putObjectFields(Object object) {
-        logger.error().append("No ExecutionContext provided; cannot use QueryScope").endl();
-        throw new NoExecutionContextRegisteredException();
+        fail();
     }
 }

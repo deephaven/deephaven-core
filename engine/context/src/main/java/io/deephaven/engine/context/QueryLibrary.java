@@ -4,175 +4,108 @@
 package io.deephaven.engine.context;
 
 import com.github.f4b6a3.uuid.UuidCreator;
-import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-public abstract class QueryLibrary {
-    private static final QueryLibraryImports IMPORTS_INSTANCE = QueryLibraryImports.copyFromServiceLoader();
+public class QueryLibrary {
+    static final QueryLibraryImports IMPORTS_INSTANCE = QueryLibraryImports.copyFromServiceLoader();
 
-    public interface Context {
-        void updateVersionString();
-
-        Collection<String> getImportStrings();
-
-        Collection<Package> getPackageImports();
-
-        Collection<Class<?>> getClassImports();
-
-        Collection<Class<?>> getStaticImports();
-
-        void importPackage(Package aPackage);
-
-        void importClass(Class<?> aClass);
-
-        void importStatic(Class<?> aClass);
+    static QueryLibrary makeNewLibrary() {
+        return new QueryLibrary(IMPORTS_INSTANCE);
     }
 
-    public static QueryLibrary.Context makeNewLibrary() {
-        return new QueryLibrary.ContextImpl(IMPORTS_INSTANCE);
-    }
-
-    @VisibleForTesting
-    public static QueryLibrary.Context makeNewLibrary(String libraryVersion) {
-        final QueryLibrary.ContextImpl ql = (QueryLibrary.ContextImpl) makeNewLibrary();
+    static QueryLibrary makeNewLibrary(String libraryVersion) {
+        final QueryLibrary ql = makeNewLibrary();
         ql.versionString = libraryVersion;
         return ql;
     }
 
-    public static void resetLibrary() {
-        setLibrary(null);
+    // Any dynamically-added package, class, or static import may alter the meaning of the Java code
+    // we are compiling. So when this happens, we dynamically generate a new globally-unique version string.
+    private String versionString;
+
+    private final Map<String, Package> packageImports;
+    private final Map<String, Class<?>> classImports;
+    private final Map<String, Class<?>> staticImports;
+
+    /** package-private constructor for {@link io.deephaven.engine.context.PoisonedQueryLibrary} */
+    QueryLibrary() {
+        packageImports = null;
+        classImports = null;
+        staticImports = null;
     }
 
-    public static void setLibrary(QueryLibrary.Context library) {
-        ExecutionContext.setContext(ExecutionContext.newBuilder()
-                .setQueryLibrary(library == null ? PoisonedQueryLibrary.INSTANCE : library)
-                .captureMutableQueryScope()
-                .captureCompilerContext()
-                .markSystemic()
-                .build());
+    private QueryLibrary(QueryLibraryImports imports) {
+        packageImports = new ConcurrentSkipListMap<>();
+        for (Package p : imports.packages()) {
+            packageImports.put(p.getName(), p);
+        }
+        classImports = new ConcurrentSkipListMap<>();
+        for (Class<?> c : imports.classes()) {
+            classImports.put(c.getCanonicalName(), c);
+        }
+        staticImports = new ConcurrentSkipListMap<>();
+        for (Class<?> c : imports.statics()) {
+            staticImports.put(c.getCanonicalName(), c);
+        }
+        updateVersionString();
     }
 
-    public static QueryLibrary.Context getLibrary() {
-        return ExecutionContext.getContext().getQueryLibrary();
+    public Collection<Class<?>> getClassImports() {
+        return Collections.unmodifiableCollection(classImports.values());
     }
 
-    public static void importPackage(Package aPackage) {
-        getLibrary().importPackage(aPackage);
+    public Collection<Class<?>> getStaticImports() {
+        return Collections.unmodifiableCollection(staticImports.values());
     }
 
-    public static void importClass(Class<?> aClass) {
-        getLibrary().importClass(aClass);
+    public Collection<Package> getPackageImports() {
+        return Collections.unmodifiableCollection(packageImports.values());
     }
 
-    public static void importStatic(Class<?> aClass) {
-        getLibrary().importStatic(aClass);
-    }
-
-    public static Collection<String> getImportStrings() {
-        return getLibrary().getImportStrings();
-    }
-
-    public static Collection<Package> getPackageImports() {
-        return getLibrary().getPackageImports();
-    }
-
-    public static Collection<Class<?>> getClassImports() {
-        return getLibrary().getClassImports();
-    }
-
-    public static Collection<Class<?>> getStaticImports() {
-        return getLibrary().getStaticImports();
-    }
-
-    private static class ContextImpl implements Context {
-        // Any dynamically-added package, class, or static import may alter the meaning of the Java code
-        // we are compiling. So when this happens, we dynamically generate a new globally-unique version string.
-        private String versionString;
-
-        private final Map<String, Package> packageImports;
-        private final Map<String, Class<?>> classImports;
-        private final Map<String, Class<?>> staticImports;
-
-        private ContextImpl(QueryLibraryImports imports) {
-            packageImports = new ConcurrentSkipListMap<>();
-            for (Package p : imports.packages()) {
-                packageImports.put(p.getName(), p);
-            }
-            classImports = new ConcurrentSkipListMap<>();
-            for (Class<?> c : imports.classes()) {
-                classImports.put(c.getCanonicalName(), c);
-            }
-            staticImports = new ConcurrentSkipListMap<>();
-            for (Class<?> c : imports.statics()) {
-                staticImports.put(c.getCanonicalName(), c);
-            }
+    public void importPackage(Package aPackage) {
+        final Package previous = packageImports.put(aPackage.getName(), aPackage);
+        if (aPackage != previous) {
             updateVersionString();
         }
+    }
 
-        @Override
-        public Collection<Class<?>> getClassImports() {
-            return Collections.unmodifiableCollection(classImports.values());
+    public void importClass(Class<?> aClass) {
+        final Class<?> previous = classImports.put(aClass.getName(), aClass);
+        if (aClass != previous) {
+            updateVersionString();
         }
+    }
 
-        @Override
-        public Collection<Class<?>> getStaticImports() {
-            return Collections.unmodifiableCollection(staticImports.values());
+    public void importStatic(Class<?> aClass) {
+        final Class<?> previous = staticImports.put(aClass.getCanonicalName(), aClass);
+        if (aClass != previous) {
+            updateVersionString();
         }
+    }
 
-        @Override
-        public Collection<Package> getPackageImports() {
-            return Collections.unmodifiableCollection(packageImports.values());
+    public Collection<String> getImportStrings() {
+        final List<String> imports = new ArrayList<>();
+
+        imports.add("// QueryLibrary internal version number: " + versionString);
+        for (final Package packageImport : packageImports.values()) {
+            imports.add("import " + packageImport.getName() + ".*;");
         }
-
-        @Override
-        public void importPackage(Package aPackage) {
-            final Package previous = packageImports.put(aPackage.getName(), aPackage);
-            if (aPackage != previous) {
-                updateVersionString();
+        for (final Class<?> classImport : classImports.values()) {
+            if (classImport.getDeclaringClass() != null) {
+                imports.add("import static " + classImport.getCanonicalName() + ";");
+            } else if (!packageImports.containsKey(classImport.getPackage().getName())) {
+                imports.add("import " + classImport.getName() + ";");
             }
         }
-
-        @Override
-        public void importClass(Class<?> aClass) {
-            final Class<?> previous = classImports.put(aClass.getName(), aClass);
-            if (aClass != previous) {
-                updateVersionString();
-            }
+        for (final Class<?> staticImport : staticImports.values()) {
+            imports.add("import static " + staticImport.getCanonicalName() + ".*;");
         }
+        return imports;
+    }
 
-        @Override
-        public void importStatic(Class<?> aClass) {
-            final Class<?> previous = staticImports.put(aClass.getCanonicalName(), aClass);
-            if (aClass != previous) {
-                updateVersionString();
-            }
-        }
-
-        @Override
-        public Collection<String> getImportStrings() {
-            final List<String> imports = new ArrayList<>();
-
-            imports.add("// QueryLibrary internal version number: " + versionString);
-            for (final Package packageImport : packageImports.values()) {
-                imports.add("import " + packageImport.getName() + ".*;");
-            }
-            for (final Class<?> classImport : classImports.values()) {
-                if (classImport.getDeclaringClass() != null) {
-                    imports.add("import static " + classImport.getCanonicalName() + ";");
-                } else if (!packageImports.containsKey(classImport.getPackage().getName())) {
-                    imports.add("import " + classImport.getName() + ";");
-                }
-            }
-            for (final Class<?> staticImport : staticImports.values()) {
-                imports.add("import static " + staticImport.getCanonicalName() + ".*;");
-            }
-            return imports;
-        }
-
-        public void updateVersionString() {
-            versionString = UuidCreator.toString(UuidCreator.getRandomBased());
-        }
+    public void updateVersionString() {
+        versionString = UuidCreator.toString(UuidCreator.getRandomBased());
     }
 }

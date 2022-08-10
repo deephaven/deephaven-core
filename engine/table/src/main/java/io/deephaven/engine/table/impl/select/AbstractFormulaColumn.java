@@ -97,7 +97,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     protected void applyUsedVariables(Map<String, ColumnDefinition<?>> columnDefinitionMap, Set<String> variablesUsed) {
         final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
-        final QueryScope queryScope = QueryScope.getScope();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleParams.put(param.getName(), param);
         }
@@ -284,11 +284,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
                 final ColumnSource<?> cs = columnsToData.get(sd.arrays[ii]);
                 vectors[ii] = makeAppropriateVectorWrapper(cs, rowSet);
             }
-            final FormulaKernel fk;
-            // TODO: do we actually need execution context to instantiate the formula kernel?
-            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
-                fk = formulaKernelFactory.createInstance(vectors, params);
-            }
+            final FormulaKernel fk = formulaKernelFactory.createInstance(vectors, params);
             return new FormulaKernelAdapter(rowSet, sd, netColumnSources, fk);
         };
     }

@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.lang;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.vector.*;
 import io.deephaven.engine.context.QueryScope;
@@ -1703,7 +1704,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
         });
 
-        final QueryScope queryScope = QueryScope.getScope();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             if (param.getName().equals(n.getNameAsString())) {
                 NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();

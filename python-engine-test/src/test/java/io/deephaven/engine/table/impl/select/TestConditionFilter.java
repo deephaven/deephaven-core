@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -369,12 +370,14 @@ public class TestConditionFilter extends PythonTest {
             validate(expression, keepRowSet, dropRowSet, FormulaParserConfiguration.Deephaven);
         }
         if (testPython) {
-            QueryScope currentScope = QueryScope.getScope();
+            ExecutionContext currentContext = ExecutionContext.getContext();
+            QueryScope currentScope = currentContext.getQueryScope();
             try {
                 if (pythonScope == null) {
-                    pythonScope = new PythonDeephavenSession(new PythonScopeJpyImpl(getMainGlobals().asDict()))
-                            .newQueryScope();
-                    QueryScope.setScope(pythonScope);
+                    final ExecutionContext context = new PythonDeephavenSession(new PythonScopeJpyImpl(
+                            getMainGlobals().asDict())).getExecutionContext();
+                    pythonScope = context.getQueryScope();
+                    context.open();
                 }
                 for (QueryScopeParam param : currentScope.getParams(currentScope.getParamNames())) {
                     pythonScope.putParam(param.getName(), param.getValue());
@@ -382,7 +385,7 @@ public class TestConditionFilter extends PythonTest {
                 expression = expression.replaceAll("true", "True").replaceAll("false", "False");
                 validate(expression, keepRowSet, dropRowSet, FormulaParserConfiguration.Numba);
             } finally {
-                QueryScope.setScope(currentScope);
+                currentContext.open();
             }
         }
 

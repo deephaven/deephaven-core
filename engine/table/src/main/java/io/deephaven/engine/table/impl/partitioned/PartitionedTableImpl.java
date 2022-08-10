@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.partitioned;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.base.Pair;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -26,7 +27,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
-import io.deephaven.engine.updategraph.ConcurrentMethod;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -240,11 +240,6 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @ConcurrentMethod
     @Override
-    public PartitionedTable transform(@NotNull UnaryOperator<Table> transformer) {
-        return transform(ExecutionContext.getContextToRecord(), transformer);
-    }
-
-    @Override
     public PartitionedTableImpl transform(final ExecutionContext executionContext,
             @NotNull final UnaryOperator<Table> transformer) {
         final Table resultTable;
@@ -273,13 +268,6 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 resultConstituentDefinition,
                 constituentChangesPermitted,
                 true);
-    }
-
-    @Override
-    public PartitionedTableImpl partitionedTransform(
-            @NotNull final PartitionedTable other,
-            @NotNull final BinaryOperator<Table> transformer) {
-        return partitionedTransform(other, ExecutionContext.getContextToRecord(), transformer);
     }
 
     @Override

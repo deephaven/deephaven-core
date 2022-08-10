@@ -10,7 +10,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.ExecutionContext;
@@ -1236,7 +1235,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             final Callable<Table> callable;
             final Table slowed;
             if (withReset) {
-                QueryLibrary.importStatic(TestConcurrentInstantiation.class);
+                ExecutionContext.getContext().getQueryLibrary().importStatic(TestConcurrentInstantiation.class);
 
                 slowed = table.updateView("KeyColumn=barrierFunction.apply(KeyColumn)");
                 callable = () -> {
@@ -1368,7 +1367,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Callable<PartitionedTable> callable;
         final Table slowed;
         if (withReset) {
-            QueryLibrary.importStatic(TestConcurrentInstantiation.class);
+            ExecutionContext.getContext().getQueryLibrary().importStatic(TestConcurrentInstantiation.class);
 
             slowed = table.updateView("KeyColumn=identitySleep(KeyColumn)");
             callable = () -> slowed.partitionBy("KeyColumn");

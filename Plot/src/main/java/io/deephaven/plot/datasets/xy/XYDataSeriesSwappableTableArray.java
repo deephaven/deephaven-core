@@ -3,6 +3,7 @@
  */
 package io.deephaven.plot.datasets.xy;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.TableSnapshotSeries;
 import io.deephaven.plot.datasets.data.IndexableNumericDataSwappableTable;
@@ -10,7 +11,6 @@ import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 
 import java.util.function.Function;
@@ -51,7 +51,7 @@ public class XYDataSeriesSwappableTableArray extends XYDataSeriesArray implement
         final String queryFunction = columnName + "Function";
         return t -> {
             QueryScope.addParam(queryFunction, function);
-            QueryLibrary.importClass(resultClass);
+            ExecutionContext.getContext().getQueryLibrary().importClass(resultClass);
             return t.update(columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction + ".apply("
                     + onColumn + ")");
         };

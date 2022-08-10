@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
@@ -12,9 +13,7 @@ import io.deephaven.engine.util.PythonScope;
 import io.deephaven.engine.util.PythonScopeJpyImpl;
 import io.deephaven.time.DateTime;
 import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScopeParam;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -231,13 +230,13 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @NotNull
     String generateClassBody() {
         if (params == null) {
-            params = QueryScope.getScope().getParams(userParams);
+            params = ExecutionContext.getContext().getQueryScope().getParams(userParams);
         }
 
         final TypeAnalyzer ta = TypeAnalyzer.create(returnedType);
 
         final CodeGenerator g = CodeGenerator.create(
-                CodeGenerator.create(QueryLibrary.getImportStrings().toArray()), "",
+                CodeGenerator.create(ExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()), "",
                 "public class $CLASSNAME$ extends [[FORMULA_CLASS_NAME]]", CodeGenerator.block(
                         generateFormulaFactoryLambda(), "",
                         CodeGenerator.repeated("instanceVar", "private final [[TYPE]] [[NAME]];"),
@@ -859,7 +858,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         }
 
         // beyond the immutable types, we must assume that anything coming from Python is python
-        return QueryScope.getScope() instanceof PythonScope;
+        return ExecutionContext.getContext().getQueryScope() instanceof PythonScope;
     }
 
     private boolean isUsedColumnStateless(String columnName) {

@@ -99,8 +99,11 @@ public interface WhereFilter extends Filter {
 
     /**
      * Initialize this select filter given the table definition
-     * 
+     *
      * @param tableDefinition the definition of the table that will be filtered
+     * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
+     *          {@link io.deephaven.engine.context.CompilerTools} usage needs to be resolved within init.
+     *          Implementations must be idempotent.
      */
     void init(TableDefinition tableDefinition);
 

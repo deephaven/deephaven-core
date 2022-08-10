@@ -75,13 +75,12 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         createOrClearDirectory(classCacheDirectory);
 
         final QueryScope queryScope = newQueryScope();
-        final QueryLibrary.Context queryLibrary = QueryLibrary.makeNewLibrary();
         final CompilerTools.Context compilerContext =
                 CompilerTools.newContext(classCacheDirectory, getClass().getClassLoader());
 
         executionContext = ExecutionContext.newBuilder()
                 .markSystemic()
-                .setQueryLibrary(queryLibrary)
+                .newQueryLibrary()
                 .setQueryScope(queryScope)
                 .setCompilerContext(compilerContext)
                 .build();

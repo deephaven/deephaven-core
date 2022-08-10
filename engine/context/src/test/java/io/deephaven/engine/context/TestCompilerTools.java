@@ -4,6 +4,7 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,14 +51,16 @@ public class TestCompilerTools {
         CLASS_CODE = testClassCode1.toString();
     }
 
+    private SafeCloseable executionContext;
+
     @Before
     public void setUp() {
-        CompilerTools.setContextForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests();
     }
 
     @After
     public void tearDown() {
-        CompilerTools.resetContext();
+        executionContext.close();
     }
 
     @Test
@@ -94,11 +97,11 @@ public class TestCompilerTools {
         System.out.println(printMillis(System.currentTimeMillis()) + ": starting test with class " + className);
         // We don't want to create the threads until the compile is mostly complete
 
-        final CompilerTools.Context context = CompilerTools.getContext();
+        final ExecutionContext context = ExecutionContext.getContext();
         for (int i = 0; i < NUM_THREADS; i++) {
             final int fi = i; // For the lambda
             threads[i] = new Thread(() -> {
-                CompilerTools.setContext(context);
+                context.open();
                 try {
                     final long delay = fi == 0 ? 0 : fi * WAIT_BETWEEN_THREAD_START_MILLIS + waitStartMillis;
                     final long startTime = System.currentTimeMillis();

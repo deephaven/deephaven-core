@@ -8,7 +8,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.NoExecutionContextRegisteredException;
 
 import java.io.File;
-import java.util.Hashtable;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -16,39 +15,40 @@ public class PoisonedCompilerToolsContext implements CompilerTools.Context {
     private static final Logger logger = LoggerFactory.getLogger(PoisonedCompilerToolsContext.class);
     public static final PoisonedCompilerToolsContext INSTANCE = new PoisonedCompilerToolsContext();
 
-    @Override
-    public Hashtable<String, CompletableFuture<Class<?>>> getKnownClasses() {
+    private PoisonedCompilerToolsContext() {}
+
+    private <T> T fail() {
         logger.error().append("No ExecutionContext provided; cannot use CompilerTools").endl();
         throw new NoExecutionContextRegisteredException();
+    }
+
+    @Override
+    public Map<String, CompletableFuture<Class<?>>> getKnownClasses() {
+        return fail();
     }
 
     @Override
     public ClassLoader getClassLoaderForFormula(Map<String, Class<?>> parameterClasses) {
-        logger.error().append("No ExecutionContext provided; cannot use CompilerTools").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     public File getClassDestination() {
-        logger.error().append("No ExecutionContext provided; cannot use CompilerTools").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     public String getClassPath() {
-        logger.error().append("No ExecutionContext provided; cannot use CompilerTools").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     public File getFakeClassDestination() {
-        logger.error().append("No ExecutionContext provided; cannot use CompilerTools").endl();
-        throw new NoExecutionContextRegisteredException();
+        return fail();
     }
 
     @Override
     public void setParentClassLoader(ClassLoader parentClassLoader) {
-        logger.error().append("No ExecutionContext provided; cannot use CompilerTools").endl();
-        throw new NoExecutionContextRegisteredException();
+        fail();
     }
 }

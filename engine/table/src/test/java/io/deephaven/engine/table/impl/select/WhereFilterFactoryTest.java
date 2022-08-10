@@ -35,8 +35,6 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
     }
 
     public void testInComplex() {
-        QueryScope.setScope(new QueryScope.StandaloneImpl());
-
         assertEquals(MatchFilter.class, WhereFilterFactory.getExpression("Opra in opra1, opra2, opra3").getClass());
         QueryScope.addParam("pmExpiry", "World");
         assertEquals(MatchFilter.class, WhereFilterFactory.getExpression("amExpiry = pmExpiry").getClass());
@@ -69,7 +67,6 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
     }
 
     public void testCharMatch() {
-        QueryScope.setScope(new QueryScope.StandaloneImpl());
         QueryScope.addParam("theChar", 'C');
 
         final Table tt = TableTools.newTable(TableTools.charCol("AChar", 'A', 'B', 'C', '\0', '\''));
