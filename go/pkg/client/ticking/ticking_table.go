@@ -213,9 +213,9 @@ func (tt *TickingTable) ToRecord() arrow.Record {
 	b := array.NewRecordBuilder(memory.DefaultAllocator, tt.schema)
 	defer b.Release()
 
-	iter := tt.keys.Iterator()
-
 	for fieldIdx := 0; fieldIdx < len(tt.columns); fieldIdx++ {
+		iter := tt.keys.Iterator()
+
 		switch tt.schema.Field(fieldIdx).Type.ID() {
 		case arrow.PrimitiveTypes.Int32.ID():
 			sourceData := tt.columns[fieldIdx].(*Int32Column)

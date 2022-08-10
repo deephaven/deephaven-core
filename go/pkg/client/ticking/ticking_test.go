@@ -135,7 +135,7 @@ func compareRecords(actual arrow.Record, expected arrow.Record) error {
 			actualData := actualColumn.Int32Values()[rowIdx]
 			expectedData := expectedColumn.Int32Values()[rowIdx]
 			if actualData != expectedData {
-				return fmt.Errorf("differing data (actual %d, expected %d)", actual.NumRows(), expected.NumCols())
+				return fmt.Errorf("differing data (actual %d, expected %d)", actualData, expectedData)
 			}
 		}
 	}
@@ -179,6 +179,8 @@ func TestAppendingTable(t *testing.T) {
 	defer tickingData.Release()
 
 	if err = compareRecords(tickingData, rec); err != nil {
+		t.Log(tickingData)
+		t.Log(rec)
 		t.Error(err)
 		return
 	}
