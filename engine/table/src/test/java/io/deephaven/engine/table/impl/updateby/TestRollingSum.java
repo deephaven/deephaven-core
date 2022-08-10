@@ -37,10 +37,41 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
         t.setRefreshing(false);
 
-        int prevTicks = 500;
+        int prevTicks = 100;
         int postTicks = 0;
 
-        final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks));
+        final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingSumTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
+                    summed.getColumn(col).getType(), prevTicks, postTicks);
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyFwdWindow() {
+        final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
+        t.setRefreshing(false);
+
+        int prevTicks = 0;
+        int postTicks = 100;
+
+        final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingSumTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
+                    summed.getColumn(col).getType(), prevTicks, postTicks);
+        }
+    }
+
+
+    @Test
+    public void testStaticZeroKeyFwdRevWindow() {
+        final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
+        t.setRefreshing(false);
+
+        int prevTicks = 100;
+        int postTicks = 100;
+
+        final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
             assertWithRollingSumTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
                     summed.getColumn(col).getType(), prevTicks, postTicks);
@@ -88,10 +119,10 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, true, grouped, false, 0x31313131).t;
 
         int prevTicks = 100;
-        int postTicks = 0;
+        int postTicks = 10;
 
         final Table summed =
-                t.updateBy(UpdateByOperation.RollingSum(prevTicks, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
+                t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
 
@@ -147,6 +178,30 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testZeroKeyGeneralTicking() {
+        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final QueryTable t = result.t;
+
+        final long prevTicks = 100;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum(prevTicks));
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateTableUpdates(100, billy, t, result.infos));
+            TstUtils.validate("Table - step " + ii, nuggets);
+        }
+    }
+
+    @Test
+    public void testZeroKeyGeneralTickingFwdWindow() {
         final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
         final QueryTable t = result.t;
 

@@ -43,8 +43,8 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         public RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final RowSet source,
                                             final boolean upstreamAppendOnly) {
 
-            // NOTE: this is fast rather than bounding to the smallest set possible (i.e. unaware of buckets and
-            // over-represents sparse data). Will result in computing far more than actually necessary
+            // NOTE: this is fast rather than bounding to the smallest set possible. Will result in computing more than
+            // actually necessary
 
             // TODO: return the minimal set of data for this update
 
@@ -70,19 +70,14 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             }
 
             if (upstream.modified().isNonempty()) {
-                // TODO: make this more efficient
-                final List<String> cols = List.of(affectingColumns);
-                boolean modifiedAffectingColumn = Arrays.stream(upstream.modifiedColumnSet().dirtyColumnNames()).anyMatch(cols::contains);
-
-                if (modifiedAffectingColumn) {
-                    // add the rows affected by the mods
-                    builder.addRange(computeFirstAffectedKey(upstream.modified().firstRowKey(), source),
-                            computeLastAffectedKey(upstream.modified().lastRowKey(), source));
-                }
+                // add the rows affected by the mods
+                builder.addRange(computeFirstAffectedKey(upstream.modified().firstRowKey(), source),
+                        computeLastAffectedKey(upstream.modified().lastRowKey(), source));
             }
 
-            try (final RowSet ignored = affectedRows) {
-                affectedRows = builder.build();
+            try (final RowSet ignored = affectedRows;
+                 final RowSet brs = builder.build()) {
+                affectedRows = source.intersect(brs);
             }
             return affectedRows;
         }
@@ -129,8 +124,10 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         if (recorder == null) {
             // ticks
             final long keyPos = source.find(key);
-            final long idx = keyPos - (long) reverseTimeScaleUnits + 1;
-            if (idx < 0) {
+            final long idx = (keyPos < 0) ? -keyPos - reverseTimeScaleUnits : keyPos - reverseTimeScaleUnits + 1;
+            if (idx >= source.size()) {
+                return source.lastRowKey();
+            } else if (idx < 0) {
                 return source.firstRowKey();
             }
             return source.get(idx);
@@ -143,9 +140,11 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         if (recorder == null) {
             // ticks
             final long keyPos = source.find(key);
-            final long idx = keyPos + (long)forwardTimeScaleUnits;
+            final long idx = keyPos + forwardTimeScaleUnits;
             if (idx >= source.size()) {
                 return source.lastRowKey();
+            } else if (idx < 0) {
+                return source.firstRowKey();
             }
             return source.get(idx);
         }
@@ -157,9 +156,11 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         if (recorder == null) {
             // ticks
             final long keyPos = source.find(key);
-            final long idx = keyPos - (long) forwardTimeScaleUnits;
+            final long idx = (keyPos < 0) ? -keyPos - forwardTimeScaleUnits - 1 : keyPos - forwardTimeScaleUnits;
             if (idx >= source.size()) {
                 return source.lastRowKey();
+            } else if (idx < 0) {
+                return source.firstRowKey();
             }
             return source.get(idx);
         }
@@ -171,9 +172,11 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         if (recorder == null) {
             // ticks
             final long keyPos = source.find(key);
-            final long idx = keyPos + (long) reverseTimeScaleUnits;
+            final long idx = (keyPos < 0) ? -keyPos + reverseTimeScaleUnits - 1 : keyPos + reverseTimeScaleUnits;
             if (idx >= source.size()) {
                 return source.lastRowKey();
+            } else if (idx < 0) {
+                return source.firstRowKey();
             }
             return source.get(idx);
         }

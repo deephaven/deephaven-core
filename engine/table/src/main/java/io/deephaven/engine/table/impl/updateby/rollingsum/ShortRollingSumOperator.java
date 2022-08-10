@@ -26,6 +26,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Map;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
 
     // RollingSum will output Long values for integral types
@@ -42,20 +44,10 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
 
         public LinkedList<Short> windowValues = new LinkedList<>();
 
-        public RowSetBuilderSequential modifiedBuilder;
-        public RowSet newModified;
-
         protected Context(final int chunkSize) {
             this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
             this.fillContext.ensureCapacity(chunkSize);
             this.outputValues = new SizedLongChunk<>(chunkSize);
-        }
-
-        public RowSetBuilderSequential getModifiedBuilder() {
-            if(modifiedBuilder == null) {
-                modifiedBuilder = RowSetFactory.builderSequential();
-            }
-            return modifiedBuilder;
         }
 
         @Override
@@ -173,7 +165,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
                               final long groupPosition) {
         final Context ctx = (Context) context;
 
-        computeTicks(ctx, 0, workingChunk.size());
+        computeTicks(ctx, 0, inputKeys.intSize());
         //noinspection unchecked
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
     }
@@ -188,10 +180,14 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
                 ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get(ii));
             }
 
-            MutableLong sum = new MutableLong(0);
+            MutableLong sum = new MutableLong(NULL_LONG);
             ctx.windowValues.forEach(v-> {
                 if (v != null && v != QueryConstants.NULL_SHORT) {
-                    sum.add(v);
+                    if (sum.longValue() == NULL_LONG) {
+                        sum.setValue(v);
+                    } else {
+                        sum.add(v);
+                    }
                 }
             });
 
