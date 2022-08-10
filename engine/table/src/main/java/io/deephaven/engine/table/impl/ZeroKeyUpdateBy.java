@@ -79,7 +79,11 @@ class ZeroKeyUpdateBy extends UpdateBy {
             if (rowRedirection != null && source.isRefreshing()) {
                 processUpdateForRedirection(fakeUpdate);
             }
+            // do an addition phase for all the operators that can add directly (i.e. backwards looking)
             ctx.doUpdate(source.getRowSet(), source.getRowSet(), UpdateType.Add);
+
+            // do a reprocessing phase for operators that can't add directly
+            ctx.reprocessRows(RowSetShiftData.EMPTY);
         }
     }
 

@@ -33,6 +33,7 @@ public abstract class BaseWindowedShortUpdateByOperator extends UpdateByWindowed
     // endregion extra-fields
 
     protected class Context extends UpdateWindowedContext {
+        public boolean canProcessDirectly;
         public RowSet workingRowSet = null;
 
         // candidate data for the window
@@ -167,7 +168,8 @@ public abstract class BaseWindowedShortUpdateByOperator extends UpdateByWindowed
             if (valuePositionChunk == null) {
                 valuePositionChunk = WritableLongChunk.makeWritableChunk(inputKeys.intSize());
             } else if (valuePositionChunk.capacity() < inputKeys.size()) {
-                valuePositionChunk.setSize(inputKeys.intSize());
+                valuePositionChunk.close();
+                valuePositionChunk = WritableLongChunk.makeWritableChunk(inputKeys.intSize());
             }
 
             // produce position data for the window (will be timestamps for time-based)
@@ -242,8 +244,13 @@ public abstract class BaseWindowedShortUpdateByOperator extends UpdateByWindowed
     public void initializeForUpdate(@NotNull UpdateContext context, @NotNull TableUpdate upstream, @NotNull RowSet resultSourceRowSet, boolean usingBuckets, boolean isUpstreamAppendOnly) {
         final Context ctx = (Context) context;
         ctx.workingRowSet = resultSourceRowSet;
-    }
 
+        if(!usingBuckets) {
+            // we can only process directly from an update if the window is entire backward-looking.  Since we
+            // allow negative values in fwd/rev ticks and timestamps, we need to check both
+            ctx.canProcessDirectly = isUpstreamAppendOnly && forwardTimeScaleUnits <= 0 && reverseTimeScaleUnits >= 0;;
+        }
+    }
 
     @Override
     public void initializeFor(@NotNull final UpdateContext context,
@@ -252,7 +259,8 @@ public abstract class BaseWindowedShortUpdateByOperator extends UpdateByWindowed
         final Context ctx = (Context) context;
         ctx.currentUpdateType = type;
 
-        if (type == UpdateBy.UpdateType.Add || type == UpdateBy.UpdateType.Reprocess) {
+        if ((type == UpdateBy.UpdateType.Add && ctx.canProcessDirectly)
+                || type == UpdateBy.UpdateType.Reprocess) {
             long windowStartKey = computeFirstAffectingKey(updateRowSet.firstRowKey(), ctx.workingRowSet);
             ctx.loadWindowChunks(windowStartKey);
         }
@@ -264,6 +272,12 @@ public abstract class BaseWindowedShortUpdateByOperator extends UpdateByWindowed
         if(type == UpdateBy.UpdateType.Reprocess && ctx.modifiedBuilder != null) {
             ctx.newModified = ctx.modifiedBuilder.build();
         }
+    }
+
+    @Override
+    public boolean canProcessNormalUpdate(@NotNull UpdateContext context) {
+        final Context ctx = (Context) context;
+        return ctx.canProcessDirectly;
     }
 
     @Override
@@ -292,14 +306,10 @@ public abstract class BaseWindowedShortUpdateByOperator extends UpdateByWindowed
                                  @NotNull final Chunk<Values> values,
                                  long bucketPosition) {
         final Context ctx = (Context) updateContext;
-
-        if (recorder == null) {
-            // use position data to determine the windows
+        if (ctx.canProcessDirectly) {
             ctx.loadDataChunks(inputKeys);
-        } else {
-            // use timestamp data to determine the windows
+            doAddChunk(ctx, inputKeys, keyChunk, values, bucketPosition);
         }
-        doAddChunk(ctx, inputKeys, keyChunk, values, bucketPosition);
     }
 
     /**
@@ -342,12 +352,7 @@ public abstract class BaseWindowedShortUpdateByOperator extends UpdateByWindowed
                                        @NotNull final Chunk<Values> valuesChunk,
                                        @NotNull final RowSet postUpdateSourceIndex) {
         final Context ctx = (Context) updateContext;
-        if (recorder == null) {
-            // use position data to determine the windows
-            ctx.loadDataChunks(inputKeys);
-        } else {
-            // use timestamp data to determine the windows
-        }
+        ctx.loadDataChunks(inputKeys);
         doAddChunk(ctx, inputKeys, keyChunk, valuesChunk, 0);
         ctx.getModifiedBuilder().appendRowSequence(inputKeys);
     }

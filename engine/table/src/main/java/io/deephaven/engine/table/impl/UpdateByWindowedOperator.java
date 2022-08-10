@@ -43,6 +43,14 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         public RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final RowSet source,
                                             final boolean upstreamAppendOnly) {
 
+            // under certain circumstances, we can process directly and do not need to reprocess
+            if (upstreamAppendOnly && forwardTimeScaleUnits <= 0 && reverseTimeScaleUnits >= 0) {
+                try (final RowSet ignored = affectedRows) {
+                    affectedRows = RowSetFactory.empty();
+                }
+                return affectedRows;
+            }
+
             // NOTE: this is fast rather than bounding to the smallest set possible. Will result in computing more than
             // actually necessary
 
@@ -181,14 +189,6 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             return source.get(idx);
         }
         return -1;
-    }
-
-    /***
-     *  Windowed operators must always reprocess
-     */
-    @Override
-    public boolean canProcessNormalUpdate(@NotNull UpdateContext context) {
-        return false;
     }
 
     @NotNull

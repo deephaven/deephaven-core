@@ -1131,7 +1131,9 @@ public class BucketedUpdateBy extends UpdateBy {
                     processUpdateForRedirection(initialUpdate);
                 }
 
+//                accumulateUpdatesByBucket(upstream, ctx);
                 ctx.doAppendOnlyAdds(true, source.getRowSet());
+
                 if (slotTracker != null) {
                     // noinspection resource
                     slotTracker.applyUpdates(RowSetShiftData.EMPTY);
