@@ -1,0 +1,11 @@
+{
+  "trust": {
+    "type": "all"
+  },
+  "protocols": {
+    "type": "modern"
+  },
+  "ciphers": {
+    "type": "modern"
+  }
+}

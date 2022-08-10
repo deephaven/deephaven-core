@@ -139,7 +139,14 @@ public class JettyBackedGrpcServer implements GrpcServer {
         final HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfig);
         final ServerConnector serverConnector;
         if (config.ssl().isPresent()) {
-            httpConfig.addCustomizer(new SecureRequestCustomizer());
+            // Note: explicitly setting SNI host check to false here to better match the configuration that gRPC Netty
+            // has out-of-the-box. gRPC Netty does not even have an easy way to enable SNI host checking,
+            // https://github.com/grpc/grpc-java/issues/7397. Essentially, the client retains responsibility for
+            // hostname verification based on the hostname it's connecting to, the certificate presented, and the
+            // configured trust stores. An SNI-less Jetty server setup potentially affords proxied deployments a simpler
+            // configuration model (essentially, the server does not need to know it is being proxied).
+            final boolean sniHostCheck = false;
+            httpConfig.addCustomizer(new SecureRequestCustomizer(sniHostCheck));
             final HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
             h2.setRateControlFactory(new RateControl.Factory() {});
             final ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
