@@ -22,36 +22,29 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SessionServiceClient interface {
-	//
 	// Handshake between client and server to create a new session. The response includes a metadata header name and the
 	// token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
 	NewSession(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error)
-	//
 	// Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
 	// token that should replace the existing token for subsequent requests.
 	RefreshSessionToken(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error)
-	//
 	// Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all
 	// unreleased exports will be automatically released.
 	CloseSession(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*CloseSessionResponse, error)
-	//
 	// Attempts to release an export by its ticket. Returns true if an existing export was found. It is the client's
 	// responsibility to release all resources they no longer want the server to hold on to. Proactively cancels work; do
 	// not release a ticket that is needed by dependent work that has not yet finished
 	// (i.e. the dependencies that are staying around should first be in EXPORTED state).
 	Release(ctx context.Context, in *ReleaseRequest, opts ...grpc.CallOption) (*ReleaseResponse, error)
-	//
 	// Makes a copy from a source ticket to a client managed result ticket. The source ticket does not need to be
 	// a client managed ticket.
 	ExportFromTicket(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
-	//
 	// Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
 	//
 	// New streams will flush notifications for all un-released exports, prior to seeing any new or updated exports
 	// for all live exports. After the refresh of existing state, subscribers will receive notifications of new and
 	// updated exports. An export id of zero will be sent to indicate all pre-existing exports have been sent.
 	ExportNotifications(ctx context.Context, in *ExportNotificationRequest, opts ...grpc.CallOption) (SessionService_ExportNotificationsClient, error)
-	//
 	// Receive a best-effort message on-exit indicating why this server is exiting. Reception of this message cannot be
 	// guaranteed.
 	TerminationNotification(ctx context.Context, in *TerminationNotificationRequest, opts ...grpc.CallOption) (*TerminationNotificationResponse, error)
@@ -155,36 +148,29 @@ func (c *sessionServiceClient) TerminationNotification(ctx context.Context, in *
 // All implementations must embed UnimplementedSessionServiceServer
 // for forward compatibility
 type SessionServiceServer interface {
-	//
 	// Handshake between client and server to create a new session. The response includes a metadata header name and the
 	// token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
 	NewSession(context.Context, *HandshakeRequest) (*HandshakeResponse, error)
-	//
 	// Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
 	// token that should replace the existing token for subsequent requests.
 	RefreshSessionToken(context.Context, *HandshakeRequest) (*HandshakeResponse, error)
-	//
 	// Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all
 	// unreleased exports will be automatically released.
 	CloseSession(context.Context, *HandshakeRequest) (*CloseSessionResponse, error)
-	//
 	// Attempts to release an export by its ticket. Returns true if an existing export was found. It is the client's
 	// responsibility to release all resources they no longer want the server to hold on to. Proactively cancels work; do
 	// not release a ticket that is needed by dependent work that has not yet finished
 	// (i.e. the dependencies that are staying around should first be in EXPORTED state).
 	Release(context.Context, *ReleaseRequest) (*ReleaseResponse, error)
-	//
 	// Makes a copy from a source ticket to a client managed result ticket. The source ticket does not need to be
 	// a client managed ticket.
 	ExportFromTicket(context.Context, *ExportRequest) (*ExportResponse, error)
-	//
 	// Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
 	//
 	// New streams will flush notifications for all un-released exports, prior to seeing any new or updated exports
 	// for all live exports. After the refresh of existing state, subscribers will receive notifications of new and
 	// updated exports. An export id of zero will be sent to indicate all pre-existing exports have been sent.
 	ExportNotifications(*ExportNotificationRequest, SessionService_ExportNotificationsServer) error
-	//
 	// Receive a best-effort message on-exit indicating why this server is exiting. Reception of this message cannot be
 	// guaranteed.
 	TerminationNotification(context.Context, *TerminationNotificationRequest) (*TerminationNotificationResponse, error)

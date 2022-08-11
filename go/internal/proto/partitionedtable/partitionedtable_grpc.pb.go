@@ -23,14 +23,11 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PartitionedTableServiceClient interface {
-	//
 	// Transforms a table into a partitioned table, consisting of many separate table, each individually
 	// addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
 	PartitionBy(ctx context.Context, in *PartitionByRequest, opts ...grpc.CallOption) (*PartitionByResponse, error)
-	//
 	// Given a partitioned table, returns a table with the contents of all of the constituent tables.
 	Merge(ctx context.Context, in *MergeRequest, opts ...grpc.CallOption) (*table.ExportedTableCreationResponse, error)
-	//
 	// Given a partitioned table and a row described by another table's contents, returns a table
 	// that matched that row, if any. If none is present, NOT_FOUND will be sent in response. If
 	// more than one is present, FAILED_PRECONDITION will be sent in response.
@@ -85,14 +82,11 @@ func (c *partitionedTableServiceClient) GetTable(ctx context.Context, in *GetTab
 // All implementations must embed UnimplementedPartitionedTableServiceServer
 // for forward compatibility
 type PartitionedTableServiceServer interface {
-	//
 	// Transforms a table into a partitioned table, consisting of many separate table, each individually
 	// addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
 	PartitionBy(context.Context, *PartitionByRequest) (*PartitionByResponse, error)
-	//
 	// Given a partitioned table, returns a table with the contents of all of the constituent tables.
 	Merge(context.Context, *MergeRequest) (*table.ExportedTableCreationResponse, error)
-	//
 	// Given a partitioned table and a row described by another table's contents, returns a table
 	// that matched that row, if any. If none is present, NOT_FOUND will be sent in response. If
 	// more than one is present, FAILED_PRECONDITION will be sent in response.

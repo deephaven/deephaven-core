@@ -62,7 +62,6 @@ func (*ListFieldsRequest) Descriptor() ([]byte, []int) {
 	return file_deephaven_proto_application_proto_rawDescGZIP(), []int{0}
 }
 
-//
 // Represents a batch of fields.
 type FieldsChangeUpdate struct {
 	state         protoimpl.MessageState
@@ -127,7 +126,6 @@ func (x *FieldsChangeUpdate) GetRemoved() []*FieldInfo {
 	return nil
 }
 
-//
 // A lightweight object describing the exposed field.
 type FieldInfo struct {
 	state         protoimpl.MessageState

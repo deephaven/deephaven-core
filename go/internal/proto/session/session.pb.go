@@ -103,21 +103,18 @@ func (ExportNotification_State) EnumDescriptor() ([]byte, []int) {
 	return file_deephaven_proto_session_proto_rawDescGZIP(), []int{8, 0}
 }
 
-//
 // The request that a client provides to a server on handshake.
 type HandshakeRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	//
 	// A defined protocol version.
 	//
 	// Deephaven's OSS protocols are as follows:
 	// - protocol = 0: most recent HandshakeResponse payload
 	// - protocol = 1: payload is BasicAuth
 	AuthProtocol int32 `protobuf:"zigzag32,1,opt,name=auth_protocol,json=authProtocol,proto3" json:"auth_protocol,omitempty"`
-	//
 	// Arbitrary auth/handshake info.
 	Payload []byte `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
 }
@@ -168,7 +165,6 @@ func (x *HandshakeRequest) GetPayload() []byte {
 	return nil
 }
 
-//
 // Servers respond with information needed to make subsequent requests tied to this session.
 // The session token should be refreshed prior to the deadline, which is represented as milliseconds since the
 // epoch. Clients are encouraged to use the expiration delay and cookie deadline to determine a good time to refresh.
@@ -177,16 +173,12 @@ type HandshakeResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	//
 	// The metadata header to identify the session. This value is static and defined via configuration.
 	MetadataHeader []byte `protobuf:"bytes,1,opt,name=metadata_header,json=metadataHeader,proto3" json:"metadata_header,omitempty"`
-	//
 	// Arbitrary session_token to assign to the value to the provided metadata header.
 	SessionToken []byte `protobuf:"bytes,2,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty"`
-	//
 	// When this session_token will be considered invalid by the server.
 	TokenDeadlineTimeMillis int64 `protobuf:"zigzag64,3,opt,name=token_deadline_time_millis,json=tokenDeadlineTimeMillis,proto3" json:"token_deadline_time_millis,omitempty"`
-	//
 	// The length of time that this token was intended to live. Note that `refreshSessionToken` may return the
 	// existing token to reduce overhead and to prevent denial-of-service caused by refreshing too frequently.
 	TokenExpirationDelayMillis int64 `protobuf:"zigzag64,4,opt,name=token_expiration_delay_millis,json=tokenExpirationDelayMillis,proto3" json:"token_expiration_delay_millis,omitempty"`
@@ -513,10 +505,8 @@ type ExportNotification struct {
 
 	Ticket      *ticket.Ticket           `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
 	ExportState ExportNotification_State `protobuf:"varint,2,opt,name=export_state,json=exportState,proto3,enum=io.deephaven.proto.backplane.grpc.ExportNotification_State" json:"export_state,omitempty"`
-	//
 	// any errors will include an id that can be used to find details of the error in the logs
 	Context string `protobuf:"bytes,3,opt,name=context,proto3" json:"context,omitempty"`
-	//
 	// will be set to an identifier of the dependency that cascaded the error if applicable
 	DependentHandle string `protobuf:"bytes,4,opt,name=dependent_handle,json=dependentHandle,proto3" json:"dependent_handle,omitempty"`
 }
