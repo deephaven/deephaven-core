@@ -273,14 +273,6 @@ message SelectOrUpdateRequest {
   repeated string column_specs = 3;
 }
 
-message Pair {
-  // Must be non-empty
-  string output_column_name = 1;
-
-  // May be empty
-  string input_column_name = 2;
-}
-
 message MathContext {
   enum RoundingMode {
     UP = 0;
@@ -421,7 +413,7 @@ message UpdateByRequest {
       }
 
       UpdateBySpec spec = 1;
-      repeated Pair pair = 2;
+      repeated string match_pairs = 2;
     }
     oneof type {
       UpdateByColumn column = 1;

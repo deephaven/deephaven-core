@@ -2,6 +2,7 @@ package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.agg.Pair;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.OperationControl;
@@ -121,8 +122,8 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
     private static ColumnUpdateOperation adaptColumn(UpdateByColumn column) {
         ColumnUpdateOperation.Builder builder = ColumnUpdateOperation.builder()
                 .spec(adaptSpec(column.getSpec()));
-        for (io.deephaven.proto.backplane.grpc.Pair pair : column.getPairList()) {
-            builder.addColumns(PairBuilder.adapt(pair));
+        for (String matchPair : column.getMatchPairsList()) {
+            builder.addColumns(Pair.parse(matchPair));
         }
         return builder.build();
     }

@@ -1,6 +1,7 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
@@ -63,7 +64,7 @@ class UpdateByBuilder {
         UpdateByColumn.Builder builder = UpdateByColumn.newBuilder()
                 .setSpec(adapt(columnUpdate.spec()));
         for (Pair pair : columnUpdate.columns()) {
-            builder.addPair(PairBuilder.adapt(pair));
+            builder.addMatchPairs(Strings.of(pair));
         }
         return builder.build();
     }
