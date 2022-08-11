@@ -1073,11 +1073,11 @@ public class BucketedUpdateBy extends UpdateBy {
 
         final int hashTableSize = control.initialHashTableSizeOrDefault();
 
-        if (source.isRefreshing() && !source.isAddOnly()) {
+//        if (source.isRefreshing() && !source.isAddOnly()) {
             slotTracker = new UpdateBySlotTracker(control.chunkCapacityOrDefault());
-        } else {
-            slotTracker = null;
-        }
+//        } else {
+//            slotTracker = null;
+//        }
         if (!useGrouping) {
             this.hashTable = TypedHasherFactory.make(UpdateByStateManagerTypedBase.class,
                     keySources, keySources,
@@ -1131,8 +1131,12 @@ public class BucketedUpdateBy extends UpdateBy {
                     processUpdateForRedirection(initialUpdate);
                 }
 
-//                accumulateUpdatesByBucket(upstream, ctx);
+                // do an addition phase for all the operators that can add directly (i.e. backwards looking)
                 ctx.doAppendOnlyAdds(true, source.getRowSet());
+
+
+                // do a reprocessing phase for operators that can't add directly
+//                ctx.reprocessRows(RowSetShiftData.EMPTY);
 
                 if (slotTracker != null) {
                     // noinspection resource

@@ -1,3 +1,8 @@
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortRollingSumOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
@@ -28,7 +33,7 @@ import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
+public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
 
     // RollingSum will output Long values for integral types
     private final WritableColumnSource<Long> outputSource;
@@ -37,12 +42,12 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BaseWindowedShortUpdateByOperator.Context {
+    protected class Context extends BaseWindowedLongUpdateByOperator.Context {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
         public final SizedLongChunk<Values> outputValues;
         public UpdateBy.UpdateType currentUpdateType;
 
-        public LinkedList<Short> windowValues = new LinkedList<>();
+        public LinkedList<Long> windowValues = new LinkedList<>();
 
         protected Context(final int chunkSize) {
             this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
@@ -70,13 +75,13 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
         ((Context)context).fillContext.ensureCapacity(chunkSize);
     }
 
-    public ShortRollingSumOperator(@NotNull final MatchPair pair,
+    public LongRollingSumOperator(@NotNull final MatchPair pair,
                                    @NotNull final String[] affectingColumns,
                                    @NotNull final OperationControl control,
                                    @Nullable final LongRecordingUpdateByOperator recorder,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @NotNull final ColumnSource<Short> valueSource,
+                                   @NotNull final ColumnSource<Long> valueSource,
                                    @Nullable final RowRedirection rowRedirection
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
@@ -99,7 +104,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
     }
 
     @Override
-    public void push(UpdateContext context, long key, short val) {
+    public void push(UpdateContext context, long key, long val) {
         final Context ctx = (Context) context;
         ctx.windowValues.addLast(val);
     }
@@ -116,7 +121,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
     }
 
     @Override
-    public void doAddChunk(@NotNull final BaseWindowedShortUpdateByOperator.Context context,
+    public void doAddChunk(@NotNull final BaseWindowedLongUpdateByOperator.Context context,
                               @NotNull final RowSequence inputKeys,
                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                               @NotNull final Chunk<Values> workingChunk,
@@ -140,7 +145,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
 
             MutableLong sum = new MutableLong(NULL_LONG);
             ctx.windowValues.forEach(v-> {
-                if (v != null && v != QueryConstants.NULL_SHORT) {
+                if (v != null && v != QueryConstants.NULL_LONG) {
                     if (sum.longValue() == NULL_LONG) {
                         sum.setValue(v);
                     } else {

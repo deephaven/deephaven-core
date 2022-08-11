@@ -26,12 +26,13 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOperator {
-    protected final ColumnSource<Integer> valueSource;
+public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWindowedOperator {
+    protected final ColumnSource<Object> valueSource;
 
     protected boolean initialized = false;
 
     // region extra-fields
+    private final Class<T> colType;
     // endregion extra-fields
 
     protected class Context extends UpdateWindowedContext {
@@ -49,7 +50,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
 
         public RowSequence.Iterator windowIterator = null;
 
-        public WritableIntChunk<Values> candidateValuesChunk;
+        public WritableObjectChunk<T, Values> candidateValuesChunk;
         public WritableLongChunk<? extends RowKeys> candidateRowKeysChunk;
         public WritableLongChunk<? extends RowKeys> candidatePositionsChunk;
         public WritableLongChunk<Values> candidateTimestampsChunk;
@@ -119,7 +120,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
 
             // fill the window values chunk
             if (candidateValuesChunk == null) {
-                candidateValuesChunk = WritableIntChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
+                candidateValuesChunk = WritableObjectChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
             }
             try (ChunkSource.FillContext fc = valueSource.makeFillContext(WINDOW_CHUNK_SIZE)){
                 valueSource.fillChunk(fc, candidateValuesChunk, windowRowSequence);
@@ -199,7 +200,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
             while (candidatePositionsChunk.size() > 0 && candidatePositionsChunk.get(candidateWindowIndex) <= head) {
                 final long pos = candidatePositionsChunk.get(candidateWindowIndex);
                 final long key = candidateRowKeysChunk.get(candidateWindowIndex);
-                final int val = candidateValuesChunk.get(candidateWindowIndex);
+                final Object val = candidateValuesChunk.get(candidateWindowIndex);
 
                 push(context, key, val);
 
@@ -218,27 +219,29 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
         }
     }
 
-    public BaseWindowedIntUpdateByOperator(@NotNull final MatchPair pair,
+    public BaseWindowedObjectUpdateByOperator(@NotNull final MatchPair pair,
                                             @NotNull final String[] affectingColumns,
                                             @NotNull final OperationControl control,
                                             @Nullable final LongRecordingUpdateByOperator timeRecorder,
                                             final long reverseTimeScaleUnits,
                                             final long forwardTimeScaleUnits,
                                             @Nullable final RowRedirection rowRedirection,
-                                            @NotNull final ColumnSource<Integer> valueSource
+                                            @NotNull final ColumnSource<Object> valueSource
                                             // region extra-constructor-args
+                                      , final Class<T> colType
                                             // endregion extra-constructor-args
                                     ) {
         super(pair, affectingColumns, control, timeRecorder, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection);
         this.valueSource = valueSource;
         // region constructor
+        this.colType = colType;
         // endregion constructor
     }
 
     // region extra-methods
     // endregion extra-methods
 
-    public abstract void push(UpdateContext context, long key, int val);
+    public abstract void push(UpdateContext context, long key, Object val);
     public abstract void pop(UpdateContext context, long key);
     public abstract void reset(UpdateContext context);
 

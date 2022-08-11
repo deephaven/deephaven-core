@@ -1,20 +1,24 @@
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableFloatChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.sized.SizedFloatChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
-import io.deephaven.chunk.util.pools.ChunkPoolConstants;
-import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.updateby.internal.*;
+import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedFloatUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import io.deephaven.util.QueryConstants;
@@ -28,26 +32,26 @@ import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
+public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
 
     // RollingSum will output Long values for integral types
-    private final WritableColumnSource<Long> outputSource;
-    private final WritableColumnSource<Long> maybeInnerSource;
+    private final WritableColumnSource<Float> outputSource;
+    private final WritableColumnSource<Float> maybeInnerSource;
 
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BaseWindowedShortUpdateByOperator.Context {
+    protected class Context extends BaseWindowedFloatUpdateByOperator.Context {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
-        public final SizedLongChunk<Values> outputValues;
+        public final SizedFloatChunk<Values> outputValues;
         public UpdateBy.UpdateType currentUpdateType;
 
-        public LinkedList<Short> windowValues = new LinkedList<>();
+        public LinkedList<Float> windowValues = new LinkedList<>();
 
         protected Context(final int chunkSize) {
             this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
             this.fillContext.ensureCapacity(chunkSize);
-            this.outputValues = new SizedLongChunk<>(chunkSize);
+            this.outputValues = new SizedFloatChunk<>(chunkSize);
         }
 
         @Override
@@ -60,7 +64,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.UpdateContext makeUpdateContext(final int chunkSize) {
+    public UpdateContext makeUpdateContext(final int chunkSize) {
         return new Context(chunkSize);
     }
 
@@ -70,13 +74,13 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
         ((Context)context).fillContext.ensureCapacity(chunkSize);
     }
 
-    public ShortRollingSumOperator(@NotNull final MatchPair pair,
+    public FloatRollingSumOperator(@NotNull final MatchPair pair,
                                    @NotNull final String[] affectingColumns,
                                    @NotNull final OperationControl control,
                                    @Nullable final LongRecordingUpdateByOperator recorder,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @NotNull final ColumnSource<Short> valueSource,
+                                   @NotNull final ColumnSource<Float> valueSource,
                                    @Nullable final RowRedirection rowRedirection
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
@@ -84,13 +88,13 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
         super(pair, affectingColumns, control, recorder, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection, valueSource);
         if(rowRedirection != null) {
             // region create-dense
-            this.maybeInnerSource = new LongArraySource();
+            this.maybeInnerSource = new FloatArraySource();
             // endregion create-dense
             this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
-            this.outputSource = new LongSparseArraySource();
+            this.outputSource = new FloatSparseArraySource();
             // endregion create-sparse
         }
 
@@ -99,7 +103,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
     }
 
     @Override
-    public void push(UpdateContext context, long key, short val) {
+    public void push(UpdateContext context, long key, float val) {
         final Context ctx = (Context) context;
         ctx.windowValues.addLast(val);
     }
@@ -116,7 +120,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
     }
 
     @Override
-    public void doAddChunk(@NotNull final BaseWindowedShortUpdateByOperator.Context context,
+    public void doAddChunk(@NotNull final BaseWindowedFloatUpdateByOperator.Context context,
                               @NotNull final RowSequence inputKeys,
                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                               @NotNull final Chunk<Values> workingChunk,
@@ -132,7 +136,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
                               final int runStart,
                               final int runLength) {
 
-        final WritableLongChunk<Values> localOutputValues = ctx.outputValues.get();
+        final WritableFloatChunk<Values> localOutputValues = ctx.outputValues.get();
         for (int ii = runStart; ii < runStart + runLength; ii++) {
             if (recorder == null) {
                 ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get(ii));
@@ -174,6 +178,6 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
     public void applyOutputShift(@NotNull final UpdateContext context,
                                  @NotNull final RowSet subIndexToShift,
                                  final long delta) {
-        ((LongSparseArraySource)outputSource).shift(subIndexToShift, delta);
+        ((FloatSparseArraySource)outputSource).shift(subIndexToShift, delta);
     }
 }

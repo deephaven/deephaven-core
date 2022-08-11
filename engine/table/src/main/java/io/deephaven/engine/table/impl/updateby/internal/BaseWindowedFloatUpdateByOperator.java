@@ -1,8 +1,3 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit BaseWindowedCharUpdateByOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
 package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.api.updateby.OperationControl;
@@ -19,15 +14,13 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
-import io.deephaven.engine.table.impl.updateby.rollingsum.ShortRollingSumOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOperator {
-    protected final ColumnSource<Integer> valueSource;
+public abstract class BaseWindowedFloatUpdateByOperator extends UpdateByWindowedOperator {
+    protected final ColumnSource<Float> valueSource;
 
     protected boolean initialized = false;
 
@@ -49,7 +42,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
 
         public RowSequence.Iterator windowIterator = null;
 
-        public WritableIntChunk<Values> candidateValuesChunk;
+        public WritableFloatChunk<Values> candidateValuesChunk;
         public WritableLongChunk<? extends RowKeys> candidateRowKeysChunk;
         public WritableLongChunk<? extends RowKeys> candidatePositionsChunk;
         public WritableLongChunk<Values> candidateTimestampsChunk;
@@ -119,7 +112,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
 
             // fill the window values chunk
             if (candidateValuesChunk == null) {
-                candidateValuesChunk = WritableIntChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
+                candidateValuesChunk = WritableFloatChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
             }
             try (ChunkSource.FillContext fc = valueSource.makeFillContext(WINDOW_CHUNK_SIZE)){
                 valueSource.fillChunk(fc, candidateValuesChunk, windowRowSequence);
@@ -199,7 +192,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
             while (candidatePositionsChunk.size() > 0 && candidatePositionsChunk.get(candidateWindowIndex) <= head) {
                 final long pos = candidatePositionsChunk.get(candidateWindowIndex);
                 final long key = candidateRowKeysChunk.get(candidateWindowIndex);
-                final int val = candidateValuesChunk.get(candidateWindowIndex);
+                final float val = candidateValuesChunk.get(candidateWindowIndex);
 
                 push(context, key, val);
 
@@ -218,16 +211,16 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
         }
     }
 
-    public BaseWindowedIntUpdateByOperator(@NotNull final MatchPair pair,
-                                            @NotNull final String[] affectingColumns,
-                                            @NotNull final OperationControl control,
-                                            @Nullable final LongRecordingUpdateByOperator timeRecorder,
-                                            final long reverseTimeScaleUnits,
-                                            final long forwardTimeScaleUnits,
-                                            @Nullable final RowRedirection rowRedirection,
-                                            @NotNull final ColumnSource<Integer> valueSource
-                                            // region extra-constructor-args
-                                            // endregion extra-constructor-args
+    public BaseWindowedFloatUpdateByOperator(@NotNull final MatchPair pair,
+                                             @NotNull final String[] affectingColumns,
+                                             @NotNull final OperationControl control,
+                                             @Nullable final LongRecordingUpdateByOperator timeRecorder,
+                                             final long reverseTimeScaleUnits,
+                                             final long forwardTimeScaleUnits,
+                                             @Nullable final RowRedirection rowRedirection,
+                                             @NotNull final ColumnSource<Float> valueSource
+                                             // region extra-constructor-args
+                                             // endregion extra-constructor-args
                                     ) {
         super(pair, affectingColumns, control, timeRecorder, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection);
         this.valueSource = valueSource;
@@ -238,7 +231,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
     // region extra-methods
     // endregion extra-methods
 
-    public abstract void push(UpdateContext context, long key, int val);
+    public abstract void push(UpdateContext context, long key, float val);
     public abstract void pop(UpdateContext context, long key);
     public abstract void reset(UpdateContext context);
 
@@ -329,7 +322,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
     }
 
     @Override
-    public void addChunkBucketed(final @NotNull UpdateByOperator.UpdateContext context,
+    public void addChunkBucketed(final @NotNull UpdateContext context,
                                  final @NotNull Chunk<Values> values,
                                  final @NotNull LongChunk<? extends RowKeys> keyChunk,
                                  final @NotNull IntChunk<RowKeys> bucketPositions,

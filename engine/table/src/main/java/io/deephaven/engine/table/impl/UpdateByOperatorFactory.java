@@ -8,12 +8,13 @@ import io.deephaven.api.updateby.spec.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
-import io.deephaven.engine.table.impl.updateby.rollingsum.ShortRollingSumOperator;
+import io.deephaven.engine.table.impl.updateby.rollingsum.*;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.time.DateTime;
@@ -407,37 +408,34 @@ public class UpdateByOperatorFactory {
             final long prevTimeScaleUnits = rs.prevTimeScale().timescaleUnits();
             final long fwdTimeScaleUnits = rs.fwdTimeScale().timescaleUnits();
 
-            if (csType == short.class || csType == Short.class) {
-                return new ShortRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits, columnSource, rowRedirection);
-            }
-//            if (csType == Boolean.class || csType == boolean.class) {
-//                return new ByteRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
-//                        columnSource, rowRedirection, NULL_BOOLEAN_AS_BYTE);
-//            } else if (csType == byte.class || csType == Byte.class) {
-//                return new ByteRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
-//                        columnSource, rowRedirection, NULL_BYTE);
-//            } else if (csType == short.class || csType == Short.class) {
-//                return new ShortRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
-//                        columnSource, rowRedirection);
-//            } else if (csType == int.class || csType == Integer.class) {
-//                return new IntRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
-//                        columnSource, rowRedirection);
-//            } else if (csType == long.class || csType == Long.class) {
-//                return new LongRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
-//                        columnSource, rowRedirection);
-//            } else if (csType == float.class || csType == Float.class) {
-//                return new FloatRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
-//                        columnSource, rowRedirection);
-//            } else if (csType == double.class || csType == Double.class) {
-//                return new DoubleRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder,
-//                        prevTimeScaleUnits, fwdTimeScaleUnits, columnSource, rowRedirection);
+            if (csType == Boolean.class || csType == boolean.class) {
+                return new ByteRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
+                        ReinterpretUtils.booleanToByteSource(columnSource), rowRedirection, NULL_BOOLEAN_AS_BYTE);
+            } else if (csType == byte.class || csType == Byte.class) {
+                return new ByteRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
+                        columnSource, rowRedirection, NULL_BYTE);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
+                        columnSource, rowRedirection);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
+                        columnSource, rowRedirection);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
+                        columnSource, rowRedirection);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder, prevTimeScaleUnits, fwdTimeScaleUnits,
+                        columnSource, rowRedirection);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder,
+                        prevTimeScaleUnits, fwdTimeScaleUnits, columnSource, rowRedirection);
 //            } else if (csType == BigDecimal.class) {
 //                return new BigDecimalRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder,
 //                        prevTimeScaleUnits, fwdTimeScaleUnits, columnSource, rowRedirection, control.mathContextOrDefault());
 //            } else if (csType == BigInteger.class) {
 //                return new BigIntegerRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(), recorder,
 //                        prevTimeScaleUnits, fwdTimeScaleUnits, columnSource, rowRedirection);
-//            }
+            }
 
             throw new IllegalArgumentException("Can not perform RollingSum on type " + csType);
         }

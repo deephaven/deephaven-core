@@ -24,7 +24,9 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.UpdateBy;
+import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
+import io.deephaven.engine.table.impl.updateby.rollingsum.ShortRollingSumOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -318,19 +320,6 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
     }
 
     // region Addition
-    @Override
-    public void addChunk(@NotNull final UpdateContext updateContext,
-                                 @NotNull final RowSequence inputKeys,
-                                 @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                 @NotNull final Chunk<Values> values,
-                                 long bucketPosition) {
-        final Context ctx = (Context) updateContext;
-        if (ctx.canProcessDirectly) {
-            ctx.loadDataChunks(inputKeys);
-            doAddChunk(ctx, inputKeys, keyChunk, values, bucketPosition);
-        }
-    }
-
     /**
      * Add a chunk of values to the operator.
      *
@@ -344,6 +333,61 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
                                        @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                                        @NotNull final Chunk<Values> workingChunk,
                                        final long bucketPosition);
+
+    @Override
+    public void addChunk(@NotNull final UpdateContext updateContext,
+                                 @NotNull final RowSequence inputKeys,
+                                 @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                                 @NotNull final Chunk<Values> values,
+                                 long bucketPosition) {
+        final Context ctx = (Context) updateContext;
+        if (ctx.canProcessDirectly) {
+            ctx.loadDataChunks(inputKeys);
+            doAddChunk(ctx, inputKeys, keyChunk, values, bucketPosition);
+        }
+    }
+
+    @Override
+    public void addChunkBucketed(final @NotNull UpdateByOperator.UpdateContext context,
+                                 final @NotNull Chunk<Values> values,
+                                 final @NotNull LongChunk<? extends RowKeys> keyChunk,
+                                 final @NotNull IntChunk<RowKeys> bucketPositions,
+                                 final @NotNull IntChunk<ChunkPositions> startPositions,
+                                 final @NotNull IntChunk<ChunkLengths> runLengths) {
+        final Context ctx = (Context) context;
+        if (ctx.canProcessDirectly) {
+//            final ShortChunk<Values> asShorts = values.asShortChunk();
+            for (int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
+                final int runStart = startPositions.get(runIdx);
+                final int runLength = runLengths.get(runIdx);
+                final int bucketPosition = bucketPositions.get(runStart);
+//                doAddChunk(ctx, inputKeys, keyChunk, values, bucketPosition);
+
+//            try (RowSequence rs = RowSequenceFactory.wrapRowKeysChunkAsRowSequence((LongChunk<OrderedRowKeys>) keyChunk)_
+
+//            RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+//            for (int ii = runStart; ii < runStart + runLength; ii++) {
+//                builder.appendKey(keyChunk.get(ii));
+//            }
+//
+//            WritableRowSet bucketRs = bucketRowSet.get(bucketPosition);
+//            if (bucketRs == null) {
+//                bucketRs = builder.build();
+//                bucketRowSet.set(bucketPosition, bucketRs);
+//            } else {
+//                try (final RowSet added = builder.build()) {
+//                    bucketRs.insert(added);
+//                }
+//            }
+//
+//            ctx.curVal = NULL_LONG;
+//            ctx.currentWindow.clear();
+
+//            accumulate(asShorts, (LongChunk<OrderedRowKeys>) keyChunk, ctx, runStart, runLength, bucketRs);
+//            bucketLastVal.set(bucketPosition, ctx.curVal);
+            }
+        }
+    }
 
     // endregion
 

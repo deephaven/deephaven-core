@@ -103,19 +103,17 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
 
     @Override
     public final boolean applicableTo(Class<?> inputType) {
-        return inputType.equals(short.class);
+        return
+                // is primitive numeric?
+                inputType.equals(double.class) || inputType.equals(float.class)
+                        || inputType.equals(int.class) || inputType.equals(long.class) || inputType.equals(short.class)
+                        || inputType.equals(byte.class)
 
-//        return
-//                // is primitive numeric?
-//                inputType.equals(double.class) || inputType.equals(float.class)
-//                        || inputType.equals(int.class) || inputType.equals(long.class) || inputType.equals(short.class)
-//                        || inputType.equals(byte.class)
-//
 //                        // is boxed numeric?
 //                        || Number.class.isAssignableFrom(inputType)
-//
-//                        // is boolean?
-//                        || inputType == boolean.class || inputType == Boolean.class;
+
+                        // is boolean?
+                        || inputType == boolean.class || inputType == Boolean.class;
     }
 
     @Override
