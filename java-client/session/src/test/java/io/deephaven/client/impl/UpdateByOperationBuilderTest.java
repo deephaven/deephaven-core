@@ -5,7 +5,6 @@ import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByOperation.Visitor;
 import io.deephaven.api.updateby.spec.CumSumSpec;
-import io.deephaven.proto.backplane.grpc.Pair;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec;
@@ -34,7 +33,7 @@ public class UpdateByOperationBuilderTest {
                     .setColumn(UpdateByColumn.newBuilder()
                             .setSpec(UpdateBySpec.newBuilder().setSum(UpdateByCumulativeSum.getDefaultInstance())
                                     .build())
-                            .addPair(Pair.newBuilder().setOutputColumnName("Foo").build()).build())
+                            .addMatchPairs("Foo").build())
                     .build();
         }
     }
