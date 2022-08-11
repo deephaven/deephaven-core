@@ -257,7 +257,6 @@ func (x *GetTableRequest) GetResultId() *ticket.Ticket {
 	return nil
 }
 
-//
 // A message that describes a partitioned table, able to be sent as a plugin object to a client.
 // This object will also come with a ticket to the underlying table that can be used to get the
 // constituent tables by key.

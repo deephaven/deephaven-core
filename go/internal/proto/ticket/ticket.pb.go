@@ -23,7 +23,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
 // An opaque identifier that the service can use to retrieve a particular
 // portion of a stream.
 type Ticket struct {
@@ -79,7 +78,6 @@ type TypedTicket struct {
 	unknownFields protoimpl.UnknownFields
 
 	Ticket *Ticket `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
-	//
 	// The type. An empty string means that it is not known, not that the server chose to not set it.
 	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 }

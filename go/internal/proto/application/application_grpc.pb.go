@@ -22,13 +22,12 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ApplicationServiceClient interface {
-	//
 	// Request the list of the fields exposed via the worker.
 	//
-	// - The first received message contains all fields that are currently available
-	//   on the worker. None of these fields will be RemovedFields.
-	// - Subsequent messages modify the existing state. Fields are identified by
-	//   their ticket and may be replaced or removed.
+	//   - The first received message contains all fields that are currently available
+	//     on the worker. None of these fields will be RemovedFields.
+	//   - Subsequent messages modify the existing state. Fields are identified by
+	//     their ticket and may be replaced or removed.
 	ListFields(ctx context.Context, in *ListFieldsRequest, opts ...grpc.CallOption) (ApplicationService_ListFieldsClient, error)
 }
 
@@ -76,13 +75,12 @@ func (x *applicationServiceListFieldsClient) Recv() (*FieldsChangeUpdate, error)
 // All implementations must embed UnimplementedApplicationServiceServer
 // for forward compatibility
 type ApplicationServiceServer interface {
-	//
 	// Request the list of the fields exposed via the worker.
 	//
-	// - The first received message contains all fields that are currently available
-	//   on the worker. None of these fields will be RemovedFields.
-	// - Subsequent messages modify the existing state. Fields are identified by
-	//   their ticket and may be replaced or removed.
+	//   - The first received message contains all fields that are currently available
+	//     on the worker. None of these fields will be RemovedFields.
+	//   - Subsequent messages modify the existing state. Fields are identified by
+	//     their ticket and may be replaced or removed.
 	ListFields(*ListFieldsRequest, ApplicationService_ListFieldsServer) error
 	mustEmbedUnimplementedApplicationServiceServer()
 }
