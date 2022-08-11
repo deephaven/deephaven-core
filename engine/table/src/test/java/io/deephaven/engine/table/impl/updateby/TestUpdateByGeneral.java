@@ -1,13 +1,12 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.EvalNugget;
-import io.deephaven.engine.table.impl.TableWithDefaults;
+import io.deephaven.engine.table.impl.TableBase;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -83,9 +82,9 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
 
                     @Override
                     protected Table e() {
-                        TableWithDefaults base = result.t;
+                        TableBase base = result.t;
                         if (!appendOnly) {
-                            base = (TableWithDefaults) base.sort("ts");
+                            base = (TableBase) base.sort("ts");
                         }
 
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();

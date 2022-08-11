@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 /**
  * Sub-interface to capture default methods rom {@link Table}.
  */
-public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Table, Table> {
+public interface TableBase extends Table, TableOperationsBase<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
 
@@ -50,6 +50,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table getMeta() {
         List<String> columnNames = new ArrayList<>();
         List<String> columnDataTypes = new ArrayList<>();
@@ -85,6 +86,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default boolean hasColumns(final String... columnNames) {
         if (columnNames == null) {
             throw new IllegalArgumentException("columnNames cannot be null!");
@@ -94,6 +96,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default boolean hasColumns(Collection<String> columnNames) {
         if (columnNames == null) {
             throw new IllegalArgumentException("columnNames cannot be null!");
@@ -107,6 +110,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default boolean isEmpty() {
         return size() == 0;
     }
@@ -117,6 +121,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Map<String, Object> getAttributes() {
         return getAttributes(Collections.emptySet());
     }
@@ -126,6 +131,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    @FinalDefault
     default <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz) {
         @SuppressWarnings("rawtypes")
         ColumnSource rawColumnSource = getColumnSource(sourceName);
@@ -143,6 +149,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default DataColumn getColumn(final int columnIndex) {
         return getColumn(this.getDefinition().getColumns().get(columnIndex).getName());
     }
@@ -172,6 +179,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default IntegerColumnIterator integerColumnIterator(@NotNull final String columnName) {
         return new IntegerColumnIterator(this, columnName);
     }
@@ -202,12 +210,14 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table where(Filter... filters) {
         return where(List.of(filters));
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table wouldMatch(String... expressions) {
         return wouldMatch(WouldMatchPairFactory.getExpressions(expressions));
     }
@@ -217,49 +227,58 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    @FinalDefault
     default Table select(Selectable... columns) {
         return select(List.of(columns));
     }
 
     @Override
+    @FinalDefault
     default Table select() {
         return select(getDefinition().getColumnNamesArray());
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table selectDistinct() {
         return selectDistinct(getDefinition().getColumnNamesArray());
     }
 
     @Override
+    @FinalDefault
     default Table update(Selectable... newColumns) {
         return update(List.of(newColumns));
     }
 
     @Override
+    @FinalDefault
     default Table lazyUpdate(Selectable... newColumns) {
         return lazyUpdate(List.of(newColumns));
     }
 
     @Override
+    @FinalDefault
     default Table view(Selectable... columns) {
         return view(List.of(columns));
     }
 
     @Override
+    @FinalDefault
     default Table updateView(Selectable... newColumns) {
         return updateView(List.of(newColumns));
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table dropColumns(Collection<String> columnNames) {
         return dropColumns(columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table dropColumnFormats() {
         String[] columnAry = getDefinition().getColumnStream()
                 .map(ColumnDefinition::getName)
@@ -275,16 +294,19 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table renameColumns(Collection<String> columns) {
         return renameColumns(MatchPairFactory.getExpressions(columns));
     }
 
     @Override
+    @FinalDefault
     default Table renameColumns(String... columns) {
         return renameColumns(MatchPairFactory.getExpressions(columns));
     }
 
     @Override
+    @FinalDefault
     default Table renameAllColumns(UnaryOperator<String> renameFunction) {
         return renameColumns(getDefinition().getColumnStream().map(ColumnDefinition::getName)
                 .map(n -> new MatchPair(renameFunction.apply(n), n)).toArray(MatchPair[]::new));
@@ -292,12 +314,14 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table formatRowWhere(String condition, String formula) {
         return formatColumnWhere(ColumnFormattingValues.ROW_FORMAT_NAME, condition, formula);
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table formatColumnWhere(String columnName, String condition, String formula) {
         return formatColumns(
                 columnName + " = (" + condition + ") ? io.deephaven.engine.util.ColorUtil.toLong(" + formula
@@ -306,24 +330,28 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table moveColumnsUp(String... columnsToMove) {
         return moveColumns(0, columnsToMove);
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table moveColumnsDown(String... columnsToMove) {
         return moveColumns(numColumns() - columnsToMove.length, true, columnsToMove);
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table moveColumns(int index, String... columnsToMove) {
         return moveColumns(index, false, columnsToMove);
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table dateTimeColumnAsNanos(String columnName) {
         return dateTimeColumnAsNanos(columnName, columnName);
     }
@@ -333,6 +361,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    @FinalDefault
     default Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return exactJoin(
@@ -342,11 +371,13 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return aj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.LESS_THAN_EQUAL);
     }
 
     @Override
+    @FinalDefault
     default Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
         return aj(
@@ -357,6 +388,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table aj(Table rightTable, Collection<String> columnsToMatch) {
         Pair<MatchPair[], AsOfMatchRule> expressions = AjMatchPairFactory.getExpressions(false, columnsToMatch);
         return aj(
@@ -367,11 +399,13 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return raj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.GREATER_THAN_EQUAL);
     }
 
     @Override
+    @FinalDefault
     default Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
         return raj(
@@ -382,6 +416,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table raj(Table rightTable, Collection<String> columnsToMatch) {
         Pair<MatchPair[], AsOfMatchRule> expressions = AjMatchPairFactory.getExpressions(true, columnsToMatch);
         return raj(
@@ -392,6 +427,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return naturalJoin(
@@ -401,6 +437,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table join(Table rightTable) {
         return join(
                 rightTable,
@@ -409,34 +446,39 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table join(Table rightTable, int numRightBitsToReserve) {
         return join(rightTable, Collections.emptyList(), Collections.emptyList(), numRightBitsToReserve);
     }
 
     @Override
+    @FinalDefault
     default Table join(Table rightTable, String columnsToMatch, int numRightBitsToReserve) {
         return join(
                 rightTable,
-                MatchPairFactory.getExpressions(TableOperationsWithDefaults.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(TableOperationsBase.splitToCollection(columnsToMatch)),
                 MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
                 numRightBitsToReserve);
     }
 
     @Override
+    @FinalDefault
     default Table join(Table rightTable, String columnsToMatch, String columnsToAdd, int numRightBitsToReserve) {
         return join(
                 rightTable,
-                MatchPairFactory.getExpressions(TableOperationsWithDefaults.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(TableOperationsWithDefaults.splitToCollection(columnsToAdd)),
+                MatchPairFactory.getExpressions(TableOperationsBase.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(TableOperationsBase.splitToCollection(columnsToAdd)),
                 numRightBitsToReserve);
     }
 
     @Override
+    @FinalDefault
     default Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return join(rightTable, columnsToMatch, columnsToAdd, CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE);
     }
 
     @Override
+    @FinalDefault
     default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return join(
@@ -446,6 +488,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd, int numRightBitsToReserve) {
         return join(
@@ -460,17 +503,20 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    @FinalDefault
     default Table headBy(long nRows, Collection<String> groupByColumnNames) {
         return headBy(nRows, groupByColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
     @Override
+    @FinalDefault
     default Table tailBy(long nRows, Collection<String> groupByColumnNames) {
         return tailBy(nRows, groupByColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table applyToAllBy(String formulaColumn, String columnParamName,
             Collection<? extends ColumnName> groupByColumns) {
         return aggAllBy(AggSpec.formula(formulaColumn, columnParamName), groupByColumns.toArray(ColumnName[]::new));
@@ -478,12 +524,14 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table applyToAllBy(String formulaColumn, Collection<? extends ColumnName> groupByColumns) {
         return applyToAllBy(formulaColumn, "each", groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table applyToAllBy(String formulaColumn, String... groupByColumns) {
         return applyToAllBy(formulaColumn, ColumnName.from(groupByColumns));
     }
@@ -493,11 +541,13 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    @FinalDefault
     default Table ungroup(String... columnsToUngroup) {
         return ungroup(false, columnsToUngroup);
     }
 
     @Override
+    @FinalDefault
     default Table ungroupAllBut(String... columnsNotToUngroup) {
         final Set<String> columnsNotToUnwrapSet = Arrays.stream(columnsNotToUngroup).collect(Collectors.toSet());
         return ungroup(getDefinition().getColumnStream()
@@ -507,6 +557,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table ungroup() {
         return ungroup(getDefinition().getColumnStream()
                 .filter(c -> c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType()))
@@ -514,6 +565,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table ungroup(boolean nullFill) {
         return ungroup(nullFill,
                 getDefinition().getColumnStream()
@@ -527,6 +579,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default PartitionedTable partitionBy(String... keyColumnNames) {
         return partitionBy(false, keyColumnNames);
     }
@@ -537,12 +590,14 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> groupByColumns) {
         return rollup(aggregations, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Collection<String> groupByColumns) {
         return rollup(aggregations, includeConstituents,
@@ -551,12 +606,14 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
         return rollup(aggregations, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             String... groupByColumns) {
         return rollup(aggregations, includeConstituents,
@@ -565,18 +622,21 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table rollup(Collection<? extends Aggregation> aggregations, ColumnName... groupByColumns) {
         return rollup(aggregations, false, groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table rollup(Collection<? extends Aggregation> aggregations) {
         return rollup(aggregations, false, ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents) {
         return rollup(aggregations, includeConstituents, ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
@@ -586,6 +646,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    @FinalDefault
     default Table snapshotIncremental(Table rightTable, String... stampColumns) {
         return snapshotIncremental(rightTable, false, stampColumns);
     }
@@ -595,6 +656,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    @FinalDefault
     default Table mergeBefore(final Table... others) {
         final List<Table> tables = new ArrayList<>(others.length + 1);
         tables.add(this);
@@ -603,6 +665,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     }
 
     @Override
+    @FinalDefault
     default Table mergeAfter(final Table... others) {
         final List<Table> tables = new ArrayList<>(others.length + 1);
         tables.addAll(List.of(others));
@@ -627,6 +690,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
 
     @Override
     @ConcurrentMethod
+    @FinalDefault
     default Table withColumnDescription(String column, String description) {
         return withColumnDescription(Collections.singletonMap(column, description));
     }
@@ -636,6 +700,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    @FinalDefault
     default void close() {
         releaseCachedResources();
     }
@@ -648,6 +713,7 @@ public interface TableWithDefaults extends Table, TableOperationsWithDefaults<Ta
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    @FinalDefault
     default void listenForUpdates(ShiftObliviousListener listener) {
         listenForUpdates(listener, false);
     }

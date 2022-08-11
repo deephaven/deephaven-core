@@ -56,7 +56,7 @@ import java.util.stream.Stream;
  * Base abstract class all standard table implementations.
  */
 public abstract class BaseTable extends LivenessArtifact
-        implements TableWithDefaults, NotificationStepReceiver, NotificationStepSource {
+        implements TableBase, NotificationStepReceiver, NotificationStepSource {
 
     private static final long serialVersionUID = 1L;
 

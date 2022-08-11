@@ -46,7 +46,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.impl.TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY;
+import static io.deephaven.engine.table.impl.TableBase.ZERO_LENGTH_TABLE_ARRAY;
 
 /**
  * Tools for working with tables. This includes methods to examine tables, combine them, convert them to and from CSV

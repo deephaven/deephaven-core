@@ -495,10 +495,5 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         return basicTransform(ct -> ct.selectDistinct(columns));
     }
 
-    @Override
-    public PartitionedTable.Proxy countBy(String countColumnName, ColumnName... groupByColumns) {
-        return basicTransform(ct -> ct.countBy(countColumnName, groupByColumns));
-    }
-
     // endregion TableOperations Implementation
 }

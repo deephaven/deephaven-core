@@ -2,8 +2,6 @@ package io.deephaven.engine.table.impl;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.Strings;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.chunk.Chunk;
@@ -27,7 +25,7 @@ import java.util.*;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 /**
- * The core of the {@link TableWithDefaults#updateBy(UpdateByControl, Collection, Collection)} operation.
+ * The core of the {@link TableBase#updateBy(UpdateByControl, Collection, Collection)} operation.
  */
 public abstract class UpdateBy {
     protected final ChunkSource.WithPrev<Values>[] inputSources;
@@ -75,11 +73,11 @@ public abstract class UpdateBy {
     /**
      * Apply the specified operations to each group of rows in the source table and produce a result table with the same
      * index as the source with each operator applied.
-     * 
+     *
      * @param source the source to apply to.
      * @param clauses the operations to apply.
      * @param byColumns the columns to group by before applying operations
-     * 
+     *
      * @return a new table with the same index as the source with all the operations applied.
      */
     public static Table updateBy(@NotNull final QueryTable source,
