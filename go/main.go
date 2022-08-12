@@ -257,10 +257,4 @@ func doStuff1() {
 
 		fmt.Println(tickingTbl)
 	}*/
-
-	err = tbl.Release(ctx)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 }

@@ -42,9 +42,9 @@ func NewTickingTable(schema *arrow.Schema) (*TickingTable, error) {
 		var newColumn tickingColumn
 
 		switch field.Type.ID() {
-		case arrow.PrimitiveTypes.Int32.ID():
+		case arrow.INT32:
 			newColumn = &Int32Column{}
-		case arrow.FixedWidthTypes.Timestamp_ns.ID(): // TODO: There has to be a better way to compare these.
+		case arrow.TIMESTAMP:
 			newColumn = &TimestampColumn{}
 		default:
 			return nil, fmt.Errorf("unsupported data type for ticking table %v %T", field.Type, field.Type)
@@ -217,7 +217,7 @@ func (tt *TickingTable) ToRecord() arrow.Record {
 		iter := tt.keys.Iterator()
 
 		switch tt.schema.Field(fieldIdx).Type.ID() {
-		case arrow.PrimitiveTypes.Int32.ID():
+		case arrow.INT32:
 			sourceData := tt.columns[fieldIdx].(*Int32Column)
 			orderedData := make([]int32, tt.keys.GetCardinality())
 			i := 0
@@ -228,7 +228,7 @@ func (tt *TickingTable) ToRecord() arrow.Record {
 				i++
 			}
 			b.Field(fieldIdx).(*array.Int32Builder).AppendValues(orderedData, nil)
-		case arrow.FixedWidthTypes.Timestamp_ns.ID(): // TODO: There has to be a better way to compare this
+		case arrow.TIMESTAMP:
 			sourceData := tt.columns[fieldIdx].(*TimestampColumn)
 			orderedData := make([]arrow.Timestamp, tt.keys.GetCardinality())
 			i := 0
@@ -245,7 +245,7 @@ func (tt *TickingTable) ToRecord() arrow.Record {
 	return b.NewRecord()
 }
 
-func (tt *TickingTable) ModifyEntry(column int, key uint64, sourceRecord arrow.Record, sourceRow int) {
+func (tt *TickingTable) ModifyEntry(column int, key uint64, sourceRecord arrow.Table, sourceRow int) {
 	if !tt.schema.Equal(sourceRecord.Schema()) {
 		panic("mismatched schema")
 	}
@@ -263,19 +263,45 @@ func (tt *TickingTable) ModifyEntry(column int, key uint64, sourceRecord arrow.R
 	destColumn := tt.columns[column]
 
 	switch tt.schema.Field(column).Type.ID() {
-	case arrow.PrimitiveTypes.Int32.ID():
-		sourceData := sourceColumn.(*array.Int32)
+	case arrow.INT32:
 		destData := destColumn.(*Int32Column)
-		destData.values[storagePos] = sourceData.Value(sourceRow)
-	case arrow.FixedWidthTypes.Timestamp_ns.ID(): // TODO: There has to be a better way to compare these
-		sourceData := sourceColumn.(*array.Timestamp)
+		destData.values[storagePos] = getI32Value(sourceColumn, sourceRow)
+	case arrow.TIMESTAMP:
 		destData := destColumn.(*TimestampColumn)
-		destData.values[storagePos] = sourceData.Value(sourceRow)
+		destData.values[storagePos] = getTimestampValue(sourceColumn, sourceRow)
 	}
 }
 
+func getI32Value(column *arrow.Column, sourceRow int) int32 {
+	for _, chunk := range column.Data().Chunks() {
+		arr := chunk.(*array.Int32)
+		values := arr.Int32Values()
+		if sourceRow < len(values) {
+			return values[sourceRow]
+		} else {
+			sourceRow -= len(values)
+		}
+	}
+
+	panic("out of bounds index")
+}
+
+func getTimestampValue(column *arrow.Column, sourceRow int) arrow.Timestamp {
+	for _, chunk := range column.Data().Chunks() {
+		arr := chunk.(*array.Timestamp)
+		values := arr.TimestampValues()
+		if sourceRow < len(values) {
+			return values[sourceRow]
+		} else {
+			sourceRow -= len(values)
+		}
+	}
+
+	panic("out of bounds index")
+}
+
 // TODO: This could be optimized by having it add an entire range at a time.
-func (tt *TickingTable) AddRow(key uint64, sourceRecord arrow.Record, sourceRow int) {
+func (tt *TickingTable) AddRow(key uint64, sourceRecord arrow.Table, sourceRow int) {
 	if !tt.schema.Equal(sourceRecord.Schema()) {
 		panic("mismatched schema")
 	}
@@ -295,10 +321,9 @@ func (tt *TickingTable) AddRow(key uint64, sourceRecord arrow.Record, sourceRow 
 		var destIdx int
 
 		switch tt.schema.Field(colIdx).Type.ID() {
-		case arrow.PrimitiveTypes.Int32.ID():
-			sourceData := sourceColumn.(*array.Int32)
+		case arrow.INT32:
 			destData := tt.columns[colIdx].(*Int32Column)
-			sourceValue := sourceData.Value(sourceRow)
+			sourceValue := getI32Value(sourceColumn, sourceRow)
 			if freeIndex == -1 {
 				destIdx = len(destData.values)
 				destData.values = append(destData.values, sourceValue)
@@ -306,10 +331,9 @@ func (tt *TickingTable) AddRow(key uint64, sourceRecord arrow.Record, sourceRow 
 				destIdx = freeIndex
 				destData.values[freeIndex] = sourceValue
 			}
-		case arrow.FixedWidthTypes.Timestamp_ns.ID(): // TODO: There has to be a better way to compare these
-			sourceData := sourceColumn.(*array.Timestamp)
+		case arrow.TIMESTAMP:
 			destData := tt.columns[colIdx].(*TimestampColumn)
-			sourceValue := sourceData.Value(sourceRow)
+			sourceValue := getTimestampValue(sourceColumn, sourceRow)
 			if freeIndex == -1 {
 				destIdx = len(destData.values)
 				destData.values = append(destData.values, sourceValue)
@@ -345,7 +369,7 @@ func (col *TimestampColumn) Get(row int) interface{} {
 }
 
 type TickingUpdate struct {
-	Record arrow.Record
+	Record arrow.Table
 
 	IsSnapshot bool
 

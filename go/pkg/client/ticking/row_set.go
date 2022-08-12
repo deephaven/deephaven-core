@@ -12,8 +12,20 @@ type RowRange struct {
 	End   uint64
 }
 
+func (rr RowRange) Size() uint64 {
+	return rr.End - rr.Begin + 1
+}
+
 type RowSet struct {
 	Ranges []RowRange
+}
+
+func (rs RowSet) Size() uint64 {
+	var total uint64
+	for _, r := range rs.Ranges {
+		total += r.Size()
+	}
+	return total
 }
 
 func (rs *RowSet) GetAllRows() <-chan uint64 {

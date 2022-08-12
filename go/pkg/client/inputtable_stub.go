@@ -198,3 +198,28 @@ func (its *inputTableStub) deleteTable(ctx context.Context, inputTable *TableHan
 
 	return nil
 }
+
+type AddableInputTable interface {
+	AddTable(ctx context.Context, toAdd *TableHandle) error
+}
+
+// implicitly releases the record
+func (cl *Client) UploadAndAdd(ctx context.Context, destTable AddableInputTable, toAdd arrow.Record) error {
+	tbl, err := cl.ImportTable(ctx, toAdd)
+	if err != nil {
+		return err
+	}
+
+	err = destTable.AddTable(ctx, tbl)
+	if err != nil {
+		return err
+	}
+
+	err = tbl.Release(ctx)
+	if err != nil {
+		return err
+	}
+
+	toAdd.Release()
+	return nil
+}

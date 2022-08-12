@@ -19,7 +19,7 @@ import (
 func sampleSchema() *arrow.Schema {
 	return arrow.NewSchema(
 		[]arrow.Field{
-			{Name: "K", Type: arrow.PrimitiveTypes.Int32},
+			{Name: "KK", Type: arrow.PrimitiveTypes.Int32},
 			{Name: "V1", Type: arrow.PrimitiveTypes.Int32},
 			{Name: "V2", Type: arrow.PrimitiveTypes.Int32},
 		},
@@ -27,7 +27,7 @@ func sampleSchema() *arrow.Schema {
 	)
 }
 
-func randomSampleRecord(numRows int64) arrow.Record {
+func randomSampleRecord(numRows int64, maxValue uint32) arrow.Record {
 	schema := sampleSchema()
 
 	b := array.NewRecordBuilder(memory.DefaultAllocator, schema)
@@ -36,7 +36,7 @@ func randomSampleRecord(numRows int64) arrow.Record {
 	for colIdx := 0; colIdx < len(schema.Fields()); colIdx++ {
 		column := make([]int32, numRows)
 		for i := 0; i < len(column); i++ {
-			column[i] = int32(rand.Uint32())
+			column[i] = int32(rand.Uint32() % maxValue)
 		}
 		b.Field(colIdx).(*array.Int32Builder).AppendValues(column, nil)
 	}
@@ -44,7 +44,86 @@ func randomSampleRecord(numRows int64) arrow.Record {
 	return b.NewRecord()
 }
 
-func addRecordAppend(ctx context.Context, cl *client.Client, inTable *client.AppendOnlyInputTable, record arrow.Record) error {
+// Creates a sample record, except it copies the keys from another record
+func randomSampleRecordCopiedKeys(keyRecord arrow.Record, maxValue uint32) arrow.Record {
+	schema := sampleSchema()
+
+	b := array.NewRecordBuilder(memory.DefaultAllocator, schema)
+	defer b.Release()
+
+	b.Field(0).(*array.Int32Builder).AppendValues(keyRecord.Column(0).(*array.Int32).Int32Values(), nil)
+
+	for colIdx := 1; colIdx < len(schema.Fields()); colIdx++ {
+		column := make([]int32, keyRecord.NumRows())
+		for i := 0; i < len(column); i++ {
+			column[i] = int32(rand.Uint32() % maxValue)
+		}
+		b.Field(colIdx).(*array.Int32Builder).AppendValues(column, nil)
+	}
+
+	return b.NewRecord()
+}
+
+func getExpectedKeyTable(keyRecord arrow.Table) arrow.Record {
+	getAllValues := func(column *arrow.Column) <-chan int32 {
+		ch := make(chan int32)
+		go func() {
+			for _, chunk := range column.Data().Chunks() {
+				data := chunk.(*array.Int32)
+				for _, value := range data.Int32Values() {
+					ch <- value
+				}
+			}
+			close(ch)
+		}()
+		return ch
+	}
+
+	c0 := getAllValues(keyRecord.Column(0))
+	c1 := getAllValues(keyRecord.Column(1))
+	c2 := getAllValues(keyRecord.Column(2))
+
+	var d0 []int32
+	var d1 []int32
+	var d2 []int32
+
+	for k := range c0 {
+		v1 := <-c1
+		v2 := <-c2
+
+		var keyFound bool
+
+		for foundIdx, d := range d0 {
+			if d == k {
+				// Key already exists.
+				keyFound = true
+				d1[foundIdx] = v1
+				d2[foundIdx] = v2
+				break
+			}
+		}
+
+		if !keyFound {
+			// New key, so append it
+			d0 = append(d0, k)
+			d1 = append(d1, v1)
+			d2 = append(d2, v2)
+		}
+	}
+
+	schema := sampleSchema()
+
+	b := array.NewRecordBuilder(memory.DefaultAllocator, schema)
+	defer b.Release()
+
+	b.Field(0).(*array.Int32Builder).AppendValues(d0, nil)
+	b.Field(1).(*array.Int32Builder).AppendValues(d1, nil)
+	b.Field(2).(*array.Int32Builder).AppendValues(d2, nil)
+
+	return b.NewRecord()
+}
+
+func addRecordAppend(ctx context.Context, cl *client.Client, inTable client.AddableInputTable, record arrow.Record) error {
 	dataTbl, err := cl.ImportTable(ctx, record)
 	if err != nil {
 		return err
@@ -166,7 +245,7 @@ func TestAppendingTable(t *testing.T) {
 	test_tools.CheckError(t, "waitForUpdate", err)
 	tickingTbl.ApplyUpdate(update)
 
-	rec := randomSampleRecord(5)
+	rec := randomSampleRecord(5, 100)
 	err = addRecordAppend(ctx, cl, inTable, rec)
 	test_tools.CheckError(t, "addRecordAppend", err)
 	defer rec.Release()
@@ -181,6 +260,160 @@ func TestAppendingTable(t *testing.T) {
 	if err = compareRecords(tickingData, rec); err != nil {
 		t.Log(tickingData)
 		t.Log(rec)
+		t.Error(err)
+		return
+	}
+
+	subCancel()
+
+	err = waitForClose(updateCh)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+
+func TestRemovingTable(t *testing.T) {
+	ctx := context.Background()
+
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	test_tools.CheckError(t, "NewClient", err)
+	defer cl.Close()
+
+	schema := sampleSchema()
+
+	inTable, err := cl.NewAppendOnlyInputTableFromSchema(ctx, schema)
+	test_tools.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
+	defer inTable.Release(ctx)
+
+	outTable, err := inTable.Tail(ctx, 5)
+	test_tools.CheckError(t, "Tail", err)
+	defer outTable.Release(ctx)
+
+	subCtx, subCancel := context.WithCancel(ctx)
+	defer subCancel()
+
+	tickingTbl, updateCh, err := outTable.Subscribe(subCtx)
+	test_tools.CheckError(t, "Subscribe", err)
+
+	update, err := waitForUpdate(updateCh)
+	test_tools.CheckError(t, "waitForUpdate", err)
+	tickingTbl.ApplyUpdate(update)
+
+	rec1 := randomSampleRecord(5, 100)
+	err = addRecordAppend(ctx, cl, inTable, rec1)
+	test_tools.CheckError(t, "addRecordAppend", err)
+	defer rec1.Release()
+
+	update, err = waitForUpdate(updateCh)
+	test_tools.CheckError(t, "waitForUpdate", err)
+	tickingTbl.ApplyUpdate(update)
+
+	tickingData1 := tickingTbl.ToRecord()
+	defer tickingData1.Release()
+
+	if err = compareRecords(tickingData1, rec1); err != nil {
+		t.Log(tickingData1)
+		t.Log(rec1)
+		t.Error(err)
+		return
+	}
+
+	rec2 := randomSampleRecord(5, 100)
+	err = addRecordAppend(ctx, cl, inTable, rec2)
+	test_tools.CheckError(t, "addRecordAppend", err)
+	defer rec2.Release()
+
+	update, err = waitForUpdate(updateCh)
+	test_tools.CheckError(t, "waitForUpdate", err)
+	tickingTbl.ApplyUpdate(update)
+
+	tickingData2 := tickingTbl.ToRecord()
+	defer tickingData2.Release()
+
+	if err = compareRecords(tickingData2, rec2); err != nil {
+		t.Log(tickingData2)
+		t.Log(rec1)
+		t.Error(err)
+		return
+	}
+
+	subCancel()
+
+	err = waitForClose(updateCh)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+
+func TestModifyingTable(t *testing.T) {
+	ctx := context.Background()
+
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	test_tools.CheckError(t, "NewClient", err)
+	defer cl.Close()
+
+	schema := sampleSchema()
+
+	inTable, err := cl.NewKeyBackedInputTableFromSchema(ctx, schema, "KK")
+	test_tools.CheckError(t, "NewAppendOnlyInputTableFromSchema", err)
+	defer inTable.Release(ctx)
+
+	subCtx, subCancel := context.WithCancel(ctx)
+	defer subCancel()
+
+	tickingTbl, updateCh, err := inTable.Subscribe(subCtx)
+	test_tools.CheckError(t, "Subscribe", err)
+
+	update, err := waitForUpdate(updateCh)
+	test_tools.CheckError(t, "waitForUpdate", err)
+	tickingTbl.ApplyUpdate(update)
+
+	rec1 := randomSampleRecord(20, 10)
+
+	fmt.Println("table is ", tickingTbl)
+	fmt.Println("adding in record", rec1)
+
+	err = addRecordAppend(ctx, cl, inTable, rec1)
+	test_tools.CheckError(t, "addRecordAppend", err)
+	defer rec1.Release()
+
+	update, err = waitForUpdate(updateCh)
+	test_tools.CheckError(t, "waitForUpdate", err)
+	tickingTbl.ApplyUpdate(update)
+
+	tickingData1 := tickingTbl.ToRecord()
+	defer tickingData1.Release()
+
+	expected1 := getExpectedKeyTable(array.NewTableFromRecords(rec1.Schema(), []arrow.Record{rec1}))
+
+	if err = compareRecords(tickingData1, expected1); err != nil {
+		t.Log(tickingData1)
+		t.Log(rec1)
+		t.Error(err)
+		return
+	}
+
+	rec2 := randomSampleRecordCopiedKeys(rec1, 10)
+
+	err = addRecordAppend(ctx, cl, inTable, rec2)
+	test_tools.CheckError(t, "addRecordAppend", err)
+	defer rec2.Release()
+
+	update, err = waitForUpdate(updateCh)
+	test_tools.CheckError(t, "waitForUpdate", err)
+	tickingTbl.ApplyUpdate(update)
+
+	tickingData2 := tickingTbl.ToRecord()
+	defer tickingData2.Release()
+
+	expected2 := getExpectedKeyTable(array.NewTableFromRecords(rec1.Schema(), []arrow.Record{rec1, rec2}))
+	defer expected2.Release()
+
+	if err = compareRecords(tickingData2, expected2); err != nil {
+		t.Log(tickingData2)
+		t.Log(expected2)
 		t.Error(err)
 		return
 	}

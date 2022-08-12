@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/apache/arrow/go/v8/arrow"
+	"github.com/apache/arrow/go/v8/arrow/array"
 	"github.com/apache/arrow/go/v8/arrow/flight"
 	"github.com/apache/arrow/go/v8/arrow/ipc"
 	flatbuffers "github.com/google/flatbuffers/go"
@@ -303,10 +304,51 @@ func (fs *flightStub) subscribe(ctx context.Context, handle *TableHandle, option
 		defer doExchg.CloseSend()
 		defer close(updateChan)
 
+		var pendingUpdate *ticking.TickingUpdate
+		var pendingRecords []arrow.Record
+
+		trySubmitUpdate := func() (done bool, err error) {
+			var expectedRows uint64
+			if pendingUpdate.HasIncludedRows {
+				expectedRows += pendingUpdate.AddedRowsIncluded.Size()
+			} else {
+				expectedRows += pendingUpdate.AddedRows.Size()
+			}
+
+			if len(pendingUpdate.ModifiedRows) > 0 {
+				// TODO: Again, ragged edge problems.
+				// expectedRows should actually be a per-column check,
+				// or we should send padded records.
+				expectedRows += pendingUpdate.ModifiedRows[0].Size()
+			}
+
+			var rowsReceived uint64
+			for _, rec := range pendingRecords {
+				rowsReceived += uint64(rec.NumRows())
+			}
+
+			if rowsReceived > expectedRows {
+				return false, errors.New("received too many rows")
+			} else if rowsReceived == expectedRows {
+				pendingUpdate.Record = array.NewTableFromRecords(handle.schema, pendingRecords)
+				updateChan <- ticking.TickingStatus{Update: *pendingUpdate}
+				pendingUpdate = nil
+				pendingRecords = nil
+				return true, nil
+			} else {
+				return false, nil
+			}
+		}
+
 		for reader.Next() {
 			resp := reader.LatestAppMetadata()
 
 			if len(resp) > 0 {
+				if pendingUpdate != nil {
+					updateChan <- ticking.TickingStatus{Err: errors.New("previous update was never completed")}
+					return
+				}
+
 				meta := resp
 				msgWrapper := flatbuf_b.GetRootAsBarrageMessageWrapper(meta, 0)
 
@@ -404,11 +446,13 @@ func (fs *flightStub) subscribe(ctx context.Context, handle *TableHandle, option
 					// Solutions:
 					// - Copy/paste the entirety of the reader code from Apache Arrow so we can remove the check
 					// - Make a barrage subscription option that pads records so that all columns are the same length
+					//		(preferably, make the ragged edges an opt-in)
 					record := reader.Record()
 					record.Retain()
 
-					update := ticking.TickingUpdate{
-						Record:     record,
+					pendingRecords = append(pendingRecords, record)
+
+					pendingUpdate = &ticking.TickingUpdate{
 						IsSnapshot: updateMeta.IsSnapshot(),
 
 						AddedRows:   addedRowsDec,
@@ -424,12 +468,23 @@ func (fs *flightStub) subscribe(ctx context.Context, handle *TableHandle, option
 						ModifiedRows: modifiedRows,
 					}
 
-					updateChan <- ticking.TickingStatus{Update: update}
+					_, err = trySubmitUpdate()
+					if err != nil {
+						updateChan <- ticking.TickingStatus{Err: err}
+						return
+					}
 				} else {
 					fmt.Println("OTHER MESSAGE TYPE")
 				}
 			} else {
-				fmt.Println("NO METADATA")
+				record := reader.Record()
+				record.Retain()
+
+				pendingRecords = append(pendingRecords, record)
+				_, err = trySubmitUpdate()
+				if err != nil {
+					updateChan <- ticking.TickingStatus{Err: err}
+				}
 			}
 		}
 
