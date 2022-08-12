@@ -379,15 +379,22 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public PartitionedTable partitionBy(boolean dropKeys, @NotNull Collection<? extends ColumnName> keyColumnNames) {
-        return coalesce().partitionBy(dropKeys, keyColumnNames);
+    public PartitionedTable partitionBy(boolean dropKeys, @NotNull Collection<? extends ColumnName> columns) {
+        return coalesce().partitionBy(dropKeys, columns);
     }
 
     @Override
     @ConcurrentMethod
     public PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
-            Table initialGroups, String... keyColumnNames) {
+                                             Table initialGroups, String... keyColumnNames) {
         return coalesce().partitionedAggBy(aggregations, preserveEmpty, initialGroups, keyColumnNames);
+    }
+
+    @Override
+    @ConcurrentMethod
+    public PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
+            Table initialGroups, @NotNull Collection<? extends ColumnName> columns) {
+        return coalesce().partitionedAggBy(aggregations, preserveEmpty, initialGroups, columns);
     }
 
     @Override

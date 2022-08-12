@@ -82,17 +82,11 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             @NotNull final RowSet resultSourceIndex,
             final long lastPrevKey ,
             final boolean isAppendOnly) {
+        super.initializeForUpdate(context, upstream, resultSourceIndex, lastPrevKey, isAppendOnly);
+
         final EmaContext ctx = (EmaContext) context;
-
-        // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
-        // to have a bad time. This is not necessary for non-redirections since the SparseArraySources do not
-        // need to do anything with capacity.
-        if (isRedirected) {
-            outputSource.ensureCapacity(resultSourceIndex.size() + 1);
-        }
-
-        // If we aren't bucketing, we'll just remember the appendyness.
-        ctx.canProcessDirectly = isAppendOnly;
+        // pre-load the context timestamp with the previous last value in the timestamp column (if possible)
+        ctx.lastStamp = (lastPrevKey == NULL_ROW_KEY || timeRecorder == null) ? NULL_LONG : locateFirstValidPreviousTimestamp(resultSourceIndex, lastPrevKey);
     }
 
     @Override
@@ -100,7 +94,6 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             @NotNull final RowSet updateRowSet,
             @NotNull final UpdateBy.UpdateType type) {
         super.initializeFor(updateContext, updateRowSet, type);
-        ((EmaContext) updateContext).lastStamp = NULL_LONG;
     }
 
     @Override
@@ -134,13 +127,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
                 ctx.lastStamp = NULL_LONG;
             } else {
                 // If it hasn't been reset to null, then it's possible that the value at that position was null, in
-                // which case
-                // we must have ignored it, and so we have to actually keep looking backwards until we find something
-                // not null.
-
-
-                // Note that it's OK that we are not setting the singletonVal here, because if we had to go back more
-                // rows, then whatever the correct value was, was already set at the initial location.
+                // which case  we must have ignored it, and so we have to actually keep looking backwards until we find
+                // something not null.
                 ctx.lastStamp = locateFirstValidPreviousTimestamp(sourceIndex, firstUnmodifiedKey);
             }
         }
@@ -154,12 +142,13 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         }
 
         try (final RowSet.SearchIterator rIt = indexToSearch.reverseIterator()) {
-            rIt.advance(firstUnmodifiedKey);
-            while (rIt.hasNext()) {
-                final long nextKey = rIt.nextLong();
-                potentialResetTimestamp = timeRecorder.getCurrentLong(nextKey);
-                if (potentialResetTimestamp != NULL_LONG && isValueValid(nextKey)) {
-                    return potentialResetTimestamp;
+            if (rIt.advance(firstUnmodifiedKey)) {
+                while (rIt.hasNext()) {
+                    final long nextKey = rIt.nextLong();
+                    potentialResetTimestamp = timeRecorder.getCurrentLong(nextKey);
+                    if (potentialResetTimestamp != NULL_LONG && isValueValid(nextKey)) {
+                        return potentialResetTimestamp;
+                    }
                 }
             }
         }

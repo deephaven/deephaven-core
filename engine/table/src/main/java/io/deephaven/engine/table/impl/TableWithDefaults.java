@@ -26,6 +26,7 @@ import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
@@ -1089,6 +1090,12 @@ public interface TableWithDefaults extends Table {
         return partitionBy(false, keyColumnNames);
     }
 
+    @Override
+    @ConcurrentMethod
+    default PartitionedTable partitionedAggBy(final Collection<? extends Aggregation> aggregations,
+             final boolean preserveEmpty, @Nullable final Table initialGroups, String... keyColumnNames) {
+        return partitionedAggBy(aggregations, preserveEmpty, initialGroups, ColumnName.from(keyColumnNames));
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Hierarchical table operations (rollup and treeTable).

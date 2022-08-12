@@ -2,22 +2,15 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.sized.SizedLongChunk;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
-import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
-import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -49,7 +42,7 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
 
 //        final BucketedPartitionedUpdateBy updateBy = new BucketedPartitionedUpdateBy(ops, source, rowRedirection, control);
 
-        final PartitionedTable pt = source.partitionBy(false, byColumns);
+        final PartitionedTable pt = source.partitionedAggBy(List.of(), true, null, byColumns);
         final PartitionedTable transformed = pt.transform(t -> {
             // create the table
             Table newTable =  ZeroKeyUpdateBy.compute(

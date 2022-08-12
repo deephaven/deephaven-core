@@ -476,31 +476,9 @@ public class QueryTable extends BaseTable {
         });
     }
 
-//    @Override
-//    public PartitionedTable partitionBy(final boolean dropKeys, final String... keyColumnNames) {
-//        if (isStream()) {
-//            throw streamUnsupported("partitionBy");
-//        }
-//        final List<ColumnName> columns = ColumnName.from(keyColumnNames);
-//        return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, columns), () -> {
-//            final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), columns);
-//            final Set<String> keyColumnNamesSet =
-//                    Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
-//            final TableDefinition constituentDefinition;
-//            if (dropKeys) {
-//                constituentDefinition = TableDefinition.of(definition.getColumnStream()
-//                        .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
-//            } else {
-//                constituentDefinition = definition;
-//            }
-//            return new PartitionedTableImpl(partitioned, keyColumnNamesSet, true, CONSTITUENT.name(),
-//                    constituentDefinition, isRefreshing(), false);
-//        });
-//    }
-
     @Override
     public PartitionedTable partitionedAggBy(final Collection<? extends Aggregation> aggregations,
-            final boolean preserveEmpty, @Nullable final Table initialGroups, final String... keyColumnNames) {
+            final boolean preserveEmpty, @Nullable final Table initialGroups, @NotNull final Collection<? extends ColumnName> columns) {
         if (isStream()) {
             throw streamUnsupported("partitionedAggBy");
         }
@@ -513,9 +491,9 @@ public class QueryTable extends BaseTable {
                 ? aggregations
                 : Stream.concat(aggregations.stream(), Stream.of(partition)).collect(Collectors.toList());
         final Table aggregated =
-                aggBy(aggregationsToUse, preserveEmpty, initialGroups, ColumnName.from(keyColumnNames));
+                aggBy(aggregationsToUse, preserveEmpty, initialGroups, columns);
         final Set<String> keyColumnNamesSet =
-                Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
+                columns.stream().map(ColumnName::name).collect(Collectors.toCollection(LinkedHashSet::new));
         final TableDefinition constituentDefinition;
         if (partition.includeGroupByColumns()) {
             constituentDefinition = definition;

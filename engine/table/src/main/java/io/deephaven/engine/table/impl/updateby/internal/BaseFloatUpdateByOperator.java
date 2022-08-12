@@ -32,7 +32,6 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperator {
     protected final WritableColumnSource<Float> outputSource;
     protected final WritableColumnSource<Float> maybeInnerSource;
-    protected boolean trackingPrev = false;
 
     private final MatchPair pair;
     private final String[] affectingColumns;
@@ -182,12 +181,9 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
 
     @Override
     public void startTrackingPrev() {
-        if (!trackingPrev) {
-            trackingPrev = true;
-            outputSource.startTrackingPrevValues();
-            if (isRedirected) {
-                maybeInnerSource.startTrackingPrevValues();
-            }
+        outputSource.startTrackingPrevValues();
+        if (isRedirected) {
+            maybeInnerSource.startTrackingPrevValues();
         }
     }
 

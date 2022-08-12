@@ -47,7 +47,11 @@ class ZeroKeyUpdateBy extends UpdateBy {
         updateBy.doInitialAdditions();
 
         if (source.isRefreshing()) {
-            Arrays.stream(ops).forEach(UpdateByOperator::startTrackingPrev);
+//            // start tracking previous values
+//            if (rowRedirection != null) {
+//                rowRedirection.startTrackingPrevValues();
+//            }
+//            Arrays.stream(ops).forEach(UpdateByOperator::startTrackingPrev);
             final ZeroKeyUpdateByListener listener = updateBy.newListener(description, result);
             source.listenForUpdates(listener);
             result.addParentReference(listener);

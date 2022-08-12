@@ -3,20 +3,15 @@ package io.deephaven.engine.table.impl.updateby.ema;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -26,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
@@ -89,18 +85,11 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             @NotNull RowSet resultSourceIndex,
             final long lastPrevKey,
             boolean isAppendOnly) {
-        // noinspection unchecked
+        super.initializeForUpdate(context, upstream, resultSourceIndex, lastPrevKey, isAppendOnly);
+
         final EmaContext ctx = (EmaContext) context;
-
-        // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
-        // to have a bad time. This is not necessary for non-redirections since the SparseArraySources do not
-        // need to do anything with capacity.
-        if (isRedirected) {
-            outputSource.ensureCapacity(resultSourceIndex.size() + 1);
-        }
-
-        // If we aren't bucketing, we'll just remember the appendyness.
-        ctx.canProcessDirectly = isAppendOnly;
+        // pre-load the context timestamp with the previous last value in the timestamp column (if possible)
+        ctx.lastStamp = (lastPrevKey == NULL_ROW_KEY || timeRecorder == null) ? NULL_LONG : locateFirstValidPreviousTimestamp(resultSourceIndex, lastPrevKey);
     }
 
     @SuppressWarnings("unchecked")
@@ -109,7 +98,6 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             @NotNull final RowSet updateRowSet,
             @NotNull final UpdateBy.UpdateType type) {
         super.initializeFor(updateContext, updateRowSet, type);
-        ((EmaContext) updateContext).lastStamp = NULL_LONG;
     }
 
     @Override
@@ -140,21 +128,16 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
         final EmaContext ctx = (EmaContext) context;
         if (!ctx.canProcessDirectly) {
-//            // If we set the last state to null, then we know it was a reset state and the timestamp must also
-//            // have been reset.
-//            if (singletonVal == null || (firstUnmodifiedKey == NULL_ROW_KEY)) {
-//                singletonLastStamp = NULL_LONG;
-//            } else {
-//                // If it hasn't been reset to null, then it's possible that the value at that position was null, in
-//                // which case
-//                // we must have ignored it, and so we have to actually keep looking backwards until we find something
-//                // not null.
-//
-//
-//                // Note that it's OK that we are not setting the singletonVal here, because if we had to go back more
-//                // rows, then whatever the correct value was, was already set at the initial location.
-//                singletonLastStamp = locateFirstValidPreviousTimestamp(sourceIndex, firstUnmodifiedKey);
-//            }
+            // If we set the last state to null, then we know it was a reset state and the timestamp must also
+            // have been reset.
+            if (ctx.curVal == null || (firstUnmodifiedKey == NULL_ROW_KEY)) {
+                ctx.lastStamp = NULL_LONG;
+            } else {
+                // If it hasn't been reset to null, then it's possible that the value at that position was null, in
+                // which case  we must have ignored it, and so we have to actually keep looking backwards until we find
+                // something not null.
+                ctx.lastStamp = locateFirstValidPreviousTimestamp(sourceIndex, firstUnmodifiedKey);
+            }
         }
     }
 
@@ -166,12 +149,13 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         }
 
         try (final RowSet.SearchIterator rIt = indexToSearch.reverseIterator()) {
-            rIt.advance(firstUnmodifiedKey);
-            while (rIt.hasNext()) {
-                final long nextKey = rIt.nextLong();
-                potentialResetTimestamp = timeRecorder.getCurrentLong(nextKey);
-                if (potentialResetTimestamp != NULL_LONG && isValueValid(nextKey)) {
-                    return potentialResetTimestamp;
+            if (rIt.advance(firstUnmodifiedKey)) {
+                while (rIt.hasNext()) {
+                    final long nextKey = rIt.nextLong();
+                    potentialResetTimestamp = timeRecorder.getCurrentLong(nextKey);
+                    if (potentialResetTimestamp != NULL_LONG && isValueValid(nextKey)) {
+                        return potentialResetTimestamp;
+                    }
                 }
             }
         }

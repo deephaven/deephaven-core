@@ -33,7 +33,6 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 public abstract class BaseIntUpdateByOperator extends UpdateByCumulativeOperator {
     protected final WritableColumnSource<Integer> outputSource;
     protected final WritableColumnSource<Integer> maybeInnerSource;
-    protected boolean trackingPrev = false;
 
     protected final MatchPair pair;
     protected final String[] affectingColumns;
@@ -198,12 +197,9 @@ public abstract class BaseIntUpdateByOperator extends UpdateByCumulativeOperator
 
     @Override
     public void startTrackingPrev() {
-        if (!trackingPrev) {
-            trackingPrev = true;
-            outputSource.startTrackingPrevValues();
-            if (isRedirected) {
-                maybeInnerSource.startTrackingPrevValues();
-            }
+        outputSource.startTrackingPrevValues();
+        if (isRedirected) {
+            maybeInnerSource.startTrackingPrevValues();
         }
     }
 

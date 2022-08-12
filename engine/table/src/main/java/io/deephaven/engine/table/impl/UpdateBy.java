@@ -112,10 +112,6 @@ public abstract class UpdateBy {
             rowRedirection = null;
         }
 
-        // start tracking previous values
-        if (rowRedirection != null) {
-            rowRedirection.startTrackingPrevValues();
-        }
 
         // TODO(deephaven-core#2693): Improve UpdateBy implementation for ColumnName
         // generate a MatchPair array for use by the existing algorithm
@@ -150,13 +146,22 @@ public abstract class UpdateBy {
         final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
         if (pairs.length == 0) {
             descriptionBuilder.append(")");
-            return ZeroKeyUpdateBy.compute(
+            Table ret = ZeroKeyUpdateBy.compute(
                     descriptionBuilder.toString(),
                     source,
                     opArr,
                     resultSources,
                     rowRedirection,
                     control);
+
+            if (source.isRefreshing()) {
+                // start tracking previous values
+                if (rowRedirection != null) {
+                    rowRedirection.startTrackingPrevValues();
+                }
+                ops.forEach(UpdateByOperator::startTrackingPrev);
+            }
+            return ret;
         }
 
         descriptionBuilder.append(", pairs={").append(MatchPair.matchString(pairs)).append("})");
@@ -173,7 +178,7 @@ public abstract class UpdateBy {
                     String.join(", ", problems) + "}");
         }
 
-        return BucketedPartitionedUpdateBy.compute(
+        Table ret = BucketedPartitionedUpdateBy.compute(
                 descriptionBuilder.toString(),
                 source,
                 opArr,
@@ -182,27 +187,14 @@ public abstract class UpdateBy {
                 rowRedirection,
                 control);
 
-//        return BucketedUpdateBy.compute(descriptionBuilder.toString(),
-//                source,
-//                opArr,
-//                resultSources,
-//                rowRedirection,
-//                keySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
-//                originalKeySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
-//                pairs,
-//                control);
-
-//
-//
-//        return BucketedUpdateBy.compute(descriptionBuilder.toString(),
-//                source,
-//                opArr,
-//                resultSources,
-//                rowRedirection,
-//                keySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
-//                originalKeySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
-//                pairs,
-//                control);
+        if (source.isRefreshing()) {
+            // start tracking previous values
+            if (rowRedirection != null) {
+                rowRedirection.startTrackingPrevValues();
+            }
+            ops.forEach(UpdateByOperator::startTrackingPrev);
+        }
+        return ret;
     }
 
     protected void processUpdateForRedirection(@NotNull final TableUpdate upstream) {
