@@ -130,10 +130,6 @@ func (tt *TickingTable) ApplyUpdate(update TickingUpdate) {
 		destSet = append(destSet, r)
 	}
 
-	fmt.Println("starts: ", startSet)
-	fmt.Println("ends: ", endSet)
-	fmt.Println("dests: ", destSet)
-
 	// Negative deltas get applied low-to-high keyspace order
 	for i := 0; i < len(startSet); i++ {
 		start := startSet[i]
@@ -347,6 +343,56 @@ func (tt *TickingTable) AddRow(key uint64, sourceRecord arrow.Table, sourceRow i
 
 		tt.keys.Add(key)
 		tt.redirectIndex[key] = destIdx
+	}
+}
+
+// TODO:
+// This would be a more efficient way to consume the record instead of using rowidx in ApplyUpdate
+// Is it worth the extra effort? Who knows!
+type ChunkedIter struct {
+	chunks   *arrow.Chunked
+	chunkIdx int
+	elemIdx  int
+}
+
+// you'd have one of these methods for each of the supported types, which seems... like a lot of work
+func (iter *ChunkedIter) NextI32() (value int32, ok bool) {
+	if iter.chunkIdx == len(iter.chunks.Chunks()) {
+		return 0, false
+	} else {
+		chunk := iter.chunks.Chunk(iter.chunkIdx).(*array.Int32)
+		value := chunk.Value(iter.elemIdx)
+		iter.elemIdx++
+		if iter.elemIdx == chunk.Len() {
+			iter.elemIdx = 0
+			iter.chunkIdx += 1
+		}
+		return value, true
+	}
+}
+
+// ditto on the above comment
+// also the length of the returned array might not necessarily be the same as the len argument
+func (iter *ChunkedIter) NextI32Slice(length int) (values []int32) {
+	if iter.chunkIdx == len(iter.chunks.Chunks()) {
+		return nil
+	} else {
+		chunk := iter.chunks.Chunk(iter.chunkIdx).(*array.Int32)
+
+		consumed := length
+		if consumed > chunk.Len() {
+			consumed = chunk.Len()
+		}
+
+		values = chunk.Int32Values()[iter.elemIdx : iter.elemIdx+consumed]
+
+		iter.elemIdx += consumed
+		if iter.elemIdx == chunk.Len() {
+			iter.elemIdx = 0
+			iter.chunkIdx += 1
+		}
+
+		return values
 	}
 }
 

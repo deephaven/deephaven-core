@@ -174,6 +174,7 @@ func waitForClose(updateCh <-chan ticking.TickingStatus) error {
 
 // checkTable repeatedly snapshots a table and checks it using the provided function.
 // If the table still fails the check after the timeout has expired, this returns an error.
+/*
 func checkSnapshot(ctx context.Context, table *client.TableHandle, expected arrow.Record, timeout time.Duration) error {
 	timeoutChannel := time.After(timeout)
 
@@ -196,6 +197,7 @@ func checkSnapshot(ctx context.Context, table *client.TableHandle, expected arro
 		}
 	}
 }
+*/
 
 func compareRecords(actual arrow.Record, expected arrow.Record) error {
 	if actual.NumCols() != expected.NumCols() {
@@ -371,10 +373,6 @@ func TestModifyingTable(t *testing.T) {
 	tickingTbl.ApplyUpdate(update)
 
 	rec1 := randomSampleRecord(20, 10)
-
-	fmt.Println("table is ", tickingTbl)
-	fmt.Println("adding in record", rec1)
-
 	err = addRecordAppend(ctx, cl, inTable, rec1)
 	test_tools.CheckError(t, "addRecordAppend", err)
 	defer rec1.Release()

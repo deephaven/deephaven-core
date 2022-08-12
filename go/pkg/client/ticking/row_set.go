@@ -136,19 +136,15 @@ func (dec *RowSetDecoder) munchValue(valueType rowSetValueType) (int64, error) {
 	switch valueType {
 	case valueTypeShort:
 		value := dec.munchShort()
-		fmt.Print("s ", value, " ")
 		return int64(value), nil
 	case valueTypeInt:
 		value := dec.munchInt()
-		fmt.Print("i ", value, " ")
 		return int64(value), nil
 	case valueTypeLong:
 		value := dec.munchLong()
-		fmt.Print("l ", value, " ")
 		return int64(value), nil
 	case valueTypeByte:
 		value := dec.munchByte()
-		fmt.Print("b ", value, " ")
 		return int64(value), nil
 	default:
 		return 0, fmt.Errorf("unknown RowSet value type %d", valueType)
@@ -161,7 +157,6 @@ func (dec *RowSetDecoder) munchCmd() (done bool, err error) {
 
 	switch cmdType {
 	case cmdTypeOffset:
-		fmt.Print("offset ")
 		val, err := dec.munchValue(valType)
 		if err != nil {
 			return false, err
@@ -169,7 +164,6 @@ func (dec *RowSetDecoder) munchCmd() (done bool, err error) {
 		dec.resultRowSet = append(dec.resultRowSet, int64(val))
 		return false, nil
 	case cmdTypeShortArray:
-		fmt.Print("shortarray ")
 		length, err := dec.munchValue(valType)
 		if err != nil {
 			return false, err
@@ -179,11 +173,9 @@ func (dec *RowSetDecoder) munchCmd() (done bool, err error) {
 			value := int64(dec.munchShort())
 			values = append(values, value)
 		}
-		fmt.Printf("%v ", values)
 		dec.resultRowSet = append(dec.resultRowSet, values...)
 		return false, nil
 	case cmdTypeByteArray:
-		fmt.Print("bytearray ")
 		length, err := dec.munchValue(valType)
 		if err != nil {
 			return false, err
@@ -193,14 +185,9 @@ func (dec *RowSetDecoder) munchCmd() (done bool, err error) {
 			value := int64(dec.munchByte())
 			values = append(values, value)
 		}
-		fmt.Printf("%v ", values)
 		dec.resultRowSet = append(dec.resultRowSet, values...)
 		return false, nil
 	case cmdTypeEnd:
-		fmt.Print("end")
-		if valType != 0 {
-			fmt.Printf(" (%d)", valType)
-		}
 		return true, nil
 	default:
 		return false, fmt.Errorf("unknown command type %d", cmdType)

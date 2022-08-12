@@ -280,9 +280,6 @@ func (fs *flightStub) subscribe(ctx context.Context, handle *TableHandle, option
 	desc := &flight.FlightDescriptor{Type: flight.DescriptorCMD, Cmd: []byte{0x64, 0x70, 0x68, 0x6E}}
 	data := &flight.FlightData{DataHeader: msgBuf, AppMetadata: customMeta, FlightDescriptor: desc}
 
-	msg := flatbuf_b.GetRootAsBarrageMessageWrapper(customMeta, 0)
-	fmt.Println(msg)
-
 	err = doExchg.Send(data)
 	if err != nil {
 		return nil, nil, err
@@ -357,13 +354,8 @@ func (fs *flightStub) subscribe(ctx context.Context, handle *TableHandle, option
 					payload[i] = byte(msgWrapper.MsgPayload(i))
 				}
 
-				fmt.Println(msgWrapper.MsgType())
 				if msgWrapper.MsgType() == flatbuf_b.BarrageMessageTypeBarrageUpdateMetadata {
 					updateMeta := flatbuf_b.GetRootAsBarrageUpdateMetadata(payload, 0)
-					fmt.Println()
-					fmt.Println("first_seq:", updateMeta.FirstSeq())
-					fmt.Println("last_seq:", updateMeta.LastSeq())
-					fmt.Println("is_snapshot", updateMeta.IsSnapshot())
 
 					addedRows := make([]byte, updateMeta.AddedRowsLength())
 					for i := 0; i < updateMeta.AddedRowsLength(); i++ {
@@ -400,21 +392,16 @@ func (fs *flightStub) subscribe(ctx context.Context, handle *TableHandle, option
 							updateChan <- ticking.TickingStatus{Err: err}
 							return
 						}
-						fmt.Println("modified: ", modifiedRowSetDe)
 						modifiedRows = append(modifiedRows, modifiedRowSetDe)
 					}
 
-					fmt.Print("removed rows: ")
 					removedRowsDec, err := ticking.DeserializeRowSet(removedRows)
-					fmt.Println()
 					if err != nil {
 						updateChan <- ticking.TickingStatus{Err: err}
 						return
 					}
 
-					fmt.Print("shift data: ")
 					startSet, endSet, destSet, err := ticking.DeserializeRowSetShiftData(shiftData)
-					fmt.Println()
 					if err != nil {
 						updateChan <- ticking.TickingStatus{Err: err}
 						return
@@ -424,18 +411,14 @@ func (fs *flightStub) subscribe(ctx context.Context, handle *TableHandle, option
 
 					var addedRowsIncSet ticking.RowSet
 					if hasIncludedRows {
-						fmt.Print("added rows included: ")
 						addedRowsIncSet, err = ticking.DeserializeRowSet(addedRowsIncluded)
-						fmt.Println()
 						if err != nil {
 							updateChan <- ticking.TickingStatus{Err: err}
 							return
 						}
 					}
 
-					fmt.Print("added rows: ")
 					addedRowsDec, err := ticking.DeserializeRowSet(addedRows)
-					fmt.Println()
 					if err != nil {
 						updateChan <- ticking.TickingStatus{Err: err}
 						return
@@ -474,7 +457,7 @@ func (fs *flightStub) subscribe(ctx context.Context, handle *TableHandle, option
 						return
 					}
 				} else {
-					fmt.Println("OTHER MESSAGE TYPE")
+					fmt.Println("TODO: OTHER MESSAGE TYPE")
 				}
 			} else {
 				record := reader.Record()
