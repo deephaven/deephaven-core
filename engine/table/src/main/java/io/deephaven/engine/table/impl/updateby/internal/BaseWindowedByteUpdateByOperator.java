@@ -40,28 +40,8 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
 
     protected class Context extends UpdateWindowedContext {
         public boolean canProcessDirectly;
-        public RowSet workingRowSet = null;
-
-        // candidate data for the window
-        public final int WINDOW_CHUNK_SIZE = 1024;
-
-        // data that is actually in the current window
-        public LongRingBuffer windowRowKeys = new LongRingBuffer(WINDOW_CHUNK_SIZE, true);
-        // the selector that determines whether this value should be in the window, positions for tick-based and
-        // timestamps for time-based operators
-        public LongRingBuffer windowSelector = new LongRingBuffer(WINDOW_CHUNK_SIZE, true);
-
-        public RowSequence.Iterator windowIterator = null;
 
         public WritableByteChunk<Values> candidateValuesChunk;
-        public WritableLongChunk<? extends RowKeys> candidateRowKeysChunk;
-        public WritableLongChunk<? extends RowKeys> candidatePositionsChunk;
-        public WritableLongChunk<Values> candidateTimestampsChunk;
-
-        public int candidateWindowIndex = 0;
-
-        // position data for the chunk being currently processed
-        public WritableLongChunk<? extends RowKeys> valuePositionChunk;
 
         // other useful stuff
         public UpdateBy.UpdateType currentUpdateType;
@@ -78,146 +58,21 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
 
         @Override
         public void close() {
-            if (windowIterator != null) {
-                windowIterator.close();
-                windowIterator = null;
-            }
-
+            super.close();
             if (candidateValuesChunk != null) {
                 candidateValuesChunk.close();
                 candidateValuesChunk = null;
             }
-
-            if (candidateRowKeysChunk != null) {
-                candidateRowKeysChunk.close();
-                candidateRowKeysChunk = null;
-            }
-
-            if (candidatePositionsChunk != null) {
-                candidatePositionsChunk.close();
-                candidatePositionsChunk = null;
-            }
-
-            if (valuePositionChunk != null) {
-                valuePositionChunk.close();
-                valuePositionChunk = null;
-            }
-
-            // no need to close, just release the reference
-            workingRowSet = null;
         }
 
-        /***
-         * Fill the working chunks with data for this key
-         *
-         * @param startKey the key for which we want to
-         */
-        public void loadWindowChunks(final long startKey) {
-            // TODO: make sure this works for bucketed
-            if (windowIterator == null) {
-                windowIterator = workingRowSet.getRowSequenceIterator();
-            }
-            windowIterator.advance(startKey);
-
-            RowSequence windowRowSequence = windowIterator.getNextRowSequenceWithLength(WINDOW_CHUNK_SIZE);
-
+        @Override
+        public void loadCandidateValueChunk(RowSequence windowRowSequence) {
             // fill the window values chunk
             if (candidateValuesChunk == null) {
                 candidateValuesChunk = WritableByteChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
             }
             try (ChunkSource.FillContext fc = valueSource.makeFillContext(WINDOW_CHUNK_SIZE)){
                 valueSource.fillChunk(fc, candidateValuesChunk, windowRowSequence);
-            }
-
-            // fill the window keys chunk
-            if (candidateRowKeysChunk == null) {
-                candidateRowKeysChunk = WritableLongChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
-            }
-            windowRowSequence.fillRowKeyChunk(candidateRowKeysChunk);
-
-            if (recorder == null) {
-                // get position data for the window items (relative to the table or bucket rowset)
-                if (candidatePositionsChunk == null) {
-                    candidatePositionsChunk = WritableLongChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
-                }
-
-                // TODO: gotta be a better way than creating two rowsets
-                try (final RowSet rs = windowRowSequence.asRowSet();
-                     final RowSet positions = workingRowSet.invert(rs)) {
-                    positions.fillRowKeyChunk(candidatePositionsChunk);
-                }
-            } else {
-                // get timestamp values from the recorder column source
-                if (candidateTimestampsChunk == null) {
-                    candidateTimestampsChunk = WritableLongChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
-                }
-                try (final ChunkSource.FillContext fc = recorder.getColumnSource().makeFillContext(WINDOW_CHUNK_SIZE)) {
-                    recorder.getColumnSource().fillChunk(fc, candidateTimestampsChunk, windowRowSequence);
-                }
-            }
-
-            // reset the index to beginning of the chunks
-            candidateWindowIndex = 0;
-        }
-
-        /***
-         * Fill the working chunks with data for this key
-         *
-         * @param inputKeys the keys for which we want to get position or timestamp values
-         */
-        public void loadDataChunks(final RowSequence inputKeys) {
-            if (recorder != null) {
-                // timestamp data will be available from the recorder
-                return;
-            }
-
-            if (valuePositionChunk == null) {
-                valuePositionChunk = WritableLongChunk.makeWritableChunk(inputKeys.intSize());
-            } else if (valuePositionChunk.capacity() < inputKeys.size()) {
-                valuePositionChunk.close();
-                valuePositionChunk = WritableLongChunk.makeWritableChunk(inputKeys.intSize());
-            }
-
-            // produce position data for the window (will be timestamps for time-based)
-            // TODO: gotta be a better way than creating two rowsets
-            try (final RowSet rs = inputKeys.asRowSet();
-                 final RowSet positions = workingRowSet.invert(rs)) {
-                positions.fillRowKeyChunk(valuePositionChunk);
-            }
-        }
-
-        public void fillWindowTicks(UpdateContext context, long currentPos) {
-            // compute the head and tail (inclusive)
-            final long tail = Math.max(0, currentPos - reverseTimeScaleUnits + 1);
-            final long head = Math.min(workingRowSet.size() - 1, currentPos + forwardTimeScaleUnits);
-
-            while (windowSelector.peek(Long.MAX_VALUE) < tail) {
-                final long pos = windowSelector.remove();
-                final long key = windowRowKeys.remove();
-
-                pop(context, key);
-            }
-
-
-            // look at the window data and push until satisfied or at the end of the rowset
-            while (candidatePositionsChunk.size() > 0 && candidatePositionsChunk.get(candidateWindowIndex) <= head) {
-                final long pos = candidatePositionsChunk.get(candidateWindowIndex);
-                final long key = candidateRowKeysChunk.get(candidateWindowIndex);
-                final byte val = candidateValuesChunk.get(candidateWindowIndex);
-
-                push(context, key, val);
-
-                windowSelector.add(pos);
-                windowRowKeys.add(key);
-
-                if (++candidateWindowIndex >= candidatePositionsChunk.size()) {
-                    // load the next chunk in order
-                    loadWindowChunks(key + 1);
-                }
-            }
-
-            if (windowSelector.isEmpty()) {
-                reset(context);
             }
         }
     }
@@ -254,10 +109,6 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
         return new ByteArraySource();
     }
     // endregion extra-methods
-
-    public abstract void push(UpdateContext context, long key, byte val);
-    public abstract void pop(UpdateContext context, long key);
-    public abstract void reset(UpdateContext context);
 
     @Override
     public void initializeForUpdate(@NotNull UpdateContext context, @NotNull TableUpdate upstream, @NotNull RowSet resultSourceRowSet, final long lastPrevKey, boolean isUpstreamAppendOnly) {

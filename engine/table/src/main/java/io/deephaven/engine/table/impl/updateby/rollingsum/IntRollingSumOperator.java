@@ -32,6 +32,7 @@ import java.util.LinkedList;
 import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 
 public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
 
@@ -106,15 +107,32 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
     }
 
     @Override
-    public void push(UpdateContext context, long key, int val) {
+    public void push(UpdateContext context, long key, int index) {
         final Context ctx = (Context) context;
+        Integer val = ctx.candidateValuesChunk.get(index);
+
+        // add the value to the window buffer
         ctx.windowValues.addLast(val);
+
+        // increase the running sum
+        if (val != NULL_INT) {
+            if (ctx.currentVal == NULL_LONG) {
+                ctx.currentVal = val;
+            } else {
+                ctx.currentVal += val;
+            }
+        }
     }
 
     @Override
     public void pop(UpdateContext context, long key) {
         final Context ctx = (Context) context;
-        ctx.windowValues.pop();
+        Integer val = ctx.windowValues.pop();
+
+        // reduce the running sum
+        if (val != NULL_INT) {
+            ctx.currentVal -= val;
+        }
     }
 
     @Override
@@ -144,21 +162,7 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
             if (recorder == null) {
                 ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get(ii));
             }
-
-            MutableLong sum = new MutableLong(NULL_LONG);
-            ctx.windowValues.forEach(v-> {
-                if (v != null && v != QueryConstants.NULL_INT) {
-                    if (sum.longValue() == NULL_LONG) {
-                        sum.setValue(v);
-                    } else {
-                        sum.add(v);
-                    }
-                }
-            });
-
-            // this call generates the push/pop calls to satisfy the window
-//            ctx.fillWindow(key, postUpdateSourceIndex);
-
+            // the sum was computed by push/pop operations
             localOutputValues.set(ii, ctx.currentVal);
         }
     }

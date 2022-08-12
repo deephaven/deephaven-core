@@ -32,6 +32,7 @@ import java.util.LinkedList;
 import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
 
@@ -109,15 +110,32 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
     }
 
     @Override
-    public void push(UpdateContext context, long key, byte val) {
+    public void push(UpdateContext context, long key, int index) {
         final Context ctx = (Context) context;
+        Byte val = ctx.candidateValuesChunk.get(index);
+
+        // add the value to the window buffer
         ctx.windowValues.addLast(val);
+
+        // increase the running sum
+        if (val != NULL_BYTE) {
+            if (ctx.currentVal == NULL_LONG) {
+                ctx.currentVal = val;
+            } else {
+                ctx.currentVal += val;
+            }
+        }
     }
 
     @Override
     public void pop(UpdateContext context, long key) {
         final Context ctx = (Context) context;
-        ctx.windowValues.pop();
+        Byte val = ctx.windowValues.pop();
+
+        // reduce the running sum
+        if (val != NULL_BYTE) {
+            ctx.currentVal -= val;
+        }
     }
 
     @Override
@@ -147,21 +165,7 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
             if (recorder == null) {
                 ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get(ii));
             }
-
-            MutableLong sum = new MutableLong(NULL_LONG);
-            ctx.windowValues.forEach(v-> {
-                if (v != null && v != QueryConstants.NULL_BYTE) {
-                    if (sum.longValue() == NULL_LONG) {
-                        sum.setValue(v);
-                    } else {
-                        sum.add(v);
-                    }
-                }
-            });
-
-            // this call generates the push/pop calls to satisfy the window
-//            ctx.fillWindow(key, postUpdateSourceIndex);
-
+            // the sum was computed by push/pop operations
             localOutputValues.set(ii, ctx.currentVal);
         }
     }

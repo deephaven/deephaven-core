@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOpe
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import io.deephaven.util.QueryConstants;
+import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,6 +31,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Map;
 
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
@@ -103,8 +105,9 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     }
 
     @Override
-    public void push(UpdateContext context, long key, float val) {
+    public void push(UpdateContext context, long key, int index) {
         final Context ctx = (Context) context;
+        float val = ctx.candidateValuesChunk.get(index);
         ctx.windowValues.addLast(val);
     }
 
@@ -141,19 +144,16 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
                 ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get(ii));
             }
 
-            MutableLong sum = new MutableLong(NULL_LONG);
+            MutableFloat sum = new MutableFloat(NULL_FLOAT);
             ctx.windowValues.forEach(v-> {
-                if (v != null && v != QueryConstants.NULL_SHORT) {
-                    if (sum.longValue() == NULL_LONG) {
+                if (v != QueryConstants.NULL_FLOAT) {
+                    if (sum.getValue() == NULL_FLOAT) {
                         sum.setValue(v);
                     } else {
                         sum.add(v);
                     }
                 }
             });
-
-            // this call generates the push/pop calls to satisfy the window
-//            ctx.fillWindow(key, postUpdateSourceIndex);
 
             localOutputValues.set(ii, sum.getValue());
         }

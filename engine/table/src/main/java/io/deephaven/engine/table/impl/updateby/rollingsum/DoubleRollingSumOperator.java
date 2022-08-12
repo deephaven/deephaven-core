@@ -27,6 +27,7 @@ import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOpe
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import io.deephaven.util.QueryConstants;
+import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,6 +36,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Map;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator {
@@ -108,8 +110,9 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
     }
 
     @Override
-    public void push(UpdateContext context, long key, double val) {
+    public void push(UpdateContext context, long key, int index) {
         final Context ctx = (Context) context;
+        double val = ctx.candidateValuesChunk.get(index);
         ctx.windowValues.addLast(val);
     }
 
@@ -146,19 +149,16 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
                 ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get(ii));
             }
 
-            MutableLong sum = new MutableLong(NULL_LONG);
+            MutableDouble sum = new MutableDouble(NULL_DOUBLE);
             ctx.windowValues.forEach(v-> {
-                if (v != null && v != QueryConstants.NULL_SHORT) {
-                    if (sum.longValue() == NULL_LONG) {
+                if (v != QueryConstants.NULL_DOUBLE) {
+                    if (sum.getValue() == NULL_DOUBLE) {
                         sum.setValue(v);
                     } else {
                         sum.add(v);
                     }
                 }
             });
-
-            // this call generates the push/pop calls to satisfy the window
-//            ctx.fillWindow(key, postUpdateSourceIndex);
 
             localOutputValues.set(ii, sum.getValue());
         }
