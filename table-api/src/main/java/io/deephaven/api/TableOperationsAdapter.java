@@ -301,6 +301,16 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
+    public final TOPS_1 aggBy(Collection<? extends Aggregation> aggregations) {
+        return adapt(delegate.aggBy(aggregations));
+    }
+
+    @Override
+    public TOPS_1 aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty) {
+        return adapt(delegate.aggBy(aggregations, preserveEmpty));
+    }
+
+    @Override
     public final TOPS_1 aggBy(Aggregation aggregation, String... groupByColumns) {
         return adapt(delegate.aggBy(aggregation, groupByColumns));
     }
@@ -308,11 +318,6 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     @Override
     public final TOPS_1 aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns) {
         return adapt(delegate.aggBy(aggregation, groupByColumns));
-    }
-
-    @Override
-    public final TOPS_1 aggBy(Collection<? extends Aggregation> aggregations) {
-        return adapt(delegate.aggBy(aggregations));
     }
 
     @Override
@@ -362,6 +367,13 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
             Collection<? extends ColumnName> byColumns) {
         return adapt(delegate.updateBy(control, operations, byColumns));
+    }
+
+    @Override
+    public TOPS_1 aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, TABLE_1 initialGroups,
+            Collection<? extends ColumnName> groupByColumns) {
+        return adapt(delegate.aggBy(aggregations, preserveEmpty, initialGroups == null ? null : adapt(initialGroups),
+                groupByColumns));
     }
 
     @Override

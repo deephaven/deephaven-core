@@ -29,17 +29,14 @@ type ConsoleServiceClient interface {
 	ExecuteCommand(ctx context.Context, in *ExecuteCommandRequest, opts ...grpc.CallOption) (*ExecuteCommandResponse, error)
 	CancelCommand(ctx context.Context, in *CancelCommandRequest, opts ...grpc.CallOption) (*CancelCommandResponse, error)
 	BindTableToVariable(ctx context.Context, in *BindTableToVariableRequest, opts ...grpc.CallOption) (*BindTableToVariableResponse, error)
-	//
 	// Starts a stream for autocomplete on the current session. More than one console,
 	// more than one document can be edited at a time using this, and they can separately
 	// be closed as well. A given document should only be edited within one stream at a
 	// time.
 	AutoCompleteStream(ctx context.Context, opts ...grpc.CallOption) (ConsoleService_AutoCompleteStreamClient, error)
-	//
 	// Half of the browser-based (browser's can't do bidirectional streams without websockets)
 	// implementation for AutoCompleteStream.
 	OpenAutoCompleteStream(ctx context.Context, in *AutoCompleteRequest, opts ...grpc.CallOption) (ConsoleService_OpenAutoCompleteStreamClient, error)
-	//
 	// Other half of the browser-based implementation for AutoCompleteStream.
 	NextAutoCompleteStream(ctx context.Context, in *AutoCompleteRequest, opts ...grpc.CallOption) (*BrowserNextResponse, error)
 }
@@ -221,17 +218,14 @@ type ConsoleServiceServer interface {
 	ExecuteCommand(context.Context, *ExecuteCommandRequest) (*ExecuteCommandResponse, error)
 	CancelCommand(context.Context, *CancelCommandRequest) (*CancelCommandResponse, error)
 	BindTableToVariable(context.Context, *BindTableToVariableRequest) (*BindTableToVariableResponse, error)
-	//
 	// Starts a stream for autocomplete on the current session. More than one console,
 	// more than one document can be edited at a time using this, and they can separately
 	// be closed as well. A given document should only be edited within one stream at a
 	// time.
 	AutoCompleteStream(ConsoleService_AutoCompleteStreamServer) error
-	//
 	// Half of the browser-based (browser's can't do bidirectional streams without websockets)
 	// implementation for AutoCompleteStream.
 	OpenAutoCompleteStream(*AutoCompleteRequest, ConsoleService_OpenAutoCompleteStreamServer) error
-	//
 	// Other half of the browser-based implementation for AutoCompleteStream.
 	NextAutoCompleteStream(context.Context, *AutoCompleteRequest) (*BrowserNextResponse, error)
 	mustEmbedUnimplementedConsoleServiceServer()

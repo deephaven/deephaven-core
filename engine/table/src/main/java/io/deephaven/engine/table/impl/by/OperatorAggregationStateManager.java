@@ -12,6 +12,8 @@ import org.apache.commons.lang3.mutable.MutableInt;
 
 interface OperatorAggregationStateManager {
 
+    int maxTableSize();
+
     SafeCloseable makeAggregationStateBuildContext(ColumnSource<?>[] buildSources, long maxSize);
 
     void add(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions);

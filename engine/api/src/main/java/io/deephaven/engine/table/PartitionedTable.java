@@ -9,6 +9,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.updategraph.ConcurrentMethod;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -62,6 +63,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      *
      * @return The underlying {@link Table partitioned table}
      */
+    @ConcurrentMethod
     Table table();
 
     /**
@@ -70,6 +72,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      *
      * @return The key column names
      */
+    @ConcurrentMethod
     Set<String> keyColumnNames();
 
     /**
@@ -82,6 +85,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      *
      * @return Whether the keys in the underlying partitioned table are unique
      */
+    @ConcurrentMethod
     boolean uniqueKeys();
 
     /**
@@ -89,6 +93,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      *
      * @return The constituent column name
      */
+    @ConcurrentMethod
     String constituentColumnName();
 
     /**
@@ -98,6 +103,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      *
      * @return The constituent definition
      */
+    @ConcurrentMethod
     TableDefinition constituentDefinition();
 
     /**
@@ -115,6 +121,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      *
      * @return Whether the constituents of the underlying partitioned table can change
      */
+    @ConcurrentMethod
     boolean constituentChangesPermitted();
 
     /**
@@ -125,6 +132,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @see #proxy(boolean, boolean)
      */
     @FinalDefault
+    @ConcurrentMethod
     default Proxy proxy() {
         return proxy(true, true);
     }
@@ -147,6 +155,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @return A proxy that allows {@link TableOperations table operations} to be applied to the constituent tables of
      *         this PartitionedTable
      */
+    @ConcurrentMethod
     Proxy proxy(boolean requireMatchingKeys, boolean sanityCheckJoinOperations);
 
     /**
@@ -169,6 +178,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @param filters The filters to apply. Must not reference the constituent column.
      * @return The filtered PartitionedTable
      */
+    @ConcurrentMethod
     PartitionedTable filter(Collection<? extends Filter> filters);
 
     /**
@@ -180,6 +190,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @param sortColumns The columns to sort by. Must not reference the constituent column.
      * @return The sorted PartitionedTable
      */
+    @ConcurrentMethod
     PartitionedTable sort(Collection<SortColumn> sortColumns);
 
     /**
@@ -242,6 +253,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @return The {@link Table constituent} at the single row in {@link #table()} matching the {@code keyColumnValues},
      *         or {@code null} if no matches were found
      */
+    @ConcurrentMethod
     Table constituentFor(@NotNull Object... keyColumnValues);
 
     /**
@@ -255,5 +267,6 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      *
      * @return An array of all current {@link Table constituents}
      */
+    @ConcurrentMethod
     Table[] constituents();
 }

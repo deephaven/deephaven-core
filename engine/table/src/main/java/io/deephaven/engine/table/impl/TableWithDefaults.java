@@ -664,6 +664,18 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table aggBy(Collection<? extends Aggregation> aggregations) {
+        return aggBy(aggregations, Collections.emptyList());
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty) {
+        return aggBy(aggregations, preserveEmpty, null, Collections.emptyList());
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table aggBy(Aggregation aggregation, String... groupByColumns) {
         return aggBy(List.of(aggregation), groupByColumns);
     }
@@ -682,8 +694,9 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
-    default Table aggBy(Collection<? extends Aggregation> aggregations) {
-        return aggBy(aggregations, Collections.emptyList());
+    default Table aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends ColumnName> groupByColumns) {
+        return aggBy(aggregations, false, null, groupByColumns);
     }
 
     @Override
@@ -697,6 +710,7 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
+    @ConcurrentMethod
     default Table applyToAllBy(String formulaColumn, String columnParamName,
             Collection<? extends ColumnName> groupByColumns) {
         return aggAllBy(AggSpec.formula(formulaColumn, columnParamName), groupByColumns.toArray(ColumnName[]::new));
@@ -1000,6 +1014,12 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table medianBy() {
         return medianBy(ZERO_LENGTH_COLUMNNAME_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table countBy(String countColumnName, ColumnName... groupByColumns) {
+        return aggBy(Aggregation.AggCount(countColumnName), Arrays.asList(groupByColumns));
     }
 
     @Override

@@ -25,6 +25,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.updategraph.ConcurrentMethod;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -93,36 +94,43 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         return "PartitionedTable for " + table.getDescription();
     }
 
+    @ConcurrentMethod
     @Override
     public Table table() {
         return table;
     }
 
+    @ConcurrentMethod
     @Override
     public Set<String> keyColumnNames() {
         return keyColumnNames;
     }
 
+    @ConcurrentMethod
     @Override
     public boolean uniqueKeys() {
         return uniqueKeys;
     }
 
+    @ConcurrentMethod
     @Override
     public String constituentColumnName() {
         return constituentColumnName;
     }
 
+    @ConcurrentMethod
     @Override
     public TableDefinition constituentDefinition() {
         return constituentDefinition;
     }
 
+    @ConcurrentMethod
     @Override
     public boolean constituentChangesPermitted() {
         return constituentChangesPermitted;
     }
 
+    @ConcurrentMethod
     @Override
     public PartitionedTable.Proxy proxy(final boolean requireMatchingKeys, final boolean sanityCheckJoinOperations) {
         return PartitionedTableProxyImpl.of(this, requireMatchingKeys, sanityCheckJoinOperations);
@@ -187,6 +195,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         return candidates;
     }
 
+    @ConcurrentMethod
     @Override
     public PartitionedTableImpl filter(@NotNull final Collection<? extends Filter> filters) {
         final WhereFilter[] whereFilters = WhereFilter.from(filters);
@@ -208,6 +217,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 false);
     }
 
+    @ConcurrentMethod
     @Override
     public PartitionedTable sort(@NotNull final Collection<SortColumn> sortColumns) {
         final boolean invalidSortColumn = sortColumns.stream()
@@ -227,6 +237,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 false);
     }
 
+    @ConcurrentMethod
     @Override
     public PartitionedTableImpl transform(@NotNull final UnaryOperator<Table> transformer) {
         final Table resultTable;
@@ -302,6 +313,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     // TODO (https://github.com/deephaven/deephaven-core/issues/2368): Consider adding transformWithKeys support
 
+    @ConcurrentMethod
     @Override
     public Table constituentFor(@NotNull final Object... keyColumnValues) {
         if (keyColumnValues.length != keyColumnNames.size()) {
@@ -334,6 +346,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         }
     }
 
+    @ConcurrentMethod
     @Override
     public Table[] constituents() {
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
