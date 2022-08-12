@@ -92,6 +92,67 @@ To bring up a SSL-enabled server on port 8443 with a development key and certifi
 ./gradlew server-jetty-app:run -Pgroovy -PdevCerts
 ```
 
-SSL configuration can be applied manually with the properties "ssl.identity.type", "ssl.identity.certChainPath", and
-"ssl.identity.privateKeyPath". See the javadocs on `io.deephaven.server.jetty.JettyConfig` and
-`io.deephaven.server.runner.Main.parseSSLConfig` for more information.
+SSL configuration can be applied manually with the properties "ssl.identity.type", "ssl.identity.certChainPath",
+"ssl.identity.privateKeyPath", "ssl.trust.type", and "ssl.trust.path". Furthermore, outbound Deephaven-to-Deephaven
+connections can be explicitly configured separately if desired, with the same properties prefixed with "outbound.".
+See the javadocs on `io.deephaven.server.jetty.JettyConfig` and `io.deephaven.server.runner.Main.parseSSLConfig` for
+more information.
+
+### SSL examples
+
+#### Simple
+
+```properties
+ssl.identity.type=privatekey
+ssl.identity.certChainPath=server.chain.crt
+ssl.identity.privateKeyPath=server.key
+```
+
+This is a common setup where the server specifies a private key and certificate chain. The certificate can be signed
+either by a public CA or an internal CA.
+
+#### Intranet
+
+```properties
+ssl.identity.type=privatekey
+ssl.identity.certChainPath=server.chain.crt
+ssl.identity.privateKeyPath=server.key
+ssl.trust.type=certs
+ssl.trust.path=ca.crt
+```
+
+This is a common intranet setup where the server additionally specifies a trust certificate. Most often, this will be a
+pattern used by organizations with an internal CA.
+
+Outbound initiated Deephaven-to-Deephaven connections will trust other servers that can be verified via ca.crt or the
+JDK trust stores.
+
+#### Zero-trust / Mutual TLS
+
+```properties
+ssl.identity.type=privatekey
+ssl.identity.certChainPath=server.chain.crt
+ssl.identity.privateKeyPath=server.key
+ssl.trust.type=certs
+ssl.trust.path=ca.crt
+ssl.clientAuthentication=NEEDED
+```
+
+This is a setup where the server additionally specifies that mutual TLS is required. This may be used to publicly expose
+a server without the need to setup a VPN, or for high security intranet needs.
+
+Inbound connections need to be verifiable via ca.crt. Outbound initiated Deephaven-to-Deephaven connections will trust
+other servers that can be verified via ca.crt or the JDK trust stores.
+
+#### Outbound
+
+```properties
+outbound.ssl.identity.type=privatekey
+outbound.ssl.identity.certChainPath=outbound-identity.chain.crt
+outbound.ssl.identity.privateKeyPath=outbound-identity.key
+outbound.ssl.trust.type=certs
+outbound.ssl.trust.path=outbound-ca.crt
+```
+
+In all of the above cases, the outbound Deephaven-to-Deephaven connections can be configured separately from the
+server's inbound configuration.
