@@ -3,20 +3,20 @@ module github.com/deephaven/deephaven-core/go
 go 1.18
 
 require (
+	github.com/RoaringBitmap/roaring v1.2.1
 	github.com/apache/arrow/go/v8 v8.0.0
+	github.com/google/flatbuffers v2.0.5+incompatible
 	google.golang.org/grpc v1.47.0
 	google.golang.org/protobuf v1.27.1
 )
 
 require (
-	github.com/RoaringBitmap/roaring v1.2.1 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/apache/thrift v0.15.0 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/goccy/go-json v0.9.6 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/flatbuffers v2.0.5+incompatible // indirect
 	github.com/klauspost/asmfmt v1.3.1 // indirect
 	github.com/klauspost/compress v1.14.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
