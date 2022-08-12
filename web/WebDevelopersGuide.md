@@ -610,7 +610,7 @@ These instances are immutable - all operations that compose them to build bigger
      third.
      * `isInf` - Returns true if the given number is "infinity".
      * `isNaN` - Returns true if the given number is "not a number".
-     * `isNormal` - Returns true if the given number is not null, is not infinity, and is not "not a number".
+     * `isFinite` - Returns true if the given number is not null, is not infinity, and is not "not a number".
      * `startsWith` - Returns true if the first string starts with the second string.
      * `endsWith` - Returns true if the first string ends with the second string.
      * `matches` - Returns true if the first string argument matches the second string used as a Java regular expression.
