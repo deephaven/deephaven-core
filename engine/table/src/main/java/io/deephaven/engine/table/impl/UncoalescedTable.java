@@ -345,21 +345,15 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public Table groupBy(Collection<? extends ColumnName> groupByColumns) {
-        return coalesce().groupBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
     public Table aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return coalesce().aggAllBy(spec, groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table aggBy(Collection<? extends Aggregation> aggregations,
+    public Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups,
             Collection<? extends ColumnName> groupByColumns) {
-        return coalesce().aggBy(aggregations, groupByColumns);
+        return coalesce().aggBy(aggregations, preserveEmpty, initialGroups, groupByColumns);
     }
 
     @Override
@@ -373,91 +367,6 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    @ConcurrentMethod
-    public Table applyToAllBy(String formulaColumn, String columnParamName,
-            Collection<? extends ColumnName> groupByColumns) {
-        return coalesce().applyToAllBy(formulaColumn, columnParamName, groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table sumBy(ColumnName... groupByColumns) {
-        return coalesce().sumBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table absSumBy(ColumnName... groupByColumns) {
-        return coalesce().absSumBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table avgBy(ColumnName... groupByColumns) {
-        return coalesce().avgBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table wavgBy(String weightColumn, ColumnName... groupByColumns) {
-        return coalesce().wavgBy(weightColumn, groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table wsumBy(String weightColumn, ColumnName... groupByColumns) {
-        return coalesce().wsumBy(weightColumn, groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table stdBy(ColumnName... groupByColumns) {
-        return coalesce().stdBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table varBy(ColumnName... groupByColumns) {
-        return coalesce().varBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table lastBy(ColumnName... groupByColumns) {
-        return coalesce().lastBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table firstBy(ColumnName... groupByColumns) {
-        return coalesce().firstBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table minBy(ColumnName... groupByColumns) {
-        return coalesce().minBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table maxBy(ColumnName... groupByColumns) {
-        return coalesce().maxBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table medianBy(ColumnName... groupByColumns) {
-        return coalesce().medianBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table countBy(String countColumnName, ColumnName... groupByColumns) {
-        return coalesce().countBy(countColumnName, groupByColumns);
-    }
-
-    @Override
     public Table ungroup(boolean nullFill, String... columnsToUngroup) {
         return coalesce().ungroup(nullFill, columnsToUngroup);
     }
@@ -466,6 +375,13 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     @ConcurrentMethod
     public PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames) {
         return coalesce().partitionBy(dropKeys, keyColumnNames);
+    }
+
+    @Override
+    @ConcurrentMethod
+    public PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
+            Table initialGroups, String... keyColumnNames) {
+        return coalesce().partitionedAggBy(aggregations, preserveEmpty, initialGroups, keyColumnNames);
     }
 
     @Override

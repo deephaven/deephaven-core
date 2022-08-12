@@ -281,7 +281,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         final Collection<? extends Aggregation> aggs = aggSupplier.get();
         final Collection<? extends ColumnName> columnNames = ColumnName.from(cols);
         final Function<Table, Table> applyAggs = t -> t.aggBy(aggs, columnNames);
-        return sds.transform(MemoizedOperationKey.aggBy(aggs, columnNames), applyAggs);
+        return sds.transform(MemoizedOperationKey.aggBy(aggs, false, null, columnNames), applyAggs);
     }
 
     private static SelectableDataSet getLastBySelectableDataSet(final SelectableDataSet sds, final String... columns) {

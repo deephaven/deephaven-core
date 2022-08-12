@@ -22,11 +22,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InputTableServiceClient interface {
-	//
 	// Adds the provided table to the specified input table. The new data to add must only have
 	// columns (name, types, and order) which match the given input table's columns.
 	AddTableToInputTable(ctx context.Context, in *AddTableRequest, opts ...grpc.CallOption) (*AddTableResponse, error)
-	//
 	// Removes the provided table from the specified input tables. The tables indicating which rows
 	// to remove are expected to only have columns that match the key columns of the input table.
 	DeleteTableFromInputTable(ctx context.Context, in *DeleteTableRequest, opts ...grpc.CallOption) (*DeleteTableResponse, error)
@@ -62,11 +60,9 @@ func (c *inputTableServiceClient) DeleteTableFromInputTable(ctx context.Context,
 // All implementations must embed UnimplementedInputTableServiceServer
 // for forward compatibility
 type InputTableServiceServer interface {
-	//
 	// Adds the provided table to the specified input table. The new data to add must only have
 	// columns (name, types, and order) which match the given input table's columns.
 	AddTableToInputTable(context.Context, *AddTableRequest) (*AddTableResponse, error)
-	//
 	// Removes the provided table from the specified input tables. The tables indicating which rows
 	// to remove are expected to only have columns that match the key columns of the input table.
 	DeleteTableFromInputTable(context.Context, *DeleteTableRequest) (*DeleteTableResponse, error)

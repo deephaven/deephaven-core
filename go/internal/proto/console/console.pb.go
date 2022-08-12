@@ -781,7 +781,8 @@ type LogSubscriptionRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// presently you get _all_ logs, not just your console
-	//    Ticket console_id = 1;
+	//
+	//	Ticket console_id = 1;
 	LastSeenLogTimestamp int64    `protobuf:"varint,1,opt,name=last_seen_log_timestamp,json=lastSeenLogTimestamp,proto3" json:"last_seen_log_timestamp,omitempty"`
 	Levels               []string `protobuf:"bytes,2,rep,name=levels,proto3" json:"levels,omitempty"`
 }
@@ -1205,6 +1206,7 @@ type AutoCompleteRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Request:
+	//
 	//	*AutoCompleteRequest_OpenDocument
 	//	*AutoCompleteRequest_ChangeDocument
 	//	*AutoCompleteRequest_GetCompletionItems
@@ -1317,6 +1319,7 @@ type AutoCompleteResponse struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Response:
+	//
 	//	*AutoCompleteResponse_CompletionItems
 	Response isAutoCompleteResponse_Response `protobuf_oneof:"response"`
 }

@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class AbstractColumnSource<T> implements
@@ -42,6 +43,7 @@ public abstract class AbstractColumnSource<T> implements
     protected final Class<?> componentType;
 
     protected volatile Map<T, RowSet> groupToRange;
+    protected volatile List<ColumnSource> rowSetIndexerKey;
 
     protected AbstractColumnSource(@NotNull final Class<T> type) {
         this(type, Object.class);
@@ -100,6 +102,19 @@ public abstract class AbstractColumnSource<T> implements
     @Override
     public ColumnSource<T> getPrevSource() {
         return new PrevColumnSource<>(this);
+    }
+
+    @Override
+    public List<ColumnSource> getColumnSources() {
+        List<ColumnSource> localRowSetIndexerKey;
+        if ((localRowSetIndexerKey = rowSetIndexerKey) == null) {
+            synchronized (this) {
+                if ((localRowSetIndexerKey = rowSetIndexerKey) == null) {
+                    rowSetIndexerKey = localRowSetIndexerKey = Collections.singletonList(this);
+                }
+            }
+        }
+        return localRowSetIndexerKey;
     }
 
     @Override

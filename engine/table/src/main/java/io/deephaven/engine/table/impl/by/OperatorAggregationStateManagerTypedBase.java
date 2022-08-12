@@ -20,6 +20,11 @@ public abstract class OperatorAggregationStateManagerTypedBase
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = HashTableColumnSource.MINIMUM_OVERFLOW_HASH_SLOT;
 
+    @Override
+    public final int maxTableSize() {
+        return Math.toIntExact(MAX_TABLE_SIZE);
+    }
+
     // the number of slots in our table
     private int tableSize;
 

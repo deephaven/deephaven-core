@@ -366,6 +366,7 @@ type TableReference struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Ref:
+	//
 	//	*TableReference_Ticket
 	//	*TableReference_BatchOffset
 	Ref isTableReference_Ref `protobuf_oneof:"ref"`
@@ -2256,6 +2257,7 @@ type Literal struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Value:
+	//
 	//	*Literal_StringValue
 	//	*Literal_DoubleValue
 	//	*Literal_BoolValue
@@ -2379,6 +2381,7 @@ type Value struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Data:
+	//
 	//	*Value_Reference
 	//	*Value_Literal
 	Data isValue_Data `protobuf_oneof:"data"`
@@ -2459,6 +2462,7 @@ type Condition struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Data:
+	//
 	//	*Condition_And
 	//	*Condition_Or
 	//	*Condition_Not
@@ -3386,6 +3390,7 @@ type CreateInputTableRequest struct {
 
 	ResultId *ticket.Ticket `protobuf:"bytes,1,opt,name=result_id,json=resultId,proto3" json:"result_id,omitempty"`
 	// Types that are assignable to Definition:
+	//
 	//	*CreateInputTableRequest_SourceTableId
 	//	*CreateInputTableRequest_Schema
 	Definition isCreateInputTableRequest_Definition `protobuf_oneof:"definition"`
@@ -3665,6 +3670,7 @@ type CreateInputTableRequest_InputTableKind struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Kind:
+	//
 	//	*CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_
 	//	*CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_
 	Kind isCreateInputTableRequest_InputTableKind_Kind `protobuf_oneof:"kind"`
@@ -3834,6 +3840,7 @@ type BatchTableRequest_Operation struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Op:
+	//
 	//	*BatchTableRequest_Operation_EmptyTable
 	//	*BatchTableRequest_Operation_TimeTable
 	//	*BatchTableRequest_Operation_DropColumns

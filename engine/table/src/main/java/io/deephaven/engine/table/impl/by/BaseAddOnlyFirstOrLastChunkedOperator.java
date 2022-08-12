@@ -18,7 +18,10 @@ import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirectio
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-abstract class BaseAddOnlyFirstOrLastChunkedOperator implements IterativeChunkedAggregationOperator {
+abstract class BaseAddOnlyFirstOrLastChunkedOperator
+        extends NoopStateChangeRecorder // We can never empty or reincarnate states since we're add-only
+        implements IterativeChunkedAggregationOperator {
+
     final boolean isFirst;
     final LongArraySource redirections;
     private final LongColumnSourceWritableRowRedirection rowRedirection;

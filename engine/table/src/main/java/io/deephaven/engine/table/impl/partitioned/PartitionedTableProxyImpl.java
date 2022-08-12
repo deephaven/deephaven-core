@@ -649,6 +649,16 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
+    public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations) {
+        return basicTransform(ct -> ct.aggBy(aggregations));
+    }
+
+    @Override
+    public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty) {
+        return basicTransform(ct -> ct.aggBy(aggregations, preserveEmpty));
+    }
+
+    @Override
     public PartitionedTable.Proxy aggBy(Aggregation aggregation, String... groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregation, groupByColumns));
     }
@@ -656,11 +666,6 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     @Override
     public PartitionedTable.Proxy aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregation, groupByColumns));
-    }
-
-    @Override
-    public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations) {
-        return basicTransform(ct -> ct.aggBy(aggregations));
     }
 
     @Override
@@ -672,6 +677,13 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends ColumnName> groupByColumns) {
         return basicTransform(ct -> ct.aggBy(aggregations, groupByColumns));
+    }
+
+    @Override
+    public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
+            TableOperations<?, ?> initialGroups, Collection<? extends ColumnName> groupByColumns) {
+        return complexTransform(initialGroups, (ct, ot) -> ct.aggBy(aggregations, preserveEmpty, ot, groupByColumns),
+                null);
     }
 
     @Override

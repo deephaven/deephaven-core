@@ -23,115 +23,83 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TableServiceClient interface {
-	//
 	// Request an ETCR for this ticket. Ticket must reference a Table.
 	GetExportedTableCreationResponse(ctx context.Context, in *ticket.Ticket, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Fetches a Table from an existing source ticket and exports it to the local session result ticket.
 	FetchTable(ctx context.Context, in *FetchTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
 	FetchPandasTable(ctx context.Context, in *FetchPandasTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Create a table that has preview columns applied to an existing source table.
 	ApplyPreviewColumns(ctx context.Context, in *ApplyPreviewColumnsRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Create an empty table with the given column names and types.
 	EmptyTable(ctx context.Context, in *EmptyTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Create a time table with the given start time and period.
 	TimeTable(ctx context.Context, in *TimeTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Drop columns from the parent table.
 	DropColumns(ctx context.Context, in *DropColumnsRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Add columns to the given table using the given column specifications and the update table operation.
 	Update(ctx context.Context, in *SelectOrUpdateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Add columns to the given table using the given column specifications and the lazyUpdate table operation.
 	LazyUpdate(ctx context.Context, in *SelectOrUpdateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Add columns to the given table using the given column specifications and the view table operation.
 	View(ctx context.Context, in *SelectOrUpdateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Add columns to the given table using the given column specifications and the updateView table operation.
 	UpdateView(ctx context.Context, in *SelectOrUpdateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Select the given columns from the given table.
 	Select(ctx context.Context, in *SelectOrUpdateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Returns a new table definition with the unique tuples of the specified columns
 	SelectDistinct(ctx context.Context, in *SelectDistinctRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Filter parent table with structured filters.
 	Filter(ctx context.Context, in *FilterTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Filter parent table with unstructured filters.
 	UnstructuredFilter(ctx context.Context, in *UnstructuredFilterTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Sort parent table via the provide sort descriptors.
 	Sort(ctx context.Context, in *SortTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Extract rows from the head of the parent table.
 	Head(ctx context.Context, in *HeadOrTailRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Extract rows from the tail of the parent table.
 	Tail(ctx context.Context, in *HeadOrTailRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Run the headBy table operation for the given group by columns on the given table.
 	HeadBy(ctx context.Context, in *HeadOrTailByRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Run the tailBy operation for the given group by columns on the given table.
 	TailBy(ctx context.Context, in *HeadOrTailByRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Ungroup the given columns (all columns will be ungrouped if columnsToUngroup is empty or unspecified).
 	Ungroup(ctx context.Context, in *UngroupRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Create a merged table from the given input tables. If a key column is provided (not null), a sorted
 	// merged will be performed using that column.
 	MergeTables(ctx context.Context, in *MergeTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of a cross join operation. Also known as the cartesian product.
 	CrossJoinTables(ctx context.Context, in *CrossJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of a natural join operation.
 	NaturalJoinTables(ctx context.Context, in *NaturalJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of an exact join operation.
 	ExactJoinTables(ctx context.Context, in *ExactJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of a left join operation.
 	LeftJoinTables(ctx context.Context, in *LeftJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of an as of join operation.
 	AsOfJoinTables(ctx context.Context, in *AsOfJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of an aggregate table operation.
 	ComboAggregate(ctx context.Context, in *ComboAggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Snapshot rightId, triggered by leftId, and export the resulting new Table.
 	// The left table's change events cause a new snapshot to be taken. The result table includes a
 	// "snapshot key" which is a subset (possibly all) of the left table's columns. The
 	// remaining columns in the result table come from right table, the table being snapshotted.
 	Snapshot(ctx context.Context, in *SnapshotTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Returns a new table with a flattened row set.
 	Flatten(ctx context.Context, in *FlattenRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//*
+	// *
 	// Downsamples a table assume its contents will be rendered in a run chart, with each subsequent row holding a later
 	// X value (i.e., sorted on that column). Multiple Y columns can be specified, as can a range of values for the X
 	// column to support zooming in.
 	RunChartDownsample(ctx context.Context, in *RunChartDownsampleRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//*
+	// *
 	// Creates a new Table based on the provided configuration. This can be used as a regular table from the other methods
 	// in this interface, or can be interacted with via the InputTableService to modify its contents.
 	CreateInputTable(ctx context.Context, in *CreateInputTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	//
 	// Batch a series of requests and send them all at once. This enables the user to create intermediate tables without
 	// requiring them to be exported and managed by the client. The server will automatically release any tables when they
 	// are no longer depended upon.
 	Batch(ctx context.Context, in *BatchTableRequest, opts ...grpc.CallOption) (TableService_BatchClient, error)
-	//
 	// Establish a stream of table updates for cheap notifications of table size updates.
 	//
 	// New streams will flush updates for all existing table exports. An export id of zero will be sent to indicate all
@@ -504,115 +472,83 @@ func (x *tableServiceExportedTableUpdatesClient) Recv() (*ExportedTableUpdateMes
 // All implementations must embed UnimplementedTableServiceServer
 // for forward compatibility
 type TableServiceServer interface {
-	//
 	// Request an ETCR for this ticket. Ticket must reference a Table.
 	GetExportedTableCreationResponse(context.Context, *ticket.Ticket) (*ExportedTableCreationResponse, error)
-	//
 	// Fetches a Table from an existing source ticket and exports it to the local session result ticket.
 	FetchTable(context.Context, *FetchTableRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
 	FetchPandasTable(context.Context, *FetchPandasTableRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Create a table that has preview columns applied to an existing source table.
 	ApplyPreviewColumns(context.Context, *ApplyPreviewColumnsRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Create an empty table with the given column names and types.
 	EmptyTable(context.Context, *EmptyTableRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Create a time table with the given start time and period.
 	TimeTable(context.Context, *TimeTableRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Drop columns from the parent table.
 	DropColumns(context.Context, *DropColumnsRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Add columns to the given table using the given column specifications and the update table operation.
 	Update(context.Context, *SelectOrUpdateRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Add columns to the given table using the given column specifications and the lazyUpdate table operation.
 	LazyUpdate(context.Context, *SelectOrUpdateRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Add columns to the given table using the given column specifications and the view table operation.
 	View(context.Context, *SelectOrUpdateRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Add columns to the given table using the given column specifications and the updateView table operation.
 	UpdateView(context.Context, *SelectOrUpdateRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Select the given columns from the given table.
 	Select(context.Context, *SelectOrUpdateRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Returns a new table definition with the unique tuples of the specified columns
 	SelectDistinct(context.Context, *SelectDistinctRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Filter parent table with structured filters.
 	Filter(context.Context, *FilterTableRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Filter parent table with unstructured filters.
 	UnstructuredFilter(context.Context, *UnstructuredFilterTableRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Sort parent table via the provide sort descriptors.
 	Sort(context.Context, *SortTableRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Extract rows from the head of the parent table.
 	Head(context.Context, *HeadOrTailRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Extract rows from the tail of the parent table.
 	Tail(context.Context, *HeadOrTailRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Run the headBy table operation for the given group by columns on the given table.
 	HeadBy(context.Context, *HeadOrTailByRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Run the tailBy operation for the given group by columns on the given table.
 	TailBy(context.Context, *HeadOrTailByRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Ungroup the given columns (all columns will be ungrouped if columnsToUngroup is empty or unspecified).
 	Ungroup(context.Context, *UngroupRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Create a merged table from the given input tables. If a key column is provided (not null), a sorted
 	// merged will be performed using that column.
 	MergeTables(context.Context, *MergeTablesRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of a cross join operation. Also known as the cartesian product.
 	CrossJoinTables(context.Context, *CrossJoinTablesRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of a natural join operation.
 	NaturalJoinTables(context.Context, *NaturalJoinTablesRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of an exact join operation.
 	ExactJoinTables(context.Context, *ExactJoinTablesRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of a left join operation.
 	LeftJoinTables(context.Context, *LeftJoinTablesRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of an as of join operation.
 	AsOfJoinTables(context.Context, *AsOfJoinTablesRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Returns the result of an aggregate table operation.
 	ComboAggregate(context.Context, *ComboAggregateRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Snapshot rightId, triggered by leftId, and export the resulting new Table.
 	// The left table's change events cause a new snapshot to be taken. The result table includes a
 	// "snapshot key" which is a subset (possibly all) of the left table's columns. The
 	// remaining columns in the result table come from right table, the table being snapshotted.
 	Snapshot(context.Context, *SnapshotTableRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Returns a new table with a flattened row set.
 	Flatten(context.Context, *FlattenRequest) (*ExportedTableCreationResponse, error)
-	//*
+	// *
 	// Downsamples a table assume its contents will be rendered in a run chart, with each subsequent row holding a later
 	// X value (i.e., sorted on that column). Multiple Y columns can be specified, as can a range of values for the X
 	// column to support zooming in.
 	RunChartDownsample(context.Context, *RunChartDownsampleRequest) (*ExportedTableCreationResponse, error)
-	//*
+	// *
 	// Creates a new Table based on the provided configuration. This can be used as a regular table from the other methods
 	// in this interface, or can be interacted with via the InputTableService to modify its contents.
 	CreateInputTable(context.Context, *CreateInputTableRequest) (*ExportedTableCreationResponse, error)
-	//
 	// Batch a series of requests and send them all at once. This enables the user to create intermediate tables without
 	// requiring them to be exported and managed by the client. The server will automatically release any tables when they
 	// are no longer depended upon.
 	Batch(*BatchTableRequest, TableService_BatchServer) error
-	//
 	// Establish a stream of table updates for cheap notifications of table size updates.
 	//
 	// New streams will flush updates for all existing table exports. An export id of zero will be sent to indicate all

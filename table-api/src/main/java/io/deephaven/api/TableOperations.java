@@ -511,17 +511,106 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Produce an aggregated result by grouping all rows from {@code this} into a single group of rows and applying
+     * {@code aggregation} to the result. The result table will have one row if {@code this} has one or more rows, or
+     * else zero rows.
+     *
+     * @param aggregation The {@link Aggregation aggregation} to apply
+     * @return A new table aggregating the rows of {@code this}
+     */
     TOPS aggBy(Aggregation aggregation);
 
-    TOPS aggBy(Aggregation aggregation, String... groupByColumns);
-
-    TOPS aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns);
-
+    /**
+     * Produce an aggregated result by grouping all rows from {@code this} into a single group of rows and applying
+     * {@code aggregations} to the result. The result table will have one row if {@code this} has one or more rows, or
+     * else zero rows.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @return A new table aggregating the rows of {@code this}
+     */
     TOPS aggBy(Collection<? extends Aggregation> aggregations);
 
+    /**
+     * Produce an aggregated result by grouping all rows from {@code this} into a single group of rows and applying
+     * {@code aggregations} to the result.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @param preserveEmpty If {@code preserveEmpty == true}, the result table will always have one row. Otherwise, the
+     *        result table will have one row if {@code this} has one or more rows, or else zero rows.
+     * @return A new table aggregating the rows of {@code this}
+     */
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty);
+
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregation} to each resulting group of rows. The result table will have one row per group, ordered by the
+     * <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never changes.
+     * Groups that become empty will be removed from the result.
+     *
+     * @param aggregation The {@link Aggregation aggregation} to apply
+     * @param groupByColumns The columns to group by
+     * @return A new table aggregating the rows of {@code this}
+     */
+    TOPS aggBy(Aggregation aggregation, String... groupByColumns);
+
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregation} to each resulting group of rows. The result table will have one row per group, ordered by the
+     * <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never changes.
+     * Groups that become empty will be removed from the result.
+     *
+     * @param aggregation The {@link Aggregation aggregation} to apply
+     * @param groupByColumns The {@link ColumnName columns} to group by
+     * @return A new table aggregating the rows of {@code this}
+     */
+    TOPS aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns);
+
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregations} to each resulting group of rows. The result table will have one row per group, ordered by
+     * the <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never
+     * changes. Groups that become empty will be removed from the result.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @param groupByColumns The columns to group by
+     * @return A new table aggregating the rows of {@code this}
+     */
     TOPS aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns);
 
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregations} to each resulting group of rows. The result table will have one row per group, ordered by
+     * the <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never
+     * changes. Groups that become empty will be removed from the result.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @param groupByColumns The {@link ColumnName columns} to group by
+     * @return A new table aggregating the rows of {@code this}
+     */
     TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns);
+
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregations} to each resulting group of rows. The result table will have one row per group, ordered by
+     * the <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never
+     * changes.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @param preserveEmpty Whether to keep result rows for groups that are initially empty or become empty as a result
+     *        of updates. Each aggregation operator defines its own value for empty groups.
+     * @param initialGroups A table whose distinct combinations of values for the {@code groupByColumns} should be used
+     *        to create an initial set of aggregation groups. All other columns are ignored. This is useful in
+     *        combination with {@code preserveEmpty == true} to ensure that particular groups appear in the result
+     *        table, or with {@code preserveEmpty == false} to control the encounter order for a collection of groups
+     *        and thus their relative order in the result. Changes to {@code initialGroups} are not expected or handled;
+     *        if {@code initialGroups} is a refreshing table, only its contents at instantiation time will be used. If
+     *        {@code initialGroups == null}, the result will be the same as if a table with no rows was supplied.
+     * @param groupByColumns The {@link ColumnName columns} to group by
+     * @return A new table aggregating the rows of {@code this}
+     */
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, TABLE initialGroups,
+            Collection<? extends ColumnName> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 

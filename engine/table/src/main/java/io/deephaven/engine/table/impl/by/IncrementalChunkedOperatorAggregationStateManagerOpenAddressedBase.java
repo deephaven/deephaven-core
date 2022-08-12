@@ -11,7 +11,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
@@ -20,39 +19,47 @@ import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.P
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.jetbrains.annotations.NotNull;
 
 public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase
         extends OperatorAggregationStateManagerOpenAddressedAlternateBase
         implements IncrementalOperatorAggregationStateManager {
-    // our state value used when nothing is there
+
+    /** Our state value used when nothing is there. */
     protected static final int EMPTY_OUTPUT_POSITION = QueryConstants.NULL_INT;
 
-    // the state value for the bucket, parallel to mainKeySources (the state is an output row key for the aggregation)
+    /**
+     * The state value for the bucket, parallel to mainKeySources (the state is an output row key for the aggregation).
+     */
     protected ImmutableIntArraySource mainOutputPosition = new ImmutableIntArraySource();
 
-    // the state value for the bucket, parallel to alternateKeySources (the state is an output row key for the
-    // aggregation)
+    /**
+     * The state value for the bucket, parallel to alternateKeySources (the state is an output row key for the
+     * aggregation).
+     */
     protected ImmutableIntArraySource alternateOutputPosition;
 
-    // used as a row redirection for the output key sources, updated using the mainInsertMask to identify the main vs.
-    // alternate values
+    /**
+     * Used as a row redirection for the output key sources, updated using the mainInsertMask to identify the main vs.
+     * alternate values.
+     */
     protected final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
 
-    // how many values are in each state, addressed by output row key
-    protected final LongArraySource rowCountSource = new LongArraySource();
-
-    // state variables that exist as part of the update
+    /** State variables that exist as part of the update. */
     protected MutableInt nextOutputPosition;
     protected WritableIntChunk<RowKeys> outputPositions;
 
-    // output alternating column sources
+    /** Output alternating column sources. */
     protected AlternatingColumnSource[] alternatingColumnSources;
 
-    // the mask for insertion into the main table (this tells our alternating column sources which of the two sources
-    // to access for a given key)
+    /**
+     * The mask for insertion into the main table (this tells our alternating column sources which of the two sources to
+     * access for a given key).
+     */
     protected int mainInsertMask = 0;
 
-    protected IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources,
+    protected IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase(
+            ColumnSource<?>[] tableKeySources,
             int tableSize,
             double maximumLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
@@ -93,15 +100,19 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     }
 
     @Override
-    public void add(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources,
-            MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
+    public void add(
+            @NotNull final SafeCloseable bc,
+            @NotNull final RowSequence rowSequence,
+            @NotNull final ColumnSource<?>[] sources,
+            @NotNull final MutableInt nextOutputPosition,
+            @NotNull final WritableIntChunk<RowKeys> outputPositions) {
         outputPositions.setSize(rowSequence.intSize());
         if (rowSequence.isEmpty()) {
             return;
         }
         this.nextOutputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
-        buildTable((BuildContext) bc, rowSequence, sources, true, this::build);
+        buildTable((BuildContext) bc, rowSequence, sources, this::build);
         this.outputPositions = null;
         this.nextOutputPosition = null;
     }
@@ -109,7 +120,6 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     @Override
     public void onNextChunk(int size) {
         outputPositionToHashSlot.ensureCapacity(nextOutputPosition.intValue() + size, false);
-        rowCountSource.ensureCapacity(nextOutputPosition.intValue() + size, false);
     }
 
     @Override
@@ -138,71 +148,47 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     public void beginUpdateCycle() {
-        // at the beginning of the update cycle, we always want to do some rehash work so that we can eventually ditch
-        // the alternate table
+        // Once we're past initial state processing, we want to rehash incrementally.
+        fullRehash = false;
+        // At the beginning of the update cycle, we always want to do some rehash work so that we can eventually ditch
+        // the alternate table.
         if (rehashPointer > 0) {
             rehashInternalPartial(CHUNK_SIZE);
         }
     }
 
-    @Override
-    public void addForUpdate(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources,
-            MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions,
-            final WritableIntChunk<RowKeys> reincarnatedPositions) {
-        outputPositions.setSize(rowSequence.intSize());
-        reincarnatedPositions.setSize(0);
-        if (rowSequence.isEmpty()) {
-            return;
-        }
-        this.nextOutputPosition = nextOutputPosition;
-        this.outputPositions = outputPositions;
-        buildTable((BuildContext) bc, rowSequence, sources, false,
-                ((chunkOk, sourceKeyChunks) -> buildForUpdate(chunkOk, sourceKeyChunks, reincarnatedPositions)));
-        this.outputPositions = null;
-        this.nextOutputPosition = null;
-    }
-
-    protected abstract void buildForUpdate(RowSequence chunkOk, Chunk[] sourceKeyChunks,
-            WritableIntChunk<RowKeys> reincarnatedPositions);
+    protected abstract void probe(RowSequence chunkOk, Chunk[] sourceKeyChunks);
 
     @Override
-    public void remove(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?>[] sources,
-            WritableIntChunk<RowKeys> outputPositions, final WritableIntChunk<RowKeys> emptiedPositions) {
-        outputPositions.setSize(rowSequence.intSize());
-        emptiedPositions.setSize(0);
-        if (rowSequence.isEmpty()) {
-            return;
-        }
-        this.outputPositions = outputPositions;
-        probeTable((ProbeContext) pc, rowSequence, true, sources,
-                (chunkOk, sourceKeyChunks) -> IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.this
-                        .doRemoveProbe(chunkOk, sourceKeyChunks, emptiedPositions));
-        this.outputPositions = null;
-    }
-
-    protected abstract void doRemoveProbe(RowSequence chunkOk, Chunk[] sourceKeyChunks,
-            WritableIntChunk<RowKeys> emptiedPositions);
-
-    @Override
-    public void findModifications(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?>[] sources,
-            WritableIntChunk<RowKeys> outputPositions) {
+    public void remove(
+            @NotNull final SafeCloseable pc,
+            @NotNull final RowSequence rowSequence,
+            @NotNull final ColumnSource<?>[] sources,
+            @NotNull final WritableIntChunk<RowKeys> outputPositions) {
         outputPositions.setSize(rowSequence.intSize());
         if (rowSequence.isEmpty()) {
             return;
         }
         this.outputPositions = outputPositions;
-        probeTable((ProbeContext) pc, rowSequence, false, sources,
-                IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.this::doModifyProbe);
+        probeTable((ProbeContext) pc, rowSequence, true, sources, this::probe);
         this.outputPositions = null;
     }
 
-    protected abstract void doModifyProbe(RowSequence chunkOk, Chunk[] sourceKeyChunks);
+    @Override
+    public void findModifications(
+            @NotNull final SafeCloseable pc,
+            @NotNull final RowSequence rowSequence,
+            @NotNull final ColumnSource<?>[] sources,
+            @NotNull final WritableIntChunk<RowKeys> outputPositions) {
+        outputPositions.setSize(rowSequence.intSize());
+        if (rowSequence.isEmpty()) {
+            return;
+        }
+        this.outputPositions = outputPositions;
+        probeTable((ProbeContext) pc, rowSequence, false, sources, this::probe);
+        this.outputPositions = null;
+    }
 
     @Override
     public void startTrackingPrevValues() {}
-
-    @Override
-    public void setRowSize(int outputPosition, long size) {
-        rowCountSource.set(outputPosition, size);
-    }
 }

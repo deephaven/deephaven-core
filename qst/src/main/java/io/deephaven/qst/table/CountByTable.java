@@ -9,7 +9,7 @@ import org.immutables.value.Value.Immutable;
 
 @Immutable
 @NodeStyle
-public abstract class CountByTable extends ByTableBase {
+public abstract class CountByTable extends ByTableBase implements SingleParentTable {
 
     public static Builder builder() {
         return ImmutableCountByTable.builder();

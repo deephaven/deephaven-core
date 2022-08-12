@@ -33,6 +33,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
 import java.lang.reflect.Constructor;
@@ -103,26 +104,12 @@ public class TypedHasherFactory {
             final ClassName rowKeyType = ClassName.get(RowKeys.class);
             final ParameterizedTypeName emptiedChunkType =
                     ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class), rowKeyType);
-            final ParameterSpec emptiedPositions = ParameterSpec.builder(emptiedChunkType, "emptiedPositions").build();
 
-            builder.addProbe(new HasherConfig.ProbeSpec("doRemoveProbe", "outputPosition",
-                    false, TypedAggregationFactory::removeProbeFound,
-                    TypedAggregationFactory::probeMissing, emptiedPositions));
-            builder.addProbe(
-                    new HasherConfig.ProbeSpec("doModifyProbe", "outputPosition", false,
-                            TypedAggregationFactory::probeFound,
-                            TypedAggregationFactory::probeMissing));
+            builder.addProbe(new HasherConfig.ProbeSpec("probe", "outputPosition", false,
+                    TypedAggregationFactory::probeFound, TypedAggregationFactory::probeMissing));
 
-            builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition",
-                    false, true, TypedAggregationFactory::buildFoundIncrementalInitial,
-                    TypedAggregationFactory::buildInsertIncremental));
-
-            final ParameterSpec reincarnatedPositions =
-                    ParameterSpec.builder(emptiedChunkType, "reincarnatedPositions").build();
-            builder.addBuild(
-                    new HasherConfig.BuildSpec("buildForUpdate", "outputPosition",
-                            false, true, TypedAggregationFactory::buildFoundIncrementalUpdate,
-                            TypedAggregationFactory::buildInsertIncremental, reincarnatedPositions));
+            builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
+                    TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
         } else if (baseClass.equals(StaticNaturalJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticNaturalJoinHasher").packageGroup("naturaljoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
