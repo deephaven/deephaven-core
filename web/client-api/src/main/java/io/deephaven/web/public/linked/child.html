@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <title>Deephaven Web API linked table example: child window</title>
     <script src="../dh-internal.js" type="text/javascript"></script>
-    <script src="../dh-core.js" type="text/javascript"></script>
     <link href="../basic.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -26,7 +25,10 @@
 
 </ul>
 
-<script>
+<script type="module">
+    import {dh} from './dh-core.js';
+    const {Client, FilterValue, Table} = dh;
+
   if (!window.opener) {
     alert("This page only works correctly when opened by another window.");
     throw "This page only works correctly when opened by another window.";
@@ -43,14 +45,14 @@
     url.protocol = 'wss:';
   }
 
-  window.c = new dh.Client(url.href);
-  c.addEventListener(dh.Client.EVENT_CONNECT, () => {
+  window.c = new Client(url.href);
+  c.addEventListener(Client.EVENT_CONNECT, () => {
     c.login({username:'dh',token:'dh',type:'password'}).then(result => {
       console.log("login successful");
     });
   });
   //wait for the named config to load
-  c.addEventListener(dh.Client.EVENT_CONFIG_ADDED, event => {
+  c.addEventListener(Client.EVENT_CONFIG_ADDED, event => {
     var config = event.detail;
     if (config.name === configName) {
       if (config.status !== 'Running') {
@@ -136,9 +138,9 @@
 
               // wrap the data so that we can handle it as a filter value
               if (typeof valueToFilterOn === 'string') {
-                valueToFilterOn = dh.FilterValue.ofString(valueToFilterOn);
+                valueToFilterOn = FilterValue.ofString(valueToFilterOn);
               } else {
-                valueToFilterOn = dh.FilterValue.ofNumber(valueToFilterOn);
+                valueToFilterOn = FilterValue.ofNumber(valueToFilterOn);
               }
 
               // apply a new filter (could also present a menu at this point to ask which filter to use)
@@ -166,7 +168,7 @@
     simpleLinkedTable.appendChild(header);
 
     // listen for items to be added, populate the table body
-    oldTableHandlerCleanup = table.addEventListener(dh.Table.EVENT_UPDATED, function handleTableUpdate(event) {
+    oldTableHandlerCleanup = table.addEventListener(Table.EVENT_UPDATED, function handleTableUpdate(event) {
       console.log("update event received, time to redraw data");
       // rebuild the current tbody from scratch
       var tbody = simpleLinkedTable.querySelector('tbody');

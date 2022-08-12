@@ -5,7 +5,6 @@
 
     <title>Simple Deephaven JS Client</title>
     <script src="dh-internal.js" type="text/javascript"></script>
-    <script src="dh-core.js" type="text/javascript"></script>
 </head>
 <body>
 <h3>Simple test page to verify that the Deephaven JS API can connect, create a table, and subscribe to changes</h3>
@@ -13,11 +12,13 @@
     When the page loads, a connection to the server will be created, and a new ticking table declared. Read the source
     for this page to see how it was created.
 </p>
-<script type="text/javascript">
+<script type="module">
+    import {dh} from './dh-core.js';
+    const {IdeConnection} = dh;
 var ide;
 var table;
 (async () => {
-    var connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+    var connection = new IdeConnection(window.location.protocol + "//" + window.location.host);
     var consoleTypes = await connection.getConsoleTypes();
     ide = await connection.startSession(consoleTypes[0]);
     document.body.append("session created", document.createElement("br"));

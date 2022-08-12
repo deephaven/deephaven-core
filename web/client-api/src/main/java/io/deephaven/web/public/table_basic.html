@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <title>Deephaven JS API display basic table</title>
     <script src="dh-internal.js" type="text/javascript"></script>
-    <script src="dh-core.js" type="text/javascript"></script>
     <link href="basic.css" rel="stylesheet" type="text/css" />
     <style>
         table { border-spacing: 0; }
@@ -17,14 +16,16 @@
 <h3>Table data</h3>
 <table id="simpleTable"></table>
 
-<script>
+<script type="module">
+    import {dh} from './dh-core.js';
+    const {IdeConnection} = dh;
 var table;
 var connection;
 var ide;
 
 (async () => {
     // Open a connection to the server
-    connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+    connection = new IdeConnection(window.location.protocol + "//" + window.location.host);
 
 
     var types = await connection.getConsoleTypes();

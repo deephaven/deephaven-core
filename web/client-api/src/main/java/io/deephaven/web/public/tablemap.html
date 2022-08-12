@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <title>Deephaven Web API TableMap api</title>
     <script src="dh-internal.js" type="text/javascript"></script>
-    <script src="dh-core.js" type="text/javascript"></script>
     <link href="basic.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -27,8 +26,9 @@
 
 </table>
 
-<script>
-
+<script type="module">
+    import {dh} from './dh-core.js';
+    const {Client, Table} = dh;
   var url = new URL('/socket', window.location);
   if (url.protocol === 'http:') {
     url.protocol = 'ws:';
@@ -36,8 +36,8 @@
     url.protocol = 'wss:';
   }
 
-  window.c = new dh.Client(url.href);
-  c.addEventListener(dh.Client.EVENT_CONNECT, () => {
+  window.c = new Client(url.href);
+  c.addEventListener(Client.EVENT_CONNECT, () => {
     connected();
     c.login({username:'dh',token:'dh',type:'password'}).then(result => {
       console.log("login successful");
@@ -50,14 +50,14 @@
   var keyList = document.getElementById('keyList');
 
   function connected() {
-    c.addEventListener(dh.Client.EVENT_CONFIG_REMOVED, event => {
+    c.addEventListener(Client.EVENT_CONFIG_REMOVED, event => {
       removeQuery(event.detail);
     });
-    c.addEventListener(dh.Client.EVENT_CONFIG_UPDATED, event => {
+    c.addEventListener(Client.EVENT_CONFIG_UPDATED, event => {
       removeQuery(event.detail);
       addQuery(event.detail);
     });
-    c.addEventListener(dh.Client.EVENT_CONFIG_ADDED, event => {
+    c.addEventListener(Client.EVENT_CONFIG_ADDED, event => {
       addQuery(event.detail);
     });
     function removeQuery(queryInfo) {
@@ -149,7 +149,7 @@
     simplePagingTable.appendChild(header);
 
     // listen for items to be added, populate the table body
-    oldTableHandlerCleanup = table.addEventListener(dh.Table.EVENT_UPDATED, function handleTableUpdate(event) {
+    oldTableHandlerCleanup = table.addEventListener(Table.EVENT_UPDATED, function handleTableUpdate(event) {
       console.log("update event received, time to redraw data");
       // rebuild the current tbody from scratch
       var tbody = simplePagingTable.querySelector('tbody');

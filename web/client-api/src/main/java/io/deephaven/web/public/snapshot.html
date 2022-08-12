@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <title>Deephaven Web API table snapshot</title>
     <script src="dh-internal.js" type="text/javascript"></script>
-    <script src="dh-core.js" type="text/javascript"></script>
     <link href="basic.css" rel="stylesheet" type="text/css" />
     <style>
         li.open ul { display:block; }
@@ -69,7 +68,9 @@ Stamp Columns: <input type="text" id="stampColumnsInput"/><br>
     </tr>
 </table>
 
-<script>
+<script type="module">
+    import {dh} from './dh-core.js';
+    const {Client} = dh;
 
     var url = new URL('/socket', window.location);
     if (url.protocol === 'http:') {
@@ -78,8 +79,8 @@ Stamp Columns: <input type="text" id="stampColumnsInput"/><br>
         url.protocol = 'wss:';
     }
 
-    window.c = new dh.Client(url.href);
-    c.addEventListener(dh.Client.EVENT_CONNECT, () => {
+    window.c = new Client(url.href);
+    c.addEventListener(Client.EVENT_CONNECT, () => {
         connected();
         c.login({username:'dh',token:'dh',type:'password'}).then(result => {
             console.log("login successful");
@@ -96,14 +97,14 @@ Stamp Columns: <input type="text" id="stampColumnsInput"/><br>
     var doInitialSnapshotInput = document.getElementById('doInitialSnapshotInput');
 
     function connected() {
-        c.addEventListener(dh.Client.EVENT_CONFIG_REMOVED, event => {
+        c.addEventListener(Client.EVENT_CONFIG_REMOVED, event => {
             removeQuery(event.detail);
         });
-        c.addEventListener(dh.Client.EVENT_CONFIG_UPDATED, event => {
+        c.addEventListener(Client.EVENT_CONFIG_UPDATED, event => {
             removeQuery(event.detail);
             addQuery(event.detail);
         });
-        c.addEventListener(dh.Client.EVENT_CONFIG_ADDED, event => {
+        c.addEventListener(Client.EVENT_CONFIG_ADDED, event => {
             addQuery(event.detail);
         });
         function removeQuery(queryInfo) {
@@ -132,7 +133,7 @@ Stamp Columns: <input type="text" id="stampColumnsInput"/><br>
             queryElt.onclick = () => {
                 open = !open;
                 queryElt.className = open ? 'open' : 'closed';
-                queryInfo.addEventListener(dh.QueryInfo.EVENT_TABLE_METRICS, event => {
+                queryInfo.addEventListener(QueryInfo.EVENT_TABLE_METRICS, event => {
                     if (event.detail.nanos === -1) {
                         console.log(event.detail.type);
                     } else {
@@ -188,7 +189,7 @@ Stamp Columns: <input type="text" id="stampColumnsInput"/><br>
         tableElement.appendChild(header);
 
         // listen for items to be added, populate the table body
-        handleCleanup = table.addEventListener(dh.Table.EVENT_UPDATED, function handleTableUpdate(event) {
+        handleCleanup = table.addEventListener(Table.EVENT_UPDATED, function handleTableUpdate(event) {
             console.log("update event received, time to redraw data");
             // rebuild the current tbody from scratch
             var tbody = tableElement.querySelector('tbody');

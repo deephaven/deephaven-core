@@ -9,7 +9,9 @@ import com.google.gwt.core.ext.UnableToCompleteException;
 import com.google.gwt.core.ext.linker.*;
 import com.google.gwt.dev.About;
 import com.google.gwt.dev.util.DefaultTextOutput;
+import com.google.gwt.util.tools.Utility;
 
+import java.io.IOException;
 import java.util.Set;
 
 /**
@@ -35,8 +37,6 @@ public class DeephavenJsApiLinker extends AbstractLinker {
 
         ArtifactSet toReturn = new ArtifactSet(artifacts);
         DefaultTextOutput out = new DefaultTextOutput(true);
-        out.print("(function(){");
-        out.newline();
 
         // get compilation result
         Set<CompilationResult> results = artifacts.find(CompilationResult.class);
@@ -54,23 +54,41 @@ public class DeephavenJsApiLinker extends AbstractLinker {
 
         // get the generated javascript
         String[] javaScript = result.getJavaScript();
-        out.print("self.dh = {}");
-        out.newline();
-        out.print("var $wnd = self, $doc, $entry, $moduleName, $moduleBase;");
-        out.newline();
-        out.print("var $gwt_version = \"" + About.getGwtVersionNum() + "\";");
-        out.newlineOpt();
-        out.print(javaScript[0]);
-        out.newline();
 
-        out.print("gwtOnLoad(null,'" + context.getModuleName() + "',null);");
-        out.newline();
-        out.print("})();");
-        out.newline();
+        StringBuffer buffer = readFileToStringBuffer(getSelectionScriptTemplate(), logger);
+        replaceAll(buffer, "__GWT_VERSION__", About.getGwtVersionNum());
+        replaceAll(buffer, "__JAVASCRIPT_RESULT__", javaScript[0]);
+        replaceAll(buffer, "__MODULE_NAME__", context.getModuleName());
+
+        out.print(buffer.toString());
 
         toReturn.add(emitString(logger, out.toString(), "dh-core.js"));
 
         return toReturn;
     }
 
+    protected StringBuffer readFileToStringBuffer(String filename,
+            TreeLogger logger) throws UnableToCompleteException {
+        StringBuffer buffer;
+        try {
+            buffer = new StringBuffer(Utility.getFileFromClassPath(filename));
+        } catch (IOException e) {
+            logger.log(TreeLogger.ERROR, "Unable to read file: " + filename, e);
+            throw new UnableToCompleteException();
+        }
+        return buffer;
+    }
+
+    protected String getSelectionScriptTemplate() {
+        return "io/deephaven/web/DeephavenJsApiLinkerTemplate.js";
+    }
+
+    protected static void replaceAll(StringBuffer buf, String search,
+            String replace) {
+        int len = search.length();
+        for (int pos = buf.indexOf(search); pos >= 0; pos = buf.indexOf(search,
+                pos + 1)) {
+            buf.replace(pos, pos + len, replace);
+        }
+    }
 }
