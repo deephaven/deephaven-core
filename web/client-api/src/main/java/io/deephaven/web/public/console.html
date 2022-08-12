@@ -5,20 +5,21 @@
 
     <title>Deephaven JS API Console Interaction</title>
     <script src="dh-internal.js" type="text/javascript"></script>
-    <script src="dh-core.js" type="text/javascript"></script>
 </head>
 <body>
 <div id="logs"></div>
 <div id="tools">
     <textarea id="command" placeholder="waiting for connection..." rows="1" cols="80" autofocus="autofocus" disabled="disabled" style="resize:vertical"></textarea><button id="run">Run</button>
 </div>
-<script type="text/javascript">
+<script type="module">
+    import {dh} from './dh-core.js';
+    const {IdeConnection} = dh;
     var connection;
     var ide;
     var table;
     (async () => {
         // create a connection to the server
-        connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+        connection = new IdeConnection(window.location.protocol + "//" + window.location.host);
 
         // check if a language was specified
         var url = new URL(window.location);

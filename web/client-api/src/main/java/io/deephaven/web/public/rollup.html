@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <title>Deephaven Web API rollup table example</title>
     <script src="dh-internal.js" type="text/javascript"></script>
-    <script src="dh-core.js" type="text/javascript"></script>
     <script src="treegrid.js" type="text/javascript"></script>
     <script src="totals.js" type="text/javascript"></script>
     <link href="basic.css" rel="stylesheet" type="text/css" />
@@ -72,7 +71,8 @@
 <input id="includeConstituents" type="checkbox"><label for="includeConstituents">Include Constituent values</label><br/>
 <button id="open">Display Rollup Table</button>
 <div id="treetable"></div>
-<script>
+<script type="module">
+    import {dh} from './dh-core.js'
   var url = new URL('/socket', window.location);
   if (url.protocol === 'http:') {
     url.protocol = 'ws:';

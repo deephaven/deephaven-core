@@ -4,8 +4,7 @@
     <meta charset="utf-8" />
     <title>Deephaven Web API tree table example</title>
     <script src="dh-internal.js" type="text/javascript"></script>
-    <script src="dh-core.js" type="text/javascript"></script>
-    <script src="treegrid.js" type="text/javascript"></script>
+    <script src="treegrid.js" type="module"></script>
     <script src="totals.js" type="text/javascript"></script>
 
     <link href="basic.css" rel="stylesheet" type="text/css" />
@@ -16,22 +15,25 @@
     </style>
 </head>
 <body>
-<script>
+<script type="module">
+    import {dh} from './dh-core.js';
+    const {Client} = dh;
+
   var url = new URL('/socket', window.location);
   if (url.protocol === 'http:') {
     url.protocol = 'ws:';
   } else {
     url.protocol = 'wss:';
   }
-  var c = new dh.Client(url.href);
-  c.addEventListener(dh.Client.EVENT_CONNECT, () => {
+  var c = new Client(url.href);
+  c.addEventListener(Client.EVENT_CONNECT, () => {
     c.login({username:'dh',token:'dh',type:'password'}).then(result => {
       console.log("login successful");
     });
-    c.addEventListener(dh.Client.EVENT_CONFIG_UPDATED, event => {
+    c.addEventListener(Client.EVENT_CONFIG_UPDATED, event => {
       addQuery(event.detail);
     });
-    c.addEventListener(dh.Client.EVENT_CONFIG_ADDED, event => {
+    c.addEventListener(Client.EVENT_CONFIG_ADDED, event => {
       addQuery(event.detail);
     });
   });

@@ -1,3 +1,5 @@
+import {dh} from './dh-core.js';
+const {Table, FilterValue} = dh;
 /**
  * Simple es6 class encapsulating some basic rendering for a tree table in a grid, allowing
  * expanding and collapsing nodes, and filtering and sorting columns.
@@ -5,7 +7,7 @@
 class TreeGrid {
   constructor(treeTable) {
     this.treeTable = treeTable;
-    this.treeTable.addEventListener(dh.Table.EVENT_UPDATED, e => this.repaint(e.detail));
+    this.treeTable.addEventListener(Table.EVENT_UPDATED, e => this.repaint(e.detail));
 
     this.rootElement = document.createElement('table');
     this.rootElement.addEventListener('click', e => this.toggle(e));
@@ -176,10 +178,10 @@ class TreeGrid {
           //TODO convert value more completely
           var value = target.internalValue;
           if (typeof value === 'string') {
-            value = dh.FilterValue.ofString(value);
+            value = FilterValue.ofString(value);
           } else /*if (typeof value === 'number')*/ {
             //otherwise, we'll just assume it is a number, ofNumber will throw exceptions if not
-            value = dh.FilterValue.ofNumber(value);
+            value = FilterValue.ofNumber(value);
           }
           //TODO make editable
           current.push(buildFilter(column, value));
@@ -190,10 +192,10 @@ class TreeGrid {
           //TODO convert value more completely
           var value = target.internalValue;
           if (typeof value === 'string') {
-            value = dh.FilterValue.ofString(value);
+            value = FilterValue.ofString(value);
           } else /*if (typeof value === 'number')*/ {
             //otherwise, we'll just assume it is a number, ofNumber will throw exceptions if not
-            value = dh.FilterValue.ofNumber(value);
+            value = FilterValue.ofNumber(value);
           }
 
           //TODO make editable

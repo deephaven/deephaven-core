@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <title>Deephaven Web API Totals Tables example</title>
     <script src="dh-internal.js" type="text/javascript"></script>
-    <script src="dh-core.js" type="text/javascript"></script>
     <link href="basic.css" rel="stylesheet" type="text/css" />
     <style>
         li.open ul { display:block; }
@@ -32,8 +31,9 @@
 <button id="next">&gt;</button>
 <button id="end">&gt;&gt;</button>
 
-<script>
-
+<script type="module">
+    import {dh} from './dh-core.js';
+    const {Client} = dh;
   var url = new URL('/socket', window.location);
   if (url.protocol === 'http:') {
     url.protocol = 'ws:';
@@ -41,7 +41,7 @@
     url.protocol = 'wss:';
   }
 
-  window.c = new dh.Client(url.href);
+  window.c = new Client(url.href);
   c.addEventListener(dh.Client.EVENT_CONNECT, () => {
     connected();
     c.login({username:'dh',token:'dh',type:'password'}).then(result => {

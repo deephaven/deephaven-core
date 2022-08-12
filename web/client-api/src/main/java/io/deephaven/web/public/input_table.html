@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <title>Deephaven Web API table viewport and updates</title>
   <script src="dh-internal.js" type="text/javascript"></script>
-  <script src="dh-core.js" type="text/javascript"></script>
   <script src="input_tables.js" type="text/javascript"></script>
   <link href="basic.css" rel="stylesheet" type="text/css" />
   <style>
@@ -34,7 +33,10 @@
 <button id="next">&gt;</button>
 <button id="end">&gt;&gt;</button>
 
-<script>
+<script type="module">
+  import {dh} from './dh-core.js'
+  const {IdeConnection, Table} = dh;
+
   var table, inputTable;
   var connection;
   var ide;
@@ -43,7 +45,7 @@
   var currentOffset;
   var PAGE_SIZE = 20;
   (async () => {
-    connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+    connection = new IdeConnection(window.location.protocol + "//" + window.location.host);
 
     var types = await connection.getConsoleTypes();
     if (types.indexOf("python") !== -1) {
@@ -135,7 +137,7 @@ remoteTable = KeyedArrayBackedMutableTable.make(emptyTable(0).updateView('id=0',
     simplePagingTable.appendChild(header);
 
     // listen for items to be added, populate the table body
-    oldTableHandlerCleanup = t.addEventListener(dh.Table.EVENT_UPDATED, function handleTableUpdate(event) {
+    oldTableHandlerCleanup = t.addEventListener(Table.EVENT_UPDATED, function handleTableUpdate(event) {
       console.log("update event received, time to redraw data");
       // rebuild the current tbody from scratch
       var tbody = simplePagingTable.querySelector('tbody');

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Deephaven Web API Formatting examples</title>
     <script src="dh-internal.js" type="text/javascript"></script>
-    <script src="dh-core.js" type="text/javascript"></script>
     <style>
         .console {
             max-height: 200px;
@@ -73,9 +72,8 @@
         </ul>
     </div>
 </div>
-<script>
-
-
+<script type="module">
+    import {dh} from './dh-core.js';
   document.querySelectorAll(".section").forEach(section => {
     var patternInput = section.querySelector('.pattern');
     // wire up predefined templates
