@@ -9,7 +9,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.vector.*;
 import io.deephaven.engine.table.impl.select.formula.*;
@@ -32,9 +31,6 @@ import java.util.*;
 public abstract class AbstractFormulaColumn implements FormulaColumn {
     private static final Logger log = LoggerFactory.getLogger(AbstractFormulaColumn.class);
 
-    private final boolean useKernelFormulas;
-
-
     private static final boolean ALLOW_UNSAFE_REFRESHING_FORMULAS = Configuration.getInstance()
             .getBooleanForClassWithDefault(AbstractFormulaColumn.class, "allowUnsafeRefreshingFormulas", false);
 
@@ -44,11 +40,11 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @NotNull
     protected final String columnName;
-    private FormulaFactory formulaFactory;
+    protected FormulaFactory formulaFactory;
     private Formula formula;
-    protected List<String> userParams;
     protected QueryScopeParam<?>[] params;
     protected Map<String, ? extends ColumnSource<?>> columnSources;
+    protected Map<String, ? extends ColumnDefinition<?>> columnDefinitions;
     private TrackingRowSet rowSet;
     protected Class<?> returnedType;
     public static final String COLUMN_SUFFIX = "_";
@@ -67,10 +63,9 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
      * @param formulaString the formula string to be parsed by the QueryLanguageParser
      * @param useKernelFormulas
      */
-    protected AbstractFormulaColumn(String columnName, String formulaString, boolean useKernelFormulas) {
+    protected AbstractFormulaColumn(String columnName, String formulaString) {
         this.formulaString = Require.neqNull(formulaString, "formulaString");
         this.columnName = NameValidator.validateColumnName(columnName);
-        this.useKernelFormulas = useKernelFormulas;
         this.executionContext = ExecutionContext.getContextToRecord();
     }
 
@@ -95,7 +90,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         return initDef(extractDefinitions(columnsOfInterest));
     }
 
-    protected void applyUsedVariables(Map<String, ColumnDefinition<?>> columnDefinitionMap, Set<String> variablesUsed) {
+    protected void applyUsedVariables(Set<String> variablesUsed) {
         final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
@@ -104,7 +99,6 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
         final List<QueryScopeParam<?>> paramsList = new ArrayList<>();
         usedColumns = new ArrayList<>();
-        userParams = new ArrayList<>();
         usedColumnArrays = new ArrayList<>();
         for (String variable : variablesUsed) {
             if (variable.equals("i")) {
@@ -113,31 +107,44 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
                 usesII = true;
             } else if (variable.equals("k")) {
                 usesK = true;
-            } else if (columnDefinitionMap.get(variable) != null) {
+            } else if (columnDefinitions.get(variable) != null) {
                 usedColumns.add(variable);
             } else {
                 String strippedColumnName =
                         variable.substring(0, Math.max(0, variable.length() - COLUMN_SUFFIX.length()));
-                if (variable.endsWith(COLUMN_SUFFIX) && columnDefinitionMap.get(strippedColumnName) != null) {
+                if (variable.endsWith(COLUMN_SUFFIX) && columnDefinitions.get(strippedColumnName) != null) {
                     usedColumnArrays.add(strippedColumnName);
                 } else if (possibleParams.containsKey(variable)) {
                     paramsList.add(possibleParams.get(variable));
-                    userParams.add(variable);
                 }
             }
         }
 
         params = paramsList.toArray(QueryScopeParam.ZERO_LENGTH_PARAM_ARRAY);
-        for (QueryScopeParam<?> param : paramsList) {
-            try {
-                // noinspection ResultOfMethodCallIgnored, we only care that we can get the value here not what it is
-                param.getValue();
-            } catch (RuntimeException e) {
-                throw new RuntimeException("Error retrieving " + param.getName(), e);
+    }
+
+    protected void onCopy(final AbstractFormulaColumn copy) {
+        copy.formulaFactory = formulaFactory;
+        copy.columnDefinitions = columnDefinitions;
+        copy.params = params;
+        copy.usedColumns = usedColumns;
+        copy.usedColumnArrays = usedColumnArrays;
+        copy.usesI = usesI;
+        copy.usesII = usesII;
+        copy.usesK = usesK;
+    }
+
+    protected void validateColumnDefinition(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+        for (final Map.Entry<String, ColumnDefinition<?>> entry : columnDefinitionMap.entrySet()) {
+            final String name = entry.getKey();
+            final ColumnDefinition<?> newDef = entry.getValue();
+            final ColumnDefinition<?> origDef = columnDefinitions.get(name);
+            if (!origDef.equals(newDef)) {
+                throw new IllegalStateException("initDef must be idempotent but column changed from "
+                        + origDef + " to " + newDef);
             }
         }
     }
-
 
     @Override
     public List<String> getColumns() {
@@ -225,15 +232,8 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     private Formula getFormula(boolean initLazyMap,
             Map<String, ? extends ColumnSource<?>> columnsToData,
             QueryScopeParam<?>... params) {
-        if (formulaFactory == null) {
-            formulaFactory = useKernelFormulas ? createKernelFormulaFactory() : createFormulaFactory();
-        }
         formula = formulaFactory.createFormula(rowSet, initLazyMap, columnsToData, executionContext, params);
         return formula;
-    }
-
-    protected FormulaFactory createFormulaFactory() {
-        throw new UnsupportedOperationException();
     }
 
     @SuppressWarnings("unchecked")
@@ -266,8 +266,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         return new ObjectVectorColumnWrapper<>((ColumnSource<Object>) cs, rowSet);
     }
 
-    private FormulaFactory createKernelFormulaFactory() {
-        final FormulaKernelFactory formulaKernelFactory = getFormulaKernelFactory();
+    protected FormulaFactory createKernelFormulaFactory(final FormulaKernelFactory formulaKernelFactory) {
         final FormulaSourceDescriptor sd = getSourceDescriptor();
 
         return (rowSet, lazy, columnsToData, executionContext, params) -> {
@@ -290,8 +289,6 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     protected abstract FormulaSourceDescriptor getSourceDescriptor();
-
-    protected abstract FormulaKernelFactory getFormulaKernelFactory();
 
     @Override
     public String getName() {
@@ -335,16 +332,16 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         final Class<?> dataType;
         final Class<?> vectorType;
         final String vectorTypeString;
-        final ColumnSource<?> columnSource;
+        final ColumnDefinition<?> columnDefinition;
 
         public ColumnArrayParameter(String name, String bareName, Class<?> dataType, Class<?> vectorType,
-                String vectorTypeString, ColumnSource<?> columnSource) {
+                String vectorTypeString, ColumnDefinition<?> columnDefinition) {
             this.name = name;
             this.bareName = bareName;
             this.dataType = dataType;
             this.vectorType = vectorType;
             this.vectorTypeString = vectorTypeString;
-            this.columnSource = columnSource;
+            this.columnDefinition = columnDefinition;
         }
     }
 

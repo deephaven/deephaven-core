@@ -36,29 +36,22 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     private FormulaColumnPython(String columnName,
             io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction dcf) {
-        super(columnName, "<python-formula>", true);
+        super(columnName, "<python-formula>");
         this.dcf = Objects.requireNonNull(dcf);
     }
 
-    private void initFromDef(Map<String, ColumnDefinition<?>> columnNameMap) {
-        if (initialized) {
-            throw new IllegalStateException("Already initialized");
-        }
-        returnedType = dcf.getReturnedType();
-        this.initialized = true;
-    }
-
     @Override
-    protected final FormulaKernelFactory getFormulaKernelFactory() {
-        return this;
-    }
-
-    @Override
-    public final List<String> initDef(Map<String, ColumnDefinition<?>> columnNameMap) {
+    public final List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         if (!initialized) {
-            initFromDef(columnNameMap);
-            applyUsedVariables(columnNameMap, new LinkedHashSet<>(dcf.getColumnNames()));
+            initialized = true;
+            returnedType = dcf.getReturnedType();
+            columnDefinitions = columnDefinitionMap;
+            applyUsedVariables(new LinkedHashSet<>(dcf.getColumnNames()));
+            formulaFactory = createKernelFormulaFactory(this);
+        } else {
+            validateColumnDefinition(columnDefinitionMap);
         }
+
         return usedColumns;
     }
 
@@ -87,7 +80,14 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     @Override
     public final SelectColumn copy() {
-        return new FormulaColumnPython(columnName, dcf);
+        final FormulaColumnPython copy = new FormulaColumnPython(columnName, dcf);
+        if (initialized) {
+            // copy all initDef state
+            copy.initialized = true;
+            copy.returnedType = returnedType;
+            onCopy(copy);
+        }
+        return copy;
     }
 
     @Override

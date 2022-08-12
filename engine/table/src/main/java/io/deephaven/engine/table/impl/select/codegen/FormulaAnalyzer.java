@@ -29,33 +29,21 @@ public class FormulaAnalyzer {
 
     public static Result analyze(final String rawFormulaString,
             final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            Map<String, Class<?>> otherVariables) {
-        try {
-            return analyzeHelper(rawFormulaString, columnDefinitionMap, otherVariables);
-        } catch (Exception e) {
-            throw new FormulaCompilationException("Formula compilation error for: " + rawFormulaString, e);
-        }
-    }
-
-    private static Result analyzeHelper(final String rawFormulaString,
-            final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            Map<String, Class<?>> otherVariables) throws Exception {
+            final DateTimeUtils.Result timeConversionResult,
+            final QueryLanguageParser.Result queryLanguageResult) throws Exception {
         final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleParams.put(param.getName(), param);
         }
 
-        final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(rawFormulaString);
-        final QueryLanguageParser.Result result = getCompiledFormula(columnDefinitionMap, timeConversionResult,
-                otherVariables);
-
-        log.debug().append("Expression (after language conversion) : ").append(result.getConvertedExpression()).endl();
+        log.debug().append("Expression (after language conversion) : ")
+                .append(queryLanguageResult.getConvertedExpression()).endl();
 
         final List<String> usedColumns = new ArrayList<>();
         final List<String> userParams = new ArrayList<>();
         final List<String> usedColumnArrays = new ArrayList<>();
-        for (String variable : result.getVariablesUsed()) {
+        for (String variable : queryLanguageResult.getVariablesUsed()) {
             final String colSuffix = DhFormulaColumn.COLUMN_SUFFIX;
             final String bareName;
             if (variable.equals("i") || variable.equals("ii") || variable.equals("k")) {
@@ -70,11 +58,11 @@ public class FormulaAnalyzer {
                 userParams.add(variable);
             }
         }
-        Class<?> returnedType = result.getType();
+        Class<?> returnedType = queryLanguageResult.getType();
         if (returnedType == boolean.class) {
             returnedType = Boolean.class;
         }
-        final String cookedFormulaString = result.getConvertedExpression();
+        final String cookedFormulaString = queryLanguageResult.getConvertedExpression();
         final String timeInstanceVariables = timeConversionResult.getInstanceVariablesString();
         return new Result(returnedType,
                 usedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
@@ -84,8 +72,7 @@ public class FormulaAnalyzer {
     }
 
     public static QueryLanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
-            DateTimeUtils.Result timeConversionResult,
-            Map<String, Class<?>> otherVariables) throws Exception {
+            DateTimeUtils.Result timeConversionResult) throws Exception {
         final Map<String, Class<?>> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);
         possibleVariables.put("ii", long.class);
@@ -133,9 +120,6 @@ public class FormulaAnalyzer {
                 .endl();
 
         possibleVariables.putAll(timeConversionResult.getNewVariables());
-        if (otherVariables != null) {
-            possibleVariables.putAll(otherVariables);
-        }
 
         final Set<Class<?>> classImports =
                 new HashSet<>(ExecutionContext.getContext().getQueryLibrary().getClassImports());
