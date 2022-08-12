@@ -31,44 +31,9 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
         // endregion constructor
     }
 
-    @Override
-    public void addChunkBucketed(@NotNull final UpdateContext context,
-                                 @NotNull final Chunk<Values> values,
-                                 @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                                 @NotNull final IntChunk<RowKeys> bucketPositions,
-                                 @NotNull final IntChunk<ChunkPositions> startPositions,
-                                 @NotNull final IntChunk<ChunkLengths> runLengths) {
-        final DoubleChunk<Values> asDoubles = values.asDoubleChunk();
-        final Context ctx = (Context) context;
-        final WritableDoubleChunk<Values> localOutputChunk = ctx.outputValues.get();
-        for(int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
-            final int runStart = startPositions.get(runIdx);
-            final int runLength = runLengths.get(runIdx);
-            final int bucketPosition = bucketPositions.get(runStart);
-
-            ctx.curVal = bucketLastVal.getDouble(bucketPosition);
-            if(Double.isNaN(ctx.curVal)) {
-                localOutputChunk.fillWithValue(runStart, runLength, ctx.curVal);
-            } else {
-                accumulate(asDoubles, ctx, runStart, runLength);
-                bucketLastVal.set(bucketPosition, ctx.curVal);
-            }
-        }
-
-        //noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), localOutputChunk, (LongChunk<RowKeys>) keyChunk);
-    }
-
     protected void doAddChunk(@NotNull final Context ctx,
                               @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk,
-                              final long groupPosition) {
-        ctx.curVal = groupPosition == singletonGroup ? singletonVal : NULL_DOUBLE;
-        if(ctx.lastGroupPosition != groupPosition) {
-            ctx.lastGroupPosition = groupPosition;
-            ctx.filledWithPermanentValue = false;
-        }
-
+                              @NotNull final Chunk<Values> workingChunk) {
         if(Double.isNaN(ctx.curVal)) {
             if(!ctx.filledWithPermanentValue) {
                 ctx.filledWithPermanentValue = true;
@@ -77,9 +42,6 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
         } else {
             accumulate(workingChunk.asDoubleChunk(), ctx, 0, workingChunk.size());
         }
-
-        singletonGroup = groupPosition;
-        singletonVal = ctx.curVal;
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
     }
 

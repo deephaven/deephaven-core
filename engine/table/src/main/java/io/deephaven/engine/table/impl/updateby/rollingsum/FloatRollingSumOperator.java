@@ -123,8 +123,7 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     public void doAddChunk(@NotNull final BaseWindowedFloatUpdateByOperator.Context context,
                               @NotNull final RowSequence inputKeys,
                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                              @NotNull final Chunk<Values> workingChunk,
-                              final long groupPosition) {
+                              @NotNull final Chunk<Values> workingChunk) {
         final Context ctx = (Context) context;
 
         computeTicks(ctx, 0, inputKeys.intSize());

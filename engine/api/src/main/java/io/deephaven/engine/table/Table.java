@@ -1588,6 +1588,19 @@ public interface Table extends
     PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames);
 
     /**
+     * Create a {@link PartitionedTable} from this table, partitioned according to the specified key columns.
+     * <p>
+     * The underlying partitioned table backing the result contains each row in {@code this} table in exactly one of the
+     * result's constituent tables.
+     *
+     * @param dropKeys Whether to drop key columns in the output constituent tables
+     * @param keyColumnNames The name of the key columns to partition by
+     * @return A {@link PartitionedTable} keyed by {@code keyColumnNames}
+     */
+    @ConcurrentMethod
+    PartitionedTable partitionBy(boolean dropKeys, @NotNull Collection<? extends ColumnName> keyColumnNames);
+
+    /**
      * Equivalent to {@code partitionBy(false, keyColumnNames)}
      * <p>
      * Create a {@link PartitionedTable} from this table, partitioned according to the specified key columns. Key
@@ -1601,6 +1614,7 @@ public interface Table extends
      */
     @ConcurrentMethod
     PartitionedTable partitionBy(String... keyColumnNames);
+
 
     // -----------------------------------------------------------------------------------------------------------------
     // Hierarchical table operations (rollup and treeTable).

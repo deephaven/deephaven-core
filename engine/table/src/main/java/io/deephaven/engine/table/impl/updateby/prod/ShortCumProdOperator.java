@@ -28,37 +28,13 @@ public class ShortCumProdOperator extends BaseLongUpdateByOperator {
     }
 
     @Override
-    public void addChunkBucketed(final @NotNull UpdateContext context,
-                                 final @NotNull Chunk<Values> values,
-                                 final @NotNull LongChunk<? extends RowKeys> keyChunk,
-                                 final @NotNull IntChunk<RowKeys> bucketPositions,
-                                 final @NotNull IntChunk<ChunkPositions> startPositions,
-                                 final @NotNull IntChunk<ChunkLengths> runLengths) {
-
-        final Context ctx = (Context) context;
-        final ShortChunk<Values> asShorts = values.asShortChunk();
-        for(int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
-            final int runStart = startPositions.get(runIdx);
-            final int runLength = runLengths.get(runIdx);
-            final int bucketPosition = bucketPositions.get(runStart);
-
-            ctx.curVal = bucketLastVal.getLong(bucketPosition);
-            accumulate(asShorts, ctx, runStart, runLength);
-            bucketLastVal.set(bucketPosition, ctx.curVal);
-        }
-        //noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(), (LongChunk<RowKeys>) keyChunk);
-    }
-
-    @Override
     protected void doAddChunk(@NotNull final Context ctx,
                               @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk,
-                              final long groupPosition) {
-        ctx.curVal = groupPosition == singletonGroup ? singletonVal : NULL_LONG;
+                              @NotNull final Chunk<Values> workingChunk) {
+//        ctx.curVal = groupPosition == singletonGroup ? singletonVal : NULL_LONG;
         accumulate(workingChunk.asShortChunk(), ctx, 0, workingChunk.size());
-        singletonGroup = groupPosition;
-        singletonVal = ctx.curVal;
+//        singletonGroup = groupPosition;
+//        singletonVal = ctx.curVal;
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
     }
 

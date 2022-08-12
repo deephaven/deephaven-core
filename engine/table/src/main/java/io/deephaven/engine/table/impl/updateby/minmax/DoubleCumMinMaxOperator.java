@@ -35,42 +35,9 @@ public class DoubleCumMinMaxOperator extends BaseDoubleUpdateByOperator {
     }
 
     @Override
-    public void addChunkBucketed(@NotNull final UpdateContext context,
-                                 @NotNull final Chunk<Values> values,
-                                 @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                                 @NotNull final IntChunk<RowKeys> bucketPositions,
-                                 @NotNull final IntChunk<ChunkPositions> startPositions,
-                                 @NotNull final IntChunk<ChunkLengths> runLengths) {
-        final DoubleChunk<Values> asDoubles = values.asDoubleChunk();
-        final Context ctx = (Context) context;
-        for (int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
-            final int runStart = startPositions.get(runIdx);
-            final int runLength = runLengths.get(runIdx);
-            final int bucketPosition = bucketPositions.get(runStart);
-
-            ctx.curVal = bucketLastVal.getDouble(bucketPosition);
-            if (Double.isNaN(ctx.curVal) || Double.isInfinite(ctx.curVal)) {
-                ctx.outputValues.get().fillWithValue(runStart, runLength, ctx.curVal);
-            } else {
-                accumulateMinMax(asDoubles, ctx, runStart, runLength);
-                bucketLastVal.set(bucketPosition, ctx.curVal);
-            }
-        }
-        //noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(), (LongChunk<RowKeys>) keyChunk);
-    }
-
-    @Override
     protected void doAddChunk(@NotNull final Context ctx,
                               @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk,
-                              long groupPosition) {
-        ctx.curVal = singletonGroup == groupPosition ? singletonVal : NULL_DOUBLE;
-        if(ctx.lastGroupPosition != groupPosition) {
-            ctx.lastGroupPosition = groupPosition;
-            ctx.filledWithPermanentValue = false;
-        }
-
+                              @NotNull final Chunk<Values> workingChunk) {
         if(Double.isNaN(ctx.curVal) || Double.isInfinite(ctx.curVal)) {
             if(!ctx.filledWithPermanentValue) {
                 ctx.filledWithPermanentValue = true;
@@ -79,9 +46,6 @@ public class DoubleCumMinMaxOperator extends BaseDoubleUpdateByOperator {
         } else {
             accumulateMinMax(workingChunk.asDoubleChunk(), ctx, 0, workingChunk.size());
         }
-
-        singletonGroup = groupPosition;
-        singletonVal = ctx.curVal;
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
     }
 

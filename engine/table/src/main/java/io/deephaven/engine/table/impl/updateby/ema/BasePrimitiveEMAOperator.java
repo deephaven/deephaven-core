@@ -33,9 +33,6 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     protected final OperationControl control;
     protected final LongRecordingUpdateByOperator timeRecorder;
     protected final double timeScaleUnits;
-    private LongArraySource bucketLastTimestamp;
-
-    private long singletonLastStamp = NULL_LONG;
 
     class EmaContext extends Context {
         double alpha;
@@ -73,12 +70,6 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         this.timeScaleUnits = timeScaleUnits;
     }
 
-    @Override
-    public void setBucketCapacity(final int capacity) {
-        super.setBucketCapacity(capacity);
-        bucketLastTimestamp.ensureCapacity(capacity);
-    }
-
     @NotNull
     @Override
     public UpdateByOperator.UpdateContext makeUpdateContext(final int chunkSize) {
@@ -89,16 +80,9 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     public void initializeForUpdate(@NotNull final UpdateByOperator.UpdateContext context,
             @NotNull final TableUpdate upstream,
             @NotNull final RowSet resultSourceIndex,
-            final boolean usingBuckets,
+            final long lastPrevKey ,
             final boolean isAppendOnly) {
         final EmaContext ctx = (EmaContext) context;
-        if (!initialized) {
-            initialized = true;
-            if (usingBuckets) {
-                this.bucketLastVal = new DoubleArraySource();
-                this.bucketLastTimestamp = new LongArraySource();
-            }
-        }
 
         // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
         // to have a bad time. This is not necessary for non-redirections since the SparseArraySources do not
@@ -107,10 +91,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             outputSource.ensureCapacity(resultSourceIndex.size() + 1);
         }
 
-        if (!usingBuckets) {
-            // If we aren't bucketing, we'll just remember the appendyness.
-            ctx.canProcessDirectly = isAppendOnly;
-        }
+        // If we aren't bucketing, we'll just remember the appendyness.
+        ctx.canProcessDirectly = isAppendOnly;
     }
 
     @Override
@@ -122,71 +104,16 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     }
 
     @Override
-    public void onBucketsRemoved(@NotNull final RowSet removedBuckets) {
-        if (bucketLastVal != null) {
-            bucketLastVal.setNull(removedBuckets);
-            bucketLastTimestamp.setNull(removedBuckets);
-        } else {
-            singletonVal = QueryConstants.NULL_DOUBLE;
-            singletonLastStamp = NULL_LONG;
-        }
-    }
-
-    @Override
     protected void doAddChunk(@NotNull final Context context,
             @NotNull final RowSequence inputKeys,
-            @NotNull final Chunk<Values> workingChunk,
-            long groupPosition) {
+            @NotNull final Chunk<Values> workingChunk) {
         final EmaContext ctx = (EmaContext) context;
-        if (groupPosition == singletonGroup) {
-            ctx.lastStamp = singletonLastStamp;
-            ctx.curVal = singletonVal;
-        } else {
-            ctx.lastStamp = NULL_LONG;
-            ctx.curVal = NULL_DOUBLE;
-        }
-
         if (timeRecorder == null) {
             computeWithTicks(ctx, workingChunk, 0, inputKeys.intSize());
         } else {
             computeWithTime(ctx, workingChunk, 0, inputKeys.intSize());
         }
-
-        singletonVal = ctx.curVal;
-        singletonLastStamp = ctx.lastStamp;
-        singletonGroup = groupPosition;
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
-    }
-
-    @Override
-    public void addChunkBucketed(@NotNull final UpdateByOperator.UpdateContext context,
-                                 @NotNull final Chunk<Values> values,
-                                 @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                                 @NotNull final IntChunk<RowKeys> bucketPositions,
-                                 @NotNull final IntChunk<ChunkPositions> startPositions,
-                                 @NotNull final IntChunk<ChunkLengths> runLengths) {
-        final EmaContext ctx = (EmaContext) context;
-        for (int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
-            final int runStart = startPositions.get(runIdx);
-            final int runLength = runLengths.get(runIdx);
-            final int runEnd = runStart + runLength;
-            final int bucketPosition = bucketPositions.get(runStart);
-
-            ctx.lastStamp = bucketLastTimestamp.getLong(bucketPosition);
-            ctx.curVal = bucketLastVal.getDouble(bucketPosition);
-            if (timeRecorder == null) {
-                computeWithTicks(ctx, values, runStart, runEnd);
-            } else {
-                computeWithTime(ctx, values, runStart, runEnd);
-            }
-
-            bucketLastVal.set(bucketPosition, ctx.curVal);
-            bucketLastTimestamp.set(bucketPosition, ctx.lastStamp);
-        }
-
-        // noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(),
-                (LongChunk<RowKeys>) keyChunk);
     }
 
     @Override
@@ -203,8 +130,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         if (!ctx.canProcessDirectly) {
             // If we set the last state to null, then we know it was a reset state and the timestamp must also
             // have been reset.
-            if (singletonVal == NULL_DOUBLE || (firstUnmodifiedKey == NULL_ROW_KEY)) {
-                singletonLastStamp = NULL_LONG;
+            if (ctx.curVal == NULL_DOUBLE || (firstUnmodifiedKey == NULL_ROW_KEY)) {
+                ctx.lastStamp = NULL_LONG;
             } else {
                 // If it hasn't been reset to null, then it's possible that the value at that position was null, in
                 // which case
@@ -214,39 +141,9 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
                 // Note that it's OK that we are not setting the singletonVal here, because if we had to go back more
                 // rows, then whatever the correct value was, was already set at the initial location.
-                singletonLastStamp = locateFirstValidPreviousTimestamp(sourceIndex, firstUnmodifiedKey);
+                ctx.lastStamp = locateFirstValidPreviousTimestamp(sourceIndex, firstUnmodifiedKey);
             }
         }
-    }
-
-    @Override
-    public void resetForReprocessBucketed(@NotNull final UpdateByOperator.UpdateContext ctx,
-                                          @NotNull final RowSet bucketIndex,
-                                          final long bucketPosition,
-                                          final long firstUnmodifiedKey) {
-        final double previousVal = firstUnmodifiedKey == NULL_ROW_KEY ? QueryConstants.NULL_DOUBLE
-                : outputSource.getDouble(firstUnmodifiedKey);
-        bucketLastVal.set(bucketPosition, previousVal);
-
-        if (timeRecorder == null) {
-            return;
-        }
-
-        long potentialResetTimestamp;
-        if (previousVal == NULL_DOUBLE) {
-            potentialResetTimestamp = NULL_LONG;
-        } else {
-            // If it hasn't been reset to null, then it's possible that the value at that position was null, in which
-            // case
-            // we must have ignored it, and so we have to actually keep looking backwards until we find something
-            // not null.
-
-
-            // Note that it's OK that we are not setting the singletonVal here, because if we had to go back more
-            // rows, then whatever the correct value was, was already set at the initial location.
-            potentialResetTimestamp = locateFirstValidPreviousTimestamp(bucketIndex, firstUnmodifiedKey);
-        }
-        bucketLastTimestamp.set(bucketPosition, potentialResetTimestamp);
     }
 
     private long locateFirstValidPreviousTimestamp(@NotNull final RowSet indexToSearch,

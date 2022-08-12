@@ -51,7 +51,7 @@ import java.util.Map;
  * <li>Adds
  * <ul>
  * <li>{@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
- * <li>{@link #addChunkBucketed(UpdateContext, RowSequence, LongChunk, Chunk, long)}</li>
+ * <li>{@link #addChunk(UpdateContext, RowSequence, LongChunk, Chunk, long)}</li>
  * <li>{@link #finishFor(UpdateContext, UpdateBy.UpdateType)}</li>
  * </ul>
  * </li>
@@ -159,7 +159,7 @@ public interface UpdateByOperator {
             }
         }
 
-        return smallestModifiedKey == Long.MAX_VALUE ? RowSet.NULL_ROW_KEY : smallestModifiedKey;
+        return smallestModifiedKey;
     }
 
     /**
@@ -181,13 +181,6 @@ public interface UpdateByOperator {
          */
         RowSet getAffectedRows();
     }
-
-    /**
-     * Notify the operator of the current maximum bucket.
-     * 
-     * @param capacity the capacity
-     */
-    void setBucketCapacity(final int capacity);
 
     /**
      * Get the name of the input column this operator depends on.
@@ -241,13 +234,13 @@ public interface UpdateByOperator {
      * @param context the context object
      * @param upstream the upstream update to process
      * @param resultSourceIndex the result index of the source table
-     * @param usingBuckets if the update is bucketed or not
+     * @param lastPrevKey the last key for this table before this update
      * @param isUpstreamAppendOnly if the upstream update was detected to be append-only.
      */
     void initializeForUpdate(@NotNull final UpdateContext context,
             @NotNull final TableUpdate upstream,
             @NotNull final RowSet resultSourceIndex,
-            final boolean usingBuckets,
+            final long lastPrevKey,
             final boolean isUpstreamAppendOnly);
 
     /**
@@ -313,7 +306,7 @@ public interface UpdateByOperator {
 
     /**
      * Query if this operator can process the update normally, or if it can only reprocess. This method is guaranteed to
-     * be invoked after {@link #initializeForUpdate(UpdateContext, TableUpdate, RowSet, boolean, boolean)} so the
+     * be invoked after {@link #initializeForUpdate(UpdateContext, TableUpdate, RowSet, long, boolean)} so the
      * operator is aware of the upstream {@link TableUpdate}.
      *
      * @param context the context
@@ -330,14 +323,6 @@ public interface UpdateByOperator {
      */
     void setChunkSize(@NotNull final UpdateContext context, final int chunkSize);
 
-
-    /**
-     * Called when some buckets have been completely emptied. Operators can use this to reset internal states.
-     *
-     * @param removedBuckets an index of removed bucket positions.
-     */
-    void onBucketsRemoved(@NotNull final RowSet removedBuckets);
-
     /**
      * Add a chunk of non-bucketed items to the operation.
      *
@@ -345,30 +330,11 @@ public interface UpdateByOperator {
      * @param keyChunk a chunk of keys for the rows being added. If the operator returns {@code false} for
      *        {@link #requiresKeys()} this will be null.
      * @param values the chunk of values for the rows being added
-     * @param bucketPosition the group position
      */
     void addChunk(@NotNull final UpdateContext context,
                           @NotNull final RowSequence inputKeys,
                           @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                          @NotNull final Chunk<Values> values,
-                          final long bucketPosition);
-
-    /**
-     * Add a chunk of bucketed items to the operation.
-     *
-     * @param context the context object
-     * @param values the value chunk
-     * @param keyChunk a chunk of keys for the rows being added
-     * @param bucketPositions a chunk of hash bucket positions for each key
-     * @param runLengths the runLengths of each run of bucket values
-     * @param startPositions the start position of a run within the chunk
-     */
-    void addChunkBucketed(@NotNull final UpdateContext context,
-                          @NotNull final Chunk<Values> values,
-                          @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                          @NotNull final IntChunk<RowKeys> bucketPositions,
-                          @NotNull final IntChunk<ChunkPositions> startPositions,
-                          @NotNull final IntChunk<ChunkLengths> runLengths);
+                          @NotNull final Chunk<Values> values);
 
     /**
      * Modify a chunk of values with the operation.
@@ -378,14 +344,12 @@ public interface UpdateByOperator {
      * @param keyChunk a chunk of post-shift space keys for the update.
      * @param prevValuesChunk a chunk of previous values for the update
      * @param postValuesChunk a chunk of current values for the update
-     * @param bucketPosition the position of the current group being processed
      */
     void modifyChunk(@NotNull final UpdateContext context,
             @Nullable final LongChunk<OrderedRowKeys> prevKeyChunk,
             @Nullable final LongChunk<OrderedRowKeys> keyChunk,
             @NotNull final Chunk<Values> prevValuesChunk,
-            @NotNull final Chunk<Values> postValuesChunk,
-            final long bucketPosition);
+            @NotNull final Chunk<Values> postValuesChunk);
 
     /**
      * Remove a chunk of values from the operation.
@@ -393,12 +357,10 @@ public interface UpdateByOperator {
      * @param context the context object
      * @param keyChunk a chunk of keys being removed.
      * @param prevValuesChunk the chunk of values being removed
-     * @param bucketPosition the position of the current group being processed
      */
     void removeChunk(@NotNull final UpdateContext context,
             @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-            @NotNull final Chunk<Values> prevValuesChunk,
-            final long bucketPosition);
+            @NotNull final Chunk<Values> prevValuesChunk);
 
     /**
      * Apply a shift to the operation.
@@ -436,26 +398,6 @@ public interface UpdateByOperator {
                                 @NotNull final RowSet postUpdateSourceIndex);
 
     /**
-     * Reprocess a chunk of data for a bucketed table.
-     *
-     * @param context the context object
-     * @param inputKeys the keys contained in the chunk
-     * @param values the current chunk of working values.
-     * @param keyChunk a {@link LongChunk} containing the keys.
-     * @param bucketPositions a {@link IntChunk} containing the bucket position of each key. Parallel to `keyChunk` and
-     *        `values
-     * @param runStartPositions the starting positions of each run within the key and value chunk
-     * @param runLengths the run runLengths of each run in the key and value chunks. Parallel to `runStartPositions`
-     */
-    void reprocessChunkBucketed(@NotNull final UpdateContext context,
-                                @NotNull final RowSequence inputKeys,
-                                @NotNull final Chunk<Values> values,
-                                @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                                @NotNull final IntChunk<RowKeys> bucketPositions,
-                                @NotNull final IntChunk<ChunkPositions> runStartPositions,
-                                @NotNull final IntChunk<ChunkLengths> runLengths);
-
-    /**
      * Reset the operator to the state at the `firstModifiedKey` for non-bucketed operation. This is invoked immediately
      * prior to calls to {@link #resetForReprocess(UpdateContext, RowSet, long)}. <br>
      * <br>
@@ -468,18 +410,4 @@ public interface UpdateByOperator {
     void resetForReprocess(@NotNull final UpdateContext context,
             @NotNull final RowSet sourceIndex,
             final long firstUnmodifiedKey);
-
-    /**
-     * Reset the operator to the state at the `firstModifiedKey` for the specified bucket. This is invoked immediately
-     * prior to calls to
-     * {@link #reprocessChunkBucketed(UpdateContext, RowSequence, Chunk, LongChunk, IntChunk, IntChunk, IntChunk)}.
-     *
-     * @param context the context object
-     * @param bucketIndex the current index of the specified bucket
-     * @param firstUnmodifiedKey the first unmodified key in the bucket after which we will reprocess rows.
-     */
-    void resetForReprocessBucketed(@NotNull final UpdateContext context,
-                                   @NotNull final RowSet bucketIndex,
-                                   final long bucketPosition,
-                                   final long firstUnmodifiedKey);
 }

@@ -33,17 +33,11 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperator {
     protected final WritableColumnSource<Long> outputSource;
     protected final WritableColumnSource<Long> maybeInnerSource;
+    protected boolean trackingPrev = false;
+
     protected final MatchPair pair;
     protected final String[] affectingColumns;
     protected final boolean isRedirected;
-
-    protected LongArraySource bucketLastVal;
-
-    /** These are only used in grouped operations */
-    protected long singletonVal;
-    protected long singletonGroup = QueryConstants.NULL_LONG;
-
-    protected boolean initialized = false;
 
     // region extra-fields
     // endregion extra-fields
@@ -110,8 +104,6 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
 
         // region constructor
         // endregion constructor
-
-        this.singletonVal = QueryConstants.NULL_LONG;
     }
 
     // region extra-methods
@@ -121,11 +113,6 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
     public void setChunkSize(@NotNull final UpdateContext context, final int chunkSize) {
         ((Context)context).outputValues.ensureCapacity(chunkSize);
         ((Context)context).fillContext.ensureCapacity(chunkSize);
-    }
-
-    @Override
-    public void setBucketCapacity(final int capacity) {
-        bucketLastVal.ensureCapacity(capacity);
     }
 
     @NotNull
@@ -162,17 +149,9 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
     public void initializeForUpdate(@NotNull final UpdateContext context,
                                     @NotNull final TableUpdate upstream,
                                     @NotNull final RowSet resultSourceIndex,
-                                    final boolean usingBuckets,
+                                    final long lastPrevKey,
                                     final boolean isUpstreamAppendOnly) {
         final Context ctx = (Context) context;
-        if(!initialized) {
-            initialized = true;
-            if(usingBuckets) {
-                // region create-bucket
-                this.bucketLastVal = new LongArraySource();
-                // endregion create-bucket
-            }
-        }
 
         // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
         // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
@@ -182,10 +161,11 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
             outputSource.ensureCapacity(resultSourceIndex.size() + 1);
         }
 
-        if(!usingBuckets) {
-            // If we aren't bucketing, we'll just remember the appendyness.
-            ctx.canProcessDirectly = isUpstreamAppendOnly;
-        }
+        // just remember the appendyness.
+        ctx.canProcessDirectly = isUpstreamAppendOnly;
+
+        // pre-load the context with the previous last value in the table (if possibe)
+        ctx.curVal = lastPrevKey == NULL_ROW_KEY ? QueryConstants.NULL_LONG : outputSource.getLong(lastPrevKey);
     }
 
     @Override
@@ -193,7 +173,6 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
                               @NotNull final RowSet updateRowSet,
                               @NotNull final UpdateBy.UpdateType type) {
         ((Context)updateContext).currentUpdateType = type;
-        ((Context)updateContext).curVal = QueryConstants.NULL_LONG;
     }
 
     @Override
@@ -219,9 +198,12 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
 
     @Override
     public void startTrackingPrev() {
-        outputSource.startTrackingPrevValues();
-        if(isRedirected) {
-            maybeInnerSource.startTrackingPrevValues();
+        if (!trackingPrev) {
+            trackingPrev = true;
+            outputSource.startTrackingPrevValues();
+            if (isRedirected) {
+                maybeInnerSource.startTrackingPrevValues();
+            }
         }
     }
 
@@ -237,15 +219,6 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
     }
 
     @Override
-    public void onBucketsRemoved(@NotNull final RowSet removedBuckets) {
-        if(bucketLastVal != null) {
-            bucketLastVal.setNull(removedBuckets);
-        } else {
-            singletonVal = QueryConstants.NULL_LONG;
-        }
-    }
-
-    @Override
     public boolean canProcessNormalUpdate(@NotNull UpdateContext context) {
         return ((Context)context).canProcessDirectly;
     }
@@ -255,11 +228,10 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
     public void addChunk(@NotNull final UpdateContext updateContext,
                                  @NotNull final RowSequence inputKeys,
                                  @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                 @NotNull final Chunk<Values> values,
-                                 long bucketPosition) {
+                                 @NotNull final Chunk<Values> values) {
         final Context ctx = (Context) updateContext;
         if (ctx.canProcessDirectly) {
-            doAddChunk(ctx, inputKeys, values, bucketPosition);
+            doAddChunk(ctx, inputKeys, values);
         }
     }
 
@@ -269,12 +241,10 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
      * @param ctx the context object
      * @param inputKeys the input keys for the chunk
      * @param workingChunk the chunk of values
-     * @param bucketPosition the bucket position that the values belong to.
      */
     protected abstract void doAddChunk(@NotNull final Context ctx,
                                        @NotNull final RowSequence inputKeys,
-                                       @NotNull final Chunk<Values> workingChunk,
-                                       final long bucketPosition);
+                                       @NotNull final Chunk<Values> workingChunk);
 
     // endregion
 
@@ -296,18 +266,8 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
                                   long firstUnmodifiedKey) {
         final Context ctx = (Context) context;
         if(!ctx.canProcessDirectly) {
-            singletonVal = firstUnmodifiedKey == NULL_ROW_KEY ? QueryConstants.NULL_LONG : outputSource.getLong(firstUnmodifiedKey);
+            ctx.curVal = firstUnmodifiedKey == NULL_ROW_KEY ? QueryConstants.NULL_LONG : outputSource.getLong(firstUnmodifiedKey);
         }
-    }
-
-
-    @Override
-    public void resetForReprocessBucketed(@NotNull final UpdateContext ctx,
-                                          @NotNull final RowSet bucketIndex,
-                                          final long bucketPosition,
-                                          final long firstUnmodifiedKey) {
-        final long previousVal = firstUnmodifiedKey == NULL_ROW_KEY ? QueryConstants.NULL_LONG : outputSource.getLong(firstUnmodifiedKey);
-        bucketLastVal.set(bucketPosition, previousVal);
     }
 
     @Override
@@ -317,20 +277,8 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
                                        @NotNull final Chunk<Values> valuesChunk,
                                        @NotNull final RowSet postUpdateSourceIndex) {
         final Context ctx = (Context) updateContext;
-        doAddChunk(ctx, inputKeys, valuesChunk, 0);
+        doAddChunk(ctx, inputKeys, valuesChunk);
         ctx.getModifiedBuilder().appendRowSequence(inputKeys);
-    }
-
-    @Override
-    public void reprocessChunkBucketed(@NotNull UpdateContext updateContext,
-                                       @NotNull final RowSequence chunkOk,
-                                       @NotNull final Chunk<Values> values,
-                                       @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                                       @NotNull final IntChunk<RowKeys> bucketPositions,
-                                       @NotNull final IntChunk<ChunkPositions> runStartPositions,
-                                       @NotNull final IntChunk<ChunkLengths> runLengths) {
-        addChunkBucketed(updateContext, values, keyChunk, bucketPositions, runStartPositions, runLengths);
-        ((Context)updateContext).getModifiedBuilder().appendRowSequence(chunkOk);
     }
 
     // endregion
@@ -342,15 +290,13 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
                                   @Nullable final LongChunk<OrderedRowKeys> prevKeyChunk,
                                   @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                                   @NotNull final Chunk<Values> prevValuesChunk,
-                                  @NotNull final Chunk<Values> postValuesChunk,
-                                  long bucketPosition) {
+                                  @NotNull final Chunk<Values> postValuesChunk) {
     }
 
     @Override
     final public void removeChunk(@NotNull final UpdateContext updateContext,
                                   @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                  @NotNull final Chunk<Values> prevValuesChunk,
-                                  long bucketPosition) {
+                                  @NotNull final Chunk<Values> prevValuesChunk) {
     }
 
     @Override

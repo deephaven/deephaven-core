@@ -44,6 +44,8 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
 
         public LinkedList<Short> windowValues = new LinkedList<>();
 
+        public long currentVal = NULL_LONG;
+
         protected Context(final int chunkSize) {
             this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
             this.fillContext.ensureCapacity(chunkSize);
@@ -113,14 +115,14 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
     @Override
     public void reset(UpdateContext context) {
         final Context ctx = (Context) context;
+        ctx.currentVal = NULL_LONG;
     }
 
     @Override
     public void doAddChunk(@NotNull final BaseWindowedShortUpdateByOperator.Context context,
                               @NotNull final RowSequence inputKeys,
                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                              @NotNull final Chunk<Values> workingChunk,
-                              final long groupPosition) {
+                              @NotNull final Chunk<Values> workingChunk) {
         final Context ctx = (Context) context;
 
         computeTicks(ctx, 0, inputKeys.intSize());
@@ -152,7 +154,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
             // this call generates the push/pop calls to satisfy the window
 //            ctx.fillWindow(key, postUpdateSourceIndex);
 
-            localOutputValues.set(ii, sum.getValue());
+            localOutputValues.set(ii, ctx.currentVal);
         }
     }
 

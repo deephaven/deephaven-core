@@ -213,12 +213,4 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
     public boolean requiresKeys() {
         return true;
     }
-
-    @Override
-    public void setBucketCapacity(int capacity) {
-    }
-
-    @Override
-    public void onBucketsRemoved(@NotNull final RowSet removedBuckets) {
-    }
 }

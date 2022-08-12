@@ -456,15 +456,14 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public PartitionedTable partitionBy(final boolean dropKeys, final String... keyColumnNames) {
+    public PartitionedTable partitionBy(final boolean dropKeys, @NotNull final Collection<? extends ColumnName> columns) {
         if (isStream()) {
             throw streamUnsupported("partitionBy");
         }
-        final List<ColumnName> columns = ColumnName.from(keyColumnNames);
         return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, columns), () -> {
             final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), columns);
             final Set<String> keyColumnNamesSet =
-                    Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
+                    columns.stream().map(ColumnName::name).collect(Collectors.toCollection(LinkedHashSet::new));
             final TableDefinition constituentDefinition;
             if (dropKeys) {
                 constituentDefinition = TableDefinition.of(definition.getColumnStream()
@@ -476,6 +475,28 @@ public class QueryTable extends BaseTable {
                     constituentDefinition, isRefreshing(), false);
         });
     }
+
+//    @Override
+//    public PartitionedTable partitionBy(final boolean dropKeys, final String... keyColumnNames) {
+//        if (isStream()) {
+//            throw streamUnsupported("partitionBy");
+//        }
+//        final List<ColumnName> columns = ColumnName.from(keyColumnNames);
+//        return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, columns), () -> {
+//            final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), columns);
+//            final Set<String> keyColumnNamesSet =
+//                    Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
+//            final TableDefinition constituentDefinition;
+//            if (dropKeys) {
+//                constituentDefinition = TableDefinition.of(definition.getColumnStream()
+//                        .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
+//            } else {
+//                constituentDefinition = definition;
+//            }
+//            return new PartitionedTableImpl(partitioned, keyColumnNamesSet, true, CONSTITUENT.name(),
+//                    constituentDefinition, isRefreshing(), false);
+//        });
+//    }
 
     @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,

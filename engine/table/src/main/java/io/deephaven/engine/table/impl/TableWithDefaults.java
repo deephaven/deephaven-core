@@ -1059,9 +1059,16 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames) {
+        return partitionBy(dropKeys, ColumnName.from(keyColumnNames));
+    }
+
+    @Override
+    @ConcurrentMethod
     default PartitionedTable partitionBy(String... keyColumnNames) {
         return partitionBy(false, keyColumnNames);
     }
+
 
     // -----------------------------------------------------------------------------------------------------------------
     // Hierarchical table operations (rollup and treeTable).

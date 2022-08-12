@@ -32,36 +32,10 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
     // endregion extra-methods
 
     @Override
-    public void addChunkBucketed(@NotNull final UpdateContext context,
-                                 @NotNull final Chunk<Values> values,
-                                 @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                                 @NotNull final IntChunk<RowKeys> bucketPositions,
-                                 @NotNull final IntChunk<ChunkPositions> startPositions,
-                                 @NotNull final IntChunk<ChunkLengths> runLengths) {
-        final CharChunk<Values> asChars = values.asCharChunk();
-        final Context ctx = (Context) context;
-        for(int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
-            final int runStart = startPositions.get(runIdx);
-            final int runLength = runLengths.get(runIdx);
-            final int bucketPosition = bucketPositions.get(runStart);
-
-            ctx.curVal = bucketLastVal.getChar(bucketPosition);
-            accumulate(asChars, ctx, runStart, runLength);
-            bucketLastVal.set(bucketPosition, ctx.curVal);
-        }
-        //noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(), (LongChunk<RowKeys>) keyChunk);
-    }
-
-    @Override
     protected void doAddChunk(@NotNull final Context ctx,
                               @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk,
-                              final long bucketPosition) {
-        ctx.curVal = singletonGroup == bucketPosition ? singletonVal : NULL_CHAR;
+                              @NotNull final Chunk<Values> workingChunk) {
         accumulate(workingChunk.asCharChunk(), ctx, 0, workingChunk.size());
-        singletonGroup = bucketPosition;
-        singletonVal = ctx.curVal;
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
     }
 

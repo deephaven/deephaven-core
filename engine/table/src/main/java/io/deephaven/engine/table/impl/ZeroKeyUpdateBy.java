@@ -18,6 +18,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Map;
 
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+
 /**
  * An implementation of {@link UpdateBy} dedicated to zero key computation.
  */
@@ -45,9 +47,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
         updateBy.doInitialAdditions();
 
         if (source.isRefreshing()) {
-            if (rowRedirection != null) {
-                rowRedirection.startTrackingPrevValues();
-            }
             Arrays.stream(ops).forEach(UpdateByOperator::startTrackingPrev);
             final ZeroKeyUpdateByListener listener = updateBy.newListener(description, result);
             source.listenForUpdates(listener);
@@ -196,8 +195,8 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     }
                 }
 
-                operators[opIdx].initializeForUpdate(opContext[opIdx], upstream, source.getRowSet(), false,
-                        upstreamAppendOnly);
+                operators[opIdx].initializeForUpdate(opContext[opIdx], upstream, source.getRowSet(),
+                        isInitializeStep ? NULL_ROW_KEY : source.getRowSet().lastRowKeyPrev(), upstreamAppendOnly);
             }
 
             // retrieve the affected rows from all operator update contexts
@@ -379,13 +378,13 @@ class ZeroKeyUpdateBy extends UpdateBy {
                                     null, postWorkingChunks[slotPosition].get(),
                                     null, fillContexts[slotPosition].get());
                             currentOp.addChunk(opContext[opIdx], chunkOk, keyChunk.get(),
-                                    postWorkingChunks[slotPosition].get(), 0);
+                                    postWorkingChunks[slotPosition].get());
                         } else if (type == UpdateType.Remove) {
                             prepareValuesChunkFor(opIdx, slotPosition, true, false, chunkOk, prevChunkOk,
                                     postWorkingChunks[slotPosition].get(), null,
                                     fillContexts[slotPosition].get(), null);
                             currentOp.removeChunk(opContext[opIdx], keyChunk.get(),
-                                    postWorkingChunks[slotPosition].get(), 0);
+                                    postWorkingChunks[slotPosition].get());
                         } else if (type == UpdateType.Modify) {
                             prepareValuesChunkFor(opIdx, slotPosition, true, true, chunkOk, prevChunkOk,
                                     prevWorkingChunks[slotPosition], postWorkingChunks[slotPosition].get(),
@@ -394,8 +393,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                                     prevKeyChunk == null ? keyChunk.get() : prevKeyChunk,
                                     keyChunk.get(),
                                     prevWorkingChunks[slotPosition],
-                                    postWorkingChunks[slotPosition].get(),
-                                    0);
+                                    postWorkingChunks[slotPosition].get());
                         } else if (type == UpdateType.Reprocess) {
                             // is this chunk relevant to this operator? If so, then intersect and process only the
                             // relevant rows
@@ -499,19 +497,12 @@ class ZeroKeyUpdateBy extends UpdateBy {
             }
         }
 
-        private void onBucketsRemoved(@NotNull final RowSet removedBuckets) {
-            for (final UpdateByOperator operator : operators) {
-                operator.onBucketsRemoved(removedBuckets);
-            }
-        }
-
         public boolean canAnyProcessNormally() {
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx] && operators[opIdx].canProcessNormalUpdate(opContext[opIdx])) {
                     return true;
                 }
             }
-
             return false;
         }
     }
@@ -570,10 +561,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
                         ctx.doUpdate(upstream.modified(), upstream.modified(), UpdateType.Modify);
                     }
                     ctx.doUpdate(upstream.added(), upstream.added(), UpdateType.Add);
-                }
-
-                if (source.getRowSet().isEmpty()) {
-                    ctx.onBucketsRemoved(RowSetFactory.fromKeys(0));
                 }
 
                 // Now do the reprocessing phase.

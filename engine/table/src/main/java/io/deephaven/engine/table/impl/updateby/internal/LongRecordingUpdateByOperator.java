@@ -87,11 +87,6 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
         currentContext.addedChunk = valuesChunk.asLongChunk();
     }
 
-    @Override
-    public void reprocessChunkBucketed(@NotNull UpdateContext updateContext, @NotNull RowSequence chunkOk, @NotNull Chunk<Values> values, @NotNull LongChunk<? extends RowKeys> keyChunk, @NotNull IntChunk<RowKeys> bucketPositions, @NotNull IntChunk<ChunkPositions> runStartPositions, @NotNull IntChunk<ChunkLengths> runLengths) {
-        currentContext.addedChunk = values.asLongChunk();
-    }
-
     @NotNull
     @Override
     public UpdateContext makeUpdateContext(int chunkSize) {
@@ -102,25 +97,11 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
     public void addChunk(@NotNull UpdateContext updateContext,
                                  @NotNull RowSequence inputKeys,
                                  @Nullable LongChunk<OrderedRowKeys> keyChunk,
-                                 @NotNull Chunk<Values> values,
-                                 long bucketPosition) {
-        currentContext.addedChunk = values.asLongChunk();
-    }
-
-    @Override
-    public void addChunkBucketed(@NotNull UpdateContext context,
-                                 @NotNull Chunk<Values> values,
-                                 @NotNull LongChunk<? extends RowKeys> keyChunk,
-                                 @NotNull IntChunk<RowKeys> bucketPositions,
-                                 @NotNull IntChunk<ChunkPositions> startPositions,
-                                 @NotNull IntChunk<ChunkLengths> runLengths) {
+                                 @NotNull Chunk<Values> values) {
         currentContext.addedChunk = values.asLongChunk();
     }
 
     // region Unused methods
-    @Override
-    public void setBucketCapacity(int capacity) {
-    }
 
     @NotNull
     @Override
@@ -147,7 +128,7 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
     }
 
     @Override
-    public void initializeForUpdate(@NotNull UpdateContext ctx, @NotNull TableUpdate upstream, @NotNull RowSet resultSourceIndex, boolean usingBuckets, boolean isUpstreamAppendOnly) {
+    public void initializeForUpdate(@NotNull UpdateContext ctx, @NotNull TableUpdate upstream, @NotNull RowSet resultSourceIndex, final long key, boolean isUpstreamAppendOnly) {
     }
 
     @Override
@@ -194,17 +175,12 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
     }
 
     @Override
-    public void onBucketsRemoved(@NotNull RowSet removedBuckets) {
+    public void modifyChunk(@NotNull UpdateContext updateContext, @Nullable LongChunk<OrderedRowKeys> prevKeyChunk, @Nullable LongChunk<OrderedRowKeys> keyChunk, @NotNull Chunk<Values> prevValuesChunk, @NotNull Chunk<Values> postValuesChunk) {
 
     }
 
     @Override
-    public void modifyChunk(@NotNull UpdateContext updateContext, @Nullable LongChunk<OrderedRowKeys> prevKeyChunk, @Nullable LongChunk<OrderedRowKeys> keyChunk, @NotNull Chunk<Values> prevValuesChunk, @NotNull Chunk<Values> postValuesChunk, long bucketPosition) {
-
-    }
-
-    @Override
-    public void removeChunk(@NotNull UpdateContext updateContext, @Nullable LongChunk<OrderedRowKeys> keyChunk, @NotNull Chunk<Values> prevValuesChunk, long bucketPosition) {
+    public void removeChunk(@NotNull UpdateContext updateContext, @Nullable LongChunk<OrderedRowKeys> keyChunk, @NotNull Chunk<Values> prevValuesChunk) {
 
     }
 
@@ -220,11 +196,6 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
 
     @Override
     public void resetForReprocess(@NotNull UpdateContext context, @NotNull RowSet sourceIndex, long firstUnmodifiedKey) {
-
-    }
-
-    @Override
-    public void resetForReprocessBucketed(@NotNull UpdateContext context, @NotNull RowSet bucketIndex, long bucketPosition, long firstUnmodifiedKey) {
 
     }
 

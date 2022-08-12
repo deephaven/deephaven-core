@@ -85,12 +85,14 @@ public abstract class UpdateBy {
             @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByControl control) {
 
-        WritableRowRedirection rowRedirection = null;
+        final WritableRowRedirection rowRedirection;
         if (control.useRedirectionOrDefault()) {
             if (!source.isRefreshing()) {
                 if (!source.isFlat() && SparseConstants.sparseStructureExceedsOverhead(source.getRowSet(),
                         control.maxStaticSparseMemoryOverheadOrDefault())) {
                     rowRedirection = new InverseRowRedirectionImpl(source.getRowSet());
+                } else {
+                    rowRedirection = null;
                 }
             } else {
                 final JoinControl.RedirectionType type = JoinControl.getRedirectionType(source, 4.0, true);
@@ -106,6 +108,13 @@ public abstract class UpdateBy {
                         throw new IllegalStateException("Unsupported redirection type " + type);
                 }
             }
+        } else {
+            rowRedirection = null;
+        }
+
+        // start tracking previous values
+        if (rowRedirection != null) {
+            rowRedirection.startTrackingPrevValues();
         }
 
         // TODO(deephaven-core#2693): Improve UpdateBy implementation for ColumnName
@@ -152,15 +161,11 @@ public abstract class UpdateBy {
 
         descriptionBuilder.append(", pairs={").append(MatchPair.matchString(pairs)).append("})");
 
-        final List<ColumnSource<?>> originalKeySources = new ArrayList<>(pairs.length);
-        final List<ColumnSource<?>> keySources = new ArrayList<>(pairs.length);
         for (final MatchPair byColumn : pairs) {
             if (!source.hasColumns(byColumn.rightColumn)) {
                 problems.add(byColumn.rightColumn);
                 continue;
             }
-            originalKeySources.add(source.getColumnSource(byColumn.rightColumn));
-            keySources.add(ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(byColumn.rightColumn)));
         }
 
         if (!problems.isEmpty()) {
@@ -168,15 +173,36 @@ public abstract class UpdateBy {
                     String.join(", ", problems) + "}");
         }
 
-        return BucketedUpdateBy.compute(descriptionBuilder.toString(),
+        return BucketedPartitionedUpdateBy.compute(
+                descriptionBuilder.toString(),
                 source,
                 opArr,
                 resultSources,
+                byColumns,
                 rowRedirection,
-                keySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
-                originalKeySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
-                pairs,
                 control);
+
+//        return BucketedUpdateBy.compute(descriptionBuilder.toString(),
+//                source,
+//                opArr,
+//                resultSources,
+//                rowRedirection,
+//                keySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
+//                originalKeySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
+//                pairs,
+//                control);
+
+//
+//
+//        return BucketedUpdateBy.compute(descriptionBuilder.toString(),
+//                source,
+//                opArr,
+//                resultSources,
+//                rowRedirection,
+//                keySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
+//                originalKeySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
+//                pairs,
+//                control);
     }
 
     protected void processUpdateForRedirection(@NotNull final TableUpdate upstream) {

@@ -29,8 +29,6 @@ import org.jetbrains.annotations.Nullable;
 public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOperator {
     protected final ColumnSource<Integer> valueSource;
 
-    protected boolean initialized = false;
-
     // region extra-fields
     // endregion extra-fields
 
@@ -243,15 +241,13 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
     public abstract void reset(UpdateContext context);
 
     @Override
-    public void initializeForUpdate(@NotNull UpdateContext context, @NotNull TableUpdate upstream, @NotNull RowSet resultSourceRowSet, boolean usingBuckets, boolean isUpstreamAppendOnly) {
+    public void initializeForUpdate(@NotNull UpdateContext context, @NotNull TableUpdate upstream, @NotNull RowSet resultSourceRowSet, final long lastPrevKey, boolean isUpstreamAppendOnly) {
         final Context ctx = (Context) context;
         ctx.workingRowSet = resultSourceRowSet;
 
-        if(!usingBuckets) {
-            // we can only process directly from an update if the window is entire backward-looking.  Since we
-            // allow negative values in fwd/rev ticks and timestamps, we need to check both
-            ctx.canProcessDirectly = isUpstreamAppendOnly && forwardTimeScaleUnits <= 0 && reverseTimeScaleUnits >= 0;;
-        }
+        // we can only process directly from an update if the window is entire backward-looking.  Since we
+        // allow negative values in fwd/rev ticks and timestamps, we need to check both
+        ctx.canProcessDirectly = isUpstreamAppendOnly && forwardTimeScaleUnits <= 0 && reverseTimeScaleUnits >= 0;;
     }
 
     @Override
@@ -307,66 +303,21 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
      * @param ctx the context object
      * @param inputKeys the input keys for the chunk
      * @param workingChunk the chunk of values
-     * @param bucketPosition the bucket position that the values belong to.
      */
     protected abstract void doAddChunk(@NotNull final Context ctx,
                                        @NotNull final RowSequence inputKeys,
                                        @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                       @NotNull final Chunk<Values> workingChunk,
-                                       final long bucketPosition);
+                                       @NotNull final Chunk<Values> workingChunk);
 
     @Override
     public void addChunk(@NotNull final UpdateContext updateContext,
                                  @NotNull final RowSequence inputKeys,
                                  @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                 @NotNull final Chunk<Values> values,
-                                 long bucketPosition) {
+                                 @NotNull final Chunk<Values> values) {
         final Context ctx = (Context) updateContext;
         if (ctx.canProcessDirectly) {
             ctx.loadDataChunks(inputKeys);
-            doAddChunk(ctx, inputKeys, keyChunk, values, bucketPosition);
-        }
-    }
-
-    @Override
-    public void addChunkBucketed(final @NotNull UpdateByOperator.UpdateContext context,
-                                 final @NotNull Chunk<Values> values,
-                                 final @NotNull LongChunk<? extends RowKeys> keyChunk,
-                                 final @NotNull IntChunk<RowKeys> bucketPositions,
-                                 final @NotNull IntChunk<ChunkPositions> startPositions,
-                                 final @NotNull IntChunk<ChunkLengths> runLengths) {
-        final Context ctx = (Context) context;
-        if (ctx.canProcessDirectly) {
-//            final ShortChunk<Values> asShorts = values.asShortChunk();
-            for (int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
-                final int runStart = startPositions.get(runIdx);
-                final int runLength = runLengths.get(runIdx);
-                final int bucketPosition = bucketPositions.get(runStart);
-//                doAddChunk(ctx, inputKeys, keyChunk, values, bucketPosition);
-
-//            try (RowSequence rs = RowSequenceFactory.wrapRowKeysChunkAsRowSequence((LongChunk<OrderedRowKeys>) keyChunk)_
-
-//            RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-//            for (int ii = runStart; ii < runStart + runLength; ii++) {
-//                builder.appendKey(keyChunk.get(ii));
-//            }
-//
-//            WritableRowSet bucketRs = bucketRowSet.get(bucketPosition);
-//            if (bucketRs == null) {
-//                bucketRs = builder.build();
-//                bucketRowSet.set(bucketPosition, bucketRs);
-//            } else {
-//                try (final RowSet added = builder.build()) {
-//                    bucketRs.insert(added);
-//                }
-//            }
-//
-//            ctx.curVal = NULL_LONG;
-//            ctx.currentWindow.clear();
-
-//            accumulate(asShorts, (LongChunk<OrderedRowKeys>) keyChunk, ctx, runStart, runLength, bucketRs);
-//            bucketLastVal.set(bucketPosition, ctx.curVal);
-            }
+            doAddChunk(ctx, inputKeys, keyChunk, values);
         }
     }
 
@@ -382,14 +333,6 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
     }
 
     @Override
-    public void resetForReprocessBucketed(@NotNull final UpdateContext context,
-                                          @NotNull final RowSet bucketRowSet,
-                                          final long bucketPosition,
-                                          final long firstUnmodifiedKey) {
-        final Context ctx = (Context) context;
-    }
-
-    @Override
     public void reprocessChunk(@NotNull final UpdateContext updateContext,
                                        @NotNull final RowSequence inputKeys,
                                        @Nullable final LongChunk<OrderedRowKeys> keyChunk,
@@ -397,20 +340,8 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
                                        @NotNull final RowSet postUpdateSourceIndex) {
         final Context ctx = (Context) updateContext;
         ctx.loadDataChunks(inputKeys);
-        doAddChunk(ctx, inputKeys, keyChunk, valuesChunk, 0);
+        doAddChunk(ctx, inputKeys, keyChunk, valuesChunk);
         ctx.getModifiedBuilder().appendRowSequence(inputKeys);
-    }
-
-    @Override
-    public void reprocessChunkBucketed(@NotNull UpdateContext updateContext,
-                                       @NotNull final RowSequence chunkOk,
-                                       @NotNull final Chunk<Values> values,
-                                       @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                                       @NotNull final IntChunk<RowKeys> bucketPositions,
-                                       @NotNull final IntChunk<ChunkPositions> runStartPositions,
-                                       @NotNull final IntChunk<ChunkLengths> runLengths) {
-        addChunkBucketed(updateContext, values, keyChunk, bucketPositions, runStartPositions, runLengths);
-        ((Context)updateContext).getModifiedBuilder().appendRowSequence(chunkOk);
     }
 
     // endregion
@@ -422,15 +353,13 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
                                   @Nullable final LongChunk<OrderedRowKeys> prevKeyChunk,
                                   @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                                   @NotNull final Chunk<Values> prevValuesChunk,
-                                  @NotNull final Chunk<Values> postValuesChunk,
-                                  long bucketPosition) {
+                                  @NotNull final Chunk<Values> postValuesChunk) {
     }
 
     @Override
     final public void removeChunk(@NotNull final UpdateContext updateContext,
                                   @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                  @NotNull final Chunk<Values> prevValuesChunk,
-                                  long bucketPosition) {
+                                  @NotNull final Chunk<Values> prevValuesChunk) {
     }
 
     @Override
