@@ -207,6 +207,11 @@ service TableService {
    * initial update had been sent.
    */
   rpc ExportedTableUpdates(ExportedTableUpdatesRequest) returns (stream ExportedTableUpdateMessage) {}
+
+  /*
+   * Seek a row number within a table.
+   */
+  rpc SeekRow(SeekRowRequest) returns (SeekRowResponse) {}
 }
 
 message TableReference {
@@ -603,6 +608,21 @@ message FilterTableRequest {
   TableReference source_id = 2;
 
   repeated Condition filters = 3;
+}
+
+message SeekRowRequest {
+    TableReference source_id = 1;
+    sint64 starting_row = 2 [jstype=JS_STRING];
+    string column_name = 3;
+    string value_type = 4;
+    string seek_value = 5;
+    bool insensitive = 6;
+    bool contains = 7;
+    bool is_backward = 8;
+}
+
+message SeekRowResponse {
+    sint64 result_row = 1 [jstype=JS_STRING];
 }
 
 message Reference {
