@@ -462,10 +462,10 @@ public class TestEma extends BaseUpdateByTest {
     // endregion
 
     private void computeEma(TableBase source,
-                            final String tsCol,
-                            long scale,
-                            OperationControl control,
-                            String... groups) {
+            final String tsCol,
+            long scale,
+            OperationControl control,
+            String... groups) {
         final boolean useTicks = StringUtils.isNullOrEmpty(tsCol);
         final ByEmaSimple bes = new ByEmaSimple(
                 control.onNullValueOrDefault() == BadDataBehavior.RESET

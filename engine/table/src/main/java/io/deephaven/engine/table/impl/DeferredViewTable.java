@@ -30,11 +30,11 @@ public class DeferredViewTable extends RedefinableTable {
     protected final WhereFilter[] deferredFilters;
 
     public DeferredViewTable(@NotNull final TableDefinition definition,
-                             @NotNull final String description,
-                             @NotNull final TableReference tableReference,
-                             @Nullable final String[] deferredDropColumns,
-                             @Nullable final SelectColumn[] deferredViewColumns,
-                             @Nullable final WhereFilter[] deferredFilters) {
+            @NotNull final String description,
+            @NotNull final TableReference tableReference,
+            @Nullable final String[] deferredDropColumns,
+            @Nullable final SelectColumn[] deferredViewColumns,
+            @Nullable final WhereFilter[] deferredFilters) {
         super(definition, description);
         this.tableReference = tableReference;
         this.deferredDropColumns =
@@ -263,7 +263,7 @@ public class DeferredViewTable extends RedefinableTable {
 
     @Override
     protected Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
-                             SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency) {
+            SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency) {
         DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal, description + "-redefined",
                 new SimpleTableReference(this), null, viewColumns, null);
         deferredViewTable.setRefreshing(isRefreshing());

@@ -904,10 +904,9 @@ public interface Table extends
     PartitionedTable partitionBy(String... keyColumnNames);
 
     /**
-     * Convenience method that performs an {@link #aggBy} and wraps the result
-     * in a {@link PartitionedTable}. If {@code aggregations} does not include a {@link io.deephaven.api.agg.Partition
-     * partition}, one will be added automatically with the default constituent column name and behavior used in
-     * {@link #partitionBy(String...)}.
+     * Convenience method that performs an {@link #aggBy} and wraps the result in a {@link PartitionedTable}. If
+     * {@code aggregations} does not include a {@link io.deephaven.api.agg.Partition partition}, one will be added
+     * automatically with the default constituent column name and behavior used in {@link #partitionBy(String...)}.
      *
      * @param aggregations The {@link Aggregation aggregations} to apply
      * @param preserveEmpty Whether to keep result rows for groups that are initially empty or become empty as a result
@@ -924,7 +923,7 @@ public interface Table extends
      */
     @ConcurrentMethod
     PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
-                                      Table initialGroups, String... keyColumnNames);
+            Table initialGroups, String... keyColumnNames);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Hierarchical table operations (rollup and treeTable).

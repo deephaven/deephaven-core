@@ -469,8 +469,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-   public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
-           TableOperations<?, ?> initialGroups, Collection<? extends ColumnName> groupByColumns) {
+    public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
+            TableOperations<?, ?> initialGroups, Collection<? extends ColumnName> groupByColumns) {
         if (initialGroups == null) {
             return basicTransform(ct -> ct.aggBy(aggregations, preserveEmpty, null, groupByColumns));
         }
