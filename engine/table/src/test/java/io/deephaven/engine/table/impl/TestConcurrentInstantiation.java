@@ -49,6 +49,9 @@ import static io.deephaven.engine.table.impl.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class TestConcurrentInstantiation extends QueryTableTestBase {
+    private static final int TIMEOUT_LENGTH = 5;
+    private static final TimeUnit TIMEOUT_UNIT = TimeUnit.MINUTES;
+
     private ExecutorService pool;
     private ExecutorService dualPool;
 
@@ -95,14 +98,14 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // () -> TreeTableFilter.rawFilterTree(treed, "Sentinel in 4, 6, 9, 11, 12, 13, 14, 15");
         //
         // UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        // final Table rawSorted = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        // final Table rawSorted = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         // TableTools.show(rawSorted);
         //
         // assertTrue(Arrays.equals(new int[] {1, 3, 4, 6, 9}, (int[]) rawSorted.getColumn("Sentinel").getDirect()));
         //
         // TstUtils.addToTable(source, i(10), c("Sentinel", 11),
         // c("Parent", 2));
-        // final Table table2 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        // final Table table2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
         //
         // source.notifyListeners(i(10), i(), i());
@@ -111,7 +114,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
         //
         // UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-        // final Table table3 = future3.get(1000, TimeUnit.MILLISECONDS);
+        // final Table table3 = future3.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         //
         // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
         // assertEquals(TableTools.diff(table2, table3, 20), "");
@@ -119,7 +122,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         // TstUtils.addToTable(source, i(11), c("Sentinel", 12), c("Parent", 10));
         //
-        // final Table table4 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        // final Table table4 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
         // assertEquals(TableTools.diff(table2, table3, 20), "");
         // assertEquals(TableTools.diff(table3, table4, 20), "");
@@ -143,21 +146,21 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Table flat = pool.submit(table::flatten).get(1000, TimeUnit.MILLISECONDS);
+        final Table flat = pool.submit(table::flatten).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(TableTools.diff(flat, table, 10), "");
         TestCase.assertEquals(TableTools.diff(flat, tableStart, 10), "");
 
         TstUtils.addToTable(table, i(3), c("x", 4), c("y", "d"));
 
-        final Table flat2 = pool.submit(table::flatten).get(1000, TimeUnit.MILLISECONDS);
+        final Table flat2 = pool.submit(table::flatten).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(prevTable(flat), tableStart);
         TstUtils.assertTableEquals(prevTable(flat2), tableStart);
 
         table.notifyListeners(i(3), i(), i());
 
-        final Table flat3 = pool.submit(table::flatten).get(1000, TimeUnit.MILLISECONDS);
+        final Table flat3 = pool.submit(table::flatten).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(prevTable(flat), tableStart);
         TstUtils.assertTableEquals(prevTable(flat2), tableStart);
@@ -182,20 +185,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Table updateView1 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table updateView1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(TableTools.diff(updateView1, tableStart, 10), "");
 
         TstUtils.addToTable(table, i(3), c("x", 4), c("y", "d"));
 
-        final Table updateView2 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table updateView2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(updateView1));
         TstUtils.assertTableEquals(tableStart, prevTable(updateView2));
 
         table.notifyListeners(i(3), i(), i());
 
-        final Table updateView3 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table updateView3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(updateView1));
         TstUtils.assertTableEquals(tableStart, prevTable(updateView2));
@@ -219,20 +222,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Table updateView1 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table updateView1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(TableTools.diff(updateView1, tableStart, 10), "");
 
         TstUtils.addToTable(table, i(3), c("x", 4), c("y", "d"));
 
-        final Table updateView2 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table updateView2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(updateView1));
         TstUtils.assertTableEquals(tableStart, prevTable(updateView2));
 
         table.notifyListeners(i(3), i(), i());
 
-        final Table updateView3 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table updateView3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(updateView1));
         TstUtils.assertTableEquals(tableStart, prevTable(updateView2));
@@ -257,20 +260,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Table dropColumns1 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table dropColumns1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(TableTools.diff(dropColumns1, tableStart, 10), "");
 
         TstUtils.addToTable(table, i(3), c("x", 4), c("y", "d"), c("z", 16));
 
-        final Table dropColumns2 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table dropColumns2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(dropColumns1));
         TstUtils.assertTableEquals(tableStart, prevTable(dropColumns2));
 
         table.notifyListeners(i(3), i(), i());
 
-        final Table dropColumns3 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table dropColumns3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(dropColumns1));
         TstUtils.assertTableEquals(tableStart, prevTable(dropColumns2));
@@ -293,20 +296,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Table filter1 = pool.submit(() -> table.where("z")).get(1000, TimeUnit.MILLISECONDS);
+        final Table filter1 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(TableTools.diff(filter1, tableStart, 10), "");
 
         TstUtils.addToTable(table, i(3), c("x", 4), c("y", "d"), c("z", true));
 
-        final Table filter2 = pool.submit(() -> table.where("z")).get(1000, TimeUnit.MILLISECONDS);
+        final Table filter2 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(filter1));
         TstUtils.assertTableEquals(tableStart, prevTable(filter2));
 
         table.notifyListeners(i(3), i(), i());
 
-        final Table filter3 = pool.submit(() -> table.where("z")).get(1000, TimeUnit.MILLISECONDS);
+        final Table filter3 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(filter1));
         TstUtils.assertTableEquals(tableStart, prevTable(filter2));
@@ -328,20 +331,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Table filter1 = pool.submit(() -> table.where("z")).get(1000, TimeUnit.MILLISECONDS);
+        final Table filter1 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(TableTools.diff(filter1, tableStart, 10), "");
 
         TstUtils.addToTable(table, i(2, 3), c("x", 1, 4), c("y", "a", "d"), c("z", false, true));
 
-        final Table filter2 = pool.submit(() -> table.where("z")).get(1000, TimeUnit.MILLISECONDS);
+        final Table filter2 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(filter1));
         TstUtils.assertTableEquals(tableStart, prevTable(filter2));
 
         table.notifyListeners(i(3), i(), i(2));
 
-        final Table filter3 = pool.submit(() -> table.where("z")).get(1000, TimeUnit.MILLISECONDS);
+        final Table filter3 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(filter1));
         TstUtils.assertTableEquals(tableStart, prevTable(filter2));
@@ -375,20 +378,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Future<Table> future1 = dualPool.submit(() -> table.where(filter));
         try {
-            future1.get(1000, TimeUnit.MILLISECONDS);
+            future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
             fail("Filtering should be blocked on UGP");
         } catch (TimeoutException ignored) {
         }
         TstUtils.addToTable(table, i(2, 3), c("x", 1, 4), c("y", "a", "d"), c("z", false, true));
 
-        final Table filter2 = dualPool.submit(() -> table.where("z")).get(1000, TimeUnit.MILLISECONDS);
+        final Table filter2 = dualPool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         assertTableEquals(tableStart, prevTable(filter2));
         table.notifyListeners(i(3), i(), i(2));
 
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
-        final Table filter1 = future1.get(1000, TimeUnit.MILLISECONDS);
+        final Table filter1 = future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         TstUtils.assertTableEquals(testUpdate, filter1);
         TstUtils.assertTableEquals(filter2, filter1);
     }
@@ -403,20 +406,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Table sort1 = pool.submit(() -> table.sortDescending("x")).get(1000, TimeUnit.MILLISECONDS);
+        final Table sort1 = pool.submit(() -> table.sortDescending("x")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(TableTools.diff(sort1, tableStart, 10), "");
 
         TstUtils.addToTable(table, i(3), c("x", 4), c("y", "d"));
 
-        final Table sort2 = pool.submit(() -> table.sortDescending("x")).get(1000, TimeUnit.MILLISECONDS);
+        final Table sort2 = pool.submit(() -> table.sortDescending("x")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(sort1));
         TstUtils.assertTableEquals(tableStart, prevTable(sort2));
 
         table.notifyListeners(i(3), i(), i());
 
-        final Table sort3 = pool.submit(() -> table.sortDescending("x")).get(1000, TimeUnit.MILLISECONDS);
+        final Table sort3 = pool.submit(() -> table.sortDescending("x")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(sort1));
         TstUtils.assertTableEquals(tableStart, prevTable(sort2));
@@ -442,20 +445,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Table reverse1 = pool.submit(table::reverse).get(1000, TimeUnit.MILLISECONDS);
+        final Table reverse1 = pool.submit(table::reverse).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(TableTools.diff(reverse1, tableStart, 10), "");
 
         TstUtils.addToTable(table, i(8), c("x", 4), c("y", "d"));
 
-        final Table reverse2 = pool.submit(table::reverse).get(1000, TimeUnit.MILLISECONDS);
+        final Table reverse2 = pool.submit(table::reverse).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(reverse1));
         TstUtils.assertTableEquals(tableStart, prevTable(reverse2));
 
         table.notifyListeners(i(8), i(), i());
 
-        final Table reverse3 = pool.submit(table::reverse).get(1000, TimeUnit.MILLISECONDS);
+        final Table reverse3 = pool.submit(table::reverse).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(reverse1));
         TstUtils.assertTableEquals(tableStart, prevTable(reverse2));
@@ -512,8 +515,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TableTools.show(tableA);
         TableTools.show(tableD);
 
-        final Table sortA = pool.submit(() -> tableA.sort("x")).get(1000, TimeUnit.MILLISECONDS);
-        final Table sortD = pool.submit(() -> tableD.sort("x")).get(1000, TimeUnit.MILLISECONDS);
+        final Table sortA = pool.submit(() -> tableA.sort("x")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table sortD = pool.submit(() -> tableD.sort("x")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TableTools.show(sortA);
         TableTools.show(sortD);
@@ -537,20 +540,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Table chain1 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table chain1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(TableTools.diff(chain1, tableStart, 10), "");
 
         TstUtils.addToTable(table, i(3), c("x", 4), c("y", "d"), c("z", true));
 
-        final Table chain2 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table chain2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(chain1));
         TstUtils.assertTableEquals(tableStart, prevTable(chain2));
 
         table.notifyListeners(i(3), i(), i());
 
-        final Table chain3 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table chain3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         showWithRowSet(chain3);
 
@@ -572,7 +575,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final ReverseLookupListener rll =
                 pool.submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x"))
-                        .get(1000, TimeUnit.MILLISECONDS);
+                        .get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(rll.get(1), 2);
         TestCase.assertEquals(rll.get(2), 4);
@@ -583,7 +586,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final ReverseLookupListener rll2 =
                 pool.submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x"))
-                        .get(1000, TimeUnit.MILLISECONDS);
+                        .get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(rll2.get(1), 2);
         TestCase.assertEquals(rll2.get(2), 4);
@@ -594,7 +597,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final ReverseLookupListener rll3 =
                 pool.submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x"))
-                        .get(1000, TimeUnit.MILLISECONDS);
+                        .get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(rll3.get(1), 2);
         TestCase.assertEquals(rll3.get(2), rll.getNoEntryValue());
@@ -749,14 +752,14 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                 final List<Table> beforeStartFirstHalf = new ArrayList<>(splitCallables.size());
                 for (Pair<Callable<Table>, Function<Table, Table>> splitCallable : splitCallables) {
-                    beforeStartFirstHalf.add(pool.submit(splitCallable.first).get(1000, TimeUnit.MILLISECONDS));
+                    beforeStartFirstHalf.add(pool.submit(splitCallable.first).get(TIMEOUT_LENGTH, TIMEOUT_UNIT));
                 }
 
                 UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
                 if (beforeUpdate) {
                     // before we update the underlying data
-                    final Table chain1 = pool.submit(complete).get(1000, TimeUnit.MILLISECONDS);
+                    final Table chain1 = pool.submit(complete).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                     chain1.setAttribute("Step", i);
                     chain1.setAttribute("Type", "beforeUpdate");
                     results.add(chain1);
@@ -767,7 +770,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
                         final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second
-                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get(1000, TimeUnit.MILLISECONDS);
+                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeUpdateSplit");
                         beforeStartAndBeforeUpdateSplitResults.add(splitResult);
@@ -777,14 +780,14 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                 final List<Table> beforeUpdateFirstHalf = new ArrayList<>(splitCallables.size());
                 for (Pair<Callable<Table>, Function<Table, Table>> splitCallable : splitCallables) {
-                    beforeUpdateFirstHalf.add(pool.submit(splitCallable.first).get(1000, TimeUnit.MILLISECONDS));
+                    beforeUpdateFirstHalf.add(pool.submit(splitCallable.first).get(TIMEOUT_LENGTH, TIMEOUT_UNIT));
                 }
 
                 final RowSet[] updates = GenerateTableUpdates.computeTableUpdates(size, random, table, columnInfos);
 
                 if (beforeNotify) {
                     // after we update the underlying data, but before we notify
-                    final Table chain2 = pool.submit(complete).get(1000, TimeUnit.MILLISECONDS);
+                    final Table chain2 = pool.submit(complete).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                     chain2.setAttribute("Step", i);
                     chain2.setAttribute("Type", "beforeNotify");
                     results.add(chain2);
@@ -795,7 +798,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
                         final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second
-                                .apply(beforeUpdateFirstHalf.get(fSplitIndex))).get(1000, TimeUnit.MILLISECONDS);
+                                .apply(beforeUpdateFirstHalf.get(fSplitIndex))).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeAndAfterUpdateSplit");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -809,7 +812,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
                         final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second
-                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get(1000, TimeUnit.MILLISECONDS);
+                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeStartAndAfterUpdate");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -820,7 +823,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                 final List<Table> beforeNotifyFirstHalf = new ArrayList<>(splitCallables.size());
                 for (Pair<Callable<Table>, Function<Table, Table>> splitCallable : splitCallables) {
-                    beforeNotifyFirstHalf.add(pool.submit(splitCallable.first).get(1000, TimeUnit.MILLISECONDS));
+                    beforeNotifyFirstHalf.add(pool.submit(splitCallable.first).get(TIMEOUT_LENGTH, TIMEOUT_UNIT));
                 }
 
                 table.notifyListeners(updates[0], updates[1], updates[2]);
@@ -830,7 +833,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
                         final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second
-                                .apply(beforeNotifyFirstHalf.get(fSplitIndex))).get(1000, TimeUnit.MILLISECONDS);
+                                .apply(beforeNotifyFirstHalf.get(fSplitIndex))).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeAndAfterNotify");
                         beforeAndAfterNotifySplitResults.add(splitResult);
@@ -843,7 +846,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
                         final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second
-                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get(1000, TimeUnit.MILLISECONDS);
+                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeStartAndAfterNotify");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -857,7 +860,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
                         final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second
-                                .apply(beforeUpdateFirstHalf.get(fSplitIndex))).get(1000, TimeUnit.MILLISECONDS);
+                                .apply(beforeUpdateFirstHalf.get(fSplitIndex))).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeUpdateAndAfterNotify");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -869,13 +872,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 final List<Table> beforeCycleFirstHalf = new ArrayList<>(splitCallables.size());
                 if (beforeAndAfterCycle) {
                     for (Pair<Callable<Table>, Function<Table, Table>> splitCallable : splitCallables) {
-                        beforeCycleFirstHalf.add(pool.submit(splitCallable.first).get(1000, TimeUnit.MILLISECONDS));
+                        beforeCycleFirstHalf.add(pool.submit(splitCallable.first).get(TIMEOUT_LENGTH, TIMEOUT_UNIT));
                     }
                 }
 
                 if (beforeNotify) {
                     // after notification, on the same cycle
-                    final Table chain3 = pool.submit(complete).get(1000, TimeUnit.MILLISECONDS);
+                    final Table chain3 = pool.submit(complete).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                     chain3.setAttribute("Step", i);
                     chain3.setAttribute("Type", "beforeNotify");
                     results.add(chain3);
@@ -905,7 +908,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
                         final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second
-                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get(1000, TimeUnit.MILLISECONDS);
+                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeStartAndAfterCycle");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -930,7 +933,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
                         final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second
-                                .apply(beforeUpdateFirstHalf.get(fSplitIndex))).get(1000, TimeUnit.MILLISECONDS);
+                                .apply(beforeUpdateFirstHalf.get(fSplitIndex))).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeUpdateAndAfterCycle");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -955,7 +958,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
                         final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second
-                                .apply(beforeNotifyFirstHalf.get(fSplitIndex))).get(1000, TimeUnit.MILLISECONDS);
+                                .apply(beforeNotifyFirstHalf.get(fSplitIndex))).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeNotifyAndAfterCycle");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -982,7 +985,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
                         final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second
-                                .apply(beforeCycleFirstHalf.get(fSplitIndex))).get(1000, TimeUnit.MILLISECONDS);
+                                .apply(beforeCycleFirstHalf.get(fSplitIndex))).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeAndAfterCycle");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -1042,7 +1045,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Callable<Table> callable = () -> table.selectDistinct("y");
 
-        final Table distinct1 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table distinct1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(expected1, distinct1);
 
@@ -1050,14 +1053,14 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         TstUtils.assertTableEquals(expected1, distinct1);
 
-        final Table distinct2 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table distinct2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(expected1, distinct2);
         TstUtils.assertTableEquals(expected1, prevTable(distinct2));
 
         table.notifyListeners(i(3), i(), i());
 
-        final Table distinct3 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final Table distinct3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(expected1, prevTable(distinct1));
         TstUtils.assertTableEquals(expected1, prevTable(distinct2));
@@ -1136,7 +1139,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
             UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
-            final Table distinct1 = future1.get(1000, TimeUnit.MILLISECONDS);
+            final Table distinct1 = future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
             TstUtils.assertTableEquals(expected1, distinct1);
         } finally {
             QueryScope.addParam("barrierFunction", null);
@@ -1267,7 +1270,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             if (withReset) {
                 barrierFunction.waitForInvocation(2, 5000);
             }
-            result1 = future1.get(1000, TimeUnit.MILLISECONDS);
+            result1 = future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
             System.out.println("Result 1");
             TableTools.show(result1);
@@ -1289,7 +1292,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
             TstUtils.assertTableEquals(expected1, prevResult1a, TableDiff.DiffItems.DoublesExact);
 
-            final Table result2 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+            final Table result2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
             System.out.println("Result 2");
             TableTools.show(result2);
@@ -1316,7 +1319,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
                 }
             }
-            final Table result3 = future3.get(1000, TimeUnit.MILLISECONDS);
+            final Table result3 = future3.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
             System.out.println("Prev Result 1");
             final Table prevResult1b = prevTable(result1);
@@ -1391,7 +1394,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         if (withReset) {
             SleepUtil.sleep(25);
         }
-        result1 = future1.get(1000, TimeUnit.MILLISECONDS);
+        result1 = future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         System.out.println("Result 1");
         final Table result1a = result1.constituentFor("a");
@@ -1410,7 +1413,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         doByConcurrentAdditions(table, false);
         doByConcurrentModifications(table, false);
 
-        final PartitionedTable result2 = pool.submit(callable).get(1000, TimeUnit.MILLISECONDS);
+        final PartitionedTable result2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         System.out.println("Result 2");
         final Table result2a = result2.constituentFor("a");
@@ -1433,7 +1436,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             }
         }
-        final PartitionedTable result3 = future3.get(1000, TimeUnit.MILLISECONDS);
+        final PartitionedTable result3 = future3.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         System.out.println("Result 3");
         final Table result3a = result3.constituentFor("a");
@@ -1592,20 +1595,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Table snap1 = pool.submit(() -> emptyTable.snapshot(table)).get(1000, TimeUnit.MILLISECONDS);
+        final Table snap1 = pool.submit(() -> emptyTable.snapshot(table)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(TableTools.diff(snap1, tableStart, 10), "");
 
         TstUtils.addToTable(table, i(3), c("x", 4), c("y", "d"), c("z", true));
 
-        final Table snap2 = pool.submit(() -> emptyTable.snapshot(table)).get(1000, TimeUnit.MILLISECONDS);
+        final Table snap2 = pool.submit(() -> emptyTable.snapshot(table)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(snap1));
         TstUtils.assertTableEquals(tableStart, prevTable(snap2));
 
         table.notifyListeners(i(3), i(), i());
 
-        final Table snap3 = pool.submit(() -> emptyTable.snapshot(table)).get(1000, TimeUnit.MILLISECONDS);
+        final Table snap3 = pool.submit(() -> emptyTable.snapshot(table)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(snap1));
         TstUtils.assertTableEquals(tableStart, prevTable(snap2));

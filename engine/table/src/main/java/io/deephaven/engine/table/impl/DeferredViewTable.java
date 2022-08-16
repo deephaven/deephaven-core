@@ -42,7 +42,7 @@ public class DeferredViewTable extends RedefinableTable {
         this.deferredViewColumns =
                 deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY : deferredViewColumns;
         for (final SelectColumn sc : this.deferredViewColumns) {
-            sc.initDef(definition.getColumnNameMap());
+            sc.initDef(tableReference.getDefinition().getColumnNameMap());
         }
         this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY : deferredFilters;
         for (final WhereFilter sf : this.deferredFilters) {
