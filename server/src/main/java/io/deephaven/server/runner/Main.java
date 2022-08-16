@@ -146,7 +146,7 @@ public class Main {
         return Optional.of(IdentityPrivateKey.builder().certChainPath(identityCa).privateKeyPath(identityKey).build());
     }
 
-    private static Optional<Trust> parseTrustConfig(String prefix, Configuration config) {
+    private static Optional<? extends Trust> parseTrustConfig(String prefix, Configuration config) {
         final String trustType = config.getStringWithDefault(prefix(prefix, SSL_TRUST_TYPE), null);
         if (trustType == null) {
             return Optional.empty();
@@ -156,10 +156,12 @@ public class Main {
                     String.format("Only support `%s` trust type through Configuration", CERTS));
         }
         final String trustPath = config.getStringWithDefault(prefix(prefix, SSL_TRUST_PATH), null);
-        if (trustPath == null) {
-            throw new IllegalArgumentException(String.format("Must specify `%s`", prefix(prefix, SSL_TRUST_PATH)));
-        }
-        return Optional.of(TrustCertificates.of(trustPath));
+        return Optional.ofNullable(trustPath)
+                .map(TrustCertificates::of)
+                .or(() -> {
+                    throw new IllegalArgumentException(
+                            String.format("Must specify `%s`", prefix(prefix, SSL_TRUST_PATH)));
+                });
     }
 
     private static Optional<ClientAuth> parseClientAuth(String prefix, Configuration config) {
