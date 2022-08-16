@@ -248,6 +248,18 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
     @Override
     public abstract AbstractConditionFilter copy();
 
+    protected void onCopy(final AbstractConditionFilter copy) {
+        if (initialized) {
+            copy.initialized = true;
+            copy.usedColumns = usedColumns;
+            copy.usedColumnArrays = usedColumnArrays;
+            copy.usesI = usesI;
+            copy.usesII = usesII;
+            copy.usesK = usesK;
+            copy.params = params;
+        }
+    }
+
     @Override
     public String toString() {
         return formula;

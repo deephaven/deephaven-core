@@ -49,6 +49,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     private List<Pair<String, Class>> usedInputs; // that is columns and special variables
     private String classBody;
     private Filter filter = null;
+    private boolean filterValidForCopy = true;
 
     private ConditionFilter(@NotNull String formula) {
         super(formula, false);
@@ -550,14 +551,16 @@ public class ConditionFilter extends AbstractConditionFilter {
     @Override
     protected Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        if (filter != null) {
-            return filter;
+        if (filter == null) {
+            final FilterKernel<?> filterKernel = (FilterKernel<?>) filterKernelClass
+                    .getConstructor(Table.class, RowSet.class, QueryScopeParam[].class)
+                    .newInstance(table, fullSet, (Object) params);
+            final String[] columnNames = usedInputs.stream().map(p -> p.first).toArray(String[]::new);
+            filter = new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
+            // note this filter is not valid for use in other contexts, as it captures references from the source table
+            filterValidForCopy = false;
         }
-        final FilterKernel filterKernel = (FilterKernel) filterKernelClass
-                .getConstructor(Table.class, RowSet.class, QueryScopeParam[].class)
-                .newInstance(table, fullSet, (Object) params);
-        final String[] columnNames = usedInputs.stream().map(p -> p.first).toArray(String[]::new);
-        return new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
+        return filter;
     }
 
     @Override
@@ -567,7 +570,17 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public ConditionFilter copy() {
-        return new ConditionFilter(formula, outerToInnerNames);
+        final ConditionFilter copy = new ConditionFilter(formula, outerToInnerNames);
+        onCopy(copy);
+        if (initialized) {
+            copy.filterKernelClass = filterKernelClass;
+            copy.usedInputs = usedInputs;
+            copy.classBody = classBody;
+            if (filterValidForCopy) {
+                copy.filter = filter;
+            }
+        }
+        return copy;
     }
 
     @Override

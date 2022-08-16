@@ -107,7 +107,12 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
 
     @Override
     public TimeSeriesFilter copy() {
-        return new TimeSeriesFilter(columnName, nanos);
+        final TimeSeriesFilter copy = new TimeSeriesFilter(columnName, nanos);
+        if (initialized) {
+            copy.initialized = true;
+            UpdateGraphProcessor.DEFAULT.addSource(copy);
+        }
+        return copy;
     }
 
     @Override

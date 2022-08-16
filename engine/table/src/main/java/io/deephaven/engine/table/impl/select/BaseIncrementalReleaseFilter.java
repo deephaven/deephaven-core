@@ -162,7 +162,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
 
     /**
      * How many nanos between the first release event and the final release event?
-     * 
+     *
      * @return nano duration of this filter, or NULL_LONG if the filter is not completed
      */
     @ScriptApi
@@ -211,6 +211,14 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
 
     @Override
     abstract public BaseIncrementalReleaseFilter copy();
+
+    protected void onCopy(BaseIncrementalReleaseFilter copy) {
+        copy.started = started;
+        copy.initialized = initialized;
+        if (started && initialized) {
+            copy.addToUpdateGraphProcessor();
+        }
+    }
 
     @Override
     public boolean isRefreshing() {

@@ -43,6 +43,10 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
 
     @Override
     public void init(TableDefinition tableDefinition) {
+        addToUpdateGraphProcessor();
+    }
+
+    private void addToUpdateGraphProcessor() {
         if (!addedToUpdateGraphProcessor) {
             UpdateGraphProcessor.DEFAULT.addSource(this);
             addedToUpdateGraphProcessor = true;
@@ -88,7 +92,9 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
 
     @Override
     public RollingReleaseFilter copy() {
-        return new RollingReleaseFilter(workingSize, rollingSize);
+        final RollingReleaseFilter copy = new RollingReleaseFilter(workingSize, rollingSize);
+        copy.addToUpdateGraphProcessor();
+        return copy;
     }
 
     @Override

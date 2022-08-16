@@ -103,50 +103,48 @@ public class MatchFilter extends WhereFilterImpl {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
-        synchronized (this) {
-            if (initialized || strValues == null) {
-                return;
-            }
-            ColumnDefinition column = tableDefinition.getColumn(columnName);
-            if (column == null) {
-                throw new RuntimeException("Column \"" + columnName
-                        + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
-            }
-            final List<Object> valueList = new ArrayList<>();
-            final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-            final ColumnTypeConvertor convertor =
-                    ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
-            for (int valIdx = 0; valIdx < strValues.length; ++valIdx) {
-                if (queryScope.hasParamName(strValues[valIdx])) {
-                    Object paramValue = queryScope.readParamValue(strValues[valIdx]);
-                    if (paramValue != null && paramValue.getClass().isArray()) {
-                        ArrayTypeUtils.ArrayAccessor accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
-                        for (int ai = 0; ai < accessor.length(); ++ai) {
-                            valueList.add(convertor.convertParamValue(accessor.get(ai)));
-                        }
-                    } else if (paramValue != null && Collection.class.isAssignableFrom(paramValue.getClass())) {
-                        for (final Object paramValueMember : (Collection) paramValue) {
-                            valueList.add(convertor.convertParamValue(paramValueMember));
-                        }
-                    } else {
-                        valueList.add(convertor.convertParamValue(paramValue));
+    public synchronized void init(TableDefinition tableDefinition) {
+        if (initialized || strValues == null) {
+            return;
+        }
+        ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
+        if (column == null) {
+            throw new RuntimeException("Column \"" + columnName
+                    + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+        }
+        final List<Object> valueList = new ArrayList<>();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final ColumnTypeConvertor convertor =
+                ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
+        for (String strValue : strValues) {
+            if (queryScope.hasParamName(strValue)) {
+                Object paramValue = queryScope.readParamValue(strValue);
+                if (paramValue != null && paramValue.getClass().isArray()) {
+                    ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
+                    for (int ai = 0; ai < accessor.length(); ++ai) {
+                        valueList.add(convertor.convertParamValue(accessor.get(ai)));
+                    }
+                } else if (paramValue != null && Collection.class.isAssignableFrom(paramValue.getClass())) {
+                    for (final Object paramValueMember : (Collection<?>) paramValue) {
+                        valueList.add(convertor.convertParamValue(paramValueMember));
                     }
                 } else {
-                    Object convertedValue;
-                    try {
-                        convertedValue = convertor.convertStringLiteral(strValues[valIdx]);
-                    } catch (Throwable t) {
-                        throw new IllegalArgumentException("Failed to convert literal value <" + strValues[valIdx] +
-                                "> for column \"" + columnName + "\" of type " + column.getDataType().getName(), t);
-                    }
-                    valueList.add(convertedValue);
+                    valueList.add(convertor.convertParamValue(paramValue));
                 }
+            } else {
+                Object convertedValue;
+                try {
+                    convertedValue = convertor.convertStringLiteral(strValue);
+                } catch (Throwable t) {
+                    throw new IllegalArgumentException("Failed to convert literal value <" + strValue +
+                            "> for column \"" + columnName + "\" of type " + column.getDataType().getName(), t);
+                }
+                valueList.add(convertedValue);
             }
-            // values = (Object[])ArrayTypeUtils.toArray(valueList, TypeUtils.getBoxedType(theColumn.getDataType()));
-            values = valueList.toArray();
-            initialized = true;
         }
+        // values = (Object[])ArrayTypeUtils.toArray(valueList, TypeUtils.getBoxedType(theColumn.getDataType()));
+        values = valueList.toArray();
+        initialized = true;
     }
 
     @Override
@@ -415,12 +413,17 @@ public class MatchFilter extends WhereFilterImpl {
 
     @Override
     public WhereFilter copy() {
+        final MatchFilter copy;
         if (strValues != null) {
-            return new MatchFilter(caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
+            copy = new MatchFilter(caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                     getMatchType(), columnName, strValues);
         } else {
-            return new MatchFilter(getMatchType(), columnName, values);
-
+            copy = new MatchFilter(getMatchType(), columnName, values);
         }
+        if (initialized) {
+            copy.initialized = true;
+            copy.values = values;
+        }
+        return copy;
     }
 }
