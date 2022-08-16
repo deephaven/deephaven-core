@@ -48,7 +48,7 @@ public class JpyInit {
     }
 
     private static void init(JpyConfigExt jpyConfig) {
-        log.info().append("Loaded jpy config ").append(jpyConfig).endl();
+        log.info().append("Loaded jpy config ").append(jpyConfig.toString()).endl();
         log.info().append("Starting Python interpreter").endl();
         jpyConfig.initPython();
         jpyConfig.startPython();
