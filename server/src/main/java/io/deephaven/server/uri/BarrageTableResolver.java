@@ -12,7 +12,6 @@ import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
-import io.deephaven.ssl.config.Identity;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.uri.ApplicationUri;
 import io.deephaven.uri.DeephavenTarget;
@@ -26,7 +25,6 @@ import io.deephaven.uri.resolver.UriResolversInstance;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;

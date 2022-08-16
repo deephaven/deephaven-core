@@ -164,10 +164,7 @@ public class Main {
 
     private static Optional<ClientAuth> parseClientAuth(String prefix, Configuration config) {
         final String clientAuth = config.getStringWithDefault(prefix(prefix, SSL_CLIENT_AUTH), null);
-        if (clientAuth == null) {
-            return Optional.empty();
-        }
-        return Optional.of(ClientAuth.valueOf(clientAuth));
+        return Optional.ofNullable(clientAuth).map(ClientAuth::valueOf);
     }
 
     private static String prefix(String prefix, String key) {

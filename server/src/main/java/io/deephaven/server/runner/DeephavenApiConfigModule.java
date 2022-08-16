@@ -11,7 +11,6 @@ import io.deephaven.ssl.config.Trust;
 import io.deephaven.ssl.config.TrustJdk;
 
 import javax.inject.Named;
-import java.util.Optional;
 
 @Module
 public class DeephavenApiConfigModule {
