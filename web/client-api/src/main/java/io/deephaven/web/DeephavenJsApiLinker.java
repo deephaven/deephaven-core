@@ -87,7 +87,7 @@ public class DeephavenJsApiLinker extends AbstractLinker {
             String replace) {
         int len = search.length();
         for (int pos = buf.indexOf(search); pos >= 0; pos = buf.indexOf(search,
-                pos + 1)) {
+                pos + replace.length())) {
             buf.replace(pos, pos + len, replace);
         }
     }

@@ -1,4 +1,5 @@
-import {dh} from './dh-core.js';
+import dh from './dh-core.js';
+
 const {Table, FilterValue} = dh;
 /**
  * Simple es6 class encapsulating some basic rendering for a tree table in a grid, allowing

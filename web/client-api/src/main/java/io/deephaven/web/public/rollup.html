@@ -72,7 +72,8 @@
 <button id="open">Display Rollup Table</button>
 <div id="treetable"></div>
 <script type="module">
-    import {dh} from './dh-core.js'
+  import dh from './dh-core.js'
+
   var url = new URL('/socket', window.location);
   if (url.protocol === 'http:') {
     url.protocol = 'ws:';

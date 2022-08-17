@@ -68,8 +68,9 @@
 
 </ul>
 <script type="module">
-    import {dh} from './dh-core.js';
-    const {Client} = dh;
+  import dh from './dh-core.js';
+
+  const {Client} = dh;
   var url = new URL('/socket', window.location);
   if (url.protocol === 'http:') {
     url.protocol = 'ws:';

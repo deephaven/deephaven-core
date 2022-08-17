@@ -22,7 +22,8 @@
 <div id="data"></div>
 
 <script type="module">
-    import {dh} from './dh-core.js';
+    import dh from './dh-core.js';
+
     const {Client} = dh;
     var url = new URL('/socket', window.location);
     if (url.protocol === 'http:') {

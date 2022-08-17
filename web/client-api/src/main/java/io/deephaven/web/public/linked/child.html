@@ -26,9 +26,9 @@
 </ul>
 
 <script type="module">
-    import {dh} from './dh-core.js';
-    const {Client, FilterValue, Table} = dh;
+  import dh from '../dh-core.js';
 
+  const {Client, FilterValue, Table} = dh;
   if (!window.opener) {
     alert("This page only works correctly when opened by another window.");
     throw "This page only works correctly when opened by another window.";

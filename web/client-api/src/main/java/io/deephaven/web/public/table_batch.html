@@ -32,9 +32,9 @@ until "Send Batch" above is clicked, then all changes are applied at once.</p>
 </table>
 
 <script type="module">
-  import {dh} from './dh-core.js';
-  const {Client, FilterValue} = dh;
+  import dh from './dh-core.js';
 
+  const {Client, FilterValue} = dh;
   var url = new URL('/socket', window.location);
   if (url.protocol === 'http:') {
     url.protocol = 'ws:';

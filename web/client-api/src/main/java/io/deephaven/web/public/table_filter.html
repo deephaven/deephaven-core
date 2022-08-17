@@ -53,9 +53,9 @@
 </div>
 
 <script type="module">
-    import {dh} from './dh-core.js';
-    const {IdeConnection, Table, FilterValue} = dh;
+  import dh from './dh-core.js';
 
+  const {IdeConnection, Table, FilterValue} = dh;
   var filterSetup = {
     "Equals..." : {
       build : (column, value) => column.filter().eq(value),

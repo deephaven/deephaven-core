@@ -12,7 +12,8 @@
     <textarea id="command" placeholder="waiting for connection..." rows="1" cols="80" autofocus="autofocus" disabled="disabled" style="resize:vertical"></textarea><button id="run">Run</button>
 </div>
 <script type="module">
-    import {dh} from './dh-core.js';
+    import dh from './dh-core.js';
+
     const {IdeConnection} = dh;
     var connection;
     var ide;
