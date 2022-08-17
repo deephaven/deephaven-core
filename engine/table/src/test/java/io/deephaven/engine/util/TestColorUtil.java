@@ -21,7 +21,7 @@ public class TestColorUtil extends BaseArrayTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
         t1 = TableTools.emptyTable(size).updateView("X = i", "Y = 2*i");
     }
 

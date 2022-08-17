@@ -74,7 +74,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
 
         scope = new LivenessScope();
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
         LivenessScopeStack.push(scope);
 
         oldReporter = AsyncClientErrorNotifier.setReporter(this);

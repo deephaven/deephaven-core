@@ -26,7 +26,7 @@ public class TestDownsampledWhereFilter {
 
     @Before
     public void setUp() throws Exception {
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
     }
 
     @After

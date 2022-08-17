@@ -21,7 +21,7 @@ public class TestMoveColumns extends TestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
         table = TableTools.emptyTable(1).update("a=1", "b=2", "c=3", "d=4", "e=5");
         numCols = table.numColumns();
     }

@@ -34,7 +34,7 @@ public class TestAggregatedSelect extends TestCase {
 
     @Before
     public void setUp() {
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
         try {
             tableDirectory = Files.createTempDirectory("TestAggregatedSelect").toFile();
         } catch (IOException e) {

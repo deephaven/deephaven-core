@@ -29,7 +29,7 @@ public class TestLiveness {
         oldCheckUgp = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
         scope = new LivenessScope();
         LivenessScopeStack.push(scope);
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
     }
 
     @After

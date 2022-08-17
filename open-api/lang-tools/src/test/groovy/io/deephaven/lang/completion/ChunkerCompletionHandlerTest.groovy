@@ -37,7 +37,7 @@ class ChunkerCompletionHandlerTest extends Specification implements ChunkerCompl
     private SafeCloseable executionContext;
 
     void setup() {
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
     }
 
     void cleanup() {

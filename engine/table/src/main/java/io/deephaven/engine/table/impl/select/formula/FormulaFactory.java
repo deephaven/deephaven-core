@@ -15,6 +15,5 @@ public interface FormulaFactory {
     Formula createFormula(
             TrackingRowSet rowSet,
             boolean initLazyMap, Map<String, ? extends ColumnSource> columnsToData,
-            ExecutionContext executionContext,
             QueryScopeParam... params);
 }

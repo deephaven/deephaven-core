@@ -17,7 +17,7 @@ public class QueryLibraryTest {
 
     @Before
     public void setUp() {
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
     }
 
     @After

@@ -45,7 +45,7 @@ public class TestOHLCDataSeries extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
     }
 
     @Override

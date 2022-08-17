@@ -52,7 +52,6 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     protected boolean usesI; // uses the "i" variable which is an integer position for the row
     protected boolean usesII; // uses the "ii" variable which is the long position for the row
     protected boolean usesK; // uses the "k" variable which is the long row key into a column source
-    private final ExecutionContext executionContext;
 
     /**
      * Create a formula column for the given formula string.
@@ -61,12 +60,10 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
      *
      * @param columnName the result column name
      * @param formulaString the formula string to be parsed by the QueryLanguageParser
-     * @param useKernelFormulas
      */
     protected AbstractFormulaColumn(String columnName, String formulaString) {
         this.formulaString = Require.neqNull(formulaString, "formulaString");
         this.columnName = NameValidator.validateColumnName(columnName);
-        this.executionContext = ExecutionContext.getContextToRecord();
     }
 
     @Override
@@ -232,7 +229,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     private Formula getFormula(boolean initLazyMap,
             Map<String, ? extends ColumnSource<?>> columnsToData,
             QueryScopeParam<?>... params) {
-        formula = formulaFactory.createFormula(rowSet, initLazyMap, columnsToData, executionContext, params);
+        formula = formulaFactory.createFormula(rowSet, initLazyMap, columnsToData, params);
         return formula;
     }
 
@@ -269,7 +266,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     protected FormulaFactory createKernelFormulaFactory(final FormulaKernelFactory formulaKernelFactory) {
         final FormulaSourceDescriptor sd = getSourceDescriptor();
 
-        return (rowSet, lazy, columnsToData, executionContext, params) -> {
+        return (rowSet, lazy, columnsToData, params) -> {
             // Maybe warn that we ignore "lazy". By the way, "lazy" is the wrong term anyway. "lazy" doesn't mean
             // "cached", which is how we are using it.
             final Map<String, ColumnSource<?>> netColumnSources = new HashMap<>();

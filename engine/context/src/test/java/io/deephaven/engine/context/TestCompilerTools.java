@@ -55,7 +55,7 @@ public class TestCompilerTools {
 
     @Before
     public void setUp() {
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
     }
 
     @After

@@ -38,7 +38,7 @@ public class TestWhereFilterFactory extends TestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
         table = TableTools.newTable(
                 TableTools.col(STRING_COLUMN, NORMAL_STRING, NEEDS_ESCAPE, NO_COMMAS_A, NO_COMMAS_B, WITH_COMMAS_A,
                         WITH_COMMAS_B),

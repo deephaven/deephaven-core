@@ -32,14 +32,13 @@ public class ExecutionContext {
     }
 
     @VisibleForTesting
-    public static SafeCloseable createForUnitTests() {
+    public static ExecutionContext createForUnitTests() {
         return newBuilder()
                 .markSystemic()
                 .newQueryScope()
                 .newQueryLibrary()
                 .setCompilerContext(CompilerTools.createContextForUnitTests())
-                .build()
-                .open();
+                .build();
     }
 
     // -----------------------------------------------------------------------------------------------------------------

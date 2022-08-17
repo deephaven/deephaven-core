@@ -31,7 +31,7 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
         super.setUp();
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
     }
 
     @Override

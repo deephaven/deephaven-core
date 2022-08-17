@@ -57,7 +57,6 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private static final String COLUMN_SOURCE_CLASSNAME = ColumnSource.class.getCanonicalName();
     private static final String C14NUTIL_CLASSNAME = C14nUtil.class.getCanonicalName();
     private static final String LAZY_RESULT_CACHE_NAME = "__lazyResultCache";
-    private static final String EXECUTION_CONTEXT_NAME = "__executionContext";
     private static final String FORMULA_FACTORY_NAME = "__FORMULA_FACTORY";
     private static final String PARAM_CLASSNAME = QueryScopeParam.class.getCanonicalName();
     private static final String EVALUATION_EXCEPTION_CLASSNAME = FormulaEvaluationException.class.getCanonicalName();
@@ -237,7 +236,6 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         generateFormulaFactoryLambda(), "",
                         CodeGenerator.repeated("instanceVar", "private final [[TYPE]] [[NAME]];"),
                         "private final Map<Object, Object> [[LAZY_RESULT_CACHE_NAME]];",
-                        "private final io.deephaven.engine.context.ExecutionContext [[EXECUTION_CONTEXT_NAME]];",
                         analyzedFormula.timeInstanceVariables, "",
                         generateConstructor(), "",
                         generateAppropriateGetMethod(ta, false), "",
@@ -255,7 +253,6 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 "");
         g.replace("FORMULA_CLASS_NAME", Formula.class.getCanonicalName());
         g.replace("LAZY_RESULT_CACHE_NAME", LAZY_RESULT_CACHE_NAME);
-        g.replace("EXECUTION_CONTEXT_NAME", EXECUTION_CONTEXT_NAME);
         visitFormulaParameters(null,
                 cs -> {
                     final CodeGenerator fc = g.instantiateNewRepeated("instanceVar");
@@ -291,7 +288,6 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 "public $CLASSNAME$(final TrackingRowSet __rowSet,", CodeGenerator.indent(
                         "final boolean __lazy,",
                         "final java.util.Map<String, ? extends [[COLUMN_SOURCE_CLASSNAME]]> __columnsToData,",
-                        "final io.deephaven.engine.context.ExecutionContext __executionContext,",
                         "final [[PARAM_CLASSNAME]]... __params)"),
                 CodeGenerator.block(
                         "super(__rowSet);",
@@ -301,11 +297,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                                 "[[COLUMN_ARRAY_NAME]] = new [[VECTOR_TYPE_PREFIX]]ColumnWrapper(__columnsToData.get(\"[[COLUMN_NAME]]\"), __rowSet);"),
                         CodeGenerator.repeated("initParam",
                                 "[[PARAM_NAME]] = ([[PARAM_TYPE]]) __params[[[PARAM_INDEX]]].getValue();"),
-                        "[[LAZY_RESULT_CACHE_NAME]] = __lazy ? new ConcurrentHashMap<>() : null;",
-                        "this.[[EXECUTION_CONTEXT_NAME]] = __executionContext;"));
+                        "[[LAZY_RESULT_CACHE_NAME]] = __lazy ? new ConcurrentHashMap<>() : null;"));
 
         g.replace("LAZY_RESULT_CACHE_NAME", LAZY_RESULT_CACHE_NAME);
-        g.replace("EXECUTION_CONTEXT_NAME", EXECUTION_CONTEXT_NAME);
         g.replace("COLUMN_SOURCE_CLASSNAME", COLUMN_SOURCE_CLASSNAME);
         g.replace("PARAM_CLASSNAME", PARAM_CLASSNAME);
         visitFormulaParameters(null,
@@ -374,12 +368,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         CodeGenerator.optional("maybeCreateII",
                                 "final long ii = findResult;"),
                         CodeGenerator.repeated("cacheColumnSourceGet", "final [[TYPE]] [[VAR]] = [[GET_EXPRESSION]];"),
-                        "try (io.deephaven.util.SafeCloseable __ignored = [[EXECUTION_CONTEXT_NAME]] != null ? [[EXECUTION_CONTEXT_NAME]].open() : null)",
-                        CodeGenerator.block(
-                                "if ([[LAZY_RESULT_CACHE_NAME]] != null)", CodeGenerator.block(
-                                        "final Object __lazyKey = [[C14NUTIL_CLASSNAME]].maybeMakeCompoundKey([[FORMULA_ARGS]]);",
-                                        "return ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[FORMULA_ARGS]]));"),
-                                "return applyFormulaPerItem([[FORMULA_ARGS]]);")));
+                        "if ([[LAZY_RESULT_CACHE_NAME]] != null)", CodeGenerator.block(
+                                "final Object __lazyKey = [[C14NUTIL_CLASSNAME]].maybeMakeCompoundKey([[FORMULA_ARGS]]);",
+                                "return ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[FORMULA_ARGS]]));"),
+                        "return applyFormulaPerItem([[FORMULA_ARGS]]);"));
         final String returnTypeString;
         final String resultTypeString;
         if (ta.enginePrimitiveType != null) {
@@ -420,7 +412,6 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         g.replace("FORMULA_ARGS", makeCommaSeparatedList(formulaArgs));
         g.replace("LAZY_RESULT_CACHE_NAME", LAZY_RESULT_CACHE_NAME);
-        g.replace("EXECUTION_CONTEXT_NAME", EXECUTION_CONTEXT_NAME);
         g.replace("C14NUTIL_CLASSNAME", C14NUTIL_CLASSNAME);
 
         return g.freeze();
@@ -551,43 +542,43 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         "final WritableChunk<? super Values> __destination,",
                         "final RowSequence __rowSequence[[ADDITIONAL_CHUNK_ARGS]])"),
                 CodeGenerator.block(
-                        "try (io.deephaven.util.SafeCloseable ignored = [[EXECUTION_CONTEXT_NAME]] != null ? [[EXECUTION_CONTEXT_NAME]].open() : null)",
-                        CodeGenerator.block(
-                                "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
-                                CodeGenerator.optional("maybeCreateIOrII",
-                                        "try (final RowSet prev = __usePrev ? __rowSet.copyPrev() : null;",
-                                        CodeGenerator.indent(
-                                                "final RowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet()))"),
-                                        CodeGenerator.block(
-                                                CodeGenerator.optional("maybeCreateI",
-                                                        "__context.__iChunk.setSize(0);",
-                                                        "inverted.forAllRowKeys(l -> __context.__iChunk.add(__intSize(l)));"),
-                                                CodeGenerator.optional("maybeCreateII",
-                                                        "inverted.fillRowKeyChunk(__context.__iiChunk);"))),
-                                CodeGenerator.repeated("getChunks",
-                                        "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = __sources[[[SOURCE_INDEX]]].[[AS_CHUNK_METHOD]]();"),
-                                "final int[] __chunkPosHolder = new int[] {0};",
-                                "if ([[LAZY_RESULT_CACHE_NAME]] != null)", CodeGenerator.block(
-                                        "__rowSequence.forAllRowKeys(k ->", CodeGenerator.block(
-                                                "final int __chunkPos = __chunkPosHolder[0]++;",
-                                                CodeGenerator.optional("maybeCreateI",
-                                                        "final int i = __context.__iChunk.get(__chunkPos);"),
-                                                CodeGenerator.optional("maybeCreateII",
-                                                        "final long ii = __context.__iiChunk.get(__chunkPos);"),
-                                                "final Object __lazyKey = [[C14NUTIL_CLASSNAME]].maybeMakeCompoundKey([[APPLY_FORMULA_ARGS]]);",
-                                                "__typedDestination.set(__chunkPos, ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[APPLY_FORMULA_ARGS]])));"),
-                                        ");" // close the lambda
-                                ), CodeGenerator.samelineBlock("else",
-                                        "__rowSequence.forAllRowKeys(k ->", CodeGenerator.block(
-                                                "final int __chunkPos = __chunkPosHolder[0]++;",
-                                                CodeGenerator.optional("maybeCreateI",
-                                                        "final int i = __context.__iChunk.get(__chunkPos);"),
-                                                CodeGenerator.optional("maybeCreateII",
-                                                        "final long ii = __context.__iiChunk.get(__chunkPos);"),
-                                                "__typedDestination.set(__chunkPos, applyFormulaPerItem([[APPLY_FORMULA_ARGS]]));"),
-                                        ");" // close the lambda
-                                ),
-                                "__typedDestination.setSize(__chunkPosHolder[0]);")));
+                        "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
+                        CodeGenerator.optional("maybeCreateIOrII",
+                                "try (final RowSet prev = __usePrev ? __rowSet.copyPrev() : null;",
+                                CodeGenerator.indent(
+                                        "final RowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet()))"),
+                                CodeGenerator.block(
+                                        CodeGenerator.optional("maybeCreateI",
+                                                "__context.__iChunk.setSize(0);",
+                                                "inverted.forAllRowKeys(l -> __context.__iChunk.add(__intSize(l)));"),
+                                        CodeGenerator.optional("maybeCreateII",
+                                                "inverted.fillRowKeyChunk(__context.__iiChunk);"))),
+                        CodeGenerator.repeated("getChunks",
+                                "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = __sources[[[SOURCE_INDEX]]].[[AS_CHUNK_METHOD]]();"),
+                        "final int[] __chunkPosHolder = new int[] {0};",
+                        "if ([[LAZY_RESULT_CACHE_NAME]] != null)", CodeGenerator.block(
+                                "__rowSequence.forAllRowKeys(k ->", CodeGenerator.block(
+                                        "final int __chunkPos = __chunkPosHolder[0]++;",
+                                        CodeGenerator.optional("maybeCreateI",
+                                                "final int i = __context.__iChunk.get(__chunkPos);"),
+                                        CodeGenerator.optional("maybeCreateII",
+                                                "final long ii = __context.__iiChunk.get(__chunkPos);"),
+                                        "final Object __lazyKey = [[C14NUTIL_CLASSNAME]].maybeMakeCompoundKey([[APPLY_FORMULA_ARGS]]);",
+                                        "__typedDestination.set(__chunkPos, ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[APPLY_FORMULA_ARGS]])));"),
+                                ");" // close the lambda
+                        ), CodeGenerator.samelineBlock("else",
+                                "__rowSequence.forAllRowKeys(k ->", CodeGenerator.block(
+                                        "final int __chunkPos = __chunkPosHolder[0]++;",
+                                        CodeGenerator.optional("maybeCreateI",
+                                                "final int i = __context.__iChunk.get(__chunkPos);"),
+                                        CodeGenerator.optional("maybeCreateII",
+                                                "final long ii = __context.__iiChunk.get(__chunkPos);"),
+                                        "__typedDestination.set(__chunkPos, applyFormulaPerItem([[APPLY_FORMULA_ARGS]]));"),
+                                ");" // close the lambda
+                        ),
+                        "__typedDestination.setSize(__chunkPosHolder[0]);"
+
+                ));
 
         g.replace("DEST_CHUNK_TYPE", ta.writableChunkVariableType);
         g.replace("DEST_AS_CHUNK_METHOD", ta.asWritableChunkMethodName);
@@ -618,7 +609,6 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         g.replace("RESULT_TYPE", ta.enginePrimitiveType != null ? ta.enginePrimitiveType.getName() : ta.typeString);
         g.replace("LAZY_RESULT_CACHE_NAME", LAZY_RESULT_CACHE_NAME);
-        g.replace("EXECUTION_CONTEXT_NAME", EXECUTION_CONTEXT_NAME);
         g.replace("C14NUTIL_CLASSNAME", C14NUTIL_CLASSNAME);
 
         return g.freeze();

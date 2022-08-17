@@ -60,7 +60,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
 
         // initialize the unit test's execution context
-        executionContext = ExecutionContext.createForUnitTests();
+        executionContext = ExecutionContext.createForUnitTests().open();
 
         oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
         oldCheckLtm = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
