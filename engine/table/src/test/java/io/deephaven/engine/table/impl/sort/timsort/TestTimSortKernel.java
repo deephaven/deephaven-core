@@ -12,7 +12,10 @@ import io.deephaven.engine.rowset.RowSetFactory;
 
 import io.deephaven.engine.rowset.impl.PerfStats;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Rule;
 
 import java.util.Comparator;
 import java.util.List;
@@ -31,6 +34,9 @@ public abstract class TestTimSortKernel {
     private static final int PERFORMANCE_SEEDS = 10;
     private static final int CORRECTNESS_SEEDS = 10;
 
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
     @FunctionalInterface
     public interface GenerateTupleList<T> {
         List<T> generate(Random random, int size);
@@ -48,7 +54,7 @@ public abstract class TestTimSortKernel {
         abstract void run();
     }
 
-    abstract static class SortKernelStuff<T> {
+    abstract static class SortKernelStuff<T> implements SafeCloseable {
         final WritableLongChunk<RowKeys> rowKeys;
 
         SortKernelStuff(int size) {
@@ -58,9 +64,14 @@ public abstract class TestTimSortKernel {
         abstract void run();
 
         abstract void check(List<T> expected);
+
+        @Override
+        public void close() {
+            rowKeys.close();
+        }
     }
 
-    abstract static class PartitionKernelStuff<T> {
+    abstract static class PartitionKernelStuff<T> implements SafeCloseable {
         final WritableLongChunk<RowKeys> rowKeys;
 
         PartitionKernelStuff(int size) {
@@ -70,6 +81,11 @@ public abstract class TestTimSortKernel {
         abstract void run();
 
         abstract void check(List<T> expected);
+
+        @Override
+        public void close() {
+            rowKeys.close();
+        }
     }
 
     abstract static class SortMultiKernelStuff<T> extends SortKernelStuff<T> {
@@ -95,6 +111,15 @@ public abstract class TestTimSortKernel {
         abstract void run();
 
         abstract void check(List<T> expected);
+
+        @Override
+        public void close() {
+            super.close();
+            offsets.close();
+            lengths.close();
+            offsetsOut.close();
+            lengthsOut.close();
+        }
     }
 
     <T, K, M> void performanceTest(GenerateTupleList<T> generateValues,
@@ -163,6 +188,7 @@ public abstract class TestTimSortKernel {
             sortStuff.run();
 
             sortStuff.check(javaTuples);
+            sortStuff.close();
         }
     }
 
@@ -193,6 +219,7 @@ public abstract class TestTimSortKernel {
             partitionStuff.run();
 
             partitionStuff.check(javaTuples);
+            partitionStuff.close();
         }
     }
 
@@ -213,6 +240,7 @@ public abstract class TestTimSortKernel {
             // System.out.println("After sort: " + javaTuples);
 
             sortStuff.check(javaTuples);
+            sortStuff.close();
         }
     }
 

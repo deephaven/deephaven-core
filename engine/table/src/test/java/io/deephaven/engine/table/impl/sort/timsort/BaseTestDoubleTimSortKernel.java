@@ -69,6 +69,13 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
         void check(List<DoubleLongTuple> expected) {
             verify(expected.size(), expected, doubleChunk, rowKeys);
         }
+
+        @Override
+        public void close() {
+            super.close();
+            doubleChunk.close();
+            context.close();
+        }
     }
 
     public static class DoublePartitionKernelStuff extends PartitionKernelStuff<DoubleLongTuple> {
@@ -118,6 +125,14 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
         @Override
         void check(List<DoubleLongTuple> expected) {
             verifyPartition(context, rowSet, expected.size(), expected, valuesChunk, rowKeys, columnSource);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            valuesChunk.close();
+            context.close();
+            rowSet.close();
         }
     }
 
@@ -241,6 +256,20 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
         @Override
         void check(List<DoubleLongLongTuple> expected) {
             verify(expected.size(), expected, primaryChunk, secondaryChunk, rowKeys);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            primaryChunk.close();
+            secondaryChunk.close();
+            secondaryChunkPermuted.close();
+            sortIndexContext.close();
+            indicesToFetch.close();
+            originalPositions.close();
+            context.close();
+            secondarySortContext.close();
+            secondaryColumnSourceContext.close();
         }
     }
 
