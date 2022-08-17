@@ -85,16 +85,16 @@ public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
                                    @NotNull final ColumnSource<Long> valueSource,
-                                   @Nullable final RowRedirection rowRedirection
+                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, recorder, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection, valueSource);
-        if(rowRedirection != null) {
+        super(pair, affectingColumns, control, recorder, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource);
+        if(redirContext.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new LongArraySource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource(redirContext.getRowRedirection(), maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -176,7 +176,7 @@ public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
-        if(isRedirected) {
+        if(redirContext.isRedirected()) {
             maybeInnerSource.startTrackingPrevValues();
         }
     }

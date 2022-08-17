@@ -27,8 +27,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
     protected final MatchPair pair;
     protected final String[] affectingColumns;
 
-    protected final boolean isRedirected;
-
+    protected UpdateBy.UpdateByRedirectionContext redirContext;
 
     public abstract class UpdateWindowedContext implements UpdateContext {
         // store the current subset of rows that need computation
@@ -266,7 +265,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
      * @param control the control parameters for operation
      * @param timeRecorder   an optional recorder for a timestamp column.  If this is null, it will be assumed time is
      *                       measured in integer ticks.
-     * @param rowRedirection the row redirection to use for the operation
+     * @param redirContext the row redirection context to use for the operation
      */
     public UpdateByWindowedOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
@@ -274,14 +273,14 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
                                     @Nullable final LongRecordingUpdateByOperator timeRecorder,
                                     final long reverseTimeScaleUnits,
                                     final long forwardTimeScaleUnits,
-                                    @Nullable final RowRedirection rowRedirection) {
+                                    @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
         this.control = control;
         this.recorder = timeRecorder;
         this.reverseTimeScaleUnits = reverseTimeScaleUnits;
         this.forwardTimeScaleUnits = forwardTimeScaleUnits;
-        this.isRedirected = rowRedirection != null;
+        this.redirContext = redirContext;
     }
 
     public abstract void push(UpdateContext context, long key, int index);

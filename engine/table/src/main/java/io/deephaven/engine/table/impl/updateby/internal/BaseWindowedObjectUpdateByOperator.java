@@ -78,13 +78,13 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
                                             @Nullable final LongRecordingUpdateByOperator timeRecorder,
                                             final long reverseTimeScaleUnits,
                                             final long forwardTimeScaleUnits,
-                                            @Nullable final RowRedirection rowRedirection,
+                                            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
                                             @NotNull final ColumnSource<Object> valueSource
                                             // region extra-constructor-args
                                       , final Class<T> colType
                                             // endregion extra-constructor-args
                                     ) {
-        super(pair, affectingColumns, control, timeRecorder, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection);
+        super(pair, affectingColumns, control, timeRecorder, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext);
         this.valueSource = valueSource;
         // region constructor
         this.colType = colType;

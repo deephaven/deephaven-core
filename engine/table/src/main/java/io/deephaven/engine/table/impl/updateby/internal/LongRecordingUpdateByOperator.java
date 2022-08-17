@@ -74,6 +74,16 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
     }
 
     /**
+     * Get the pervious long value within the underlying {@link ColumnSource}.
+     *
+     * @param key the key
+     * @return the previous value at the key within the column source.
+     */
+    public long getPrevLong(final long key) {
+        return columnSource.getPrevLong(key);
+    }
+
+    /**
      * Get the current underlying {@link ColumnSource}.
      *
      * @return the current value at the key within the column source.

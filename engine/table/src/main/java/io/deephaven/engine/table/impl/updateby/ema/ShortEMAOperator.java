@@ -7,6 +7,7 @@ import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -35,11 +36,11 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                             @Nullable final LongRecordingUpdateByOperator timeRecorder,
                             final long timeScaleUnits,
                             @NotNull final ColumnSource<Short> valueSource,
-                            @Nullable final RowRedirection rowRedirection
+                            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
                             // region extra-constructor-args
                             // endregion extra-constructor-args
                             ) {
-        super(pair, affectingColumns, control, timeRecorder, timeScaleUnits, rowRedirection);
+        super(pair, affectingColumns, control, timeRecorder, timeScaleUnits, redirContext);
         this.valueSource = valueSource;
         // region constructor
         // endregion constructor

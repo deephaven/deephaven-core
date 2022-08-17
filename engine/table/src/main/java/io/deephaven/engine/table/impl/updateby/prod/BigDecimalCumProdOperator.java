@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.updateby.prod;
 
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectBinaryOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -14,9 +15,9 @@ public final class BigDecimalCumProdOperator extends BaseObjectBinaryOperator<Bi
     private final MathContext mathContext;
 
     public BigDecimalCumProdOperator(@NotNull final MatchPair inputPair,
-            @Nullable final RowRedirection rowRedirection,
+            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
             @NotNull final MathContext mathContext) {
-        super(BigDecimal.class, inputPair, new String[] {inputPair.rightColumn}, rowRedirection);
+        super(BigDecimal.class, inputPair, new String[] {inputPair.rightColumn}, redirContext);
         this.mathContext = mathContext;
     }
 

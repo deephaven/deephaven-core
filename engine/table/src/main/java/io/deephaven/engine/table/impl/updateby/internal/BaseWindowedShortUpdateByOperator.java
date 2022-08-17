@@ -77,12 +77,12 @@ public abstract class BaseWindowedShortUpdateByOperator extends UpdateByWindowed
                                             @Nullable final LongRecordingUpdateByOperator timeRecorder,
                                             final long reverseTimeScaleUnits,
                                             final long forwardTimeScaleUnits,
-                                            @Nullable final RowRedirection rowRedirection,
+                                            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
                                             @NotNull final ColumnSource<Short> valueSource
                                             // region extra-constructor-args
                                             // endregion extra-constructor-args
                                     ) {
-        super(pair, affectingColumns, control, timeRecorder, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection);
+        super(pair, affectingColumns, control, timeRecorder, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext);
         this.valueSource = valueSource;
         // region constructor
         // endregion constructor

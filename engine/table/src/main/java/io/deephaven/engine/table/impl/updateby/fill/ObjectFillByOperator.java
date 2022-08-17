@@ -12,6 +12,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -23,12 +24,12 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
     // endregion extra-fields
 
     public ObjectFillByOperator(@NotNull final MatchPair fillPair,
-                              @Nullable final RowRedirection rowRedirection
+                              @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
                               // region extra-constructor-args
                                       , final Class<T> colType
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, colType);
+        super(fillPair, new String[] { fillPair.rightColumn }, redirContext, colType);
         // region constructor
         // endregion constructor
     }

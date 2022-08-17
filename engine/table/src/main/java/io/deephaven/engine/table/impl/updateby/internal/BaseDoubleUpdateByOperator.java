@@ -40,7 +40,8 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
 
     private final MatchPair pair;
     private final String[] affectingColumns;
-    protected final boolean isRedirected;
+
+    private UpdateBy.UpdateByRedirectionContext redirContext;
 
     protected class Context extends UpdateCumulativeContext {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
@@ -82,16 +83,17 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
+     * @param redirContext the {@link UpdateBy.UpdateByRedirectionContext} for the overall update
      */
     public BaseDoubleUpdateByOperator(@NotNull final MatchPair pair,
                                      @NotNull final String[] affectingColumns,
-                                     @Nullable final RowRedirection rowRedirection) {
+                                     @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
-        this.isRedirected = rowRedirection != null;
-        if(rowRedirection != null) {
+        this.redirContext = redirContext;
+        if(this.redirContext.isRedirected()) {
             this.maybeInnerSource = new DoubleArraySource();
-            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource(this.redirContext.getRowRedirection(), maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             this.outputSource = new DoubleSparseArraySource();
@@ -145,8 +147,8 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
         // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
         // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
         // need to do anything with capacity.
-        if(isRedirected) {
-            outputSource.ensureCapacity(resultSourceRowSet.size() + 1);
+        if(redirContext.isRedirected()) {
+            outputSource.ensureCapacity(redirContext.requiredCapacity());
         }
 
         // If we aren't bucketing, we'll just remember the appendyness.
@@ -187,7 +189,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
-        if (isRedirected) {
+        if (redirContext.isRedirected()) {
             maybeInnerSource.startTrackingPrevValues();
         }
     }

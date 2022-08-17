@@ -19,6 +19,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -35,12 +36,12 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
 
     public LongCumMinMaxOperator(@NotNull final MatchPair inputPair,
                                   final boolean isMax,
-                                  @Nullable final RowRedirection rowRedirection
+                                  @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
                                   // region extra-constructor-args
                               ,@NotNull final Class<?> type
                                   // endregion extra-constructor-args
                                   ) {
-        super(inputPair, new String[] { inputPair.rightColumn }, rowRedirection);
+        super(inputPair, new String[] { inputPair.rightColumn }, redirContext);
         this.isMax = isMax;
         // region constructor
         this.type = type;

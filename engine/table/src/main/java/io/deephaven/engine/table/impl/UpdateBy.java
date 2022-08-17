@@ -32,17 +32,110 @@ public abstract class UpdateBy {
     protected final int[] inputSourceSlots;
     protected final UpdateByOperator[] operators;
     protected final QueryTable source;
-    @Nullable
-    protected final WritableRowRedirection rowRedirection;
-    protected final WritableRowSet freeRows;
-    protected long maxInnerIndex;
+
+    protected final UpdateByRedirectionContext redirContext;
 
     protected final UpdateByControl control;
 
+    public static class UpdateByRedirectionContext implements Context {
+        @Nullable
+        protected final WritableRowRedirection rowRedirection;
+        protected final WritableRowSet freeRows;
+        protected long maxInnerIndex;
+
+        public UpdateByRedirectionContext(@Nullable final WritableRowRedirection rowRedirection) {
+            this.rowRedirection = rowRedirection;
+            this.freeRows = rowRedirection == null ? null : RowSetFactory.empty();
+            this.maxInnerIndex = 0;
+        }
+
+        public boolean isRedirected() {
+            return rowRedirection != null;
+        }
+
+        public long requiredCapacity() {
+            return maxInnerIndex + 1;
+        }
+
+        @Nullable
+        public WritableRowRedirection getRowRedirection() {
+            return rowRedirection;
+        }
+
+        public void processUpdateForRedirection(@NotNull final TableUpdate upstream, final TrackingRowSet prevRowSet) {
+            if (upstream.removed().isNonempty()) {
+                final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
+                synchronized (rowRedirection) {
+                    upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(rowRedirection.remove(key)));
+                    freeRows.insert(freeBuilder.build());
+                }
+            }
+
+            if (upstream.shifted().nonempty()) {
+                try (final WritableRowSet prevIndexLessRemoves = prevRowSet.copyPrev()) {
+                    prevIndexLessRemoves.remove(upstream.removed());
+                    final RowSet.SearchIterator fwdIt = prevIndexLessRemoves.searchIterator();
+
+                    upstream.shifted().apply((start, end, delta) -> {
+                        if (delta < 0 && fwdIt.advance(start)) {
+                            for (long key = fwdIt.currentValue(); fwdIt.currentValue() <= end; key = fwdIt.nextLong()) {
+                                if (shiftRedirectedKey(fwdIt, delta, key))
+                                    break;
+                            }
+                        } else {
+                            try (final RowSet.SearchIterator revIt = prevIndexLessRemoves.reverseIterator()) {
+                                if (revIt.advance(end)) {
+                                    for (long key = revIt.currentValue(); revIt.currentValue() >= start; key =
+                                            revIt.nextLong()) {
+                                        if (shiftRedirectedKey(revIt, delta, key))
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            if (upstream.added().isNonempty()) {
+                final MutableLong lastAllocated = new MutableLong(0);
+                synchronized (rowRedirection) {
+                    final WritableRowSet.Iterator freeIt = freeRows.iterator();
+                    upstream.added().forAllRowKeys(outerKey -> {
+                        final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
+                        lastAllocated.setValue(innerKey);
+                        rowRedirection.put(outerKey, innerKey);
+                    });
+                    freeRows.removeRange(0, lastAllocated.longValue());
+                }
+            }
+        }
+
+        private boolean shiftRedirectedKey(@NotNull final RowSet.SearchIterator iterator, final long delta,
+                                           final long key) {
+            synchronized (rowRedirection) {
+                final long inner = rowRedirection.remove(key);
+                if (inner != NULL_ROW_KEY) {
+                    rowRedirection.put(key + delta, inner);
+                }
+                return !iterator.hasNext();
+            }
+        }
+
+        @Override
+        public void close() {
+            try (final WritableRowSet ignored = freeRows) {
+            }
+        }
+    }
+
     protected UpdateBy(@NotNull final UpdateByOperator[] operators,
             @NotNull final QueryTable source,
-            @Nullable final WritableRowRedirection rowRedirection, UpdateByControl control) {
+            @NotNull final UpdateByRedirectionContext redirContext,
+            UpdateByControl control) {
         this.control = control;
+        this.redirContext = redirContext;
+
         if (operators.length == 0) {
             throw new IllegalArgumentException("At least one operator must be specified");
         }
@@ -65,8 +158,6 @@ public abstract class UpdateBy {
                 inputSourceSlots[opIdx] = maybeExistingSlot;
             }
         }
-        this.rowRedirection = rowRedirection;
-        this.freeRows = rowRedirection == null ? null : RowSetFactory.empty();
     }
 
     // region UpdateBy implementation
@@ -85,6 +176,7 @@ public abstract class UpdateBy {
             @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByControl control) {
 
+        // create the rowRedirection if instructed
         final WritableRowRedirection rowRedirection;
         if (control.useRedirectionOrDefault()) {
             if (!source.isRefreshing()) {
@@ -112,13 +204,15 @@ public abstract class UpdateBy {
             rowRedirection = null;
         }
 
+        // create an UpdateByRedirectionContext for use by the UpdateBy objects
+        UpdateByRedirectionContext ctx = new UpdateByRedirectionContext(rowRedirection);
 
         // TODO(deephaven-core#2693): Improve UpdateBy implementation for ColumnName
         // generate a MatchPair array for use by the existing algorithm
         MatchPair[] pairs = MatchPair.fromPairs(byColumns);
 
         final UpdateByOperatorFactory updateByOperatorFactory =
-                new UpdateByOperatorFactory(source, pairs, rowRedirection, control);
+                new UpdateByOperatorFactory(source, pairs, ctx, control);
         final Collection<UpdateByOperator> ops = updateByOperatorFactory.getOperators(clauses);
 
         final StringBuilder descriptionBuilder = new StringBuilder("updateBy(ops={")
@@ -151,8 +245,9 @@ public abstract class UpdateBy {
                     source,
                     opArr,
                     resultSources,
-                    rowRedirection,
-                    control);
+                    ctx,
+                    control,
+                    true);
 
             if (source.isRefreshing()) {
                 // start tracking previous values
@@ -184,7 +279,7 @@ public abstract class UpdateBy {
                 opArr,
                 resultSources,
                 byColumns,
-                rowRedirection,
+                ctx,
                 control);
 
         if (source.isRefreshing()) {
@@ -195,60 +290,6 @@ public abstract class UpdateBy {
             ops.forEach(UpdateByOperator::startTrackingPrev);
         }
         return ret;
-    }
-
-    protected void processUpdateForRedirection(@NotNull final TableUpdate upstream) {
-        if (upstream.removed().isNonempty()) {
-            final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
-            upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(rowRedirection.remove(key)));
-            freeRows.insert(freeBuilder.build());
-        }
-
-        if (upstream.shifted().nonempty()) {
-            try (final WritableRowSet prevIndexLessRemoves = source.getRowSet().copyPrev()) {
-                prevIndexLessRemoves.remove(upstream.removed());
-                final RowSet.SearchIterator fwdIt = prevIndexLessRemoves.searchIterator();
-
-                upstream.shifted().apply((start, end, delta) -> {
-                    if (delta < 0 && fwdIt.advance(start)) {
-                        for (long key = fwdIt.currentValue(); fwdIt.currentValue() <= end; key = fwdIt.nextLong()) {
-                            if (shiftRedirectedKey(fwdIt, delta, key))
-                                break;
-                        }
-                    } else {
-                        try (final RowSet.SearchIterator revIt = prevIndexLessRemoves.reverseIterator()) {
-                            if (revIt.advance(end)) {
-                                for (long key = revIt.currentValue(); revIt.currentValue() >= start; key =
-                                        revIt.nextLong()) {
-                                    if (shiftRedirectedKey(revIt, delta, key))
-                                        break;
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        if (upstream.added().isNonempty()) {
-            final MutableLong lastAllocated = new MutableLong(0);
-            final WritableRowSet.Iterator freeIt = freeRows.iterator();
-            upstream.added().forAllRowKeys(outerKey -> {
-                final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
-                lastAllocated.setValue(innerKey);
-                rowRedirection.put(outerKey, innerKey);
-            });
-            freeRows.removeRange(0, lastAllocated.longValue());
-        }
-    }
-
-    private boolean shiftRedirectedKey(@NotNull final RowSet.SearchIterator iterator, final long delta,
-            final long key) {
-        final long inner = rowRedirection.remove(key);
-        if (inner != NULL_ROW_KEY) {
-            rowRedirection.put(key + delta, inner);
-        }
-        return !iterator.hasNext();
     }
 
     /**

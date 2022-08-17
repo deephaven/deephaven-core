@@ -12,6 +12,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -26,12 +27,12 @@ public class ByteCumSumOperator extends BaseLongUpdateByOperator {
     // endregion extra-fields
 
     public ByteCumSumOperator(@NotNull final MatchPair pair,
-                               @Nullable final RowRedirection rowRedirection
+                               @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
                                // region extra-constructor-args
                                ,final byte nullValue
                                // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection);
+        super(pair, new String[] { pair.rightColumn }, redirContext);
         // region constructor
         this.nullValue = nullValue;
         // endregion constructor

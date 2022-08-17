@@ -60,11 +60,11 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             @Nullable final LongRecordingUpdateByOperator timeRecorder,
             final long timeScaleUnits,
             @NotNull ColumnSource<T> valueSource,
-            @Nullable final RowRedirection rowRedirection
+            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, BigDecimal.class);
+        super(pair, affectingColumns, redirContext, BigDecimal.class);
         this.control = control;
         this.timeRecorder = timeRecorder;
         this.timeScaleUnits = timeScaleUnits;

@@ -24,6 +24,8 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  * An implementation of {@link UpdateBy} dedicated to zero key computation.
  */
 class ZeroKeyUpdateBy extends UpdateBy {
+    /** Apply shifts to operator outputs? */
+    final boolean applyShifts;
 
     /**
      * Perform an updateBy without any key columns.
@@ -32,7 +34,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
      * @param source the source table
      * @param ops the operations to perform
      * @param resultSources the result sources
-     * @param rowRedirection the {@link io.deephaven.engine.table.impl.util.RowRedirection}, if one is used.
+     * @param redirContext the row redirection shared context
      * @param control the control object.
      * @return the result table
      */
@@ -40,10 +42,11 @@ class ZeroKeyUpdateBy extends UpdateBy {
             @NotNull final QueryTable source,
             @NotNull final UpdateByOperator[] ops,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-            @Nullable final WritableRowRedirection rowRedirection,
-            @NotNull final UpdateByControl control) {
+            @NotNull final UpdateByRedirectionContext redirContext,
+            @NotNull final UpdateByControl control,
+            final boolean applyShifts) {
         final QueryTable result = new QueryTable(source.getRowSet(), resultSources);
-        final ZeroKeyUpdateBy updateBy = new ZeroKeyUpdateBy(ops, source, rowRedirection, control);
+        final ZeroKeyUpdateBy updateBy = new ZeroKeyUpdateBy(ops, source, redirContext, control, applyShifts);
         updateBy.doInitialAdditions();
 
         if (source.isRefreshing()) {
@@ -57,9 +60,11 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
     protected ZeroKeyUpdateBy(@NotNull final UpdateByOperator[] operators,
             @NotNull final QueryTable source,
-            @Nullable final WritableRowRedirection rowRedirection,
-            @NotNull final UpdateByControl control) {
-        super(operators, source, rowRedirection, control);
+            @NotNull final UpdateByRedirectionContext redirContext,
+            @NotNull final UpdateByControl control,
+            final boolean applyShifts) {
+        super(operators, source, redirContext, control);
+        this.applyShifts = applyShifts;
     }
 
     ZeroKeyUpdateByListener newListener(@NotNull final String description, @NotNull final QueryTable result) {
@@ -72,11 +77,13 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 RowSetFactory.empty(),
                 RowSetShiftData.EMPTY,
                 ModifiedColumnSet.ALL);
+        if (redirContext.isRedirected()) {
+            redirContext.processUpdateForRedirection(fakeUpdate, source.getRowSet());
+        }
+
         try (final UpdateContext ctx = new UpdateContext(fakeUpdate, null, true)) {
             ctx.setAllAffected();
-            if (rowRedirection != null && source.isRefreshing()) {
-                processUpdateForRedirection(fakeUpdate);
-            }
+
             // do an addition phase for all the operators that can add directly (i.e. backwards looking)
             ctx.doUpdate(source.getRowSet(), source.getRowSet(), UpdateType.Add);
 
@@ -128,6 +135,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
         /** A Long Chunk for previous keys */
         WritableLongChunk<OrderedRowKeys> prevKeyChunk;
+
 
         final RowSet affectedRows;
 
@@ -438,21 +446,9 @@ class ZeroKeyUpdateBy extends UpdateBy {
                         keyBefore = sit.binarySearchValue(
                                 (compareTo, ignored) -> Long.compare(keyStart - 1, compareTo), 1);
                     }
-                    operators[opIndex].resetForReprocess(opContext[opIndex], sourceRowSet, keyBefore);
-                }
-            }
+                    // apply a shift to keyBefore since the output column is still in prev key space
 
-            // We will not mess with shifts if we are using a redirection because we'll have applied the shift
-            // to the redirection index already by now.
-            if (rowRedirection == null && shifted.nonempty()) {
-                try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
-                    shifted.apply((begin, end, delta) -> {
-                        try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
-                            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                                operators[opIdx].applyOutputShift(opContext[opIdx], subRowSet, delta);
-                            }
-                        }
-                    });
+                    operators[opIndex].resetForReprocess(opContext[opIndex], sourceRowSet, keyBefore);
                 }
             }
 
@@ -536,8 +532,23 @@ class ZeroKeyUpdateBy extends UpdateBy {
         @Override
         public void onUpdate(TableUpdate upstream) {
             try (final UpdateContext ctx = new UpdateContext(upstream, inputModifiedColumnSets, false)) {
-                if (rowRedirection != null) {
-                    processUpdateForRedirection(upstream);
+
+                if (redirContext.isRedirected()) {
+                    redirContext.processUpdateForRedirection(upstream, source.getRowSet());
+                }
+
+                // We will not mess with shifts if we are using a redirection because we'll have applied the shift
+                // to the redirection index already by now.
+                if (applyShifts && !redirContext.isRedirected() && upstream.shifted().nonempty()) {
+                    try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
+                        upstream.shifted().apply((begin, end, delta) -> {
+                            try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
+                                for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                                    operators[opIdx].applyOutputShift(ctx.opContext[opIdx], subRowSet, delta);
+                                }
+                            }
+                        });
+                    }
                 }
 
                 // If anything can process normal operations we have to pass them down, otherwise we can skip this
@@ -600,6 +611,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     downstream.modified = RowSetFactory.empty();
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 }
+
                 result.notifyListeners(downstream);
             }
         }

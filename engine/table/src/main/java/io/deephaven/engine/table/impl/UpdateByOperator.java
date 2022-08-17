@@ -376,7 +376,6 @@ public interface UpdateByOperator {
     /**
      * Apply a shift to the operation.
      *
-     * @param context the context object
      */
     void applyOutputShift(@NotNull final UpdateContext context,
             @NotNull final RowSet subIndexToShift,

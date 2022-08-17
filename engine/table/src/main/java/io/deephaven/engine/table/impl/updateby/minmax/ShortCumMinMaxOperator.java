@@ -7,6 +7,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseShortUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -22,11 +23,11 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
 
     public ShortCumMinMaxOperator(@NotNull final MatchPair inputPair,
                                   final boolean isMax,
-                                  @Nullable final RowRedirection rowRedirection
+                                  @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
                                   // region extra-constructor-args
                                   // endregion extra-constructor-args
                                   ) {
-        super(inputPair, new String[] { inputPair.rightColumn }, rowRedirection);
+        super(inputPair, new String[] { inputPair.rightColumn }, redirContext);
         this.isMax = isMax;
         // region constructor
         // endregion constructor

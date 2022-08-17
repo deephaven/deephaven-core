@@ -56,15 +56,15 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
      *        measured in integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
      *        in ticks, otherwise it is measured in nanoseconds.
-     * @param rowRedirection the row redirection to use for the EMA
+     * @param redirContext the row redirection context to use for the EMA
      */
     public BasePrimitiveEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final LongRecordingUpdateByOperator timeRecorder,
             final long timeScaleUnits,
-            @Nullable final RowRedirection rowRedirection) {
-        super(pair, affectingColumns, rowRedirection);
+            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
+        super(pair, affectingColumns, redirContext);
         this.control = control;
         this.timeRecorder = timeRecorder;
         this.timeScaleUnits = timeScaleUnits;

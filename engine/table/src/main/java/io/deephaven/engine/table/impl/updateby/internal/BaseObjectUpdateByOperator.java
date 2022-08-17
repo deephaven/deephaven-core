@@ -36,7 +36,8 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
 
     protected final MatchPair pair;
     protected final String[] affectingColumns;
-    protected final boolean isRedirected;
+
+    private UpdateBy.UpdateByRedirectionContext redirContext;
 
     // region extra-fields
     private final Class<T> colType;
@@ -79,23 +80,23 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param rowRedirection the {@link RowRedirection} if one is used
+     * @param redirContext the {@link UpdateBy.UpdateByRedirectionContext} for the overall update
      */
     public BaseObjectUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection
+                                    @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
                                     // region extra-constructor-args
                                       , final Class<T> colType
                                     // endregion extra-constructor-args
                                     ) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
-        this.isRedirected = rowRedirection != null;
-        if(rowRedirection != null) {
+        this.redirContext = redirContext;
+        if(this.redirContext.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new ObjectArraySource(colType);
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource(this.redirContext.getRowRedirection(), maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -158,16 +159,16 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
         // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
         // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
         // need to do anything with capacity.
-        if(isRedirected) {
+        if(redirContext.isRedirected()) {
             // The redirection index does not use the 0th index for some reason.
-            outputSource.ensureCapacity(resultSourceIndex.size() + 1);
+            outputSource.ensureCapacity(redirContext.requiredCapacity());
         }
 
         // just remember the appendyness.
         ctx.canProcessDirectly = isUpstreamAppendOnly;
 
-        // pre-load the context with the previous last value in the table (if possibe)
-        ctx.curVal = lastPrevKey == NULL_ROW_KEY ? null : outputSource.get(lastPrevKey);
+        // pre-load the context with the previous last value in the table (if possible)
+        ctx.curVal = lastPrevKey == NULL_ROW_KEY ? null : outputSource.getPrev(lastPrevKey);
     }
 
     @Override
@@ -201,7 +202,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
-        if (isRedirected) {
+        if (redirContext.isRedirected()) {
             maybeInnerSource.startTrackingPrevValues();
         }
     }
