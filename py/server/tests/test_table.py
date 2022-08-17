@@ -3,10 +3,12 @@
 #
 
 import unittest
+from typing import List, Any
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
+from deephaven.pandas import to_pandas
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -560,30 +562,50 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(cm.exception.root_cause)
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
+    def verify_table_data(self, t: Table, expected: List[Any]):
+        t_data = to_pandas(t).values[0]
+        for s in expected:
+            self.assertIn(s, t_data)
+
     def test_update_local(self):
         nonlocal_str = "nonlocal str"
+        closure_str = "closure str"
 
         def inner_func(arg: str):
             def local_fn() -> str:
                 return "local str"
+
+            # Note, need to bring a nonlocal_str into the local scope before it can be used in formulas
             nonlocal nonlocal_str
+            a_number = 20002
+
             local_int = 101
-            t = empty_table(1)
-            formulas = ["Col1 = local_fn()",
-                        "Col2 = global_fn()",
-                        "Col3 = nonlocal_str",
-                        "Col4 = arg",
-                        "Col5 = local_int",
-                        "Col6 = global_int",
-                        ]
-            t2 = t.update(formulas)
-            t2_data = t2.to_string()
-            self.assertIn("local str", t2_data)
-            self.assertIn("global str", t2_data)
-            self.assertIn("nonlocal str", t2_data)
-            self.assertIn(arg, t2_data)
-            self.assertIn("101", t2_data)
-            self.assertIn("1001", t2_data)
+            with self.subTest("LEG"):
+                t = empty_table(1)
+                formulas = ["Col1 = local_fn()",
+                            "Col2 = global_fn()",
+                            "Col3 = nonlocal_str",
+                            "Col4 = arg",
+                            "Col5 = local_int",
+                            "Col6 = global_int",
+                            "Col7 = a_number",
+                            ]
+
+                rt = t.update(formulas)
+                column_data = ["local str", "global str", "nonlocal str", arg, 101, 1001, 20002]
+                self.verify_table_data(rt, column_data)
+
+            with self.subTest("Closure"):
+                def closure_fn() -> str:
+                    return closure_str
+
+                formulas = ["Col1 = closure_fn()"]
+                rt = t.update(formulas)
+                self.verify_table_data(rt, ["closure str"])
+                nonlocal closure_str
+                closure_str = "closure str2"
+                rt = t.update(formulas)
+                self.verify_table_data(rt, ["closure str2"])
 
         inner_func("param str")
 
@@ -595,12 +617,54 @@ class TableTestCase(BaseTestCase):
         t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")
         self.assertIn("100", t.to_string())
 
+    def test_scope_comprehensions(self):
+        with self.subTest("List comprehension"):
+            t = empty_table(1)
+            a_list = range(3)
+            rt_list = [t.update(formulas=["X=a", "Y=a*10"]) for a in a_list]
+            for i, rt in enumerate(rt_list):
+                self.verify_table_data(rt, [i, i * 10])
+
+        with self.subTest("Set comprehension"):
+            rt_set = {(a, t.update(formulas=["X=a", "Y=a*10"])) for a in a_list}
+            for i, rt in rt_set:
+                self.verify_table_data(rt, [i, i * 10])
+
+        with self.subTest("Dict comprehension"):
+            a_dict = {"k1": 101, "k2": 202}
+            rt_dict = {k: t.update(formulas=["X=v", "Y=v*10"]) for k, v in a_dict.items()}
+            for k, rt in rt_dict.items():
+                v = a_dict[k]
+                self.verify_table_data(rt, [v, v*10])
+
+    def test_scope_lambda(self):
+        t = empty_table(1)
+        lambda_fn = lambda x: t.update(formulas=["X = x", "Y = x * 10"])
+        rt = lambda_fn(10)
+        self.verify_table_data(rt, [10, 10 * 10])
+
+    @classmethod
+    def update_in_class_method(cls, arg1, arg2) -> Table:
+        return empty_table(1).update(formulas=["X = arg1", "Y = arg2"])
+
+    @staticmethod
+    def update_in_static_method(arg1, arg2) -> Table:
+        return empty_table(1).update(formulas=["X = arg1", "Y = arg2"])
+
+    def test_decorated_methods(self):
+        rt = self.update_in_class_method("101", "202")
+        self.verify_table_data(rt, ["101", "202"])
+
+        rt = self.update_in_static_method(101, 202)
+        self.verify_table_data(rt, [101, 202])
+
 
 def global_fn() -> str:
     return "global str"
 
 
 global_int = 1001
+a_number = 10001
 
 if __name__ == "__main__":
     unittest.main()

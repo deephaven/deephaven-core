@@ -170,7 +170,7 @@ public interface PythonScope<PyObj> {
          */
     }
 
-    public PyDictWrapper globals();
+    public PyDictWrapper mainGlobals();
 
     /**
      * Push the provided Python scope into the thread scope stack for subsequent operations on Tables

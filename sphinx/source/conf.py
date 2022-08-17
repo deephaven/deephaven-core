@@ -100,7 +100,7 @@ jpy.get_type("io.deephaven.engine.table.lang.QueryScope").setScope(py_dh_session
 
 import deephaven
 docs_title = "Deephaven python modules."
-package_roots = [deephaven]
+package_roots = [jpy, deephaven]
 package_excludes = ['._']
 
 import dh_sphinx

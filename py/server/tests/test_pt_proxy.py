@@ -318,6 +318,40 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             for gct in agg_pt_proxy.target.constituent_tables:
                 self.assertGreaterEqual(gct.size, 1)
 
+    def test_query_scope(self):
+
+        nonlocal_str = "nonlocal str"
+        closure_str = "closure str"
+
+        def inner_func(arg: str):
+            def local_fn() -> str:
+                return "local str"
+
+            # Note, need to bring a nonlocal_str into the local scope before it can be used in formulas
+            nonlocal nonlocal_str
+            a_number = 20002
+
+            local_int = 101
+            formulas = ["Col1 = local_fn()",
+                        "Col2 = global_fn()",
+                        "Col3 = nonlocal_str",
+                        "Col4 = arg",
+                        "Col5 = local_int",
+                        "Col6 = global_int",
+                        "Col7 = a_number",
+                        ]
+
+            return self.pt_proxy.update(formulas)
+
+        self.assertIsNotNone(inner_func("param str"))
+
+
+def global_fn() -> str:
+    return "global str"
+
+
+global_int = 1001
+a_number = 10001
 
 if __name__ == '__main__':
     unittest.main()

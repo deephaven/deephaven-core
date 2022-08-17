@@ -57,7 +57,7 @@ _deephaven_pkg_prefix = __file__
 
 @contextlib.contextmanager
 def _query_scope_ctx():
-    """A context manager to set/unset query scope based on the scope of the most immediate application code that invokes
+    """A context manager to set/unset query scope based on the scope of the most immediate caller code that invokes
     Table operations."""
 
     # locate the innermost Deephaven frame (i.e. any of the table operation methods that use this context manager)
@@ -66,13 +66,11 @@ def _query_scope_ctx():
         if filename and filename == __file__:
             break
 
-    # we deem any module/function/method which calls a wrapped formula/filter-evaluating Table op as an application
-    # frame. This holds true and makes sense even when such module/function/method is part of the Deephaven package, and
-    # should not be a hurdle for developing such code as function/method parameters are now part of the query scope
+    # combine the immediate caller's globals and locals into a single dict and use it as the query scope
     if len(outer_frames) > i + 2:
-        app_frame, *_ = outer_frames[i + 1]
-        scope_dict = app_frame.f_globals.copy()
-        scope_dict.update(app_frame.f_locals)
+        caller_frame, *_ = outer_frames[i + 1]
+        scope_dict = caller_frame.f_globals.copy()
+        scope_dict.update(caller_frame.f_locals)
         try:
             _j_py_script_session.pushScope(scope_dict)
             yield
@@ -369,7 +367,7 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self), _query_scope_ctx():
+            with _query_scope_ctx(), auto_locking_ctx(self):
                 return Table(j_table=self.j_table.update(*formulas))
         except Exception as e:
             raise DHError(e, "table update operation failed.") from e
@@ -388,7 +386,7 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self), _query_scope_ctx():
+            with _query_scope_ctx(), auto_locking_ctx(self):
                 return Table(j_table=self.j_table.lazyUpdate(*formulas))
         except Exception as e:
             raise DHError(e, "table lazy_update operation failed.") from e
@@ -445,7 +443,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            with auto_locking_ctx(self), _query_scope_ctx():
+            with _query_scope_ctx(), auto_locking_ctx(self):
                 if not formulas:
                     return Table(j_table=self.j_table.select())
                 formulas = to_sequence(formulas)
@@ -2018,7 +2016,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             filters = to_sequence(filters)
-            with auto_locking_ctx(self), _query_scope_ctx():
+            with _query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(*filters))
         except Exception as e:
             raise DHError(e, "where operation on the PartitionedTableProxy failed.") from e
@@ -2083,7 +2081,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self), _query_scope_ctx():
+            with _query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.view(*formulas))
         except Exception as e:
             raise DHError(e, "view operation on the PartitionedTableProxy failed.") from e
@@ -2104,7 +2102,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self), _query_scope_ctx():
+            with _query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateView(*formulas))
         except Exception as e:
             raise DHError(e, "update_view operation on the PartitionedTableProxy failed.") from e
@@ -2125,7 +2123,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self), _query_scope_ctx():
+            with _query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(*formulas))
         except Exception as e:
             raise DHError(e, "update operation on the PartitionedTableProxy failed.") from e
@@ -2146,7 +2144,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self), _query_scope_ctx():
+            with _query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(*formulas))
         except Exception as e:
             raise DHError(e, "select operation on the PartitionedTableProxy failed.") from e
@@ -2167,7 +2165,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with auto_locking_ctx(self), _query_scope_ctx():
+            with _query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.selectDistinct(*formulas))
         except Exception as e:
             raise DHError(e, "select_distinct operation on the PartitionedTableProxy failed.") from e

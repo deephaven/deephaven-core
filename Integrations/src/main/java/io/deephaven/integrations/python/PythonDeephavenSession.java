@@ -179,6 +179,9 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     }
 
     public void pushScope(PyObject pydict) {
+        if (!pydict.isDict()) {
+            throw new IllegalArgumentException("Expect a Python dict but got a" + pydict.repr());
+        }
         scope.pushScope(pydict);
     }
 
@@ -226,7 +229,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     protected PythonSnapshot takeSnapshot() {
-        return new PythonSnapshot(scope.globals().copy());
+        return new PythonSnapshot(scope.mainGlobals().copy());
     }
 
     @Override
@@ -281,7 +284,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     @Override
     public synchronized void setVariable(String name, @Nullable Object newValue) {
         try (PythonSnapshot fromSnapshot = takeSnapshot()) {
-            final PyDictWrapper globals = scope.globals();
+            final PyDictWrapper globals = scope.mainGlobals();
             if (newValue == null) {
                 try {
                     globals.delItem(name);

@@ -208,7 +208,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         }
     }
 
-    public PyDictWrapper globals() {
+    public PyDictWrapper mainGlobals() {
         return dict;
     }
 
@@ -226,7 +226,10 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     public void popScope() {
         Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
         if (scopeStack != null) {
-            scopeStack.pop();
+            PyDictWrapper pydict = scopeStack.pop();
+            pydict.close();
+        } else {
+            throw new IllegalStateException("The thread scope stack is empty.");
         }
     }
 }
