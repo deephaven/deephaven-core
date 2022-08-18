@@ -3,9 +3,10 @@
 #
 
 import unittest
+from types import SimpleNamespace
 from typing import List, Any
 
-from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule
+from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
 from deephaven.pandas import to_pandas
@@ -562,12 +563,15 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(cm.exception.root_cause)
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
-    def verify_table_data(self, t: Table, expected: List[Any]):
-        t_data = to_pandas(t).values[0]
+    def verify_table_data(self, t: Table, expected: List[Any], assert_not_in: bool = False):
+        t_data = to_pandas(t).values.flatten()
         for s in expected:
-            self.assertIn(s, t_data)
+            if assert_not_in:
+                self.assertNotIn(s, t_data)
+            else:
+                self.assertIn(s, t_data)
 
-    def test_update_local(self):
+    def test_update_LEG_closure(self):
         nonlocal_str = "nonlocal str"
         closure_str = "closure str"
 
@@ -607,6 +611,14 @@ class TableTestCase(BaseTestCase):
                 rt = t.update(formulas)
                 self.verify_table_data(rt, ["closure str2"])
 
+            with self.subTest("Changing scope"):
+                x = 1
+                rt = empty_table(1).update("X = x")
+                self.verify_table_data(rt, [1])
+                x = 2
+                rt = rt.update(formulas="Y = x")
+                self.verify_table_data(rt, [1, 2])
+
         inner_func("param str")
 
     def test_nested_scopes(self):
@@ -635,7 +647,7 @@ class TableTestCase(BaseTestCase):
             rt_dict = {k: t.update(formulas=["X=v", "Y=v*10"]) for k, v in a_dict.items()}
             for k, rt in rt_dict.items():
                 v = a_dict[k]
-                self.verify_table_data(rt, [v, v*10])
+                self.verify_table_data(rt, [v, v * 10])
 
     def test_scope_lambda(self):
         t = empty_table(1)
@@ -657,6 +669,29 @@ class TableTestCase(BaseTestCase):
 
         rt = self.update_in_static_method(101, 202)
         self.verify_table_data(rt, [101, 202])
+
+    def test_ticking_table_scope(self):
+        from deephaven import ugp
+        x = 1
+        with ugp.shared_lock():
+            rt = time_table("00:00:01").update("X = x")
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+        self.verify_table_data(rt, [1])
+        for i in range(2, 5):
+            x = i
+            self.wait_ticking_table_update(rt, row_count=i, timeout=5)
+        self.verify_table_data(rt, list(range(2, 5)), assert_not_in=True)
+
+        x = SimpleNamespace()
+        x.v = 1
+        with ugp.shared_lock():
+            rt = time_table("00:00:01").update("X = x.v").drop_columns("Timestamp")
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+
+        for i in range(2, 5):
+            x.v = i
+            self.wait_ticking_table_update(rt, row_count=i, timeout=5)
+        self.verify_table_data(rt, list(range(1, 5)))
 
 
 def global_fn() -> str:

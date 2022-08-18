@@ -170,6 +170,9 @@ public interface PythonScope<PyObj> {
          */
     }
 
+    /**
+     * @return the Python's __main__ module namespace
+     */
     public PyDictWrapper mainGlobals();
 
     /**

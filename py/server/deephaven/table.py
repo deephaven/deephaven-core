@@ -52,7 +52,6 @@ _JUnsynchronizedScriptSessionQueryScope = jpy.get_type(
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
 _j_script_session = jpy.cast(_JQueryScope.getScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
 _j_py_script_session = jpy.cast(_j_script_session, _JPythonScriptSession)
-_deephaven_pkg_prefix = __file__
 
 
 @contextlib.contextmanager
