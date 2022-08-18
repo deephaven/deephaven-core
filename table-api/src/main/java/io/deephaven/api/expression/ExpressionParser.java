@@ -1,10 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.util;
-
-import io.deephaven.engine.exceptions.ExpressionException;
-import org.jetbrains.annotations.NotNull;
+package io.deephaven.api.expression;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -18,7 +15,7 @@ import java.util.LinkedHashMap;
  * @param <TYPE> The expected type of the parsed expression
  */
 public class ExpressionParser<TYPE> {
-    private Map<Pattern, ExpressionFactory<TYPE>> expressions = new LinkedHashMap<>();
+    private final Map<Pattern, ExpressionFactory<TYPE>> expressions = new LinkedHashMap<>();
 
     /**
      * Attempt to process the expression using the {@link #registerFactory(ExpressionFactory) configured}
@@ -29,7 +26,6 @@ public class ExpressionParser<TYPE> {
      *
      * @throws ExpressionException if there is a problem parsing the expression, or no parsers accepted the expression.
      */
-    @NotNull
     public TYPE parse(String expression, Object... args) {
         Throwable creationException = null;
         for (Map.Entry<Pattern, ExpressionFactory<TYPE>> patternExpressionFactoryEntry : expressions.entrySet()) {

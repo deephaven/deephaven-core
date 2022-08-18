@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl.select;
+package io.deephaven.api.expression;
 
 /**
  * A set of constants used to build consistent patterns to process query parameters.

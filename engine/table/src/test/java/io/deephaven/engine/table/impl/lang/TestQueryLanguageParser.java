@@ -119,6 +119,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("ExampleQuantity4", double.class);
         variables.put("ExampleStr", String.class);
 
+        variables.put("genericSub", TestGenericSub.class);
+
         variableParameterizedTypes = new HashMap<>();
         variableParameterizedTypes.put("myArrayList", new Class[] {Long.class});
         variableParameterizedTypes.put("myHashMap", new Class[] {Integer.class, Double.class});
@@ -2185,6 +2187,51 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         // this was getting picked up as invalid, so we're ensuring here that it is not an error.
         expression = "23 >= plus(System.currentTimeMillis(), 12)";
         check(expression, "greaterEquals(23, plus(System.currentTimeMillis(), 12))", boolean.class, new String[0]);
+    }
+
+    public static class TestGenericResult1 {
+    }
+    public static class TestGenericResult2 {
+    }
+    public static class TestGenericResult3 {
+    }
+    public static class TestGenericResult4 {
+    }
+    public interface TestGenericInterfaceSuper<T> {
+        default T getFromInterfaceSuper() {
+            return null;
+        }
+    }
+    public interface TestGenericInterfaceForSuper<T> {
+        default T getFromInterfaceForSuper() {
+            return null;
+        }
+    }
+    public interface TestGenericInterfaceSub<T> extends TestGenericInterfaceSuper<TestGenericResult1> {
+        default T getFromInterfaceSub() {
+            return null;
+        }
+    }
+    public static abstract class TestGenericSuper<T> implements TestGenericInterfaceForSuper<TestGenericResult2> {
+        public T getFromSuper() {
+            return null;
+        }
+    }
+    public static class TestGenericSub extends TestGenericSuper<TestGenericResult3>
+            implements TestGenericInterfaceSub<TestGenericResult4> {
+    }
+
+    public void testGenericReturnTypeResolution() throws Exception {
+        final String[] resultVarsUsed = new String[] {"genericSub"};
+
+        String expression = "genericSub.getFromInterfaceSuper()";
+        check(expression, expression, TestGenericResult1.class, resultVarsUsed);
+        expression = "genericSub.getFromInterfaceForSuper()";
+        check(expression, expression, TestGenericResult2.class, resultVarsUsed);
+        expression = "genericSub.getFromSuper()";
+        check(expression, expression, TestGenericResult3.class, resultVarsUsed);
+        expression = "genericSub.getFromInterfaceSub()";
+        check(expression, expression, TestGenericResult4.class, resultVarsUsed);
     }
 
     @SuppressWarnings("SameParameterValue")

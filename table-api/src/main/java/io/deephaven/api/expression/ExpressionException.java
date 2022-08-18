@@ -1,14 +1,14 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.exceptions;
+package io.deephaven.api.expression;
 
 /**
  * An unchecked exception indicating a problem with a parsed expression, for example in
- * {@link io.deephaven.engine.table.Table#where(String...)} or
- * {@link io.deephaven.engine.table.Table#update(String...)}.
+ * {@link io.deephaven.api.TableOperations#where(String...)} or
+ * {@link io.deephaven.api.TableOperations#update(String...)}.
  */
-public class ExpressionException extends UncheckedTableException {
+public class ExpressionException extends RuntimeException {
 
     final String problemExpression;
 

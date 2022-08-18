@@ -13,6 +13,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -23,6 +24,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static io.deephaven.api.TableOperationsBase.splitToCollection;
 
 public abstract class TableBase implements TableSpec {
 
@@ -245,9 +248,10 @@ public abstract class TableBase implements TableSpec {
     @Override
     public final AsOfJoinTable aj(TableSpec rightTable, String columnsToMatch) {
         AsOfJoinTable.Builder builder = AsOfJoinTable.builder().left(this).right(rightTable);
-        for (String match : split(columnsToMatch)) {
-            builder.addMatches(JoinMatch.parse(match));
-        }
+        AsOfJoinMatchFactory.AsOfJoinResult result =
+                AsOfJoinMatchFactory.getAjExpressions(splitToCollection(columnsToMatch));
+        builder.addMatches(result.matches);
+        builder.rule(result.rule);
         return builder.build();
     }
 
@@ -255,9 +259,10 @@ public abstract class TableBase implements TableSpec {
     public final AsOfJoinTable aj(TableSpec rightTable, String columnsToMatch,
             String columnsToAdd) {
         AsOfJoinTable.Builder builder = AsOfJoinTable.builder().left(this).right(rightTable);
-        for (String match : split(columnsToMatch)) {
-            builder.addMatches(JoinMatch.parse(match));
-        }
+        AsOfJoinMatchFactory.AsOfJoinResult result =
+                AsOfJoinMatchFactory.getAjExpressions(splitToCollection(columnsToMatch));
+        builder.addMatches(result.matches);
+        builder.rule(result.rule);
         for (String addition : split(columnsToAdd)) {
             builder.addAdditions(JoinAddition.parse(addition));
         }
@@ -284,6 +289,10 @@ public abstract class TableBase implements TableSpec {
     public final ReverseAsOfJoinTable raj(TableSpec rightTable, String columnsToMatch) {
         ReverseAsOfJoinTable.Builder builder =
                 ReverseAsOfJoinTable.builder().left(this).right(rightTable);
+        AsOfJoinMatchFactory.ReverseAsOfJoinResult result =
+                AsOfJoinMatchFactory.getRajExpressions(splitToCollection(columnsToMatch));
+        builder.addMatches(result.matches);
+        builder.rule(result.rule);
         for (String match : split(columnsToMatch)) {
             builder.addMatches(JoinMatch.parse(match));
         }
@@ -295,9 +304,10 @@ public abstract class TableBase implements TableSpec {
             String columnsToAdd) {
         ReverseAsOfJoinTable.Builder builder =
                 ReverseAsOfJoinTable.builder().left(this).right(rightTable);
-        for (String match : split(columnsToMatch)) {
-            builder.addMatches(JoinMatch.parse(match));
-        }
+        AsOfJoinMatchFactory.ReverseAsOfJoinResult result =
+                AsOfJoinMatchFactory.getRajExpressions(splitToCollection(columnsToMatch));
+        builder.addMatches(result.matches);
+        builder.rule(result.rule);
         for (String addition : split(columnsToAdd)) {
             builder.addAdditions(JoinAddition.parse(addition));
         }

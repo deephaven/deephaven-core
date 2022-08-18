@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import com.google.common.collect.Lists;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
@@ -12,7 +13,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.iterators.*;
-import io.deephaven.engine.table.impl.select.AjMatchPairFactory;
+import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
 import io.deephaven.engine.util.TableTools;
@@ -390,12 +391,12 @@ public interface TableBase extends Table, TableOperationsBase<Table, Table> {
     @Override
     @FinalDefault
     default Table aj(Table rightTable, Collection<String> columnsToMatch) {
-        Pair<MatchPair[], AsOfMatchRule> expressions = AjMatchPairFactory.getExpressions(false, columnsToMatch);
+        AsOfJoinMatchFactory.AsOfJoinResult result = AsOfJoinMatchFactory.getAjExpressions(columnsToMatch);
         return aj(
                 rightTable,
-                expressions.getFirst(),
+                MatchPair.fromMatches(List.of(result.matches)),
                 MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                expressions.getSecond());
+                AsOfMatchRule.of(result.rule));
     }
 
     @Override
@@ -418,12 +419,12 @@ public interface TableBase extends Table, TableOperationsBase<Table, Table> {
     @Override
     @FinalDefault
     default Table raj(Table rightTable, Collection<String> columnsToMatch) {
-        Pair<MatchPair[], AsOfMatchRule> expressions = AjMatchPairFactory.getExpressions(true, columnsToMatch);
+        AsOfJoinMatchFactory.ReverseAsOfJoinResult result = AsOfJoinMatchFactory.getRajExpressions(columnsToMatch);
         return raj(
                 rightTable,
-                expressions.getFirst(),
+                MatchPair.fromMatches(List.of(result.matches)),
                 MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                expressions.getSecond());
+                AsOfMatchRule.of(result.rule));
     }
 
     @Override

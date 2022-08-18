@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.util;
+package io.deephaven.api.expression;
 
 public abstract class AbstractExpressionFactory<T> implements ExpressionFactory<T> {
     private final String pattern;

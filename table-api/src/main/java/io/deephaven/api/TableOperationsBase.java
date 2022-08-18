@@ -5,6 +5,7 @@ package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -164,13 +165,17 @@ public interface TableOperationsBase<TOPS extends TableOperations<TOPS, TABLE>, 
 
     @Override
     default TOPS aj(TABLE rightTable, String columnsToMatch) {
-        return aj(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)), Collections.emptyList());
+        final AsOfJoinMatchFactory.AsOfJoinResult result =
+                AsOfJoinMatchFactory.getAjExpressions(splitToCollection(columnsToMatch));
+        return aj(rightTable, Arrays.asList(result.matches), Collections.emptyList(), result.rule);
     }
 
     @Override
     default TOPS aj(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
-        return aj(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)),
-                JoinAddition.from(splitToCollection(columnsToAdd)));
+        final AsOfJoinMatchFactory.AsOfJoinResult result =
+                AsOfJoinMatchFactory.getAjExpressions(splitToCollection(columnsToMatch));
+        return aj(rightTable, Arrays.asList(result.matches), JoinAddition.from(splitToCollection(columnsToAdd)),
+                result.rule);
     }
 
     @Override
@@ -183,13 +188,17 @@ public interface TableOperationsBase<TOPS extends TableOperations<TOPS, TABLE>, 
 
     @Override
     default TOPS raj(TABLE rightTable, String columnsToMatch) {
-        return raj(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)), Collections.emptyList());
+        final AsOfJoinMatchFactory.ReverseAsOfJoinResult result =
+                AsOfJoinMatchFactory.getRajExpressions(splitToCollection(columnsToMatch));
+        return raj(rightTable, Arrays.asList(result.matches), Collections.emptyList(), result.rule);
     }
 
     @Override
     default TOPS raj(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
-        return raj(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)),
-                JoinAddition.from(splitToCollection(columnsToAdd)));
+        final AsOfJoinMatchFactory.ReverseAsOfJoinResult result =
+                AsOfJoinMatchFactory.getRajExpressions(splitToCollection(columnsToMatch));
+        return raj(rightTable, Arrays.asList(result.matches), JoinAddition.from(splitToCollection(columnsToAdd)),
+                result.rule);
     }
 
     @Override
