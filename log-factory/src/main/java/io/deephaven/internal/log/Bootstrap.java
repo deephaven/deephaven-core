@@ -11,7 +11,7 @@ class Bootstrap {
 
     public static void log(Class<?> source, String message) {
         if (isEnabled()) {
-            System.err.printf("# %s: %s%n", source.getName(), message);
+            System.out.printf("# %s: %s%n", source.getName(), message);
         }
     }
 }
