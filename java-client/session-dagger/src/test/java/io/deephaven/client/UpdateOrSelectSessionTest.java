@@ -58,12 +58,6 @@ public class UpdateOrSelectSessionTest extends DeephavenSessionTestBase {
                 return spec.lazyUpdate(formulas);
             }
         },
-        // SELECT_DISTINCT {
-        // @Override
-        // public TableSpec apply(TableSpec spec, String[] formulas) {
-        // return spec.selectDistinct(formulas);
-        // }
-        // }
     }
 
     private final UpdateOrSelect method;
