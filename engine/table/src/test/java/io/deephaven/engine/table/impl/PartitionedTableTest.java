@@ -32,6 +32,7 @@ import junit.framework.TestCase;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -89,29 +90,35 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testMergePopulate() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-implement once populate keys is replaced
-        /*
-         * final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(), c("Sym", "aa", "bb",
-         * "aa", "bb"), c("intCol", 10, 20, 40, 60), c("doubleCol", 0.1, 0.2, 0.4, 0.6));
-         * 
-         * final Table withK = queryTable.update("K=k");
-         * 
-         * final PartitionedTable partitionedTable = withK.partitionBy("Sym"); partitionedTable.populateKeys("cc",
-         * "dd");
-         * 
-         * final Table merged = partitionedTable.merge(); final Table mergedByK = merged.sort("K");
-         * 
-         * if (printTableUpdates) { TableTools.show(withK); TableTools.show(mergedByK); }
-         * 
-         * assertEquals("", TableTools.diff(mergedByK, withK, 10));
-         * 
-         * UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> { addToTable(queryTable, i(3, 9), c("Sym", "cc",
-         * "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9)); queryTable.notifyListeners(i(3, 9), i(), i()); });
-         * 
-         * if (printTableUpdates) { TableTools.show(withK); TableTools.show(mergedByK); }
-         * 
-         * assertEquals("", TableTools.diff(mergedByK, withK, 10));
-         */
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+                c("Sym", "aa", "bb", "aa", "bb"), c("intCol", 10, 20, 40, 60), c("doubleCol", 0.1, 0.2, 0.4, 0.6));
+
+        final Table withK = queryTable.update("K=k");
+
+        final QueryTable keyTable = TstUtils.testTable(c("Sym", "cc", "dd"));
+        final PartitionedTable partitionedTable = withK.partitionedAggBy(List.of(), true, keyTable, "Sym");
+
+        final Table merged = partitionedTable.merge();
+        final Table mergedByK = merged.sort("K");
+
+        if (printTableUpdates) {
+            TableTools.show(withK);
+            TableTools.show(mergedByK);
+        }
+
+        assertEquals("", TableTools.diff(mergedByK, withK, 10));
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            addToTable(queryTable, i(3, 9), c("Sym", "cc", "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9));
+            queryTable.notifyListeners(i(3, 9), i(), i());
+        });
+
+        if (printTableUpdates) {
+            TableTools.show(withK);
+            TableTools.show(mergedByK);
+        }
+
+        assertEquals("", TableTools.diff(mergedByK, withK, 10));
     }
 
     public void testMergeIncremental() {
@@ -133,16 +140,18 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                         new TstUtils.IntGenerator(0, 20),
                         new TstUtils.DoubleGenerator(0, 100)));
 
-        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-add key initialization
         final EvalNugget en[] = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        return table.partitionBy("Sym").merge().sort("Sym");
+                        return table.partitionedAggBy(List.of(), true, testTable(c("Sym", syms)), "Sym")
+                                .merge().sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.partitionBy("intCol").merge().sort("intCol");
+                        return table.partitionedAggBy(List.of(), true,
+                                testTable(intCol("intCol", IntStream.rangeClosed(0, 20).toArray())), "intCol")
+                                .merge().sort("intCol");
                     }
                 },
         };
@@ -195,21 +204,19 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
                 new TstUtils.IntGenerator(100, 200)));
 
-        final PartitionedTable leftPT = withK.partitionBy("Sym");
-        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-add key initialization
-        // leftPT.populateKeys("aa", "bb", "cc", "dd");
+        final PartitionedTable leftPT =
+                withK.partitionedAggBy(List.of(), true, testTable(c("Sym", "aa", "bb", "cc", "dd")), "Sym");
         final PartitionedTable.Proxy leftProxy = leftPT.proxy(false, false);
 
-        final PartitionedTable rightPT = rightTable.partitionBy("Sym");
-        // TODO (https://github.com/deephaven/deephaven-core/issues/2416): Re-add key initialization
-        // rightPT.populateKeys("aa", "bb", "cc", "dd");
+        final PartitionedTable rightPT =
+                rightTable.partitionedAggBy(List.of(), true, testTable(c("Sym", "aa", "bb", "cc", "dd")), "Sym");
         final PartitionedTable.Proxy rightProxy = rightPT.proxy(false, false);
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return table.update("K=Indices").partitionBy("Sym")
-                                // .populateKeys("aa", "bb", "cc", "dd")
+                        return table.update("K=Indices")
+                                .partitionedAggBy(List.of(), true, testTable(c("Sym", "aa", "bb", "cc", "dd")), "Sym")
                                 .proxy(false, false)
                                 .update("K2=Indices*2")
                                 .select("K", "K2", "Half=doubleCol/2", "Sq=doubleCol*doubleCol",

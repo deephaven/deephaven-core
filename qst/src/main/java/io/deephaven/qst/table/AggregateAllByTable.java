@@ -17,7 +17,7 @@ import java.util.Set;
 
 @Immutable
 @NodeStyle
-public abstract class AggregateAllByTable extends ByTableBase {
+public abstract class AggregateAllByTable extends ByTableBase implements SingleParentTable {
 
     public static Builder builder() {
         return ImmutableAggregateAllByTable.builder();

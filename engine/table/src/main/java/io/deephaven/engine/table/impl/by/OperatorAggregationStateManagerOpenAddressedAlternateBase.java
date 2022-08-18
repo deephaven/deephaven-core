@@ -14,32 +14,39 @@ import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.P
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.*;
-import static io.deephaven.util.SafeCloseable.closeArray;
 
 public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         implements OperatorAggregationStateManager {
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
 
-    // the number of slots in our table
+    /** The number of slots in our table. */
     protected int tableSize;
-    // the number of slots in our alternate table, to start with "1" is a lie, but rehashPointer is zero; so our
-    // location value is positive and can be compared against rehashPointer safely
+
+    /**
+     * The number of slots in our alternate table, to start with "1" is a lie, but rehashPointer is zero; so our
+     * location value is positive and can be compared against rehashPointer safely
+     */
     protected int alternateTableSize = 1;
 
-    // how much of the alternate sources are necessary to rehash?
+    /** Should we rehash the entire table fully ({@code true}) or incrementally ({@code false})? */
+    protected boolean fullRehash = true;
+
+    /** How much of the alternate sources are necessary to rehash? */
     protected int rehashPointer = 0;
 
     protected long numEntries = 0;
 
-    // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
-    // or if it falls below minimum load factor we will instead contract the table
+    /**
+     * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor or if
+     * it falls below minimum load factor we will instead contract the table.
+     */
     private final double maximumLoadFactor;
 
-    // the keys for our hash entries
+    /** The keys for our hash entries. */
     protected final WritableColumnSource[] mainKeySources;
 
-    // the keys for our hash entries, for the old alternative smaller table
+    /** The keys for our hash entries, for the old alternative smaller table. */
     protected final ColumnSource[] alternateKeySources;
 
     protected OperatorAggregationStateManagerOpenAddressedAlternateBase(ColumnSource<?>[] tableKeySources,
@@ -59,6 +66,11 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         }
 
         this.maximumLoadFactor = maximumLoadFactor;
+    }
+
+    @Override
+    public final int maxTableSize() {
+        return Math.toIntExact(MAX_TABLE_SIZE);
     }
 
     protected abstract void build(RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
@@ -85,7 +97,6 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
-            final boolean fullRehash,
             final BuildHandler buildHandler) {
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
@@ -95,7 +106,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
                 onNextChunk(nextChunkSize);
-                while (doRehash(fullRehash, bc.rehashCredits, nextChunkSize)) {
+                while (doRehash(bc.rehashCredits, nextChunkSize)) {
                     migrateFront();
                 }
 
@@ -152,12 +163,11 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
     }
 
     /**
-     * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
      * @param rehashCredits the number of entries this operation has rehashed (input/output)
      * @param nextChunkSize the size of the chunk we are processing
      * @return true if a front migration is required
      */
-    public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
+    public boolean doRehash(MutableInt rehashCredits, int nextChunkSize) {
         if (rehashPointer > 0) {
             final int requiredRehash = nextChunkSize - rehashCredits.intValue();
             if (requiredRehash <= 0) {

@@ -257,9 +257,11 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     @Override
     public void visit(AggregationTable aggregationTable) {
         if (aggregationTable.groupByColumns().isEmpty()) {
-            addOp(aggregationTable, parentOps(aggregationTable).aggBy(aggregationTable.aggregations()));
+            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(aggregationTable.aggregations(),
+                    aggregationTable.preserveEmpty()));
         } else {
-            addOp(aggregationTable, parentOps(aggregationTable).aggBy(aggregationTable.aggregations(),
+            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(aggregationTable.aggregations(),
+                    aggregationTable.preserveEmpty(), aggregationTable.initialGroups().map(this::table).orElse(null),
                     aggregationTable.groupByColumns()));
         }
     }

@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
@@ -26,7 +27,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggregationOperator {
+public class SortedFirstOrLastChunkedOperator
+        extends BasicStateChangeRecorder
+        implements IterativeChunkedAggregationOperator {
     private final ChunkType chunkType;
     private final boolean isFirst;
     private final Supplier<SegmentedSortedArray> ssaFactory;
@@ -416,6 +419,9 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
         ssa.insert(values, indices);
         final long newValue = isFirst ? ssa.getFirst() : ssa.getLast();
         final long oldValue = redirections.getAndSetUnsafe(destination, newValue);
+        if (oldValue == RowSequence.NULL_ROW_KEY && newValue != RowSequence.NULL_ROW_KEY) {
+            onReincarnated(destination);
+        }
         return oldValue != newValue;
     }
 
@@ -432,6 +438,9 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
         ssa.remove(values, indices);
         final long newValue = isFirst ? ssa.getFirst() : ssa.getLast();
         final long oldValue = redirections.getAndSetUnsafe(destination, newValue);
+        if (oldValue != RowSequence.NULL_ROW_KEY && newValue == RowSequence.NULL_ROW_KEY) {
+            onEmptied(destination);
+        }
         return oldValue != newValue;
     }
 
