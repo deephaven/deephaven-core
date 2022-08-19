@@ -460,6 +460,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         private int nextRangeIdx = 0;
         private long rangeCurr = -1;
         private long rangeEnd = -1;
+        private long cachedNextValue;
         private SortedRanges sar;
 
         private Iterator(final SortedRanges sar) {
@@ -469,6 +470,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
             sar.acquire();
             this.sar = sar;
+            // preload the cached value for the first call, reload after every change to `nextRangeIdx`
+            cachedNextValue = sar.unpackedGet(nextRangeIdx);
         }
 
         @Override
@@ -485,18 +488,21 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
 
         private void nextRange() {
-            rangeCurr = sar.unpackedGet(nextRangeIdx);
+            rangeCurr = cachedNextValue;
             if (++nextRangeIdx == sar.count) {
                 rangeEnd = rangeCurr;
                 close();
                 return;
             }
-            final long after = sar.unpackedGet(nextRangeIdx);
-            if (after < 0) {
-                rangeEnd = -after;
+            // this is the "hot" path for which we are optimizing
+            cachedNextValue = sar.unpackedGet(nextRangeIdx);
+            if (cachedNextValue < 0) {
+                rangeEnd = -cachedNextValue;
                 ++nextRangeIdx;
                 if (nextRangeIdx == sar.count) {
                     close();
+                } else {
+                    cachedNextValue = sar.unpackedGet(nextRangeIdx);
                 }
             } else {
                 rangeEnd = rangeCurr;
@@ -520,6 +526,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         protected int nextRangeIdx = 0;
         protected long currRangeStart = -1;
         protected long currRangeEnd = -1;
+        protected long cachedNextValue;
         protected SortedRanges sar;
 
         protected RangeIteratorBase(final SortedRanges sar) {
@@ -529,21 +536,25 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
             sar.acquire();
             this.sar = sar;
+            cachedNextValue = sar.unpackedGet(nextRangeIdx);
         }
 
         protected final void nextRange() {
-            currRangeStart = sar.unpackedGet(nextRangeIdx);
+            currRangeStart = cachedNextValue;
             if (++nextRangeIdx == sar.count) {
                 currRangeEnd = currRangeStart;
                 closeImpl();
                 return;
             }
-            final long after = sar.unpackedGet(nextRangeIdx);
-            if (after < 0) {
-                currRangeEnd = -after;
+            // this is the "hot" path for which we are optimizing
+            cachedNextValue = sar.unpackedGet(nextRangeIdx);
+            if (cachedNextValue < 0) {
+                currRangeEnd = -cachedNextValue;
                 ++nextRangeIdx;
                 if (nextRangeIdx == sar.count) {
                     closeImpl();
+                } else {
+                    cachedNextValue = sar.unpackedGet(nextRangeIdx);
                 }
                 return;
             }
@@ -590,14 +601,18 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 nextRangeIdx = sar.count;
                 return true;
             }
-            final long after = sar.unpackedGet(p);
-            if (after < 0) {
-                currRangeEnd = -after;
+            cachedNextValue = sar.unpackedGet(p);
+            if (cachedNextValue < 0) {
+                currRangeEnd = -cachedNextValue;
                 nextRangeIdx = p + 1;
+                if (nextRangeIdx < sar.count) {
+                    cachedNextValue = sar.unpackedGet(nextRangeIdx);
+                }
                 return true;
             }
             currRangeEnd = currRangeStart;
             nextRangeIdx = p;
+            cachedNextValue = sar.unpackedGet(nextRangeIdx);
             return true;
         }
 
@@ -793,6 +808,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             if (neg) {
                 currRangeStart = currRangeEnd = -data;
                 nextRangeIdx = i + 1;
+                cachedNextValue = sar.unpackedGet(nextRangeIdx);
                 return currRangeStart;
             }
             final int next = i + 1;
@@ -809,10 +825,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         (final long v) -> comp.compareTargetTo(v, dir));
                 currRangeEnd = -nextData;
                 nextRangeIdx = next + 1;
+                cachedNextValue = sar.unpackedGet(nextRangeIdx);
                 return currRangeStart;
             }
             currRangeStart = currRangeEnd = data;
             nextRangeIdx = next;
+            cachedNextValue = sar.unpackedGet(nextRangeIdx);
             return currRangeStart;
         }
     }
