@@ -291,12 +291,4 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
         releasedAll = true;
         super.onReleaseAll();
     }
-
-    @Override
-    public AutoTuningIncrementalReleaseFilter copy() {
-        final AutoTuningIncrementalReleaseFilter copy = new AutoTuningIncrementalReleaseFilter(getInitialSize(),
-                initialRelease, targetFactor, verbose, timeProvider);
-        onCopy(copy);
-        return copy;
-    }
 }

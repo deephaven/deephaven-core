@@ -56,6 +56,7 @@ public class DateTimeRangeFilter extends LongRangeFilter {
         final DateTimeRangeFilter copy =
                 new DateTimeRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
         copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
         return copy;
     }
 

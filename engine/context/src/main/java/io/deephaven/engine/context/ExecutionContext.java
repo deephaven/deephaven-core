@@ -168,7 +168,7 @@ public class ExecutionContext {
 
         /**
          * A systemic execution context is one that is supplied by the system and not the user. A systemic context will
-         * not be recorded when work is deferred
+         * not be recorded when work is deferred.
          */
         @ScriptApi
         public Builder markSystemic() {
@@ -259,6 +259,10 @@ public class ExecutionContext {
 
         /**
          * Use the current ExecutionContext's QueryScope instance.
+         * <p>
+         * 
+         * @apiNote This captures a reference to the current, likely mutable, query scope state. Future changes to the
+         *          query scope may cause deferred operations to fail. Additionally, if the QueryScope
          */
         @ScriptApi
         public Builder captureQueryScope() {
@@ -274,8 +278,7 @@ public class ExecutionContext {
         @ScriptApi
         public Builder captureQueryScopeVars(String... vars) {
             if (vars.length == 0) {
-                this.queryScope = EmptyQueryScope.INSTANCE;
-                return this;
+                return newQueryScope();
             }
 
             this.queryScope = new QueryScope.StandaloneImpl();

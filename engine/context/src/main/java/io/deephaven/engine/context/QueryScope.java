@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.context;
 
-import io.deephaven.base.CompareUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.Period;
@@ -58,13 +57,6 @@ public abstract class QueryScope implements LogOutputAppendable {
     // -----------------------------------------------------------------------------------------------------------------
     // Implementation
     // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * Parameter name for the query name.
-     */
-    public static final String QUERY_NAME_PARAM_NAME = "__QUERY_NAME__";
-
-    private volatile String queryNameValue;
 
     /**
      * A type of RuntimeException thrown when a variable referenced within the {@link QueryScope} is not defined or,
@@ -202,32 +194,6 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @param object object to add public members from.
      */
     public abstract void putObjectFields(final Object object);
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Accessors for "special" scope variables
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * Gets the query name.
-     *
-     * @return query name.
-     */
-    public final String getQueryName() {
-        return queryNameValue;
-    }
-
-    /**
-     * Sets the query name.
-     *
-     * @param queryName query name.
-     */
-    public void setQueryName(String queryName) {
-        if (CompareUtils.equals(queryName, queryNameValue)) {
-            return;
-        }
-        putParam(QUERY_NAME_PARAM_NAME, queryName);
-        queryNameValue = queryName;
-    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // LogOutputAppendable implementation

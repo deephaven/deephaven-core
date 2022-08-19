@@ -180,11 +180,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     @Override
     public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        if (columnDefinitions != null) {
+        if (formulaFactory != null) {
             validateColumnDefinition(columnDefinitionMap);
             return formulaColumnPython != null ? formulaColumnPython.usedColumns : usedColumns;
         }
-        columnDefinitions = columnDefinitionMap;
 
         try {
             final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(formulaString);
@@ -196,7 +195,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             log.debug().append("Expression (after language conversion) : ").append(analyzedFormula.cookedFormulaString)
                     .endl();
 
-            applyUsedVariables(result.getVariablesUsed());
+            applyUsedVariables(columnDefinitionMap, result.getVariablesUsed());
             returnedType = result.getType();
             if (returnedType == boolean.class) {
                 returnedType = Boolean.class;
@@ -718,7 +717,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @Override
     public SelectColumn copy() {
         final DhFormulaColumn copy = new DhFormulaColumn(columnName, formulaString);
-        if (analyzedFormula != null) {
+        if (formulaFactory != null) {
             copy.analyzedFormula = analyzedFormula;
             copy.returnedType = returnedType;
             copy.formulaColumnPython = formulaColumnPython;

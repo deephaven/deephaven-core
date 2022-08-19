@@ -461,7 +461,7 @@ public class TestEma extends BaseUpdateByTest {
 
     // endregion
 
-    private void computeEma(TableBase source,
+    private void computeEma(TableDefaults source,
             final String tsCol,
             long scale,
             OperationControl control,

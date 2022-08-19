@@ -42,14 +42,13 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     @Override
     public final List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        if (!initialized) {
-            initialized = true;
-            returnedType = dcf.getReturnedType();
-            columnDefinitions = columnDefinitionMap;
-            applyUsedVariables(new LinkedHashSet<>(dcf.getColumnNames()));
-            formulaFactory = createKernelFormulaFactory(this);
-        } else {
+        if (initialized) {
             validateColumnDefinition(columnDefinitionMap);
+        } else {
+            returnedType = dcf.getReturnedType();
+            applyUsedVariables(columnDefinitionMap, new LinkedHashSet<>(dcf.getColumnNames()));
+            formulaFactory = createKernelFormulaFactory(this);
+            initialized = true;
         }
 
         return usedColumns;
@@ -83,9 +82,9 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
         final FormulaColumnPython copy = new FormulaColumnPython(columnName, dcf);
         if (initialized) {
             // copy all initDef state
-            copy.initialized = true;
             copy.returnedType = returnedType;
             onCopy(copy);
+            copy.initialized = true;
         }
         return copy;
     }

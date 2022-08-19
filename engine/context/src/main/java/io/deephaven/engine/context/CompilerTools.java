@@ -168,12 +168,44 @@ public class CompilerTools {
     private static class ContextImpl implements Context {
         private final Map<String, CompletableFuture<Class<?>>> knownClasses = new HashMap<>();
 
+        String[] dynamicPatterns = new String[] {DYNAMIC_GROOVY_CLASS_PREFIX, FORMULA_PREFIX};
+
+        private final File classDestination;
+        private final boolean isCacheDirectory;
+        private final Set<File> additionalClassLocations;
+        private volatile WritableURLClassLoader ucl;
+
+        private ContextImpl(File classDestination) {
+            this(classDestination, Context.class.getClassLoader(), false);
+        }
+
+        private ContextImpl(File classDestination, ClassLoader parentClassLoader, boolean isCacheDirectory) {
+            this.classDestination = classDestination;
+            this.isCacheDirectory = isCacheDirectory;
+            ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
+                    classDestination.getAbsolutePath());
+            additionalClassLocations = new LinkedHashSet<>();
+
+            URL[] urls = new URL[1];
+            try {
+                urls[0] = (classDestination.toURI().toURL());
+            } catch (MalformedURLException e) {
+                throw new RuntimeException("", e);
+            }
+            // We should be able to create this class loader, even if this is invoked from external code
+            // that does not have sufficient security permissions.
+            this.ucl = doPrivileged((PrivilegedAction<WritableURLClassLoader>) () -> new WritableURLClassLoader(urls,
+                    parentClassLoader));
+
+            if (isCacheDirectory) {
+                addClassSource(classDestination);
+            }
+        }
+
         @Override
         public Map<String, CompletableFuture<Class<?>>> getKnownClasses() {
             return knownClasses;
         }
-
-        String[] dynamicPatterns = new String[] {DYNAMIC_GROOVY_CLASS_PREFIX, FORMULA_PREFIX};
 
         @Override
         public ClassLoader getClassLoaderForFormula(final Map<String, Class<?>> parameterClasses) {
@@ -297,38 +329,6 @@ public class CompilerTools {
             }
         }
 
-        private final File classDestination;
-        private final boolean isCacheDirectory;
-        private final Set<File> additionalClassLocations;
-        private volatile WritableURLClassLoader ucl;
-
-        private ContextImpl(File classDestination) {
-            this(classDestination, Context.class.getClassLoader(), false);
-        }
-
-        private ContextImpl(File classDestination, ClassLoader parentClassLoader, boolean isCacheDirectory) {
-            this.classDestination = classDestination;
-            this.isCacheDirectory = isCacheDirectory;
-            ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
-                    classDestination.getAbsolutePath());
-            additionalClassLocations = new LinkedHashSet<>();
-
-            URL[] urls = new URL[1];
-            try {
-                urls[0] = (classDestination.toURI().toURL());
-            } catch (MalformedURLException e) {
-                throw new RuntimeException("", e);
-            }
-            // We should be able to create this class loader, even if this is invoked from external code
-            // that does not have sufficient security permissions.
-            this.ucl = doPrivileged((PrivilegedAction<WritableURLClassLoader>) () -> new WritableURLClassLoader(urls,
-                    parentClassLoader));
-
-            if (isCacheDirectory) {
-                addClassSource(getFakeClassDestination());
-            }
-        }
-
         protected void addClassSource(File classSourceDirectory) {
             synchronized (additionalClassLocations) {
                 if (additionalClassLocations.contains(classSourceDirectory)) {
@@ -360,11 +360,6 @@ public class CompilerTools {
 
         public String getClassPath() {
             StringBuilder sb = new StringBuilder();
-            if (isCacheDirectory) {
-                // TODO: why two copies of classDestination in the generated path?
-                sb.append(classDestination.getAbsolutePath()).append(File.pathSeparatorChar);
-            }
-
             sb.append(classDestination.getAbsolutePath());
             synchronized (additionalClassLocations) {
                 for (File classLoc : additionalClassLocations) {

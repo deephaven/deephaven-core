@@ -245,7 +245,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open();
+        try (final SafeCloseable ignored1 = executionContext == null ? null : executionContext.open();
                 final SafeCloseable ignored2 = LivenessScopeStack.open()) {
 
             // Perform the transformation
@@ -286,7 +286,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open();
+        try (final SafeCloseable ignored1 = executionContext == null ? null : executionContext.open();
                 final SafeCloseable ignored2 = LivenessScopeStack.open()) {
             // Perform the transformation
             final MatchPair[] joinAdditions =

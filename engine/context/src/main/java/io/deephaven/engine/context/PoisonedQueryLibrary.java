@@ -10,6 +10,8 @@ public class PoisonedQueryLibrary extends QueryLibrary {
     private static final Logger logger = LoggerFactory.getLogger(PoisonedQueryScope.class);
     public static final PoisonedQueryLibrary INSTANCE = new PoisonedQueryLibrary();
 
+    private PoisonedQueryLibrary() {}
+
     private <T> T fail() {
         logger.error().append("No ExecutionContext provided; cannot use QueryLibrary").endl();
         throw new NoExecutionContextRegisteredException();

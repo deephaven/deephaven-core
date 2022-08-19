@@ -24,11 +24,4 @@ public class IncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
     long getSizeIncrement() {
         return sizeIncrement;
     }
-
-    @Override
-    public IncrementalReleaseFilter copy() {
-        final IncrementalReleaseFilter copy = new IncrementalReleaseFilter(getInitialSize(), sizeIncrement);
-        onCopy(copy);
-        return copy;
-    }
 }

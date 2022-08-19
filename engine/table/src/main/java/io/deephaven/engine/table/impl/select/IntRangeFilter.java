@@ -78,6 +78,7 @@ public class IntRangeFilter extends AbstractRangeFilter {
     public IntRangeFilter copy() {
         final IntRangeFilter copy = new IntRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
         copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
         return copy;
     }
 

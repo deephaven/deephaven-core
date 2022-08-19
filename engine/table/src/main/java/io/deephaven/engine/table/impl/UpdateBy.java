@@ -25,7 +25,7 @@ import java.util.*;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 /**
- * The core of the {@link TableBase#updateBy(UpdateByControl, Collection, Collection)} operation.
+ * The core of the {@link Table#updateBy(UpdateByControl, Collection, Collection)} operation.
  */
 public abstract class UpdateBy {
     protected final ChunkSource.WithPrev<Values>[] inputSources;

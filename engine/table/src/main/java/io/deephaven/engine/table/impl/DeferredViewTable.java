@@ -41,12 +41,13 @@ public class DeferredViewTable extends RedefinableTable {
                 deferredDropColumns == null ? CollectionUtil.ZERO_LENGTH_STRING_ARRAY : deferredDropColumns;
         this.deferredViewColumns =
                 deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY : deferredViewColumns;
+        final TableDefinition parentDefinition = tableReference.getDefinition();
         for (final SelectColumn sc : this.deferredViewColumns) {
-            sc.initDef(tableReference.getDefinition().getColumnNameMap());
+            sc.initDef(parentDefinition.getColumnNameMap());
         }
         this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY : deferredFilters;
         for (final WhereFilter sf : this.deferredFilters) {
-            sf.init(definition);
+            sf.init(parentDefinition);
             if (sf instanceof LivenessReferent) {
                 manage((LivenessReferent) sf);
             }
@@ -103,8 +104,7 @@ public class DeferredViewTable extends RedefinableTable {
             localResult = ((DeferredViewTable) localResult)
                     .getResultTableWithWhere(tableAndRemainingFilters.remainingFilters);
         } else {
-            localResult = localResult.where(Arrays.stream(tableAndRemainingFilters.remainingFilters)
-                    .map(WhereFilter::copy).toArray(WhereFilter[]::new));
+            localResult = localResult.where(WhereFilter.copyFrom(tableAndRemainingFilters.remainingFilters));
         }
 
         localResult = applyDeferredViews(localResult);
@@ -126,9 +126,7 @@ public class DeferredViewTable extends RedefinableTable {
             result = result.dropColumns(deferredDropColumns);
         }
         if (deferredViewColumns.length > 0) {
-            result = result.view(Arrays.stream(deferredViewColumns)
-                    .map(SelectColumn::copy)
-                    .toArray(SelectColumn[]::new));
+            result = result.view(SelectColumn.copyFrom(deferredViewColumns));
         }
         return result;
     }

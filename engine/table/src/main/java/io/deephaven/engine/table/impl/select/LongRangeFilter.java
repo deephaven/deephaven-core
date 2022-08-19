@@ -78,6 +78,7 @@ public class LongRangeFilter extends AbstractRangeFilter {
     public LongRangeFilter copy() {
         final LongRangeFilter copy = new LongRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
         copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
         return copy;
     }
 

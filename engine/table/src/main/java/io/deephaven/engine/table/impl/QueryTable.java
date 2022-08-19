@@ -1218,7 +1218,7 @@ public class QueryTable extends BaseTable {
      * DO NOT USE -- this API is in flux and may change or disappear in the future.
      */
     public SelectValidationResult validateSelect(final SelectColumn... selectColumns) {
-        final SelectColumn[] clones = Arrays.stream(selectColumns).map(SelectColumn::copy).toArray(SelectColumn[]::new);
+        final SelectColumn[] clones = SelectColumn.copyFrom(selectColumns);
         SelectAndViewAnalyzer analyzer = SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.SELECT_STATIC, columns,
                 rowSet, getModifiedColumnSetForUpdates(), true, clones);
         return new SelectValidationResult(analyzer, clones);

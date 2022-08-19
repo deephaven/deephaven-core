@@ -210,14 +210,8 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     }
 
     @Override
-    abstract public BaseIncrementalReleaseFilter copy();
-
-    protected void onCopy(BaseIncrementalReleaseFilter copy) {
-        copy.started = started;
-        copy.initialized = initialized;
-        if (started && initialized) {
-            copy.addToUpdateGraphProcessor();
-        }
+    public BaseIncrementalReleaseFilter copy() {
+        throw new UnsupportedOperationException("copy cannot start the filter");
     }
 
     @Override

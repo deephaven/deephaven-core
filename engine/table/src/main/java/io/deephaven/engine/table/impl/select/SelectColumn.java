@@ -34,6 +34,10 @@ public interface SelectColumn extends Selectable {
         return selectables.stream().map(SelectColumn::of).toArray(SelectColumn[]::new);
     }
 
+    static SelectColumn[] copyFrom(SelectColumn[] selectColumns) {
+        return Arrays.stream(selectColumns).map(SelectColumn::copy).toArray(SelectColumn[]::new);
+    }
+
     /**
      * Convenient static final instance of a zero length Array of SelectColumns for use in toArray calls.
      */

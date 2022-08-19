@@ -71,6 +71,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         final SingleSidedComparableRangeFilter copy =
                 new SingleSidedComparableRangeFilter(columnName, pivot, lowerInclusive, upperInclusive);
         copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
         return copy;
     }
 

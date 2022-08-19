@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 public class QueryLibrary {
-    static final QueryLibraryImports IMPORTS_INSTANCE = QueryLibraryImports.copyFromServiceLoader();
+    private static final QueryLibraryImports IMPORTS_INSTANCE = QueryLibraryImports.copyFromServiceLoader();
 
     static QueryLibrary makeNewLibrary() {
         return new QueryLibrary(IMPORTS_INSTANCE);

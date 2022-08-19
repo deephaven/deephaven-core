@@ -75,6 +75,7 @@ public class FloatRangeFilter extends AbstractRangeFilter {
     public FloatRangeFilter copy() {
         final FloatRangeFilter copy = new FloatRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
         copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
         return copy;
     }
 

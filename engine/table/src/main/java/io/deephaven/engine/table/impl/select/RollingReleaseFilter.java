@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
@@ -24,8 +25,6 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
     private RecomputeListener listener;
     private boolean releaseMoreEntries = false;
 
-    transient private boolean addedToUpdateGraphProcessor = false;
-
     public RollingReleaseFilter(long workingSize, long rollingSize) {
         this.workingSize = workingSize;
         this.rollingSize = rollingSize;
@@ -42,16 +41,7 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
-        addToUpdateGraphProcessor();
-    }
-
-    private void addToUpdateGraphProcessor() {
-        if (!addedToUpdateGraphProcessor) {
-            UpdateGraphProcessor.DEFAULT.addSource(this);
-            addedToUpdateGraphProcessor = true;
-        }
-    }
+    public void init(TableDefinition tableDefinition) {}
 
     @Override
     public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
@@ -86,15 +76,15 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
 
     @Override
     public void setRecomputeListener(RecomputeListener listener) {
+        Assert.eqNull(this.listener, "this.listener");
         this.listener = listener;
         listener.setIsRefreshing(true);
+        UpdateGraphProcessor.DEFAULT.addSource(this);
     }
 
     @Override
     public RollingReleaseFilter copy() {
-        final RollingReleaseFilter copy = new RollingReleaseFilter(workingSize, rollingSize);
-        copy.addToUpdateGraphProcessor();
-        return copy;
+        return new RollingReleaseFilter(workingSize, rollingSize);
     }
 
     @Override

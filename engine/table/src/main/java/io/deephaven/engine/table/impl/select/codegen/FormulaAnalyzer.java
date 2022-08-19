@@ -92,7 +92,8 @@ public class FormulaAnalyzer {
             }
         }
 
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final ExecutionContext context = ExecutionContext.getContext();
+        final QueryScope queryScope = context.getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleVariables.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
 
@@ -122,12 +123,12 @@ public class FormulaAnalyzer {
         possibleVariables.putAll(timeConversionResult.getNewVariables());
 
         final Set<Class<?>> classImports =
-                new HashSet<>(ExecutionContext.getContext().getQueryLibrary().getClassImports());
+                new HashSet<>(context.getQueryLibrary().getClassImports());
         classImports.add(TrackingWritableRowSet.class);
         classImports.add(WritableColumnSource.class);
         return new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
-                ExecutionContext.getContext().getQueryLibrary().getPackageImports(),
-                classImports, ExecutionContext.getContext().getQueryLibrary().getStaticImports(), possibleVariables,
+                context.getQueryLibrary().getPackageImports(),
+                classImports, context.getQueryLibrary().getStaticImports(), possibleVariables,
                 possibleVariableParameterizedTypes)
                         .getResult();
     }

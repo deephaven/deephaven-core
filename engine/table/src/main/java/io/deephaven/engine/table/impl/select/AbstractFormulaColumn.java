@@ -24,6 +24,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.*;
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * A SelectColumn that implements a formula computed from the existing columns in the table and a query scope.
@@ -87,7 +88,9 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         return initDef(extractDefinitions(columnsOfInterest));
     }
 
-    protected void applyUsedVariables(Set<String> variablesUsed) {
+    protected void applyUsedVariables(Map<String, ColumnDefinition<?>> columnDefinitionMap, Set<String> variablesUsed) {
+        columnDefinitions = columnDefinitionMap;
+
         final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
@@ -132,15 +135,17 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     protected void validateColumnDefinition(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        for (final Map.Entry<String, ColumnDefinition<?>> entry : columnDefinitionMap.entrySet()) {
-            final String name = entry.getKey();
-            final ColumnDefinition<?> newDef = entry.getValue();
+        final Consumer<String> validateColumn = name -> {
+            final ColumnDefinition<?> newDef = columnDefinitionMap.get(name);
             final ColumnDefinition<?> origDef = columnDefinitions.get(name);
-            if (!origDef.equals(newDef)) {
-                throw new IllegalStateException("initDef must be idempotent but column changed from "
-                        + origDef + " to " + newDef);
+            if (!origDef.isCompatible(newDef)) {
+                throw new IllegalStateException("initDef must be idempotent but column '" + name + "' changed from "
+                        + origDef.describeForCompatibility() + " to " + newDef.describeForCompatibility());
             }
-        }
+        };
+
+        usedColumns.forEach(validateColumn);
+        usedColumnArrays.forEach(validateColumn);
     }
 
     @Override

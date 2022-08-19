@@ -79,6 +79,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         final ComparableRangeFilter copy =
                 new ComparableRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
         copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
         return copy;
     }
 

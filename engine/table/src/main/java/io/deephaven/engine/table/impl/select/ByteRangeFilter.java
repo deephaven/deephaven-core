@@ -78,6 +78,7 @@ public class ByteRangeFilter extends AbstractRangeFilter {
     public ByteRangeFilter copy() {
         final ByteRangeFilter copy = new ByteRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
         copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
         return copy;
     }
 

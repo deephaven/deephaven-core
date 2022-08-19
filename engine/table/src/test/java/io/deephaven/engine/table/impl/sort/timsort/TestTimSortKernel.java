@@ -182,13 +182,11 @@ public abstract class TestTimSortKernel {
 
             final List<T> javaTuples = tupleListGenerator.generate(random, size);
 
-            final SortKernelStuff<T> sortStuff = prepareFunction.apply(javaTuples);
-
-            javaTuples.sort(comparator);
-            sortStuff.run();
-
-            sortStuff.check(javaTuples);
-            sortStuff.close();
+            try (final SortKernelStuff<T> sortStuff = prepareFunction.apply(javaTuples)) {
+                javaTuples.sort(comparator);
+                sortStuff.run();
+                sortStuff.check(javaTuples);
+            }
         }
     }
 
@@ -213,13 +211,11 @@ public abstract class TestTimSortKernel {
             }
             final RowSet rowSet = builder.build();
 
-            final PartitionKernelStuff<T> partitionStuff =
-                    prepareFunction.apply(javaTuples, rowSet, chunkSize, nPartitions, false);
-
-            partitionStuff.run();
-
-            partitionStuff.check(javaTuples);
-            partitionStuff.close();
+            try (final PartitionKernelStuff<T> partitionStuff =
+                    prepareFunction.apply(javaTuples, rowSet, chunkSize, nPartitions, false)) {
+                partitionStuff.run();
+                partitionStuff.check(javaTuples);
+            }
         }
     }
 

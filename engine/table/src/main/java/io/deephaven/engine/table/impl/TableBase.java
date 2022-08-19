@@ -3,12 +3,10 @@
  */
 package io.deephaven.engine.table.impl;
 
-import com.google.common.collect.Lists;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.base.Pair;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;

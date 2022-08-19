@@ -3,6 +3,7 @@
  */
 package io.deephaven.qst.examples;
 
+import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableSpec;
@@ -27,7 +28,7 @@ public class EmployeesExample {
                 .newTable();
     }
 
-    public static TableSpec joined() {
+    public static JoinTable joined() {
         return employees().join(departments(), "DeptId", "DeptName,DeptTelephone=Telephone");
     }
 }

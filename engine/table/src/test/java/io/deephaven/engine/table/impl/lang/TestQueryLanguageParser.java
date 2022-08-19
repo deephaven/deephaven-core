@@ -2197,6 +2197,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     }
     public static class TestGenericResult4 {
     }
+    public static class TestGenericResult5 {
+    }
     public interface TestGenericInterfaceSuper<T> {
         default T getFromInterfaceSuper() {
             return null;
@@ -2212,13 +2214,18 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
             return null;
         }
     }
+    public interface TestGenericInterfaceSibling<T> {
+        default T getFromInterfaceSibling() {
+            return null;
+        }
+    }
     public static abstract class TestGenericSuper<T> implements TestGenericInterfaceForSuper<TestGenericResult2> {
         public T getFromSuper() {
             return null;
         }
     }
     public static class TestGenericSub extends TestGenericSuper<TestGenericResult3>
-            implements TestGenericInterfaceSub<TestGenericResult4> {
+            implements TestGenericInterfaceSub<TestGenericResult4>, TestGenericInterfaceSibling<TestGenericResult5> {
     }
 
     public void testGenericReturnTypeResolution() throws Exception {
@@ -2232,6 +2239,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, expression, TestGenericResult3.class, resultVarsUsed);
         expression = "genericSub.getFromInterfaceSub()";
         check(expression, expression, TestGenericResult4.class, resultVarsUsed);
+        expression = "genericSub.getFromInterfaceSibling()";
+        check(expression, expression, TestGenericResult5.class, resultVarsUsed);
     }
 
     @SuppressWarnings("SameParameterValue")
