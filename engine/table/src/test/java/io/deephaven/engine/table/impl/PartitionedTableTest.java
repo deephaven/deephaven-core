@@ -816,7 +816,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         return new EvalNugget() {
             @Override
             protected Table e() {
-                // note we cannot re-use the execution context as the expected
+                // note we cannot reuse the execution context and remove the values as the table is built each iteration
                 try (final SafeCloseable ignored = ExecutionContext.newBuilder()
                         .captureCompilerContext()
                         .captureQueryLibrary()
