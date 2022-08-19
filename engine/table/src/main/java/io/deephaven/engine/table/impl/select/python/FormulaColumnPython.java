@@ -32,8 +32,6 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     private final io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction dcf;
 
-    private boolean initialized;
-
     private FormulaColumnPython(String columnName,
             io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction dcf) {
         super(columnName, "<python-formula>");
@@ -42,13 +40,12 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     @Override
     public final List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        if (initialized) {
+        if (formulaFactory != null) {
             validateColumnDefinition(columnDefinitionMap);
         } else {
             returnedType = dcf.getReturnedType();
             applyUsedVariables(columnDefinitionMap, new LinkedHashSet<>(dcf.getColumnNames()));
             formulaFactory = createKernelFormulaFactory(this);
-            initialized = true;
         }
 
         return usedColumns;
@@ -67,9 +64,6 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     @Override
     protected final FormulaSourceDescriptor getSourceDescriptor() {
-        if (!initialized) {
-            throw new IllegalStateException("Must be initialized first");
-        }
         return new FormulaSourceDescriptor(
                 returnedType,
                 dcf.getColumnNames().toArray(new String[0]),
@@ -80,18 +74,17 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     @Override
     public final SelectColumn copy() {
         final FormulaColumnPython copy = new FormulaColumnPython(columnName, dcf);
-        if (initialized) {
+        if (formulaFactory != null) {
             // copy all initDef state
             copy.returnedType = returnedType;
             onCopy(copy);
-            copy.initialized = true;
         }
         return copy;
     }
 
     @Override
     public final FormulaKernel createInstance(Vector<?>[] arrays, QueryScopeParam<?>[] params) {
-        if (!initialized) {
+        if (formulaFactory == null) {
             throw new IllegalStateException("Must be initialized first");
         }
         return dcf.toFormulaKernel();
