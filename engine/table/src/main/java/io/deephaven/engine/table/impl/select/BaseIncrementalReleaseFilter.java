@@ -211,7 +211,8 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
 
     @Override
     public BaseIncrementalReleaseFilter copy() {
-        throw new UnsupportedOperationException("copy cannot start the filter");
+        throw new UnsupportedOperationException(getClass().getName() + " does not support automatic copy() due to " +
+                "usage incompatibilities (internally-created instances cannot be start()ed)");
     }
 
     @Override

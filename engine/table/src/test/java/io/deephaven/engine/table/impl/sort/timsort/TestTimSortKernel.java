@@ -227,16 +227,15 @@ public abstract class TestTimSortKernel {
 
             final List<T> javaTuples = tupleListGenerator.generate(random, size);
 
-            final SortKernelStuff<T> sortStuff = prepareFunction.apply(javaTuples);
+            try (final SortKernelStuff<T> sortStuff = prepareFunction.apply(javaTuples)) {
+                // System.out.println("Prior to sort: " + javaTuples);
+                sortStuff.run();
 
-            // System.out.println("Prior to sort: " + javaTuples);
-            sortStuff.run();
+                javaTuples.sort(comparator);
+                // System.out.println("After sort: " + javaTuples);
 
-            javaTuples.sort(comparator);
-            // System.out.println("After sort: " + javaTuples);
-
-            sortStuff.check(javaTuples);
-            sortStuff.close();
+                sortStuff.check(javaTuples);
+            }
         }
     }
 
