@@ -149,7 +149,9 @@ public class SwitchColumn implements SelectColumn {
     @Override
     public SwitchColumn copy() {
         final SwitchColumn switchColumn = new SwitchColumn(columnName, expression, parser);
-        switchColumn.realColumn = realColumn.copy();
+        if (realColumn != null) {
+            switchColumn.realColumn = realColumn.copy();
+        }
         return switchColumn;
     }
 }
