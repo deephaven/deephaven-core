@@ -1254,8 +1254,10 @@ public class QueryTable extends BaseTable {
 
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
                     final SelectAndViewAnalyzer.JobScheduler jobScheduler;
-                    if (QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
-                            && OperationInitializationThreadPool.NUM_THREADS > 1)
+                    if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE ||
+                            (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
+                                    && OperationInitializationThreadPool.NUM_THREADS > 1))
+                            && !OperationInitializationThreadPool.isInitializationThread()
                             && analyzer.allowCrossColumnParallelization()) {
                         jobScheduler = new SelectAndViewAnalyzer.OperationInitializationPoolJobScheduler();
                     } else {
