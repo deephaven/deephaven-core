@@ -215,7 +215,7 @@ public class ArrowFlightUtil {
             BarrageSnapshotOptions snapshotRequestOptions, StreamObserver<BarrageStreamGenerator.View> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
 
-        // if the table is static or append-only and a full snapshot is requested, we can make and send multiple
+        // if the table is static and a full snapshot is requested, we can make and send multiple
         // snapshots to save memory and operate more efficiently
         if (!table.isRefreshing()) {
             createAndSendStaticSnapshot(table, columns, viewport, reverseViewport, snapshotRequestOptions, listener,
