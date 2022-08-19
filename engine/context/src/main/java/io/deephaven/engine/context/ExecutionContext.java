@@ -260,9 +260,10 @@ public class ExecutionContext {
         /**
          * Use the current ExecutionContext's QueryScope instance.
          * <p>
-         * 
+         *
          * @apiNote This captures a reference to the current, likely mutable, query scope state. Future changes to the
-         *          query scope may cause deferred operations to fail. Additionally, if the QueryScope
+         *          query scope may cause deferred operations to fail. Additionally, there is risk of GC leakage should
+         *          the query scope be otherwise unreachable.
          */
         @ScriptApi
         public Builder captureQueryScope() {
