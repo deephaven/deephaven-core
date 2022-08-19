@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 /**
  * Sub-interface to capture default methods rom {@link Table}.
  */
-public interface TableBase extends Table, TableOperationsBase<Table, Table> {
+public interface TableDefaults extends Table, TableOperationsDefaults<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
 
@@ -455,7 +455,7 @@ public interface TableBase extends Table, TableOperationsBase<Table, Table> {
     default Table join(Table rightTable, String columnsToMatch, int numRightBitsToReserve) {
         return join(
                 rightTable,
-                MatchPairFactory.getExpressions(TableOperationsBase.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToMatch)),
                 MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
                 numRightBitsToReserve);
     }
@@ -465,8 +465,8 @@ public interface TableBase extends Table, TableOperationsBase<Table, Table> {
     default Table join(Table rightTable, String columnsToMatch, String columnsToAdd, int numRightBitsToReserve) {
         return join(
                 rightTable,
-                MatchPairFactory.getExpressions(TableOperationsBase.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(TableOperationsBase.splitToCollection(columnsToAdd)),
+                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToAdd)),
                 numRightBitsToReserve);
     }
 

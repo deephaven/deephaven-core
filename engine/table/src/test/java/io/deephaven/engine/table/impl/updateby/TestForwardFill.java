@@ -264,7 +264,7 @@ public class TestForwardFill extends BaseUpdateByTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return ((TableBase) queryTable.sort("intCol")).updateBy(UpdateByOperation.Fill());
+                        return ((TableDefaults) queryTable.sort("intCol")).updateBy(UpdateByOperation.Fill());
                     }
                 },
         };

@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static io.deephaven.api.TableOperationsBase.splitToCollection;
+import static io.deephaven.api.TableOperationsDefaults.splitToCollection;
 
 public abstract class TableBase implements TableSpec {
 

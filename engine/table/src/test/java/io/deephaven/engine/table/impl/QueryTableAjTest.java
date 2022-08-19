@@ -40,7 +40,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.api.TableOperationsBase.splitToCollection;
+import static io.deephaven.api.TableOperationsDefaults.splitToCollection;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.QueryTableTestBase.intColumn;
 import static io.deephaven.engine.table.impl.TstUtils.*;

@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 /**
  * Sub-interface to capture default methods rom {@link TABLE}.
  */
-public interface TableOperationsBase<TOPS extends TableOperations<TOPS, TABLE>, TABLE>
+public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABLE>, TABLE>
         extends TableOperations<TOPS, TABLE> {
 
     Filter[] ZERO_LENGTH_FILTER_ARRAY = new Filter[0];
@@ -145,7 +145,7 @@ public interface TableOperationsBase<TOPS extends TableOperations<TOPS, TABLE>, 
     @Override
     default TOPS exactJoin(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
         return exactJoin(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)),
-                JoinAddition.from(TableOperationsBase.splitToCollection(columnsToAdd)));
+                JoinAddition.from(TableOperationsDefaults.splitToCollection(columnsToAdd)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -158,7 +158,7 @@ public interface TableOperationsBase<TOPS extends TableOperations<TOPS, TABLE>, 
     @Override
     default TOPS join(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
         return join(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)),
-                JoinAddition.from(TableOperationsBase.splitToCollection(columnsToAdd)));
+                JoinAddition.from(TableOperationsDefaults.splitToCollection(columnsToAdd)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------

@@ -34,14 +34,14 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  * {@link UpdateBy} can use to produce a result.
  */
 public class UpdateByOperatorFactory {
-    private final TableBase source;
+    private final TableDefaults source;
     private final MatchPair[] groupByColumns;
     @Nullable
     private final WritableRowRedirection rowRedirection;
     @NotNull
     private final UpdateByControl control;
 
-    public UpdateByOperatorFactory(@NotNull final TableBase source,
+    public UpdateByOperatorFactory(@NotNull final TableDefaults source,
             @NotNull final MatchPair[] groupByColumns,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
@@ -207,7 +207,7 @@ public class UpdateByOperatorFactory {
 
         @SuppressWarnings("unchecked")
         private UpdateByOperator makeEmaOperator(@NotNull final MatchPair pair,
-                @NotNull final TableBase source,
+                @NotNull final TableDefaults source,
                 @Nullable final LongRecordingUpdateByOperator recorder,
                 @NotNull final EmaSpec ema) {
             // noinspection rawtypes
@@ -253,7 +253,7 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform EMA on type " + csType);
         }
 
-        private LongRecordingUpdateByOperator makeLongRecordingOperator(TableBase source, String colName) {
+        private LongRecordingUpdateByOperator makeLongRecordingOperator(TableDefaults source, String colName) {
             final ColumnSource<?> columnSource = source.getColumnSource(colName);
             final Class<?> colType = columnSource.getType();
             if (colType != long.class &&
@@ -270,7 +270,7 @@ public class UpdateByOperatorFactory {
             return new LongRecordingUpdateByOperator(colName, inputColumns, columnSource);
         }
 
-        private UpdateByOperator makeCumProdOperator(MatchPair fc, TableBase source) {
+        private UpdateByOperator makeCumProdOperator(MatchPair fc, TableDefaults source) {
             final Class<?> csType = source.getColumnSource(fc.rightColumn).getType();
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteCumProdOperator(fc, rowRedirection);
@@ -293,7 +293,7 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
         }
 
-        private UpdateByOperator makeCumMinMaxOperator(MatchPair fc, TableBase source, boolean isMax) {
+        private UpdateByOperator makeCumMinMaxOperator(MatchPair fc, TableDefaults source, boolean isMax) {
             final ColumnSource<?> columnSource = source.getColumnSource(fc.rightColumn);
             final Class<?> csType = columnSource.getType();
             if (csType == byte.class || csType == Byte.class) {
@@ -316,7 +316,7 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
         }
 
-        private UpdateByOperator makeCumSumOperator(MatchPair fc, TableBase source) {
+        private UpdateByOperator makeCumSumOperator(MatchPair fc, TableDefaults source) {
             final Class<?> csType = source.getColumnSource(fc.rightColumn).getType();
             if (csType == Boolean.class || csType == boolean.class) {
                 return new ByteCumSumOperator(fc, rowRedirection, NULL_BOOLEAN_AS_BYTE);
@@ -341,7 +341,7 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform Cumulative Sum on type " + csType);
         }
 
-        private UpdateByOperator makeForwardFillOperator(MatchPair fc, TableBase source) {
+        private UpdateByOperator makeForwardFillOperator(MatchPair fc, TableDefaults source) {
             final ColumnSource<?> columnSource = source.getColumnSource(fc.rightColumn);
             final Class<?> csType = columnSource.getType();
             if (csType == char.class || csType == Character.class) {

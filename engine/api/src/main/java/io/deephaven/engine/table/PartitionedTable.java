@@ -5,7 +5,7 @@ package io.deephaven.engine.table;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.TableOperations;
-import io.deephaven.api.TableOperationsBase;
+import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.base.log.LogOutputAppendable;
@@ -38,7 +38,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     /**
      * Interface for proxies created by {@link #proxy()}.
      */
-    interface Proxy extends TableOperationsBase<Proxy, TableOperations<?, ?>> {
+    interface Proxy extends TableOperationsDefaults<Proxy, TableOperations<?, ?>> {
 
         /**
          * Get the PartitionedTable instance underlying this proxy.
