@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 
 /**
  * A ScriptSession that uses a JPy cpython interpreter internally.
- *
+ * <p>
  * This is used for applications or the console; Python code running remotely uses WorkerPythonEnvironment for it's
  * supporting structures.
  */
@@ -178,6 +178,17 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 .orElse(defaultValue);
     }
 
+    public void pushScope(PyObject pydict) {
+        if (!pydict.isDict()) {
+            throw new IllegalArgumentException("Expect a Python dict but got a" + pydict.repr());
+        }
+        scope.pushScope(pydict);
+    }
+
+    public void popScope() {
+        scope.popScope();
+    }
+
     @Override
     protected void evaluate(String command, String scriptName) {
         log.info().append("Evaluating command: " + command).endl();
@@ -218,7 +229,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     protected PythonSnapshot takeSnapshot() {
-        return new PythonSnapshot(scope.globals().copy());
+        return new PythonSnapshot(scope.mainGlobals().copy());
     }
 
     @Override
@@ -273,7 +284,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     @Override
     public synchronized void setVariable(String name, @Nullable Object newValue) {
         try (PythonSnapshot fromSnapshot = takeSnapshot()) {
-            final PyDictWrapper globals = scope.globals();
+            final PyDictWrapper globals = scope.mainGlobals();
             if (newValue == null) {
                 try {
                     globals.delItem(name);
