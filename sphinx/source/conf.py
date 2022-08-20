@@ -96,7 +96,7 @@ jvm.init_jvm(
 import jpy
 py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
 py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
-jpy.get_type("io.deephaven.engine.table.lang.QueryScope").setScope(py_dh_session.newQueryScope())
+py_dh_session.getExecutionContext().open()
 
 import deephaven
 docs_title = "Deephaven python modules."

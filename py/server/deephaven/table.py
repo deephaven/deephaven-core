@@ -46,11 +46,12 @@ _JReverseAsOfJoinRule = jpy.get_type("io.deephaven.api.ReverseAsOfJoinRule")
 _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
-_JQueryScope = jpy.get_type("io.deephaven.engine.table.lang.QueryScope")
+_JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+_JQueryScope = jpy.get_type("io.deephaven.engine.context.QueryScope")
 _JUnsynchronizedScriptSessionQueryScope = jpy.get_type(
     "io.deephaven.engine.util.AbstractScriptSession$UnsynchronizedScriptSessionQueryScope")
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
-_j_script_session = jpy.cast(_JQueryScope.getScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
+_j_script_session = jpy.cast(_JExecutionContext.getContext().getQueryScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
 _j_py_script_session = jpy.cast(_j_script_session, _JPythonScriptSession)
 
 
