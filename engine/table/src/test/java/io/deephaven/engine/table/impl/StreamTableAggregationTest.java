@@ -20,6 +20,7 @@ import io.deephaven.test.junit4.EngineCleanup;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,10 +42,15 @@ public class StreamTableAggregationTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
-    private final Table source = TableCreatorImpl.create(EmptyTable.of(INPUT_SIZE)
-            .update("Sym = Long.toString(ii % 1000) + `_Sym`")
-            .update("Price = ii / 100 - (ii % 100)")
-            .update("Size = (long) (ii / 50 - (ii % 50))"));
+    private Table source;
+
+    @Before
+    public void setUp() {
+        source = TableCreatorImpl.create(EmptyTable.of(INPUT_SIZE)
+                .update("Sym = Long.toString(ii % 1000) + `_Sym`")
+                .update("Price = ii / 100 - (ii % 100)")
+                .update("Size = (long) (ii / 50 - (ii % 50))"));
+    }
 
     /**
      * Execute a table operator ending in an aggregation.

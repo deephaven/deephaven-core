@@ -23,6 +23,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
@@ -36,7 +37,6 @@ import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import static io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
-import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.Period;
@@ -73,7 +73,7 @@ public class FormulaKernelSample implements io.deephaven.engine.table.impl.selec
     private final java.lang.Integer q;
 
     public FormulaKernelSample(io.deephaven.vector.Vector[] __vectors,
-            io.deephaven.engine.table.lang.QueryScopeParam[] __params) {
+            io.deephaven.engine.context.QueryScopeParam[] __params) {
         II_ = (io.deephaven.vector.LongVector)__vectors[0];
         q = (java.lang.Integer)__params[0].getValue();
     }

@@ -4,16 +4,32 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.gui.color.Color;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 
 import static io.deephaven.gui.color.Color.*;
 
 public class TestColorUtil extends BaseArrayTestCase {
 
     private final int size = 10;
-    private final Table t1 = TableTools.emptyTable(size).updateView("X = i", "Y = 2*i");
+    private SafeCloseable executionContext;
+    private Table t1;
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        executionContext = ExecutionContext.createForUnitTests().open();
+        t1 = TableTools.emptyTable(size).updateView("X = i", "Y = 2*i");
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        executionContext.close();
+    }
 
     public void testRowFormatWhereNew() {
         testRowFormatWhere(t1.formatRowWhere("X > 5", "ALICEBLUE"), ALICEBLUE);

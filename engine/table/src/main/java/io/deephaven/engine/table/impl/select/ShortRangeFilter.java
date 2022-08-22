@@ -76,7 +76,10 @@ public class ShortRangeFilter extends AbstractRangeFilter {
 
     @Override
     public ShortRangeFilter copy() {
-        return new ShortRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        final ShortRangeFilter copy = new ShortRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
+        return copy;
     }
 
     @Override

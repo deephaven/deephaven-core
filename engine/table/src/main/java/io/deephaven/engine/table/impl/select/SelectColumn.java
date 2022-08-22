@@ -34,6 +34,10 @@ public interface SelectColumn extends Selectable {
         return selectables.stream().map(SelectColumn::of).toArray(SelectColumn[]::new);
     }
 
+    static SelectColumn[] copyFrom(SelectColumn[] selectColumns) {
+        return Arrays.stream(selectColumns).map(SelectColumn::copy).toArray(SelectColumn[]::new);
+    }
+
     /**
      * Convenient static final instance of a zero length Array of SelectColumns for use in toArray calls.
      */
@@ -64,6 +68,9 @@ public interface SelectColumn extends Selectable {
      * @param columnDefinitionMap the starting set of column definitions
      *
      * @return a list of columns on which the result of this is dependent
+     * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
+     *          {@link io.deephaven.engine.context.CompilerTools} usage needs to be resolved within initDef.
+     *          Implementations must be idempotent.
      */
     List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap);
 

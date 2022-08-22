@@ -46,11 +46,12 @@ _JReverseAsOfJoinRule = jpy.get_type("io.deephaven.api.ReverseAsOfJoinRule")
 _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
-_JQueryScope = jpy.get_type("io.deephaven.engine.table.lang.QueryScope")
+_JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+_JQueryScope = jpy.get_type("io.deephaven.engine.context.QueryScope")
 _JUnsynchronizedScriptSessionQueryScope = jpy.get_type(
     "io.deephaven.engine.util.AbstractScriptSession$UnsynchronizedScriptSessionQueryScope")
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
-_j_script_session = jpy.cast(_JQueryScope.getScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
+_j_script_session = jpy.cast(_JExecutionContext.getContext().getQueryScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
 _j_py_script_session = jpy.cast(_j_script_session, _JPythonScriptSession)
 
 
@@ -128,7 +129,9 @@ class Table(JObjectWrapper):
     j_object_type = jpy.get_type("io.deephaven.engine.table.Table")
 
     def __init__(self, j_table: jpy.JType):
-        self.j_table = j_table
+        self.j_table = jpy.cast(j_table, self.j_object_type)
+        if self.j_table is None:
+            raise DHError("j_table type is not io.deephaven.engine.table.Table")
         self._definition = self.j_table.getDefinition()
         self._schema = None
         self._is_refreshing = None
@@ -975,7 +978,7 @@ class Table(JObjectWrapper):
         separate rows.
 
         Args:
-            cols (Union[str, Sequence[str]], optional): the name(s) of the array column(s), if None, all array columns 
+            cols (Union[str, Sequence[str]], optional): the name(s) of the array column(s), if None, all array columns
                 will be ungrouped, default is None
 
         Returns:
@@ -1818,9 +1821,9 @@ class PartitionedTable(JObjectWrapper):
             require_matching_keys (bool): whether to ensure that both partitioned tables have all the same keys
                 present when an operation uses this PartitionedTable and another PartitionedTable as inputs for a
                 :meth:`~PartitionedTable.partitioned_transform`, default is True
-            sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs 
-            in exactly one constituent table of the underlying partitioned table. If the other table argument is also a 
-            PartitionedTableProxy, its constituents will also be subjected to this constraint. 
+            sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs
+            in exactly one constituent table of the underlying partitioned table. If the other table argument is also a
+            PartitionedTableProxy, its constituents will also be subjected to this constraint.
         """
         return PartitionedTableProxy(
             j_pt_proxy=self.j_partitioned_table.proxy(require_matching_keys, sanity_check_joins))

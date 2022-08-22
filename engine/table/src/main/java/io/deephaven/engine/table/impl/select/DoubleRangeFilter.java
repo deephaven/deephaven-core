@@ -78,7 +78,10 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
 
     @Override
     public DoubleRangeFilter copy() {
-        return new DoubleRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        final DoubleRangeFilter copy = new DoubleRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
+        return copy;
     }
 
     @Override

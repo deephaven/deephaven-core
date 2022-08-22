@@ -22,9 +22,11 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.testutil.Shuffle;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.test.junit4.EngineCleanup;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -37,6 +39,9 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 import static junit.framework.TestCase.*;
 
 public class TestIntegerArraySource {
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
+
     private IntegerArraySource forArray(int[] values) {
         final IntegerArraySource source = new IntegerArraySource();
         source.ensureCapacity(values.length);
@@ -52,17 +57,6 @@ public class TestIntegerArraySource {
         for (int i = 0; i < values.length; i++) {
             dest.set(i, values[i]);
         }
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     private void testGetChunkGeneric(int[] values, int[] newValues, int chunkSize, RowSet rowSet) {
@@ -85,58 +79,60 @@ public class TestIntegerArraySource {
     }
 
     private void validateValues(int chunkSize, int[] values, RowSet rowSet, IntegerArraySource source) {
-        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final RowSet.Iterator it = rowSet.iterator();
-        final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
-        long pos = 0;
-        while (it.hasNext()) {
-            assertTrue(rsIterator.hasMore());
-            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
-            final IntChunk chunk = source.getChunk(context, okChunk).asIntChunk();
-            assertTrue(chunk.size() <= chunkSize);
-            if (rsIterator.hasMore()) {
-                assertEquals(chunkSize, chunk.size());
-            }
-            for (int i = 0; i < chunk.size(); i++) {
-                assertTrue(it.hasNext());
-                final long idx = it.nextLong();
-                checkFromSource("idx=" + idx + ", i=" + i, source.getInt(idx), chunk.get(i));
-                checkFromValues("idx=" + idx + ", i=" + i, values[(int) idx], chunk.get(i));
-                pos++;
-            }
-            // region samecheck
-            final LongChunk<OrderedRowKeyRanges> ranges = okChunk.asRowKeyRangesChunk();
-            if (ranges.size() > 2 || ranges.get(0) / IntegerArraySource.BLOCK_SIZE != (ranges.get(1) / IntegerArraySource.BLOCK_SIZE)) {
-                assertTrue(DefaultGetContext.isMyWritableChunk(context, chunk));
+        try (final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+             final RowSet.Iterator it = rowSet.iterator();
+             final ChunkSource.GetContext context = source.makeGetContext(chunkSize)) {
+            long pos = 0;
+            while (it.hasNext()) {
+                assertTrue(rsIterator.hasMore());
+                final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
+                final IntChunk chunk = source.getChunk(context, okChunk).asIntChunk();
+                assertTrue(chunk.size() <= chunkSize);
+                if (rsIterator.hasMore()) {
+                    assertEquals(chunkSize, chunk.size());
+                }
+                for (int i = 0; i < chunk.size(); i++) {
+                    assertTrue(it.hasNext());
+                    final long idx = it.nextLong();
+                    checkFromSource("idx=" + idx + ", i=" + i, source.getInt(idx), chunk.get(i));
+                    checkFromValues("idx=" + idx + ", i=" + i, values[(int) idx], chunk.get(i));
+                    pos++;
+                }
+                // region samecheck
+                final LongChunk<OrderedRowKeyRanges> ranges = okChunk.asRowKeyRangesChunk();
+                if (ranges.size() > 2 || ranges.get(0) / IntegerArraySource.BLOCK_SIZE != (ranges.get(1) / IntegerArraySource.BLOCK_SIZE)) {
+                    assertTrue(DefaultGetContext.isMyWritableChunk(context, chunk));
 
-            } else {
-                assertTrue(DefaultGetContext.isMyResettableChunk(context, chunk));
+                } else {
+                    assertTrue(DefaultGetContext.isMyResettableChunk(context, chunk));
+                }
+                // endregion samecheck
             }
-            // endregion samecheck
+            assertEquals(pos, rowSet.size());
         }
-        assertEquals(pos, rowSet.size());
     }
 
 
     private void validatePrevValues(int chunkSize, int[] values, RowSet rowSet, IntegerArraySource source) {
-        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final RowSet.Iterator it = rowSet.iterator();
-        final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
-        long pos = 0;
-        while (it.hasNext()) {
-            assertTrue(rsIterator.hasMore());
-            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
-            final IntChunk chunk = source.getPrevChunk(context, okChunk).asIntChunk();
-            for (int i = 0; i < chunk.size(); i++) {
-                assertTrue(it.hasNext());
-                final long idx = it.nextLong();
-                checkFromSource(source.getPrevInt(idx), chunk.get(i));
-                checkFromValues(values[(int) idx], chunk.get(i));
-                pos++;
+        try (final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+             final RowSet.Iterator it = rowSet.iterator();
+             final ChunkSource.GetContext context = source.makeGetContext(chunkSize)) {
+            long pos = 0;
+            while (it.hasNext()) {
+                assertTrue(rsIterator.hasMore());
+                final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
+                final IntChunk chunk = source.getPrevChunk(context, okChunk).asIntChunk();
+                for (int i = 0; i < chunk.size(); i++) {
+                    assertTrue(it.hasNext());
+                    final long idx = it.nextLong();
+                    checkFromSource(source.getPrevInt(idx), chunk.get(i));
+                    checkFromValues(values[(int) idx], chunk.get(i));
+                    pos++;
+                }
+                assertTrue(DefaultGetContext.isMyWritableChunk(context, chunk));
             }
-            assertTrue(DefaultGetContext.isMyWritableChunk(context, chunk));
+            assertEquals(pos, rowSet.size());
         }
-        assertEquals(pos, rowSet.size());
     }
 
     @Test
@@ -179,21 +175,22 @@ public class TestIntegerArraySource {
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource<?> source = formulaColumn.getDataView();
-        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final RowSet.Iterator it = rowSet.iterator();
-        final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
-        long pos = 0;
-        while (it.hasNext()) {
-            assertTrue(rsIterator.hasMore());
-            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
-            final IntChunk chunk = source.getChunk(context, okChunk).asIntChunk();
-            for (int i = 0; i < chunk.size(); i++) {
-                assertTrue(it.hasNext());
-                assertEquals(chunk.get(i), source.getInt(it.nextLong()));
-                pos++;
+        try (final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+             final RowSet.Iterator it = rowSet.iterator();
+             final ChunkSource.GetContext context = source.makeGetContext(chunkSize)) {
+            long pos = 0;
+            while (it.hasNext()) {
+                assertTrue(rsIterator.hasMore());
+                final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
+                final IntChunk chunk = source.getChunk(context, okChunk).asIntChunk();
+                for (int i = 0; i < chunk.size(); i++) {
+                    assertTrue(it.hasNext());
+                    assertEquals(chunk.get(i), source.getInt(it.nextLong()));
+                    pos++;
+                }
             }
+            assertEquals(pos, rowSet.size());
         }
-        assertEquals(pos, rowSet.size());
     }
     // endregion lazy
 
@@ -289,45 +286,47 @@ public class TestIntegerArraySource {
     }
 
     private void validateValuesWithFill(int chunkSize, int[] values, RowSet rowSet, IntegerArraySource source) {
-        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final RowSet.Iterator it = rowSet.iterator();
-        final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
-        final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(chunkSize);
-        long pos = 0;
-        while (it.hasNext()) {
-            assertTrue(rsIterator.hasMore());
-            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
-            source.fillChunk(context, chunk, okChunk);
-            for (int i = 0; i < chunk.size(); i++) {
-                assertTrue(it.hasNext());
-                final long idx = it.nextLong();
-                checkFromSource(source.getInt(idx), chunk.get(i));
-                checkFromValues(values[(int)idx], chunk.get(i));
-                pos++;
+        try (final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+             final RowSet.Iterator it = rowSet.iterator();
+             final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
+             final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(chunkSize)) {
+            long pos = 0;
+            while (it.hasNext()) {
+                assertTrue(rsIterator.hasMore());
+                final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
+                source.fillChunk(context, chunk, okChunk);
+                for (int i = 0; i < chunk.size(); i++) {
+                    assertTrue(it.hasNext());
+                    final long idx = it.nextLong();
+                    checkFromSource(source.getInt(idx), chunk.get(i));
+                    checkFromValues(values[(int) idx], chunk.get(i));
+                    pos++;
+                }
             }
+            assertEquals(pos, rowSet.size());
         }
-        assertEquals(pos, rowSet.size());
     }
 
     private void validatePrevValuesWithFill(int chunkSize, int[] values, RowSet rowSet, IntegerArraySource source) {
-        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final RowSet.Iterator it = rowSet.iterator();
-        final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
-        final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(chunkSize);
-        long pos = 0;
-        while (it.hasNext()) {
-            assertTrue(rsIterator.hasMore());
-            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
-            source.fillPrevChunk(context, chunk, okChunk);
-            for (int i = 0; i < chunk.size(); i++) {
-                assertTrue(it.hasNext());
-                final long idx = it.nextLong();
-                checkFromSource(source.getPrevInt(idx), chunk.get(i));
-                checkFromValues(values[(int)idx], chunk.get(i));
-                pos++;
+        try (final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+             final RowSet.Iterator it = rowSet.iterator();
+             final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
+             final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(chunkSize)) {
+            long pos = 0;
+            while (it.hasNext()) {
+                assertTrue(rsIterator.hasMore());
+                final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
+                source.fillPrevChunk(context, chunk, okChunk);
+                for (int i = 0; i < chunk.size(); i++) {
+                    assertTrue(it.hasNext());
+                    final long idx = it.nextLong();
+                    checkFromSource(source.getPrevInt(idx), chunk.get(i));
+                    checkFromValues(values[(int) idx], chunk.get(i));
+                    pos++;
+                }
             }
+            assertEquals(pos, rowSet.size());
         }
-        assertEquals(pos, rowSet.size());
     }
 
     @Test
@@ -391,23 +390,24 @@ public class TestIntegerArraySource {
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource source = formulaColumn.getDataView();
-        final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final RowSet.Iterator it = rowSet.iterator();
-        final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
-        final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(chunkSize);
-        long pos = 0;
-        while (it.hasNext()) {
-            assertTrue(rsIterator.hasMore());
-            final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
-            source.fillChunk(context, chunk, okChunk);
-            for (int i = 0; i < chunk.size(); i++) {
-                assertTrue(it.hasNext());
-                final long idx = it.nextLong();
-                assertEquals(chunk.get(i), source.getInt(idx));
-                pos++;
+        try (final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
+             final RowSet.Iterator it = rowSet.iterator();
+             final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
+             final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(chunkSize)) {
+            long pos = 0;
+            while (it.hasNext()) {
+                assertTrue(rsIterator.hasMore());
+                final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
+                source.fillChunk(context, chunk, okChunk);
+                for (int i = 0; i < chunk.size(); i++) {
+                    assertTrue(it.hasNext());
+                    final long idx = it.nextLong();
+                    assertEquals(chunk.get(i), source.getInt(idx));
+                    pos++;
+                }
             }
+            assertEquals(pos, rowSet.size());
         }
-        assertEquals(pos, rowSet.size());
     }
     // endregion lazygeneric
 
@@ -505,22 +505,19 @@ public class TestIntegerArraySource {
         // super hack
         final int[] peekedBlock = (int[])source.getBlock(0);
 
-        try (RowSet srcKeys = RowSetFactory.fromRange(rangeStart, rangeEnd)) {
-            try (RowSet destKeys = RowSetFactory.fromRange(rangeStart + 1, rangeEnd + 1)) {
-                try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
-                    try (ChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
-                        Chunk chunk = source.getChunk(srcContext, srcKeys);
-                        if (chunk.isAlias(peekedBlock)) {
-                            // If the ArraySource gives out aliases of its blocks, then it should throw when we try to
-                            // fill from that aliased chunk
-                            try {
-                                source.fillFromChunk(destContext, chunk, destKeys);
-                                TestCase.fail();
-                            } catch (UnsupportedOperationException uoe) {
-                                // Expected
-                            }
-                        }
-                    }
+        try (RowSet srcKeys = RowSetFactory.fromRange(rangeStart, rangeEnd);
+             RowSet destKeys = RowSetFactory.fromRange(rangeStart + 1, rangeEnd + 1);
+             ChunkSource.GetContext srcContext = source.makeGetContext(arraySize);
+             ChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
+            Chunk chunk = source.getChunk(srcContext, srcKeys);
+            if (chunk.isAlias(peekedBlock)) {
+                // If the ArraySource gives out aliases of its blocks, then it should throw when we try to
+                // fill from that aliased chunk
+                try {
+                    source.fillFromChunk(destContext, chunk, destKeys);
+                    TestCase.fail();
+                } catch (UnsupportedOperationException uoe) {
+                    // Expected
                 }
             }
         }

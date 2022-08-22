@@ -9,6 +9,7 @@ import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -47,6 +48,8 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     private long lastCompletedStep;
     private Throwable upstreamError;
     private TableListener.Entry errorSourceEntry;
+
+    private final ExecutionContext executionContext = ExecutionContext.getContextToRecord();
 
     protected MergedListener(
             Iterable<? extends ListenerRecorder> recorders,
@@ -275,6 +278,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         @Override
         public boolean canExecute(final long step) {
             return MergedListener.this.canExecute(step);
+        }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
         }
     }
 }

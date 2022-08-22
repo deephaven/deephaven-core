@@ -20,11 +20,12 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.util.SafeCloseable;
 
 import java.util.stream.IntStream;
 
 public class ObjectPartitionKernel {
-    public static class PartitionKernelContext {
+    public static class PartitionKernelContext implements SafeCloseable {
         // during the actual partition operation, we stick the new keys in here; when we exceed chunksize afterwards,
         // we can pass the entire chunk value to the builder; which then makes the virtual call to build it all at once
         private final WritableLongChunk<RowKeys>[] accumulatedKeys;
@@ -79,6 +80,15 @@ public class ObjectPartitionKernel {
         public ObjectLongTuple [] getPivots() {
             return IntStream.range(0, pivotValues.size()).mapToObj(ii -> new ObjectLongTuple(pivotValues.get(ii), pivotKeys.get(ii))).toArray(ObjectLongTuple[]::new);
         }
+
+        @Override
+        public void close() {
+            for (WritableLongChunk<RowKeys> chunk : accumulatedKeys) {
+                chunk.close();
+            }
+            pivotValues.close();
+            pivotKeys.close();
+        }
     }
 
 //    private static String format(Object last) {
@@ -91,18 +101,19 @@ public class ObjectPartitionKernel {
     public static PartitionKernelContext createContext(RowSet rowSet, ColumnSource<Object> columnSource, int chunkSize, int nPartitions, boolean preserveEquality) {
         final PartitionKernelContext context = new PartitionKernelContext(chunkSize, nPartitions, preserveEquality);
 
-        final WritableLongChunk<RowKeys> tempPivotKeys = WritableLongChunk.makeWritableChunk(nPartitions * 3);
-        final WritableObjectChunk<Object, Any> tempPivotValues = WritableObjectChunk.makeWritableChunk(nPartitions * 3);
+        try (final WritableLongChunk<RowKeys> tempPivotKeys = WritableLongChunk.makeWritableChunk(nPartitions * 3);
+             final WritableObjectChunk<Object, Any> tempPivotValues = WritableObjectChunk.makeWritableChunk(nPartitions * 3)) {
 
-        samplePivots(rowSet, nPartitions, tempPivotKeys, tempPivotValues, columnSource);
+            samplePivots(rowSet, nPartitions, tempPivotKeys, tempPivotValues, columnSource);
 
-        // copy from the oversized chunk, which was used for sorting into the chunk which we will use for our binary searches
-        for (int ii = 0; ii < tempPivotKeys.size(); ++ii) {
-            context.pivotKeys.set(ii, tempPivotKeys.get(ii));
-            context.pivotValues.set(ii, tempPivotValues.get(ii));
+            // copy from the oversized chunk, which was used for sorting into the chunk which we will use for our binary searches
+            for (int ii = 0; ii < tempPivotKeys.size(); ++ii) {
+                context.pivotKeys.set(ii, tempPivotKeys.get(ii));
+                context.pivotValues.set(ii, tempPivotValues.get(ii));
+            }
+
+            return context;
         }
-
-        return context;
     }
 
     // the sample pivots function could be smarter; in that if we are reading a block, there is a strong argument to

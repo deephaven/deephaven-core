@@ -5,6 +5,8 @@ package io.deephaven.server.netty;
 
 import dagger.BindsInstance;
 import dagger.Component;
+import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
+import io.deephaven.server.console.python.PythonConsoleSessionModule;
 import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
@@ -21,7 +23,9 @@ import javax.inject.Singleton;
         PythonGlobalScopeCopyModule.class,
         HealthCheckModule.class,
         PythonPluginsRegistration.Module.class,
-        NettyServerModule.class
+        NettyServerModule.class,
+        PythonConsoleSessionModule.class,
+        GroovyConsoleSessionModule.class,
 })
 public interface NettyServerComponent extends DeephavenApiServerComponent {
     @Component.Builder

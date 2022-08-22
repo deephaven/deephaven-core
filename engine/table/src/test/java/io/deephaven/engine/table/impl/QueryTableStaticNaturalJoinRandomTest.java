@@ -3,14 +3,14 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.StringUtils;
+import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.map.TByteIntMap;
@@ -205,7 +205,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             joined = leftJoinTable.naturalJoin(rightJoinTable, matchKeys, "RightSentinel");
         } else {
             joined = NaturalJoinHelper.naturalJoin((QueryTable) leftJoinTable, (QueryTable) rightJoinTable,
-                    MatchPairFactory.getExpressions(StringUtils.splitToCollection(matchKeys)),
+                    MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(matchKeys)),
                     MatchPairFactory.getExpressions("RightSentinel"), false, control);
         }
 

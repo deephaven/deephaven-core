@@ -11,11 +11,11 @@ import groovy.lang.MissingPropertyException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
@@ -126,21 +126,22 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     public GroovyDeephavenSession(ObjectTypeLookup objectTypeLookup, final RunScripts runScripts)
             throws IOException {
-        this(objectTypeLookup, null, runScripts, false);
+        this(objectTypeLookup, null, runScripts);
     }
 
     public GroovyDeephavenSession(
-            ObjectTypeLookup objectTypeLookup, @Nullable final Listener changeListener,
-            final RunScripts runScripts, boolean isDefaultScriptSession)
+            ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener changeListener,
+            final RunScripts runScripts)
             throws IOException {
-        super(objectTypeLookup, changeListener, isDefaultScriptSession);
+        super(objectTypeLookup, changeListener);
 
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         groovyShell.setVariable("__groovySession", this);
         groovyShell.setVariable("DB_SCRIPT_PATH", DEFAULT_SCRIPT_PATH);
 
-        compilerContext.setParentClassLoader(getShell().getClassLoader());
+        executionContext.getCompilerContext().setParentClassLoader(getShell().getClassLoader());
 
         publishInitial();
 
@@ -531,8 +532,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
                 "import org.joda.time.LocalTime;\n" +
                 "import io.deephaven.time.Period;\n" +
-                "import io.deephaven.engine.table.lang.QueryScopeParam;\n" +
-                "import io.deephaven.engine.table.lang.QueryScope;\n" +
+                "import io.deephaven.engine.context.QueryScopeParam;\n" +
+                "import io.deephaven.engine.context.QueryScope;\n" +
                 "import java.util.*;\n" +
                 "import java.lang.*;\n" +
                 "import static io.deephaven.util.QueryConstants.*;\n" +
@@ -596,7 +597,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 // only increment QueryLibrary version if some dynamic class overrides an existing class
                 if (!dynamicClasses.add(entry.getKey()) && !notifiedQueryLibrary) {
                     notifiedQueryLibrary = true;
-                    queryLibrary.updateVersionString();
+                    executionContext.getQueryLibrary().updateVersionString();
                 }
 
                 try {

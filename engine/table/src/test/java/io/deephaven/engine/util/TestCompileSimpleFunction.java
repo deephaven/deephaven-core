@@ -3,12 +3,28 @@
  */
 package io.deephaven.engine.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 
 import java.util.Collections;
 
 public class TestCompileSimpleFunction extends TestCase {
+    private SafeCloseable executionContext;
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        executionContext = ExecutionContext.createForUnitTests().open();
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        executionContext.close();
+    }
+
     public void testString() {
         String res = DynamicCompileUtils.compileSimpleFunction(String.class, "return \"Hello, world\"").get();
         TestCase.assertEquals("Hello, world", res);

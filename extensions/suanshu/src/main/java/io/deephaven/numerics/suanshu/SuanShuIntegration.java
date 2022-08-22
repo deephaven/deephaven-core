@@ -5,7 +5,7 @@ package io.deephaven.numerics.suanshu;
 
 import com.google.auto.service.AutoService;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.table.lang.QueryLibraryImports;
+import io.deephaven.engine.context.QueryLibraryImports;
 import io.deephaven.vector.*;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import com.numericalmethod.suanshu.matrix.MatrixAccessException;

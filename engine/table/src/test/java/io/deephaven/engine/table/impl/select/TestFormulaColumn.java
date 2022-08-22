@@ -10,8 +10,8 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryLibrary;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
 import io.deephaven.test.junit4.EngineCleanup;
@@ -51,10 +51,6 @@ public class TestFormulaColumn {
     private final boolean useKernelFormulas;
     private boolean kernelFormulasSavedValue;
 
-    static {
-        setUpQueryScope();
-    }
-
     public TestFormulaColumn(boolean useKernelFormulas) {
         this.useKernelFormulas = useKernelFormulas;
         testDataTable = getTestDataTable();
@@ -69,12 +65,12 @@ public class TestFormulaColumn {
         kernelFormulasSavedValue = DhFormulaColumn.useKernelFormulasProperty;
         DhFormulaColumn.useKernelFormulasProperty = useKernelFormulas;
 
+        setUpQueryScope();
         setUpQueryLibrary();
     }
 
     @After
     public void tearDown() throws Exception {
-        QueryLibrary.resetLibrary();
         DhFormulaColumn.useKernelFormulasProperty = kernelFormulasSavedValue;
     }
 

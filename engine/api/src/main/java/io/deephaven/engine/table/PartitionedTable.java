@@ -5,11 +5,13 @@ package io.deephaven.engine.table;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.updategraph.ConcurrentMethod;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,7 +38,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     /**
      * Interface for proxies created by {@link #proxy()}.
      */
-    interface Proxy extends TableOperations<Proxy, TableOperations<?, ?>> {
+    interface Proxy extends TableOperationsDefaults<Proxy, TableOperations<?, ?>> {
 
         /**
          * Get the PartitionedTable instance underlying this proxy.
@@ -164,7 +166,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * columns not in the {@link #constituentDefinition() constituent definition}, those columns will be ignored. If
      * constituent tables are missing columns in the constituent definition, the corresponding output rows will be
      * {@code null}.
-     * 
+     *
      * @return A merged representation of the constituent tables
      */
     Table merge();
@@ -186,7 +188,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * Make a new PartitionedTable from the result of applying {@code sortColumns} to the underlying partitioned table.
      * <p>
      * {@code sortColumns} must not reference the constituent column.
-     * 
+     *
      * @param sortColumns The columns to sort by. Must not reference the constituent column.
      * @return The sorted PartitionedTable
      */
@@ -198,13 +200,31 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * Apply {@code transformer} to all constituent {@link Table tables}, and produce a new PartitionedTable containing
      * the results.
      * <p>
-     * {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for an empty
-     * input table.
+     *
+     * @apiNote {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for an
+     *          empty input table. It is required to install an ExecutionContext to access any
+     *          QueryLibrary/QueryScope/CompilerContext functionality from the {@code transformer}.
      *
      * @param transformer The {@link UnaryOperator} to apply to all constituent {@link Table tables}
      * @return The new PartitionedTable containing the resulting constituents
      */
-    PartitionedTable transform(@NotNull UnaryOperator<Table> transformer);
+    default PartitionedTable transform(@NotNull UnaryOperator<Table> transformer) {
+        return transform(ExecutionContext.getContextToRecord(), transformer);
+    }
+
+    /**
+     * <p>
+     * Apply {@code transformer} to all constituent {@link Table tables}, and produce a new PartitionedTable containing
+     * the results. The {@code transformer} will be invoked in the provided ExecutionContext.
+     * <p>
+     * {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for an empty
+     * input table.
+     *
+     * @param executionContext The ExecutionContext to use for the {@code transformer}
+     * @param transformer The {@link UnaryOperator} to apply to all constituent {@link Table tables}
+     * @return The new PartitionedTable containing the resulting constituents
+     */
+    PartitionedTable transform(ExecutionContext executionContext, @NotNull UnaryOperator<Table> transformer);
 
     /**
      * <p>
@@ -222,15 +242,50 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * {@link ColumnSource#getType() data type} and {@link ColumnSource#getComponentType() component type}.</li>
      * </ol>
      * <p>
-     * {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for empty input
-     * tables.
+     *
+     * @apiNote {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for
+     *          empty input tables. It is required to install an ExecutionContext to access any
+     *          QueryLibrary/QueryScope/CompilerContext functionality from the {@code transformer}.
      *
      * @param other The other PartitionedTable to find constituents in
      * @param transformer The {@link BinaryOperator} to apply to all pairs of constituent {@link Table tables}
      * @return The new PartitionedTable containing the resulting constituents
      */
+    default PartitionedTable partitionedTransform(
+            @NotNull PartitionedTable other,
+            @NotNull BinaryOperator<Table> transformer) {
+        return partitionedTransform(other, ExecutionContext.getContextToRecord(), transformer);
+    }
+
+    /**
+     * <p>
+     * Apply {@code transformer} to all constituent {@link Table tables} found in {@code this} and {@code other} with
+     * the same key column values, and produce a new PartitionedTable containing the results. The {@code transformer}
+     * will be invoked in the provided ExecutionContext.
+     * <p>
+     * Note that {@code other}'s key columns must match {@code this} PartitionedTable's key columns. Two matching
+     * mechanisms are supported, and will be attempted in the order listed:
+     * <ol>
+     * <li>Match by column name. Both PartitionedTables must have all the same {@link #keyColumnNames() key column
+     * names}. Like-named columns must have the same {@link ColumnSource#getType() data type} and
+     * {@link ColumnSource#getComponentType() component type}.</li>
+     * <li>Match by column order. Both PartitionedTables must have their matchable columns in the same order within
+     * their {@link #keyColumnNames() key column names}. Like-positioned columns must have the same
+     * {@link ColumnSource#getType() data type} and {@link ColumnSource#getComponentType() component type}.</li>
+     * </ol>
+     * <p>
+     * {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for empty input
+     * tables. It is required to install an ExecutionContext to access any QueryLibrary/QueryScope/CompilerContext
+     * functionality from the {@code transformer}.
+     *
+     * @param other The other PartitionedTable to find constituents in
+     * @param executionContext The ExecutionContext to use for the {@code transformer}
+     * @param transformer The {@link BinaryOperator} to apply to all pairs of constituent {@link Table tables}
+     * @return The new PartitionedTable containing the resulting constituents
+     */
     PartitionedTable partitionedTransform(
             @NotNull PartitionedTable other,
+            ExecutionContext executionContext,
             @NotNull BinaryOperator<Table> transformer);
 
     /**

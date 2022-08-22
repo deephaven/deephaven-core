@@ -7,8 +7,8 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryLibrary;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.PythonEvaluator;
@@ -75,20 +75,22 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * @param objectTypeLookup the object type lookup
      * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
-     * @param isDefaultScriptSession true if this is in the default context of a worker jvm
      * @param pythonEvaluator
      * @throws IOException if an IO error occurs running initialization scripts
      */
     public PythonDeephavenSession(
             ObjectTypeLookup objectTypeLookup, @Nullable final Listener listener, boolean runInitScripts,
-            boolean isDefaultScriptSession, PythonEvaluatorJpy pythonEvaluator)
+            PythonEvaluatorJpy pythonEvaluator)
             throws IOException {
-        super(objectTypeLookup, listener, isDefaultScriptSession);
+        super(objectTypeLookup, listener);
 
         evaluator = pythonEvaluator;
         scope = pythonEvaluator.getScope();
-        this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
-                .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
+        executionContext.getQueryLibrary().importClass(org.jpy.PyObject.class);
+        try (final SafeCloseable ignored = executionContext.open()) {
+            this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+                    .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
+        }
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         /*
@@ -108,14 +110,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 runScript(script);
             }
         }
-
-        final QueryLibrary currLibrary = QueryLibrary.getLibrary();
-        try {
-            QueryLibrary.setLibrary(queryLibrary);
-            QueryLibrary.importClass(org.jpy.PyObject.class);
-        } finally {
-            QueryLibrary.setLibrary(currLibrary);
-        }
     }
 
     /**
@@ -123,7 +117,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * IPython kernel session.
      */
     public PythonDeephavenSession(PythonScope<?> scope) {
-        super(NoOp.INSTANCE, null, false);
+        super(NoOp.INSTANCE, null);
         this.scope = (PythonScope<PyObject>) scope;
         this.module = null;
         this.evaluator = null;

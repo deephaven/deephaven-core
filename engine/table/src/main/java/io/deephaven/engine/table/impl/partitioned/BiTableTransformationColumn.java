@@ -14,6 +14,8 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -29,6 +31,7 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
     private final String inputOutputColumnName;
     private final String secondInputColumnName;
     private final BinaryOperator<Table> transformer;
+    private final ExecutionContext executionContext;
 
     private ColumnSource<Table> inputColumnSource1;
     private ColumnSource<Table> inputColumnSource2;
@@ -36,9 +39,11 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
     BiTableTransformationColumn(
             @NotNull final String inputOutputColumnName,
             @NotNull final String secondInputColumnName,
+            final ExecutionContext executionContext,
             @NotNull final BinaryOperator<Table> transformer) {
         this.inputOutputColumnName = inputOutputColumnName;
         this.secondInputColumnName = secondInputColumnName;
+        this.executionContext = executionContext;
         this.transformer = transformer;
     }
 
@@ -76,7 +81,8 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
 
     @Override
     public SelectColumn copy() {
-        return new BiTableTransformationColumn(inputOutputColumnName, secondInputColumnName, transformer);
+        return new BiTableTransformationColumn(inputOutputColumnName, secondInputColumnName,
+                executionContext, transformer);
     }
 
     private final class OutputFormulaFillContext implements Formula.FillContext {
@@ -104,12 +110,16 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
 
         @Override
         public Object get(final long rowKey) {
-            return transformer.apply(inputColumnSource1.get(rowKey), inputColumnSource2.get(rowKey));
+            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
+                return transformer.apply(inputColumnSource1.get(rowKey), inputColumnSource2.get(rowKey));
+            }
         }
 
         @Override
         public Object getPrev(final long rowKey) {
-            return transformer.apply(inputColumnSource1.getPrev(rowKey), inputColumnSource2.getPrev(rowKey));
+            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
+                return transformer.apply(inputColumnSource1.getPrev(rowKey), inputColumnSource2.getPrev(rowKey));
+            }
         }
 
         @Override
@@ -153,8 +163,10 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
             final WritableObjectChunk<Table, ? super Values> typedDestination = destination.asWritableObjectChunk();
             final int size = source1.size();
             typedDestination.setSize(size);
-            for (int ii = 0; ii < size; ++ii) {
-                typedDestination.set(ii, transformer.apply(source1.get(ii), source2.get(ii)));
+            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
+                for (int ii = 0; ii < size; ++ii) {
+                    typedDestination.set(ii, transformer.apply(source1.get(ii), source2.get(ii)));
+                }
             }
         }
     }
