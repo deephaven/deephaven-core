@@ -86,8 +86,11 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
         evaluator = pythonEvaluator;
         scope = pythonEvaluator.getScope();
-        this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
-                .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
+        executionContext.getQueryLibrary().importClass(org.jpy.PyObject.class);
+        try (final SafeCloseable ignored = executionContext.open()) {
+            this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+                    .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
+        }
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         /*
@@ -107,8 +110,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 runScript(script);
             }
         }
-
-        executionContext.getQueryLibrary().importClass(org.jpy.PyObject.class);
     }
 
     /**
