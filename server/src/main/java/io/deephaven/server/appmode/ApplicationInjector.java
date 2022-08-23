@@ -41,12 +41,16 @@ public class ApplicationInjector {
     }
 
     public void run() throws IOException, ClassNotFoundException {
-        if (!ApplicationConfig.isApplicationModeEnabled()) {
+        for (ApplicationState.Factory factory : ApplicationState.Factory.loadFromServiceFactory()) {
+            loadApplicationFactory(factory);
+        }
+
+        if (!ApplicationConfig.isCustomApplicationModeEnabled()) {
             return;
         }
 
-        final Path applicationDir = ApplicationConfig.applicationDir();
-        log.info().append("Finding application(s) in '").append(applicationDir.toString()).append("'...").endl();
+        final Path applicationDir = ApplicationConfig.customApplicationDir();
+        log.info().append("Finding custom application(s) in '").append(applicationDir.toString()).append("'...").endl();
 
         List<ApplicationConfig> configs;
         try {
@@ -86,6 +90,16 @@ public class ApplicationInjector {
             int numExports = app.listFields().size();
             log.info().append("\tfound ").append(numExports).append(" exports").endl();
 
+            ticketResolver.onApplicationLoad(app);
+        }
+    }
+
+    private void loadApplicationFactory(ApplicationState.Factory factory) {
+        log.info().append("Starting ApplicationState.Factory '").append(factory.toString()).append('\'').endl();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final ApplicationState app = factory.create(applicationListener);
+            int numExports = app.listFields().size();
+            log.info().append("\tfound ").append(numExports).append(" exports").endl();
             ticketResolver.onApplicationLoad(app);
         }
     }
