@@ -65,8 +65,7 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
             case Object:
                 return (dataType == String.class)
                         ? new JsonNodeStringFieldCopier(fieldName)
-                        : new JsonNodeObjectFieldCopier(fieldName)
-                        ;
+                        : new JsonNodeObjectFieldCopier(fieldName);
         }
         throw new IllegalArgumentException("Can not convert field of type " + dataType);
     }
