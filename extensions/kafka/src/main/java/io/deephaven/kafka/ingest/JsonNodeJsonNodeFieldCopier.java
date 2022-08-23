@@ -10,10 +10,10 @@ import io.deephaven.chunk.WritableObjectChunk;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.chunk.attributes.Values;
 
-public class JsonNodeObjectFieldCopier implements FieldCopier {
+public class JsonNodeJsonNodeFieldCopier implements FieldCopier {
     private final JsonPointer fieldPointer;
 
-    public JsonNodeObjectFieldCopier(final String fieldPointerStr) {
+    public JsonNodeJsonNodeFieldCopier(final String fieldPointerStr) {
         this.fieldPointer = JsonPointer.compile(fieldPointerStr);
     }
 
