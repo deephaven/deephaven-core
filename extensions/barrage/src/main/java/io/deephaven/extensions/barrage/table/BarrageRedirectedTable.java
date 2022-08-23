@@ -55,8 +55,8 @@ public class BarrageRedirectedTable extends BarrageTable {
             final WritableColumnSource<?>[] writableSources,
             final WritableRowRedirection rowRedirection,
             final Map<String, Object> attributes,
-            final boolean isViewPort) {
-        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, isViewPort);
+            final long initialViewPortRows) {
+        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, initialViewPortRows);
         this.rowRedirection = rowRedirection;
     }
 

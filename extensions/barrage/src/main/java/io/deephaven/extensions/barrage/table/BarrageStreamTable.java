@@ -47,8 +47,8 @@ public class BarrageStreamTable extends BarrageTable {
             final LinkedHashMap<String, ColumnSource<?>> columns,
             final WritableColumnSource<?>[] writableSources,
             final Map<String, Object> attributes,
-            final boolean isViewPort) {
-        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, isViewPort);
+            final long initialViewPortRows) {
+        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, initialViewPortRows);
     }
 
     private void processUpdate(final BarrageMessage update) {
