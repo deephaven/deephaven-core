@@ -56,8 +56,7 @@ public class ConjunctiveFilter extends ComposedFilter {
 
     @Override
     public ConjunctiveFilter copy() {
-        return new ConjunctiveFilter(
-                Arrays.stream(getComponentFilters()).map(WhereFilter::copy).toArray(WhereFilter[]::new));
+        return new ConjunctiveFilter(WhereFilter.copyFrom(getComponentFilters()));
     }
 
     @Override

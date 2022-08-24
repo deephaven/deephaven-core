@@ -4,6 +4,7 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.engine.context.ExecutionContext;
 
 /**
  * A {@link NotificationQueue.Notification} that does not actually notify anything.
@@ -32,4 +33,9 @@ public class EmptyNotification extends AbstractNotification {
 
     @Override
     public final void run() {}
+
+    @Override
+    public ExecutionContext getExecutionContext() {
+        return null;
+    }
 }

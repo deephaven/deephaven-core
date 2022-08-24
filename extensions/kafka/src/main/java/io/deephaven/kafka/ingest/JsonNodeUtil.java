@@ -545,7 +545,10 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static String getString(final JsonNode node) {
-        return isNullOrMissingField(node) ? null : node.asText();
+        if (isNullOrMissingField(node)) {
+            return null;
+        }
+        return node.isValueNode() ? node.asText() : node.toString();
     }
 
     /**

@@ -4,6 +4,7 @@
 package io.deephaven.engine.util;
 
 import org.jpy.PyDictWrapper;
+import org.jpy.PyObject;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
@@ -169,5 +170,21 @@ public interface PythonScope<PyObj> {
          */
     }
 
-    public PyDictWrapper globals();
+    /**
+     * @return the Python's __main__ module namespace
+     */
+    public PyDictWrapper mainGlobals();
+
+    /**
+     * Push the provided Python scope into the thread scope stack for subsequent operations on Tables
+     *
+     * @param pydict a Python dictionary representing the current scope under which the Python code in running, it is
+     *        the combination of module globals and function locals
+     */
+    void pushScope(PyObject pydict);
+
+    /**
+     * Pop the last Python scope pushed by {@link #pushScope(PyObject pydict)} from the thread scope stack
+     */
+    void popScope();
 }

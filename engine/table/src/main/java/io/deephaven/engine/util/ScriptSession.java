@@ -3,7 +3,8 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.ReleasableLivenessManager;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
@@ -54,6 +55,12 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
      * @return a VariableProvider instance backed by the global/binding context of this script session.
      */
     VariableProvider getVariableProvider();
+
+    /**
+     * Obtain an {@link ExecutionContext} instance for the current script session. This is the execution context that is
+     * used when executing scripts.
+     */
+    ExecutionContext getExecutionContext();
 
     class Changes {
         public RuntimeException error = null;

@@ -76,7 +76,11 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
     @Override
     public WhereFilter copy() {
-        return new ComparableRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        final ComparableRangeFilter copy =
+                new ComparableRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
+        return copy;
     }
 
     @Override

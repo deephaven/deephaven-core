@@ -50,6 +50,8 @@ public class RegexFilter extends PatternFilter {
 
     @Override
     public RegexFilter copy() {
-        return new RegexFilter(getCaseSensitivity(), getMatchType(), columnName, value);
+        final RegexFilter copy = new RegexFilter(getCaseSensitivity(), getMatchType(), columnName, value);
+        copy.pattern = pattern;
+        return copy;
     }
 }

@@ -3,9 +3,6 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableColumnSource;
-
 public interface FormulaColumn extends SelectColumn {
 
     static FormulaColumn createFormulaColumn(String columnName, String formulaString,

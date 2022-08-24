@@ -5,7 +5,8 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
@@ -15,8 +16,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -49,6 +49,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     private List<Pair<String, Class>> usedInputs; // that is columns and special variables
     private String classBody;
     private Filter filter = null;
+    private boolean filterValidForCopy = true;
 
     private ConditionFilter(@NotNull String formula) {
         super(formula, false);
@@ -419,8 +420,11 @@ public class ConditionFilter extends AbstractConditionFilter {
             usedInputs.add(new Pair<>("k", long.class));
         }
         final StringBuilder classBody = new StringBuilder();
-        classBody.append(CodeGenerator.create(QueryLibrary.getImportStrings().toArray()).build()).append(
-                "\n\npublic class $CLASSNAME$ implements ")
+        classBody
+                .append(CodeGenerator
+                        .create(ExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()).build())
+                .append(
+                        "\n\npublic class $CLASSNAME$ implements ")
                 .append(FilterKernel.class.getCanonicalName()).append("<FilterKernel.Context>{\n");
         classBody.append("\n").append(timeConversionResult.getInstanceVariablesString()).append("\n");
         final Indenter indenter = new Indenter();
@@ -547,14 +551,16 @@ public class ConditionFilter extends AbstractConditionFilter {
     @Override
     protected Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        if (filter != null) {
-            return filter;
+        if (filter == null) {
+            final FilterKernel<?> filterKernel = (FilterKernel<?>) filterKernelClass
+                    .getConstructor(Table.class, RowSet.class, QueryScopeParam[].class)
+                    .newInstance(table, fullSet, (Object) params);
+            final String[] columnNames = usedInputs.stream().map(p -> p.first).toArray(String[]::new);
+            filter = new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
+            // note this filter is not valid for use in other contexts, as it captures references from the source table
+            filterValidForCopy = false;
         }
-        final FilterKernel filterKernel = (FilterKernel) filterKernelClass
-                .getConstructor(Table.class, RowSet.class, QueryScopeParam[].class)
-                .newInstance(table, fullSet, (Object) params);
-        final String[] columnNames = usedInputs.stream().map(p -> p.first).toArray(String[]::new);
-        return new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
+        return filter;
     }
 
     @Override
@@ -564,7 +570,17 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public ConditionFilter copy() {
-        return new ConditionFilter(formula, outerToInnerNames);
+        final ConditionFilter copy = new ConditionFilter(formula, outerToInnerNames);
+        onCopy(copy);
+        if (initialized) {
+            copy.filterKernelClass = filterKernelClass;
+            copy.usedInputs = usedInputs;
+            copy.classBody = classBody;
+            if (filterValidForCopy) {
+                copy.filter = filter;
+            }
+        }
+        return copy;
     }
 
     @Override

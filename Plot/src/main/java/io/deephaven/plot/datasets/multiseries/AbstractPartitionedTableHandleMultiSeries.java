@@ -3,12 +3,12 @@
  */
 package io.deephaven.plot.datasets.multiseries;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.datasets.DataSeriesInternal;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.PartitionedTable;
 
 import java.util.Arrays;
@@ -90,7 +90,7 @@ public abstract class AbstractPartitionedTableHandleMultiSeries<SERIES extends D
     public void applyTransform(final String columnName, final String update, final Class[] classesToImport,
             final Map<String, Object> params, boolean columnTypesPreserved) {
         ArgumentValidations.assertNull(partitionedTable, "partitionedTable must be null", getPlotInfo());
-        Arrays.stream(classesToImport).forEach(QueryLibrary::importClass);
+        Arrays.stream(classesToImport).forEach(aClass -> ExecutionContext.getContext().getQueryLibrary().importClass(aClass));
         params.forEach(QueryScope::addParam);
         partitionedTableHandle.addColumn(columnName);
 

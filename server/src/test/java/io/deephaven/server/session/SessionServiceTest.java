@@ -5,6 +5,7 @@ package io.deephaven.server.session;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.auth.AuthContext;
@@ -25,8 +26,9 @@ public class SessionServiceTest {
     public void setup() {
         livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
-        sessionService =
-                new SessionService(scheduler, authContext -> new SessionState(scheduler, authContext), TOKEN_EXPIRE_MS);
+        sessionService = new SessionService(scheduler,
+                authContext -> new SessionState(scheduler, NoLanguageDeephavenSession::new, authContext),
+                TOKEN_EXPIRE_MS);
     }
 
     @After

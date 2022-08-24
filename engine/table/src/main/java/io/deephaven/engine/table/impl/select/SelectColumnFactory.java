@@ -4,8 +4,8 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
-import io.deephaven.engine.util.AbstractExpressionFactory;
-import io.deephaven.engine.util.ExpressionParser;
+import io.deephaven.api.expression.AbstractExpressionFactory;
+import io.deephaven.api.expression.ExpressionParser;
 import io.deephaven.engine.util.ColumnFormattingValues;
 
 import java.util.Arrays;
@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static io.deephaven.engine.table.impl.select.SelectFactoryConstants.*;
+import static io.deephaven.api.expression.SelectFactoryConstants.*;
 
 /**
  * A factory to create {@link SelectColumn}s from an input expression.

@@ -12,7 +12,10 @@ import io.deephaven.engine.rowset.RowSetFactory;
 
 import io.deephaven.engine.rowset.impl.PerfStats;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Rule;
 
 import java.util.Comparator;
 import java.util.List;
@@ -31,6 +34,9 @@ public abstract class TestTimSortKernel {
     private static final int PERFORMANCE_SEEDS = 10;
     private static final int CORRECTNESS_SEEDS = 10;
 
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
     @FunctionalInterface
     public interface GenerateTupleList<T> {
         List<T> generate(Random random, int size);
@@ -48,7 +54,7 @@ public abstract class TestTimSortKernel {
         abstract void run();
     }
 
-    abstract static class SortKernelStuff<T> {
+    abstract static class SortKernelStuff<T> implements SafeCloseable {
         final WritableLongChunk<RowKeys> rowKeys;
 
         SortKernelStuff(int size) {
@@ -58,9 +64,14 @@ public abstract class TestTimSortKernel {
         abstract void run();
 
         abstract void check(List<T> expected);
+
+        @Override
+        public void close() {
+            rowKeys.close();
+        }
     }
 
-    abstract static class PartitionKernelStuff<T> {
+    abstract static class PartitionKernelStuff<T> implements SafeCloseable {
         final WritableLongChunk<RowKeys> rowKeys;
 
         PartitionKernelStuff(int size) {
@@ -70,6 +81,11 @@ public abstract class TestTimSortKernel {
         abstract void run();
 
         abstract void check(List<T> expected);
+
+        @Override
+        public void close() {
+            rowKeys.close();
+        }
     }
 
     abstract static class SortMultiKernelStuff<T> extends SortKernelStuff<T> {
@@ -95,6 +111,15 @@ public abstract class TestTimSortKernel {
         abstract void run();
 
         abstract void check(List<T> expected);
+
+        @Override
+        public void close() {
+            super.close();
+            offsets.close();
+            lengths.close();
+            offsetsOut.close();
+            lengthsOut.close();
+        }
     }
 
     <T, K, M> void performanceTest(GenerateTupleList<T> generateValues,
@@ -157,12 +182,11 @@ public abstract class TestTimSortKernel {
 
             final List<T> javaTuples = tupleListGenerator.generate(random, size);
 
-            final SortKernelStuff<T> sortStuff = prepareFunction.apply(javaTuples);
-
-            javaTuples.sort(comparator);
-            sortStuff.run();
-
-            sortStuff.check(javaTuples);
+            try (final SortKernelStuff<T> sortStuff = prepareFunction.apply(javaTuples)) {
+                javaTuples.sort(comparator);
+                sortStuff.run();
+                sortStuff.check(javaTuples);
+            }
         }
     }
 
@@ -187,12 +211,11 @@ public abstract class TestTimSortKernel {
             }
             final RowSet rowSet = builder.build();
 
-            final PartitionKernelStuff<T> partitionStuff =
-                    prepareFunction.apply(javaTuples, rowSet, chunkSize, nPartitions, false);
-
-            partitionStuff.run();
-
-            partitionStuff.check(javaTuples);
+            try (final PartitionKernelStuff<T> partitionStuff =
+                    prepareFunction.apply(javaTuples, rowSet, chunkSize, nPartitions, false)) {
+                partitionStuff.run();
+                partitionStuff.check(javaTuples);
+            }
         }
     }
 
@@ -204,15 +227,15 @@ public abstract class TestTimSortKernel {
 
             final List<T> javaTuples = tupleListGenerator.generate(random, size);
 
-            final SortKernelStuff<T> sortStuff = prepareFunction.apply(javaTuples);
+            try (final SortKernelStuff<T> sortStuff = prepareFunction.apply(javaTuples)) {
+                // System.out.println("Prior to sort: " + javaTuples);
+                sortStuff.run();
 
-            // System.out.println("Prior to sort: " + javaTuples);
-            sortStuff.run();
+                javaTuples.sort(comparator);
+                // System.out.println("After sort: " + javaTuples);
 
-            javaTuples.sort(comparator);
-            // System.out.println("After sort: " + javaTuples);
-
-            sortStuff.check(javaTuples);
+                sortStuff.check(javaTuples);
+            }
         }
     }
 

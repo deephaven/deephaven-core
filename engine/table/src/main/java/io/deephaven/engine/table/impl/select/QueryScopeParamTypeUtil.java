@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import groovy.lang.Closure;
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.CompilerTools;
 import io.deephaven.util.type.TypeUtils;
 
 import java.lang.reflect.Modifier;

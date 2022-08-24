@@ -7,7 +7,7 @@ import io.deephaven.plot.Figure;
 import io.deephaven.plot.FigureFactory;
 import io.deephaven.plot.axistransformations.AxisTransformLambda;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 
 

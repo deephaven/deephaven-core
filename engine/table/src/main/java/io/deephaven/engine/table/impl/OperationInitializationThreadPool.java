@@ -12,8 +12,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class OperationInitializationThreadPool {
-    public final static int NUM_THREADS =
+
+    public static final int NUM_THREADS =
             Configuration.getInstance().getIntegerWithDefault("OperationInitializationThreadPool.threads", 1);
+
+    private static final ThreadLocal<Boolean> isInitializationThread = ThreadLocal.withInitial(() -> false);
+
+    public static boolean isInitializationThread() {
+        return isInitializationThread.get();
+    }
 
     public final static ExecutorService executorService;
     static {
@@ -24,6 +31,7 @@ public class OperationInitializationThreadPool {
                     @Override
                     public Thread newThread(@NotNull Runnable r) {
                         return super.newThread(() -> {
+                            isInitializationThread.set(true);
                             MultiChunkPool.enableDedicatedPoolForThisThread();
                             r.run();
                         });

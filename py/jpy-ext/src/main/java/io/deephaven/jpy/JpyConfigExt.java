@@ -3,8 +3,6 @@
  */
 package io.deephaven.jpy;
 
-import io.deephaven.base.log.LogOutput;
-import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.jpy.JpyConfig.Flag;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -13,7 +11,7 @@ import java.util.Objects;
 import org.jpy.PyLib;
 import org.jpy.PyLibInitializer;
 
-public class JpyConfigExt implements LogOutputAppendable {
+public class JpyConfigExt {
 
     private final JpyConfig config;
     private boolean initialized;
@@ -30,20 +28,20 @@ public class JpyConfigExt implements LogOutputAppendable {
     /**
      * Equivalent to {@code logOutput.append(safeToString(path))}
      */
-    private static void format(LogOutput logOutput, Path path) {
+    private static void format(StringBuilder logOutput, Path path) {
         logOutput.append(safeToString(path));
     }
 
     /**
      * Appends each item from {@code collection} to the {@code logOutput}, separated by a comma
      */
-    private static <T> void format(LogOutput logOutput, Collection<T> collection) {
+    private static <T> void format(StringBuilder logOutput, Collection<T> collection) {
         boolean first = true;
         for (T item : collection) {
             if (!first) {
-                logOutput = logOutput.append(',');
+                logOutput.append(',');
             }
-            logOutput = logOutput.append(item.toString());
+            logOutput.append(item.toString());
             first = false;
         }
     }
@@ -105,15 +103,27 @@ public class JpyConfigExt implements LogOutputAppendable {
         }
     }
 
+    public void append(StringBuilder logOutput) {
+        logOutput.append("flags=");
+        format(logOutput, config.getFlags());
+        logOutput.append(",programName=");
+        format(logOutput, config.getProgramName().orElse(null));
+        logOutput.append(",pythonHome=");
+        format(logOutput, config.getPythonHome().orElse(null));
+        logOutput.append(",pythonLib=");
+        format(logOutput, config.getPythonLib().orElse(null));
+        logOutput.append(",jpyLib=");
+        format(logOutput, config.getJpyLib().orElse(null));
+        logOutput.append(",jdlLib=");
+        format(logOutput, config.getJdlLib().orElse(null));
+        logOutput.append(",extras=");
+        format(logOutput, config.getExtraPaths());
+    }
+
     @Override
-    public LogOutput append(LogOutput logOutput) {
-        return logOutput
-                .append("flags=").append(JpyConfigExt::format, config.getFlags())
-                .append(",programName=").append(JpyConfigExt::format, config.getProgramName().orElse(null))
-                .append(",pythonHome=").append(JpyConfigExt::format, config.getPythonHome().orElse(null))
-                .append(",pythonLib=").append(JpyConfigExt::format, config.getPythonLib().orElse(null))
-                .append(",jpyLib=").append(JpyConfigExt::format, config.getJpyLib().orElse(null))
-                .append(",jdlLib=").append(JpyConfigExt::format, config.getJdlLib().orElse(null))
-                .append(",extras=").append(JpyConfigExt::format, config.getExtraPaths());
+    public final String toString() {
+        StringBuilder sb = new StringBuilder();
+        append(sb);
+        return sb.toString();
     }
 }

@@ -7,6 +7,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
@@ -52,6 +53,8 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     private volatile long lastCompletedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile long lastEnqueuedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+
+    protected final ExecutionContext executionContext = ExecutionContext.getContextToRecord();
 
     InstrumentedTableListenerBase(@Nullable String description, boolean terminalListener) {
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(description);
@@ -207,6 +210,11 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
             return output.append("ErrorNotification{").append("originalException=")
                     .append(originalException.getMessage()).append(", sourceEntry=").append(sourceEntry).append("}");
         }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
+        }
     }
 
     protected abstract class NotificationBase extends AbstractNotification implements LogOutputAppendable {
@@ -250,6 +258,11 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         @Override
         public final boolean canExecute(final long step) {
             return InstrumentedTableListenerBase.this.canExecute(step);
+        }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
         }
 
         void doRun(final Runnable invokeOnUpdate) {

@@ -6,9 +6,10 @@ package io.deephaven.engine.table.impl.lang;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.vector.*;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.vector.Vector;
 import io.deephaven.util.type.TypeUtils;
 import com.github.javaparser.ast.*;
@@ -430,20 +431,22 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return getMethod(scope, methodName, paramTypes, parameterizedTypes).getReturnType();
     }
 
-    private Class<?> calculateMethodReturnTypeUsingGenerics(Method method, Class<?>[] paramTypes,
-            Class<?>[][] parameterizedTypes) {
-        Type genericReturnType = method.getGenericReturnType();
+    private Class<?> calculateMethodReturnTypeUsingGenerics(
+            Class<?> scope, Method method, Class<?>[] paramTypes, Class<?>[][] parameterizedTypes) {
+        Type methodReturnType = method.getGenericReturnType();
 
         int arrayDimensions = 0;
 
-        while (genericReturnType instanceof GenericArrayType) {
-            genericReturnType = ((GenericArrayType) genericReturnType).getGenericComponentType();
+        while (methodReturnType instanceof GenericArrayType) {
+            methodReturnType = ((GenericArrayType) methodReturnType).getGenericComponentType();
             arrayDimensions++;
         }
 
-        if (!(genericReturnType instanceof TypeVariable)) {
+        if (!(methodReturnType instanceof TypeVariable)) {
             return method.getReturnType();
         }
+
+        final TypeVariable<?> genericReturnType = (TypeVariable<?>) methodReturnType;
 
         // check for the generic type in a param
 
@@ -480,7 +483,49 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
         }
 
-        return method.getReturnType();
+        // check if inheritance fixes the generic type
+        final Class<?> fixedGenericType = extractGenericType(scope, method, genericReturnType);
+        return fixedGenericType != null ? fixedGenericType : method.getReturnType();
+    }
+
+    private Class<?> extractGenericType(final Type type, final Method method, final TypeVariable<?> genericReturnType) {
+        final Class<?> clazz;
+        if (type instanceof ParameterizedType) {
+            final ParameterizedType parameterizedType = (ParameterizedType) type;
+            final Type rawType = parameterizedType.getRawType();
+            if (!(rawType instanceof Class<?>)) {
+                return null;
+            }
+            clazz = (Class<?>) rawType;
+
+            // check if this parameterized type matches the method's declaring class, then return the fixed type
+            if (method.getDeclaringClass().equals(rawType)) {
+                final Type[] typeArguments = parameterizedType.getActualTypeArguments();
+                final TypeVariable<?>[] typeParameters = clazz.getTypeParameters();
+                for (int ii = 0; ii < typeParameters.length; ++ii) {
+                    if (typeParameters[ii].getName().equals(genericReturnType.getName())
+                            && typeArguments[ii] instanceof Class<?>) {
+                        return (Class<?>) typeArguments[ii];
+                    }
+                }
+            }
+        } else if (type instanceof Class<?>) {
+            clazz = (Class<?>) type;
+        } else {
+            return null;
+        }
+
+        // check for generic interfaces
+        for (final Type superInterfaceType : clazz.getGenericInterfaces()) {
+            final Class<?> returnType = extractGenericType(superInterfaceType, method, genericReturnType);
+            if (returnType != null) {
+                return returnType;
+            }
+        }
+
+        // check super type
+        final Type superType = clazz.getGenericSuperclass();
+        return (superType != null) ? extractGenericType(superType, method, genericReturnType) : null;
     }
 
     @SuppressWarnings({"ConstantConditions"})
@@ -1690,7 +1735,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             printArguments(expressions, printer);
         }
 
-        return calculateMethodReturnTypeUsingGenerics(method, expressionTypes, parameterizedTypes);
+        return calculateMethodReturnTypeUsingGenerics(scope, method, expressionTypes, parameterizedTypes);
     }
 
     private void checkPyNumbaVectorizedFunc(MethodCallExpr n, Expression[] expressions, Class<?>[] expressionTypes) {
@@ -1703,7 +1748,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
         });
 
-        final QueryScope queryScope = QueryScope.getScope();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             if (param.getName().equals(n.getNameAsString())) {
                 NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();

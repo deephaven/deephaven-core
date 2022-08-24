@@ -76,7 +76,10 @@ public class ByteRangeFilter extends AbstractRangeFilter {
 
     @Override
     public ByteRangeFilter copy() {
-        return new ByteRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        final ByteRangeFilter copy = new ByteRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
+        return copy;
     }
 
     @Override

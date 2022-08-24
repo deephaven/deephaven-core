@@ -3,20 +3,11 @@
  */
 package io.deephaven.treetable;
 
-import io.deephaven.csv.CsvTools;
-import io.deephaven.csv.util.CsvReaderException;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.HierarchicalTable;
 import io.deephaven.engine.table.impl.QueryTableTestBase;
-import org.junit.Test;
 
 import java.util.*;
 
 import static io.deephaven.engine.util.TableTools.emptyTable;
-import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
 
 public class SnapshotStateTest extends QueryTableTestBase {
 

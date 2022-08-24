@@ -109,7 +109,7 @@ public class PartitionAwareSourceTable extends SourceTable {
         }
 
         @Override
-        public TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
+        protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
             ArrayList<WhereFilter> partitionFilters = new ArrayList<>();
             ArrayList<WhereFilter> groupFilters = new ArrayList<>();
             ArrayList<WhereFilter> otherFilters = new ArrayList<>();
@@ -119,7 +119,7 @@ public class PartitionAwareSourceTable extends SourceTable {
                     groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
             for (WhereFilter filter : whereFilters) {
-                filter.init(table.definition);
+                // note: our filters are already initialized
                 List<String> columns = filter.getColumns();
                 if (filter instanceof ReindexingFilter) {
                     otherFilters.add(filter);

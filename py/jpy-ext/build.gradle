@@ -15,12 +15,7 @@ plugins {
   id 'java-library'
 }
 
-configurations {
-  implementation.extendsFrom fishBase
-}
-
 dependencies {
   api 'org.jpyconsortium:jpy:0.11.0'
   api project(':deephaven-jpy-config')
-  api project(':Base')
 }

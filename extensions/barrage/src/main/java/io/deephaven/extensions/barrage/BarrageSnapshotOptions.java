@@ -26,6 +26,7 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
                 .useDeephavenNulls(options.useDeephavenNulls())
                 .columnConversionMode(ColumnConversionMode.conversionModeFbToEnum(mode))
                 .batchSize(options.batchSize())
+                .maxMessageSize(options.maxMessageSize())
                 .build();
     }
 
@@ -47,8 +48,18 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
     /**
      * @return the preferred batch size if specified
      */
+    @Override
     @Default
     public int batchSize() {
+        return 0;
+    }
+
+    /**
+     * @return the maximum GRPC message size if specified
+     */
+    @Override
+    @Default
+    public int maxMessageSize() {
         return 0;
     }
 
@@ -61,7 +72,8 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
     public int appendTo(FlatBufferBuilder builder) {
         return io.deephaven.barrage.flatbuf.BarrageSnapshotOptions.createBarrageSnapshotOptions(
                 builder, ColumnConversionMode.conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(),
-                batchSize());
+                batchSize(),
+                maxMessageSize());
     }
 
     public interface Builder {
@@ -71,6 +83,8 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
         Builder columnConversionMode(ColumnConversionMode columnConversionMode);
 
         Builder batchSize(int batchSize);
+
+        Builder maxMessageSize(int messageSize);
 
         BarrageSnapshotOptions build();
     }

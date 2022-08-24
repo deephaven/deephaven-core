@@ -6,10 +6,10 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.RollupInfo;
-import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.util.AbstractExpressionFactory;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.api.expression.AbstractExpressionFactory;
 import io.deephaven.engine.util.ColumnFormattingValues;
-import io.deephaven.engine.util.ExpressionParser;
+import io.deephaven.api.expression.ExpressionParser;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.internal.log.LoggerFactory;
@@ -29,7 +29,7 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.impl.select.SelectFactoryConstants.*;
+import static io.deephaven.api.expression.SelectFactoryConstants.*;
 
 /**
  * Given a user's filter string produce an appropriate WhereFilter instance.

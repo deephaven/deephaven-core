@@ -5,9 +5,11 @@ package io.deephaven.engine.table.impl.partitioned;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.base.Pair;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessManager;
@@ -25,7 +27,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
-import io.deephaven.engine.updategraph.ConcurrentMethod;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -239,13 +240,17 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @ConcurrentMethod
     @Override
-    public PartitionedTableImpl transform(@NotNull final UnaryOperator<Table> transformer) {
+    public PartitionedTableImpl transform(final ExecutionContext executionContext,
+            @NotNull final UnaryOperator<Table> transformer) {
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored1 = executionContext == null ? null : executionContext.open();
+                final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+
             // Perform the transformation
-            resultTable = table.update(new TableTransformationColumn(constituentColumnName, transformer));
+            resultTable = table.update(new TableTransformationColumn(
+                    constituentColumnName, executionContext, transformer));
             enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition
@@ -268,6 +273,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     @Override
     public PartitionedTableImpl partitionedTransform(
             @NotNull final PartitionedTable other,
+            final ExecutionContext executionContext,
             @NotNull final BinaryOperator<Table> transformer) {
         // Check safety before doing any extra work
         if (table.isRefreshing() || other.table().isRefreshing()) {
@@ -280,7 +286,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored1 = executionContext == null ? null : executionContext.open();
+                final SafeCloseable ignored2 = LivenessScopeStack.open()) {
             // Perform the transformation
             final MatchPair[] joinAdditions =
                     new MatchPair[] {new MatchPair(RHS_CONSTITUENT, other.constituentColumnName())};
@@ -289,7 +296,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                             .where(new MatchFilter(Inverted, RHS_CONSTITUENT, (Object) null))
                     : table.join(other.table(), joinPairs, joinAdditions);
             resultTable = joined
-                    .update(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT, transformer))
+                    .update(new BiTableTransformationColumn(
+                            constituentColumnName, RHS_CONSTITUENT, executionContext, transformer))
                     .dropColumns(RHS_CONSTITUENT);
             enclosingScope.manage(resultTable);
 

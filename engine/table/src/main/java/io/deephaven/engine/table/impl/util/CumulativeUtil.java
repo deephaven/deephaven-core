@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
@@ -64,7 +64,7 @@ public class CumulativeUtil {
     /**
      * General purpose core method for executing running and cumulative aggregations. Used by helper methods which
      * provide template formulae for specific types of aggregations.
-     * 
+     *
      * @param t The {@link Table} to use as input to the aggregation.
      * @param key Nullable string key to use to access the cached previous row value within the {@link CumulativeHelper}
      *        map. Note that a non-null literal key must be enclosed in backticks since it will be used in a formula.
@@ -88,7 +88,7 @@ public class CumulativeUtil {
 
     /**
      * Executes a cumulative aggregation of the minimum value so far for a formula.
-     * 
+     *
      * @param t The {@link Table} to use as input to the aggregation.
      * @param newCol The name of the aggregation column to add to the table.
      * @param formula A formula for the source value on which to calculate a running minimum. This can be as simple as
@@ -102,7 +102,7 @@ public class CumulativeUtil {
 
     /**
      * Executes a cumulative sum aggregation far for a formula.
-     * 
+     *
      * @param t The {@link Table} to use as input to the aggregation.
      * @param key Nullable string key to use to access the cached previous row value within the {@link CumulativeHelper}
      *        map. Note that a non-null literal key must be enclosed in backticks since it will be used in a formula.
@@ -120,7 +120,7 @@ public class CumulativeUtil {
 
     /**
      * Executes a cumulative sum aggregation far for a formula.
-     * 
+     *
      * @param t The {@link Table} to use as input to the aggregation.
      * @param newCol The name of the aggregation column to add to the table.
      * @param formula A formula for the source value on which to calculate a running sum. This can be as simple as the
@@ -134,7 +134,7 @@ public class CumulativeUtil {
 
     /**
      * Executes a rolling sum aggregation far for a formula.
-     * 
+     *
      * @param t The {@link Table} to use as input to the aggregation.
      * @param windowSize The number of rows to include in the rolling sum window.
      * @param newCol The name of the aggregation column to add to the table.
@@ -150,7 +150,7 @@ public class CumulativeUtil {
 
     /**
      * Returns only rows for which the selected column value is different from the value in the previous row.
-     * 
+     *
      * @param t The {@link Table} to use as input to the method.
      * @param key Nullable string key to use to access the cached previous row value within the {@link CumulativeHelper}
      *        map. Note that a non-null literal key must be enclosed in backticks since it will be used in a formula.
@@ -167,7 +167,7 @@ public class CumulativeUtil {
 
     /**
      * main method to show examples of use of this class' methods.
-     * 
+     *
      * @param args Not used
      * @throws IOException
      */
