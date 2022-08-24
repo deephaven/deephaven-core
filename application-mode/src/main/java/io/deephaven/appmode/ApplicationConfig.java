@@ -13,16 +13,6 @@ import java.util.List;
 
 public interface ApplicationConfig {
 
-    /**
-     * True if application mode is enabled; set system property {@link ApplicationConfigImpl#APPLICATION_DIR_PROP} to
-     * enable.
-     *
-     * @return true if application mode is enabled
-     */
-    static boolean isApplicationModeEnabled() {
-        return true;
-    }
-
     static boolean isCustomApplicationModeEnabled() {
         return ApplicationConfigImpl.APPLICATION_DIR != null;
     }
