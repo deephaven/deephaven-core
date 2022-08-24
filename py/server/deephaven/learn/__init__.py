@@ -136,23 +136,14 @@ def learn(table: Table = None, model_func: Callable = None, inputs: List[Input] 
         if batch_size is None:
             raise ValueError("Batch size cannot be inferred. Please specify a batch size.")
 
-        # TODO: When ticket #1072 is resolved, the following code should be replaced with
-        # Globals["__computer"] = _Computer_(table, model_func, [input.input for input in inputs], batch_size)
-        # and remove from globals at the end of function
-        (jpy.get_type("io.deephaven.engine.context.QueryScope")
-         .addParam("__computer", _JLearnComputer(table.j_table, model_func,
-                                                 [input_.input for input_ in inputs],
-                                                 batch_size)))
+        __computer = _JLearnComputer(table.j_table, model_func,
+                [input_.input for input_ in inputs], batch_size)
 
         future_offset = _create_non_conflicting_col_name(table, "__FutureOffset")
         clean = _create_non_conflicting_col_name(table, "__CleanComputer")
 
         if outputs is not None:
             __scatterer = _JLearnScatterer([output.output for output in outputs])
-            # TODO: Similarly at resolution of #1072, replace the following code with
-            # Globals["__scatterer"] = __scatterer
-            # and remove from Globals at end of function
-            jpy.get_type("io.deephaven.engine.context.QueryScope").addParam("__scatterer", __scatterer)
 
             return (table
                     .update(formulas=[f"{future_offset} = __computer.compute(k)", ])
