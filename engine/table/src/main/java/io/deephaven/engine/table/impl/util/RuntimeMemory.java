@@ -123,11 +123,13 @@ public class RuntimeMemory {
          */
         public long totalMemory;
         /**
-         * The total number of GC collections since program start. The sum of {@link GarbageCollectorMXBean#getCollectionCount()}.
+         * The total number of GC collections since program start. The sum of
+         * {@link GarbageCollectorMXBean#getCollectionCount()}.
          */
         public long totalCollections;
         /**
-         * The approximated total time of GC collections since program start, in milliseconds. The sum of the {@link GarbageCollectorMXBean#getCollectionTime()}.
+         * The approximated total time of GC collections since program start, in milliseconds. The sum of the
+         * {@link GarbageCollectorMXBean#getCollectionTime()}.
          */
         public long totalCollectionTimeMs;
 
