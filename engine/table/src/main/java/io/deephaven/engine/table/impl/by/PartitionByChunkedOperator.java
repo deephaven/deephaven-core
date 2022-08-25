@@ -382,21 +382,17 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         if (builder == NONEXISTENT_TABLE_ROW_SET_BUILDER) {
             return;
         }
+        // slice the chunk to the start and length
+        LongChunk<OrderedRowKeys> sliced = rowKeysToAdd.slice(start, length);
         if (builder == null) {
             // create (and store) a new builder, fill with these keys
             final RowSetBuilderRandom newBuilder = RowSetFactory.builderRandom();
-            OrderedLongSet.fromChunk(rowKeysToAdd, start, length, false).ixForEachLongRange((s, e) -> {
-                newBuilder.addRange(s, e);
-                return true;
-            });
+            newBuilder.addRowKeysChunk(sliced);
             rowSetColumn.set(destination, newBuilder);
             return;
         }
         // add the keys to the stored builder
-        OrderedLongSet.fromChunk(rowKeysToAdd, start, length, false).ixForEachLongRange((s, e) -> {
-            builder.addRange(s, e);
-            return true;
-        });
+        builder.addRowKeysChunk(sliced);
     }
 
     private static void accumulateToRowSet(@NotNull final ObjectArraySource<RowSetBuilderRandom> rowSetColumn,
