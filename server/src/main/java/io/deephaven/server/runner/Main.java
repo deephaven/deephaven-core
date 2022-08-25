@@ -34,10 +34,10 @@ public class Main {
         if (args.length == 0) {
             try (final InputStream in = Main.class.getResourceAsStream("/bootstrap.properties")) {
                 if (in != null) {
-                    System.out.println("# Bootstrapping from resource '/bootstrap.properties'%n");
+                    System.out.println("# Bootstrapping from resource '/bootstrap.properties'");
                     System.getProperties().load(in);
                 } else {
-                    System.out.println("# No resource '/bootstrap.properties' found, skipping bootstrapping%n");
+                    System.out.println("# No resource '/bootstrap.properties' found, skipping bootstrapping");
                 }
             }
         } else {
