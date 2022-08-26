@@ -7,6 +7,7 @@ import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
 import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
+import io.deephaven.server.log.LogModule;
 import io.grpc.ManagedChannelBuilder;
 
 import javax.inject.Named;
@@ -16,6 +17,7 @@ import java.io.PrintStream;
 @Singleton
 @Component(modules = {
         DeephavenApiServerModule.class,
+        LogModule.class,
         PythonConsoleSessionModule.class,
         PythonGlobalScopeCopyModule.class,
         ServerBuilderInProcessModule.class

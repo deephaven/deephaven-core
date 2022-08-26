@@ -17,9 +17,6 @@ import io.deephaven.server.appmode.AppModeModule;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.auth.AuthContextModule;
 import io.deephaven.server.console.ConsoleModule;
-import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
-import io.deephaven.server.console.python.PythonConsoleSessionModule;
-import io.deephaven.server.log.LogModule;
 import io.deephaven.server.session.SessionModule;
 import io.deephaven.server.table.TableModule;
 import io.deephaven.server.table.inputtables.InputTableModule;
@@ -28,8 +25,6 @@ import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
 import io.grpc.BindableService;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptor;
 import org.jetbrains.annotations.NotNull;
 
@@ -53,7 +48,6 @@ import java.util.concurrent.TimeUnit;
         AppModeModule.class,
         ArrowModule.class,
         AuthContextModule.class,
-        LogModule.class,
         UriModule.class,
         SessionModule.class,
         TableModule.class,

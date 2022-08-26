@@ -6,6 +6,7 @@ package io.deephaven.server.runner;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
+import io.deephaven.server.log.LogModule;
 import io.grpc.ManagedChannelBuilder;
 
 import javax.inject.Named;
@@ -15,6 +16,7 @@ import java.io.PrintStream;
 @Singleton
 @Component(modules = {
         DeephavenApiServerModule.class,
+        LogModule.class,
         GroovyConsoleSessionModule.class,
         ServerBuilderInProcessModule.class
 })
