@@ -16,6 +16,7 @@ import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -43,13 +44,13 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
     @Test
     public void getStream() throws Exception {
         final TableSpec table = i32768(TableCreatorImpl.INSTANCE);
-        try (
-                final TableHandle handle = flightSession.session().execute(table);
+        try (final TableHandle handle = flightSession.session().execute(table);
                 final FlightStream stream = flightSession.stream(handle)) {
-            System.out.println(stream.getSchema());
+            int numRows = 0;
             while (stream.next()) {
-                System.out.println(stream.getRoot().contentToTSVString());
+                numRows += stream.getRoot().getRowCount();
             }
+            Assert.assertEquals(32768, numRows);
         }
     }
 

@@ -13,8 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.impl.TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY;
-
 /**
  * Helper for coalescing and de-unioning tables prior to a merge. Only for engine-internal usage.
  */

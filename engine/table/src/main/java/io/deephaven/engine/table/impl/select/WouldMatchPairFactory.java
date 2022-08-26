@@ -4,15 +4,15 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.WouldMatchPair;
-import io.deephaven.engine.util.AbstractExpressionFactory;
-import io.deephaven.engine.util.ExpressionParser;
+import io.deephaven.api.expression.AbstractExpressionFactory;
+import io.deephaven.api.expression.ExpressionParser;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.impl.select.SelectFactoryConstants.*;
+import static io.deephaven.api.expression.SelectFactoryConstants.*;
 
 /**
  * Parses strings of the form "Column1=expression" into a {@link WouldMatchPair} (or array of them).

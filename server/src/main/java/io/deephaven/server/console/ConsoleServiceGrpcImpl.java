@@ -7,6 +7,7 @@ import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
+import io.deephaven.engine.table.impl.util.RuntimeMemory.Sample;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -33,6 +34,7 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
@@ -184,12 +186,13 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void getHeapInfo(GetHeapInfoRequest request, StreamObserver<GetHeapInfoResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
+            final Sample sample = new Sample();
+            runtimeMemory.read(sample);
             final GetHeapInfoResponse infoResponse = GetHeapInfoResponse.newBuilder()
-                    .setTotalMemory(runtimeMemory.totalMemory())
-                    .setFreeMemory(runtimeMemory.freeMemory())
+                    .setTotalMemory(sample.totalMemory)
+                    .setFreeMemory(sample.freeMemory)
                     .setMaxMemory(runtimeMemory.maxMemory())
                     .build();
-
             responseObserver.onNext(infoResponse);
             responseObserver.onCompleted();
         });
@@ -334,9 +337,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private void getCompletionItems(GetCompletionItemsRequest request,
             SessionState.ExportObject<ScriptSession> exportedConsole, CompletionParser parser,
             StreamObserver<AutoCompleteResponse> responseObserver) {
-        try {
+        final ScriptSession scriptSession = exportedConsole.get();
+        try (final SafeCloseable ignored = scriptSession.getExecutionContext().open()) {
             final VersionedTextDocumentIdentifier doc = request.getTextDocument();
-            ScriptSession scriptSession = exportedConsole.get();
             final VariableProvider vars = scriptSession.getVariableProvider();
             final CompletionLookups h = CompletionLookups.preload(scriptSession);
             // The only stateful part of a completer is the CompletionLookups, which are already once-per-session-cached

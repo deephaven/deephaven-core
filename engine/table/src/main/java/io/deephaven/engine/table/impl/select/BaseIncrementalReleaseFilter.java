@@ -162,7 +162,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
 
     /**
      * How many nanos between the first release event and the final release event?
-     * 
+     *
      * @return nano duration of this filter, or NULL_LONG if the filter is not completed
      */
     @ScriptApi
@@ -210,7 +210,10 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     }
 
     @Override
-    abstract public BaseIncrementalReleaseFilter copy();
+    public BaseIncrementalReleaseFilter copy() {
+        throw new UnsupportedOperationException(getClass().getName() + " does not support automatic copy() due to " +
+                "usage incompatibilities (internally-created instances cannot be start()ed)");
+    }
 
     @Override
     public boolean isRefreshing() {

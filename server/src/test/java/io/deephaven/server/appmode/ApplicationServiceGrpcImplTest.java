@@ -39,8 +39,9 @@ public class ApplicationServiceGrpcImplTest {
     public void setup() {
         livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
-        sessionService =
-                new SessionService(scheduler, authContext -> new SessionState(scheduler, authContext), TOKEN_EXPIRE_MS);
+        sessionService = new SessionService(scheduler,
+                authContext -> new SessionState(scheduler, NoLanguageDeephavenSession::new, authContext),
+                TOKEN_EXPIRE_MS);
         applicationServiceGrpcImpl = new ApplicationServiceGrpcImpl(AppMode.HYBRID, scheduler, sessionService,
                 new TypeLookup(ObjectTypeLookup.NoOp.INSTANCE));
     }

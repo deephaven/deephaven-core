@@ -27,7 +27,7 @@ public abstract class DeephavenApiServerTestBase {
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
-    private DeephavenApiServerInProcessComponent serverComponent;
+    private DeephavenApiServerInProcessGroovyComponent serverComponent;
     private LogBuffer logBuffer;
     private DeephavenApiServer server;
     private SafeCloseable scopeCloseable;
@@ -40,7 +40,7 @@ public abstract class DeephavenApiServerTestBase {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
-        serverComponent = DaggerDeephavenApiServerInProcessComponent
+        serverComponent = DaggerDeephavenApiServerInProcessGroovyComponent
                 .builder()
                 .withSchedulerPoolSize(4)
                 .withSessionTokenExpireTmMs(sessionTokenExpireTmMs())
@@ -63,7 +63,6 @@ public abstract class DeephavenApiServerTestBase {
             server.server().join();
         } finally {
             LogBufferGlobal.clear(logBuffer);
-            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
         }
     }
 

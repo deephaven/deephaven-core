@@ -92,18 +92,18 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private static final Logger log = LoggerFactory.getLogger(BarrageMessageProducer.class);
 
-    private static final boolean SUBSCRIPTION_GROWTH_ENABLED =
+    public static final boolean SUBSCRIPTION_GROWTH_ENABLED =
             Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class,
                     "subscriptionGrowthEnabled", false);
 
-    private static final double TARGET_SNAPSHOT_PERCENTAGE =
+    public static final double TARGET_SNAPSHOT_PERCENTAGE =
             Configuration.getInstance().getDoubleForClassWithDefault(BarrageMessageProducer.class,
                     "targetSnapshotPercentage", 0.25);
 
-    private static final long MIN_SNAPSHOT_CELL_COUNT =
+    public static final long MIN_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageMessageProducer.class,
                     "minSnapshotCellCount", 50000);
-    private static final long MAX_SNAPSHOT_CELL_COUNT =
+    public static final long MAX_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageMessageProducer.class,
                     "maxSnapshotCellCount", Long.MAX_VALUE);
 

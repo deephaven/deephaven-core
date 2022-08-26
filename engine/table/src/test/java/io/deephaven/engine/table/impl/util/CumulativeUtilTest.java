@@ -5,10 +5,25 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.util.SafeCloseable;
 
 public class CumulativeUtilTest extends BaseArrayTestCase {
+    private SafeCloseable executionContext;
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        executionContext = ExecutionContext.createForUnitTests().open();
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        executionContext.close();
+    }
 
     public void testCumSum() {
         final Table t = TableTools.emptyTable(10).updateView("Row = i");

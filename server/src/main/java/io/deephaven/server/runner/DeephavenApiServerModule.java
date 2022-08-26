@@ -63,8 +63,6 @@ import java.util.concurrent.TimeUnit;
         ObjectServiceModule.class,
         PluginsModule.class,
         PartitionedTableServiceModule.class,
-        GroovyConsoleSessionModule.class,
-        PythonConsoleSessionModule.class
 })
 public class DeephavenApiServerModule {
 
@@ -89,7 +87,16 @@ public class DeephavenApiServerModule {
     @Provides
     @Singleton
     public ScriptSession provideScriptSession(Map<String, Provider<ScriptSession>> scriptTypes) {
-        String scriptSessionType = Configuration.getInstance().getStringWithDefault("deephaven.console.type", "python");
+        final String DEEPHAVEN_CONSOLE_TYPE = "deephaven.console.type";
+        boolean configuredConsole = Configuration.getInstance().hasProperty(DEEPHAVEN_CONSOLE_TYPE);
+
+        if (!configuredConsole && scriptTypes.size() == 1) {
+            // if there is only one; use it
+            return scriptTypes.values().iterator().next().get();
+        }
+
+        // otherwise, assume we want python...
+        String scriptSessionType = Configuration.getInstance().getStringWithDefault(DEEPHAVEN_CONSOLE_TYPE, "python");
         if (!scriptTypes.containsKey(scriptSessionType)) {
             throw new IllegalArgumentException("Console type not found: " + scriptSessionType);
         }

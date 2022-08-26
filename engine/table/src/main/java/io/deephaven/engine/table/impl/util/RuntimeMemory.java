@@ -68,6 +68,13 @@ public class RuntimeMemory {
          * The approximated total time of GC collections since program start, in milliseconds.
          */
         long totalCollectionTimeMs;
+
+        private void readInto(Sample buf) {
+            buf.freeMemory = lastFreeMemory;
+            buf.totalMemory = lastTotalMemory;
+            buf.totalCollections = totalCollections;
+            buf.totalCollectionTimeMs = totalCollectionTimeMs;
+        }
     }
 
     private volatile Snapshot currSnapshot;
@@ -108,19 +115,21 @@ public class RuntimeMemory {
 
     public static class Sample {
         /**
-         * What is the last free memory value we retrieved from the Runtime.
+         * What is the last free memory value we retrieved from the {@link Runtime#freeMemory()}.
          */
         public long freeMemory;
         /**
-         * What is the last total memory value we retrieved from the Runtime.
+         * What is the last total memory value we retrieved from the {@link Runtime#totalMemory()}.
          */
         public long totalMemory;
         /**
-         * The total number of GC collections since program start.
+         * The total number of GC collections since program start. The sum of
+         * {@link GarbageCollectorMXBean#getCollectionCount()}.
          */
         public long totalCollections;
         /**
-         * The approximated total time of GC collections since program start, in milliseconds.
+         * The approximated total time of GC collections since program start, in milliseconds. The sum of the
+         * {@link GarbageCollectorMXBean#getCollectionTime()}.
          */
         public long totalCollectionTimeMs;
 
@@ -145,7 +154,7 @@ public class RuntimeMemory {
     }
 
     /**
-     * Read last collected samples.
+     * Read last collected samples. Triggers a new snapshot if the last snapshot is older than {@code cacheInterval}.
      *
      * @param buf a user provided buffer object to store the samples.
      */
@@ -172,10 +181,7 @@ public class RuntimeMemory {
                 }
             }
         }
-        buf.freeMemory = snapshot.lastFreeMemory;
-        buf.totalMemory = snapshot.lastTotalMemory;
-        buf.totalCollections = snapshot.totalCollections;
-        buf.totalCollectionTimeMs = snapshot.totalCollectionTimeMs;
+        snapshot.readInto(buf);
         if (logInterval > 0 && now >= snapshot.nextLog) {
             synchronized (this) {
                 if (now >= currSnapshot.nextLog) {
@@ -189,17 +195,12 @@ public class RuntimeMemory {
     }
 
     /**
-     * See {@link Runtime#freeMemory()}.
+     * Read last collected samples.
+     *
+     * @param buf a user provided buffer object to store the samples.
      */
-    public long freeMemory() {
-        return currSnapshot.lastFreeMemory;
-    }
-
-    /**
-     * See {@link Runtime#totalMemory()}.
-     */
-    public long totalMemory() {
-        return currSnapshot.lastTotalMemory;
+    public void readOnly(final Sample buf) {
+        currSnapshot.readInto(buf);
     }
 
     /**

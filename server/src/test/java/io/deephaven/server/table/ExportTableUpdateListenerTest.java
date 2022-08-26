@@ -6,6 +6,7 @@ package io.deephaven.server.table;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -339,7 +340,7 @@ public class ExportTableUpdateListenerTest {
 
     public class TestSessionState extends SessionState {
         public TestSessionState() {
-            super(scheduler, AUTH_CONTEXT);
+            super(scheduler, NoLanguageDeephavenSession::new, AUTH_CONTEXT);
             initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
                     DateTimeUtils.nanosToTime(Long.MAX_VALUE), this));
         }

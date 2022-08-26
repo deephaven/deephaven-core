@@ -5,6 +5,8 @@ package io.deephaven.server.jetty;
 
 import dagger.BindsInstance;
 import dagger.Component;
+import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
+import io.deephaven.server.console.python.PythonConsoleSessionModule;
 import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
@@ -22,6 +24,8 @@ import javax.inject.Singleton;
         HealthCheckModule.class,
         PythonPluginsRegistration.Module.class,
         JettyServerModule.class,
+        PythonConsoleSessionModule.class,
+        GroovyConsoleSessionModule.class,
 })
 public interface JettyServerComponent extends DeephavenApiServerComponent {
     @Component.Builder

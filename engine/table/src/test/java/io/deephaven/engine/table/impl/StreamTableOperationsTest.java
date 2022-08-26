@@ -19,6 +19,7 @@ import io.deephaven.test.junit4.EngineCleanup;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,15 +37,20 @@ import java.util.stream.LongStream;
 public class StreamTableOperationsTest {
 
     @Rule
-    public EngineCleanup base = new EngineCleanup();
+    public final EngineCleanup framework = new EngineCleanup();
 
     private static final long INPUT_SIZE = 100_000L;
     private static final long MAX_RANDOM_ITERATION_SIZE = 10_000;
 
-    private final Table source = TableCreatorImpl.create(EmptyTable.of(INPUT_SIZE)
-            .update("Sym = Long.toString(ii % 1000) + `_Sym`")
-            .update("Price = ii / 100 - (ii % 100)")
-            .update("Size = (long) (ii / 50 - (ii % 50))"));
+    private Table source;
+
+    @Before
+    public void setUp() {
+        source = TableCreatorImpl.create(EmptyTable.of(INPUT_SIZE)
+                .update("Sym = Long.toString(ii % 1000) + `_Sym`")
+                .update("Price = ii / 100 - (ii % 100)")
+                .update("Size = (long) (ii / 50 - (ii % 50))"));
+    }
 
     /**
      * Execute a table operator.

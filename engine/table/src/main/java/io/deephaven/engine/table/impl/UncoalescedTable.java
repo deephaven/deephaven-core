@@ -17,7 +17,7 @@ import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.iterators.*;
-import io.deephaven.engine.updategraph.ConcurrentMethod;
+import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,7 +31,7 @@ import java.util.function.Function;
  * Abstract class for uncoalesced tables. These tables have deferred work that must be done before data can be operated
  * on.
  */
-public abstract class UncoalescedTable extends BaseTable implements TableWithDefaults {
+public abstract class UncoalescedTable extends BaseTable {
 
     private final Object coalescingLock = new Object();
 

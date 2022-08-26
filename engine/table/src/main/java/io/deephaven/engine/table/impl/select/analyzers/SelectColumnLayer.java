@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.ObjectChunkIterator;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
@@ -41,6 +42,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
      * The same reference as super.columnSource, but as a WritableColumnSource and maybe reinterpretted
      */
     private final WritableColumnSource writableSource;
+
+    /**
+     * The execution context the select column layer was constructed in
+     */
+    private final ExecutionContext executionContext;
+
     /**
      * Our parent row set, used for ensuring capacity.
      */
@@ -71,6 +78,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.parentRowSet = parentRowSet;
         this.writableSource = (WritableColumnSource) ReinterpretUtils.maybeConvertToPrimitive(ws);
         this.isRedirected = isRedirected;
+        this.executionContext = ExecutionContext.getContextToRecord();
 
         dependencyBitSet = new BitSet();
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
@@ -173,11 +181,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                 throw new IllegalStateException();
                             }
 
-                            jobScheduler.submit(() -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
-                                    liveResultOwner, onCompletion, this::onError, updates),
+                            jobScheduler.submit(
+                                    executionContext,
+                                    () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
+                                            liveResultOwner, onCompletion, this::onError, updates),
                                     SelectColumnLayer.this, this::onError);
                         } else {
                             jobScheduler.submit(
+                                    executionContext,
                                     () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion),
                                     SelectColumnLayer.this, this::onError);
                         }
@@ -205,6 +216,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         for (TableUpdate splitUpdate : splitUpdates) {
             final long fdest = destinationOffset;
             jobScheduler.submit(
+                    executionContext,
                     () -> doParallelApplyUpdate(splitUpdate, toClear, helper, liveResultOwner, onCompletion,
                             checkTableOperations, divisions, fdest),
                     SelectColumnLayer.this, onError);

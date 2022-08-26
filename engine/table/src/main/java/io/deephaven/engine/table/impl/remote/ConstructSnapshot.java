@@ -539,8 +539,8 @@ public class ConstructSnapshot {
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
             final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final RowSet positionsToSnapshot,
-            @Nullable final RowSet reversePositionsToSnapshot) {
+            @Nullable final RowSequence positionsToSnapshot,
+            @Nullable final RowSequence reversePositionsToSnapshot) {
         return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
                 positionsToSnapshot, reversePositionsToSnapshot,
                 makeSnapshotControl(false, table.isRefreshing(), table));
@@ -553,15 +553,16 @@ public class ConstructSnapshot {
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot A RowSet of positions within the table to include, null for all
+     * @param positionsToSnapshot A RowSequence of positions within the table to include, null for all
+     * @param reversePositionsToSnapshot A RowSequence of reverse positions within the table to include, null for all
      * @param control A {@link SnapshotControl} to define the parameters and consistency for this snapshot
      * @return a snapshot of the entire base table.
      */
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final RowSet positionsToSnapshot,
-            @Nullable final RowSet reversePositionsToSnapshot,
+            @Nullable final RowSequence positionsToSnapshot,
+            @Nullable final RowSequence reversePositionsToSnapshot,
             @NotNull final SnapshotControl control) {
 
         final BarrageMessage snapshot = new BarrageMessage();

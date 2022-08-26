@@ -43,9 +43,10 @@ class DoExchange extends FlightExampleBase {
             // inner metadata for the snapshot request
             final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
+            // you can use 0 for batch size and max message size to use server-side defaults
             int optOffset =
                     BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
-                            false, 1000);
+                            false, 0, 0);
 
             final int ticOffset =
                     BarrageSnapshotRequest.createTicketVector(metadata,

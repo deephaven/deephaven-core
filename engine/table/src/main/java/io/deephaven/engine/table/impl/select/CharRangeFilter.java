@@ -71,7 +71,10 @@ public class CharRangeFilter extends AbstractRangeFilter {
 
     @Override
     public CharRangeFilter copy() {
-        return new CharRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        final CharRangeFilter copy = new CharRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
+        return copy;
     }
 
     @Override

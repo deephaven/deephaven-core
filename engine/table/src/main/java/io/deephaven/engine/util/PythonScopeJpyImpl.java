@@ -14,6 +14,8 @@ import java.util.stream.Stream;
 
 public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private final PyDictWrapper dict;
+
+    private static final ThreadLocal<Deque<PyDictWrapper>> threadScopeStack = new ThreadLocal<>();
     private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = getNumbaVectorizedFuncType();
 
     // this assumes that the Python interpreter won't be re-initialized during a session, if this turns out to be a
@@ -34,26 +36,35 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         this.dict = dict;
     }
 
+    private PyDictWrapper currentScope() {
+        Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
+        if (scopeStack == null || scopeStack.isEmpty()) {
+            return this.dict;
+        } else {
+            return scopeStack.peek();
+        }
+    }
+
     @Override
     public Optional<PyObject> getValueRaw(String name) {
         // note: we *may* be returning Optional.of(None)
         // None is a valid PyObject, and can be in scope
-        return Optional.ofNullable(dict.get(name));
+        return Optional.ofNullable(currentScope().get(name));
     }
 
     @Override
     public Stream<PyObject> getKeysRaw() {
-        return dict.keySet().stream();
+        return currentScope().keySet().stream();
     }
 
     @Override
     public Stream<Entry<PyObject, PyObject>> getEntriesRaw() {
-        return dict.entrySet().stream();
+        return currentScope().entrySet().stream();
     }
 
     @Override
     public boolean containsKey(String name) {
-        return dict.containsKey(name);
+        return currentScope().containsKey(name);
     }
 
     @Override
@@ -197,7 +208,28 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         }
     }
 
-    public PyDictWrapper globals() {
+    public PyDictWrapper mainGlobals() {
         return dict;
+    }
+
+    @Override
+    public void pushScope(PyObject pydict) {
+        Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
+        if (scopeStack == null) {
+            scopeStack = new ArrayDeque<>();
+            threadScopeStack.set(scopeStack);
+        }
+        scopeStack.push(pydict.asDict());
+    }
+
+    @Override
+    public void popScope() {
+        Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
+        if (scopeStack != null) {
+            PyDictWrapper pydict = scopeStack.pop();
+            pydict.close();
+        } else {
+            throw new IllegalStateException("The thread scope stack is empty.");
+        }
     }
 }

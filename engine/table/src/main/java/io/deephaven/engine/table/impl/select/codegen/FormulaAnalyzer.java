@@ -4,14 +4,14 @@
 package io.deephaven.engine.table.impl.select.codegen;
 
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.QueryScopeParamTypeUtil;
-import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaCompilationException;
 import io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor;
@@ -29,33 +29,21 @@ public class FormulaAnalyzer {
 
     public static Result analyze(final String rawFormulaString,
             final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            Map<String, Class<?>> otherVariables) {
-        try {
-            return analyzeHelper(rawFormulaString, columnDefinitionMap, otherVariables);
-        } catch (Exception e) {
-            throw new FormulaCompilationException("Formula compilation error for: " + rawFormulaString, e);
-        }
-    }
-
-    private static Result analyzeHelper(final String rawFormulaString,
-            final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            Map<String, Class<?>> otherVariables) throws Exception {
+            final DateTimeUtils.Result timeConversionResult,
+            final QueryLanguageParser.Result queryLanguageResult) throws Exception {
         final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
-        final QueryScope queryScope = QueryScope.getScope();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleParams.put(param.getName(), param);
         }
 
-        final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(rawFormulaString);
-        final QueryLanguageParser.Result result = getCompiledFormula(columnDefinitionMap, timeConversionResult,
-                otherVariables);
-
-        log.debug().append("Expression (after language conversion) : ").append(result.getConvertedExpression()).endl();
+        log.debug().append("Expression (after language conversion) : ")
+                .append(queryLanguageResult.getConvertedExpression()).endl();
 
         final List<String> usedColumns = new ArrayList<>();
         final List<String> userParams = new ArrayList<>();
         final List<String> usedColumnArrays = new ArrayList<>();
-        for (String variable : result.getVariablesUsed()) {
+        for (String variable : queryLanguageResult.getVariablesUsed()) {
             final String colSuffix = DhFormulaColumn.COLUMN_SUFFIX;
             final String bareName;
             if (variable.equals("i") || variable.equals("ii") || variable.equals("k")) {
@@ -70,11 +58,11 @@ public class FormulaAnalyzer {
                 userParams.add(variable);
             }
         }
-        Class<?> returnedType = result.getType();
+        Class<?> returnedType = queryLanguageResult.getType();
         if (returnedType == boolean.class) {
             returnedType = Boolean.class;
         }
-        final String cookedFormulaString = result.getConvertedExpression();
+        final String cookedFormulaString = queryLanguageResult.getConvertedExpression();
         final String timeInstanceVariables = timeConversionResult.getInstanceVariablesString();
         return new Result(returnedType,
                 usedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
@@ -84,8 +72,7 @@ public class FormulaAnalyzer {
     }
 
     public static QueryLanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
-            DateTimeUtils.Result timeConversionResult,
-            Map<String, Class<?>> otherVariables) throws Exception {
+            DateTimeUtils.Result timeConversionResult) throws Exception {
         final Map<String, Class<?>> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);
         possibleVariables.put("ii", long.class);
@@ -105,7 +92,8 @@ public class FormulaAnalyzer {
             }
         }
 
-        final QueryScope queryScope = QueryScope.getScope();
+        final ExecutionContext context = ExecutionContext.getContext();
+        final QueryScope queryScope = context.getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleVariables.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
 
@@ -133,15 +121,15 @@ public class FormulaAnalyzer {
                 .endl();
 
         possibleVariables.putAll(timeConversionResult.getNewVariables());
-        if (otherVariables != null) {
-            possibleVariables.putAll(otherVariables);
-        }
 
-        final Set<Class<?>> classImports = new HashSet<>(QueryLibrary.getClassImports());
+        final Set<Class<?>> classImports =
+                new HashSet<>(context.getQueryLibrary().getClassImports());
         classImports.add(TrackingWritableRowSet.class);
         classImports.add(WritableColumnSource.class);
-        return new QueryLanguageParser(timeConversionResult.getConvertedFormula(), QueryLibrary.getPackageImports(),
-                classImports, QueryLibrary.getStaticImports(), possibleVariables, possibleVariableParameterizedTypes)
+        return new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
+                context.getQueryLibrary().getPackageImports(),
+                classImports, context.getQueryLibrary().getStaticImports(), possibleVariables,
+                possibleVariableParameterizedTypes)
                         .getResult();
     }
 

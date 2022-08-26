@@ -5,15 +5,15 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -227,7 +227,7 @@ public class QueryTableSelectUpdateTest {
             return;
         }
 
-        QueryLibrary.importStatic(QueryTableSelectUpdateTest.class);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(QueryTableSelectUpdateTest.class);
 
         QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), c("A", 1, 2, 3));
         table = (QueryTable) table

@@ -27,7 +27,7 @@ public class TestGroovyDeephavenSession {
     public void setup() throws IOException {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
-        session = new GroovyDeephavenSession(NoOp.INSTANCE, null, GroovyDeephavenSession.RunScripts.none(), false);
+        session = new GroovyDeephavenSession(NoOp.INSTANCE, null, GroovyDeephavenSession.RunScripts.none());
     }
 
     @After

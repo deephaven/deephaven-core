@@ -18,7 +18,7 @@ import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.gui.color.ColorPaletteArray;
 import io.deephaven.util.QueryConstants;

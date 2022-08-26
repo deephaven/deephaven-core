@@ -8,6 +8,7 @@ description 'Engine API: Engine API module, suitable as a compile-time dependenc
 dependencies {
     api project(':qst')
     api project(':engine-chunk')
+    api project(':engine-context')
     api project(':engine-vector')
     api project(':engine-time')
     api project(':engine-updategraph')
@@ -17,8 +18,6 @@ dependencies {
     implementation depTrove3
 
     Classpaths.inheritImmutables(project)
-
-    implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
 
     implementation 'com.google.guava:guava:19.0'
 

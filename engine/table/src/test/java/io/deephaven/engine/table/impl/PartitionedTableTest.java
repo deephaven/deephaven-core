@@ -9,19 +9,19 @@ import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
-import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -244,6 +244,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         final PartitionedTable partitionedTable = sourceTable.partitionBy("Key");
 
+        final ExecutionContext executionContext = ExecutionContext.makeSystemicExecutionContext();
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     @Override
@@ -255,7 +256,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                     @Override
                     protected Table e() {
                         return partitionedTable
-                                .transform(
+                                .transform(executionContext,
                                         t -> t.update("K2=Key * 2").update("K3=Key + K2").update("K5 = K3 + K2"))
                                 .merge().sort("Key");
                     }
@@ -264,7 +265,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                     @Override
                     protected Table e() {
                         return partitionedTable
-                                .partitionedTransform(partitionedTable,
+                                .partitionedTransform(partitionedTable, executionContext,
                                         (l, r) -> l.naturalJoin(r.lastBy("Key"), "Key", "Sentinel2=Sentinel"))
                                 .merge().sort("Key");
                     }
@@ -461,9 +462,14 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         pauseHelper.release();
         pauseHelper2.release();
 
+        final ExecutionContext executionContext = ExecutionContext.newBuilder()
+                .captureQueryScopeVars("pauseHelper2")
+                .captureQueryLibrary()
+                .captureCompilerContext()
+                .build();
         final PartitionedTable result2 =
                 sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").partitionBy("USym2")
-                        .transform(t -> t.update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"));
+                        .transform(executionContext, t -> t.update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"));
 
         // pauseHelper.pause();
         pauseHelper2.pause();
@@ -543,8 +549,13 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         pauseHelper.release();
 
+        final ExecutionContext executionContext = ExecutionContext.newBuilder()
+                .captureQueryScopeVars("pauseHelper")
+                .captureQueryLibrary()
+                .captureCompilerContext()
+                .build();
         final PartitionedTable result2 = sourceTable2.partitionBy("USym2")
-                .transform(t -> t.update("SlowItDown2=pauseHelper.pauseValue(2 * k)"));
+                .transform(executionContext, t -> t.update("SlowItDown2=pauseHelper.pauseValue(2 * k)"));
 
         final PartitionedTable joined = result.partitionedTransform(result2, (l, r) -> {
             System.out.println("Doing naturalJoin");
@@ -739,9 +750,17 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         final MutableLong step = new MutableLong(0);
         QueryScope.addParam("step", step);
-        QueryLibrary.importStatic(TableTools.class);
-        final Table underlying = base.update(
-                "Constituent=emptyTable(1000 * step.longValue()).update(\"JJ=ii * \" + II + \" * step.longValue()\")");
+        ExecutionContext.getContext().getQueryLibrary().importStatic(TableTools.class);
+
+        final Table underlying;
+        try (final SafeCloseable ignored = ExecutionContext.newBuilder()
+                .captureQueryLibrary()
+                .captureCompilerContext()
+                .captureQueryScope()
+                .build().open()) {
+            underlying = base.update(
+                    "Constituent=emptyTable(1000 * step.longValue()).update(\"JJ=ii * \" + II + \" * step.longValue()\")");
+        }
 
         final PartitionedTable partitioned = PartitionedTableFactory.of(underlying);
         final Table merged = partitioned.merge();
@@ -790,5 +809,56 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             mergedTable.getRowSet().writableCast().removeRange(0, 1);
             ((BaseTable) mergedTable).notifyListeners(i(), ir(0, 1), i());
         });
+    }
+
+    private EvalNugget newExecutionContextNugget(
+            QueryTable table, Function<PartitionedTable.Proxy, PartitionedTable.Proxy> op) {
+        return new EvalNugget() {
+            @Override
+            protected Table e() {
+                // note we cannot reuse the execution context and remove the values as the table is built each iteration
+                try (final SafeCloseable ignored = ExecutionContext.newBuilder()
+                        .captureCompilerContext()
+                        .captureQueryLibrary()
+                        .newQueryScope()
+                        .build().open()) {
+                    ;
+                    ExecutionContext.getContext().getQueryScope().putParam("queryScopeVar", "queryScopeValue");
+                    ExecutionContext.getContext().getQueryScope().putParam("queryScopeFilter", 50000);
+
+                    final PartitionedTable.Proxy proxy = table.partitionedAggBy(List.of(), true, null, "intCol")
+                            .proxy(false, false);
+                    final Table result = op.apply(proxy).target().merge().sort("intCol");
+
+                    ExecutionContext.getContext().getQueryScope().putParam("queryScopeVar", null);
+                    ExecutionContext.getContext().getQueryScope().putParam("queryScopeFilter", null);
+                    return result;
+                }
+            }
+        };
+    }
+
+    public void testExecutionContext() {
+        final Random random = new Random(0);
+
+        final int size = 100;
+
+        final TstUtils.ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable table = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"intCol", "indices"},
+                        new TstUtils.IntGenerator(0, 100000),
+                        new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1)));
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                newExecutionContextNugget(table, src -> src.update("K = queryScopeVar")),
+                newExecutionContextNugget(table, src -> src.updateView("K = queryScopeVar")),
+                newExecutionContextNugget(table, src -> src.select("K = queryScopeVar", "indices", "intCol")),
+                newExecutionContextNugget(table, src -> src.view("K = queryScopeVar", "indices", "intCol")),
+                newExecutionContextNugget(table, src -> src.where("intCol > queryScopeFilter")),
+        };
+
+        for (int i = 0; i < 100; i++) {
+            simulateShiftAwareStep(size, random, table, columnInfo, en);
+        }
     }
 }

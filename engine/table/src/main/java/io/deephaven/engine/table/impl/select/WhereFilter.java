@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -42,6 +43,10 @@ public interface WhereFilter extends Filter {
 
     static WhereFilter[] fromInverted(Collection<? extends Filter> filters) {
         return filters.stream().map(WhereFilter::ofInverted).toArray(WhereFilter[]::new);
+    }
+
+    static WhereFilter[] copyFrom(WhereFilter[] filters) {
+        return Arrays.stream(filters).map(WhereFilter::copy).toArray(WhereFilter[]::new);
     }
 
     /**
@@ -99,8 +104,11 @@ public interface WhereFilter extends Filter {
 
     /**
      * Initialize this select filter given the table definition
-     * 
+     *
      * @param tableDefinition the definition of the table that will be filtered
+     * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
+     *          {@link io.deephaven.engine.context.CompilerTools} usage needs to be resolved within init.
+     *          Implementations must be idempotent.
      */
     void init(TableDefinition tableDefinition);
 

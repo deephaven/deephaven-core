@@ -3,20 +3,16 @@
  */
 package io.deephaven.server.arrow;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.rpc.Code;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
-import io.deephaven.proto.flight.util.MessageHelper;
-import io.deephaven.server.barrage.BarrageStreamGenerator;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
@@ -28,10 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
-
-import static io.deephaven.server.arrow.ArrowFlightUtil.ZERO_MOD_COLUMNS;
 
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
@@ -148,57 +141,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     }
 
     public void doGetCustom(final Flight.Ticket request, final StreamObserver<InputStream> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            final SessionState.ExportObject<BaseTable> export =
-                    ticketRouter.resolve(session, request, "request");
-
-            final long queueStartTm = System.nanoTime();
-            final BarragePerformanceLog.SnapshotMetricsHelper metrics =
-                    new BarragePerformanceLog.SnapshotMetricsHelper();
-
-            session.nonExport()
-                    .require(export)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        metrics.queueNanos = System.nanoTime() - queueStartTm;
-                        final BaseTable table = export.get();
-                        metrics.tableId = Integer.toHexString(System.identityHashCode(table));
-                        metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
-
-                        // create an adapter for the response observer
-                        final StreamObserver<BarrageStreamGenerator.View> listener =
-                                ArrowModule.provideListenerAdapter().adapt(responseObserver);
-
-                        // Send Schema wrapped in Message
-                        final FlatBufferBuilder builder = new FlatBufferBuilder();
-                        final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table.getDefinition(),
-                                table.getAttributes());
-                        builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
-                                org.apache.arrow.flatbuf.MessageHeader.Schema));
-                        final ByteBuffer serializedMessage = builder.dataBuffer();
-
-                        // leverage the stream generator SchemaView constructor
-                        final BarrageStreamGenerator.SchemaView schemaView =
-                                new BarrageStreamGenerator.SchemaView(serializedMessage);
-
-                        // push the schema to the listener
-                        listener.onNext(schemaView);
-
-                        // get ourselves some data!
-                        final long snapshotStartTm = System.nanoTime();
-                        final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshot(this, table);
-                        msg.modColumnData = ZERO_MOD_COLUMNS; // actually no mod column data for DoGet
-                        metrics.snapshotNanos = System.nanoTime() - snapshotStartTm;
-
-                        // translate the viewport to keyspace and make the call
-                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, metrics)) {
-                            listener.onNext(bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS));
-                        }
-
-                        listener.onCompleted();
-                    });
-        });
+        GrpcUtil.rpcWrapper(log, responseObserver,
+                () -> ArrowFlightUtil.DoGetCustom(executorService, sessionService.getCurrentSession(),
+                        ticketRouter, request, responseObserver));
     }
 
     /**
