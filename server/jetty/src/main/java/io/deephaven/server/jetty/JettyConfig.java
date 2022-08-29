@@ -120,13 +120,6 @@ public abstract class JettyConfig implements ServerConfig {
         return ssl().isEmpty();
     }
 
-    @Value.Check
-    final void checkWebsocketsNeedsHttp1() {
-        if (websocketsOrDefault() && !http1OrDefault()) {
-            throw new IllegalArgumentException("Jetty configuration includes websockets but not HTTP1.1");
-        }
-    }
-
     public interface Builder extends ServerConfig.Builder<JettyConfig, Builder> {
 
         Builder websockets(Boolean websockets);
