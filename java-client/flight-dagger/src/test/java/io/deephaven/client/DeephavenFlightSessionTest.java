@@ -66,16 +66,19 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
         try (
                 final TableHandle handle = flightSession.session().batch().execute(spec);
                 final FlightStream stream = flightSession.stream(handle)) {
-            assertThat(stream.next()).isTrue();
-            final VectorSchemaRoot root = stream.getRoot();
-            assertThat(root.getRowCount()).isEqualTo(size);
-            final BigIntVector longVector = (BigIntVector) root.getVector("I");
+            int i = 0;
             long sum = 0;
-            for (int i = 0; i < size; ++i) {
-                sum += i;
-                final long actual = longVector.get(i);
-                assertThat(actual).isEqualTo(sum);
+            while (stream.next()) {
+                final VectorSchemaRoot root = stream.getRoot();
+                final BigIntVector longVector = (BigIntVector) root.getVector("I");
+                final int rowCount = root.getRowCount();
+                for (int r = 0; r < rowCount; ++r, ++i) {
+                    sum += i;
+                    final long actual = longVector.get(r);
+                    assertThat(actual).isEqualTo(sum);
+                }
             }
+            assertThat(i).isEqualTo(size);
         }
     }
 
