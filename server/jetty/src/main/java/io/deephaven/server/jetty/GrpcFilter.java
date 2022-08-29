@@ -3,19 +3,31 @@
  */
 package io.deephaven.server.jetty;
 
+import io.deephaven.configuration.Configuration;
 import io.grpc.servlet.jakarta.ServletAdapter;
-import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import javax.inject.Inject;
 import java.io.IOException;
 
-public class GrpcFilter implements Filter {
+import static io.grpc.internal.GrpcUtil.CONTENT_TYPE_GRPC;
+
+/**
+ * Deephaven-core's own handler for registering handlers for various grpc endpoints.
+ */
+public class GrpcFilter extends HttpFilter {
+    /**
+     * Disabling this configuration option allows a server to permit http/1.1 connections. While technically forbidden
+     * for grpc calls, it could be helpful for extremely lightweight http clients (IoT use cases), or for grpc-web where
+     * http/1.1 is technically supported.
+     */
+    public static final boolean REQUIRE_HTTP2 =
+            Configuration.getInstance().getBooleanWithDefault("http.requireHttp2", true);
+
     private final ServletAdapter grpcAdapter;
 
     @Inject
@@ -24,10 +36,22 @@ public class GrpcFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+    public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        if (request instanceof HttpServletRequest && ServletAdapter.isGrpc((HttpServletRequest) request)) {
-            grpcAdapter.doPost((HttpServletRequest) request, (HttpServletResponse) response);
+        if (ServletAdapter.isGrpc(request)) {
+            // we now know that this request is meant to be grpc, ensure that the underlying http version is not
+            // 1.1 so that grpc will behave
+            if (!REQUIRE_HTTP2 || request.getProtocol().equals("HTTP/2.0")) {
+                grpcAdapter.doPost(request, response);
+            } else {
+                // A "clean" implementation of this would use @Internal-annotated types from grpc, which is discouraged.
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.setContentType(CONTENT_TYPE_GRPC);
+                // Status.Code.INTERNAL.valueAscii() is private, using a string literal instead for "13"
+                response.setHeader("grpc-status", "13");
+                response.setHeader("grpc-message",
+                        "The server connection is not using http2, so streams and metadata may not behave as expected. The client may be connecting improperly, or a proxy may be interfering.");
+            }
         } else {
             chain.doFilter(request, response);
         }
