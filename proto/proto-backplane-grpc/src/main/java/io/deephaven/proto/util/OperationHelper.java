@@ -80,6 +80,8 @@ public class OperationHelper {
                 return op.getCreateInputTable().hasSourceTableId()
                         ? Stream.of(op.getCreateInputTable().getSourceTableId())
                         : Stream.empty();
+            case UPDATE_BY:
+                return Stream.of(op.getUpdateBy().getSourceId());
             case OP_NOT_SET:
                 throw new IllegalStateException("Operation id not set");
             default:

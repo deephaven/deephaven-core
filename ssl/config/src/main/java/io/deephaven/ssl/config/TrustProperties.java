@@ -14,7 +14,7 @@ import org.immutables.value.Value.Immutable;
 @Immutable
 @SimpleStyle
 @JsonDeserialize(as = ImmutableTrustProperties.class)
-public abstract class TrustProperties implements Trust {
+public abstract class TrustProperties extends TrustBase {
 
     public static TrustProperties of() {
         return ImmutableTrustProperties.of();

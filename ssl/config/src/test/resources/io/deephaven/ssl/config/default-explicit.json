@@ -3,5 +3,5 @@
   "trust": null,
   "ciphers": null,
   "protocols": null,
-  "clientAuthentication": "NONE"
+  "clientAuthentication": null
 }
