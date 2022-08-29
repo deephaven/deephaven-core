@@ -69,7 +69,7 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
     @Override
     final public boolean anyModified(@NotNull final UpdateContext context) {
         UpdateCumulativeContext ctx = (UpdateCumulativeContext)context;
-        return ctx.newModified.isNonempty();
+        return ctx.newModified != null && ctx.newModified.isNonempty();
     }
 
     /*** nearly all cumulative operators will not reference a timestamp column, exceptions are Ema */
