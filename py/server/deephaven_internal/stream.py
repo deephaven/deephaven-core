@@ -2,12 +2,11 @@ import io
 
 
 class TeeStream(io.TextIOBase):
-    """
-    TextIOBase subclass that splits output between a delegate instance and a set of lambdas. Can delegate some calls to
-    the provided stream but actually write only to the lambdas.
+    """TextIOBase subclass that splits output between a delegate instance and a set of lambdas.
 
-    Useful to adapt any existing file-like object (such as sys.stdout or sys.stderr), but actually let some other
-    processing take place before writing.
+    Can delegate some calls to the provided stream but actually write only to the lambdas. Useful to adapt any existing
+    file-like object (such as sys.stdout or sys.stderr), but actually let some other processing take place before
+    writing.
     """
 
     @classmethod
@@ -35,18 +34,18 @@ class TeeStream(io.TextIOBase):
         )
 
     def __init__(self, orig_stream, should_write_to_orig_stream, write_func, flush_func, close_func):
-        """
-        Creates a new TeeStream to let output be written from out place, but be sent to
-        multiple places.
+        """Creates a new TeeStream to let output be written from out place, but be sent to multiple places.
 
-        Ideally, the stream would be passed as more funcs, but we have to manage correctly
-        propagating certain non-java details like encoding and isatty.
-        :param orig_stream: the underlying python stream to use as a prototype
-        :param should_write_to_orig_stream: True to delegate writes to the original stream, False to only write to the
-        lambdas that follow
-        :param write_func: a function to call when data should be written
-        :param flush_func: a function to call when data should be flushed
-        :param close_func: a function to call when the stream should be closed
+        Ideally, the stream would be passed as more funcs, but we have to manage correctly propagating certain non-java
+        details like encoding and isatty.
+
+        Args:
+            orig_stream: the underlying python stream to use as a prototype
+            should_write_to_orig_stream: True to delegate writes to the original stream, False to only write to the
+              lambdas that follow
+            write_func: a function to call when data should be written
+            flush_func: a function to call when data should be flushed
+            close_func: a function to call when the stream should be closed
         """
         self._stream = orig_stream
         self.should_write_to_orig_stream = should_write_to_orig_stream
