@@ -78,24 +78,26 @@ public class ApplicationInjector {
         // Note: if we need to be more specific about which application we are starting, we can print out the path of
         // the application.
         log.info().append("Starting application '").append(config.toString()).append('\'').endl();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final ApplicationState app = ApplicationFactory.create(applicationDir, config,
-                    scriptSessionProvider.get(), applicationListener);
 
-            int numExports = app.listFields().size();
-            log.info().append("\tfound ").append(numExports).append(" exports").endl();
-
-            ticketResolver.onApplicationLoad(app);
+        final ApplicationState app;
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final SafeCloseable ignored2 = scriptSessionProvider.get().getExecutionContext().open()) {
+            app = ApplicationFactory.create(applicationDir, config, scriptSessionProvider.get(), applicationListener);
         }
+        int numExports = app.listFields().size();
+        log.info().append("\tfound ").append(numExports).append(" exports").endl();
+        ticketResolver.onApplicationLoad(app);
     }
 
     private void loadApplicationFactory(ApplicationState.Factory factory) {
         log.info().append("Starting ApplicationState.Factory '").append(factory.toString()).append('\'').endl();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final ApplicationState app = factory.create(applicationListener);
-            int numExports = app.listFields().size();
-            log.info().append("\tfound ").append(numExports).append(" exports").endl();
-            ticketResolver.onApplicationLoad(app);
+        final ApplicationState app;
+        try (final SafeCloseable ignored1 = LivenessScopeStack.open();
+                final SafeCloseable ignored2 = scriptSessionProvider.get().getExecutionContext().open()) {
+            app = factory.create(applicationListener);
         }
+        int numExports = app.listFields().size();
+        log.info().append("\tfound ").append(numExports).append(" exports").endl();
+        ticketResolver.onApplicationLoad(app);
     }
 }
