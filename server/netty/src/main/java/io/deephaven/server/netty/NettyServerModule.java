@@ -7,11 +7,9 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.grpc.MTlsCertificate;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.runner.GrpcServer;
-import io.deephaven.ssl.config.CiphersJdk;
-import io.deephaven.ssl.config.Protocols;
-import io.deephaven.ssl.config.ProtocolsJdk;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
@@ -49,6 +47,7 @@ public interface NettyServerModule {
         }
         services.forEach(serverBuilder::addService);
         interceptors.forEach(serverBuilder::intercept);
+        serverBuilder.intercept(MTlsCertificate.DEFAULT_INTERCEPTOR);
         serverBuilder.maxInboundMessageSize(serverConfig.maxInboundMessageSize());
         if (serverConfig.ssl().isPresent()) {
             final SSLConfig ssl = serverConfig.ssl().get().orTrust(TrustJdk.of());

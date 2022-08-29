@@ -31,7 +31,7 @@ public abstract class ClientConfig {
     public abstract DeephavenTarget target();
 
     /**
-     * The SSL configuration.
+     * The SSL configuration. Only relevant if {@link #target()} is secure.
      */
     public abstract Optional<SSLConfig> ssl();
 
@@ -46,13 +46,6 @@ public abstract class ClientConfig {
     @Default
     public int maxInboundMessageSize() {
         return DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
-    }
-
-    @Check
-    final void checkSslStatus() {
-        if (!target().isSecure() && ssl().isPresent()) {
-            throw new IllegalArgumentException("target() is trying to connect via plaintext, but ssl() is present");
-        }
     }
 
     public interface Builder {

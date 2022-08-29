@@ -140,12 +140,20 @@ public class SSLConfigTest {
 
     @Test
     void clientAuthenticationWanted() throws IOException {
-        check("client-authentication-wanted.json", SSLConfig.builder().clientAuthentication(ClientAuth.WANTED).build());
+        check("client-authentication-wanted.json", SSLConfig.builder()
+                .clientAuthentication(ClientAuth.WANTED)
+                .trust(TrustJdk.of())
+                .identity(IdentityProperties.of())
+                .build());
     }
 
     @Test
     void clientAuthenticationNeeded() throws IOException {
-        check("client-authentication-needed.json", SSLConfig.builder().clientAuthentication(ClientAuth.NEEDED).build());
+        check("client-authentication-needed.json", SSLConfig.builder()
+                .clientAuthentication(ClientAuth.NEEDED)
+                .trust(TrustJdk.of())
+                .identity(IdentityProperties.of())
+                .build());
     }
 
     private static SSLConfig server(Identity identity) {

@@ -39,6 +39,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -150,17 +151,22 @@ public final class ServletAdapter {
         StatsTraceContext statsTraceCtx =
                 StatsTraceContext.newServerContext(streamTracerFactories, method, headers);
 
+        Attributes.Builder attrBuilder = attributes.toBuilder()
+                .set(
+                        Grpc.TRANSPORT_ATTR_REMOTE_ADDR,
+                        new InetSocketAddress(req.getRemoteHost(), req.getRemotePort()))
+                .set(
+                        Grpc.TRANSPORT_ATTR_LOCAL_ADDR,
+                        new InetSocketAddress(req.getLocalAddr(), req.getLocalPort()));
+        X509Certificate[] mTlsCert = (X509Certificate[]) req.getAttribute("jakarta.servlet.request.X509Certificate");
+        if (mTlsCert != null) {
+            attrBuilder.set(GrpcServlet.MTLS_CERTIFICATE_KEY, Arrays.asList(mTlsCert));
+        }
         ServletServerStream stream = new ServletServerStream(
                 asyncCtx,
                 statsTraceCtx,
                 maxInboundMessageSize,
-                attributes.toBuilder()
-                        .set(
-                                Grpc.TRANSPORT_ATTR_REMOTE_ADDR,
-                                new InetSocketAddress(req.getRemoteHost(), req.getRemotePort()))
-                        .set(
-                                Grpc.TRANSPORT_ATTR_LOCAL_ADDR,
-                                new InetSocketAddress(req.getLocalAddr(), req.getLocalPort()))
+                attrBuilder
                         .build(),
                 getAuthority(req),
                 logId);

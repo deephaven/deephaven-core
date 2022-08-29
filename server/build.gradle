@@ -76,6 +76,8 @@ dependencies {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
 
+    implementation project(':grpc-java:grpc-mtls')
+
     testImplementation 'io.grpc:grpc-testing'
 
     testImplementation project(':proto:proto-backplane-grpc')

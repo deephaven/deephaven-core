@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @Immutable
 @SimpleStyle
 @JsonDeserialize(as = ImmutableTrustAll.class)
-public abstract class TrustAll implements Trust {
+public abstract class TrustAll extends TrustBase {
 
     public static TrustAll of() {
         return ImmutableTrustAll.of();
@@ -22,5 +22,15 @@ public abstract class TrustAll implements Trust {
     @Override
     public final <T> T walk(Visitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public final boolean contains(Trust trust) {
+        return true;
+    }
+
+    @Override
+    public final Trust or(Trust other) {
+        return this;
     }
 }

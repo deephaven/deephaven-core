@@ -9,6 +9,7 @@ import io.deephaven.util.auth.AuthContext;
 import javax.inject.Inject;
 
 public class TrivialAuthContextProvider implements AuthContextProvider {
+
     @Inject()
     public TrivialAuthContextProvider() {}
 
@@ -22,7 +23,6 @@ public class TrivialAuthContextProvider implements AuthContextProvider {
         if (!supportsProtocol(protocolVersion)) {
             return null;
         }
-
         return new AuthContext.SuperUser();
     }
 }
