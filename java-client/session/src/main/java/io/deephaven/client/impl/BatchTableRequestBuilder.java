@@ -63,6 +63,7 @@ import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
+import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
@@ -458,7 +459,11 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(UpdateByTable updateByTable) {
-            throw new UnsupportedOperationException("TODO(deephaven-core#2607): UpdateByTable gRPC impl");
+            final UpdateByRequest.Builder request = UpdateByBuilder
+                    .adapt(updateByTable)
+                    .setResultId(ticket)
+                    .setSourceId(ref(updateByTable.parent()));
+            out = op(Builder::setUpdateBy, request);
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,

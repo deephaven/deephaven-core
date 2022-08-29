@@ -16,12 +16,18 @@ _sym_db = _symbol_database.Default()
 from pydeephaven.proto import ticket_pb2 as deephaven_dot_proto_dot_ticket__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1b\x64\x65\x65phaven/proto/table.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"l\n\x0eTableReference\x12;\n\x06ticket\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.TicketH\x00\x12\x16\n\x0c\x62\x61tch_offset\x18\x02 \x01(\x11H\x00\x42\x05\n\x03ref\"\xc6\x01\n\x1d\x45xportedTableCreationResponse\x12\x44\n\tresult_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x12\n\nerror_info\x18\x03 \x01(\t\x12\x15\n\rschema_header\x18\x04 \x01(\x0c\x12\x11\n\tis_static\x18\x05 \x01(\x08\x12\x10\n\x04size\x18\x06 \x01(\x12\x42\x02\x30\x01\"\x97\x01\n\x11\x46\x65tchTableRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\xa0\x01\n\x1a\x41pplyPreviewColumnsRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x9d\x01\n\x17\x46\x65tchPandasTableRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x1d\n\x1b\x45xportedTableUpdatesRequest\"\x8c\x01\n\x1a\x45xportedTableUpdateMessage\x12<\n\texport_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x10\n\x04size\x18\x02 \x01(\x12\x42\x02\x30\x01\x12\x1e\n\x16update_failure_message\x18\x03 \x01(\t\"c\n\x11\x45mptyTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x10\n\x04size\x18\x02 \x01(\x12\x42\x02\x30\x01\"\x88\x01\n\x10TimeTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x1c\n\x10start_time_nanos\x18\x02 \x01(\x12\x42\x02\x30\x01\x12\x18\n\x0cperiod_nanos\x18\x03 \x01(\x12\x42\x02\x30\x01\"\xb1\x01\n\x15SelectOrUpdateRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_specs\x18\x03 \x03(\t\"\xb1\x01\n\x15SelectDistinctRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_names\x18\x03 \x03(\t\"\xae\x01\n\x12\x44ropColumnsRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_names\x18\x03 \x03(\t\"\xb5\x01\n\x1eUnstructuredFilterTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x0f\n\x07\x66ilters\x18\x03 \x03(\t\"\xad\x01\n\x11HeadOrTailRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x08num_rows\x18\x03 \x01(\x12\x42\x02\x30\x01\"\xce\x01\n\x13HeadOrTailByRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x08num_rows\x18\x03 \x01(\x12\x42\x02\x30\x01\x12\x1d\n\x15group_by_column_specs\x18\x04 \x03(\t\"\xc3\x01\n\x0eUngroupRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x11\n\tnull_fill\x18\x03 \x01(\x08\x12\x1a\n\x12\x63olumns_to_ungroup\x18\x04 \x03(\t\"\xad\x01\n\x12MergeTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x45\n\nsource_ids\x18\x02 \x03(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x12\n\nkey_column\x18\x03 \x01(\t\"\x91\x02\n\x14SnapshotTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x1b\n\x13\x64o_initial_snapshot\x18\x04 \x01(\x08\x12\x15\n\rstamp_columns\x18\x05 \x03(\t\"\xa7\x02\n\x16\x43rossJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\x12\x14\n\x0creserve_bits\x18\x06 \x01(\x05\"\x93\x02\n\x18NaturalJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\x91\x02\n\x16\x45xactJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\x90\x02\n\x15LeftJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\xc9\x03\n\x15\x41sOfJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\x12\\\n\x10\x61s_of_match_rule\x18\x07 \x01(\x0e\x32\x42.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.MatchRule\"Y\n\tMatchRule\x12\x13\n\x0fLESS_THAN_EQUAL\x10\x00\x12\r\n\tLESS_THAN\x10\x01\x12\x16\n\x12GREATER_THAN_EQUAL\x10\x02\x12\x10\n\x0cGREATER_THAN\x10\x03\"\xfa\x04\n\x15\x43omboAggregateRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12V\n\naggregates\x18\x03 \x03(\x0b\x32\x42.io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate\x12\x18\n\x10group_by_columns\x18\x04 \x03(\t\x12\x13\n\x0b\x66orce_combo\x18\x05 \x01(\x08\x1a\xad\x01\n\tAggregate\x12N\n\x04type\x18\x01 \x01(\x0e\x32@.io.deephaven.proto.backplane.grpc.ComboAggregateRequest.AggType\x12\x13\n\x0bmatch_pairs\x18\x02 \x03(\t\x12\x13\n\x0b\x63olumn_name\x18\x03 \x01(\t\x12\x12\n\npercentile\x18\x04 \x01(\x01\x12\x12\n\navg_median\x18\x05 \x01(\x08\"\xa5\x01\n\x07\x41ggType\x12\x07\n\x03SUM\x10\x00\x12\x0b\n\x07\x41\x42S_SUM\x10\x01\x12\t\n\x05GROUP\x10\x02\x12\x07\n\x03\x41VG\x10\x03\x12\t\n\x05\x43OUNT\x10\x04\x12\t\n\x05\x46IRST\x10\x05\x12\x08\n\x04LAST\x10\x06\x12\x07\n\x03MIN\x10\x07\x12\x07\n\x03MAX\x10\x08\x12\n\n\x06MEDIAN\x10\t\x12\x0e\n\nPERCENTILE\x10\n\x12\x07\n\x03STD\x10\x0b\x12\x07\n\x03VAR\x10\x0c\x12\x10\n\x0cWEIGHTED_AVG\x10\r\"\xe1\x01\n\x0eSortDescriptor\x12\x13\n\x0b\x63olumn_name\x18\x01 \x01(\t\x12\x13\n\x0bis_absolute\x18\x02 \x01(\x08\x12R\n\tdirection\x18\x03 \x01(\x0e\x32?.io.deephaven.proto.backplane.grpc.SortDescriptor.SortDirection\"Q\n\rSortDirection\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x17\n\nDESCENDING\x10\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\x12\r\n\tASCENDING\x10\x01\x12\x0b\n\x07REVERSE\x10\x02\"\xd8\x01\n\x10SortTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12@\n\x05sorts\x18\x03 \x03(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.SortDescriptor\"\xd7\x01\n\x12\x46ilterTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12=\n\x07\x66ilters\x18\x03 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\" \n\tReference\x12\x13\n\x0b\x63olumn_name\x18\x01 \x01(\t\"\x91\x01\n\x07Literal\x12\x16\n\x0cstring_value\x18\x01 \x01(\tH\x00\x12\x16\n\x0c\x64ouble_value\x18\x02 \x01(\x01H\x00\x12\x14\n\nbool_value\x18\x03 \x01(\x08H\x00\x12\x18\n\nlong_value\x18\x04 \x01(\x12\x42\x02\x30\x01H\x00\x12\x1d\n\x0fnano_time_value\x18\x05 \x01(\x12\x42\x02\x30\x01H\x00\x42\x07\n\x05value\"\x91\x01\n\x05Value\x12\x41\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.ReferenceH\x00\x12=\n\x07literal\x18\x02 \x01(\x0b\x32*.io.deephaven.proto.backplane.grpc.LiteralH\x00\x42\x06\n\x04\x64\x61ta\"\xbc\x05\n\tCondition\x12>\n\x03\x61nd\x18\x01 \x01(\x0b\x32/.io.deephaven.proto.backplane.grpc.AndConditionH\x00\x12<\n\x02or\x18\x02 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.OrConditionH\x00\x12>\n\x03not\x18\x03 \x01(\x0b\x32/.io.deephaven.proto.backplane.grpc.NotConditionH\x00\x12\x46\n\x07\x63ompare\x18\x04 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.CompareConditionH\x00\x12<\n\x02in\x18\x05 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.InConditionH\x00\x12\x44\n\x06invoke\x18\x06 \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.InvokeConditionH\x00\x12\x45\n\x07is_null\x18\x07 \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.IsNullConditionH\x00\x12\x46\n\x07matches\x18\x08 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.MatchesConditionH\x00\x12H\n\x08\x63ontains\x18\t \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.ContainsConditionH\x00\x12\x44\n\x06search\x18\n \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.SearchConditionH\x00\x42\x06\n\x04\x64\x61ta\"M\n\x0c\x41ndCondition\x12=\n\x07\x66ilters\x18\x01 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"L\n\x0bOrCondition\x12=\n\x07\x66ilters\x18\x01 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"L\n\x0cNotCondition\x12<\n\x06\x66ilter\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"\xac\x03\n\x10\x43ompareCondition\x12W\n\toperation\x18\x01 \x01(\x0e\x32\x44.io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation\x12L\n\x10\x63\x61se_sensitivity\x18\x02 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12\x35\n\x03lhs\x18\x03 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12\x35\n\x03rhs\x18\x04 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\"\x82\x01\n\x10\x43ompareOperation\x12\r\n\tLESS_THAN\x10\x00\x12\x16\n\x12LESS_THAN_OR_EQUAL\x10\x01\x12\x10\n\x0cGREATER_THAN\x10\x02\x12\x19\n\x15GREATER_THAN_OR_EQUAL\x10\x03\x12\n\n\x06\x45QUALS\x10\x04\x12\x0e\n\nNOT_EQUALS\x10\x05\"\x95\x02\n\x0bInCondition\x12\x38\n\x06target\x18\x01 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12<\n\ncandidates\x18\x02 \x03(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"\x98\x01\n\x0fInvokeCondition\x12\x0e\n\x06method\x18\x01 \x01(\t\x12\x38\n\x06target\x18\x02 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12;\n\targuments\x18\x03 \x03(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\"R\n\x0fIsNullCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\"\xf2\x01\n\x10MatchesCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\x12\r\n\x05regex\x18\x02 \x01(\t\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"\xfb\x01\n\x11\x43ontainsCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\x12\x15\n\rsearch_string\x18\x02 \x01(\t\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"s\n\x0fSearchCondition\x12\x15\n\rsearch_string\x18\x01 \x01(\t\x12I\n\x13optional_references\x18\x02 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\"\x94\x01\n\x0e\x46lattenRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\"\xb4\x03\n\x19RunChartDownsampleRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x13\n\x0bpixel_count\x18\x03 \x01(\x05\x12Z\n\nzoom_range\x18\x04 \x01(\x0b\x32\x46.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.ZoomRange\x12\x15\n\rx_column_name\x18\x05 \x01(\t\x12\x16\n\x0ey_column_names\x18\x06 \x03(\t\x1as\n\tZoomRange\x12\x1f\n\x0emin_date_nanos\x18\x01 \x01(\x03\x42\x02\x30\x01H\x00\x88\x01\x01\x12\x1f\n\x0emax_date_nanos\x18\x02 \x01(\x03\x42\x02\x30\x01H\x01\x88\x01\x01\x42\x11\n\x0f_min_date_nanosB\x11\n\x0f_max_date_nanos\"\xf5\x04\n\x17\x43reateInputTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12L\n\x0fsource_table_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReferenceH\x00\x12\x10\n\x06schema\x18\x03 \x01(\x0cH\x00\x12W\n\x04kind\x18\x04 \x01(\x0b\x32I.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind\x1a\xd4\x02\n\x0eInputTableKind\x12}\n\x15in_memory_append_only\x18\x01 \x01(\x0b\x32\\.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnlyH\x00\x12{\n\x14in_memory_key_backed\x18\x02 \x01(\x0b\x32[.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBackedH\x00\x1a\x14\n\x12InMemoryAppendOnly\x1a(\n\x11InMemoryKeyBacked\x12\x13\n\x0bkey_columns\x18\x01 \x03(\tB\x06\n\x04kindB\x0c\n\ndefinition\"\x91\x14\n\x11\x42\x61tchTableRequest\x12K\n\x03ops\x18\x01 \x03(\x0b\x32>.io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation\x1a\xae\x13\n\tOperation\x12K\n\x0b\x65mpty_table\x18\x01 \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.EmptyTableRequestH\x00\x12I\n\ntime_table\x18\x02 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.TimeTableRequestH\x00\x12M\n\x0c\x64rop_columns\x18\x03 \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.DropColumnsRequestH\x00\x12J\n\x06update\x18\x04 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12O\n\x0blazy_update\x18\x05 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12H\n\x04view\x18\x06 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12O\n\x0bupdate_view\x18\x07 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12J\n\x06select\x18\x08 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12S\n\x0fselect_distinct\x18\t \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectDistinctRequestH\x00\x12G\n\x06\x66ilter\x18\n \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.FilterTableRequestH\x00\x12`\n\x13unstructured_filter\x18\x0b \x01(\x0b\x32\x41.io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequestH\x00\x12\x43\n\x04sort\x18\x0c \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.SortTableRequestH\x00\x12\x44\n\x04head\x18\r \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequestH\x00\x12\x44\n\x04tail\x18\x0e \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequestH\x00\x12I\n\x07head_by\x18\x0f \x01(\x0b\x32\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequestH\x00\x12I\n\x07tail_by\x18\x10 \x01(\x0b\x32\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequestH\x00\x12\x44\n\x07ungroup\x18\x11 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.UngroupRequestH\x00\x12\x46\n\x05merge\x18\x12 \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.MergeTablesRequestH\x00\x12S\n\x0f\x63ombo_aggregate\x18\x13 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.ComboAggregateRequestH\x00\x12K\n\x08snapshot\x18\x14 \x01(\x0b\x32\x37.io.deephaven.proto.backplane.grpc.SnapshotTableRequestH\x00\x12\x44\n\x07\x66latten\x18\x15 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.FlattenRequestH\x00\x12\\\n\x14run_chart_downsample\x18\x16 \x01(\x0b\x32<.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequestH\x00\x12O\n\ncross_join\x18\x17 \x01(\x0b\x32\x39.io.deephaven.proto.backplane.grpc.CrossJoinTablesRequestH\x00\x12S\n\x0cnatural_join\x18\x18 \x01(\x0b\x32;.io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequestH\x00\x12O\n\nexact_join\x18\x19 \x01(\x0b\x32\x39.io.deephaven.proto.backplane.grpc.ExactJoinTablesRequestH\x00\x12M\n\tleft_join\x18\x1a \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.LeftJoinTablesRequestH\x00\x12N\n\nas_of_join\x18\x1b \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequestH\x00\x12K\n\x0b\x66\x65tch_table\x18\x1c \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.FetchTableRequestH\x00\x12X\n\x12\x66\x65tch_pandas_table\x18\x1d \x01(\x0b\x32:.io.deephaven.proto.backplane.grpc.FetchPandasTableRequestH\x00\x12^\n\x15\x61pply_preview_columns\x18\x1e \x01(\x0b\x32=.io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequestH\x00\x12X\n\x12\x63reate_input_table\x18\x1f \x01(\x0b\x32:.io.deephaven.proto.backplane.grpc.CreateInputTableRequestH\x00\x42\x04\n\x02op*2\n\x0f\x43\x61seSensitivity\x12\x0e\n\nMATCH_CASE\x10\x00\x12\x0f\n\x0bIGNORE_CASE\x10\x01*&\n\tMatchType\x12\x0b\n\x07REGULAR\x10\x00\x12\x0c\n\x08INVERTED\x10\x01\x32\xce%\n\x0cTableService\x12\x91\x01\n GetExportedTableCreationResponse\x12).io.deephaven.proto.backplane.grpc.Ticket\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\nFetchTable\x12\x34.io.deephaven.proto.backplane.grpc.FetchTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x92\x01\n\x10\x46\x65tchPandasTable\x12:.io.deephaven.proto.backplane.grpc.FetchPandasTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x98\x01\n\x13\x41pplyPreviewColumns\x12=.io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\nEmptyTable\x12\x34.io.deephaven.proto.backplane.grpc.EmptyTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\tTimeTable\x12\x33.io.deephaven.proto.backplane.grpc.TimeTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x88\x01\n\x0b\x44ropColumns\x12\x35.io.deephaven.proto.backplane.grpc.DropColumnsRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\x06Update\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8a\x01\n\nLazyUpdate\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x04View\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8a\x01\n\nUpdateView\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\x06Select\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0eSelectDistinct\x12\x38.io.deephaven.proto.backplane.grpc.SelectDistinctRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x83\x01\n\x06\x46ilter\x12\x35.io.deephaven.proto.backplane.grpc.FilterTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x9b\x01\n\x12UnstructuredFilter\x12\x41.io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x7f\n\x04Sort\x12\x33.io.deephaven.proto.backplane.grpc.SortTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x04Head\x12\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x04Tail\x12\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x06HeadBy\x12\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x06TailBy\x12\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x07Ungroup\x12\x31.io.deephaven.proto.backplane.grpc.UngroupRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x88\x01\n\x0bMergeTables\x12\x35.io.deephaven.proto.backplane.grpc.MergeTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x90\x01\n\x0f\x43rossJoinTables\x12\x39.io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x94\x01\n\x11NaturalJoinTables\x12;.io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x90\x01\n\x0f\x45xactJoinTables\x12\x39.io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0eLeftJoinTables\x12\x38.io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0e\x41sOfJoinTables\x12\x38.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0e\x43omboAggregate\x12\x38.io.deephaven.proto.backplane.grpc.ComboAggregateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x87\x01\n\x08Snapshot\x12\x37.io.deephaven.proto.backplane.grpc.SnapshotTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x07\x46latten\x12\x31.io.deephaven.proto.backplane.grpc.FlattenRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x96\x01\n\x12RunChartDownsample\x12<.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x92\x01\n\x10\x43reateInputTable\x12:.io.deephaven.proto.backplane.grpc.CreateInputTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x83\x01\n\x05\x42\x61tch\x12\x34.io.deephaven.proto.backplane.grpc.BatchTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x30\x01\x12\x99\x01\n\x14\x45xportedTableUpdates\x12>.io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest\x1a=.io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage\"\x00\x30\x01\x42\x41H\x01P\x01Z;github.com/deephaven/deephaven-core/go/internal/proto/tableb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1b\x64\x65\x65phaven/proto/table.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"l\n\x0eTableReference\x12;\n\x06ticket\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.TicketH\x00\x12\x16\n\x0c\x62\x61tch_offset\x18\x02 \x01(\x11H\x00\x42\x05\n\x03ref\"\xc6\x01\n\x1d\x45xportedTableCreationResponse\x12\x44\n\tresult_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x12\n\nerror_info\x18\x03 \x01(\t\x12\x15\n\rschema_header\x18\x04 \x01(\x0c\x12\x11\n\tis_static\x18\x05 \x01(\x08\x12\x10\n\x04size\x18\x06 \x01(\x12\x42\x02\x30\x01\"\x97\x01\n\x11\x46\x65tchTableRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\xa0\x01\n\x1a\x41pplyPreviewColumnsRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x9d\x01\n\x17\x46\x65tchPandasTableRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x1d\n\x1b\x45xportedTableUpdatesRequest\"\x8c\x01\n\x1a\x45xportedTableUpdateMessage\x12<\n\texport_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x10\n\x04size\x18\x02 \x01(\x12\x42\x02\x30\x01\x12\x1e\n\x16update_failure_message\x18\x03 \x01(\t\"c\n\x11\x45mptyTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x10\n\x04size\x18\x02 \x01(\x12\x42\x02\x30\x01\"\x88\x01\n\x10TimeTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x1c\n\x10start_time_nanos\x18\x02 \x01(\x12\x42\x02\x30\x01\x12\x18\n\x0cperiod_nanos\x18\x03 \x01(\x12\x42\x02\x30\x01\"\xb1\x01\n\x15SelectOrUpdateRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_specs\x18\x03 \x03(\t\"\xea\x01\n\x0bMathContext\x12\x11\n\tprecision\x18\x01 \x01(\x11\x12R\n\rrounding_mode\x18\x02 \x01(\x0e\x32;.io.deephaven.proto.backplane.grpc.MathContext.RoundingMode\"t\n\x0cRoundingMode\x12\x06\n\x02UP\x10\x00\x12\x08\n\x04\x44OWN\x10\x01\x12\x0b\n\x07\x43\x45ILING\x10\x02\x12\t\n\x05\x46LOOR\x10\x03\x12\x0b\n\x07HALF_UP\x10\x04\x12\r\n\tHALF_DOWN\x10\x05\x12\r\n\tHALF_EVEN\x10\x06\x12\x0f\n\x0bUNNECESSARY\x10\x07\"\xe6\x1a\n\x0fUpdateByRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12S\n\x07options\x18\x03 \x01(\x0b\x32\x42.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions\x12X\n\noperations\x18\x04 \x03(\x0b\x32\x44.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation\x12\x18\n\x10group_by_columns\x18\x05 \x03(\t\x1a\xc3\x03\n\x0fUpdateByOptions\x12\x1c\n\x0fuse_redirection\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x1b\n\x0e\x63hunk_capacity\x18\x02 \x01(\x05H\x01\x88\x01\x01\x12.\n!max_static_sparse_memory_overhead\x18\x03 \x01(\x01H\x02\x88\x01\x01\x12$\n\x17initial_hash_table_size\x18\x04 \x01(\x05H\x03\x88\x01\x01\x12 \n\x13maximum_load_factor\x18\x05 \x01(\x01H\x04\x88\x01\x01\x12\x1f\n\x12target_load_factor\x18\x06 \x01(\x01H\x05\x88\x01\x01\x12\x44\n\x0cmath_context\x18\x07 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.MathContextB\x12\n\x10_use_redirectionB\x11\n\x0f_chunk_capacityB$\n\"_max_static_sparse_memory_overheadB\x1a\n\x18_initial_hash_table_sizeB\x16\n\x14_maximum_load_factorB\x15\n\x13_target_load_factor\x1a\xbf\x14\n\x11UpdateByOperation\x12\x65\n\x06\x63olumn\x18\x01 \x01(\x0b\x32S.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumnH\x00\x1a\xba\x13\n\x0eUpdateByColumn\x12n\n\x04spec\x18\x01 \x01(\x0b\x32`.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec\x12\x13\n\x0bmatch_pairs\x18\x02 \x03(\t\x1a\xa2\x12\n\x0cUpdateBySpec\x12\x85\x01\n\x03sum\x18\x01 \x01(\x0b\x32v.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSumH\x00\x12\x85\x01\n\x03min\x18\x02 \x01(\x0b\x32v.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMinH\x00\x12\x85\x01\n\x03max\x18\x03 \x01(\x0b\x32v.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMaxH\x00\x12\x8d\x01\n\x07product\x18\x04 \x01(\x0b\x32z.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProductH\x00\x12}\n\x04\x66ill\x18\x05 \x01(\x0b\x32m.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFillH\x00\x12{\n\x03\x65ma\x18\x06 \x01(\x0b\x32l.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmaH\x00\x1a\x17\n\x15UpdateByCumulativeSum\x1a\x17\n\x15UpdateByCumulativeMin\x1a\x17\n\x15UpdateByCumulativeMax\x1a\x1b\n\x19UpdateByCumulativeProduct\x1a\x0e\n\x0cUpdateByFill\x1a\xed\n\n\x0bUpdateByEma\x12\x90\x01\n\x07options\x18\x01 \x01(\x0b\x32\x7f.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions\x12\x95\x01\n\ttimescale\x18\x02 \x01(\x0b\x32\x81\x01.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale\x1a\xe1\x04\n\x12UpdateByEmaOptions\x12N\n\ron_null_value\x18\x01 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.BadDataBehaviorH\x00\x88\x01\x01\x12M\n\x0con_nan_value\x18\x02 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.BadDataBehaviorH\x01\x88\x01\x01\x12M\n\x0con_null_time\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.BadDataBehaviorH\x02\x88\x01\x01\x12W\n\x16on_negative_delta_time\x18\x04 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.BadDataBehaviorH\x03\x88\x01\x01\x12S\n\x12on_zero_delta_time\x18\x05 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.BadDataBehaviorH\x04\x88\x01\x01\x12I\n\x11\x62ig_value_context\x18\x06 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.MathContextB\x10\n\x0e_on_null_valueB\x0f\n\r_on_nan_valueB\x0f\n\r_on_null_timeB\x19\n\x17_on_negative_delta_timeB\x15\n\x13_on_zero_delta_time\x1a\xce\x03\n\x14UpdateByEmaTimescale\x12\xa4\x01\n\x05ticks\x18\x01 \x01(\x0b\x32\x92\x01.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicksH\x00\x12\xa2\x01\n\x04time\x18\x02 \x01(\x0b\x32\x91\x01.io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTimeH\x00\x1a%\n\x10UpdateByEmaTicks\x12\x11\n\x05ticks\x18\x01 \x01(\x12\x42\x02\x30\x01\x1a;\n\x0fUpdateByEmaTime\x12\x0e\n\x06\x63olumn\x18\x01 \x01(\t\x12\x18\n\x0cperiod_nanos\x18\x02 \x01(\x12\x42\x02\x30\x01\x42\x06\n\x04typeB\x06\n\x04typeB\x06\n\x04type\"\xb1\x01\n\x15SelectDistinctRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_names\x18\x03 \x03(\t\"\xae\x01\n\x12\x44ropColumnsRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_names\x18\x03 \x03(\t\"\xb5\x01\n\x1eUnstructuredFilterTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x0f\n\x07\x66ilters\x18\x03 \x03(\t\"\xad\x01\n\x11HeadOrTailRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x08num_rows\x18\x03 \x01(\x12\x42\x02\x30\x01\"\xce\x01\n\x13HeadOrTailByRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x08num_rows\x18\x03 \x01(\x12\x42\x02\x30\x01\x12\x1d\n\x15group_by_column_specs\x18\x04 \x03(\t\"\xc3\x01\n\x0eUngroupRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x11\n\tnull_fill\x18\x03 \x01(\x08\x12\x1a\n\x12\x63olumns_to_ungroup\x18\x04 \x03(\t\"\xad\x01\n\x12MergeTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x45\n\nsource_ids\x18\x02 \x03(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x12\n\nkey_column\x18\x03 \x01(\t\"\x91\x02\n\x14SnapshotTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x1b\n\x13\x64o_initial_snapshot\x18\x04 \x01(\x08\x12\x15\n\rstamp_columns\x18\x05 \x03(\t\"\xa7\x02\n\x16\x43rossJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\x12\x14\n\x0creserve_bits\x18\x06 \x01(\x05\"\x93\x02\n\x18NaturalJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\x91\x02\n\x16\x45xactJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\x90\x02\n\x15LeftJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\xc9\x03\n\x15\x41sOfJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\x12\\\n\x10\x61s_of_match_rule\x18\x07 \x01(\x0e\x32\x42.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.MatchRule\"Y\n\tMatchRule\x12\x13\n\x0fLESS_THAN_EQUAL\x10\x00\x12\r\n\tLESS_THAN\x10\x01\x12\x16\n\x12GREATER_THAN_EQUAL\x10\x02\x12\x10\n\x0cGREATER_THAN\x10\x03\"\xfa\x04\n\x15\x43omboAggregateRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12V\n\naggregates\x18\x03 \x03(\x0b\x32\x42.io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate\x12\x18\n\x10group_by_columns\x18\x04 \x03(\t\x12\x13\n\x0b\x66orce_combo\x18\x05 \x01(\x08\x1a\xad\x01\n\tAggregate\x12N\n\x04type\x18\x01 \x01(\x0e\x32@.io.deephaven.proto.backplane.grpc.ComboAggregateRequest.AggType\x12\x13\n\x0bmatch_pairs\x18\x02 \x03(\t\x12\x13\n\x0b\x63olumn_name\x18\x03 \x01(\t\x12\x12\n\npercentile\x18\x04 \x01(\x01\x12\x12\n\navg_median\x18\x05 \x01(\x08\"\xa5\x01\n\x07\x41ggType\x12\x07\n\x03SUM\x10\x00\x12\x0b\n\x07\x41\x42S_SUM\x10\x01\x12\t\n\x05GROUP\x10\x02\x12\x07\n\x03\x41VG\x10\x03\x12\t\n\x05\x43OUNT\x10\x04\x12\t\n\x05\x46IRST\x10\x05\x12\x08\n\x04LAST\x10\x06\x12\x07\n\x03MIN\x10\x07\x12\x07\n\x03MAX\x10\x08\x12\n\n\x06MEDIAN\x10\t\x12\x0e\n\nPERCENTILE\x10\n\x12\x07\n\x03STD\x10\x0b\x12\x07\n\x03VAR\x10\x0c\x12\x10\n\x0cWEIGHTED_AVG\x10\r\"\xe1\x01\n\x0eSortDescriptor\x12\x13\n\x0b\x63olumn_name\x18\x01 \x01(\t\x12\x13\n\x0bis_absolute\x18\x02 \x01(\x08\x12R\n\tdirection\x18\x03 \x01(\x0e\x32?.io.deephaven.proto.backplane.grpc.SortDescriptor.SortDirection\"Q\n\rSortDirection\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x17\n\nDESCENDING\x10\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\x12\r\n\tASCENDING\x10\x01\x12\x0b\n\x07REVERSE\x10\x02\"\xd8\x01\n\x10SortTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12@\n\x05sorts\x18\x03 \x03(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.SortDescriptor\"\xd7\x01\n\x12\x46ilterTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12=\n\x07\x66ilters\x18\x03 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\" \n\tReference\x12\x13\n\x0b\x63olumn_name\x18\x01 \x01(\t\"\x91\x01\n\x07Literal\x12\x16\n\x0cstring_value\x18\x01 \x01(\tH\x00\x12\x16\n\x0c\x64ouble_value\x18\x02 \x01(\x01H\x00\x12\x14\n\nbool_value\x18\x03 \x01(\x08H\x00\x12\x18\n\nlong_value\x18\x04 \x01(\x12\x42\x02\x30\x01H\x00\x12\x1d\n\x0fnano_time_value\x18\x05 \x01(\x12\x42\x02\x30\x01H\x00\x42\x07\n\x05value\"\x91\x01\n\x05Value\x12\x41\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.ReferenceH\x00\x12=\n\x07literal\x18\x02 \x01(\x0b\x32*.io.deephaven.proto.backplane.grpc.LiteralH\x00\x42\x06\n\x04\x64\x61ta\"\xbc\x05\n\tCondition\x12>\n\x03\x61nd\x18\x01 \x01(\x0b\x32/.io.deephaven.proto.backplane.grpc.AndConditionH\x00\x12<\n\x02or\x18\x02 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.OrConditionH\x00\x12>\n\x03not\x18\x03 \x01(\x0b\x32/.io.deephaven.proto.backplane.grpc.NotConditionH\x00\x12\x46\n\x07\x63ompare\x18\x04 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.CompareConditionH\x00\x12<\n\x02in\x18\x05 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.InConditionH\x00\x12\x44\n\x06invoke\x18\x06 \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.InvokeConditionH\x00\x12\x45\n\x07is_null\x18\x07 \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.IsNullConditionH\x00\x12\x46\n\x07matches\x18\x08 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.MatchesConditionH\x00\x12H\n\x08\x63ontains\x18\t \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.ContainsConditionH\x00\x12\x44\n\x06search\x18\n \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.SearchConditionH\x00\x42\x06\n\x04\x64\x61ta\"M\n\x0c\x41ndCondition\x12=\n\x07\x66ilters\x18\x01 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"L\n\x0bOrCondition\x12=\n\x07\x66ilters\x18\x01 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"L\n\x0cNotCondition\x12<\n\x06\x66ilter\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"\xac\x03\n\x10\x43ompareCondition\x12W\n\toperation\x18\x01 \x01(\x0e\x32\x44.io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation\x12L\n\x10\x63\x61se_sensitivity\x18\x02 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12\x35\n\x03lhs\x18\x03 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12\x35\n\x03rhs\x18\x04 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\"\x82\x01\n\x10\x43ompareOperation\x12\r\n\tLESS_THAN\x10\x00\x12\x16\n\x12LESS_THAN_OR_EQUAL\x10\x01\x12\x10\n\x0cGREATER_THAN\x10\x02\x12\x19\n\x15GREATER_THAN_OR_EQUAL\x10\x03\x12\n\n\x06\x45QUALS\x10\x04\x12\x0e\n\nNOT_EQUALS\x10\x05\"\x95\x02\n\x0bInCondition\x12\x38\n\x06target\x18\x01 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12<\n\ncandidates\x18\x02 \x03(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"\x98\x01\n\x0fInvokeCondition\x12\x0e\n\x06method\x18\x01 \x01(\t\x12\x38\n\x06target\x18\x02 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12;\n\targuments\x18\x03 \x03(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\"R\n\x0fIsNullCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\"\xf2\x01\n\x10MatchesCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\x12\r\n\x05regex\x18\x02 \x01(\t\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"\xfb\x01\n\x11\x43ontainsCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\x12\x15\n\rsearch_string\x18\x02 \x01(\t\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"s\n\x0fSearchCondition\x12\x15\n\rsearch_string\x18\x01 \x01(\t\x12I\n\x13optional_references\x18\x02 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\"\x94\x01\n\x0e\x46lattenRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\"\xb4\x03\n\x19RunChartDownsampleRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x13\n\x0bpixel_count\x18\x03 \x01(\x05\x12Z\n\nzoom_range\x18\x04 \x01(\x0b\x32\x46.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.ZoomRange\x12\x15\n\rx_column_name\x18\x05 \x01(\t\x12\x16\n\x0ey_column_names\x18\x06 \x03(\t\x1as\n\tZoomRange\x12\x1f\n\x0emin_date_nanos\x18\x01 \x01(\x03\x42\x02\x30\x01H\x00\x88\x01\x01\x12\x1f\n\x0emax_date_nanos\x18\x02 \x01(\x03\x42\x02\x30\x01H\x01\x88\x01\x01\x42\x11\n\x0f_min_date_nanosB\x11\n\x0f_max_date_nanos\"\xf5\x04\n\x17\x43reateInputTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12L\n\x0fsource_table_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReferenceH\x00\x12\x10\n\x06schema\x18\x03 \x01(\x0cH\x00\x12W\n\x04kind\x18\x04 \x01(\x0b\x32I.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind\x1a\xd4\x02\n\x0eInputTableKind\x12}\n\x15in_memory_append_only\x18\x01 \x01(\x0b\x32\\.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnlyH\x00\x12{\n\x14in_memory_key_backed\x18\x02 \x01(\x0b\x32[.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBackedH\x00\x1a\x14\n\x12InMemoryAppendOnly\x1a(\n\x11InMemoryKeyBacked\x12\x13\n\x0bkey_columns\x18\x01 \x03(\tB\x06\n\x04kindB\x0c\n\ndefinition\"\xda\x14\n\x11\x42\x61tchTableRequest\x12K\n\x03ops\x18\x01 \x03(\x0b\x32>.io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation\x1a\xf7\x13\n\tOperation\x12K\n\x0b\x65mpty_table\x18\x01 \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.EmptyTableRequestH\x00\x12I\n\ntime_table\x18\x02 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.TimeTableRequestH\x00\x12M\n\x0c\x64rop_columns\x18\x03 \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.DropColumnsRequestH\x00\x12J\n\x06update\x18\x04 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12O\n\x0blazy_update\x18\x05 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12H\n\x04view\x18\x06 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12O\n\x0bupdate_view\x18\x07 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12J\n\x06select\x18\x08 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12S\n\x0fselect_distinct\x18\t \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectDistinctRequestH\x00\x12G\n\x06\x66ilter\x18\n \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.FilterTableRequestH\x00\x12`\n\x13unstructured_filter\x18\x0b \x01(\x0b\x32\x41.io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequestH\x00\x12\x43\n\x04sort\x18\x0c \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.SortTableRequestH\x00\x12\x44\n\x04head\x18\r \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequestH\x00\x12\x44\n\x04tail\x18\x0e \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequestH\x00\x12I\n\x07head_by\x18\x0f \x01(\x0b\x32\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequestH\x00\x12I\n\x07tail_by\x18\x10 \x01(\x0b\x32\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequestH\x00\x12\x44\n\x07ungroup\x18\x11 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.UngroupRequestH\x00\x12\x46\n\x05merge\x18\x12 \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.MergeTablesRequestH\x00\x12S\n\x0f\x63ombo_aggregate\x18\x13 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.ComboAggregateRequestH\x00\x12K\n\x08snapshot\x18\x14 \x01(\x0b\x32\x37.io.deephaven.proto.backplane.grpc.SnapshotTableRequestH\x00\x12\x44\n\x07\x66latten\x18\x15 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.FlattenRequestH\x00\x12\\\n\x14run_chart_downsample\x18\x16 \x01(\x0b\x32<.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequestH\x00\x12O\n\ncross_join\x18\x17 \x01(\x0b\x32\x39.io.deephaven.proto.backplane.grpc.CrossJoinTablesRequestH\x00\x12S\n\x0cnatural_join\x18\x18 \x01(\x0b\x32;.io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequestH\x00\x12O\n\nexact_join\x18\x19 \x01(\x0b\x32\x39.io.deephaven.proto.backplane.grpc.ExactJoinTablesRequestH\x00\x12M\n\tleft_join\x18\x1a \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.LeftJoinTablesRequestH\x00\x12N\n\nas_of_join\x18\x1b \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequestH\x00\x12K\n\x0b\x66\x65tch_table\x18\x1c \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.FetchTableRequestH\x00\x12X\n\x12\x66\x65tch_pandas_table\x18\x1d \x01(\x0b\x32:.io.deephaven.proto.backplane.grpc.FetchPandasTableRequestH\x00\x12^\n\x15\x61pply_preview_columns\x18\x1e \x01(\x0b\x32=.io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequestH\x00\x12X\n\x12\x63reate_input_table\x18\x1f \x01(\x0b\x32:.io.deephaven.proto.backplane.grpc.CreateInputTableRequestH\x00\x12G\n\tupdate_by\x18  \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.UpdateByRequestH\x00\x42\x04\n\x02op*=\n\x0f\x42\x61\x64\x44\x61taBehavior\x12\t\n\x05THROW\x10\x00\x12\t\n\x05RESET\x10\x01\x12\x08\n\x04SKIP\x10\x02\x12\n\n\x06POISON\x10\x03*2\n\x0f\x43\x61seSensitivity\x12\x0e\n\nMATCH_CASE\x10\x00\x12\x0f\n\x0bIGNORE_CASE\x10\x01*&\n\tMatchType\x12\x0b\n\x07REGULAR\x10\x00\x12\x0c\n\x08INVERTED\x10\x01\x32\xd3&\n\x0cTableService\x12\x91\x01\n GetExportedTableCreationResponse\x12).io.deephaven.proto.backplane.grpc.Ticket\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\nFetchTable\x12\x34.io.deephaven.proto.backplane.grpc.FetchTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x92\x01\n\x10\x46\x65tchPandasTable\x12:.io.deephaven.proto.backplane.grpc.FetchPandasTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x98\x01\n\x13\x41pplyPreviewColumns\x12=.io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\nEmptyTable\x12\x34.io.deephaven.proto.backplane.grpc.EmptyTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\tTimeTable\x12\x33.io.deephaven.proto.backplane.grpc.TimeTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x88\x01\n\x0b\x44ropColumns\x12\x35.io.deephaven.proto.backplane.grpc.DropColumnsRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\x06Update\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8a\x01\n\nLazyUpdate\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x04View\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8a\x01\n\nUpdateView\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\x06Select\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x82\x01\n\x08UpdateBy\x12\x32.io.deephaven.proto.backplane.grpc.UpdateByRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0eSelectDistinct\x12\x38.io.deephaven.proto.backplane.grpc.SelectDistinctRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x83\x01\n\x06\x46ilter\x12\x35.io.deephaven.proto.backplane.grpc.FilterTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x9b\x01\n\x12UnstructuredFilter\x12\x41.io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x7f\n\x04Sort\x12\x33.io.deephaven.proto.backplane.grpc.SortTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x04Head\x12\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x04Tail\x12\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x06HeadBy\x12\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x06TailBy\x12\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x07Ungroup\x12\x31.io.deephaven.proto.backplane.grpc.UngroupRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x88\x01\n\x0bMergeTables\x12\x35.io.deephaven.proto.backplane.grpc.MergeTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x90\x01\n\x0f\x43rossJoinTables\x12\x39.io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x94\x01\n\x11NaturalJoinTables\x12;.io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x90\x01\n\x0f\x45xactJoinTables\x12\x39.io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0eLeftJoinTables\x12\x38.io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0e\x41sOfJoinTables\x12\x38.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0e\x43omboAggregate\x12\x38.io.deephaven.proto.backplane.grpc.ComboAggregateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x87\x01\n\x08Snapshot\x12\x37.io.deephaven.proto.backplane.grpc.SnapshotTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x07\x46latten\x12\x31.io.deephaven.proto.backplane.grpc.FlattenRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x96\x01\n\x12RunChartDownsample\x12<.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x92\x01\n\x10\x43reateInputTable\x12:.io.deephaven.proto.backplane.grpc.CreateInputTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x83\x01\n\x05\x42\x61tch\x12\x34.io.deephaven.proto.backplane.grpc.BatchTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x30\x01\x12\x99\x01\n\x14\x45xportedTableUpdates\x12>.io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest\x1a=.io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage\"\x00\x30\x01\x42\x41H\x01P\x01Z;github.com/deephaven/deephaven-core/go/internal/proto/tableb\x06proto3')
 
+_BADDATABEHAVIOR = DESCRIPTOR.enum_types_by_name['BadDataBehavior']
+BadDataBehavior = enum_type_wrapper.EnumTypeWrapper(_BADDATABEHAVIOR)
 _CASESENSITIVITY = DESCRIPTOR.enum_types_by_name['CaseSensitivity']
 CaseSensitivity = enum_type_wrapper.EnumTypeWrapper(_CASESENSITIVITY)
 _MATCHTYPE = DESCRIPTOR.enum_types_by_name['MatchType']
 MatchType = enum_type_wrapper.EnumTypeWrapper(_MATCHTYPE)
+THROW = 0
+RESET = 1
+SKIP = 2
+POISON = 3
 MATCH_CASE = 0
 IGNORE_CASE = 1
 REGULAR = 0
@@ -38,6 +44,22 @@ _EXPORTEDTABLEUPDATEMESSAGE = DESCRIPTOR.message_types_by_name['ExportedTableUpd
 _EMPTYTABLEREQUEST = DESCRIPTOR.message_types_by_name['EmptyTableRequest']
 _TIMETABLEREQUEST = DESCRIPTOR.message_types_by_name['TimeTableRequest']
 _SELECTORUPDATEREQUEST = DESCRIPTOR.message_types_by_name['SelectOrUpdateRequest']
+_MATHCONTEXT = DESCRIPTOR.message_types_by_name['MathContext']
+_UPDATEBYREQUEST = DESCRIPTOR.message_types_by_name['UpdateByRequest']
+_UPDATEBYREQUEST_UPDATEBYOPTIONS = _UPDATEBYREQUEST.nested_types_by_name['UpdateByOptions']
+_UPDATEBYREQUEST_UPDATEBYOPERATION = _UPDATEBYREQUEST.nested_types_by_name['UpdateByOperation']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN = _UPDATEBYREQUEST_UPDATEBYOPERATION.nested_types_by_name['UpdateByColumn']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC = _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN.nested_types_by_name['UpdateBySpec']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVESUM = _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC.nested_types_by_name['UpdateByCumulativeSum']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEMIN = _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC.nested_types_by_name['UpdateByCumulativeMin']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEMAX = _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC.nested_types_by_name['UpdateByCumulativeMax']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEPRODUCT = _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC.nested_types_by_name['UpdateByCumulativeProduct']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYFILL = _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC.nested_types_by_name['UpdateByFill']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA = _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC.nested_types_by_name['UpdateByEma']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMAOPTIONS = _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA.nested_types_by_name['UpdateByEmaOptions']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE = _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA.nested_types_by_name['UpdateByEmaTimescale']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATICKS = _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE.nested_types_by_name['UpdateByEmaTicks']
+_UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATIME = _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE.nested_types_by_name['UpdateByEmaTime']
 _SELECTDISTINCTREQUEST = DESCRIPTOR.message_types_by_name['SelectDistinctRequest']
 _DROPCOLUMNSREQUEST = DESCRIPTOR.message_types_by_name['DropColumnsRequest']
 _UNSTRUCTUREDFILTERTABLEREQUEST = DESCRIPTOR.message_types_by_name['UnstructuredFilterTableRequest']
@@ -79,6 +101,7 @@ _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYAPPENDONLY = _CREATEINPUTTABLERE
 _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYKEYBACKED = _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.nested_types_by_name['InMemoryKeyBacked']
 _BATCHTABLEREQUEST = DESCRIPTOR.message_types_by_name['BatchTableRequest']
 _BATCHTABLEREQUEST_OPERATION = _BATCHTABLEREQUEST.nested_types_by_name['Operation']
+_MATHCONTEXT_ROUNDINGMODE = _MATHCONTEXT.enum_types_by_name['RoundingMode']
 _ASOFJOINTABLESREQUEST_MATCHRULE = _ASOFJOINTABLESREQUEST.enum_types_by_name['MatchRule']
 _COMBOAGGREGATEREQUEST_AGGTYPE = _COMBOAGGREGATEREQUEST.enum_types_by_name['AggType']
 _SORTDESCRIPTOR_SORTDIRECTION = _SORTDESCRIPTOR.enum_types_by_name['SortDirection']
@@ -152,6 +175,132 @@ SelectOrUpdateRequest = _reflection.GeneratedProtocolMessageType('SelectOrUpdate
   # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest)
   })
 _sym_db.RegisterMessage(SelectOrUpdateRequest)
+
+MathContext = _reflection.GeneratedProtocolMessageType('MathContext', (_message.Message,), {
+  'DESCRIPTOR' : _MATHCONTEXT,
+  '__module__' : 'pydeephaven.proto.table_pb2'
+  # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.MathContext)
+  })
+_sym_db.RegisterMessage(MathContext)
+
+UpdateByRequest = _reflection.GeneratedProtocolMessageType('UpdateByRequest', (_message.Message,), {
+
+  'UpdateByOptions' : _reflection.GeneratedProtocolMessageType('UpdateByOptions', (_message.Message,), {
+    'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPTIONS,
+    '__module__' : 'pydeephaven.proto.table_pb2'
+    # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions)
+    })
+  ,
+
+  'UpdateByOperation' : _reflection.GeneratedProtocolMessageType('UpdateByOperation', (_message.Message,), {
+
+    'UpdateByColumn' : _reflection.GeneratedProtocolMessageType('UpdateByColumn', (_message.Message,), {
+
+      'UpdateBySpec' : _reflection.GeneratedProtocolMessageType('UpdateBySpec', (_message.Message,), {
+
+        'UpdateByCumulativeSum' : _reflection.GeneratedProtocolMessageType('UpdateByCumulativeSum', (_message.Message,), {
+          'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVESUM,
+          '__module__' : 'pydeephaven.proto.table_pb2'
+          # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum)
+          })
+        ,
+
+        'UpdateByCumulativeMin' : _reflection.GeneratedProtocolMessageType('UpdateByCumulativeMin', (_message.Message,), {
+          'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEMIN,
+          '__module__' : 'pydeephaven.proto.table_pb2'
+          # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin)
+          })
+        ,
+
+        'UpdateByCumulativeMax' : _reflection.GeneratedProtocolMessageType('UpdateByCumulativeMax', (_message.Message,), {
+          'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEMAX,
+          '__module__' : 'pydeephaven.proto.table_pb2'
+          # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax)
+          })
+        ,
+
+        'UpdateByCumulativeProduct' : _reflection.GeneratedProtocolMessageType('UpdateByCumulativeProduct', (_message.Message,), {
+          'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEPRODUCT,
+          '__module__' : 'pydeephaven.proto.table_pb2'
+          # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct)
+          })
+        ,
+
+        'UpdateByFill' : _reflection.GeneratedProtocolMessageType('UpdateByFill', (_message.Message,), {
+          'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYFILL,
+          '__module__' : 'pydeephaven.proto.table_pb2'
+          # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill)
+          })
+        ,
+
+        'UpdateByEma' : _reflection.GeneratedProtocolMessageType('UpdateByEma', (_message.Message,), {
+
+          'UpdateByEmaOptions' : _reflection.GeneratedProtocolMessageType('UpdateByEmaOptions', (_message.Message,), {
+            'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMAOPTIONS,
+            '__module__' : 'pydeephaven.proto.table_pb2'
+            # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions)
+            })
+          ,
+
+          'UpdateByEmaTimescale' : _reflection.GeneratedProtocolMessageType('UpdateByEmaTimescale', (_message.Message,), {
+
+            'UpdateByEmaTicks' : _reflection.GeneratedProtocolMessageType('UpdateByEmaTicks', (_message.Message,), {
+              'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATICKS,
+              '__module__' : 'pydeephaven.proto.table_pb2'
+              # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks)
+              })
+            ,
+
+            'UpdateByEmaTime' : _reflection.GeneratedProtocolMessageType('UpdateByEmaTime', (_message.Message,), {
+              'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATIME,
+              '__module__' : 'pydeephaven.proto.table_pb2'
+              # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime)
+              })
+            ,
+            'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE,
+            '__module__' : 'pydeephaven.proto.table_pb2'
+            # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
+            })
+          ,
+          'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA,
+          '__module__' : 'pydeephaven.proto.table_pb2'
+          # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma)
+          })
+        ,
+        'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC,
+        '__module__' : 'pydeephaven.proto.table_pb2'
+        # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec)
+        })
+      ,
+      'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN,
+      '__module__' : 'pydeephaven.proto.table_pb2'
+      # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn)
+      })
+    ,
+    'DESCRIPTOR' : _UPDATEBYREQUEST_UPDATEBYOPERATION,
+    '__module__' : 'pydeephaven.proto.table_pb2'
+    # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation)
+    })
+  ,
+  'DESCRIPTOR' : _UPDATEBYREQUEST,
+  '__module__' : 'pydeephaven.proto.table_pb2'
+  # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest)
+  })
+_sym_db.RegisterMessage(UpdateByRequest)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOptions)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks)
+_sym_db.RegisterMessage(UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime)
 
 SelectDistinctRequest = _reflection.GeneratedProtocolMessageType('SelectDistinctRequest', (_message.Message,), {
   'DESCRIPTOR' : _SELECTDISTINCTREQUEST,
@@ -461,6 +610,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _TIMETABLEREQUEST.fields_by_name['start_time_nanos']._serialized_options = b'0\001'
   _TIMETABLEREQUEST.fields_by_name['period_nanos']._options = None
   _TIMETABLEREQUEST.fields_by_name['period_nanos']._serialized_options = b'0\001'
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATICKS.fields_by_name['ticks']._options = None
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATICKS.fields_by_name['ticks']._serialized_options = b'0\001'
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATIME.fields_by_name['period_nanos']._options = None
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATIME.fields_by_name['period_nanos']._serialized_options = b'0\001'
   _HEADORTAILREQUEST.fields_by_name['num_rows']._options = None
   _HEADORTAILREQUEST.fields_by_name['num_rows']._serialized_options = b'0\001'
   _HEADORTAILBYREQUEST.fields_by_name['num_rows']._options = None
@@ -473,10 +626,12 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _RUNCHARTDOWNSAMPLEREQUEST_ZOOMRANGE.fields_by_name['min_date_nanos']._serialized_options = b'0\001'
   _RUNCHARTDOWNSAMPLEREQUEST_ZOOMRANGE.fields_by_name['max_date_nanos']._options = None
   _RUNCHARTDOWNSAMPLEREQUEST_ZOOMRANGE.fields_by_name['max_date_nanos']._serialized_options = b'0\001'
-  _CASESENSITIVITY._serialized_start=12579
-  _CASESENSITIVITY._serialized_end=12629
-  _MATCHTYPE._serialized_start=12631
-  _MATCHTYPE._serialized_end=12669
+  _BADDATABEHAVIOR._serialized_start=16322
+  _BADDATABEHAVIOR._serialized_end=16383
+  _CASESENSITIVITY._serialized_start=16385
+  _CASESENSITIVITY._serialized_end=16435
+  _MATCHTYPE._serialized_start=16437
+  _MATCHTYPE._serialized_end=16475
   _TABLEREFERENCE._serialized_start=96
   _TABLEREFERENCE._serialized_end=204
   _EXPORTEDTABLECREATIONRESPONSE._serialized_start=207
@@ -497,96 +652,130 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _TIMETABLEREQUEST._serialized_end=1296
   _SELECTORUPDATEREQUEST._serialized_start=1299
   _SELECTORUPDATEREQUEST._serialized_end=1476
-  _SELECTDISTINCTREQUEST._serialized_start=1479
-  _SELECTDISTINCTREQUEST._serialized_end=1656
-  _DROPCOLUMNSREQUEST._serialized_start=1659
-  _DROPCOLUMNSREQUEST._serialized_end=1833
-  _UNSTRUCTUREDFILTERTABLEREQUEST._serialized_start=1836
-  _UNSTRUCTUREDFILTERTABLEREQUEST._serialized_end=2017
-  _HEADORTAILREQUEST._serialized_start=2020
-  _HEADORTAILREQUEST._serialized_end=2193
-  _HEADORTAILBYREQUEST._serialized_start=2196
-  _HEADORTAILBYREQUEST._serialized_end=2402
-  _UNGROUPREQUEST._serialized_start=2405
-  _UNGROUPREQUEST._serialized_end=2600
-  _MERGETABLESREQUEST._serialized_start=2603
-  _MERGETABLESREQUEST._serialized_end=2776
-  _SNAPSHOTTABLEREQUEST._serialized_start=2779
-  _SNAPSHOTTABLEREQUEST._serialized_end=3052
-  _CROSSJOINTABLESREQUEST._serialized_start=3055
-  _CROSSJOINTABLESREQUEST._serialized_end=3350
-  _NATURALJOINTABLESREQUEST._serialized_start=3353
-  _NATURALJOINTABLESREQUEST._serialized_end=3628
-  _EXACTJOINTABLESREQUEST._serialized_start=3631
-  _EXACTJOINTABLESREQUEST._serialized_end=3904
-  _LEFTJOINTABLESREQUEST._serialized_start=3907
-  _LEFTJOINTABLESREQUEST._serialized_end=4179
-  _ASOFJOINTABLESREQUEST._serialized_start=4182
-  _ASOFJOINTABLESREQUEST._serialized_end=4639
-  _ASOFJOINTABLESREQUEST_MATCHRULE._serialized_start=4550
-  _ASOFJOINTABLESREQUEST_MATCHRULE._serialized_end=4639
-  _COMBOAGGREGATEREQUEST._serialized_start=4642
-  _COMBOAGGREGATEREQUEST._serialized_end=5276
-  _COMBOAGGREGATEREQUEST_AGGREGATE._serialized_start=4935
-  _COMBOAGGREGATEREQUEST_AGGREGATE._serialized_end=5108
-  _COMBOAGGREGATEREQUEST_AGGTYPE._serialized_start=5111
-  _COMBOAGGREGATEREQUEST_AGGTYPE._serialized_end=5276
-  _SORTDESCRIPTOR._serialized_start=5279
-  _SORTDESCRIPTOR._serialized_end=5504
-  _SORTDESCRIPTOR_SORTDIRECTION._serialized_start=5423
-  _SORTDESCRIPTOR_SORTDIRECTION._serialized_end=5504
-  _SORTTABLEREQUEST._serialized_start=5507
-  _SORTTABLEREQUEST._serialized_end=5723
-  _FILTERTABLEREQUEST._serialized_start=5726
-  _FILTERTABLEREQUEST._serialized_end=5941
-  _REFERENCE._serialized_start=5943
-  _REFERENCE._serialized_end=5975
-  _LITERAL._serialized_start=5978
-  _LITERAL._serialized_end=6123
-  _VALUE._serialized_start=6126
-  _VALUE._serialized_end=6271
-  _CONDITION._serialized_start=6274
-  _CONDITION._serialized_end=6974
-  _ANDCONDITION._serialized_start=6976
-  _ANDCONDITION._serialized_end=7053
-  _ORCONDITION._serialized_start=7055
-  _ORCONDITION._serialized_end=7131
-  _NOTCONDITION._serialized_start=7133
-  _NOTCONDITION._serialized_end=7209
-  _COMPARECONDITION._serialized_start=7212
-  _COMPARECONDITION._serialized_end=7640
-  _COMPARECONDITION_COMPAREOPERATION._serialized_start=7510
-  _COMPARECONDITION_COMPAREOPERATION._serialized_end=7640
-  _INCONDITION._serialized_start=7643
-  _INCONDITION._serialized_end=7920
-  _INVOKECONDITION._serialized_start=7923
-  _INVOKECONDITION._serialized_end=8075
-  _ISNULLCONDITION._serialized_start=8077
-  _ISNULLCONDITION._serialized_end=8159
-  _MATCHESCONDITION._serialized_start=8162
-  _MATCHESCONDITION._serialized_end=8404
-  _CONTAINSCONDITION._serialized_start=8407
-  _CONTAINSCONDITION._serialized_end=8658
-  _SEARCHCONDITION._serialized_start=8660
-  _SEARCHCONDITION._serialized_end=8775
-  _FLATTENREQUEST._serialized_start=8778
-  _FLATTENREQUEST._serialized_end=8926
-  _RUNCHARTDOWNSAMPLEREQUEST._serialized_start=8929
-  _RUNCHARTDOWNSAMPLEREQUEST._serialized_end=9365
-  _RUNCHARTDOWNSAMPLEREQUEST_ZOOMRANGE._serialized_start=9250
-  _RUNCHARTDOWNSAMPLEREQUEST_ZOOMRANGE._serialized_end=9365
-  _CREATEINPUTTABLEREQUEST._serialized_start=9368
-  _CREATEINPUTTABLEREQUEST._serialized_end=9997
-  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND._serialized_start=9643
-  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND._serialized_end=9983
-  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYAPPENDONLY._serialized_start=9913
-  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYAPPENDONLY._serialized_end=9933
-  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYKEYBACKED._serialized_start=9935
-  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYKEYBACKED._serialized_end=9975
-  _BATCHTABLEREQUEST._serialized_start=10000
-  _BATCHTABLEREQUEST._serialized_end=12577
-  _BATCHTABLEREQUEST_OPERATION._serialized_start=10099
-  _BATCHTABLEREQUEST_OPERATION._serialized_end=12577
-  _TABLESERVICE._serialized_start=12672
-  _TABLESERVICE._serialized_end=17486
+  _MATHCONTEXT._serialized_start=1479
+  _MATHCONTEXT._serialized_end=1713
+  _MATHCONTEXT_ROUNDINGMODE._serialized_start=1597
+  _MATHCONTEXT_ROUNDINGMODE._serialized_end=1713
+  _UPDATEBYREQUEST._serialized_start=1716
+  _UPDATEBYREQUEST._serialized_end=5146
+  _UPDATEBYREQUEST_UPDATEBYOPTIONS._serialized_start=2069
+  _UPDATEBYREQUEST_UPDATEBYOPTIONS._serialized_end=2520
+  _UPDATEBYREQUEST_UPDATEBYOPERATION._serialized_start=2523
+  _UPDATEBYREQUEST_UPDATEBYOPERATION._serialized_end=5146
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN._serialized_start=2648
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN._serialized_end=5138
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC._serialized_start=2800
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC._serialized_end=5138
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVESUM._serialized_start=3620
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVESUM._serialized_end=3643
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEMIN._serialized_start=3645
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEMIN._serialized_end=3668
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEMAX._serialized_start=3670
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEMAX._serialized_end=3693
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEPRODUCT._serialized_start=3695
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYCUMULATIVEPRODUCT._serialized_end=3722
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYFILL._serialized_start=3724
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYFILL._serialized_end=3738
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA._serialized_start=3741
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA._serialized_end=5130
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMAOPTIONS._serialized_start=4056
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMAOPTIONS._serialized_end=4665
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE._serialized_start=4668
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE._serialized_end=5130
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATICKS._serialized_start=5024
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATICKS._serialized_end=5061
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATIME._serialized_start=5063
+  _UPDATEBYREQUEST_UPDATEBYOPERATION_UPDATEBYCOLUMN_UPDATEBYSPEC_UPDATEBYEMA_UPDATEBYEMATIMESCALE_UPDATEBYEMATIME._serialized_end=5122
+  _SELECTDISTINCTREQUEST._serialized_start=5149
+  _SELECTDISTINCTREQUEST._serialized_end=5326
+  _DROPCOLUMNSREQUEST._serialized_start=5329
+  _DROPCOLUMNSREQUEST._serialized_end=5503
+  _UNSTRUCTUREDFILTERTABLEREQUEST._serialized_start=5506
+  _UNSTRUCTUREDFILTERTABLEREQUEST._serialized_end=5687
+  _HEADORTAILREQUEST._serialized_start=5690
+  _HEADORTAILREQUEST._serialized_end=5863
+  _HEADORTAILBYREQUEST._serialized_start=5866
+  _HEADORTAILBYREQUEST._serialized_end=6072
+  _UNGROUPREQUEST._serialized_start=6075
+  _UNGROUPREQUEST._serialized_end=6270
+  _MERGETABLESREQUEST._serialized_start=6273
+  _MERGETABLESREQUEST._serialized_end=6446
+  _SNAPSHOTTABLEREQUEST._serialized_start=6449
+  _SNAPSHOTTABLEREQUEST._serialized_end=6722
+  _CROSSJOINTABLESREQUEST._serialized_start=6725
+  _CROSSJOINTABLESREQUEST._serialized_end=7020
+  _NATURALJOINTABLESREQUEST._serialized_start=7023
+  _NATURALJOINTABLESREQUEST._serialized_end=7298
+  _EXACTJOINTABLESREQUEST._serialized_start=7301
+  _EXACTJOINTABLESREQUEST._serialized_end=7574
+  _LEFTJOINTABLESREQUEST._serialized_start=7577
+  _LEFTJOINTABLESREQUEST._serialized_end=7849
+  _ASOFJOINTABLESREQUEST._serialized_start=7852
+  _ASOFJOINTABLESREQUEST._serialized_end=8309
+  _ASOFJOINTABLESREQUEST_MATCHRULE._serialized_start=8220
+  _ASOFJOINTABLESREQUEST_MATCHRULE._serialized_end=8309
+  _COMBOAGGREGATEREQUEST._serialized_start=8312
+  _COMBOAGGREGATEREQUEST._serialized_end=8946
+  _COMBOAGGREGATEREQUEST_AGGREGATE._serialized_start=8605
+  _COMBOAGGREGATEREQUEST_AGGREGATE._serialized_end=8778
+  _COMBOAGGREGATEREQUEST_AGGTYPE._serialized_start=8781
+  _COMBOAGGREGATEREQUEST_AGGTYPE._serialized_end=8946
+  _SORTDESCRIPTOR._serialized_start=8949
+  _SORTDESCRIPTOR._serialized_end=9174
+  _SORTDESCRIPTOR_SORTDIRECTION._serialized_start=9093
+  _SORTDESCRIPTOR_SORTDIRECTION._serialized_end=9174
+  _SORTTABLEREQUEST._serialized_start=9177
+  _SORTTABLEREQUEST._serialized_end=9393
+  _FILTERTABLEREQUEST._serialized_start=9396
+  _FILTERTABLEREQUEST._serialized_end=9611
+  _REFERENCE._serialized_start=9613
+  _REFERENCE._serialized_end=9645
+  _LITERAL._serialized_start=9648
+  _LITERAL._serialized_end=9793
+  _VALUE._serialized_start=9796
+  _VALUE._serialized_end=9941
+  _CONDITION._serialized_start=9944
+  _CONDITION._serialized_end=10644
+  _ANDCONDITION._serialized_start=10646
+  _ANDCONDITION._serialized_end=10723
+  _ORCONDITION._serialized_start=10725
+  _ORCONDITION._serialized_end=10801
+  _NOTCONDITION._serialized_start=10803
+  _NOTCONDITION._serialized_end=10879
+  _COMPARECONDITION._serialized_start=10882
+  _COMPARECONDITION._serialized_end=11310
+  _COMPARECONDITION_COMPAREOPERATION._serialized_start=11180
+  _COMPARECONDITION_COMPAREOPERATION._serialized_end=11310
+  _INCONDITION._serialized_start=11313
+  _INCONDITION._serialized_end=11590
+  _INVOKECONDITION._serialized_start=11593
+  _INVOKECONDITION._serialized_end=11745
+  _ISNULLCONDITION._serialized_start=11747
+  _ISNULLCONDITION._serialized_end=11829
+  _MATCHESCONDITION._serialized_start=11832
+  _MATCHESCONDITION._serialized_end=12074
+  _CONTAINSCONDITION._serialized_start=12077
+  _CONTAINSCONDITION._serialized_end=12328
+  _SEARCHCONDITION._serialized_start=12330
+  _SEARCHCONDITION._serialized_end=12445
+  _FLATTENREQUEST._serialized_start=12448
+  _FLATTENREQUEST._serialized_end=12596
+  _RUNCHARTDOWNSAMPLEREQUEST._serialized_start=12599
+  _RUNCHARTDOWNSAMPLEREQUEST._serialized_end=13035
+  _RUNCHARTDOWNSAMPLEREQUEST_ZOOMRANGE._serialized_start=12920
+  _RUNCHARTDOWNSAMPLEREQUEST_ZOOMRANGE._serialized_end=13035
+  _CREATEINPUTTABLEREQUEST._serialized_start=13038
+  _CREATEINPUTTABLEREQUEST._serialized_end=13667
+  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND._serialized_start=13313
+  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND._serialized_end=13653
+  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYAPPENDONLY._serialized_start=13583
+  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYAPPENDONLY._serialized_end=13603
+  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYKEYBACKED._serialized_start=13605
+  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYKEYBACKED._serialized_end=13645
+  _BATCHTABLEREQUEST._serialized_start=13670
+  _BATCHTABLEREQUEST._serialized_end=16320
+  _BATCHTABLEREQUEST_OPERATION._serialized_start=13769
+  _BATCHTABLEREQUEST_OPERATION._serialized_end=16320
+  _TABLESERVICE._serialized_start=16478
+  _TABLESERVICE._serialized_end=21425
 # @@protoc_insertion_point(module_scope)
