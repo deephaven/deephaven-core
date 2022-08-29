@@ -14,14 +14,12 @@ import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
@@ -29,6 +27,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
     protected final OperationControl control;
     protected final LongRecordingUpdateByOperator timeRecorder;
+    protected final String timestampColumnName;
     protected final double timeScaleUnits;
 
     class EmaContext extends Context {
@@ -58,6 +57,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final LongRecordingUpdateByOperator timeRecorder,
+            @Nullable final String timestampColumnName,
             final long timeScaleUnits,
             @NotNull ColumnSource<T> valueSource,
             @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
@@ -67,6 +67,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         super(pair, affectingColumns, redirContext, BigDecimal.class);
         this.control = control;
         this.timeRecorder = timeRecorder;
+        this.timestampColumnName = timestampColumnName;
         this.timeScaleUnits = timeScaleUnits;
         this.valueSource = valueSource;
         // region constructor
@@ -80,28 +81,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     }
 
     @Override
-    public void initializeForUpdate(@NotNull UpdateContext context,
-            @NotNull TableUpdate upstream,
-            @NotNull RowSet resultSourceIndex,
-            final long lastPrevKey,
-            boolean isAppendOnly) {
-        super.initializeForUpdate(context, upstream, resultSourceIndex, lastPrevKey, isAppendOnly);
-
-        final EmaContext ctx = (EmaContext) context;
-        // pre-load the context timestamp with the previous last value in the timestamp column (if possible)
-        ctx.lastStamp = (lastPrevKey == NULL_ROW_KEY || timeRecorder == null) ? NULL_LONG : locateFirstValidPreviousTimestamp(resultSourceIndex, lastPrevKey);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void initializeFor(@NotNull final UpdateContext updateContext,
-            @NotNull final RowSet updateRowSet,
-            @NotNull final UpdateBy.UpdateType type) {
-        super.initializeFor(updateContext, updateRowSet, type);
-    }
-
-    @Override
-    protected void doAddChunk(@NotNull final Context updateContext,
+    protected void doProcessChunk(@NotNull final Context updateContext,
             @NotNull final RowSequence inputKeys,
             @NotNull final Chunk<Values> workingChunk) {
         final ObjectChunk<T, Values> asObjects = workingChunk.asObjectChunk();
@@ -117,27 +97,26 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
 
     @Override
-    public void resetForReprocess(@NotNull final UpdateContext context,
-            @NotNull final RowSet sourceIndex,
-            final long firstUnmodifiedKey) {
-        super.resetForReprocess(context, sourceIndex, firstUnmodifiedKey);
+    public void resetForProcess(@NotNull final UpdateContext context,
+                                @NotNull final RowSet sourceIndex,
+                                final long firstUnmodifiedKey) {
+        super.resetForProcess(context, sourceIndex, firstUnmodifiedKey);
 
         if (timeRecorder == null) {
             return;
         }
 
         final EmaContext ctx = (EmaContext) context;
-        if (!ctx.canProcessDirectly) {
-            // If we set the last state to null, then we know it was a reset state and the timestamp must also
-            // have been reset.
-            if (ctx.curVal == null || (firstUnmodifiedKey == NULL_ROW_KEY)) {
-                ctx.lastStamp = NULL_LONG;
-            } else {
-                // If it hasn't been reset to null, then it's possible that the value at that position was null, in
-                // which case  we must have ignored it, and so we have to actually keep looking backwards until we find
-                // something not null.
-                ctx.lastStamp = locateFirstValidPreviousTimestamp(sourceIndex, firstUnmodifiedKey);
-            }
+
+        // If we set the last state to null, then we know it was a reset state and the timestamp must also
+        // have been reset.
+        if (ctx.curVal == null || (firstUnmodifiedKey == NULL_ROW_KEY)) {
+            ctx.lastStamp = NULL_LONG;
+        } else {
+            // If it hasn't been reset to null, then it's possible that the value at that position was null, in
+            // which case  we must have ignored it, and so we have to actually keep looking backwards until we find
+            // something not null.
+            ctx.lastStamp = locateFirstValidPreviousTimestamp(sourceIndex, firstUnmodifiedKey);
         }
     }
 

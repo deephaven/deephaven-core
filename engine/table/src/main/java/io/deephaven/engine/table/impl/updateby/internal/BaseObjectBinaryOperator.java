@@ -26,7 +26,7 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
 
 
     @Override
-    protected void doAddChunk(@NotNull final Context ctx,
+    protected void doProcessChunk(@NotNull final Context ctx,
                               @NotNull final RowSequence inputKeys,
                               @NotNull final Chunk<Values> workingChunk) {
         accumulate(workingChunk.asObjectChunk(), ctx, 0, inputKeys.intSize());

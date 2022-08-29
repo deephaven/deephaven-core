@@ -8,9 +8,9 @@ import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,6 +26,10 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 class ZeroKeyUpdateBy extends UpdateBy {
     /** Apply shifts to operator outputs? */
     final boolean applyShifts;
+
+    /** store timestamp data in an Ssa (if needed) */
+    final LongSegmentedSortedArray tsSsa;
+    final String tsColumnName;
 
     /**
      * Perform an updateBy without any key columns.
@@ -64,6 +68,18 @@ class ZeroKeyUpdateBy extends UpdateBy {
             @NotNull final UpdateByControl control,
             final boolean applyShifts) {
         super(operators, source, redirContext, control);
+
+        // do we need a timestamp SSA?
+        this.tsColumnName = Arrays.stream(operators)
+                .filter(op -> op.getTimestampColumnName() != null)
+                .map(UpdateByOperator::getTimestampColumnName)
+                .findFirst().orElse(null);
+
+        if (tsColumnName != null) {
+            this.tsSsa = new LongSegmentedSortedArray(1024);
+        } else {
+            this.tsSsa = null;
+        }
         this.applyShifts = applyShifts;
     }
 
@@ -81,11 +97,10 @@ class ZeroKeyUpdateBy extends UpdateBy {
             redirContext.processUpdateForRedirection(fakeUpdate, source.getRowSet());
         }
 
+        // add all the SSA data
+
         try (final UpdateContext ctx = new UpdateContext(fakeUpdate, null, true)) {
             ctx.setAllAffected();
-
-            // do an addition phase for all the operators that can add directly (i.e. backwards looking)
-            ctx.doUpdate(source.getRowSet(), source.getRowSet(), UpdateType.Add);
 
             // do a reprocessing phase for operators that can't add directly
             ctx.reprocessRows(RowSetShiftData.EMPTY);
@@ -201,9 +216,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
                                 inputSources[opIdx].getChunkType().makeWritableChunk(chunkSize);
                     }
                 }
-
-                operators[opIdx].initializeForUpdate(opContext[opIdx], upstream, source.getRowSet(),
-                        isInitializeStep ? NULL_ROW_KEY : source.getRowSet().lastRowKeyPrev(), upstreamAppendOnly);
             }
 
             // retrieve the affected rows from all operator update contexts
@@ -260,11 +272,10 @@ class ZeroKeyUpdateBy extends UpdateBy {
             }
         }
 
-        void initializeFor(@NotNull final RowSet updateRowSet,
-                @NotNull final UpdateType type) {
+        void initializeFor(@NotNull final RowSet updateRowSet) {
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx]) {
-                    operators[opIdx].initializeFor(opContext[opIdx], updateRowSet, type);
+                    operators[opIdx].initializeFor(opContext[opIdx], updateRowSet);
                     anyRequireKeys |= operators[opIdx].requiresKeys();
                 }
             }
@@ -274,10 +285,10 @@ class ZeroKeyUpdateBy extends UpdateBy {
             }
         }
 
-        void finishFor(@NotNull final UpdateType type) {
+        void finishFor() {
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx]) {
-                    operators[opIdx].finishFor(opContext[opIdx], type);
+                    operators[opIdx].finishFor(opContext[opIdx]);
                 }
             }
 
@@ -344,8 +355,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
         }
 
         void doUpdate(@NotNull final RowSet updateRowSet,
-                @NotNull final RowSet preShiftUpdateRowSet,
-                @NotNull final UpdateType type) {
+                @NotNull final RowSet preShiftUpdateRowSet) {
             if (updateRowSet.isEmpty()) {
                 return;
             }
@@ -353,7 +363,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
             try (final RowSequence.Iterator okIt = updateRowSet.getRowSequenceIterator();
                     final RowSequence.Iterator preShiftOkIt = preShiftUpdateRowSet == updateRowSet ? null
                             : preShiftUpdateRowSet.getRowSequenceIterator()) {
-                initializeFor(updateRowSet, type);
+                initializeFor(updateRowSet);
 
                 while (okIt.hasMore()) {
                     sharedContext.reset();
@@ -380,50 +390,27 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
                         final UpdateByOperator currentOp = operators[opIdx];
                         final int slotPosition = inputSourceSlots[opIdx];
-                        if (type == UpdateType.Add) {
-                            prepareValuesChunkFor(opIdx, slotPosition, false, true, chunkOk, prevChunkOk,
-                                    null, postWorkingChunks[slotPosition].get(),
-                                    null, fillContexts[slotPosition].get());
-                            currentOp.addChunk(opContext[opIdx], chunkOk, keyChunk.get(),
-                                    postWorkingChunks[slotPosition].get());
-                        } else if (type == UpdateType.Remove) {
-                            prepareValuesChunkFor(opIdx, slotPosition, true, false, chunkOk, prevChunkOk,
-                                    postWorkingChunks[slotPosition].get(), null,
-                                    fillContexts[slotPosition].get(), null);
-                            currentOp.removeChunk(opContext[opIdx], keyChunk.get(),
-                                    postWorkingChunks[slotPosition].get());
-                        } else if (type == UpdateType.Modify) {
-                            prepareValuesChunkFor(opIdx, slotPosition, true, true, chunkOk, prevChunkOk,
-                                    prevWorkingChunks[slotPosition], postWorkingChunks[slotPosition].get(),
-                                    prevFillContexts[slotPosition], fillContexts[slotPosition].get());
-                            currentOp.modifyChunk(opContext[opIdx],
-                                    prevKeyChunk == null ? keyChunk.get() : prevKeyChunk,
-                                    keyChunk.get(),
-                                    prevWorkingChunks[slotPosition],
-                                    postWorkingChunks[slotPosition].get());
-                        } else if (type == UpdateType.Reprocess) {
-                            // is this chunk relevant to this operator? If so, then intersect and process only the
-                            // relevant rows
-                            if (chunkOk.firstRowKey() <= opContext[opIdx].getAffectedRows().lastRowKey()
-                                    && chunkOk.lastRowKey() >= opContext[opIdx].getAffectedRows().firstRowKey()) {
-                                try (final RowSet rs = chunkOk.asRowSet();
-                                     final RowSet intersect = rs.intersect(opContext[opIdx].getAffectedRows())) {
+                        // is this chunk relevant to this operator? If so, then intersect and process only the
+                        // relevant rows
+                        if (chunkOk.firstRowKey() <= opContext[opIdx].getAffectedRows().lastRowKey()
+                                && chunkOk.lastRowKey() >= opContext[opIdx].getAffectedRows().firstRowKey()) {
+                            try (final RowSet rs = chunkOk.asRowSet();
+                                 final RowSet intersect = rs.intersect(opContext[opIdx].getAffectedRows())) {
 
-                                    prepareValuesChunkFor(opIdx, slotPosition, false, true, intersect, intersect,
-                                            null, postWorkingChunks[slotPosition].get(),
-                                            null, fillContexts[slotPosition].get());
-                                    currentOp.reprocessChunk(opContext[opIdx],
-                                            intersect,
-                                            keyChunk.get(),
-                                            postWorkingChunks[slotPosition].get(),
-                                            source.getRowSet());
-                                }
+                                prepareValuesChunkFor(opIdx, slotPosition, false, true, intersect, intersect,
+                                        null, postWorkingChunks[slotPosition].get(),
+                                        null, fillContexts[slotPosition].get());
+                                currentOp.processChunk(opContext[opIdx],
+                                        intersect,
+                                        keyChunk.get(),
+                                        postWorkingChunks[slotPosition].get(),
+                                        source.getRowSet());
                             }
                         }
                     }
                 }
 
-                finishFor(type);
+                finishFor();
             }
         }
 
@@ -446,14 +433,14 @@ class ZeroKeyUpdateBy extends UpdateBy {
                         keyBefore = sit.binarySearchValue(
                                 (compareTo, ignored) -> Long.compare(keyStart - 1, compareTo), 1);
                     }
-                    // apply a shift to keyBefore since the output column is still in prev key space
+                    // apply a shift to keyBefore since the output column is still in prev key space-
 
-                    operators[opIndex].resetForReprocess(opContext[opIndex], sourceRowSet, keyBefore);
+                    operators[opIndex].resetForProcess(opContext[opIndex], sourceRowSet, keyBefore);
                 }
             }
 
             // Now iterate rowset to reprocess.
-            doUpdate(affectedRows, affectedRows, UpdateType.Reprocess);
+            doUpdate(affectedRows, affectedRows);
         }
 
         /**
@@ -491,15 +478,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 }
             }
         }
-
-        public boolean canAnyProcessNormally() {
-            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if (opAffected[opIdx] && operators[opIdx].canProcessNormalUpdate(opContext[opIdx])) {
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 
     /**
@@ -533,44 +511,24 @@ class ZeroKeyUpdateBy extends UpdateBy {
         public void onUpdate(TableUpdate upstream) {
             try (final UpdateContext ctx = new UpdateContext(upstream, inputModifiedColumnSets, false)) {
 
-                if (redirContext.isRedirected()) {
-                    redirContext.processUpdateForRedirection(upstream, source.getRowSet());
-                }
-
-                // We will not mess with shifts if we are using a redirection because we'll have applied the shift
-                // to the redirection index already by now.
-                if (applyShifts && !redirContext.isRedirected() && upstream.shifted().nonempty()) {
-                    try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
-                        upstream.shifted().apply((begin, end, delta) -> {
-                            try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
-                                for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                                    operators[opIdx].applyOutputShift(ctx.opContext[opIdx], subRowSet, delta);
-                                }
-                            }
-                        });
-                    }
-                }
-
-                // If anything can process normal operations we have to pass them down, otherwise we can skip this
-                // entirely.
-                if (ctx.canAnyProcessNormally()) {
-                    ctx.doUpdate(upstream.removed(), upstream.removed(), UpdateType.Remove);
-                    if (upstream.shifted().nonempty()) {
-                        try (final WritableRowSet prevRowSet = source.getRowSet().copyPrev();
-                                final RowSet modPreShift = upstream.getModifiedPreShift()) {
-
-                            prevRowSet.remove(upstream.removed());
-                            for (int ii = 0; ii < operators.length; ii++) {
-                                operators[ii].initializeFor(ctx.opContext[ii], prevRowSet, UpdateType.Shift);
-                                operators[ii].applyShift(ctx.opContext[ii], prevRowSet, upstream.shifted());
-                                operators[ii].finishFor(ctx.opContext[ii], UpdateType.Shift);
-                            }
-                            ctx.doUpdate(upstream.modified(), modPreShift, UpdateType.Modify);
-                        }
+                if (applyShifts) {
+                    if (redirContext.isRedirected()) {
+                        redirContext.processUpdateForRedirection(upstream, source.getRowSet());
                     } else {
-                        ctx.doUpdate(upstream.modified(), upstream.modified(), UpdateType.Modify);
+                        // We will not mess with shifts if we are using a redirection because we'll have applied the shift
+                        // to the redirection index already by now.
+                        if (upstream.shifted().nonempty()) {
+                            try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
+                                upstream.shifted().apply((begin, end, delta) -> {
+                                    try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
+                                        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                                            operators[opIdx].applyOutputShift(ctx.opContext[opIdx], subRowSet, delta);
+                                        }
+                                    }
+                                });
+                            }
+                        }
                     }
-                    ctx.doUpdate(upstream.added(), upstream.added(), UpdateType.Add);
                 }
 
                 // Now do the reprocessing phase.
@@ -582,10 +540,10 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 downstream.removed = upstream.removed().copy();
                 downstream.shifted = upstream.shifted();
 
-                if (upstream.modified().isNonempty() || ctx.anyModified()) {
-                    downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                    downstream.modifiedColumnSet.clear();
+                downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                downstream.modifiedColumnSet.clear();
 
+                if (upstream.modified().isNonempty() || ctx.anyModified()) {
                     WritableRowSet modifiedRowSet = RowSetFactory.empty();
                     downstream.modified = modifiedRowSet;
                     if (upstream.modified().isNonempty()) {
@@ -596,7 +554,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
                     for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                         if (ctx.opAffected[opIdx]) {
-                            downstream.modifiedColumnSet.setAll(outputModifiedColumnSets[opIdx]);
                             if (operators[opIdx].anyModified(ctx.opContext[opIdx])) {
                                 modifiedRowSet
                                         .insert(operators[opIdx].getAdditionalModifications(ctx.opContext[opIdx]));
@@ -609,7 +566,13 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     }
                 } else {
                     downstream.modified = RowSetFactory.empty();
-                    downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+                }
+
+                // set the modified columns if any operators made changes (add/rem/modify)
+                for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                    if (ctx.opAffected[opIdx]) {
+                        downstream.modifiedColumnSet.setAll(outputModifiedColumnSets[opIdx]);
+                    }
                 }
 
                 result.notifyListeners(downstream);

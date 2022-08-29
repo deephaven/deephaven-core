@@ -65,10 +65,8 @@ public abstract class UpdateBy {
         public void processUpdateForRedirection(@NotNull final TableUpdate upstream, final TrackingRowSet prevRowSet) {
             if (upstream.removed().isNonempty()) {
                 final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
-                synchronized (rowRedirection) {
-                    upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(rowRedirection.remove(key)));
-                    freeRows.insert(freeBuilder.build());
-                }
+                upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(rowRedirection.remove(key)));
+                freeRows.insert(freeBuilder.build());
             }
 
             if (upstream.shifted().nonempty()) {
@@ -99,27 +97,23 @@ public abstract class UpdateBy {
 
             if (upstream.added().isNonempty()) {
                 final MutableLong lastAllocated = new MutableLong(0);
-                synchronized (rowRedirection) {
-                    final WritableRowSet.Iterator freeIt = freeRows.iterator();
-                    upstream.added().forAllRowKeys(outerKey -> {
-                        final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
-                        lastAllocated.setValue(innerKey);
-                        rowRedirection.put(outerKey, innerKey);
-                    });
-                    freeRows.removeRange(0, lastAllocated.longValue());
-                }
+                final WritableRowSet.Iterator freeIt = freeRows.iterator();
+                upstream.added().forAllRowKeys(outerKey -> {
+                    final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
+                    lastAllocated.setValue(innerKey);
+                    rowRedirection.put(outerKey, innerKey);
+                });
+                freeRows.removeRange(0, lastAllocated.longValue());
             }
         }
 
         private boolean shiftRedirectedKey(@NotNull final RowSet.SearchIterator iterator, final long delta,
                                            final long key) {
-            synchronized (rowRedirection) {
-                final long inner = rowRedirection.remove(key);
-                if (inner != NULL_ROW_KEY) {
-                    rowRedirection.put(key + delta, inner);
-                }
-                return !iterator.hasNext();
+            final long inner = rowRedirection.remove(key);
+            if (inner != NULL_ROW_KEY) {
+                rowRedirection.put(key + delta, inner);
             }
+            return !iterator.hasNext();
         }
 
         @Override
@@ -290,47 +284,6 @@ public abstract class UpdateBy {
             ops.forEach(UpdateByOperator::startTrackingPrev);
         }
         return ret;
-    }
-
-    /**
-     * The type of update to be applied. For use with invocations of
-     * {@link UpdateByOperator#initializeFor(UpdateByOperator.UpdateContext, RowSet, UpdateType)} and
-     * {@link UpdateByOperator#finishFor(UpdateByOperator.UpdateContext, UpdateType)}
-     */
-    public enum UpdateType {
-        /**
-         * Indicates that rows are being
-         * {@link UpdateByOperator#addChunkBucketed(UpdateByOperator.UpdateContext, RowSequence, LongChunk, Chunk, long)} added}
-         * to the operator.
-         */
-        Add,
-
-        /**
-         * Indicates that rows are being
-         * {@link UpdateByOperator#removeChunk(UpdateByOperator.UpdateContext, LongChunk, Chunk, long) removed} from the
-         * operator.
-         */
-        Remove,
-
-        /**
-         * Indicates that rows are being
-         * {@link UpdateByOperator#modifyChunk(UpdateByOperator.UpdateContext, LongChunk, LongChunk, Chunk, Chunk, long)
-         * modified} within the operator
-         */
-        Modify,
-
-        /**
-         * Indicates that rows are being
-         * {@link UpdateByOperator#applyShift(UpdateByOperator.UpdateContext, RowSet, RowSetShiftData) shifted} within
-         * the operator.
-         */
-        Shift,
-
-        /**
-         * Indicates that the {@link TableUpdate} has been processed and rows are being revisited based upon the
-         * requests of individual operators for the purposes of doing recalculations on large portions of the table
-         */
-        Reprocess
     }
     // endregion
 }

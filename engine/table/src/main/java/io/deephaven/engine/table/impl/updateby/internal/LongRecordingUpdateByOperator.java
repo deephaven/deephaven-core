@@ -19,6 +19,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.UpdateByOperator;
+import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -93,7 +94,7 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
     }
 
     @Override
-    public void reprocessChunk(@NotNull UpdateContext updateContext, @NotNull RowSequence inputKeys, @Nullable LongChunk<OrderedRowKeys> keyChunk, @NotNull Chunk<Values> valuesChunk, @NotNull RowSet postUpdateSourceIndex) {
+    public void processChunk(@NotNull UpdateContext updateContext, @NotNull RowSequence inputKeys, @Nullable LongChunk<OrderedRowKeys> keyChunk, @NotNull Chunk<Values> valuesChunk, @NotNull RowSet postUpdateSourceIndex) {
         currentContext.addedChunk = valuesChunk.asLongChunk();
     }
 
@@ -101,14 +102,6 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize) {
         return this.currentContext = new RecordingContext();
-    }
-
-    @Override
-    public void addChunk(@NotNull UpdateContext updateContext,
-                                 @NotNull RowSequence inputKeys,
-                                 @Nullable LongChunk<OrderedRowKeys> keyChunk,
-                                 @NotNull Chunk<Values> values) {
-        currentContext.addedChunk = values.asLongChunk();
     }
 
     // region Unused methods
@@ -138,29 +131,6 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
     }
 
     @Override
-    public void initializeForUpdate(@NotNull UpdateContext ctx, @NotNull TableUpdate upstream, @NotNull RowSet resultSourceIndex, final long key, boolean isUpstreamAppendOnly) {
-    }
-
-    @Override
-    public void initializeFor(@NotNull UpdateContext updateContext, @NotNull RowSet updateRowSet, @NotNull UpdateBy.UpdateType type) {
-    }
-
-    @Override
-    public void finishFor(@NotNull UpdateContext updateContext, @NotNull UpdateBy.UpdateType type) {
-    }
-
-    @NotNull
-    @Override
-    public RowSet getAdditionalModifications(@NotNull UpdateContext ctx) {
-        return RowSetFactory.empty();
-    }
-
-    @Override
-    public boolean anyModified(@NotNull UpdateContext ctx) {
-        return false;
-    }
-
-    @Override
     public void startTrackingPrev() {
     }
 
@@ -175,38 +145,15 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
     }
 
     @Override
-    public boolean canProcessNormalUpdate(@NotNull UpdateContext context) {
-        return false;
-    }
-
-    @Override
     public void setChunkSize(@NotNull UpdateContext context, int chunkSize) {
-
-    }
-
-    @Override
-    public void modifyChunk(@NotNull UpdateContext updateContext, @Nullable LongChunk<OrderedRowKeys> prevKeyChunk, @Nullable LongChunk<OrderedRowKeys> keyChunk, @NotNull Chunk<Values> prevValuesChunk, @NotNull Chunk<Values> postValuesChunk) {
-
-    }
-
-    @Override
-    public void removeChunk(@NotNull UpdateContext updateContext, @Nullable LongChunk<OrderedRowKeys> keyChunk, @NotNull Chunk<Values> prevValuesChunk) {
-
-    }
-
-    @Override
-    public void applyShift(@NotNull UpdateContext updateContext, @NotNull RowSet prevIndex, @NotNull RowSetShiftData shifted) {
-
     }
 
     @Override
     public void applyOutputShift(@NotNull UpdateContext context, @NotNull RowSet subIndexToShift, long delta) {
-
     }
 
     @Override
-    public void resetForReprocess(@NotNull UpdateContext context, @NotNull RowSet sourceIndex, long firstUnmodifiedKey) {
-
+    public void resetForProcess(@NotNull UpdateContext context, @NotNull RowSet sourceIndex, long firstUnmodifiedKey) {
     }
 
     // endregion

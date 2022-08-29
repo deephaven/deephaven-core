@@ -11,10 +11,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
@@ -25,7 +22,6 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
     private final BucketedPartitionedUpdateByListener listener;
     private final LinkedList<BucketedPartitionedUpdateByListenerRecorder> recorders;
     private final QueryTable resultTable;
-
 
     /**
      * Perform an updateBy without any key columns.
@@ -68,28 +64,30 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
 
         // create a source-listener that will listen to the source updates and apply the shifts to the output columns
         final QueryTable sourceListenerTable = new QueryTable(source.getRowSet(), source.getColumnSourceMap());
-        source.listenForUpdates(new BaseTable.ListenerImpl("", source, sourceListenerTable) {
-                 @Override
-                 public void onUpdate(@NotNull final TableUpdate upstream) {
-                     if (!redirContext.isRedirected() && upstream.shifted().nonempty()) {
-                         try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
-                             upstream.shifted().apply((begin, end, delta) -> {
-                                 try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
-                                     for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                                         operators[opIdx].applyOutputShift(null, subRowSet, delta);
-                                     }
-                                 }
-                             });
-                         }
-                     }
-                     super.onUpdate(upstream);
-                 }});
-
 
         // this table will always have the rowset of the source
         resultTable = new QueryTable(source.getRowSet(), resultSources);
 
         if (source.isRefreshing()) {
+            source.listenForUpdates(new BaseTable.ListenerImpl("", source, sourceListenerTable) {
+                @Override
+                public void onUpdate(@NotNull final TableUpdate upstream) {
+                    if (redirContext.isRedirected()) {
+                        redirContext.processUpdateForRedirection(upstream, source.getRowSet());
+                    } else if (upstream.shifted().nonempty()) {
+                        try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
+                            upstream.shifted().apply((begin, end, delta) -> {
+                                try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
+                                    for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                                        operators[opIdx].applyOutputShift(null, subRowSet, delta);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    super.onUpdate(upstream);
+                }});
+
             recorders = new LinkedList<>();
             listener = newListener(description);
 
@@ -102,6 +100,16 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
         } else {
             listener = null;
             recorders = null;
+        }
+
+        if (redirContext.isRedirected()) {
+            // make a dummy update to generate the initial row keys
+            final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
+                    RowSetFactory.empty(),
+                    RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY,
+                    ModifiedColumnSet.ALL);
+            redirContext.processUpdateForRedirection(fakeUpdate, source.getRowSet());
         }
 
         final PartitionedTable pt = sourceListenerTable.partitionedAggBy(List.of(), true, null, byColumns);
@@ -187,10 +195,10 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
 
             recorders.forEach(lr -> {
                 if (lr.getModified().isNonempty()) {
-                    // Transform any untouched modified columns to the output.
-                    lr.modifiedColumnsTransformer.transform(lr.getModifiedColumnSet(), downstream.modifiedColumnSet);
                     modifiedRowSet.insert(lr.getModified());
                 }
+                // Transform any untouched modified columns to the output.
+                lr.modifiedColumnsTransformer.transform(lr.getModifiedColumnSet(), downstream.modifiedColumnSet);
 
             });
             // should not include actual adds as modifies

@@ -29,7 +29,7 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
                                   ) {
         super(inputPair, new String[] { inputPair.rightColumn }, redirContext);
         this.isMax = isMax;
-        // region constructor
+        // region constructorÏ
         // endregion constructor
     }
 
@@ -37,7 +37,7 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
     // endregion extra-methods
 
     @Override
-    protected void doAddChunk(@NotNull final Context ctx,
+    protected void doProcessChunk(@NotNull final Context ctx,
                               @NotNull final RowSequence inputKeys,
                               @NotNull final Chunk<Values> workingChunk) {
         accumulate(workingChunk.asShortChunk(), ctx, 0, workingChunk.size());

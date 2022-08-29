@@ -43,7 +43,7 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
                                   ) {
         super(inputPair, new String[] { inputPair.rightColumn }, redirContext);
         this.isMax = isMax;
-        // region constructor
+        // region constructorÃ
         this.type = type;
         // endregion constructor
     }
@@ -63,7 +63,7 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
     // endregion extra-methods
 
     @Override
-    protected void doAddChunk(@NotNull final Context ctx,
+    protected void doProcessChunk(@NotNull final Context ctx,
                               @NotNull final RowSequence inputKeys,
                               @NotNull final Chunk<Values> workingChunk) {
         accumulate(workingChunk.asLongChunk(), ctx, 0, workingChunk.size());

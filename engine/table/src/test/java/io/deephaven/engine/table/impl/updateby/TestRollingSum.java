@@ -84,12 +84,12 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testNullOnBucketChange() throws IOException {
-        final TableWithDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
+        final TableDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
                 byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
                 shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
                 intCol("IntVal", 1, 2, NULL_INT, 3));
 
-        final TableWithDefaults expected = testTable(stringCol("Sym", "A", "A", "B", "B"),
+        final TableDefaults expected = testTable(stringCol("Sym", "A", "A", "B", "B"),
                 byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
                 shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
                 intCol("IntVal", 1, 2, NULL_INT, 3),

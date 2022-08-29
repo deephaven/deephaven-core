@@ -1,20 +1,15 @@
 package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedCharChunk;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
@@ -40,11 +35,6 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
     protected class Context extends UpdateCumulativeContext {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
         public final SizedCharChunk<Values> outputValues;
-        public boolean canProcessDirectly;
-        public UpdateBy.UpdateType currentUpdateType;
-
-        public RowSetBuilderSequential modifiedBuilder;
-        public RowSet newModified;
 
         public char curVal = QueryConstants.NULL_CHAR;
 
@@ -54,15 +44,10 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
             this.outputValues = new SizedCharChunk<>(chunkSize);
         }
 
-        public RowSetBuilderSequential getModifiedBuilder() {
-            if(modifiedBuilder == null) {
-                modifiedBuilder = RowSetFactory.builderSequential();
-            }
-            return modifiedBuilder;
-        }
-
         @Override
         public void close() {
+            super.close();
+
             outputValues.close();
             fillContext.close();
         }
@@ -141,57 +126,6 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
     }
 
     @Override
-    public void initializeForUpdate(@NotNull final UpdateContext context,
-                                    @NotNull final TableUpdate upstream,
-                                    @NotNull final RowSet resultSourceIndex,
-                                    final long lastPrevKey,
-                                    final boolean isUpstreamAppendOnly) {
-        final Context ctx = (Context) context;
-
-        // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
-        // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
-        // need to do anything with capacity.
-        if(redirContext.isRedirected()) {
-            // The redirection index does not use the 0th index for some reason.
-            outputSource.ensureCapacity(redirContext.requiredCapacity());
-        }
-
-        // just remember the appendyness.
-        ctx.canProcessDirectly = isUpstreamAppendOnly;
-
-        // pre-load the context with the previous last value in the table (if possible)
-        ctx.curVal = lastPrevKey == NULL_ROW_KEY ? QueryConstants.NULL_CHAR : outputSource.getPrevChar(lastPrevKey);
-    }
-
-    @Override
-    public void initializeFor(@NotNull final UpdateContext updateContext,
-                              @NotNull final RowSet updateRowSet,
-                              @NotNull final UpdateBy.UpdateType type) {
-        ((Context)updateContext).currentUpdateType = type;
-    }
-
-    @Override
-    public void finishFor(@NotNull final UpdateContext updateContext, @NotNull final UpdateBy.UpdateType type) {
-        final Context ctx = (Context) updateContext;
-        if(type == UpdateBy.UpdateType.Reprocess) {
-            ctx.newModified = ctx.modifiedBuilder.build();
-        }
-    }
-
-    @Override
-    public boolean requiresKeys() {
-        return false;
-    }
-
-    @Override
-    public boolean requiresValues(@NotNull final UpdateContext context) {
-        final Context ctx = (Context) context;
-        // We only need to read actual values if we can process them at this moment,  so that means if we are
-        // either part of an append-only update, or within the reprocess cycle
-        return (ctx.currentUpdateType == UpdateBy.UpdateType.Add && ctx.canProcessDirectly) || ctx.currentUpdateType == UpdateBy.UpdateType.Reprocess;
-    }
-
-    @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
         if (redirContext.isRedirected()) {
@@ -199,44 +133,16 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
         }
     }
 
-    @NotNull
-    @Override
-    final public RowSet getAdditionalModifications(@NotNull final UpdateContext ctx) {
-        return ((Context)ctx).newModified == null ? RowSetFactory.empty() : ((Context)ctx).newModified;
-    }
-
-    @Override
-    final public boolean anyModified(@NotNull final UpdateContext ctx) {
-        return ((Context)ctx).newModified != null;
-    }
-
-    @Override
-    public boolean canProcessNormalUpdate(@NotNull UpdateContext context) {
-        return ((Context)context).canProcessDirectly;
-    }
-
-    // region Addition
-    @Override
-    public void addChunk(@NotNull final UpdateContext updateContext,
-                                 @NotNull final RowSequence inputKeys,
-                                 @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                 @NotNull final Chunk<Values> values) {
-        final Context ctx = (Context) updateContext;
-        if (ctx.canProcessDirectly) {
-            doAddChunk(ctx, inputKeys, values);
-        }
-    }
-
     /**
-     * Add a chunk of values to the operator.
+     * Perform the processing for a chunk of values by the operator.
      *
      * @param ctx the context object
      * @param inputKeys the input keys for the chunk
      * @param workingChunk the chunk of values
      */
-    protected abstract void doAddChunk(@NotNull final Context ctx,
-                                       @NotNull final RowSequence inputKeys,
-                                       @NotNull final Chunk<Values> workingChunk);
+    protected abstract void doProcessChunk(@NotNull final Context ctx,
+                                           @NotNull final RowSequence inputKeys,
+                                           @NotNull final Chunk<Values> workingChunk);
 
     // endregion
 
@@ -253,49 +159,32 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
 
     // region Reprocessing
 
-    public void resetForReprocess(@NotNull final UpdateContext context,
-                                  @NotNull final RowSet sourceIndex,
-                                  long firstUnmodifiedKey) {
-        final Context ctx = (Context) context;
-        if(!ctx.canProcessDirectly) {
-            ctx.curVal = firstUnmodifiedKey == NULL_ROW_KEY ? QueryConstants.NULL_CHAR : outputSource.getChar(firstUnmodifiedKey);
+    public void resetForProcess(@NotNull final UpdateContext context,
+                                @NotNull final RowSet sourceIndex,
+                                long firstUnmodifiedKey) {
+
+        // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
+        // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
+        // need to do anything with capacity.
+        if(redirContext.isRedirected()) {
+            // The redirection index does not use the 0th index for some reason.
+            outputSource.ensureCapacity(redirContext.requiredCapacity());
         }
+
+        final Context ctx = (Context) context;
+        ctx.curVal = firstUnmodifiedKey == NULL_ROW_KEY ? QueryConstants.NULL_CHAR : outputSource.getChar(firstUnmodifiedKey);
     }
 
     @Override
-    public void reprocessChunk(@NotNull final UpdateContext updateContext,
-                                       @NotNull final RowSequence inputKeys,
-                                       @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                       @NotNull final Chunk<Values> valuesChunk,
-                                       @NotNull final RowSet postUpdateSourceIndex) {
+    public void processChunk(@NotNull final UpdateContext updateContext,
+                             @NotNull final RowSequence inputKeys,
+                             @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                             @NotNull final Chunk<Values> valuesChunk,
+                             @NotNull final RowSet postUpdateSourceIndex) {
         final Context ctx = (Context) updateContext;
-        doAddChunk(ctx, inputKeys, valuesChunk);
+        doProcessChunk(ctx, inputKeys, valuesChunk);
         ctx.getModifiedBuilder().appendRowSequence(inputKeys);
     }
 
-    // endregion
-
-    // region No-Op Operations
-
-    @Override
-    final public void modifyChunk(@NotNull final UpdateContext updateContext,
-                                  @Nullable final LongChunk<OrderedRowKeys> prevKeyChunk,
-                                  @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                  @NotNull final Chunk<Values> prevValuesChunk,
-                                  @NotNull final Chunk<Values> postValuesChunk) {
-    }
-
-    @Override
-    final public void removeChunk(@NotNull final UpdateContext updateContext,
-                                  @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                  @NotNull final Chunk<Values> prevValuesChunk) {
-    }
-
-    @Override
-    final public void applyShift(@NotNull final UpdateContext updateContext,
-                                 @NotNull final RowSet prevIndex,
-                                 @NotNull final RowSetShiftData shifted) {
-
-    }
     // endregion
 }

@@ -4,17 +4,15 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -58,7 +56,7 @@ import java.util.Map;
  *
  * <li>Reprocess
  * <ul>
- * <li>{@link #resetForReprocess(UpdateContext, RowSet, long)}</li>
+ * <li>{@link #resetForProcess(UpdateContext, RowSet, long)}</li>
  * <li>{@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
  * <li>{@link #reprocessChunkBucketed(UpdateContext, RowSequence, Chunk, LongChunk, IntChunk, IntChunk, IntChunk)}</li>
  * <li>{@link #finishFor(UpdateContext, UpdateBy.UpdateType)}</li>
@@ -191,6 +189,14 @@ public interface UpdateByOperator {
     String getInputColumnName();
 
     /**
+     * Get the name of the timestamp column this operator depends on.
+     *
+     * @return the name of the input column
+     */
+    @Nullable
+    String getTimestampColumnName();
+
+    /**
      * Get an array of column names that, when modified, affect the result of this computation.
      *
      * @return an array of column names that affect this operator.
@@ -229,44 +235,26 @@ public interface UpdateByOperator {
     UpdateContext makeUpdateContext(final int chunkSize);
 
     /**
-     * Initialize the operator for an update cycle. This is invoked before any other update processing occurs.
-     *
-     * @param context the context object
-     * @param upstream the upstream update to process
-     * @param resultSourceIndex the result index of the source table
-     * @param lastPrevKey the last key for this table before this update
-     * @param isUpstreamAppendOnly if the upstream update was detected to be append-only.
-     */
-    void initializeForUpdate(@NotNull final UpdateContext context,
-            @NotNull final TableUpdate upstream,
-            @NotNull final RowSet resultSourceIndex,
-            final long lastPrevKey,
-            final boolean isUpstreamAppendOnly);
-
-    /**
      * <p>
      * Initialize the context for the specified stage of the update process. This will always be followed by a call to
-     * {@link #finishFor(UpdateContext, UpdateBy.UpdateType)} at the end of each successful update.
+     * {@link #finishFor(UpdateContext)} at the end of each successful update.
      * </p>
      *
      * @param context the context object
      * @param updateRowSet the index of rows associated with the update.
-     * @param type the type of update being applied
      */
     void initializeFor(@NotNull final UpdateContext context,
-            @NotNull final RowSet updateRowSet,
-            @NotNull final UpdateBy.UpdateType type);
+            @NotNull final RowSet updateRowSet);
 
     /**
      * Perform and bookkeeping required at the end of a single part of the update. This is always preceded with a call
      * to
      *
-     * {@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}
+     * {@link #initializeFor(UpdateContext, RowSet)}
      *
      * @param context the context object
-     * @param type the type of update being applied
      */
-    void finishFor(@NotNull final UpdateContext context, @NotNull final UpdateBy.UpdateType type);
+    void finishFor(@NotNull final UpdateContext context);
 
     /**
      * Get an index of rows that were modified beyond the input set of modifications from the upstream. This is invoked
@@ -290,7 +278,7 @@ public interface UpdateByOperator {
 
     /**
      * Query if the operator requires key values for the current stage. This method will always be invoked after an
-     * appropriate invocation of {@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}
+     * appropriate invocation of {@link #initializeFor(UpdateContext, RowSet)}
      *
      * @return true if the operator requires keys for this operation
      */
@@ -305,73 +293,13 @@ public interface UpdateByOperator {
     boolean requiresValues(@NotNull final UpdateContext context);
 
     /**
-     * Query if this operator can process the update normally, or if it can only reprocess. This method is guaranteed to
-     * be invoked after {@link #initializeForUpdate(UpdateContext, TableUpdate, RowSet, long, boolean)} so the
-     * operator is aware of the upstream {@link TableUpdate}.
-     *
-     * @param context the context
-     * @return true if this operator can process the update normally.
-     */
-    boolean canProcessNormalUpdate(@NotNull final UpdateContext context);
-
-    /**
-     * Set the chunk size to be used for operations. This is used during the {@link UpdateBy.UpdateType#Reprocess} phase
+     * Set the chunk size to be used for operations. This is used during the processing phase
      * when the chunks allocated during the normal processing phase may not be large enough.
      *
      * @param context the context object
      * @param chunkSize the new chunk size
      */
     void setChunkSize(@NotNull final UpdateContext context, final int chunkSize);
-
-    /**
-     * Add a chunk of non-bucketed items to the operation.
-     *
-     * @param context the context object
-     * @param keyChunk a chunk of keys for the rows being added. If the operator returns {@code false} for
-     *        {@link #requiresKeys()} this will be null.
-     * @param values the chunk of values for the rows being added
-     */
-    void addChunk(@NotNull final UpdateContext context,
-                          @NotNull final RowSequence inputKeys,
-                          @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                          @NotNull final Chunk<Values> values);
-
-    /**
-     * Modify a chunk of values with the operation.
-     *
-     * @param context the context object
-     * @param prevKeyChunk a chunk of pre-shift keys. This will be equal to {@code keyChunk} if no shift is present
-     * @param keyChunk a chunk of post-shift space keys for the update.
-     * @param prevValuesChunk a chunk of previous values for the update
-     * @param postValuesChunk a chunk of current values for the update
-     */
-    void modifyChunk(@NotNull final UpdateContext context,
-            @Nullable final LongChunk<OrderedRowKeys> prevKeyChunk,
-            @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-            @NotNull final Chunk<Values> prevValuesChunk,
-            @NotNull final Chunk<Values> postValuesChunk);
-
-    /**
-     * Remove a chunk of values from the operation.
-     *
-     * @param context the context object
-     * @param keyChunk a chunk of keys being removed.
-     * @param prevValuesChunk the chunk of values being removed
-     */
-    void removeChunk(@NotNull final UpdateContext context,
-            @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-            @NotNull final Chunk<Values> prevValuesChunk);
-
-    /**
-     * Apply a shift to the operation.
-     *
-     * @param context the context object
-     * @param prevIndex the pre-shifted index
-     * @param shifted the shifts being applied
-     */
-    void applyShift(@NotNull final UpdateContext context,
-            @NotNull final RowSet prevIndex,
-            @NotNull final RowSetShiftData shifted);
 
     /**
      * Apply a shift to the operation.
@@ -382,7 +310,7 @@ public interface UpdateByOperator {
             final long delta);
 
     /**
-     * Reprocess a chunk of data for a non-bucketed table.
+     * Process a chunk of data for an updateBy table.
      *
      * @param context the context object
      * @param inputKeys the keys contained in the chunk
@@ -390,15 +318,15 @@ public interface UpdateByOperator {
      * @param valuesChunk the current chunk of working values.
      * @param postUpdateSourceIndex the resulting source index af
      */
-    void reprocessChunk(@NotNull final UpdateContext context,
-                                @NotNull final RowSequence inputKeys,
-                                @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                @NotNull final Chunk<Values> valuesChunk,
-                                @NotNull final RowSet postUpdateSourceIndex);
+    void processChunk(@NotNull final UpdateContext context,
+                      @NotNull final RowSequence inputKeys,
+                      @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                      @NotNull final Chunk<Values> valuesChunk,
+                      @NotNull final RowSet postUpdateSourceIndex);
 
     /**
      * Reset the operator to the state at the `firstModifiedKey` for non-bucketed operation. This is invoked immediately
-     * prior to calls to {@link #resetForReprocess(UpdateContext, RowSet, long)}. <br>
+     * prior to calls to {@link #resetForProcess(UpdateContext, RowSet, long)}. <br>
      * <br>
      * A `firstUnmodifiedKey` of {@link RowSet#NULL_ROW_KEY} indicates that the entire table needs to be recomputed.
      *
@@ -406,7 +334,7 @@ public interface UpdateByOperator {
      * @param sourceIndex the current index of the source table
      * @param firstUnmodifiedKey the first unmodified key after which we will reprocess rows.
      */
-    void resetForReprocess(@NotNull final UpdateContext context,
-            @NotNull final RowSet sourceIndex,
-            final long firstUnmodifiedKey);
+    void resetForProcess(@NotNull final UpdateContext context,
+                         @NotNull final RowSet sourceIndex,
+                         final long firstUnmodifiedKey);
 }

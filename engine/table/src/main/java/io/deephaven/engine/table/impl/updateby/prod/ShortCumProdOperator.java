@@ -29,7 +29,7 @@ public class ShortCumProdOperator extends BaseLongUpdateByOperator {
     }
 
     @Override
-    protected void doAddChunk(@NotNull final Context ctx,
+    protected void doProcessChunk(@NotNull final Context ctx,
                               @NotNull final RowSequence inputKeys,
                               @NotNull final Chunk<Values> workingChunk) {
 //        ctx.curVal = groupPosition == singletonGroup ? singletonVal : NULL_LONG;

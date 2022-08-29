@@ -38,9 +38,9 @@ public class DoubleFillByOperator extends BaseDoubleUpdateByOperator {
     // endregion extra-methods
 
     @Override
-    protected void doAddChunk(@NotNull final Context ctx,
-                              @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk) {
+    protected void doProcessChunk(@NotNull final Context ctx,
+                                  @NotNull final RowSequence inputKeys,
+                                  @NotNull final Chunk<Values> workingChunk) {
         accumulate(workingChunk.asDoubleChunk(), ctx, 0, workingChunk.size());
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
     }

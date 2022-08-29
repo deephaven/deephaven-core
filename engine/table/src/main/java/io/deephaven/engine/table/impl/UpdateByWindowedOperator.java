@@ -2,7 +2,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.base.LongRingBuffer;
-import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
@@ -10,17 +9,15 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedCharUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Arrays;
-import java.util.List;
 
 public abstract class UpdateByWindowedOperator implements UpdateByOperator {
     protected final OperationControl control;
     protected final LongRecordingUpdateByOperator recorder;
+    protected final String timestampColumnName;
     protected final long reverseTimeScaleUnits;
     protected final long forwardTimeScaleUnits;
 
@@ -30,6 +27,16 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
     protected UpdateBy.UpdateByRedirectionContext redirContext;
 
     public abstract class UpdateWindowedContext implements UpdateContext {
+        public RowSetBuilderSequential modifiedBuilder;
+        public RowSet newModified;
+
+        public RowSetBuilderSequential getModifiedBuilder() {
+            if(modifiedBuilder == null) {
+                modifiedBuilder = RowSetFactory.builderSequential();
+            }
+            return modifiedBuilder;
+        }
+
         // store the current subset of rows that need computation
         protected RowSet affectedRows = RowSetFactory.empty();
 
@@ -230,30 +237,14 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
 
         @Override
         public void close() {
-            if (windowIterator != null) {
-                windowIterator.close();
-                windowIterator = null;
+            try (final RowSequence.Iterator ignored1 = windowIterator;
+                 final WritableLongChunk<? extends RowKeys> ignored2 = candidateRowKeysChunk;
+                 final WritableLongChunk<? extends RowKeys> ignored3 = candidatePositionsChunk;
+                 final WritableLongChunk<Values> ignored4 = candidateTimestampsChunk;
+                 final WritableLongChunk<? extends RowKeys> ignored5 = valuePositionChunk;
+                 final RowSet ignored6 = affectedRows;
+                 final RowSet ignored7 = newModified) {
             }
-
-            if (candidateRowKeysChunk != null) {
-                candidateRowKeysChunk.close();
-                candidateRowKeysChunk = null;
-            }
-
-            if (candidatePositionsChunk != null) {
-                candidatePositionsChunk.close();
-                candidatePositionsChunk = null;
-            }
-
-            if (valuePositionChunk != null) {
-                valuePositionChunk.close();
-                valuePositionChunk = null;
-            }
-
-            // no need to close this, just release the reference
-            workingRowSet = null;
-
-            affectedRows.close();
         }
     }
 
@@ -271,6 +262,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
                                     @NotNull final String[] affectingColumns,
                                     @NotNull final OperationControl control,
                                     @Nullable final LongRecordingUpdateByOperator timeRecorder,
+                                    @Nullable final String timestampColumnName,
                                     final long reverseTimeScaleUnits,
                                     final long forwardTimeScaleUnits,
                                     @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
@@ -278,6 +270,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         this.affectingColumns = affectingColumns;
         this.control = control;
         this.recorder = timeRecorder;
+        this.timestampColumnName = timestampColumnName;
         this.reverseTimeScaleUnits = reverseTimeScaleUnits;
         this.forwardTimeScaleUnits = forwardTimeScaleUnits;
         this.redirContext = redirContext;
@@ -286,7 +279,6 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
     public abstract void push(UpdateContext context, long key, int index);
     public abstract void pop(UpdateContext context, long key);
     public abstract void reset(UpdateContext context);
-
 
     // return the first row that affects this key
     public long computeFirstAffectingKey(long key, @NotNull final RowSet source) {
@@ -353,6 +345,32 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         return -1;
     }
 
+    @Override
+    public void initializeFor(@NotNull final UpdateContext context,
+                              @NotNull final RowSet updateRowSet) {
+        final UpdateWindowedContext ctx = (UpdateWindowedContext) context;
+        long windowStartKey = computeFirstAffectingKey(updateRowSet.firstRowKey(), ctx.workingRowSet);
+        ctx.loadWindowChunks(windowStartKey);
+    }
+
+    @Override
+    public void finishFor(@NotNull final UpdateContext context) {
+        UpdateWindowedContext ctx = (UpdateWindowedContext)context;
+        ctx.newModified = ctx.getModifiedBuilder().build();
+    }
+
+    @NotNull
+    final public RowSet getAdditionalModifications(@NotNull final UpdateContext context) {
+        UpdateWindowedContext ctx = (UpdateWindowedContext)context;
+        return ctx.newModified;
+    }
+
+    @Override
+    final public boolean anyModified(@NotNull final UpdateContext context) {
+        UpdateWindowedContext ctx = (UpdateWindowedContext)context;
+        return ctx.newModified.isNonempty();
+    }
+
     @NotNull
     @Override
     public String getInputColumnName() {
@@ -372,7 +390,19 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
     }
 
     @Override
+    public String getTimestampColumnName() {
+        return this.timestampColumnName;
+    }
+
+    @Override
     public boolean requiresKeys() {
         return true;
+    }
+
+    @Override
+    public boolean requiresValues(@NotNull final UpdateContext context) {
+        // windowed operators don't need current values supplied to them, they only care about windowed values which
+        // may or may not intersect with the column values
+        return false;
     }
 }

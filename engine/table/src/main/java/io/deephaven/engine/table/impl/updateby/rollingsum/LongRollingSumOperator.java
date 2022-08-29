@@ -46,7 +46,6 @@ public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
     protected class Context extends BaseWindowedLongUpdateByOperator.Context {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
         public final SizedLongChunk<Values> outputValues;
-        public UpdateBy.UpdateType currentUpdateType;
 
         public LinkedList<Long> windowValues = new LinkedList<>();
 
@@ -82,6 +81,7 @@ public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
                                    @NotNull final String[] affectingColumns,
                                    @NotNull final OperationControl control,
                                    @Nullable final LongRecordingUpdateByOperator recorder,
+                                   @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
                                    @NotNull final ColumnSource<Long> valueSource,
@@ -89,7 +89,7 @@ public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, recorder, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource);
+        super(pair, affectingColumns, control, recorder, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource);
         if(redirContext.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new LongArraySource();
@@ -142,7 +142,7 @@ public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
     }
 
     @Override
-    public void doAddChunk(@NotNull final BaseWindowedLongUpdateByOperator.Context context,
+    public void doProcessChunk(@NotNull final BaseWindowedLongUpdateByOperator.Context context,
                               @NotNull final RowSequence inputKeys,
                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                               @NotNull final Chunk<Values> workingChunk) {

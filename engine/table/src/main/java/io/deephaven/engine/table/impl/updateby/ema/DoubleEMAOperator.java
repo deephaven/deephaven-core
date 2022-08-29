@@ -40,13 +40,14 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
                             @NotNull final String[] affectingColumns,
                             @NotNull final OperationControl control,
                             @Nullable final LongRecordingUpdateByOperator timeRecorder,
+                            @Nullable final String timestampColumnName,
                             final long timeScaleUnits,
                             @NotNull final ColumnSource<Double> valueSource,
                             @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
                             // region extra-constructor-args
                             // endregion extra-constructor-args
                             ) {
-        super(pair, affectingColumns, control, timeRecorder, timeScaleUnits, redirContext);
+        super(pair, affectingColumns, control, timeRecorder, timestampColumnName, timeScaleUnits, redirContext);
         this.valueSource = valueSource;
         // region constructor
         // endregion constructor

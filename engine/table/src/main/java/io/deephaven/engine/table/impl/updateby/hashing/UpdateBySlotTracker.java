@@ -357,7 +357,7 @@ public class UpdateBySlotTracker {
     }
 
     private long createUpdateForSlot(final int slot) {
-        if (pointer == allocated) {
+        if (pointer == allocated || slot == allocated) {
             allocated += chunkSize;
             slotUpdates.ensureCapacity(allocated);
         }

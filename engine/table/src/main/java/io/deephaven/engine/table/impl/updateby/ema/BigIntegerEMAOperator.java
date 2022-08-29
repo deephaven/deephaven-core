@@ -34,13 +34,14 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                                  @NotNull final String[] affectingColumns,
                                  @NotNull final OperationControl control,
                                  @Nullable final LongRecordingUpdateByOperator timeRecorder,
+                                 @Nullable final String timestampColumnName,
                                  final long timeScaleUnits,
                                  @NotNull final ColumnSource<BigInteger> valueSource,
                                  @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
                                  // region extra-constructor-args
                                  // endregion extra-constructor-args
                                  ) {
-        super(pair, affectingColumns, control, timeRecorder, timeScaleUnits, valueSource, redirContext);
+        super(pair, affectingColumns, control, timeRecorder, timestampColumnName, timeScaleUnits, valueSource, redirContext);
         // region constructor
         // endregion constructor
     }

@@ -34,7 +34,7 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
                                   ) {
         super(inputPair, new String[] { inputPair.rightColumn }, redirContext);
         this.isMax = isMax;
-        // region constructor
+        // region constructorÃ
         // endregion constructor
     }
 
@@ -42,7 +42,7 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
     // endregion extra-methods
 
     @Override
-    protected void doAddChunk(@NotNull final Context ctx,
+    protected void doProcessChunk(@NotNull final Context ctx,
                               @NotNull final RowSequence inputKeys,
                               @NotNull final Chunk<Values> workingChunk) {
         accumulate(workingChunk.asByteChunk(), ctx, 0, workingChunk.size());

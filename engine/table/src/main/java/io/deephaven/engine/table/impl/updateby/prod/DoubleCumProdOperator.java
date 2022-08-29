@@ -32,7 +32,7 @@ public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
         // endregion constructor
     }
 
-    protected void doAddChunk(@NotNull final Context ctx,
+    protected void doProcessChunk(@NotNull final Context ctx,
                               @NotNull final RowSequence inputKeys,
                               @NotNull final Chunk<Values> workingChunk) {
         if(Double.isNaN(ctx.curVal)) {

@@ -41,7 +41,6 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
     protected class Context extends BaseWindowedShortUpdateByOperator.Context {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
         public final SizedLongChunk<Values> outputValues;
-        public UpdateBy.UpdateType currentUpdateType;
 
         public LinkedList<Short> windowValues = new LinkedList<>();
 
@@ -77,6 +76,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
                                    @NotNull final String[] affectingColumns,
                                    @NotNull final OperationControl control,
                                    @Nullable final LongRecordingUpdateByOperator recorder,
+                                   @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
                                    @NotNull final ColumnSource<Short> valueSource,
@@ -84,7 +84,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, recorder, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource);
+        super(pair, affectingColumns, control, recorder, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource);
         if(redirContext.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new LongArraySource();
@@ -137,7 +137,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
     }
 
     @Override
-    public void doAddChunk(@NotNull final BaseWindowedShortUpdateByOperator.Context context,
+    public void doProcessChunk(@NotNull final BaseWindowedShortUpdateByOperator.Context context,
                               @NotNull final RowSequence inputKeys,
                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                               @NotNull final Chunk<Values> workingChunk) {

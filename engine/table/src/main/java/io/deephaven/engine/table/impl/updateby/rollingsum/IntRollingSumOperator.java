@@ -46,7 +46,6 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
     protected class Context extends BaseWindowedIntUpdateByOperator.Context {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
         public final SizedLongChunk<Values> outputValues;
-        public UpdateBy.UpdateType currentUpdateType;
 
         public LinkedList<Integer> windowValues = new LinkedList<>();
 
@@ -82,6 +81,7 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
                                    @NotNull final String[] affectingColumns,
                                    @NotNull final OperationControl control,
                                    @Nullable final LongRecordingUpdateByOperator recorder,
+                                   @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
                                    @NotNull final ColumnSource<Integer> valueSource,
@@ -89,7 +89,7 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, recorder, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource);
+        super(pair, affectingColumns, control, recorder, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource);
         if(redirContext.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new LongArraySource();
@@ -142,7 +142,7 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
     }
 
     @Override
-    public void doAddChunk(@NotNull final BaseWindowedIntUpdateByOperator.Context context,
+    public void doProcessChunk(@NotNull final BaseWindowedIntUpdateByOperator.Context context,
                               @NotNull final RowSequence inputKeys,
                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                               @NotNull final Chunk<Values> workingChunk) {

@@ -2,26 +2,16 @@ package io.deephaven.engine.table.impl.updateby.ema;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.sources.DoubleArraySource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,6 +22,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperator {
     protected final OperationControl control;
     protected final LongRecordingUpdateByOperator timeRecorder;
+    protected final String timestampColumnName;
     protected final double timeScaleUnits;
 
     class EmaContext extends Context {
@@ -62,11 +53,13 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final LongRecordingUpdateByOperator timeRecorder,
+            @Nullable final String timestampColumnName,
             final long timeScaleUnits,
             @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
         super(pair, affectingColumns, redirContext);
         this.control = control;
         this.timeRecorder = timeRecorder;
+        this.timestampColumnName = timestampColumnName;
         this.timeScaleUnits = timeScaleUnits;
     }
 
@@ -77,29 +70,15 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     }
 
     @Override
-    public void initializeForUpdate(@NotNull final UpdateByOperator.UpdateContext context,
-            @NotNull final TableUpdate upstream,
-            @NotNull final RowSet resultSourceIndex,
-            final long lastPrevKey ,
-            final boolean isAppendOnly) {
-        super.initializeForUpdate(context, upstream, resultSourceIndex, lastPrevKey, isAppendOnly);
-
-        final EmaContext ctx = (EmaContext) context;
-        // pre-load the context timestamp with the previous last value in the timestamp column (if possible)
-        ctx.lastStamp = (lastPrevKey == NULL_ROW_KEY || timeRecorder == null) ? NULL_LONG : locateFirstValidPreviousTimestamp(resultSourceIndex, lastPrevKey);
-    }
-
-    @Override
     public void initializeFor(@NotNull final UpdateByOperator.UpdateContext updateContext,
-            @NotNull final RowSet updateRowSet,
-            @NotNull final UpdateBy.UpdateType type) {
-        super.initializeFor(updateContext, updateRowSet, type);
+            @NotNull final RowSet updateRowSet) {
+        super.initializeFor(updateContext, updateRowSet);
     }
 
     @Override
-    protected void doAddChunk(@NotNull final Context context,
-            @NotNull final RowSequence inputKeys,
-            @NotNull final Chunk<Values> workingChunk) {
+    protected void doProcessChunk(@NotNull final Context context,
+                                  @NotNull final RowSequence inputKeys,
+                                  @NotNull final Chunk<Values> workingChunk) {
         final EmaContext ctx = (EmaContext) context;
         if (timeRecorder == null) {
             computeWithTicks(ctx, workingChunk, 0, inputKeys.intSize());
@@ -110,27 +89,25 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     }
 
     @Override
-    public void resetForReprocess(@NotNull final UpdateByOperator.UpdateContext context,
-            @NotNull final RowSet sourceIndex,
-            final long firstUnmodifiedKey) {
-        super.resetForReprocess(context, sourceIndex, firstUnmodifiedKey);
+    public void resetForProcess(@NotNull final UpdateByOperator.UpdateContext context,
+                                @NotNull final RowSet sourceIndex,
+                                final long firstUnmodifiedKey) {
+        super.resetForProcess(context, sourceIndex, firstUnmodifiedKey);
 
         if (timeRecorder == null) {
             return;
         }
 
         final EmaContext ctx = (EmaContext) context;
-        if (!ctx.canProcessDirectly) {
-            // If we set the last state to null, then we know it was a reset state and the timestamp must also
-            // have been reset.
-            if (ctx.curVal == NULL_DOUBLE || (firstUnmodifiedKey == NULL_ROW_KEY)) {
-                ctx.lastStamp = NULL_LONG;
-            } else {
-                // If it hasn't been reset to null, then it's possible that the value at that position was null, in
-                // which case  we must have ignored it, and so we have to actually keep looking backwards until we find
-                // something not null.
-                ctx.lastStamp = locateFirstValidPreviousTimestamp(sourceIndex, firstUnmodifiedKey);
-            }
+        // If we set the last state to null, then we know it was a reset state and the timestamp must also
+        // have been reset.
+        if (ctx.curVal == NULL_DOUBLE || (firstUnmodifiedKey == NULL_ROW_KEY)) {
+            ctx.lastStamp = NULL_LONG;
+        } else {
+            // If it hasn't been reset to null, then it's possible that the value at that position was null, in
+            // which case  we must have ignored it, and so we have to actually keep looking backwards until we find
+            // something not null.
+            ctx.lastStamp = locateFirstValidPreviousTimestamp(sourceIndex, firstUnmodifiedKey);
         }
     }
 
@@ -154,6 +131,11 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         }
 
         return NULL_LONG;
+    }
+
+    @Override
+    public String getTimestampColumnName() {
+        return this.timestampColumnName;
     }
 
     abstract boolean isValueValid(final long atKey);

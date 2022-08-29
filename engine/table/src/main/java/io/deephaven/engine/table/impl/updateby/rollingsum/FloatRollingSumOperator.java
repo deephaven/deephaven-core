@@ -46,7 +46,6 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     protected class Context extends BaseWindowedFloatUpdateByOperator.Context {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
         public final SizedFloatChunk<Values> outputValues;
-        public UpdateBy.UpdateType currentUpdateType;
 
         public LinkedList<Float> windowValues = new LinkedList<>();
 
@@ -80,6 +79,7 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
                                    @NotNull final String[] affectingColumns,
                                    @NotNull final OperationControl control,
                                    @Nullable final LongRecordingUpdateByOperator recorder,
+                                   @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
                                    @NotNull final ColumnSource<Float> valueSource,
@@ -87,7 +87,7 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, recorder, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource);
+        super(pair, affectingColumns, control, recorder, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource);
         if(redirContext.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new FloatArraySource();
@@ -123,10 +123,10 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     }
 
     @Override
-    public void doAddChunk(@NotNull final BaseWindowedFloatUpdateByOperator.Context context,
-                              @NotNull final RowSequence inputKeys,
-                              @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                              @NotNull final Chunk<Values> workingChunk) {
+    public void doProcessChunk(@NotNull final BaseWindowedFloatUpdateByOperator.Context context,
+                               @NotNull final RowSequence inputKeys,
+                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                               @NotNull final Chunk<Values> workingChunk) {
         final Context ctx = (Context) context;
 
         computeTicks(ctx, 0, inputKeys.intSize());
