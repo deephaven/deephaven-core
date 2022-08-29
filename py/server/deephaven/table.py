@@ -67,8 +67,9 @@ def _query_scope_ctx():
             break
 
     # combine the immediate caller's globals and locals into a single dict and use it as the query scope
-    if len(outer_frames) > i + 2:
-        caller_frame, *_ = outer_frames[i + 1]
+    caller_frame = outer_frames[i + 1].frame
+    function = outer_frames[i + 1].function
+    if len(outer_frames) > i + 2 or function != "<module>":
         scope_dict = caller_frame.f_globals.copy()
         scope_dict.update(caller_frame.f_locals)
         try:

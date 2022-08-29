@@ -6,7 +6,7 @@ import unittest
 from types import SimpleNamespace
 from typing import List, Any
 
-from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table
+from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
 from deephaven.pandas import to_pandas
@@ -627,6 +627,27 @@ class TableTestCase(BaseTestCase):
             return t.to_string().split()[2]
 
         t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")
+        self.assertIn("100", t.to_string())
+
+    def test_nested_scope_ticking(self):
+        import jpy
+        _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+        j_context = (_JExecutionContext.newBuilder()
+                     .captureCompilerContext()
+                     .captureQueryLibrary()
+                     .captureQueryScope()
+                     .build())
+
+        def inner_func(p) -> str:
+            open_ctx = j_context.open()
+            t = empty_table(1).update("X = p * 10")
+            open_ctx.close()
+            return t.to_string().split()[2]
+
+        with ugp.shared_lock():
+            t = time_table("00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
+        self.wait_ticking_table_update(t, row_count=5, timeout=10)
+
         self.assertIn("100", t.to_string())
 
     def test_scope_comprehensions(self):
