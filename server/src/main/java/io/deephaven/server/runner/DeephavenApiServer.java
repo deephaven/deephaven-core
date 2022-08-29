@@ -149,7 +149,7 @@ public class DeephavenApiServer {
 
     void startForUnitTests() throws Exception {
         pluginRegistration.registerAll();
-
+        applicationInjector.run();
         log.info().append("Starting server...").endl();
         server.start();
     }

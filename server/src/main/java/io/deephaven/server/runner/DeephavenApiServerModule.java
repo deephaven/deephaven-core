@@ -13,7 +13,6 @@ import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.object.ObjectServiceModule;
 import io.deephaven.server.partitionedtable.PartitionedTableServiceModule;
 import io.deephaven.server.plugin.PluginsModule;
-import io.deephaven.server.appmode.AppMode;
 import io.deephaven.server.appmode.AppModeModule;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.auth.AuthContextModule;
@@ -76,12 +75,6 @@ public class DeephavenApiServerModule {
     @ElementsIntoSet
     static Set<ServerInterceptor> primeInterceptors() {
         return Collections.emptySet();
-    }
-
-    @Provides
-    @Singleton
-    public static AppMode provideAppMode() {
-        return AppMode.currentMode();
     }
 
     @Provides

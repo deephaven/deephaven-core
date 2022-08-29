@@ -42,7 +42,7 @@ public class ApplicationServiceGrpcImplTest {
         sessionService = new SessionService(scheduler,
                 authContext -> new SessionState(scheduler, NoLanguageDeephavenSession::new, authContext),
                 TOKEN_EXPIRE_MS);
-        applicationServiceGrpcImpl = new ApplicationServiceGrpcImpl(AppMode.HYBRID, scheduler, sessionService,
+        applicationServiceGrpcImpl = new ApplicationServiceGrpcImpl(scheduler, sessionService,
                 new TypeLookup(ObjectTypeLookup.NoOp.INSTANCE));
     }
 
