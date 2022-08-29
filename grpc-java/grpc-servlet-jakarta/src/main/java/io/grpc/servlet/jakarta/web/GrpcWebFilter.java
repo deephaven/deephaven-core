@@ -74,9 +74,18 @@ public class GrpcWebFilter extends HttpFilter {
                                         payload.putInt(trailerLength);
                                         for (Map.Entry<String, String> entry : map.entrySet()) {
                                             payload.put(entry.getKey().getBytes(StandardCharsets.US_ASCII));
-                                            payload.put(": ".getBytes(StandardCharsets.US_ASCII));
+                                            payload.put((byte) ':');
+                                            payload.put((byte) ' ');
                                             payload.put(entry.getValue().getBytes(StandardCharsets.US_ASCII));
-                                            payload.put("\r\n".getBytes(StandardCharsets.US_ASCII));
+                                            payload.put((byte) '\r');
+                                            payload.put((byte) '\n');
+                                        }
+                                        if (payload.hasRemaining()) {
+                                            // Normally we must not throw, but this is an exceptional case. Complete
+                                            // the stream, _then_ throw.
+                                            super.complete();
+                                            throw new IllegalStateException(
+                                                    "Incorrectly sized buffer, trailer payload will be sized wrong");
                                         }
                                         wrappedResponse.getOutputStream().write(payload.array());
                                     }
@@ -105,8 +114,7 @@ public class GrpcWebFilter extends HttpFilter {
         return request.getContentType() != null && request.getContentType().startsWith(CONTENT_TYPE_GRPC_WEB);
     }
 
-    // Technically we should throw away content-length too, but the impl won't care
-    public static class GrpcWebHttpResponse extends HttpServletResponseWrapper {
+    private static class GrpcWebHttpResponse extends HttpServletResponseWrapper {
         private Supplier<Map<String, String>> trailers;
 
         public GrpcWebHttpResponse(HttpServletResponse response) {
