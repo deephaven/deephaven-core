@@ -1,7 +1,10 @@
-# Deephaven Python Embedded Server
+# deephaven-server
 
-Embeds the Deephaven Core server into a python module, so that it can be started from python, with tables produced
-directly as part of startup.
+The Dockerless version of [deephaven-core](https://www.github.com/deephaven/deephaven-core).
+
+Deephaven Community Core is a real-time, time-series, column-oriented analytics engine with relational database features. It is an open version of [Deephaven Enterprise](https://deephaven.io/enterprise/), which serves as the data backbone for prominent hedge funds, banks, and financial exchanges.
+
+`deephaven-server` enables users to run Deephaven Community Core without Docker.
 
 ## Setup
 
@@ -10,23 +13,6 @@ Java 11+ is required for this module, and the `JAVA_HOME` environment variable m
 ```shell
 pip3 install --upgrade pip setuptools wheel
 pip3 install deephaven-server
-```
-
-## Dev environment setup
-
-Java 11 and Docker are required to build this project, as most of the repository is needed to properly build it.
-Note that jpy or deephaven-jpy (built for your OS and archetecture) and the deephaven server apiwheel is also
-required. 
-
-### Build
-From the root directory of this repository
-```shell
-$ ./gradlew :py-embedded-server:assemble
-```
-
-### Install
-```shell
-$ pip install py/embedded-server/build/wheel/deephaven_server-0.12.0-py3-none-any.whl
 ```
 
 ## Quick start
