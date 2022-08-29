@@ -5,9 +5,12 @@ package io.deephaven.ide.client;
 
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.QueryConnectable;
+import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.data.ConnectToken;
 import jsinterop.annotations.*;
+import jsinterop.base.JsPropertyMap;
 
 import java.nio.charset.StandardCharsets;
 
@@ -66,6 +69,14 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         } else {
             return (Promise) Promise.reject("Cannot connect, session is dead.");
         }
+    }
+
+    public Promise<?> getObject(JsPropertyMap<Object> definitionObject) {
+        return connection.get().getJsObject(definitionObject);
+    }
+
+    public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
+        return connection.get().subscribeToFieldUpdates(callback);
     }
 
     @Override
