@@ -8,6 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -171,7 +172,7 @@ public interface UpdateByOperator {
          * @param upstream the update
          * @param source the rowset of the parent table (affected rows will be a subset)
          */
-        RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final RowSet source,
+        RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final TrackingRowSet source,
                                            final boolean upstreamAppendOnly);
 
         /**

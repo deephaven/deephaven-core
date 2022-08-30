@@ -6,6 +6,8 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.impl.singlerange.IntStartIntDeltaSingleRange;
+import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
@@ -72,7 +74,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
          * @param source the rowset of the parent table (affected rows will be a subset)
          * @param upstreamAppendOnly
          */
-        public RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final RowSet source,
+        public RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final TrackingRowSet source,
                                             final boolean upstreamAppendOnly) {
 
             // NOTE: this is fast rather than bounding to the smallest set possible. Will result in computing more than
@@ -83,12 +85,18 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             RowSetBuilderRandom builder = RowSetFactory.builderRandom();
 
             if (upstream.removed().isNonempty()) {
-                // need removes in post-shift space to determine rows to recompute
-                try (final WritableRowSet shiftedRemoves = upstream.removed().copy()) {
-                    upstream.shifted().apply(shiftedRemoves);
+                // need rows affected by removes in pre-shift space to determine rows to recompute
+                try (final RowSet prevSource = source.copyPrev()) {
 
-                    builder.addRange(computeFirstAffectedKey(shiftedRemoves.firstRowKey(), source),
-                            computeLastAffectedKey(shiftedRemoves.lastRowKey(), source));
+                    long s = computeFirstAffectedKey(upstream.removed().firstRowKey(), prevSource);
+                    long e = computeLastAffectedKey(upstream.removed().lastRowKey(), prevSource);
+
+                    try (final WritableRowSet tmp = RowSetFactory.fromRange(s,e)) {
+                        // apply shifts to get this back to post-shift
+                        upstream.shifted().apply(tmp);
+
+                        builder.addRowSet(tmp);
+                    }
                 }
             }
 

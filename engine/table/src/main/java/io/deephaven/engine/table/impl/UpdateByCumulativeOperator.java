@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedByteUpdateByOperator;
@@ -18,7 +19,7 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
         // store the current subset of rows that need computation
         protected RowSet affectedRows;
 
-        public RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final RowSet source, final boolean upstreamAppendOnly) {
+        public RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final TrackingRowSet source, final boolean upstreamAppendOnly) {
 
             long smallestModifiedKey = UpdateByOperator.smallestAffectedKey(upstream.added(), upstream.modified(), upstream.removed(), upstream.shifted(), source);
 
