@@ -74,7 +74,8 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     }
 
     public Promise<?> getObject(JsPropertyMap<Object> definitionObject) {
-        return connection.get().getJsObject(definitionObject);
+        WorkerConnection conn = connection.get();
+        return onConnected().then(e -> conn.getJsObject(definitionObject));
     }
 
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
