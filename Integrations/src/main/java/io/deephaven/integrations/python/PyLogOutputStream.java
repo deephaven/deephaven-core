@@ -24,7 +24,6 @@ public class PyLogOutputStream extends OutputStream {
 
     @Override
     public void write(@NotNull byte[] b) throws IOException {
-        // noinspection PrimitiveArrayArgumentToVarargsMethod
         rawIoBaseSupplier.get().callMethod("write", new String(b));
     }
 

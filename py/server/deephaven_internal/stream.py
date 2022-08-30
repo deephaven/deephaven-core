@@ -11,10 +11,14 @@ class TeeStream(io.TextIOBase):
 
     @classmethod
     def split(cls, py_stream, java_stream):
+        if hasattr(py_stream, "encoding"):
+            encoding = py_stream.encoding
+        else:
+            encoding = 'UTF-8'
         return TeeStream(
             orig_stream=py_stream,
             should_write_to_orig_stream=True,
-            write_func=lambda t: java_stream.write(bytes(t, py_stream.encoding)),
+            write_func=lambda t: java_stream.write(bytes(t, encoding)),
             flush_func=lambda: java_stream.flush(),
             close_func=lambda: java_stream.close()
         )
