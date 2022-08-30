@@ -80,9 +80,13 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
         // Need to make sure the connection is initialized and connected
         WorkerConnection conn = connection.get();
-        Promise<JsRunnable> cleanupPromise = onConnected().then(e -> Promise.resolve(conn.subscribeToFieldUpdates(callback)));
+        Promise<JsRunnable> cleanupPromise =
+                onConnected().then(e -> Promise.resolve(conn.subscribeToFieldUpdates(callback)));
         return () -> {
-            cleanupPromise.then(c -> { c.run(); return null; });
+            cleanupPromise.then(c -> {
+                c.run();
+                return null;
+            });
         };
     }
 
