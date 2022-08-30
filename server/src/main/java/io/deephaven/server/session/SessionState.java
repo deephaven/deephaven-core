@@ -529,16 +529,15 @@ public class SessionState {
          * @param exportId the export id for this export
          */
         private ExportObject(final SessionState session, final int exportId) {
+            super(true);
             this.session = session;
             this.exportId = exportId;
             this.logIdentity =
                     isNonExport() ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
             setState(ExportNotification.State.UNKNOWN);
 
-            // non-exports stay alive until they have been exported
-            if (isNonExport()) {
-                retainReference();
-            }
+            // we retain a reference until a non-export becomes EXPORTED or a regular export becomes RELEASED
+            retainReference();
         }
 
         /**
@@ -548,6 +547,7 @@ public class SessionState {
          * @param result the object to wrap in an export
          */
         private ExportObject(final T result) {
+            super(true);
             this.session = null;
             this.exportId = NON_EXPORT_ID;
             this.state = ExportNotification.State.EXPORTED;
@@ -1341,9 +1341,7 @@ public class SessionState {
                         throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
                     }
 
-                    final ExportObject<Object> retval = new ExportObject<>(SessionState.this, key);
-                    retval.retainReference();
-                    return retval;
+                    return new ExportObject<>(SessionState.this, key);
                 }
             };
 }

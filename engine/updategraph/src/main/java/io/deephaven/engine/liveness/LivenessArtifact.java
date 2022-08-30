@@ -18,7 +18,15 @@ public class LivenessArtifact extends ReferenceCountedLivenessNode implements Se
     private static final long serialVersionUID = 1L;
 
     protected LivenessArtifact() {
-        super(false);
+        this(false);
+    }
+
+    /**
+     * @param enforceStrongReachability Whether this {@link LivenessArtifact} should maintain strong references to its
+     *        referents
+     */
+    protected LivenessArtifact(final boolean enforceStrongReachability) {
+        super(enforceStrongReachability);
         manageWithCurrentScope();
     }
 

@@ -253,8 +253,7 @@ public class ArrowFlightUtil {
     /**
      * This is a stateful observer; a DoPut stream begins with its schema.
      */
-    public static class DoPutObserver extends SingletonLivenessManager
-            implements StreamObserver<InputStream>, Closeable {
+    public static class DoPutObserver implements StreamObserver<InputStream>, Closeable {
 
         private final ScheduledExecutorService executorService;
         private final SessionState session;
@@ -304,7 +303,6 @@ public class ArrowFlightUtil {
                         resultExportBuilder = ticketRouter
                                 .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
                                 .onError(observer);
-                        manage(resultExportBuilder.getExport());
                     }
                 }
 
@@ -402,6 +400,8 @@ public class ArrowFlightUtil {
                 });
                 resultExportBuilder = null;
             }
+
+            session.removeOnCloseCallback(this);
         }
 
         @Override
@@ -418,6 +418,8 @@ public class ArrowFlightUtil {
                 });
                 resultExportBuilder = null;
             }
+
+            session.removeOnCloseCallback(this);
         }
 
         public void onCompleted() {
@@ -430,16 +432,31 @@ public class ArrowFlightUtil {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Result flight schema never provided");
                 }
 
+                final BarrageTable localResultTable = resultTable;
+                resultTable = null;
+                final SessionState.ExportBuilder<Table> localExportBuilder = resultExportBuilder;
+                resultExportBuilder = null;
+
+
+                // gRPC is about to remove its hard reference to this observer. We must keep the result table hard
+                // referenced until the export is complete, so that the export can properly be satisfied. ExportObject's
+                // LivenessManager enforces strong reachability.
+                if (!localExportBuilder.getExport().tryManage(localResultTable)) {
+                    GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Result export already destroyed");
+                    localResultTable.dropReference();
+                    session.removeOnCloseCallback(this);
+                    return;
+                }
+                localResultTable.dropReference();
+
                 // no more changes allowed; this is officially static content
-                resultTable.sealTable(() -> resultExportBuilder.submit(() -> {
-                    // transfer ownership to submit's liveness scope, drop our extra reference
-                    resultTable.manageWithCurrentScope();
-                    resultTable.dropReference();
+                localResultTable.sealTable(() -> localExportBuilder.submit(() -> {
                     GrpcUtil.safelyExecuteLocked(observer, observer::onCompleted);
-                    return resultTable;
+                    session.removeOnCloseCallback(this);
+                    return localResultTable;
                 }), () -> {
                     GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed");
-                    resultExportBuilder = null;
+                    session.removeOnCloseCallback(this);
                 });
             });
         }
@@ -447,7 +464,6 @@ public class ArrowFlightUtil {
         @Override
         public void close() {
             // close() is intended to be invoked only though session expiration
-            release();
             GrpcUtil.safelyError(observer, Code.UNAUTHENTICATED, "Session expired");
         }
 
