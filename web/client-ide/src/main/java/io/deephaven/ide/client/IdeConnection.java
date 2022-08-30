@@ -4,7 +4,9 @@
 package io.deephaven.ide.client;
 
 import elemental2.promise.Promise;
+import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.QueryConnectable;
+import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
@@ -76,7 +78,12 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     }
 
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
-        return connection.get().subscribeToFieldUpdates(callback);
+        // Need to make sure the connection is initialized and connected
+        WorkerConnection conn = connection.get();
+        Promise<JsRunnable> cleanupPromise = onConnected().then(e -> Promise.resolve(conn.subscribeToFieldUpdates(callback)));
+        return () -> {
+            cleanupPromise.then(c -> { c.run(); return null; });
+        };
     }
 
     @Override

@@ -107,7 +107,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         return super.addEventListener(name, callback);
     }
 
-    private Promise<Void> onConnected() {
+    protected Promise<Void> onConnected() {
         if (connected) {
             return Promise.resolve((Void) null);
         }
