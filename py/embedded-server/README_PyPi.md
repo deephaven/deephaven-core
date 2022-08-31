@@ -1,14 +1,16 @@
 # deephaven-server
 
-The Dockerless version of [deephaven-core](https://www.github.com/deephaven/deephaven-core).
+A Python-native way of launching [deephaven-core](https://www.github.com/deephaven/deephaven-core).
 
 Deephaven Community Core is a real-time, time-series, column-oriented analytics engine with relational database features. It is an open version of [Deephaven Enterprise](https://deephaven.io/enterprise/), which serves as the data backbone for prominent hedge funds, banks, and financial exchanges.
 
-`deephaven-server` enables users to run Deephaven Community Core without Docker.
+## Requirements
+
+Java 11+ is required for this module, and the `JAVA_HOME` environment variable must be set appropriately.
+
+This module also requires Python version 3.7 or newer.
 
 ## Setup
-
-Java 11+ is required for this module, and the `JAVA_HOME` environment variable must be set appropriately.  Once that's done, you can use pip:
 
 ```shell
 pip3 install --upgrade pip setuptools wheel
