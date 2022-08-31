@@ -106,8 +106,8 @@ public abstract class JettyConfig implements ServerConfig {
 
     /**
      * Returns {@link #http1()} if explicitly set. If {@link #proxyHint()} is {@code true}, returns {@code false}.
-     * Otherwise, defaults to {@code true} when {@link #ssl()} is empty, and {@code false} when {@link #ssl()} is
-     * present.
+     * Otherwise, defaults to {@code true}. This may become more strict in the future, see
+     * <a href="https://github.com/deephaven/deephaven-core/issues/2787">#2787</a>).
      */
     public final boolean http1OrDefault() {
         final Boolean http1 = http1();
@@ -117,7 +117,9 @@ public abstract class JettyConfig implements ServerConfig {
         if (Boolean.TRUE.equals(proxyHint())) {
             return false;
         }
-        return ssl().isEmpty();
+        // TODO(deephaven-core#2787): OS / browser testing to determine minimum viable HTTP version
+        // return ssl().isEmpty();
+        return true;
     }
 
     public interface Builder extends ServerConfig.Builder<JettyConfig, Builder> {
