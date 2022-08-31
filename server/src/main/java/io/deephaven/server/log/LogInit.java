@@ -4,13 +4,17 @@
 package io.deephaven.server.log;
 
 import io.deephaven.base.system.StandardStreamState;
+import io.deephaven.engine.table.impl.UpdateErrorReporter;
+import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.internal.log.InitSink;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogSink;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.datastructures.WeakIdentityHashSet;
 
 import javax.inject.Inject;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Set;
 
@@ -36,6 +40,17 @@ public class LogInit {
         checkLogSinkIsSingleton();
         standardStreamState.setupRedirection();
         configureLoggerSink();
+        Logger errLog = LoggerFactory.getLogger(AsyncClientErrorNotifier.class);
+        AsyncClientErrorNotifier.setReporter(new UpdateErrorReporter() {
+            final WeakIdentityHashSet<Throwable> knownErrors = new WeakIdentityHashSet.Synchronized<>();
+
+            @Override
+            public void reportUpdateError(Throwable err) {
+                if (knownErrors.add(err)) {
+                    errLog.error().append("Error in table update: ").append(err).endl();
+                }
+            }
+        });
     }
 
     private void configureLoggerSink() {

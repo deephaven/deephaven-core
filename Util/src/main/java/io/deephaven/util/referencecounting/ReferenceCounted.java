@@ -36,7 +36,7 @@ public abstract class ReferenceCounted implements LogOutputAppendable, Serializa
     /**
      * Since we've reserved -1 as our initial reference count value, our maximum is really one less.
      */
-    private static final int MAXIMUM_VALUE = -2;
+    private static final int MAXIMUM_VALUE = -3;
 
     /**
      * This is our "one" reference count value.
@@ -44,9 +44,16 @@ public abstract class ReferenceCounted implements LogOutputAppendable, Serializa
     private static final int ONE_VALUE = 1;
 
     /**
-     * This is our "zero" reference count value (terminal state).
+     * This is our normal "zero" reference count value (terminal state).
      */
-    private static final int TERMINAL_ZERO_VALUE = 0;
+    private static final int NORMAL_TERMINAL_ZERO_VALUE = 0;
+
+    /**
+     * This is a marker "zero" reference count value (terminal state), signifying that a reference count was set to zero
+     * under exceptional circumstances, and additional attempts to drop the reference count should be treated as
+     * successful so as not to violate constraints.
+     */
+    private static final int FORCED_TERMINAL_ZERO_VALUE = -2;
 
     /**
      * The actual value of our reference count.
@@ -57,6 +64,10 @@ public abstract class ReferenceCounted implements LogOutputAppendable, Serializa
         this(0);
     }
 
+    /**
+     * @param initialValue The initial value for the reference count, taken as an unsigned integer. Must not be one of
+     *        the reserved values {@value #INITIAL_ZERO_VALUE} or {@value #FORCED_TERMINAL_ZERO_VALUE}.
+     */
     @SuppressWarnings("WeakerAccess")
     protected ReferenceCounted(final int initialValue) {
         initializeReferenceCount(initialValue);
@@ -72,13 +83,13 @@ public abstract class ReferenceCounted implements LogOutputAppendable, Serializa
     }
 
     @Override
-    public LogOutput append(@NotNull final LogOutput logOutput) {
+    public LogOutput append(final LogOutput logOutput) {
         return logOutput.append(Utils.REFERENT_FORMATTER, this).append('[').append(getCurrentReferenceCount())
                 .append(']');
     }
 
     private void initializeReferenceCount(final int initialValue) {
-        if (initialValue == INITIAL_ZERO_VALUE) {
+        if (initialValue == INITIAL_ZERO_VALUE || initialValue == FORCED_TERMINAL_ZERO_VALUE) {
             throw new IllegalArgumentException("Invalid initial reference count " + initialValue);
         }
         referenceCount = initialValue == 0 ? INITIAL_ZERO_VALUE : initialValue;
@@ -96,10 +107,23 @@ public abstract class ReferenceCounted implements LogOutputAppendable, Serializa
      * Reset this reference count to its initial state for reuse.
      */
     public final void resetReferenceCount() {
-        if (!tryUpdateReferenceCount(TERMINAL_ZERO_VALUE, INITIAL_ZERO_VALUE)) {
+        if (!tryUpdateReferenceCount(NORMAL_TERMINAL_ZERO_VALUE, INITIAL_ZERO_VALUE)
+                && !tryUpdateReferenceCount(FORCED_TERMINAL_ZERO_VALUE, INITIAL_ZERO_VALUE)) {
             throw new IllegalStateException(
                     Utils.makeReferentDescription(this) + "'s reference count is non-zero and cannot be reset");
         }
+    }
+
+    private static boolean isInitialZero(final int countValue) {
+        return countValue == INITIAL_ZERO_VALUE;
+    }
+
+    private static boolean isTerminalZero(final int countValue) {
+        return countValue == NORMAL_TERMINAL_ZERO_VALUE || countValue == FORCED_TERMINAL_ZERO_VALUE;
+    }
+
+    private static boolean isZero(final int countValue) {
+        return isInitialZero(countValue) || isTerminalZero(countValue);
     }
 
     /**
@@ -110,13 +134,13 @@ public abstract class ReferenceCounted implements LogOutputAppendable, Serializa
      */
     public final boolean tryIncrementReferenceCount() {
         int currentReferenceCount;
-        while ((currentReferenceCount = getCurrentReferenceCount()) != TERMINAL_ZERO_VALUE) {
+        while (!isTerminalZero(currentReferenceCount = getCurrentReferenceCount())) {
             if (currentReferenceCount == MAXIMUM_VALUE) {
                 throw new IllegalStateException(
                         Utils.makeReferentDescription(this) + "'s reference count cannot exceed maximum value");
             }
             if (tryUpdateReferenceCount(currentReferenceCount,
-                    currentReferenceCount == INITIAL_ZERO_VALUE ? ONE_VALUE : currentReferenceCount + 1)) {
+                    isInitialZero(currentReferenceCount) ? ONE_VALUE : currentReferenceCount + 1)) {
                 return true;
             }
         }
@@ -144,8 +168,7 @@ public abstract class ReferenceCounted implements LogOutputAppendable, Serializa
     @SuppressWarnings({"WeakerAccess", "BooleanMethodIsAlwaysInverted"})
     public final boolean tryDecrementReferenceCount() {
         int currentReferenceCount;
-        while ((currentReferenceCount = getCurrentReferenceCount()) != TERMINAL_ZERO_VALUE
-                && currentReferenceCount != INITIAL_ZERO_VALUE) {
+        while (!isZero(currentReferenceCount = getCurrentReferenceCount())) {
             if (tryUpdateReferenceCount(currentReferenceCount, currentReferenceCount - 1)) {
                 if (currentReferenceCount == ONE_VALUE) { // Did we just CAS from 1 to 0?
                     onReferenceCountAtZero();
@@ -153,7 +176,22 @@ public abstract class ReferenceCounted implements LogOutputAppendable, Serializa
                 return true;
             }
         }
-        return false;
+        return currentReferenceCount == FORCED_TERMINAL_ZERO_VALUE;
+    }
+
+    /**
+     * Force the reference count to zero. If it was non-zero, this will have the same side effects as returning to zero
+     * normally, but subsequent invocations of {@link #decrementReferenceCount()} and
+     * {@link #tryDecrementReferenceCount()} will act as if the reference count was successfully decremented until
+     * {@link #resetReferenceCount()} is invoked.
+     */
+    public final void forceReferenceCountToZero() {
+        int currentReferenceCount;
+        while (!isZero(currentReferenceCount = getCurrentReferenceCount())) {
+            if (tryUpdateReferenceCount(currentReferenceCount, FORCED_TERMINAL_ZERO_VALUE)) {
+                onReferenceCountAtZero();
+            }
+        }
     }
 
     /**

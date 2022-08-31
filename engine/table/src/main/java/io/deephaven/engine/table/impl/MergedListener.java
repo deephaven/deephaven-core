@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.UncheckedTableException;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -14,11 +16,11 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,7 +35,7 @@ import java.util.stream.StreamSupport;
  * You must use a MergedListener if your result table has multiple sources, otherwise it is possible for a table to
  * produce notifications more than once in a cycle; which is an error.
  */
-public abstract class MergedListener extends LivenessArtifact implements NotificationQueue.Dependency {
+public abstract class MergedListener extends LivenessScope implements NotificationQueue.Dependency {
     private static final Logger log = LoggerFactory.getLogger(MergedListener.class);
 
     private final Iterable<? extends ListenerRecorder> recorders;
@@ -117,6 +119,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     }
 
     private void propagateErrorInternal(@NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+        forceReferenceCountToZero();
         propagateErrorDownstream(error, entry);
         try {
             if (systemicResult()) {
@@ -253,7 +256,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                         }
                         notificationStep = queuedNotificationStep;
                     }
-                    process();
+
+                    try (final SafeCloseable ignored =
+                            LivenessScopeStack.open(MergedListener.this, false)) {
+                        process();
+                    }
                     UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has completed execution ")
                             .append(this).endl();
                 } finally {
