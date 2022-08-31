@@ -48,14 +48,16 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
         public final SizedLongChunk<Values> outputValues;
 
-        public LinkedList<Byte> windowValues = new LinkedList<>();
-
         public long currentVal = NULL_LONG;
+
+        // position data for the chunk being currently processed
+        public SizedLongChunk<? extends RowKeys> valuePositionChunk;
 
         protected Context(final int chunkSize) {
             this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
             this.fillContext.ensureCapacity(chunkSize);
             this.outputValues = new SizedLongChunk<>(chunkSize);
+            this.valuePositionChunk = new SizedLongChunk<>(chunkSize);
         }
 
         @Override
@@ -63,6 +65,7 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
             super.close();
             outputValues.close();
             fillContext.close();
+            this.valuePositionChunk.close();
         }
     }
 
@@ -74,8 +77,10 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
 
     @Override
     public void setChunkSize(@NotNull UpdateContext context, int chunkSize) {
-        ((Context)context).outputValues.ensureCapacity(chunkSize);
-        ((Context)context).fillContext.ensureCapacity(chunkSize);
+        final Context ctx = (Context) context;
+        ctx.outputValues.ensureCapacity(chunkSize);
+        ctx.fillContext.ensureCapacity(chunkSize);
+        ctx.valuePositionChunk.ensureCapacity(chunkSize);
     }
 
     public ByteRollingSumOperator(@NotNull final MatchPair pair,
@@ -110,12 +115,9 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
     }
 
     @Override
-    public void push(UpdateContext context, long key, int index) {
+    public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
-        Byte val = ctx.candidateValuesChunk.get(index);
-
-        // add the value to the window buffer
-        ctx.windowValues.addLast(val);
+        Byte val = ctx.candidateValuesChunk.get(pos);
 
         // increase the running sum
         if (val != NULL_BYTE) {
@@ -128,9 +130,9 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
     }
 
     @Override
-    public void pop(UpdateContext context, long key) {
+    public void pop(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
-        Byte val = ctx.windowValues.pop();
+        Byte val = ctx.candidateValuesChunk.get(pos);
 
         // reduce the running sum
         if (val != NULL_BYTE) {
@@ -151,7 +153,17 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
                               @NotNull final Chunk<Values> workingChunk) {
         final Context ctx = (Context) context;
 
+        if (timestampColumnName == null) {
+            // produce position data for the window (will be timestamps for time-based)
+            // TODO: gotta be a better way than creating two rowsets
+            try (final RowSet rs = inputKeys.asRowSet();
+                 final RowSet positions = ctx.sourceRowSet.invert(rs)) {
+                positions.fillRowKeyChunk(ctx.valuePositionChunk.get());
+            }
+        }
+
         computeTicks(ctx, 0, inputKeys.intSize());
+
         //noinspection unchecked
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
     }
@@ -163,7 +175,7 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
         final WritableLongChunk<Values> localOutputValues = ctx.outputValues.get();
         for (int ii = runStart; ii < runStart + runLength; ii++) {
             if (recorder == null) {
-                ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get(ii));
+                ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get().get(ii));
             }
             // the sum was computed by push/pop operations
             localOutputValues.set(ii, ctx.currentVal);

@@ -37,13 +37,14 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
         }
 
         @Override
-        public void loadCandidateValueChunk(RowSequence windowRowSequence) {
+        public void loadInfluencerValueChunk() {
+            int size = influencerKeys.intSize();
             // fill the window values chunk
             if (candidateValuesChunk == null) {
-                candidateValuesChunk = WritableIntChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
+                candidateValuesChunk = WritableIntChunk.makeWritableChunk(size);
             }
-            try (ChunkSource.FillContext fc = valueSource.makeFillContext(WINDOW_CHUNK_SIZE)){
-                valueSource.fillChunk(fc, candidateValuesChunk, windowRowSequence);
+            try (ChunkSource.FillContext fc = valueSource.makeFillContext(size)){
+                valueSource.fillChunk(fc, candidateValuesChunk, influencerKeys);
             }
         }
     }
@@ -90,7 +91,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
                                 @NotNull final RowSet sourceRowSet,
                                 long firstUnmodifiedKey) {
         final Context ctx = (Context) context;
-        ctx.workingRowSet = sourceRowSet;
+        ctx.sourceRowSet = sourceRowSet;
     }
 
     @Override
@@ -100,7 +101,6 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
                              @NotNull final Chunk<Values> valuesChunk,
                              @NotNull final RowSet postUpdateSourceIndex) {
         final Context ctx = (Context) updateContext;
-        ctx.loadDataChunks(inputKeys);
         doProcessChunk(ctx, inputKeys, keyChunk, valuesChunk);
         ctx.getModifiedBuilder().appendRowSequence(inputKeys);
     }

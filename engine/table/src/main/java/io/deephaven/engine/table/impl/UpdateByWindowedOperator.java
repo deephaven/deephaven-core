@@ -3,18 +3,15 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.base.LongRingBuffer;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.rowset.impl.singlerange.IntStartIntDeltaSingleRange;
-import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedCharUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 public abstract class UpdateByWindowedOperator implements UpdateByOperator {
     protected final OperationControl control;
@@ -39,31 +36,33 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             return modifiedBuilder;
         }
 
-        // store the current subset of rows that need computation
-        protected RowSet affectedRows = RowSetFactory.empty();
+        // store a local copy of the source rowset (may not be needed)
+        public RowSet sourceRowSet = null;
+
+        // there are two sets of rows we will be tracking.  `affected` rows need to be recomputed because of this
+        // update and `influencer` rows contain the data that will be used to compute the new values for the `affected`
+        // items.  Because the windows are user-configurable, there may be no overlap between these two sets and we
+        // don't need values for the `affected` rows at all
+        protected RowSet affectedRows;
+        protected RowSet influencerKeys;
+        protected long currentInfluencerKey;
 
         // candidate data for the window
-        public final int WINDOW_CHUNK_SIZE = 1024;
+        public final int WINDOW_CHUNK_SIZE = 4096;
 
-        // data that is actually in the current window
-        public LongRingBuffer windowRowKeys = new LongRingBuffer(WINDOW_CHUNK_SIZE, true);
+        // persist two iterators, for the head and the tail of the current window
+        protected RowSet.Iterator influencerPosIterator;
+        protected RowSet.Iterator influencerKeyIterator;
 
-        // the selector that determines whether this value should be in the window, positions for tick-based and
-        // timestamps for time-based operators
-        public LongRingBuffer windowSelector = new LongRingBuffer(WINDOW_CHUNK_SIZE, true);
+        // for use with a ticking window
+        protected RowSet affectedRowPositions;
+        protected RowSet influencerPositions;
+        protected long currentInfluencerPos;
+        protected int currentInfluencerIndex;
 
-        public RowSequence.Iterator windowIterator = null;
-
-        public RowSet workingRowSet = null;
-
-        public WritableLongChunk<? extends RowKeys> candidateRowKeysChunk;
-        public WritableLongChunk<? extends RowKeys> candidatePositionsChunk;
-        public WritableLongChunk<Values> candidateTimestampsChunk;
-
-        // position data for the chunk being currently processed
-        public WritableLongChunk<? extends RowKeys> valuePositionChunk;
-
-        public int candidateWindowIndex = 0;
+        protected LongRingBuffer windowKeys = new LongRingBuffer(WINDOW_CHUNK_SIZE, true);
+        protected LongRingBuffer windowPos = new LongRingBuffer(WINDOW_CHUNK_SIZE, true);
+        protected LongRingBuffer windowIndices = new LongRingBuffer(WINDOW_CHUNK_SIZE, true);
 
         /***
          * This function is only correct if the proper {@code source} rowset is provided.  If using buckets, then the
@@ -116,9 +115,27 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             }
 
             try (final RowSet ignored = affectedRows;
+                 final RowSet ignored2 = influencerKeys;
+                 final RowSet ignored3 = affectedRowPositions;
+                 final RowSet ignored4 = influencerPositions;
                  final RowSet brs = builder.build()) {
+
                 affectedRows = source.intersect(brs);
+
+                WritableRowSet tmp = RowSetFactory.fromRange(
+                    computeFirstAffectingKey(affectedRows.firstRowKey(), source),
+                    computeLastAffectingKey(affectedRows.lastRowKey(), source)
+                );
+                tmp.retain(source);
+                influencerKeys = tmp;
+
+                // generate position data rowsets for efficiently computed position offsets
+                if (timestampColumnName == null) {
+                    affectedRowPositions = source.invert(affectedRows);
+                    influencerPositions = source.invert(influencerKeys);
+                }
             }
+
             return affectedRows;
         }
 
@@ -126,124 +143,50 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             return affectedRows;
         }
 
-        public abstract void loadCandidateValueChunk(RowSequence windowRowSequence);
-
-        /***
-         * Fill the working chunks with data for this key
-         *
-         * @param startKey the key for which we want to
-         */
-        public void loadWindowChunks(final long startKey) {
-            // TODO: make sure this works for bucketed
-            if (windowIterator == null) {
-                windowIterator = workingRowSet.getRowSequenceIterator();
-            }
-            windowIterator.advance(startKey);
-
-            RowSequence windowRowSequence = windowIterator.getNextRowSequenceWithLength(WINDOW_CHUNK_SIZE);
-
-            loadCandidateValueChunk(windowRowSequence);
-
-            // fill the window keys chunk
-            if (candidateRowKeysChunk == null) {
-                candidateRowKeysChunk = WritableLongChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
-            }
-            windowRowSequence.fillRowKeyChunk(candidateRowKeysChunk);
-
-            if (recorder == null) {
-                // get position data for the window items (relative to the table or bucket rowset)
-                if (candidatePositionsChunk == null) {
-                    candidatePositionsChunk = WritableLongChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
-                }
-
-                // TODO: gotta be a better way than creating two rowsets
-                try (final RowSet rs = windowRowSequence.asRowSet();
-                     final RowSet positions = workingRowSet.invert(rs)) {
-                    positions.fillRowKeyChunk(candidatePositionsChunk);
-                }
-            } else {
-                // get timestamp values from the recorder column source
-                if (candidateTimestampsChunk == null) {
-                    candidateTimestampsChunk = WritableLongChunk.makeWritableChunk(WINDOW_CHUNK_SIZE);
-                }
-                try (final ChunkSource.FillContext fc = recorder.getColumnSource().makeFillContext(WINDOW_CHUNK_SIZE)) {
-                    recorder.getColumnSource().fillChunk(fc, candidateTimestampsChunk, windowRowSequence);
-                }
-            }
-
-            // reset the index to beginning of the chunks
-            candidateWindowIndex = 0;
-        }
-
-        /***
-         * Fill the working chunks with data for this key
-         *
-         * @param inputKeys the keys for which we want to get position or timestamp values
-         */
-        public void loadDataChunks(final RowSequence inputKeys) {
-            if (recorder != null) {
-                // timestamp data will be available from the recorder
-                return;
-            }
-
-            if (valuePositionChunk == null) {
-                valuePositionChunk = WritableLongChunk.makeWritableChunk(inputKeys.intSize());
-            } else if (valuePositionChunk.capacity() < inputKeys.size()) {
-                valuePositionChunk.close();
-                valuePositionChunk = WritableLongChunk.makeWritableChunk(inputKeys.intSize());
-            }
-
-            // produce position data for the window (will be timestamps for time-based)
-            // TODO: gotta be a better way than creating two rowsets
-            try (final RowSet rs = inputKeys.asRowSet();
-                 final RowSet positions = workingRowSet.invert(rs)) {
-                positions.fillRowKeyChunk(valuePositionChunk);
-            }
-        }
+        public abstract void loadInfluencerValueChunk();
 
         public void fillWindowTicks(UpdateContext context, long currentPos) {
-            // compute the head and tail (inclusive)
-            final long tail = Math.max(0, currentPos - reverseTimeScaleUnits + 1);
-            final long head = Math.min(workingRowSet.size() - 1, currentPos + forwardTimeScaleUnits);
+            // compute the head and tail positions (inclusive)
+            final long head = Math.max(0, currentPos - reverseTimeScaleUnits + 1);
+            final long tail = Math.min(sourceRowSet.size() - 1, currentPos + forwardTimeScaleUnits);
 
-            while (windowSelector.peek(Long.MAX_VALUE) < tail) {
-                final long pos = windowSelector.remove();
-                final long key = windowRowKeys.remove();
-
-                pop(context, key);
+            // pop out all values from the current window that are not in the new window
+            while (!windowPos.isEmpty() && windowPos.front() < head) {
+                pop(context, windowKeys.remove(), (int)windowIndices.remove());
+                windowPos.remove();
             }
 
+            // check our current values to see if it now matches the window
+            while(currentInfluencerPos <= tail) {
+                push(context, currentInfluencerKey, currentInfluencerIndex);
+                windowKeys.add(currentInfluencerKey);
+                windowPos.add(currentInfluencerPos);
+                windowIndices.add(currentInfluencerIndex);
+                currentInfluencerIndex++;
 
-            // look at the window data and push until satisfied or at the end of the rowset
-            while (candidatePositionsChunk.size() > 0 && candidatePositionsChunk.get(candidateWindowIndex) <= head) {
-                final long pos = candidatePositionsChunk.get(candidateWindowIndex);
-                final long key = candidateRowKeysChunk.get(candidateWindowIndex);
-
-                push(context, key, candidateWindowIndex);
-
-                windowSelector.add(pos);
-                windowRowKeys.add(key);
-
-                if (++candidateWindowIndex >= candidatePositionsChunk.size()) {
-                    // load the next chunk in order
-                    loadWindowChunks(key + 1);
+                if (influencerPosIterator.hasNext()) {
+                    currentInfluencerKey = influencerKeyIterator.next();
+                    currentInfluencerPos = influencerPosIterator.next();
+                } else {
+                    currentInfluencerPos = Long.MAX_VALUE;
+                    currentInfluencerKey = Long.MAX_VALUE;
                 }
             }
 
-            if (windowSelector.isEmpty()) {
+            if (windowPos.isEmpty()) {
                 reset(context);
             }
         }
 
         @Override
         public void close() {
-            try (final RowSequence.Iterator ignored1 = windowIterator;
-                 final WritableLongChunk<? extends RowKeys> ignored2 = candidateRowKeysChunk;
-                 final WritableLongChunk<? extends RowKeys> ignored3 = candidatePositionsChunk;
-                 final WritableLongChunk<Values> ignored4 = candidateTimestampsChunk;
-                 final WritableLongChunk<? extends RowKeys> ignored5 = valuePositionChunk;
-                 final RowSet ignored6 = affectedRows;
-                 final RowSet ignored7 = newModified) {
+            try (final RowSet.Iterator ignoredIt1 = influencerPosIterator;
+                 final RowSet.Iterator ignoredIt2 = influencerKeyIterator;
+                 final RowSet ignoredRs1 = affectedRows;
+                 final RowSet ignoredRs2 = influencerKeys;
+                 final RowSet ignoredRs3 = affectedRowPositions;
+                 final RowSet ignoredRs4 = influencerPositions;
+                 final RowSet ignoredRs5 = newModified) {
             }
         }
     }
@@ -276,8 +219,8 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         this.redirContext = redirContext;
     }
 
-    public abstract void push(UpdateContext context, long key, int index);
-    public abstract void pop(UpdateContext context, long key);
+    public abstract void push(UpdateContext context, long key, int pos);
+    public abstract void pop(UpdateContext context, long key, int pos);
     public abstract void reset(UpdateContext context);
 
     // return the first row that affects this key
@@ -349,8 +292,17 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
     public void initializeFor(@NotNull final UpdateContext context,
                               @NotNull final RowSet updateRowSet) {
         final UpdateWindowedContext ctx = (UpdateWindowedContext) context;
-        long windowStartKey = computeFirstAffectingKey(updateRowSet.firstRowKey(), ctx.workingRowSet);
-        ctx.loadWindowChunks(windowStartKey);
+        // load all the influencer values this update will need
+        ctx.loadInfluencerValueChunk();
+
+        // setup the iterators we will need for managing the windows
+        ctx.influencerKeyIterator = ctx.influencerKeys.iterator();
+        ctx.currentInfluencerKey = ctx.influencerKeyIterator.next();
+        if (ctx.influencerPositions != null) {
+            ctx.influencerPosIterator = ctx.influencerPositions.iterator();
+            ctx.currentInfluencerPos = ctx.influencerPosIterator.next();
+        }
+        ctx.currentInfluencerIndex = 0;
     }
 
     @Override

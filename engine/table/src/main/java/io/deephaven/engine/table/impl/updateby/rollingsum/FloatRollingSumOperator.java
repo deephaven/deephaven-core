@@ -11,6 +11,7 @@ import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
@@ -49,10 +50,14 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
 
         public LinkedList<Float> windowValues = new LinkedList<>();
 
+        // position data for the chunk being currently processed
+        public SizedLongChunk<? extends RowKeys> valuePositionChunk;
+
         protected Context(final int chunkSize) {
             this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
             this.fillContext.ensureCapacity(chunkSize);
             this.outputValues = new SizedFloatChunk<>(chunkSize);
+            this.valuePositionChunk = new SizedLongChunk<>(chunkSize);
         }
 
         @Override
@@ -60,6 +65,7 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
             super.close();
             outputValues.close();
             fillContext.close();
+            this.valuePositionChunk.close();
         }
     }
 
@@ -71,8 +77,10 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
 
     @Override
     public void setChunkSize(@NotNull UpdateContext context, int chunkSize) {
-        ((Context)context).outputValues.ensureCapacity(chunkSize);
-        ((Context)context).fillContext.ensureCapacity(chunkSize);
+        final Context ctx = (Context) context;
+        ctx.outputValues.ensureCapacity(chunkSize);
+        ctx.fillContext.ensureCapacity(chunkSize);
+        ctx.valuePositionChunk.ensureCapacity(chunkSize);
     }
 
     public FloatRollingSumOperator(@NotNull final MatchPair pair,
@@ -105,15 +113,16 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     }
 
     @Override
-    public void push(UpdateContext context, long key, int index) {
+    public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
-        float val = ctx.candidateValuesChunk.get(index);
+        float val = ctx.candidateValuesChunk.get(pos);
         ctx.windowValues.addLast(val);
     }
 
     @Override
-    public void pop(UpdateContext context, long key) {
+    public void pop(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
+        float val = ctx.candidateValuesChunk.get(pos);
         ctx.windowValues.pop();
     }
 
@@ -129,6 +138,15 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
                                @NotNull final Chunk<Values> workingChunk) {
         final Context ctx = (Context) context;
 
+        if (timestampColumnName == null) {
+            // produce position data for the window (will be timestamps for time-based)
+            // TODO: gotta be a better way than creating two rowsets
+            try (final RowSet rs = inputKeys.asRowSet();
+                 final RowSet positions = ctx.sourceRowSet.invert(rs)) {
+                positions.fillRowKeyChunk(ctx.valuePositionChunk.get());
+            }
+        }
+
         computeTicks(ctx, 0, inputKeys.intSize());
         //noinspection unchecked
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
@@ -141,7 +159,7 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
         final WritableFloatChunk<Values> localOutputValues = ctx.outputValues.get();
         for (int ii = runStart; ii < runStart + runLength; ii++) {
             if (recorder == null) {
-                ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get(ii));
+                ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get().get(ii));
             }
 
             MutableFloat sum = new MutableFloat(NULL_FLOAT);

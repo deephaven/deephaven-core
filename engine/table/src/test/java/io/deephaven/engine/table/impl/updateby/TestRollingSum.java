@@ -311,6 +311,7 @@ public class TestRollingSum extends BaseUpdateByTest {
             final int head = Math.max(0, i - prevTicks + 1);
             final int tail = Math.min(values.length - 1, i + postTicks);
 
+
             // compute everything in this window
             for (int computeIdx = head; computeIdx <= tail; computeIdx++) {
                 if (!isNull(values[computeIdx])) {
