@@ -86,7 +86,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
         // Set up websocket for grpc-web
-        if (config.websockets()) {
+        if (config.websocketsOrDefault()) {
             JakartaWebSocketServletContainerInitializer.configure(context, (servletContext, container) -> {
                 container.addEndpoint(
                         ServerEndpointConfig.Builder.create(WebSocketServerStream.class, "/{service}/{method}")
@@ -137,10 +137,10 @@ public class JettyBackedGrpcServer implements GrpcServer {
         return ((ServerConnector) jetty.getConnectors()[0]).getLocalPort();
     }
 
-    private static ServerConnector createConnector(Server server, ServerConfig config) {
+    private static ServerConnector createConnector(Server server, JettyConfig config) {
         // https://www.eclipse.org/jetty/documentation/jetty-11/programming-guide/index.html#pg-server-http-connector-protocol-http2-tls
         final HttpConfiguration httpConfig = new HttpConfiguration();
-        final HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfig);
+        final HttpConnectionFactory http11 = config.http1OrDefault() ? new HttpConnectionFactory(httpConfig) : null;
         final ServerConnector serverConnector;
         if (config.ssl().isPresent()) {
             // Consider allowing configuration of sniHostCheck
@@ -149,7 +149,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
             final HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
             h2.setRateControlFactory(new RateControl.Factory() {});
             final ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
-            alpn.setDefaultProtocol(http11.getProtocol());
+            alpn.setDefaultProtocol(http11 != null ? http11.getProtocol() : h2.getProtocol());
             // The Jetty server is getting intermediate setup by default if none are configured. This is most similar to
             // how the Netty servers gets setup by default via GrpcSslContexts.
             final SSLConfig sslConfig = config.ssl().get()
@@ -159,11 +159,19 @@ public class JettyBackedGrpcServer implements GrpcServer {
             final SSLFactory kickstart = KickstartUtils.create(sslConfig);
             final SslContextFactory.Server jetty = JettySslUtils.forServer(kickstart);
             final SslConnectionFactory tls = new SslConnectionFactory(jetty, alpn.getProtocol());
-            serverConnector = new ServerConnector(server, tls, alpn, h2, http11);
+            if (http11 != null) {
+                serverConnector = new ServerConnector(server, tls, alpn, h2, http11);
+            } else {
+                serverConnector = new ServerConnector(server, tls, alpn, h2);
+            }
         } else {
             final HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(httpConfig);
             h2c.setRateControlFactory(new RateControl.Factory() {});
-            serverConnector = new ServerConnector(server, http11, h2c);
+            if (http11 != null) {
+                serverConnector = new ServerConnector(server, http11, h2c);
+            } else {
+                serverConnector = new ServerConnector(server, h2c);
+            }
         }
         config.host().ifPresent(serverConnector::setHost);
         serverConnector.setPort(config.port());
