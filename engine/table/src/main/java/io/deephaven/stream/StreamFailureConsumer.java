@@ -14,5 +14,5 @@ public interface StreamFailureConsumer {
      *
      * @param cause the cause of the error
      */
-    void acceptFailure(@NotNull Exception cause);
+    void acceptFailure(@NotNull Throwable cause);
 }
