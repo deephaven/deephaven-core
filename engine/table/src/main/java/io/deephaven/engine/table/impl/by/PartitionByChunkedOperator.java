@@ -108,7 +108,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
      * downstream modifies, because updates to constituents are <em>not</em> modifies to their rows in the aggregation
      * output table, but rather table updates to be propagated.
      * <p>
-     * This exists in each cycle between {@link IterativeChunkedAggregationOperator#resetForStep(TableUpdate)} and
+     * This exists in each cycle between {@link IterativeChunkedAggregationOperator#resetForStep(TableUpdate, int)} and
      * {@link IterativeChunkedAggregationOperator#propagateUpdates(TableUpdate, RowSet)}
      * <p>
      * If this ever becomes necessary in other operators, it could be moved out to the helper the way modified
@@ -540,7 +540,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream) {
+    public void resetForStep(@NotNull final TableUpdate upstream, int startingDestinationsCount) {
         stepUpdatedDestinations = RowSetFactory.empty();
         final boolean upstreamModified = upstream.modified().isNonempty() && upstream.modifiedColumnSet().nonempty();
         if (upstreamModified) {

@@ -268,10 +268,11 @@ class AggregationContext {
      * mutated in any way.
      *
      * @param upstream The upstream {@link TableUpdateImpl}
+     * @param startingDestinationsCount The number of used destinations at the beginning of this step
      */
-    void resetOperatorsForStep(@NotNull final TableUpdate upstream) {
+    void resetOperatorsForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
-            operator.resetForStep(upstream);
+            operator.resetForStep(upstream, startingDestinationsCount);
         }
     }
 

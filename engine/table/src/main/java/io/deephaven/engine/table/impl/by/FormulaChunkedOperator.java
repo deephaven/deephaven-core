@@ -308,9 +308,9 @@ class FormulaChunkedOperator implements StateChangeRecorder, IterativeChunkedAgg
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream) {
+    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         if (delegateToBy) {
-            groupBy.resetForStep(upstream);
+            groupBy.resetForStep(upstream, startingDestinationsCount);
         }
         updateUpstreamModifiedColumnSet =
                 upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet();
