@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
+import io.deephaven.util.datastructures.WeakIdentityHashSet;
 
 import java.io.IOException;
 
@@ -14,6 +15,7 @@ import java.io.IOException;
 public class AsyncClientErrorNotifier {
 
     private static volatile UpdateErrorReporter reporter = null;
+    private static final WeakIdentityHashSet<Throwable> knownErrors = new WeakIdentityHashSet.Synchronized<>();
 
     public static UpdateErrorReporter setReporter(UpdateErrorReporter reporter) {
         final UpdateErrorReporter old = AsyncClientErrorNotifier.reporter;
@@ -23,7 +25,7 @@ public class AsyncClientErrorNotifier {
 
     public static void reportError(Throwable t) throws IOException {
         final UpdateErrorReporter localReporter = reporter;
-        if (localReporter != null) {
+        if (localReporter != null && knownErrors.add(t)) {
             localReporter.reportUpdateError(t);
         }
     }
