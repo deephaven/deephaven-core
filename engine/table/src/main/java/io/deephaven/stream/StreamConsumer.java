@@ -20,6 +20,9 @@ public interface StreamConsumer extends StreamFailureConsumer {
      * {@link io.deephaven.chunk.util.pools.PoolableChunk#close close} each chunk when it's no longer needed.
      *
      * <p>
+     * Callers may ensure that {@code data} chunks are consumed at the same time by synchronizing on {@code this}.
+     *
+     * <p>
      * Implementations will generally have a mechanism for determining the expected number and type of input chunks, but
      * this is not dictated at the interface level.
      *
