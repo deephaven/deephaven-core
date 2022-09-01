@@ -36,8 +36,8 @@ public class TableWriteBenchmark {
             .mapToObj(c -> String.valueOf((char) c))
             .toArray(String[]::new);
 
-    //@Param({"UNCOMPRESSED", "SNAPPY", "GZIP"})
-    private String compressionCodec = "SNAPPY";
+    @Param({"UNCOMPRESSED", "SNAPPY", "GZIP"})
+    private String compressionCodec;
 
     private Table table;
     private SafeCloseable exContextCloseable;

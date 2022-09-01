@@ -63,7 +63,11 @@ public class DeephavenCompressorAdapterFactory {
 
     public static class CodecWrappingCompressorAdapter implements CompressorAdapter {
         private final CompressionCodec compressionCodec;
+
+        private boolean innerCompressorPooled;
         private Compressor innerCompressor;
+
+        public boolean innerDecompressorPooled;
         private Decompressor innerDecompressor;
 
         private CodecWrappingCompressorAdapter(CompressionCodec compressionCodec) {
@@ -75,7 +79,8 @@ public class DeephavenCompressorAdapterFactory {
         public OutputStream compress(OutputStream os) throws IOException {
             if(innerCompressor == null) {
                 innerCompressor = CodecPool.getCompressor(compressionCodec);
-                if(innerCompressor == null) {
+                innerCompressorPooled = innerCompressor != null;
+                if(!innerCompressorPooled) {
                     // Some compressors are allowed to declare they cannot be pooled.  If we fail to get one
                     // then fall back on just creating a new one to hang on to.
                     innerCompressor = compressionCodec.createCompressor();
@@ -103,6 +108,7 @@ public class DeephavenCompressorAdapterFactory {
                 throws IOException {
             if(innerDecompressor == null) {
                 innerDecompressor = CodecPool.getDecompressor(compressionCodec);
+                innerDecompressorPooled = innerDecompressor != null;
             }
 
             if (innerDecompressor != null) {
@@ -127,6 +133,17 @@ public class DeephavenCompressorAdapterFactory {
 
             if(innerDecompressor != null) {
                 innerDecompressor.reset();
+            }
+        }
+
+        @Override
+        public void close() {
+            if(innerCompressor != null && innerCompressorPooled) {
+                CodecPool.returnCompressor(innerCompressor);
+            }
+
+            if(innerDecompressor != null && innerDecompressorPooled) {
+                CodecPool.returnDecompressor(innerDecompressor);
             }
         }
     }

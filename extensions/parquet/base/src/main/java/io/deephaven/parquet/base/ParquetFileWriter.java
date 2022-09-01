@@ -84,6 +84,8 @@ public class ParquetFileWriter {
             serializeFooter(footer, os);
         }
         // os (and thus writeChannel) are closed at this point.
+
+        compressorAdapter.close();
     }
 
     private void serializeFooter(final ParquetMetadata footer, final OutputStream os) throws IOException {

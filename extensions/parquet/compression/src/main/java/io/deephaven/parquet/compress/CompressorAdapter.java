@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.compress;
 
+import io.deephaven.util.SafeCloseable;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
@@ -13,7 +14,7 @@ import java.io.OutputStream;
 /**
  * An Intermediate adapter interface between Deephaven column writing and parquet compression.
  */
-public interface CompressorAdapter {
+public interface CompressorAdapter extends SafeCloseable {
     /**
      * An {@link CompressorAdapter} instance that reads and writes uncompressed data directly.
      */
@@ -35,6 +36,11 @@ public interface CompressorAdapter {
 
         @Override
         public void reset() { }
+
+        @Override
+        public void close() {
+
+        }
     };
 
     /**
