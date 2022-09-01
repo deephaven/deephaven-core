@@ -562,8 +562,8 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final WritableColumnSource<?>[] keyColumnsCopied,
                 @NotNull final ModifiedColumnSet resultModifiedColumnSet,
                 @NotNull final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories) {
-            final int previousLastState = outputPosition.intValue();
-            ac.resetOperatorsForStep(upstream);
+            final int firstStateToAdd = outputPosition.intValue();
+            ac.resetOperatorsForStep(upstream, firstStateToAdd);
 
             if (upstream.removed().isNonempty()) {
                 doRemoves(upstream.removed());
@@ -660,7 +660,7 @@ public class ChunkedOperatorAggregationHelper {
             final TableUpdateImpl downstream = new TableUpdateImpl();
             downstream.shifted = RowSetShiftData.EMPTY;
 
-            try (final RowSet newStates = makeNewStatesRowSet(previousLastState, outputPosition.intValue() - 1)) {
+            try (final RowSet newStates = makeNewStatesRowSet(firstStateToAdd, outputPosition.intValue() - 1)) {
                 downstream.added = reincarnatedStatesBuilder.build();
                 downstream.removed = emptiedStatesBuilder.build();
 
@@ -1983,7 +1983,7 @@ public class ChunkedOperatorAggregationHelper {
                         }
 
                         private void processNoKeyUpdate(@NotNull final TableUpdate upstream) {
-                            ac.resetOperatorsForStep(upstream);
+                            ac.resetOperatorsForStep(upstream, 1);
 
                             final ModifiedColumnSet upstreamModifiedColumnSet =
                                     upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY

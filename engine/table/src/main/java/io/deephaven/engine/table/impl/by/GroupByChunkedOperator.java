@@ -330,7 +330,7 @@ public final class GroupByChunkedOperator
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream) {
+    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         stepValuesModified = upstream.modified().isNonempty() && upstream.modifiedColumnSet().nonempty()
                 && upstream.modifiedColumnSet().containsAny(resultInputsModifiedColumnSet);
         someKeyHasAddsOrRemoves = false;
