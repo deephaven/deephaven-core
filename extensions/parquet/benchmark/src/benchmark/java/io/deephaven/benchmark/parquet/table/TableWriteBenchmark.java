@@ -45,11 +45,13 @@ public class TableWriteBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv() throws IOException {
-        rootPath = Files.createTempDirectory(Paths.get(Configuration.getInstance().getWorkspacePath()), "TableWriteBenchmark");
+        rootPath = Files.createTempDirectory(Paths.get(Configuration.getInstance().getWorkspacePath()),
+                "TableWriteBenchmark");
         final ExecutionContext context = ExecutionContext.newBuilder()
                 .newQueryLibrary()
                 .newQueryScope()
-                .setCompilerContext(CompilerTools.newContext(rootPath.resolve("cache").toFile(), getClass().getClassLoader()))
+                .setCompilerContext(
+                        CompilerTools.newContext(rootPath.resolve("cache").toFile(), getClass().getClassLoader()))
                 .build();
         exContextCloseable = context.open();
 
@@ -60,8 +62,8 @@ public class TableWriteBenchmark {
         QueryLibrary library = context.getQueryLibrary();
         library.importClass(TestChunkedRegionedOperations.SimpleExternalizable.class);
         // Serializable is already very inefficient, however SNAPPY also has an O(n^2) block write pattern and compounds
-        //    the terribleness.  For now, we will exclude the serializable from the benchmark
-        //library.importClass(TestChunkedRegionedOperations.SimpleSerializable.class);
+        // the terribleness. For now, we will exclude the serializable from the benchmark
+        // library.importClass(TestChunkedRegionedOperations.SimpleSerializable.class);
         library.importClass(BigInteger.class);
 
         table = TableTools.emptyTable(1_000_000).updateView(
@@ -76,11 +78,10 @@ public class TableWriteBenchmark {
                 "Sym  = ii % 64    == 0  ? null        :         Long.toString(ii % 1000)",
                 "Str  = ii % 128   == 0  ? null        :         Long.toString(ii)",
                 "DT   = ii % 256   == 0  ? null        :         new DateTime(nowNanos + ii)",
-//                "Ser  = ii % 1024  == 0  ? null        : new SimpleSerializable(ii)",
+                // "Ser = ii % 1024 == 0 ? null : new SimpleSerializable(ii)",
                 "Ext  = ii % 1024  == 0  ? null        : new SimpleExternalizable(ii)",
                 "Fix  = ii % 64    == 0  ? null        : new BigInteger(Long.toString(ii % 1000), 10)",
-                "Var  = Str == null      ? null        : new BigInteger(Str, 10)"
-        );
+                "Var  = Str == null      ? null        : new BigInteger(Str, 10)");
     }
 
     @TearDown(Level.Trial)

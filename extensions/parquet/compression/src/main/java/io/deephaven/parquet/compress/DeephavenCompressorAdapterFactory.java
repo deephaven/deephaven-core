@@ -77,16 +77,16 @@ public class DeephavenCompressorAdapterFactory {
 
         @Override
         public OutputStream compress(OutputStream os) throws IOException {
-            if(innerCompressor == null) {
+            if (innerCompressor == null) {
                 innerCompressor = CodecPool.getCompressor(compressionCodec);
                 innerCompressorPooled = innerCompressor != null;
-                if(!innerCompressorPooled) {
-                    // Some compressors are allowed to declare they cannot be pooled.  If we fail to get one
+                if (!innerCompressorPooled) {
+                    // Some compressors are allowed to declare they cannot be pooled. If we fail to get one
                     // then fall back on just creating a new one to hang on to.
                     innerCompressor = compressionCodec.createCompressor();
                 }
 
-                if(innerCompressor == null) {
+                if (innerCompressor == null) {
                     return compressionCodec.createOutputStream(os);
                 }
 
@@ -106,7 +106,7 @@ public class DeephavenCompressorAdapterFactory {
         @Override
         public BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize)
                 throws IOException {
-            if(innerDecompressor == null) {
+            if (innerDecompressor == null) {
                 innerDecompressor = CodecPool.getDecompressor(compressionCodec);
                 innerDecompressorPooled = innerDecompressor != null;
             }
@@ -127,22 +127,22 @@ public class DeephavenCompressorAdapterFactory {
 
         @Override
         public void reset() {
-            if(innerCompressor != null) {
+            if (innerCompressor != null) {
                 innerCompressor.reset();
             }
 
-            if(innerDecompressor != null) {
+            if (innerDecompressor != null) {
                 innerDecompressor.reset();
             }
         }
 
         @Override
         public void close() {
-            if(innerCompressor != null && innerCompressorPooled) {
+            if (innerCompressor != null && innerCompressorPooled) {
                 CodecPool.returnCompressor(innerCompressor);
             }
 
-            if(innerDecompressor != null && innerDecompressorPooled) {
+            if (innerDecompressor != null && innerDecompressorPooled) {
                 CodecPool.returnDecompressor(innerDecompressor);
             }
         }
@@ -172,7 +172,7 @@ public class DeephavenCompressorAdapterFactory {
      * @return a compressor instance with a name matching the given codec.
      */
     public CompressorAdapter getByName(String codecName) {
-        if(codecName.equalsIgnoreCase("UNCOMPRESSED")) {
+        if (codecName.equalsIgnoreCase("UNCOMPRESSED")) {
             return CompressorAdapter.PASSTHRU;
         }
 

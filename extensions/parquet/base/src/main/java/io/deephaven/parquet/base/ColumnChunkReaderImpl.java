@@ -56,7 +56,8 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.path = type
                 .getColumnDescription(columnChunk.meta_data.getPath_in_schema().toArray(new String[0]));
         if (columnChunk.getMeta_data().isSetCodec()) {
-            decompressor = DeephavenCompressorAdapterFactory.getInstance().getByName(columnChunk.getMeta_data().getCodec().name());
+            decompressor = DeephavenCompressorAdapterFactory.getInstance()
+                    .getByName(columnChunk.getMeta_data().getCodec().name());
         } else {
             decompressor = CompressorAdapter.PASSTHRU;
         }
