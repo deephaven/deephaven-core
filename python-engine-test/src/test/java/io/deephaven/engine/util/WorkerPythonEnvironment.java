@@ -8,7 +8,6 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.integrations.python.PythonDeephavenSession;
-import io.deephaven.integrations.python.PythonLogAdapter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.context.QueryScope;
@@ -64,8 +63,6 @@ public enum WorkerPythonEnvironment {
                             "lead to unexpected errors")
                     .endl();
         }
-
-        PythonLogAdapter.interceptOutputStreams(evaluator);
 
         final String defaultScriptPath = Configuration.getInstance()
                 .getProperty("WorkerPythonEnvironment.defaultScriptPath")
