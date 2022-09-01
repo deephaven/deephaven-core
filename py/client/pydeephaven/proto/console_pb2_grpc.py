@@ -26,6 +26,11 @@ class ConsoleServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_console__pb2.StartConsoleRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_console__pb2.StartConsoleResponse.FromString,
                 )
+        self.GetHeapInfo = channel.unary_unary(
+                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetHeapInfo',
+                request_serializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoResponse.FromString,
+                )
         self.SubscribeToLogs = channel.unary_stream(
                 '/io.deephaven.proto.backplane.script.grpc.ConsoleService/SubscribeToLogs',
                 request_serializer=deephaven_dot_proto_dot_console__pb2.LogSubscriptionRequest.SerializeToString,
@@ -75,6 +80,12 @@ class ConsoleServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def StartConsole(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetHeapInfo(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -144,6 +155,11 @@ def add_ConsoleServiceServicer_to_server(servicer, server):
                     servicer.StartConsole,
                     request_deserializer=deephaven_dot_proto_dot_console__pb2.StartConsoleRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_console__pb2.StartConsoleResponse.SerializeToString,
+            ),
+            'GetHeapInfo': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetHeapInfo,
+                    request_deserializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoResponse.SerializeToString,
             ),
             'SubscribeToLogs': grpc.unary_stream_rpc_method_handler(
                     servicer.SubscribeToLogs,
@@ -223,6 +239,23 @@ class ConsoleService(object):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/StartConsole',
             deephaven_dot_proto_dot_console__pb2.StartConsoleRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.StartConsoleResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetHeapInfo(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetHeapInfo',
+            deephaven_dot_proto_dot_console__pb2.GetHeapInfoRequest.SerializeToString,
+            deephaven_dot_proto_dot_console__pb2.GetHeapInfoResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

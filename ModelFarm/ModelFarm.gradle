@@ -4,22 +4,27 @@
 
 plugins {
     id 'io.deephaven.project.register'
+    id 'java-library'
 }
 
 configurations {
-    testCompile.extendsFrom fishBaseTest
+    testImplementation.extendsFrom fishBaseTest
 }
 
 dependencies {
-    compile project(':engine-table')
+    api project(':engine-table')
+    api project(':engine-time')
 
-    runtime project(':configs')
+    implementation project(':Configuration')
+    implementation project(':log-factory')
 
-    testCompile TestTools.projectDependency(project, 'engine-table')
-    testRuntime project(':Numerics')
+    runtimeOnly project(':configs')
 
-    testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
+    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testRuntimeOnly project(':Numerics')
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }

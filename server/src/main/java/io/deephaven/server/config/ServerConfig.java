@@ -62,7 +62,8 @@ public interface ServerConfig {
      * </tr>
      * </table>
      *
-     * Also parses {@link Main#parseSSLConfig(Configuration)} into {@link Builder#ssl(SSLConfig)}.
+     * Also parses {@link Main#parseSSLConfig(Configuration)} into {@link Builder#ssl(SSLConfig)} and
+     * {@link Main#parseOutboundSSLConfig(Configuration)} into {@link Builder#outboundSsl(SSLConfig)}.
      *
      * @param builder the builder
      * @param config the configuration
@@ -92,6 +93,7 @@ public interface ServerConfig {
             builder.maxInboundMessageSize(maxInboundMessageSize);
         }
         Main.parseSSLConfig(config).ifPresent(builder::ssl);
+        Main.parseOutboundSSLConfig(config).ifPresent(builder::outboundSsl);
         return builder;
     }
 
@@ -110,6 +112,11 @@ public interface ServerConfig {
      * The optional SSL configuration.
      */
     Optional<SSLConfig> ssl();
+
+    /**
+     * The optional outbound SSL configuration.
+     */
+    Optional<SSLConfig> outboundSsl();
 
     /**
      * The token expiration. Defaults to {@value DEFAULT_TOKEN_EXPIRE_MIN} minutes.
@@ -141,6 +148,8 @@ public interface ServerConfig {
         B port(int port);
 
         B ssl(SSLConfig ssl);
+
+        B outboundSsl(SSLConfig outboundSsl);
 
         B tokenExpire(Duration duration);
 

@@ -13,26 +13,20 @@ import java.util.List;
 
 public interface ApplicationConfig {
 
-    /**
-     * True if application mode is enabled; set system property {@link ApplicationConfigImpl#APPLICATION_DIR_PROP} to
-     * enable.
-     *
-     * @return true if application mode is enabled
-     */
-    static boolean isApplicationModeEnabled() {
+    static boolean isCustomApplicationModeEnabled() {
         return ApplicationConfigImpl.APPLICATION_DIR != null;
     }
 
     /**
-     * The application directory. Application mode must be enabled.
+     * The custom application directory. Custom application mode must be enabled.
      *
      * @return the application dir
-     * @see #isApplicationModeEnabled()
+     * @see #isCustomApplicationModeEnabled()
      */
-    static Path applicationDir() {
-        if (!isApplicationModeEnabled()) {
+    static Path customApplicationDir() {
+        if (!isCustomApplicationModeEnabled()) {
             throw new IllegalStateException(
-                    String.format("Application mode is not enabled, please set system property '%s'",
+                    String.format("Custom application mode is not enabled, please set system property '%s'",
                             ApplicationConfigImpl.APPLICATION_DIR_PROP));
         }
         final Path applicationDir;
@@ -57,7 +51,7 @@ public interface ApplicationConfig {
      * @throws ClassNotFoundException on class not found
      */
     static List<ApplicationConfig> find() throws IOException, ClassNotFoundException {
-        return ApplicationConfigImpl.find(applicationDir());
+        return ApplicationConfigImpl.find(customApplicationDir());
     }
 
     /**

@@ -177,10 +177,4 @@ public class StringUtils {
 
         return buf.toString();
     }
-
-    public static Collection<String> splitToCollection(String string) {
-        return string.trim().isEmpty() ? Collections.emptyList()
-                : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())
-                        .collect(Collectors.toList());
-    }
 }

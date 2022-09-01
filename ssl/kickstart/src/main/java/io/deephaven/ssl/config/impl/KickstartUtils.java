@@ -53,18 +53,7 @@ public class KickstartUtils {
         config.trust().ifPresent(trust -> addTrust(builder, trust));
         config.protocols().ifPresent(protocols -> addProtocols(builder, protocols));
         config.ciphers().ifPresent(ciphers -> addCiphers(builder, ciphers));
-        switch (config.clientAuthentication()) {
-            case WANTED:
-                builder.withWantClientAuthentication();
-                break;
-            case NEEDED:
-                builder.withNeedClientAuthentication();
-                break;
-            case NONE:
-                break;
-            default:
-                throw new IllegalStateException("Unexpected client auth: " + config.clientAuthentication());
-        }
+        config.clientAuthentication().ifPresent(clientAuth -> addClientAuth(builder, clientAuth));
         return builder.build();
     }
 
@@ -237,6 +226,21 @@ public class KickstartUtils {
                 return null;
             }
         });
+    }
+
+    private static void addClientAuth(SSLFactory.Builder builder, SSLConfig.ClientAuth auth) {
+        switch (auth) {
+            case NONE:
+                break;
+            case WANTED:
+                builder.withWantClientAuthentication();
+                break;
+            case NEEDED:
+                builder.withNeedClientAuthentication();
+                break;
+            default:
+                throw new IllegalStateException("Unexpected client auth: " + auth);
+        }
     }
 
     private static void addIdentity(SSLFactory.Builder builder, IdentityKeyStore config) {

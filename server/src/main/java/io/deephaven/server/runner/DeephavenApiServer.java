@@ -12,9 +12,9 @@ import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.server.plugin.PluginRegistration;
 import io.deephaven.server.appmode.ApplicationInjector;
 import io.deephaven.server.log.LogInit;
+import io.deephaven.server.plugin.PluginRegistration;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.uri.resolver.UriResolver;
 import io.deephaven.uri.resolver.UriResolvers;
@@ -108,6 +108,7 @@ public class DeephavenApiServer {
         AbstractScriptSession.createScriptCache();
 
         log.info().append("Initializing Script Session...").endl();
+
         scriptSessionProvider.get();
         pluginRegistration.registerAll();
 
@@ -133,7 +134,6 @@ public class DeephavenApiServer {
         log.info().append("Starting server...").endl();
         server.start();
         log.info().append("Server started on port ").append(server.getPort()).endl();
-
         return this;
     }
 
@@ -149,7 +149,7 @@ public class DeephavenApiServer {
 
     void startForUnitTests() throws Exception {
         pluginRegistration.registerAll();
-
+        applicationInjector.run();
         log.info().append("Starting server...").endl();
         server.start();
     }

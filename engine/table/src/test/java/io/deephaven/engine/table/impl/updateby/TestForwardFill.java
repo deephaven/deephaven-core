@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.api.updateby.UpdateByClause;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
@@ -37,7 +37,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, true, false, false, 0x507A70,
                 new String[] {"charCol"}, new TstUtils.Generator[] {new TstUtils.CharGenerator('A', 'Z', .1)}).t;
 
-        final Table filled = t.updateBy(UpdateByClause.Fill());
+        final Table filled = t.updateBy(UpdateByOperation.Fill());
         for (String col : t.getDefinition().getColumnNamesArray()) {
             assertWithForwardFill(t.getColumn(col).getDirect(), filled.getColumn(col).getDirect());
         }
@@ -50,7 +50,7 @@ public class TestForwardFill extends BaseUpdateByTest {
                 stringCol("Sentinel", null, null, null, "G", "H", null, "K", "L"),
                 intCol("Val", 1, 3, 5, NULL_INT, NULL_INT, 9, 10, NULL_INT));
 
-        final Table result = src.updateBy(UpdateByClause.Fill());
+        final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
         validator.getResultTable().listenForUpdates(failureListener);
@@ -108,7 +108,7 @@ public class TestForwardFill extends BaseUpdateByTest {
                 stringCol("Sentinel", null, null, null, "G", "H", null, "K", "L"),
                 intCol("Val", 1, 3, 5, NULL_INT, NULL_INT, 9, 10, NULL_INT));
 
-        final Table result = src.updateBy(UpdateByClause.Fill());
+        final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
         validator.getResultTable().listenForUpdates(failureListener);
@@ -160,7 +160,7 @@ public class TestForwardFill extends BaseUpdateByTest {
                 stringCol("Sentinel", null, null, null, "G", "H", null, "time toK", "L"),
                 intCol("Val", 1, 3, 5, NULL_INT, NULL_INT, 9, 10, NULL_INT));
 
-        final Table result = src.updateBy(UpdateByClause.Fill());
+        final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
         validator.getResultTable().listenForUpdates(failureListener);
@@ -232,7 +232,7 @@ public class TestForwardFill extends BaseUpdateByTest {
                 stringCol("Sentinel", "A", "B", "C", "D", "E", null, "G"),
                 intCol("Val", 0, 1, 2, 3, 4, 5, 6));
 
-        final Table result = src.updateBy(UpdateByClause.Fill());
+        final Table result = src.updateBy(UpdateByOperation.Fill());
         updateAndValidate(src, result, () -> {
             final RowSet idx = i(2, 3, 4);
             addToTable(src, idx,
@@ -259,12 +259,12 @@ public class TestForwardFill extends BaseUpdateByTest {
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.updateBy(UpdateByClause.Fill());
+                        return queryTable.updateBy(UpdateByOperation.Fill());
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return ((TableWithDefaults) queryTable.sort("intCol")).updateBy(UpdateByClause.Fill());
+                        return ((TableDefaults) queryTable.sort("intCol")).updateBy(UpdateByOperation.Fill());
                     }
                 },
         };
@@ -328,7 +328,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, true, false, false, 0x507A70,
                 new String[] {"charCol"}, new Generator[] {new CharGenerator('A', 'Z', .1)}).t;
 
-        final Table filled = t.updateBy(UpdateByClause.Fill(), "Sym");
+        final Table filled = t.updateBy(UpdateByOperation.Fill(), "Sym");
 
         final PartitionedTable preOp = t.partitionBy("Sym");
         final PartitionedTable postOp = filled.partitionBy("Sym");
@@ -349,7 +349,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, true, true, false, 0x507A70,
                 new String[] {"charCol"}, new Generator[] {new CharGenerator('A', 'Z', .1)}).t;
 
-        final Table filled = t.updateBy(UpdateByClause.Fill(), "Sym");
+        final Table filled = t.updateBy(UpdateByOperation.Fill(), "Sym");
 
         final PartitionedTable preOp = t.partitionBy("Sym");
         final PartitionedTable postOp = filled.partitionBy("Sym");
@@ -385,8 +385,8 @@ public class TestForwardFill extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return bucketed ? t.updateBy(UpdateByClause.Fill(), "Sym")
-                                : t.updateBy(UpdateByClause.Fill());
+                        return bucketed ? t.updateBy(UpdateByOperation.Fill(), "Sym")
+                                : t.updateBy(UpdateByOperation.Fill());
                     }
                 }
         };

@@ -5,6 +5,7 @@ package io.deephaven.jpy;
 
 import io.deephaven.jpy.JpyConfigSource.FromProperties;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -89,7 +90,7 @@ public final class JpyConfigFromSubprocess {
             }
             // We need to also close the stream to let python know it can start processing script
             try (OutputStream out = process.getOutputStream()) {
-                in.transferTo(out);
+                transferTo(in, out);
             } catch (Throwable t) {
                 process.destroy();
                 throw t;
@@ -105,7 +106,7 @@ public final class JpyConfigFromSubprocess {
         }
         final int exitValue = process.exitValue();
         if (exitValue != 0) {
-            final String error = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
+            final String error = readAllBytes(process.getErrorStream());
             if (error.contains("ModuleNotFoundError: No module named 'jpyutil'")) {
                 throw new IllegalStateException(
                         String.format("A Deephaven python environment has not been configured for '%s'. " +
@@ -118,5 +119,23 @@ public final class JpyConfigFromSubprocess {
         final Properties properties = new Properties();
         properties.load(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
         return properties;
+    }
+
+    private static void transferTo(InputStream in, OutputStream out) throws IOException {
+        // Requires language level > 8
+        // in.transferTo(out);
+        byte[] buffer = new byte[8192];
+        int read;
+        while ((read = in.read(buffer, 0, buffer.length)) != -1) {
+            out.write(buffer, 0, read);
+        }
+    }
+
+    private static String readAllBytes(InputStream in) throws IOException {
+        // Requires language level > 8
+        // return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
+        transferTo(in, out);
+        return out.toString("UTF-8");
     }
 }

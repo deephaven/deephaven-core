@@ -3,20 +3,21 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.iterators.*;
-import io.deephaven.engine.updategraph.ConcurrentMethod;
+import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,7 +31,7 @@ import java.util.function.Function;
  * Abstract class for uncoalesced tables. These tables have deferred work that must be done before data can be operated
  * on.
  */
-public abstract class UncoalescedTable extends BaseTable implements TableWithDefaults {
+public abstract class UncoalescedTable extends BaseTable {
 
     private final Object coalescingLock = new Object();
 
@@ -344,21 +345,15 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public Table groupBy(Collection<? extends Selectable> groupByColumns) {
-        return coalesce().groupBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public Table aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return coalesce().aggAllBy(spec, groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table aggBy(Collection<? extends Aggregation> aggregations,
-            Collection<? extends Selectable> groupByColumns) {
-        return coalesce().aggBy(aggregations, groupByColumns);
+    public Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups,
+            Collection<? extends ColumnName> groupByColumns) {
+        return coalesce().aggBy(aggregations, preserveEmpty, initialGroups, groupByColumns);
     }
 
     @Override
@@ -369,91 +364,6 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     @Override
     public Table tailBy(long nRows, String... groupByColumnNames) {
         return coalesce().tailBy(nRows, groupByColumnNames);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table applyToAllBy(String formulaColumn, String columnParamName,
-            Collection<? extends Selectable> groupByColumns) {
-        return coalesce().applyToAllBy(formulaColumn, columnParamName, groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table sumBy(Selectable... groupByColumns) {
-        return coalesce().sumBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table absSumBy(Selectable... groupByColumns) {
-        return coalesce().absSumBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table avgBy(Selectable... groupByColumns) {
-        return coalesce().avgBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table wavgBy(String weightColumn, Selectable... groupByColumns) {
-        return coalesce().wavgBy(weightColumn, groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table wsumBy(String weightColumn, Selectable... groupByColumns) {
-        return coalesce().wsumBy(weightColumn, groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table stdBy(Selectable... groupByColumns) {
-        return coalesce().stdBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table varBy(Selectable... groupByColumns) {
-        return coalesce().varBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table lastBy(Selectable... groupByColumns) {
-        return coalesce().lastBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table firstBy(Selectable... groupByColumns) {
-        return coalesce().firstBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table minBy(Selectable... groupByColumns) {
-        return coalesce().minBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table maxBy(Selectable... groupByColumns) {
-        return coalesce().maxBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table medianBy(Selectable... groupByColumns) {
-        return coalesce().medianBy(groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table countBy(String countColumnName, Selectable... groupByColumns) {
-        return coalesce().countBy(countColumnName, groupByColumns);
     }
 
     @Override
@@ -469,9 +379,16 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
+    public PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
+            Table initialGroups, String... keyColumnNames) {
+        return coalesce().partitionedAggBy(aggregations, preserveEmpty, initialGroups, keyColumnNames);
+    }
+
+    @Override
+    @ConcurrentMethod
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Selectable... columns) {
-        return coalesce().rollup(aggregations, includeConstituents, columns);
+            ColumnName... groupByColumns) {
+        return coalesce().rollup(aggregations, includeConstituents, groupByColumns);
     }
 
     @Override
@@ -483,8 +400,8 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     @Override
     @ConcurrentMethod
     public Table updateBy(@NotNull final UpdateByControl control,
-            @NotNull final Collection<? extends UpdateByClause> ops,
-            @NotNull final Collection<? extends Selectable> byColumns) {
+            @NotNull final Collection<? extends UpdateByOperation> ops,
+            @NotNull final Collection<? extends ColumnName> byColumns) {
         return UpdateBy.updateBy((QueryTable) this.coalesce(), ops, byColumns, control);
     }
 

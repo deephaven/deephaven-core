@@ -7,6 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
@@ -15,6 +16,7 @@ import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -26,16 +28,8 @@ import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
 
 @Category(SerialTest.class)
 public class MultiColumnSortTest {
-    @Before
-    public void setUp() {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-    }
-
-    @After
-    public void teardown() {
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
-    }
+    @Rule
+    public EngineCleanup framework = new EngineCleanup();
 
     @Test
     public void testMultiColumnSort() {

@@ -2,7 +2,6 @@
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 /*
-import java.util.Objects;
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit BaseTestCharTimSortKernel and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
@@ -74,6 +73,13 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
         void check(List<ObjectLongTuple> expected) {
             verify(expected.size(), expected, ObjectChunk, rowKeys);
         }
+
+        @Override
+        public void close() {
+            super.close();
+            ObjectChunk.close();
+            context.close();
+        }
     }
 
     public static class ObjectPartitionKernelStuff extends PartitionKernelStuff<ObjectLongTuple> {
@@ -118,6 +124,14 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
         @Override
         void check(List<ObjectLongTuple> expected) {
             verifyPartition(context, rowSet, expected.size(), expected, valuesChunk, rowKeys, columnSource);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            valuesChunk.close();
+            context.close();
+            rowSet.close();
         }
     }
 
@@ -242,6 +256,20 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
         @Override
         void check(List<ObjectLongLongTuple> expected) {
             verify(expected.size(), expected, primaryChunk, secondaryChunk, rowKeys);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            primaryChunk.close();
+            secondaryChunk.close();
+            secondaryChunkPermuted.close();
+            sortIndexContext.close();
+            indicesToFetch.close();
+            originalPositions.close();
+            context.close();
+            secondarySortContext.close();
+            secondaryColumnSourceContext.close();
         }
     }
 

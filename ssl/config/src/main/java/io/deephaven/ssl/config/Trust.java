@@ -33,6 +33,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 public interface Trust {
     <T> T walk(Visitor<T> visitor);
 
+    boolean contains(Trust trust);
+
+    Trust or(Trust other);
+
     interface Visitor<T> {
         T visit(TrustStore trustStore);
 

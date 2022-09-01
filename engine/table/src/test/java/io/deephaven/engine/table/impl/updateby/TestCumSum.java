@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.api.updateby.UpdateByClause;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.function.Numeric;
@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
@@ -36,7 +37,7 @@ public class TestCumSum extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, false, false, false, 0x31313131).t;
         t.setRefreshing(false);
 
-        final Table summed = t.updateBy(UpdateByClause.CumSum());
+        final Table summed = t.updateBy(UpdateByOperation.CumSum());
         for (String col : t.getDefinition().getColumnNamesArray()) {
             assertWithCumSum(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
                     summed.getColumn(col).getType());
@@ -49,12 +50,12 @@ public class TestCumSum extends BaseUpdateByTest {
 
     @Test
     public void testNullOnBucketChange() throws IOException {
-        final TableWithDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
+        final TableDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
                 byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
                 shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
                 intCol("IntVal", 1, 2, NULL_INT, 3));
 
-        final TableWithDefaults expected = testTable(stringCol("Sym", "A", "A", "B", "B"),
+        final TableDefaults expected = testTable(stringCol("Sym", "A", "A", "B", "B"),
                 byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
                 shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
                 intCol("IntVal", 1, 2, NULL_INT, 3),
@@ -62,10 +63,10 @@ public class TestCumSum extends BaseUpdateByTest {
                 longCol("ShortValSum", 1, 3, NULL_LONG, 3),
                 longCol("IntValSum", 1, 3, NULL_LONG, 3));
 
-        final Table r = t.updateBy(UpdateByClause.of(
-                UpdateByClause.CumSum("ByteValSum=ByteVal"),
-                UpdateByClause.CumSum("ShortValSum=ShortVal"),
-                UpdateByClause.CumSum("IntValSum=IntVal")), "Sym");
+        final Table r = t.updateBy(List.of(
+                UpdateByOperation.CumSum("ByteValSum=ByteVal"),
+                UpdateByOperation.CumSum("ShortValSum=ShortVal"),
+                UpdateByOperation.CumSum("IntValSum=IntVal")), "Sym");
 
         assertTableEquals(expected, r);
     }
@@ -83,7 +84,7 @@ public class TestCumSum extends BaseUpdateByTest {
     private void doTestStaticBucketed(boolean grouped) {
         final QueryTable t = createTestTable(100000, true, grouped, false, 0x31313131).t;
 
-        final Table summed = t.updateBy(UpdateByClause.CumSum("byteCol", "shortCol", "intCol", "longCol", "floatCol",
+        final Table summed = t.updateBy(UpdateByOperation.CumSum("byteCol", "shortCol", "intCol", "longCol", "floatCol",
                 "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
 
@@ -125,8 +126,8 @@ public class TestCumSum extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return bucketed ? t.updateBy(UpdateByClause.CumSum(), "Sym")
-                                : t.updateBy(UpdateByClause.CumSum());
+                        return bucketed ? t.updateBy(UpdateByOperation.CumSum(), "Sym")
+                                : t.updateBy(UpdateByOperation.CumSum());
                     }
                 }
         };
@@ -147,7 +148,7 @@ public class TestCumSum extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByClause.CumSum());
+                        return t.updateBy(UpdateByOperation.CumSum());
                     }
                 }
         };
@@ -169,7 +170,7 @@ public class TestCumSum extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByClause.CumSum(), "Sym");
+                        return t.updateBy(UpdateByOperation.CumSum(), "Sym");
                     }
                 }
         };
@@ -321,7 +322,7 @@ public class TestCumSum extends BaseUpdateByTest {
                 result[i] = result[i - 1];
             } else if (isBD) {
                 result[i] = ((BigDecimal) result[i - 1]).add((BigDecimal) values[i],
-                        UpdateByControl.defaultInstance().mathContext());
+                        UpdateByControl.mathContextDefault());
             } else {
                 result[i] = ((BigInteger) result[i - 1]).add((BigInteger) values[i]);
             }

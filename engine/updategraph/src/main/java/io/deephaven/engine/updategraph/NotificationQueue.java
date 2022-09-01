@@ -4,6 +4,7 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,7 +21,7 @@ public interface NotificationQueue {
          * Terminal notifications guarantee that they will not queue additional notifications or mutate data structures
          * that should result in additional notifications. They are in turn guaranteed to be called after all
          * non-terminal notifications for a given cycle through the notification queue.
-         * 
+         *
          * @return True iff this notification is terminal.
          */
         boolean isTerminal();
@@ -42,6 +43,23 @@ public interface NotificationQueue {
          * @return true if this notification can be executed, false if it has unmet dependencies
          */
         boolean canExecute(long step);
+
+        /**
+         * @return the execution context this notification should be run under
+         */
+        ExecutionContext getExecutionContext();
+
+        /**
+         * Run under the execution context.
+         */
+        default void runInContext() {
+            ExecutionContext executionContext = getExecutionContext();
+            if (executionContext != null) {
+                executionContext.apply(this);
+            } else {
+                this.run();
+            }
+        }
     }
 
     /**

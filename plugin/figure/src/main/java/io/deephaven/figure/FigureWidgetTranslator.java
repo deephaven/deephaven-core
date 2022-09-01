@@ -20,7 +20,7 @@ import io.deephaven.plot.axistransformations.AxisTransformBusinessCalendar;
 import io.deephaven.plot.datasets.AbstractDataSeries;
 import io.deephaven.plot.datasets.category.AbstractCategoryDataSeries;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesMap;
-import io.deephaven.plot.datasets.category.CategoryTreeMapDataSeriesTableMap;
+import io.deephaven.plot.datasets.category.CategoryTreemapDataSeriesTableMap;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesPartitionedTable;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesSwappablePartitionedTable;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
@@ -355,24 +355,30 @@ public class FigureWidgetTranslator {
                                             makeSourceDescriptor(series.getSwappableTable(), series.getNumericCol(),
                                                     numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
 
-                                } else if (s instanceof CategoryTreeMapDataSeriesTableMap) {
-                                    CategoryTreeMapDataSeriesTableMap series = (CategoryTreeMapDataSeriesTableMap) s;
+                                } else if (s instanceof CategoryTreemapDataSeriesTableMap) {
+                                    CategoryTreemapDataSeriesTableMap series = (CategoryTreemapDataSeriesTableMap) s;
                                     clientAxes
                                             .add(makeSourceDescriptor(series.getTableHandle(), series.getCategoryCol(),
                                                     catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getValueCol(),
-                                            numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
-
                                     clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
                                             series.getParentColumn(), SourceType.PARENT, null));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
-                                            series.getLabelColumn(), SourceType.LABEL, null));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
-                                            series.getColorColumn(), SourceType.COLOR, null));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
-                                            series.getHoverTextColumn(), SourceType.HOVER_TEXT, null));
-                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
-                                            series.getTextColumn(), SourceType.TEXT, null));
+                                    if (series.getValueCol() != null) {
+                                        clientAxes
+                                                .add(makeSourceDescriptor(series.getTableHandle(), series.getValueCol(),
+                                                        numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
+                                    }
+                                    if (series.getLabelColumn() != null) {
+                                        clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                                series.getLabelColumn(), SourceType.LABEL, null));
+                                    }
+                                    if (series.getColorColumn() != null) {
+                                        clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                                series.getColorColumn(), SourceType.COLOR, null));
+                                    }
+                                    if (series.getHoverTextColumn() != null) {
+                                        clientAxes.add(makeSourceDescriptor(series.getTableHandle(),
+                                                series.getHoverTextColumn(), SourceType.HOVER_TEXT, null));
+                                    }
                                 } else if (s instanceof CategoryDataSeriesMap) {// bar and plot from constant data
                                     errorList.add("OpenAPI presently does not support series of type " + s.getClass());
                                 }

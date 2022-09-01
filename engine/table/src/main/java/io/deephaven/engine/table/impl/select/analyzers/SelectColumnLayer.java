@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.ObjectChunkIterator;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
@@ -19,6 +20,7 @@ import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -40,6 +42,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
      * The same reference as super.columnSource, but as a WritableColumnSource and maybe reinterpretted
      */
     private final WritableColumnSource writableSource;
+
+    /**
+     * The execution context the select column layer was constructed in
+     */
+    private final ExecutionContext executionContext;
+
     /**
      * Our parent row set, used for ensuring capacity.
      */
@@ -70,6 +78,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.parentRowSet = parentRowSet;
         this.writableSource = (WritableColumnSource) ReinterpretUtils.maybeConvertToPrimitive(ws);
         this.isRedirected = isRedirected;
+        this.executionContext = ExecutionContext.getContextToRecord();
 
         dependencyBitSet = new BitSet();
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
@@ -172,11 +181,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                 throw new IllegalStateException();
                             }
 
-                            jobScheduler.submit(() -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
-                                    liveResultOwner, onCompletion, this::onError, updates),
+                            jobScheduler.submit(
+                                    executionContext,
+                                    () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
+                                            liveResultOwner, onCompletion, this::onError, updates),
                                     SelectColumnLayer.this, this::onError);
                         } else {
                             jobScheduler.submit(
+                                    executionContext,
                                     () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion),
                                     SelectColumnLayer.this, this::onError);
                         }
@@ -204,6 +216,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         for (TableUpdate splitUpdate : splitUpdates) {
             final long fdest = destinationOffset;
             jobScheduler.submit(
+                    executionContext,
                     () -> doParallelApplyUpdate(splitUpdate, toClear, helper, liveResultOwner, onCompletion,
                             checkTableOperations, divisions, fdest),
                     SelectColumnLayer.this, onError);
@@ -419,6 +432,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         return null;
     }
 
+    private static void maybeManage(
+            @NotNull final LivenessNode liveResultOwner,
+            @Nullable final LivenessReferent value) {
+        if (value != null && DynamicNode.notDynamicOrIsRefreshing(value)) {
+            liveResultOwner.manage(value);
+        }
+    }
+
     private <CT extends Chunk<?>> CT maybeManageAdds(
             @NotNull final CT resultChunk,
             @Nullable final LivenessNode liveResultOwner) {
@@ -427,7 +448,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                     resultChunk.asObjectChunk().asTypedObjectChunk();
             final int chunkSize = typedChunk.size();
             for (int ii = 0; ii < chunkSize; ++ii) {
-                liveResultOwner.manage(typedChunk.get(ii));
+                maybeManage(liveResultOwner, typedChunk.get(ii));
             }
         }
         return resultChunk;
@@ -468,7 +489,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 prevModifiedResults.set(ci, null);
                 ++sameCount;
             } else {
-                liveResultOwner.manage(typedModifiedResults.get(ci));
+                maybeManage(liveResultOwner, typedModifiedResults.get(ci));
             }
         }
         if (prevModifiedResults.size() == sameCount) {
@@ -498,7 +519,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         liveResultOwner.tryUnmanage(prevValueChunksToUnmanage.stream()
                 .flatMap(pvc -> StreamSupport.stream(Spliterators.spliterator(
                         new ObjectChunkIterator<>(pvc), pvc.size(), Spliterator.ORDERED), false))
-                .filter(Objects::nonNull));
+                .filter(Objects::nonNull)
+                .filter(DynamicNode::notDynamicOrIsRefreshing));
         prevValueChunksToUnmanage.forEach(SafeCloseable::closeSingle);
         prevValueChunksToUnmanage.clear();
     }

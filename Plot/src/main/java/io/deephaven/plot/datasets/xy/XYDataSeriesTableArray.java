@@ -3,18 +3,15 @@
  */
 package io.deephaven.plot.datasets.xy;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.SeriesInternal;
-import io.deephaven.plot.datasets.ColumnNameConstants;
 import io.deephaven.plot.datasets.data.IndexableNumericDataTable;
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.util.ArgumentValidations;
-import io.deephaven.plot.util.functions.FigureImplFunction;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.gui.color.Paint;
+import io.deephaven.engine.context.QueryScope;
 
 import java.util.function.Function;
 
@@ -51,7 +48,7 @@ public class XYDataSeriesTableArray extends XYDataSeriesArray implements SeriesI
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";
         QueryScope.addParam(queryFunction, function);
-        QueryLibrary.importClass(resultClass);
+        ExecutionContext.getContext().getQueryLibrary().importClass(resultClass);
         return t.update(
                 columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction + ".apply(" + onColumn + ")");
     }

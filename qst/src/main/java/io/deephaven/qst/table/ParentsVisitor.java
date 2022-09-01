@@ -243,13 +243,22 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
+    public void visit(LazyUpdateTable lazyUpdateTable) {
+        out = single(lazyUpdateTable);
+    }
+
+    @Override
     public void visit(AggregateAllByTable aggAllByTable) {
         out = single(aggAllByTable);
     }
 
     @Override
     public void visit(AggregationTable aggregationTable) {
-        out = single(aggregationTable);
+        if (aggregationTable.initialGroups().isPresent()) {
+            out = Stream.of(aggregationTable.initialGroups().get(), aggregationTable.parent());
+        } else {
+            out = Stream.of(aggregationTable.parent());
+        }
     }
 
     @Override

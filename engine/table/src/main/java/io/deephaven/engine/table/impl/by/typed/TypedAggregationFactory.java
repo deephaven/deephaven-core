@@ -24,21 +24,10 @@ public class TypedAggregationFactory {
     public static void buildInsertIncremental(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         buildInsertCommon(hasherConfig, builder);
         builder.addStatement("outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation)");
-        builder.addStatement("rowCountSource.set(outputPosition, 1L)");
     }
 
     public static void probeFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
         builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
-    }
-
-    public static void removeProbeFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
-        probeFound(hasherConfig, alternate, builder);
-
-        builder.addStatement("final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, -1)");
-        builder.addStatement("Assert.gtZero(oldRowCount, \"oldRowCount\")");
-        builder.beginControlFlow("if (oldRowCount == 1)");
-        builder.addStatement("emptiedPositions.add(outputPosition)");
-        builder.endControlFlow();
     }
 
     public static void probeMissing(CodeBlock.Builder builder) {
@@ -47,26 +36,6 @@ public class TypedAggregationFactory {
 
     static void buildFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
         builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
-    }
-
-    private static void buildFoundIncremental(HasherConfig<?> hasherConfig, boolean alternate,
-            CodeBlock.Builder builder) {
-        buildFound(hasherConfig, alternate, builder);
-        builder.addStatement("final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, 1)");
-    }
-
-    static void buildFoundIncrementalInitial(HasherConfig<?> hasherConfig, boolean alternate,
-            CodeBlock.Builder builder) {
-        buildFoundIncremental(hasherConfig, alternate, builder);
-        builder.addStatement("Assert.gtZero(oldRowCount, \"oldRowCount\")");
-    }
-
-    static void buildFoundIncrementalUpdate(HasherConfig<?> hasherConfig, boolean alternate,
-            CodeBlock.Builder builder) {
-        buildFoundIncremental(hasherConfig, alternate, builder);
-        builder.beginControlFlow("if (oldRowCount == 0)");
-        builder.addStatement("reincarnatedPositions.add(outputPosition)");
-        builder.endControlFlow();
     }
 
     private static void buildInsertCommon(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
@@ -83,7 +52,6 @@ public class TypedAggregationFactory {
         builder.addStatement(
                 "outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationTableLocation)");
     }
-
 
     @NotNull
     public static MethodSpec createFindPositionForKey(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {

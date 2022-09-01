@@ -16,10 +16,15 @@ dependencies {
     api 'org.apache.kafka:kafka-clients:7.1.1-ccs'
     api 'io.confluent:kafka-avro-serializer:7.1.1'
 
+    implementation project(':Configuration')
+    implementation project(':log-factory')
+    implementation depTrove3
+    implementation depCommonsLang3
+
     Classpaths.inheritImmutables(project)
 
-    testImplementation TestTools.projectDependency(project, 'engine-table'),
-            'junit:junit:4.13.2'
+    testImplementation TestTools.projectDependency(project, 'engine-table')
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

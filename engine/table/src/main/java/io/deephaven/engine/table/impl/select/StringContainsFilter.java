@@ -103,6 +103,9 @@ public class StringContainsFilter extends PatternFilter {
 
     @Override
     public StringContainsFilter copy() {
-        return new StringContainsFilter(getCaseSensitivity(), getMatchType(), columnName, values);
+        final StringContainsFilter copy =
+                new StringContainsFilter(getCaseSensitivity(), getMatchType(), columnName, values);
+        copy.pattern = pattern;
+        return copy;
     }
 }

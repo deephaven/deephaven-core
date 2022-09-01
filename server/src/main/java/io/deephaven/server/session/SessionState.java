@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectHashMap;
@@ -33,6 +34,7 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.auth.AuthContext;
@@ -44,6 +46,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import javax.inject.Provider;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -129,12 +132,17 @@ public class SessionState {
     private final SimpleReferenceManager<Closeable, WeakSimpleReference<Closeable>> onCloseCallbacks =
             new SimpleReferenceManager<>(WeakSimpleReference::new, false);
 
+    private final ExecutionContext executionContext;
+
     @AssistedInject
-    public SessionState(final Scheduler scheduler, @Assisted final AuthContext authContext) {
+    public SessionState(final Scheduler scheduler,
+            final Provider<ScriptSession> scriptSessionProvider,
+            @Assisted final AuthContext authContext) {
         this.sessionId = UuidCreator.toString(UuidCreator.getRandomBased());
         this.logPrefix = "SessionState{" + sessionId + "}: ";
         this.scheduler = scheduler;
         this.authContext = authContext;
+        this.executionContext = scriptSessionProvider.get().getExecutionContext();
         log.info().append(logPrefix).append("session initialized").endl();
     }
 
@@ -521,16 +529,15 @@ public class SessionState {
          * @param exportId the export id for this export
          */
         private ExportObject(final SessionState session, final int exportId) {
+            super(true);
             this.session = session;
             this.exportId = exportId;
             this.logIdentity =
                     isNonExport() ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
             setState(ExportNotification.State.UNKNOWN);
 
-            // non-exports stay alive until they have been exported
-            if (isNonExport()) {
-                retainReference();
-            }
+            // we retain a reference until a non-export becomes EXPORTED or a regular export becomes RELEASED
+            retainReference();
         }
 
         /**
@@ -540,6 +547,7 @@ public class SessionState {
          * @param result the object to wrap in an export
          */
         private ExportObject(final T result) {
+            super(true);
             this.session = null;
             this.exportId = NON_EXPORT_ID;
             this.state = ExportNotification.State.EXPORTED;
@@ -837,7 +845,8 @@ public class SessionState {
             boolean shouldLog = false;
             int evaluationNumber = -1;
             QueryProcessingResults queryProcessingResults = null;
-            try (final AutoCloseable ignored = LivenessScopeStack.open()) {
+            try (final SafeCloseable ignored1 = LivenessScopeStack.open();
+                    final SafeCloseable ignored2 = session.executionContext.open()) {
                 queryProcessingResults = new QueryProcessingResults(
                         QueryPerformanceRecorder.getInstance());
 
@@ -1332,9 +1341,7 @@ public class SessionState {
                         throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
                     }
 
-                    final ExportObject<Object> retval = new ExportObject<>(SessionState.this, key);
-                    retval.retainReference();
-                    return retval;
+                    return new ExportObject<>(SessionState.this, key);
                 }
             };
 }

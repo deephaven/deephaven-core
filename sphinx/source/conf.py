@@ -77,20 +77,31 @@ autodoc_typehints = 'none'
 # up.
 from glob import glob
 import os
-import jpyutil
-jpyutil.init_jvm(
+
+workspace = os.environ.get('DEEPHAVEN_WORKSPACE', '.')
+devroot = os.environ.get('DEEPHAVEN_DEVROOT', '.')
+propfile = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
+jvm_properties = {
+            'Configuration.rootFile': propfile,
+            'devroot': os.path.realpath(devroot),
+            'workspace': os.path.realpath(workspace),
+        }
+
+from deephaven_internal import jvm
+jvm.init_jvm(
     jvm_classpath=glob(os.environ.get('DEEPHAVEN_CLASSPATH')),
-    jvm_properties={
-        'Configuration.rootFile': os.environ.get('DEEPHAVEN_PROPFILE')
-    }
+    jvm_properties=jvm_properties,
 )
 
-import deephaven
 import jpy
+py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
+py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
+py_dh_session.getExecutionContext().open()
+
+import deephaven
 docs_title = "Deephaven python modules."
 package_roots = [jpy, deephaven]
 package_excludes = ['._']
 
 import dh_sphinx
 dh_sphinx.gen_sphinx_modules(docs_title, package_roots, package_excludes)
-

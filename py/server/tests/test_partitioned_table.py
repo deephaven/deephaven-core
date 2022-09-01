@@ -34,7 +34,7 @@ class PartitionedTransformer:
 
 class PartitionedTableTestCase(BaseTestCase):
     def setUp(self):
-        self.test_table = read_csv("tests/data/test_table.csv")
+        self.test_table = read_csv("tests/data/test_table.csv").tail(num_rows=100)
         self.partitioned_table = self.test_table.partition_by(by=["c", "e"])
 
     def tearDown(self):
@@ -92,7 +92,7 @@ class PartitionedTableTestCase(BaseTestCase):
         self.assertIn("Unsupported sort on constituent column", str(cm.exception))
 
     def test_get_constituent(self):
-        keys = [917, 167]
+        keys = [967, 203]
         self.assertIsNotNone(self.partitioned_table.get_constituent(keys))
 
         from deephaven.column import string_col, int_col, double_col

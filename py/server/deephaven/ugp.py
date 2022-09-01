@@ -106,9 +106,9 @@ def _has_refreshing_tables(*args, **kwargs):
 
 
 def auto_locking_op(f: Callable) -> Callable:
-    """A decorator for annotating unsafe Table operations. It ensures that the decorated Table operation runs under
-    the UGP shared lock when ugp.auto_locking is True, the target table is refreshing, and the current thread doesn't
-    own any UGP locks."""
+    """A decorator for annotating unsafe Table operations. It ensures that the decorated function runs under the UGP
+    shared lock if ugp.auto_locking is True, the target table-like object or any table-like arguments are refreshing,
+    and the current thread doesn't own any UGP locks."""
 
     @wraps(f)
     def do_locked(*args, **kwargs):
@@ -122,3 +122,18 @@ def auto_locking_op(f: Callable) -> Callable:
             return f(*args, **kwargs)
 
     return do_locked
+
+
+@contextlib.contextmanager
+def auto_locking_ctx(*args, **kwargs):
+    """An auto-locking aware context manager. It ensures that the enclosed code block runs under the UGP shared lock if
+    ugp.auto_locking is True, the target table-like object or any table-like arguments are refreshing, and the current
+    thread doesn't own any UGP locks."""
+    if (not _has_refreshing_tables(*args, **kwargs)
+            or not auto_locking
+            or has_shared_lock()
+            or has_exclusive_lock()):
+        yield
+    else:
+        with shared_lock():
+            yield

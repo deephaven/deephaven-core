@@ -96,3 +96,12 @@ Liveness.cleanupLogEnabled=false
 
 # Force more parallelism
 QueryTable.minimumParallelSelectRows=1024
+
+BarrageMessageProducer.subscriptionGrowthEnabled=true
+BarrageMessageProducer.targetSnapshotPercentage=0.1
+BarrageMessageProducer.minSnapshotCellCount=50
+BarrageMessageProducer.maxSnapshotCellCount=50
+BarrageStreamGenerator.batchSize=4
+
+#BarrageTable.debug=true
+#BarrageMessageProducer.debug=true

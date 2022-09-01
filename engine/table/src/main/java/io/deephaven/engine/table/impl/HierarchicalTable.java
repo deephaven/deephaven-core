@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
@@ -160,11 +161,6 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table countBy(String countColumnName, Selectable... groupByColumns) {
-        return throwUnsupported("countBy()");
-    }
-
-    @Override
     public Table ungroup(boolean nullFill, String... columnsToUngroup) {
         return throwUnsupported("ungroup()");
     }
@@ -180,13 +176,13 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+    public Table aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return throwUnsupported("aggAllBy(" + spec + ")");
     }
 
     @Override
-    public Table aggBy(Collection<? extends Aggregation> aggregations,
-            Collection<? extends Selectable> groupByColumns) {
+    public Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups,
+            Collection<? extends ColumnName> groupByColumns) {
         return throwUnsupported("aggBy()");
     }
 
@@ -251,8 +247,14 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
+    public PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
+            Table initialGroups, String... keyColumnNames) {
+        return throwUnsupported("partitionedAggBy()");
+    }
+
+    @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Selectable... columns) {
+            ColumnName... groupByColumns) {
         return throwUnsupported("rollup()");
     }
 

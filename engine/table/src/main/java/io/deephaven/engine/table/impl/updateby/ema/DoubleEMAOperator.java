@@ -5,13 +5,13 @@
  */
 package io.deephaven.engine.table.impl.updateby.ema;
 
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.api.updateby.EmaControl;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -37,7 +37,7 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
      */
     public DoubleEMAOperator(@NotNull final MatchPair pair,
                             @NotNull final String[] affectingColumns,
-                            @NotNull final EmaControl control,
+                            @NotNull final OperationControl control,
                             @Nullable final LongRecordingUpdateByOperator timeRecorder,
                             final long timeScaleUnits,
                             @NotNull final ColumnSource<Double> valueSource,
@@ -128,6 +128,6 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
 
         // Note that we don't care about Reset because in that case the current EMA at this key would be null
         // and the superclass will do the right thing.
-        return !Double.isNaN(value) || control.onNanValue() != BadDataBehavior.Skip;
+        return !Double.isNaN(value) || control.onNanValueOrDefault() != BadDataBehavior.SKIP;
     }
 }

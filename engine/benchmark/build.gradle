@@ -21,10 +21,10 @@ dependencies {
             TestTools.projectDependency(project, 'engine-table')
 
     testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+    testCompileOnly 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
 
-    testRuntime project(path: ':configs'),
-            project(path: ':test-configs'),
-            'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
 }
 
 spotless {

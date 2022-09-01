@@ -4,7 +4,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.api.updateby.EmaControl;
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -31,7 +31,7 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
      */
     public BigDecimalEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @NotNull final EmaControl control,
+            @NotNull final OperationControl control,
             @Nullable final LongRecordingUpdateByOperator timeRecorder,
             final long timeScaleUnits,
             @NotNull final ColumnSource<BigDecimal> valueSource,
@@ -57,9 +57,9 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                 if (ctx.curVal == null) {
                     ctx.curVal = input;
                 } else {
-                    ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContext())
-                            .add(input.multiply(ctx.oneMinusAlpha, control.bigValueContext()),
-                                    control.bigValueContext());
+                    ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContextOrDefault())
+                            .add(input.multiply(ctx.oneMinusAlpha, control.bigValueContextOrDefault()),
+                                    control.bigValueContextOrDefault());
                 }
             }
 
@@ -90,11 +90,11 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                         handleBadTime(ctx, dt);
                     } else {
                         ctx.alpha = BigDecimal.valueOf(Math.exp(-dt / timeScaleUnits));
-                        ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContext())
+                        ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContextOrDefault())
                                 .add(input.multiply(
-                                        BigDecimal.ONE.subtract(ctx.alpha, control.bigValueContext()),
-                                        control.bigValueContext()),
-                                        control.bigValueContext());
+                                        BigDecimal.ONE.subtract(ctx.alpha, control.bigValueContextOrDefault()),
+                                        control.bigValueContextOrDefault()),
+                                        control.bigValueContextOrDefault());
                         ctx.lastStamp = timestamp;
                     }
                 }

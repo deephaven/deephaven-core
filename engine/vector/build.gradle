@@ -6,10 +6,13 @@ plugins {
 description 'Engine Vectors: Array-like data structures for in-place data access'
 
 dependencies {
-    api project(':Util'),
-            project(':qst')
+    api project(':Util')
+    api project(':qst')
+    implementation project(':Base')
 
-    testImplementation 'junit:junit:4.13.2'
+    compileOnly depAnnotations
+
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
 
 spotless {

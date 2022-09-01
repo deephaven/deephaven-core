@@ -149,15 +149,11 @@ public class JsFigure extends HasEventHandling {
 
             for (int i = 0; i < tables.length; i++) {
                 JsTable table = tables[i];
-                if (table != null) {
-                    registerTableWithId(table, Js.cast(JsArray.of((double) i)));
-                }
+                registerTableWithId(table, Js.cast(JsArray.of((double) i)));
             }
             for (int i = 0; i < partitionedTables.length; i++) {
                 JsPartitionedTable partitionedTable = partitionedTables[i];
-                if (partitionedTable != null) {
-                    registerPartitionedTableWithId(partitionedTable, Js.cast(JsArray.of((double) i)));
-                }
+                registerPartitionedTableWithId(partitionedTable, Js.cast(JsArray.of((double) i)));
             }
             Arrays.stream(charts)
                     .flatMap(c -> Arrays.stream(c.getSeries()))
@@ -497,7 +493,7 @@ public class JsFigure extends HasEventHandling {
     public void enqueueSubscriptionCheck() {
         if (!subCheckEnqueued) {
             for (JsTable table : tables) {
-                if (table != null && table.isClosed()) {
+                if (table.isClosed()) {
                     throw new IllegalStateException("Cannot subscribe, at least one table is disconnected");
                 }
             }
@@ -536,7 +532,7 @@ public class JsFigure extends HasEventHandling {
         }
 
         if (tables != null) {
-            Arrays.stream(tables).filter(t -> t != null && !t.isClosed()).forEach(JsTable::close);
+            Arrays.stream(tables).filter(t -> !t.isClosed()).forEach(JsTable::close);
         }
         if (partitionedTables != null) {
             Arrays.stream(partitionedTables).forEach(JsPartitionedTable::close);

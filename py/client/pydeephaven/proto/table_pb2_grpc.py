@@ -30,11 +30,6 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.FetchPandasTableRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
-        self.FetchTableMap = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/FetchTableMap',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapResponse.FromString,
-                )
         self.ApplyPreviewColumns = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/ApplyPreviewColumns',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.SerializeToString,
@@ -78,6 +73,11 @@ class TableServiceStub(object):
         self.Select = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/Select',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
+        self.UpdateBy = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/UpdateBy',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.UpdateByRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
         self.SelectDistinct = channel.unary_unary(
@@ -219,14 +219,6 @@ class TableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def FetchTableMap(self, request, context):
-        """
-        Fetches a TableMap from an existing source ticket and exports it to the local session result ticket.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
     def ApplyPreviewColumns(self, request, context):
         """
         Create a table that has preview columns applied to an existing source table.
@@ -294,6 +286,14 @@ class TableServiceServicer(object):
     def Select(self, request, context):
         """
         Select the given columns from the given table.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateBy(self, request, context):
+        """
+        Returns the result of an updateBy table operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -506,11 +506,6 @@ def add_TableServiceServicer_to_server(servicer, server):
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.FetchPandasTableRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
-            'FetchTableMap': grpc.unary_unary_rpc_method_handler(
-                    servicer.FetchTableMap,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapResponse.SerializeToString,
-            ),
             'ApplyPreviewColumns': grpc.unary_unary_rpc_method_handler(
                     servicer.ApplyPreviewColumns,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.FromString,
@@ -554,6 +549,11 @@ def add_TableServiceServicer_to_server(servicer, server):
             'Select': grpc.unary_unary_rpc_method_handler(
                     servicer.Select,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'UpdateBy': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateBy,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.UpdateByRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'SelectDistinct': grpc.unary_unary_rpc_method_handler(
@@ -728,23 +728,6 @@ class TableService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def FetchTableMap(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/FetchTableMap',
-            deephaven_dot_proto_dot_table__pb2.FetchTableMapRequest.SerializeToString,
-            deephaven_dot_proto_dot_table__pb2.FetchTableMapResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
     def ApplyPreviewColumns(request,
             target,
             options=(),
@@ -893,6 +876,23 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Select',
             deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def UpdateBy(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/UpdateBy',
+            deephaven_dot_proto_dot_table__pb2.UpdateByRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

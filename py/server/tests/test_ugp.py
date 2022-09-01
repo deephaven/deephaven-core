@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
+import jpy
 import unittest
 
 from deephaven import time_table, DHError, merge, merge_sorted
@@ -66,7 +67,7 @@ class UgpTestCase(BaseTestCase):
             t = ticking_table_op_decorated()
 
         t = ticking_table_op_decorated(5)
-        self.wait_ticking_table_update(t, row_count=5, timeout=5)
+        self.wait_ticking_table_update(t, row_count=5, timeout=10)
 
         t = ticking_table_op_decorated(10, "00:00:00.001")
         self.wait_ticking_table_update(t, row_count=8, timeout=5)
@@ -82,7 +83,7 @@ class UgpTestCase(BaseTestCase):
             t = ticking_table_op_decorated()
 
         t = ticking_table_op_decorated(5)
-        self.wait_ticking_table_update(t, row_count=5, timeout=5)
+        self.wait_ticking_table_update(t, row_count=5, timeout=10)
 
         t = ticking_table_op_decorated(10, "00:00:00.001")
         self.wait_ticking_table_update(t, row_count=8, timeout=5)
@@ -206,6 +207,14 @@ class UgpTestCase(BaseTestCase):
             test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         pt = test_table.partition_by(by="Y")
 
+        _ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+        _context = _ExecutionContext.newBuilder() \
+          .captureCompilerContext() \
+          .captureQueryLibrary() \
+          .emptyQueryScope() \
+          .build() \
+          .open()
+
         with self.subTest("Merge"):
             ugp.auto_locking = False
             with self.assertRaises(DHError) as cm:
@@ -233,6 +242,8 @@ class UgpTestCase(BaseTestCase):
             ugp.auto_locking = True
             pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
 
+        _context.close()
+
     def test_auto_locking_table_factory(self):
         with ugp.shared_lock():
             test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
@@ -249,6 +260,20 @@ class UgpTestCase(BaseTestCase):
 
         with self.subTest("Merge Sorted"):
             self.skipTest("mergeSorted does not yet support refreshing tables")
+
+    def test_auto_locking_partitioned_table_proxy(self):
+        with ugp.shared_lock():
+            test_table = time_table("00:00:01").update(["X=i", "Y=i%13", "Z=X*Y"])
+        proxy = test_table.drop_columns(["Timestamp", "Y"]).partition_by(by="X").proxy()
+        proxy2 = test_table.drop_columns(["Timestamp", "Z"]).partition_by(by="X").proxy()
+
+        with self.assertRaises(DHError) as cm:
+            joined_pt_proxy = proxy.natural_join(proxy2, on="X")
+        self.assertRegex(str(cm.exception), r"IllegalStateException")
+
+        ugp.auto_locking = True
+        joined_pt_proxy = proxy.natural_join(proxy2, on="X")
+        del joined_pt_proxy
 
 
 if __name__ == "__main__":

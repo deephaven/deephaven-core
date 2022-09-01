@@ -142,6 +142,7 @@ public abstract class FlightMessageRoundTripTest {
     private UUID sessionToken;
     private SessionState currentSession;
     private AbstractScriptSession<?> scriptSession;
+    private SafeCloseable executionContext;
 
     @Before
     public void setup() throws IOException {
@@ -153,6 +154,7 @@ public abstract class FlightMessageRoundTripTest {
 
         scriptSession = component.scriptSession();
         sessionService = component.sessionService();
+        executionContext = scriptSession.getExecutionContext().open();
 
         client = FlightClient.builder().location(Location.forGrpcInsecure("localhost", actualPort))
                 .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
@@ -190,6 +192,7 @@ public abstract class FlightMessageRoundTripTest {
     public void teardown() {
         sessionService.closeAllSessions();
         scriptSession.release();
+        executionContext.close();
 
         channel.shutdown();
         try {
@@ -422,9 +425,10 @@ public abstract class FlightMessageRoundTripTest {
 
                 final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
+                // use 0 for batch size and max message size to use server-side defaults
                 int optOffset =
                         BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
-                                false, 1000);
+                                false, 0, 0);
 
                 final int ticOffset =
                         BarrageSnapshotRequest.createTicketVector(metadata,

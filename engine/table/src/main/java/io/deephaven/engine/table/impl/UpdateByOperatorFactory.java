@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.agg.Pair;
-import io.deephaven.api.updateby.ColumnUpdateClause;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.ColumnUpdateOperation;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.spec.*;
 import io.deephaven.engine.table.ColumnSource;
@@ -30,18 +30,18 @@ import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 /**
- * A factory to visit all of the {@link UpdateByClause}s to produce a set of {@link UpdateByOperator}s that
+ * A factory to visit all of the {@link UpdateByOperation}s to produce a set of {@link UpdateByOperator}s that
  * {@link UpdateBy} can use to produce a result.
  */
 public class UpdateByOperatorFactory {
-    private final TableWithDefaults source;
+    private final TableDefaults source;
     private final MatchPair[] groupByColumns;
     @Nullable
     private final WritableRowRedirection rowRedirection;
     @NotNull
     private final UpdateByControl control;
 
-    public UpdateByOperatorFactory(@NotNull final TableWithDefaults source,
+    public UpdateByOperatorFactory(@NotNull final TableDefaults source,
             @NotNull final MatchPair[] groupByColumns,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
@@ -51,7 +51,7 @@ public class UpdateByOperatorFactory {
         this.control = control;
     }
 
-    final Collection<UpdateByOperator> getOperators(@NotNull final Collection<? extends UpdateByClause> specs) {
+    final Collection<UpdateByOperator> getOperators(@NotNull final Collection<? extends UpdateByOperation> specs) {
         final OperationVisitor v = new OperationVisitor();
         specs.forEach(s -> s.walk(v));
         return v.ops;
@@ -102,17 +102,17 @@ public class UpdateByOperatorFactory {
                 .toArray(MatchPair[]::new);
     }
 
-    public String describe(Collection<? extends UpdateByClause> clauses) {
+    public String describe(Collection<? extends UpdateByOperation> clauses) {
         final Describer d = new Describer();
         clauses.forEach(c -> c.walk(d));
         return d.descriptionBuilder.toString();
     }
 
-    private static class Describer implements UpdateByClause.Visitor<Void> {
+    private static class Describer implements UpdateByOperation.Visitor<Void> {
         final StringBuilder descriptionBuilder = new StringBuilder();
 
         @Override
-        public Void visit(ColumnUpdateClause clause) {
+        public Void visit(ColumnUpdateOperation clause) {
             final MatchPair[] pairs = parseMatchPairs(clause.columns());
             final String columnStr;
             if (pairs.length == 0) {
@@ -126,13 +126,13 @@ public class UpdateByOperatorFactory {
         }
     }
 
-    private class OperationVisitor implements UpdateBySpec.Visitor<Void>, UpdateByClause.Visitor<Void> {
+    private class OperationVisitor implements UpdateBySpec.Visitor<Void>, UpdateByOperation.Visitor<Void> {
         private final List<UpdateByOperator> ops = new ArrayList<>();
         private MatchPair[] pairs;
 
         /**
          * Check if the supplied type is one of the supported time types.
-         * 
+         *
          * @param type the type
          * @return true if the type is one of the useable time types
          */
@@ -142,7 +142,7 @@ public class UpdateByOperatorFactory {
         }
 
         @Override
-        public Void visit(@NotNull final ColumnUpdateClause clause) {
+        public Void visit(@NotNull final ColumnUpdateOperation clause) {
             final UpdateBySpec spec = clause.spec();
             pairs = createColumnsToAddIfMissing(source, parseMatchPairs(clause.columns()), spec, groupByColumns);
             spec.walk(this);
@@ -207,7 +207,7 @@ public class UpdateByOperatorFactory {
 
         @SuppressWarnings("unchecked")
         private UpdateByOperator makeEmaOperator(@NotNull final MatchPair pair,
-                @NotNull final TableWithDefaults source,
+                @NotNull final TableDefaults source,
                 @Nullable final LongRecordingUpdateByOperator recorder,
                 @NotNull final EmaSpec ema) {
             // noinspection rawtypes
@@ -225,35 +225,35 @@ public class UpdateByOperatorFactory {
             final long timeScaleUnits = ema.timeScale().timescaleUnits();
 
             if (csType == byte.class || csType == Byte.class) {
-                return new ByteEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
+                return new ByteEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
+                return new ShortEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
+                return new IntEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
+                return new LongEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatEMAOperator(pair, affectingColumns, ema.control(), recorder, timeScaleUnits,
+                return new FloatEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
                         columnSource, rowRedirection);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleEMAOperator(pair, affectingColumns, ema.control(), recorder,
+                return new DoubleEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder,
                         timeScaleUnits, columnSource, rowRedirection);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalEMAOperator(pair, affectingColumns, ema.control(), recorder,
+                return new BigDecimalEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder,
                         timeScaleUnits, columnSource, rowRedirection);
             } else if (csType == BigInteger.class) {
-                return new BigIntegerEMAOperator(pair, affectingColumns, ema.control(), recorder,
+                return new BigIntegerEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder,
                         timeScaleUnits, columnSource, rowRedirection);
             }
 
             throw new IllegalArgumentException("Can not perform EMA on type " + csType);
         }
 
-        private LongRecordingUpdateByOperator makeLongRecordingOperator(TableWithDefaults source, String colName) {
+        private LongRecordingUpdateByOperator makeLongRecordingOperator(TableDefaults source, String colName) {
             final ColumnSource<?> columnSource = source.getColumnSource(colName);
             final Class<?> colType = columnSource.getType();
             if (colType != long.class &&
@@ -270,7 +270,7 @@ public class UpdateByOperatorFactory {
             return new LongRecordingUpdateByOperator(colName, inputColumns, columnSource);
         }
 
-        private UpdateByOperator makeCumProdOperator(MatchPair fc, TableWithDefaults source) {
+        private UpdateByOperator makeCumProdOperator(MatchPair fc, TableDefaults source) {
             final Class<?> csType = source.getColumnSource(fc.rightColumn).getType();
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteCumProdOperator(fc, rowRedirection);
@@ -285,7 +285,7 @@ public class UpdateByOperatorFactory {
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleCumProdOperator(fc, rowRedirection);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalCumProdOperator(fc, rowRedirection, control.mathContext());
+                return new BigDecimalCumProdOperator(fc, rowRedirection, control.mathContextOrDefault());
             } else if (csType == BigInteger.class) {
                 return new BigIntegerCumProdOperator(fc, rowRedirection);
             }
@@ -293,7 +293,7 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
         }
 
-        private UpdateByOperator makeCumMinMaxOperator(MatchPair fc, TableWithDefaults source, boolean isMax) {
+        private UpdateByOperator makeCumMinMaxOperator(MatchPair fc, TableDefaults source, boolean isMax) {
             final ColumnSource<?> columnSource = source.getColumnSource(fc.rightColumn);
             final Class<?> csType = columnSource.getType();
             if (csType == byte.class || csType == Byte.class) {
@@ -316,7 +316,7 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
         }
 
-        private UpdateByOperator makeCumSumOperator(MatchPair fc, TableWithDefaults source) {
+        private UpdateByOperator makeCumSumOperator(MatchPair fc, TableDefaults source) {
             final Class<?> csType = source.getColumnSource(fc.rightColumn).getType();
             if (csType == Boolean.class || csType == boolean.class) {
                 return new ByteCumSumOperator(fc, rowRedirection, NULL_BOOLEAN_AS_BYTE);
@@ -333,7 +333,7 @@ public class UpdateByOperatorFactory {
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleCumSumOperator(fc, rowRedirection);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalCumSumOperator(fc, rowRedirection, control.mathContext());
+                return new BigDecimalCumSumOperator(fc, rowRedirection, control.mathContextOrDefault());
             } else if (csType == BigInteger.class) {
                 return new BigIntegerCumSumOperator(fc, rowRedirection);
             }
@@ -341,7 +341,7 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform Cumulative Sum on type " + csType);
         }
 
-        private UpdateByOperator makeForwardFillOperator(MatchPair fc, TableWithDefaults source) {
+        private UpdateByOperator makeForwardFillOperator(MatchPair fc, TableDefaults source) {
             final ColumnSource<?> columnSource = source.getColumnSource(fc.rightColumn);
             final Class<?> csType = columnSource.getType();
             if (csType == char.class || csType == Character.class) {

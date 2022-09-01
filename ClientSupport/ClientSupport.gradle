@@ -3,20 +3,23 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom dhConsole
+    implementation.extendsFrom dhConsole
 }
 
 dependencies {
-    compile project(':engine-table'),
-            project(':engine-function')
+    implementation project(':engine-table')
+    implementation project(':engine-function')
+    implementation project(':log-factory')
+    implementation project(':Configuration')
+    implementation depCommonsLang3
 
-    testCompile TestTools.projectDependency(project, 'Base'),
-            TestTools.projectDependency(project, 'engine-table'),
-            project(':extensions-csv')
+    testImplementation TestTools.projectDependency(project, 'Base')
+    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(':extensions-csv')
 
-    testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 

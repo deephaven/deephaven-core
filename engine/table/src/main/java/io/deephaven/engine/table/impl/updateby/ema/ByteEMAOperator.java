@@ -5,12 +5,12 @@
  */
 package io.deephaven.engine.table.impl.updateby.ema;
 
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.api.updateby.EmaControl;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -36,7 +36,7 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
      */
     public ByteEMAOperator(@NotNull final MatchPair pair,
                             @NotNull final String[] affectingColumns,
-                            @NotNull final EmaControl control,
+                            @NotNull final OperationControl control,
                             @Nullable final LongRecordingUpdateByOperator timeRecorder,
                             final long timeScaleUnits,
                             @NotNull final ColumnSource<Byte> valueSource,

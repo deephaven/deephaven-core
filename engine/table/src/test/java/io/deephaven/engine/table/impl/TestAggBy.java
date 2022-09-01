@@ -9,10 +9,10 @@ import gnu.trove.set.hash.TDoubleHashSet;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.vector.CharVector;
-import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSet;
@@ -190,7 +190,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
                                 new TstUtils.SetGenerator<>(10.1, 20.1, 30.1, QueryConstants.NULL_DOUBLE)));
 
-        QueryLibrary.importClass(TestAggBy.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(TestAggBy.class);
 
         String[] groupByColumns = new String[0];
         EvalNuggetInterface[] en = new EvalNuggetInterface[] {

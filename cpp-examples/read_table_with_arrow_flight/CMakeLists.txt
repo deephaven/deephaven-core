@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(table_reader)
+project(read_table_with_arrow_flight)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -13,6 +13,6 @@ find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Threads REQUIRED)
 
-add_executable(table_reader main.cc)
+add_executable(read_table_with_arrow_flight main.cc)
 
-target_link_libraries(table_reader deephaven::client)
+target_link_libraries(read_table_with_arrow_flight deephaven::client)

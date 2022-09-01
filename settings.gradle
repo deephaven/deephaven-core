@@ -11,7 +11,6 @@ String[] mods = [
         'Numerics',
         'TableLogger',
         'Plot',
-        'CompilerTools',
         'Generators',
         'Integrations',
         'ModelFarm',
@@ -20,7 +19,8 @@ String[] mods = [
         'python-engine-test',
         'server',
         'table-api',
-        'qst'
+        'qst',
+        'go'
 ]
 
         // new web projects; these modules are intended to form a complete, modular web application,
@@ -53,6 +53,7 @@ include 'combined-javadoc'
 
 include 'grpc-java:grpc-servlet-jakarta'
 include 'grpc-java:grpc-servlet-websocket-jakarta'
+include 'grpc-java:grpc-mtls'
 
 include 'DHProcess'
 include 'proto:proto-backplane-grpc'
@@ -154,6 +155,9 @@ project(':replication-reflective').projectDir = file('replication/reflective')
 
 include(':engine-chunk')
 project(':engine-chunk').projectDir = file('engine/chunk')
+
+include(':engine-context')
+project(':engine-context').projectDir = file('engine/context')
 
 include(':engine-vector')
 project(':engine-vector').projectDir = file('engine/vector')

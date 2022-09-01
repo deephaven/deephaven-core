@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.time.DateTimeUtils;
@@ -12,9 +13,9 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.AjMatchPairFactory;
+import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -29,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,6 +40,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.api.TableOperationsDefaults.splitToCollection;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.QueryTableTestBase.intColumn;
 import static io.deephaven.engine.table.impl.TstUtils.*;
@@ -936,7 +939,8 @@ public class QueryTableAjTest {
                                         SortingOrder.Ascending, false)),
                                 // < aj
                                 EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted,
-                                        AjMatchPairFactory.getExpressions(false, "LeftStamp<RightStamp").first,
+                                        MatchPair.fromMatches(List.of(
+                                                AsOfJoinMatchFactory.getAjExpressions("LeftStamp<RightStamp").matches)),
                                         MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                         SortingOrder.Ascending, true))),
                         !withReverse ? Stream.empty()
@@ -948,7 +952,8 @@ public class QueryTableAjTest {
                                                 SortingOrder.Descending, false)),
                                         // > raj
                                         EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed,
-                                                AjMatchPairFactory.getExpressions(true, "LeftStamp>RightStamp").first,
+                                                MatchPair.fromMatches(List.of(AsOfJoinMatchFactory
+                                                        .getRajExpressions("LeftStamp>RightStamp").matches)),
                                                 MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                                 SortingOrder.Descending, true)))),
                 !withBuckets ? Stream.empty()
@@ -964,8 +969,8 @@ public class QueryTableAjTest {
                                         SortingOrder.Ascending, false)),
                                 // < aj, with a bucket
                                 EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted,
-                                        AjMatchPairFactory.getExpressions(false, "Bucket",
-                                                "LeftStamp<RightStamp").first,
+                                        MatchPair.fromMatches(List.of(AsOfJoinMatchFactory.getAjExpressions("Bucket",
+                                                "LeftStamp<RightStamp").matches)),
                                         MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                         SortingOrder.Ascending, true)))),
                 !withBuckets || !withReverse ? Stream.empty()
@@ -977,7 +982,8 @@ public class QueryTableAjTest {
                                         SortingOrder.Descending, false)),
                                 // > raj, with a bucket
                                 EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed,
-                                        AjMatchPairFactory.getExpressions(true, "Bucket", "LeftStamp>RightStamp").first,
+                                        MatchPair.fromMatches(List.of(AsOfJoinMatchFactory.getRajExpressions("Bucket",
+                                                "LeftStamp>RightStamp").matches)),
                                         MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                         SortingOrder.Descending, true))))
                 .toArray(EvalNuggetInterface[]::new);
@@ -1018,10 +1024,13 @@ public class QueryTableAjTest {
             TableTools.showWithRowSet(staticResult);
         }
 
+        MatchPair[] matches = MatchPair.fromMatches(List.of(reverse
+                ? AsOfJoinMatchFactory.getRajExpressions(splitToCollection(columnsToMatch)).matches
+                : AsOfJoinMatchFactory.getAjExpressions(splitToCollection(columnsToMatch)).matches));
+
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Table refreshingResult = AsOfJoinHelper.asOfJoin(control, leftTable,
-                    reverse ? ((QueryTable) rightTable.reverse()) : rightTable,
-                    AjMatchPairFactory.getExpressions(reverse, columnsToMatch.split(",")).first,
+                    reverse ? ((QueryTable) rightTable.reverse()) : rightTable, matches,
                     MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                     reverse ? SortingOrder.Descending : SortingOrder.Ascending, disallowMatch);
 

@@ -32,6 +32,8 @@ dependencies {
     implementation project(':ssl-kickstart')
     Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-jetty')
 
+    implementation project(':grpc-java:grpc-mtls')
+
     testImplementation project(':server-test')
 
     testRuntimeOnly project(':log-to-slf4j')

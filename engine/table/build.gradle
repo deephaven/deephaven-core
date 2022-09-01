@@ -23,26 +23,35 @@ sourceSets {
 }
 
 dependencies {
-    api project(':Util'),
-            project(':TableLogger'),
-            project(':engine-stringset'),
-            project(':engine-base'),
-            project(':deephaven-jpy-ext'),
-            project(':hotspot')
+    api project(':Util')
+    api project(':TableLogger')
+    api project(':engine-stringset')
+    api project(':engine-base')
+    api project(':engine-context')
+    api project(':deephaven-jpy-ext')
+    api project(':hotspot')
+    api project(':IO')
 
-    implementation project(':CompilerTools'),
-            project(':DHProcess'),
-            project(':engine-function'),
-            project(':engine-tuple'),
-            'com.github.f4b6a3:uuid-creator:3.6.0',
-            'com.tdunning:t-digest:3.2',
-	    'com.squareup:javapoet:1.9.0'
+    implementation project(':DHProcess')
+    implementation project(':engine-function')
+    implementation project(':engine-tuple')
+    implementation project(':Configuration')
+    implementation project(':log-factory')
+    implementation project(':Stats')
+    implementation project(':Net')
+    implementation project(':FishUtil')
+
+    implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
+    implementation 'com.tdunning:t-digest:3.2'
+    implementation 'com.squareup:javapoet:1.9.0'
 
     implementation project(':plugin')
+    implementation depCommonsLang3
+    Classpaths.inheritCommonsText(project, 'implementation')
 
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
-    Classpaths.inheritJavaParser(project)
+    Classpaths.inheritJavaParser(project, 'implementation')
     Classpaths.inheritAutoService(project)
 
     Classpaths.inheritImmutables(project)
@@ -53,16 +62,18 @@ dependencies {
 
     implementation 'com.google.guava:guava:19.0'
 
-    testImplementation TestTools.projectDependency(project, 'Base'),
-            TestTools.projectDependency(project, 'Util'),
-            TestTools.projectDependency(project, 'engine-chunk'),
-            TestTools.projectDependency(project, 'engine-rowset'),
-            TestTools.projectDependency(project, 'Numerics'),
-            project(':Base'),
-            project(':BenchmarkSupport'),
-            project(':extensions-csv'),
-            project(':extensions-parquet-table'),
-            'junit:junit:4.13.2'
+    testImplementation TestTools.projectDependency(project, 'Base')
+    testImplementation TestTools.projectDependency(project, 'Util')
+    testImplementation TestTools.projectDependency(project, 'engine-chunk')
+    testImplementation TestTools.projectDependency(project, 'engine-rowset')
+    testImplementation TestTools.projectDependency(project, 'Numerics')
+    testImplementation project(':Base')
+    testImplementation project(':BenchmarkSupport')
+    testImplementation project(':extensions-csv')
+    testImplementation project(':extensions-parquet-table')
+    testImplementation project(':Numerics')
+
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
@@ -96,6 +107,7 @@ spotless {
                 '**/naturaljoin/typed/rightincopen/gen/*.java',
                 '**/asofjoin/typed/rightincopen/gen/*.java',
                 '**/asofjoin/typed/staticopen/gen/*.java',
+                '**/updateby/hashing/typed/open/gen/*.java',
                 'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
                 'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
                 'src/test/java/**/*Sample.java'

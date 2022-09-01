@@ -29,6 +29,7 @@ import io.deephaven.server.table.ops.SortTableGrpcImpl;
 import io.deephaven.server.table.ops.TimeTableGrpcImpl;
 import io.deephaven.server.table.ops.UngroupGrpcImpl;
 import io.deephaven.server.table.ops.UnstructuredFilterTableGrpcImpl;
+import io.deephaven.server.table.ops.UpdateByGrpcImpl;
 import io.deephaven.server.table.ops.UpdateOrSelectGrpcImpl;
 import io.grpc.BindableService;
 
@@ -193,4 +194,9 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.CREATE_INPUT_TABLE)
     GrpcTableOperation<?> bindCreateInputTable(CreateInputTableGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.UPDATE_BY)
+    GrpcTableOperation<?> bindUpdateBy(UpdateByGrpcImpl op);
 }

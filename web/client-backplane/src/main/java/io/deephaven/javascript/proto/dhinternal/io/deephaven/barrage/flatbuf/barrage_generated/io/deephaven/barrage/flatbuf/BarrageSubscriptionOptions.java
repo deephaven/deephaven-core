@@ -18,6 +18,8 @@ public class BarrageSubscriptionOptions {
     public static native void addColumnConversionMode(
             Builder builder, int columnConversionMode);
 
+    public static native void addMaxMessageSize(Builder builder, double maxMessageSize);
+
     public static native void addMinUpdateIntervalMs(Builder builder, double minUpdateIntervalMs);
 
     public static native void addUseDeephavenNulls(Builder builder, boolean useDeephavenNulls);
@@ -27,7 +29,8 @@ public class BarrageSubscriptionOptions {
             int columnConversionMode,
             boolean useDeephavenNulls,
             double minUpdateIntervalMs,
-            double batchSize);
+            double batchSize,
+            double maxMessageSize);
 
     public static native double endBarrageSubscriptionOptions(Builder builder);
 
@@ -53,6 +56,8 @@ public class BarrageSubscriptionOptions {
     public native double batchSize();
 
     public native int columnConversionMode();
+
+    public native double maxMessageSize();
 
     public native double minUpdateIntervalMs();
 

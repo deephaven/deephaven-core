@@ -6,7 +6,7 @@ on:
 
 jobs:
   server:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -57,7 +57,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server nltk
@@ -71,7 +71,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server pytorch
@@ -85,7 +85,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server sklearn
@@ -99,7 +99,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server tensorflow
@@ -113,7 +113,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server slim
@@ -127,7 +127,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -244,7 +244,7 @@ jobs:
           ./docker/registry/tensorflow-base/build/crane/retag.sh
 
   grpc-proxy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -331,7 +331,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
 
   envoy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -418,7 +418,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
 
   web:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -514,7 +514,7 @@ jobs:
           ./docker/registry/nginx-base/build/crane/retag.sh
 
   web-plugin-packager:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3

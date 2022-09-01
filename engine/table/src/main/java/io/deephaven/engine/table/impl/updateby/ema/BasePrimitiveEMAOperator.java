@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby.ema;
 
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
@@ -10,7 +11,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.api.updateby.BadDataBehavior;
-import io.deephaven.api.updateby.EmaControl;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.UpdateBy;
@@ -30,7 +30,7 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperator {
-    protected final EmaControl control;
+    protected final OperationControl control;
     protected final LongRecordingUpdateByOperator timeRecorder;
     protected final double timeScaleUnits;
     private LongArraySource bucketLastTimestamp;
@@ -63,7 +63,7 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
      */
     public BasePrimitiveEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @NotNull final EmaControl control,
+            @NotNull final OperationControl control,
             @Nullable final LongRecordingUpdateByOperator timeRecorder,
             final long timeScaleUnits,
             @Nullable final RowRedirection rowRedirection) {
@@ -288,25 +288,25 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             final boolean isNullTime) {
         boolean doReset = false;
         if (isNull) {
-            if (control.onNullValue() == BadDataBehavior.Throw) {
+            if (control.onNullValueOrDefault() == BadDataBehavior.THROW) {
                 throw new TableDataException("Encountered null value during EMA processing");
             }
-            doReset = control.onNullValue() == BadDataBehavior.Reset;
+            doReset = control.onNullValueOrDefault() == BadDataBehavior.RESET;
         } else if (isNan) {
-            if (control.onNanValue() == BadDataBehavior.Throw) {
+            if (control.onNanValueOrDefault() == BadDataBehavior.THROW) {
                 throw new TableDataException("Encountered NaN value during EMA processing");
-            } else if (control.onNanValue() == BadDataBehavior.Poison) {
+            } else if (control.onNanValueOrDefault() == BadDataBehavior.POISON) {
                 ctx.curVal = Double.NaN;
             } else {
-                doReset = control.onNanValue() == BadDataBehavior.Reset;
+                doReset = control.onNanValueOrDefault() == BadDataBehavior.RESET;
             }
         }
 
         if (isNullTime) {
-            if (control.onNullTime() == BadDataBehavior.Throw) {
+            if (control.onNullTimeOrDefault() == BadDataBehavior.THROW) {
                 throw new TableDataException("Encountered null timestamp during EMA processing");
             }
-            doReset = control.onNullTime() == BadDataBehavior.Reset;
+            doReset = control.onNullTimeOrDefault() == BadDataBehavior.RESET;
         }
 
         if (doReset) {
@@ -318,15 +318,15 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     void handleBadTime(@NotNull final EmaContext ctx, final long dt) {
         boolean doReset = false;
         if (dt == 0) {
-            if (control.onZeroDeltaTime() == BadDataBehavior.Throw) {
+            if (control.onZeroDeltaTimeOrDefault() == BadDataBehavior.THROW) {
                 throw new TableDataException("Encountered zero delta time during EMA processing");
             }
-            doReset = control.onZeroDeltaTime() == BadDataBehavior.Reset;
+            doReset = control.onZeroDeltaTimeOrDefault() == BadDataBehavior.RESET;
         } else if (dt < 0) {
-            if (control.onNegativeDeltaTime() == BadDataBehavior.Throw) {
+            if (control.onNegativeDeltaTimeOrDefault() == BadDataBehavior.THROW) {
                 throw new TableDataException("Encountered negative delta time during EMA processing");
             }
-            doReset = control.onNegativeDeltaTime() == BadDataBehavior.Reset;
+            doReset = control.onNegativeDeltaTimeOrDefault() == BadDataBehavior.RESET;
         }
 
         if (doReset) {

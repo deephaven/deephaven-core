@@ -12,7 +12,7 @@ find_package(ArrowFlight REQUIRED HINTS ${Arrow_DIR})
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Threads REQUIRED)
-find_package(Flatbuffers REQUIRED)
+find_package(Immer REQUIRED)
 
 add_executable(do_exchange main.cc)
 

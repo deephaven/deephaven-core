@@ -189,7 +189,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
             final Schema flatbufSchema = SchemaHelper.flatbufSchema(schemaBytes.asReadOnlyByteBuffer());
             final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(flatbufSchema);
             this.barrageTable = BarrageTable.make(updateSourceCombiner, UpdateGraphProcessor.DEFAULT,
-                    null, schema.tableDef, schema.attributes, viewport != null);
+                    null, schema.tableDef, schema.attributes, viewport == null ? -1 : viewport.size());
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
                     .useDeephavenNulls(useDeephavenNulls)

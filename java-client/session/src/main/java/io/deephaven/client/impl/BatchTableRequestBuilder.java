@@ -63,6 +63,7 @@ import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
+import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
@@ -76,6 +77,7 @@ import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
 import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
+import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
@@ -383,6 +385,11 @@ class BatchTableRequestBuilder {
         }
 
         @Override
+        public void visit(LazyUpdateTable v) {
+            out = op(Builder::setLazyUpdate, selectOrUpdate(v, v.columns()));
+        }
+
+        @Override
         public void visit(SelectTable v) {
             out = op(Builder::setSelect, selectOrUpdate(v, v.columns()));
         }
@@ -394,6 +401,10 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(AggregationTable aggregationTable) {
+            if (aggregationTable.preserveEmpty() || aggregationTable.initialGroups().isPresent()) {
+                throw new UnsupportedOperationException(
+                        "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+            }
             out = op(Builder::setComboAggregate, aggBy(aggregationTable));
         }
 
@@ -448,7 +459,11 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(UpdateByTable updateByTable) {
-            throw new UnsupportedOperationException("TODO(deephaven-core#2607): UpdateByTable gRPC impl");
+            final UpdateByRequest.Builder request = UpdateByBuilder
+                    .adapt(updateByTable)
+                    .setResultId(ticket)
+                    .setSourceId(ref(updateByTable.parent()));
+            out = op(Builder::setUpdateBy, request);
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,
@@ -490,7 +505,7 @@ class BatchTableRequestBuilder {
             SelectDistinctRequest.Builder builder = SelectDistinctRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(selectDistinctTable.parent()));
-            for (Selectable column : selectDistinctTable.groupByColumns()) {
+            for (Selectable column : selectDistinctTable.columns()) {
                 builder.addColumnNames(Strings.of(column));
             }
             return builder.build();

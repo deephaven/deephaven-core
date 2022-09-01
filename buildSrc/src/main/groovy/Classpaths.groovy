@@ -73,6 +73,15 @@ class Classpaths {
     static final String JUNIT_NAME = 'junit-bom'
     static final String JUNIT_VERSION = '5.7.2'
 
+    static final String JUNIT_CLASSIC_GROUP = 'junit'
+    static final String JUNIT_CLASSIC_NAME = 'junit'
+    static final String JUNIT_CLASSIC_VERSION = '4.13.2'
+
+    static final String JMOCK_GROUP = 'org.jmock'
+    static final String JMOCK_JUNIT_NAME = 'jmock-junit4'
+    static final String JMOCK_IMPORSTERS_NAME = 'jmock-imposters'
+    static final String JMOCK_VERSION = '2.12.0'
+
     static final String ASSERTJ_GROUP = 'org.assertj'
     static final String ASSERTJ_NAME = 'assertj-core'
     static final String ASSERTJ_VERSION = '3.19.0'
@@ -127,11 +136,7 @@ class Classpaths {
         new DefaultExternalModuleDependency(group, name, version)
     }
 
-    static Configuration compile(Project p) {
-        p.configurations.findByName('api') ?: p.configurations.getByName('compile')
-    }
-
-    static void inheritGwt(Project p, String name = 'gwt-user', String configName = 'compileOnly') {
+    static void inheritGwt(Project p, String name, String configName) {
         Configuration config = p.configurations.getByName(configName)
         if (addDependency(config, GWT_GROUP, name, GWT_VERSION)) {
             // when we add gwt-dev, lets also force asm version, just to be safe.
@@ -143,32 +148,32 @@ class Classpaths {
         }
     }
 
-    static void inheritJavaParser(Project p, String name = JAVA_PARSER_NAME) {
-        Configuration compile = compile p
-        addDependency compile, JAVA_PARSER_GROUP, name, JAVA_PARSER_VERSION
+    static void inheritJavaParser(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, JAVA_PARSER_GROUP, JAVA_PARSER_NAME, JAVA_PARSER_VERSION
     }
 
-    static void inheritJavaxAnnotations(Project p) {
-        Configuration compile = compile p
-        addDependency compile, JAVAX_ANNOTATIONS_GROUP, JAVAX_ANNOTATIONS_NAME, JAVAX_ANNOTATIONS_VERSION
+    static void inheritJavaxAnnotations(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, JAVAX_ANNOTATIONS_GROUP, JAVAX_ANNOTATIONS_NAME, JAVAX_ANNOTATIONS_VERSION
     }
 
-    static void inheritJsInterop(Project p, String name = 'base') {
-        Configuration compile = compile p
-        addDependency compile, JS_INTEROP_GROUP, name,
+    static void inheritJsInterop(Project p, String name, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, JS_INTEROP_GROUP, name,
                 // google is annoying, and have different versions released for the same groupId
                 // :base: is the only one that is different, so we'll use it in the ternary.
                 name == 'base'? '1.0.0' : JS_INTEROP_VERSION
     }
 
-    static void inheritElemental(Project p, String name = 'elemental2-core') {
-        Configuration compile = compile p
-        addDependency compile, ELEMENTAL_GROUP, name, ELEMENTAL_VERSION
+    static void inheritElemental(Project p, String name, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, ELEMENTAL_GROUP, name, ELEMENTAL_VERSION
     }
 
-    static void inheritCommonsText(Project p) {
-        Configuration compile = compile p
-        addDependency compile, COMMONS_GROUP, 'commons-text', "1.6", {
+    static void inheritCommonsText(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency config, COMMONS_GROUP, 'commons-text', "1.6", {
             // commons-text depends on commons-lang3; sadly, our version of lang3 is so old,
             // there is no version of commons-text which depends on it.  So, we just exclude it.
             // we only want some small, self-contained classes in commons-text anyway.
@@ -209,6 +214,17 @@ class Classpaths {
         Configuration ap = p.configurations.getByName('annotationProcessor')
         addDependency(ap, IMMUTABLES_GROUP, IMMUTABLES_NAME, IMMUTABLES_VERSION)
         p.getDependencies().add('compileOnly', p.project(':util-immutables'))
+    }
+
+    static void inheritJUnitClassic(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, JUNIT_CLASSIC_GROUP, JUNIT_CLASSIC_NAME, JUNIT_CLASSIC_VERSION)
+    }
+
+    static void inheritJMock(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, JMOCK_GROUP, JMOCK_JUNIT_NAME, JMOCK_VERSION)
+        addDependency(config, JMOCK_GROUP, JMOCK_IMPORSTERS_NAME, JMOCK_VERSION)
     }
 
     static void inheritJUnitPlatform(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {

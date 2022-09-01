@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
@@ -108,7 +109,7 @@ public class PartitionAwareSourceTable extends SourceTable {
         }
 
         @Override
-        public TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
+        protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
             ArrayList<WhereFilter> partitionFilters = new ArrayList<>();
             ArrayList<WhereFilter> groupFilters = new ArrayList<>();
             ArrayList<WhereFilter> otherFilters = new ArrayList<>();
@@ -118,7 +119,7 @@ public class PartitionAwareSourceTable extends SourceTable {
                     groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
             for (WhereFilter filter : whereFilters) {
-                filter.init(table.definition);
+                // note: our filters are already initialized
                 List<String> columns = filter.getColumns();
                 if (filter instanceof ReindexingFilter) {
                     otherFilters.add(filter);
@@ -148,7 +149,8 @@ public class PartitionAwareSourceTable extends SourceTable {
         }
 
         @Override
-        public Table selectDistinct(SelectColumn[] selectColumns) {
+        public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
+            final SelectColumn[] selectColumns = SelectColumn.from(columns);
             for (final SelectColumn selectColumn : selectColumns) {
                 try {
                     selectColumn.initDef(getDefinition().getColumnNameMap());
@@ -160,7 +162,6 @@ public class PartitionAwareSourceTable extends SourceTable {
                     return null;
                 }
             }
-
             return table.selectDistinct(selectColumns);
         }
     }
@@ -317,8 +318,8 @@ public class PartitionAwareSourceTable extends SourceTable {
     }
 
     @Override
-    public final Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
-        final SelectColumn[] selectColumns = SelectColumn.from(groupByColumns);
+    public final Table selectDistinct(Collection<? extends Selectable> columns) {
+        final SelectColumn[] selectColumns = SelectColumn.from(columns);
         for (SelectColumn selectColumn : selectColumns) {
             selectColumn.initDef(definition.getColumnNameMap());
             if (!isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
@@ -354,5 +355,9 @@ public class PartitionAwareSourceTable extends SourceTable {
             return false;
         }
         return columnNames.stream().allMatch(partitioningColumnDefinitions::containsKey);
+    }
+
+    private boolean isValidAgainstColumnPartitionTable(Collection<ColumnName> columns) {
+        return columns.stream().map(ColumnName::name).allMatch(partitioningColumnDefinitions::containsKey);
     }
 }

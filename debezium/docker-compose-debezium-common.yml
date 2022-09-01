@@ -5,7 +5,7 @@ version: '3.4'
 
 services:
   redpanda:
-    image: docker.vectorized.io/vectorized/redpanda:${REDPANDA_VERSION}
+    image: docker.redpanda.com/vectorized/redpanda:${REDPANDA_VERSION}
     command:
       - redpanda start
       - --reactor-backend=epoll

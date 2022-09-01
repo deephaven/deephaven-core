@@ -3,10 +3,13 @@
 #
 
 import unittest
+from types import SimpleNamespace
+from typing import List, Any
 
-from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule
+from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
+from deephaven.pandas import to_pandas
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -108,7 +111,7 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(cm.exception.root_cause)
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
-    def test_usv(self):
+    def test_USV(self):
         ops = [
             Table.update,
             Table.lazy_update,
@@ -336,6 +339,7 @@ class TableTestCase(BaseTestCase):
             Table.first_by,
             Table.last_by,
             Table.sum_by,
+            Table.abs_sum_by,
             Table.avg_by,
             Table.std_by,
             Table.var_by,
@@ -359,6 +363,18 @@ class TableTestCase(BaseTestCase):
             with self.subTest(op=op):
                 result_table = op(self.test_table, by=[])
                 self.assertEqual(result_table.size, 1)
+
+        wops = [Table.weighted_avg_by,
+                Table.weighted_sum_by,
+                ]
+
+        for wop in wops:
+            with self.subTest(wop):
+                result_table = wop(self.test_table, wcol='e', by=["a", "b"])
+                self.assertEqual(len(result_table.columns), len(self.test_table.columns) - 1)
+
+                result_table = wop(self.test_table, wcol='e')
+                self.assertEqual(len(result_table.columns), len(self.test_table.columns) - 1)
 
     def test_count_by(self):
         num_distinct_a = self.test_table.select_distinct(formulas=["a"]).size
@@ -512,7 +528,22 @@ class TableTestCase(BaseTestCase):
         self.assertIsNotNone(t)
 
     def test_layout_hints(self):
-        t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d")
+        t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d", column_groups=[
+            {
+                "name": "Group1",
+                "children": ["a", "b"]
+            },
+            {
+                "name": "Group2",
+                "children": ["c", "d"],
+                "color": "#123456"
+            },
+            {
+                "name": "Group3",
+                "children": ["e", "f"],
+                "color": "RED"
+            }
+        ])
         self.assertIsNotNone(t)
 
         t = self.test_table.layout_hints(front=["d", "e"], back=["a", "b"], freeze=["c"], hide=["d"])
@@ -532,6 +563,164 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(cm.exception.root_cause)
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
+    def verify_table_data(self, t: Table, expected: List[Any], assert_not_in: bool = False):
+        t_data = to_pandas(t).values.flatten()
+        for s in expected:
+            if assert_not_in:
+                self.assertNotIn(s, t_data)
+            else:
+                self.assertIn(s, t_data)
+
+    def test_update_LEG_closure(self):
+        nonlocal_str = "nonlocal str"
+        closure_str = "closure str"
+
+        def inner_func(arg: str):
+            def local_fn() -> str:
+                return "local str"
+
+            # Note, need to bring a nonlocal_str into the local scope before it can be used in formulas
+            nonlocal nonlocal_str
+            a_number = 20002
+
+            local_int = 101
+            with self.subTest("LEG"):
+                t = empty_table(1)
+                formulas = ["Col1 = local_fn()",
+                            "Col2 = global_fn()",
+                            "Col3 = nonlocal_str",
+                            "Col4 = arg",
+                            "Col5 = local_int",
+                            "Col6 = global_int",
+                            "Col7 = a_number",
+                            ]
+
+                rt = t.update(formulas)
+                column_data = ["local str", "global str", "nonlocal str", arg, 101, 1001, 20002]
+                self.verify_table_data(rt, column_data)
+
+            with self.subTest("Closure"):
+                def closure_fn() -> str:
+                    return closure_str
+
+                formulas = ["Col1 = closure_fn()"]
+                rt = t.update(formulas)
+                self.verify_table_data(rt, ["closure str"])
+                nonlocal closure_str
+                closure_str = "closure str2"
+                rt = t.update(formulas)
+                self.verify_table_data(rt, ["closure str2"])
+
+            with self.subTest("Changing scope"):
+                x = 1
+                rt = empty_table(1).update("X = x")
+                self.verify_table_data(rt, [1])
+                x = 2
+                rt = rt.update(formulas="Y = x")
+                self.verify_table_data(rt, [1, 2])
+
+        inner_func("param str")
+
+    def test_nested_scopes(self):
+        def inner_func(p) -> str:
+            t = empty_table(1).update("X = p * 10")
+            return t.to_string().split()[2]
+
+        t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")
+        self.assertIn("100", t.to_string())
+
+    def test_nested_scope_ticking(self):
+        import jpy
+        _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+        j_context = (_JExecutionContext.newBuilder()
+                     .captureCompilerContext()
+                     .captureQueryLibrary()
+                     .captureQueryScope()
+                     .build())
+
+        def inner_func(p) -> str:
+            open_ctx = j_context.open()
+            t = empty_table(1).update("X = p * 10")
+            open_ctx.close()
+            return t.to_string().split()[2]
+
+        with ugp.shared_lock():
+            t = time_table("00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
+        self.wait_ticking_table_update(t, row_count=5, timeout=10)
+
+        self.assertIn("100", t.to_string())
+
+    def test_scope_comprehensions(self):
+        with self.subTest("List comprehension"):
+            t = empty_table(1)
+            a_list = range(3)
+            rt_list = [t.update(formulas=["X=a", "Y=a*10"]) for a in a_list]
+            for i, rt in enumerate(rt_list):
+                self.verify_table_data(rt, [i, i * 10])
+
+        with self.subTest("Set comprehension"):
+            rt_set = {(a, t.update(formulas=["X=a", "Y=a*10"])) for a in a_list}
+            for i, rt in rt_set:
+                self.verify_table_data(rt, [i, i * 10])
+
+        with self.subTest("Dict comprehension"):
+            a_dict = {"k1": 101, "k2": 202}
+            rt_dict = {k: t.update(formulas=["X=v", "Y=v*10"]) for k, v in a_dict.items()}
+            for k, rt in rt_dict.items():
+                v = a_dict[k]
+                self.verify_table_data(rt, [v, v * 10])
+
+    def test_scope_lambda(self):
+        t = empty_table(1)
+        lambda_fn = lambda x: t.update(formulas=["X = x", "Y = x * 10"])
+        rt = lambda_fn(10)
+        self.verify_table_data(rt, [10, 10 * 10])
+
+    @classmethod
+    def update_in_class_method(cls, arg1, arg2) -> Table:
+        return empty_table(1).update(formulas=["X = arg1", "Y = arg2"])
+
+    @staticmethod
+    def update_in_static_method(arg1, arg2) -> Table:
+        return empty_table(1).update(formulas=["X = arg1", "Y = arg2"])
+
+    def test_decorated_methods(self):
+        rt = self.update_in_class_method("101", "202")
+        self.verify_table_data(rt, ["101", "202"])
+
+        rt = self.update_in_static_method(101, 202)
+        self.verify_table_data(rt, [101, 202])
+
+    def test_ticking_table_scope(self):
+        from deephaven import ugp
+        x = 1
+        with ugp.shared_lock():
+            rt = time_table("00:00:01").update("X = x")
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+        self.verify_table_data(rt, [1])
+        for i in range(2, 5):
+            x = i
+            self.wait_ticking_table_update(rt, row_count=i, timeout=5)
+        self.verify_table_data(rt, list(range(2, 5)), assert_not_in=True)
+
+        x = SimpleNamespace()
+        x.v = 1
+        with ugp.shared_lock():
+            rt = time_table("00:00:01").update("X = x.v").drop_columns("Timestamp")
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+
+        for i in range(2, 5):
+            x.v = i
+            self.wait_ticking_table_update(rt, row_count=i, timeout=5)
+        self.verify_table_data(rt, list(range(1, 5)))
+
+
+def global_fn() -> str:
+    return "global str"
+
+
+global_int = 1001
+a_number = 10001
 
 if __name__ == "__main__":
     unittest.main()

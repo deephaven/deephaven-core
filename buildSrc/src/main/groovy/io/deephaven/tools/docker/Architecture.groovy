@@ -17,10 +17,16 @@ enum Architecture {
 
     static Architecture fromHost() {
         String archName = DefaultNativePlatform.host().getArchitecture().getName()
+        // See org.gradle.nativeplatform.platform.internal.Architectures for constants
         switch (archName) {
             case "x86-64":
+            case "x86_64":
+            case "amd64":
+            case "x64":
                 return AMD64
+            case "aarch64":
             case "arm-v8":
+            case "arm64":
                 return ARM64
             default:
                 throw new IllegalStateException("Unable to determine proper docker architecture for " + archName)

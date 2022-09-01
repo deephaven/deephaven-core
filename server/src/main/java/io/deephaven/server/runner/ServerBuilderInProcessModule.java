@@ -6,11 +6,11 @@ package io.deephaven.server.runner;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
+import io.deephaven.ssl.config.SSLConfig;
 import io.grpc.BindableService;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
-import io.grpc.ServerBuilder;
 import io.grpc.ServerCall;
 import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
@@ -54,6 +54,12 @@ public class ServerBuilderInProcessModule {
     @Provides
     static ManagedChannelBuilder<?> channelBuilder(@Named("serverName") String serverName) {
         return InProcessChannelBuilder.forName(serverName);
+    }
+
+    @Provides
+    @Named("client.sslConfig")
+    static SSLConfig providesSSLConfigForClient() {
+        return SSLConfig.empty();
     }
 
     /**

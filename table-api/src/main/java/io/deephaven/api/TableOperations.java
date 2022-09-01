@@ -6,8 +6,9 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.api.util.ConcurrentMethod;
 
 import java.util.Collection;
 
@@ -21,12 +22,15 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    @ConcurrentMethod
     TOPS head(long size);
 
+    @ConcurrentMethod
     TOPS tail(long size);
 
     // -------------------------------------------------------------------------------------------
 
+    @ConcurrentMethod
     TOPS reverse();
 
     // -------------------------------------------------------------------------------------------
@@ -80,16 +84,21 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    @ConcurrentMethod
     TOPS sort(String... columnsToSortBy);
 
+    @ConcurrentMethod
     TOPS sortDescending(String... columnsToSortBy);
 
+    @ConcurrentMethod
     TOPS sort(Collection<SortColumn> columnsToSortBy);
 
     // -------------------------------------------------------------------------------------------
 
+    @ConcurrentMethod
     TOPS where(String... filters);
 
+    @ConcurrentMethod
     TOPS where(Collection<? extends Filter> filters);
 
     // -------------------------------------------------------------------------------------------
@@ -148,14 +157,18 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    @ConcurrentMethod
     TOPS view(String... columns);
 
+    @ConcurrentMethod
     TOPS view(Collection<? extends Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
 
+    @ConcurrentMethod
     TOPS updateView(String... columns);
 
+    @ConcurrentMethod
     TOPS updateView(Collection<? extends Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
@@ -163,6 +176,39 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS update(String... columns);
 
     TOPS update(Collection<? extends Selectable> columns);
+
+    // -------------------------------------------------------------------------------------------
+
+    /**
+     * Compute column formulas on demand.
+     *
+     * <p>
+     * Delegates to {@link #lazyUpdate(Collection)}.
+     *
+     * @param columns the columns to add
+     * @return a new Table with the columns added; to be computed on demand
+     */
+    TOPS lazyUpdate(String... columns);
+
+    /**
+     * Compute column formulas on demand.
+     *
+     * <p>
+     * Lazy update defers computation until required for a set of values, and caches the results for a set of input
+     * values. This uses less RAM than an update statement when you have a smaller set of unique values. Less
+     * computation than an updateView is needed, because the results are saved in a cache.
+     * </p>
+     *
+     * <p>
+     * If you have many unique values, you should instead use an update statement, which will have more memory efficient
+     * structures. Values are never removed from the lazyUpdate cache, so it should be used judiciously on a ticking
+     * table.
+     * </p>
+     *
+     * @param columns the columns to add
+     * @return a new Table with the columns added; to be computed on demand
+     */
+    TOPS lazyUpdate(Collection<? extends Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
 
@@ -487,191 +533,715 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    @ConcurrentMethod
     TOPS groupBy();
 
+    @ConcurrentMethod
     TOPS groupBy(String... groupByColumns);
 
-    TOPS groupBy(Collection<? extends Selectable> groupByColumns);
+    @ConcurrentMethod
+    TOPS groupBy(Collection<? extends ColumnName> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    @ConcurrentMethod
     TOPS aggAllBy(AggSpec spec);
 
+    @ConcurrentMethod
     TOPS aggAllBy(AggSpec spec, String... groupByColumns);
 
-    TOPS aggAllBy(AggSpec spec, Selectable... groupByColumns);
+    @ConcurrentMethod
+    TOPS aggAllBy(AggSpec spec, ColumnName... groupByColumns);
 
+    @ConcurrentMethod
     TOPS aggAllBy(AggSpec spec, Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Produce an aggregated result by grouping all rows from {@code this} into a single group of rows and applying
+     * {@code aggregation} to the result. The result table will have one row if {@code this} has one or more rows, or
+     * else zero rows.
+     *
+     * @param aggregation The {@link Aggregation aggregation} to apply
+     * @return A new table aggregating the rows of {@code this}
+     */
+    @ConcurrentMethod
     TOPS aggBy(Aggregation aggregation);
 
-    TOPS aggBy(Aggregation aggregation, String... groupByColumns);
-
-    TOPS aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns);
-
+    /**
+     * Produce an aggregated result by grouping all rows from {@code this} into a single group of rows and applying
+     * {@code aggregations} to the result. The result table will have one row if {@code this} has one or more rows, or
+     * else zero rows.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @return A new table aggregating the rows of {@code this}
+     */
+    @ConcurrentMethod
     TOPS aggBy(Collection<? extends Aggregation> aggregations);
 
+    /**
+     * Produce an aggregated result by grouping all rows from {@code this} into a single group of rows and applying
+     * {@code aggregations} to the result.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @param preserveEmpty If {@code preserveEmpty == true}, the result table will always have one row. Otherwise, the
+     *        result table will have one row if {@code this} has one or more rows, or else zero rows.
+     * @return A new table aggregating the rows of {@code this}
+     */
+    @ConcurrentMethod
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty);
+
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregation} to each resulting group of rows. The result table will have one row per group, ordered by the
+     * <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never changes.
+     * Groups that become empty will be removed from the result.
+     *
+     * @param aggregation The {@link Aggregation aggregation} to apply
+     * @param groupByColumns The columns to group by
+     * @return A new table aggregating the rows of {@code this}
+     */
+    @ConcurrentMethod
+    TOPS aggBy(Aggregation aggregation, String... groupByColumns);
+
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregation} to each resulting group of rows. The result table will have one row per group, ordered by the
+     * <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never changes.
+     * Groups that become empty will be removed from the result.
+     *
+     * @param aggregation The {@link Aggregation aggregation} to apply
+     * @param groupByColumns The {@link ColumnName columns} to group by
+     * @return A new table aggregating the rows of {@code this}
+     */
+    @ConcurrentMethod
+    TOPS aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns);
+
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregations} to each resulting group of rows. The result table will have one row per group, ordered by
+     * the <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never
+     * changes. Groups that become empty will be removed from the result.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @param groupByColumns The columns to group by
+     * @return A new table aggregating the rows of {@code this}
+     */
+    @ConcurrentMethod
     TOPS aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns);
 
-    TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregations} to each resulting group of rows. The result table will have one row per group, ordered by
+     * the <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never
+     * changes. Groups that become empty will be removed from the result.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @param groupByColumns The {@link ColumnName columns} to group by
+     * @return A new table aggregating the rows of {@code this}
+     */
+    @ConcurrentMethod
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns);
+
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregations} to each resulting group of rows. The result table will have one row per group, ordered by
+     * the <em>encounter order</em> within {@code this}, thereby ensuring that the row key for a given group never
+     * changes.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @param preserveEmpty Whether to keep result rows for groups that are initially empty or become empty as a result
+     *        of updates. Each aggregation operator defines its own value for empty groups.
+     * @param initialGroups A table whose distinct combinations of values for the {@code groupByColumns} should be used
+     *        to create an initial set of aggregation groups. All other columns are ignored. This is useful in
+     *        combination with {@code preserveEmpty == true} to ensure that particular groups appear in the result
+     *        table, or with {@code preserveEmpty == false} to control the encounter order for a collection of groups
+     *        and thus their relative order in the result. Changes to {@code initialGroups} are not expected or handled;
+     *        if {@code initialGroups} is a refreshing table, only its contents at instantiation time will be used. If
+     *        {@code initialGroups == null}, the result will be the same as if a table with no rows was supplied.
+     * @param groupByColumns The {@link ColumnName columns} to group by
+     * @return A new table aggregating the rows of {@code this}
+     */
+    @ConcurrentMethod
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, TABLE initialGroups,
+            Collection<? extends ColumnName> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
-    TOPS updateBy(UpdateByClause operation);
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
+     *
+     * @param operation the operation to apply to the table.
+     * @return a table with the same rowset, with the specified operation applied to the entire table
+     */
+    @ConcurrentMethod
+    TOPS updateBy(UpdateByOperation operation);
 
-    TOPS updateBy(Collection<? extends UpdateByClause> operations);
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
+     *
+     * @param operations the operations to apply to the table.
+     * @return a table with the same rowset, with the specified operations applied to the entire table.
+     */
+    @ConcurrentMethod
+    TOPS updateBy(Collection<? extends UpdateByOperation> operations);
 
-    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations);
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
+     *
+     * @param control the {@link UpdateByControl control} to use when updating the table.
+     * @param operations the operations to apply to the table.
+     * @return a table with the same rowset, with the specified operations applied to the entire table
+     */
+    @ConcurrentMethod
+    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations);
 
-    TOPS updateBy(UpdateByClause operation, final String... byColumns);
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns}).
+     *
+     * @param operation the operation to apply to the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same rowSet, with the specified operation applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    TOPS updateBy(UpdateByOperation operation, final String... byColumns);
 
-    TOPS updateBy(Collection<? extends UpdateByClause> operations, final String... byColumns);
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns}).
+     *
+     * @param operations the operations to apply to the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same rowSet, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    TOPS updateBy(Collection<? extends UpdateByOperation> operations, final String... byColumns);
 
-    TOPS updateBy(Collection<? extends UpdateByClause> operations, Collection<? extends Selectable> byColumns);
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns}).
+     *
+     * @param operations the operations to apply to the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same rowSet, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    TOPS updateBy(Collection<? extends UpdateByOperation> operations, Collection<? extends ColumnName> byColumns);
 
-    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByClause> operations,
-            Collection<? extends Selectable> byColumns);
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns}).
+     *
+     * @param control the {@link UpdateByControl control} to use when updating the table.
+     * @param operations the operations to apply to the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same rowSet, with the specified operations applied to each group defined by the
+     *         {@code byColumns}
+     */
+    @ConcurrentMethod
+    TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
+            Collection<? extends ColumnName> byColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    @ConcurrentMethod
     TOPS selectDistinct();
 
-    TOPS selectDistinct(String... groupByColumns);
+    @ConcurrentMethod
+    TOPS selectDistinct(String... columns);
 
-    TOPS selectDistinct(Selectable... groupByColumns);
+    @ConcurrentMethod
+    TOPS selectDistinct(Selectable... columns);
 
-    TOPS selectDistinct(Collection<? extends Selectable> groupByColumns);
+    @ConcurrentMethod
+    TOPS selectDistinct(Collection<? extends Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
 
+    @ConcurrentMethod
     TOPS countBy(String countColumnName);
 
+    @ConcurrentMethod
     TOPS countBy(String countColumnName, String... groupByColumns);
 
-    TOPS countBy(String countColumnName, Selectable... groupByColumns);
+    @ConcurrentMethod
+    TOPS countBy(String countColumnName, ColumnName... groupByColumns);
 
+    @ConcurrentMethod
     TOPS countBy(String countColumnName, Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Returns the first row of the given table.
+     */
+    @ConcurrentMethod
     TOPS firstBy();
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS firstBy(String... groupByColumns);
 
-    TOPS firstBy(Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
+    TOPS firstBy(ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS firstBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Returns the last row of the given table.
+     */
+    @ConcurrentMethod
     TOPS lastBy();
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS lastBy(String... groupByColumns);
 
-    TOPS lastBy(Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
+    TOPS lastBy(ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS lastBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Produces a single row table with the minimum of each column.
+     * <p>
+     * When the input table is empty, zero output rows are produced.
+     */
+    @ConcurrentMethod
     TOPS minBy();
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS minBy(String... groupByColumns);
 
-    TOPS minBy(Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
+    TOPS minBy(ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS minBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Produces a single row table with the maximum of each column.
+     * <p>
+     * When the input table is empty, zero output rows are produced.
+     */
+    @ConcurrentMethod
     TOPS maxBy();
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy} }
+     */
+    @ConcurrentMethod
     TOPS maxBy(String... groupByColumns);
 
-    TOPS maxBy(Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy} }
+     */
+    @ConcurrentMethod
+    TOPS maxBy(ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy} }
+     */
+    @ConcurrentMethod
     TOPS maxBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Produces a single row table with the sum of each column.
+     * <p>
+     * When the input table is empty, zero output rows are produced.
+     */
+    @ConcurrentMethod
     TOPS sumBy();
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS sumBy(String... groupByColumns);
 
-    TOPS sumBy(Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
+    TOPS sumBy(ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS sumBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Produces a single row table with the average of each column.
+     * <p>
+     * When the input table is empty, zero output rows are produced.
+     */
+    @ConcurrentMethod
     TOPS avgBy();
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS avgBy(String... groupByColumns);
 
-    TOPS avgBy(Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
+    TOPS avgBy(ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS avgBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Produces a single row table with the median of each column.
+     * <p>
+     * When the input table is empty, zero output rows are produced.
+     */
+    @ConcurrentMethod
     TOPS medianBy();
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy} }
+     */
+    @ConcurrentMethod
     TOPS medianBy(String... groupByColumns);
 
-    TOPS medianBy(Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy} }
+     */
+    @ConcurrentMethod
+    TOPS medianBy(ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy} }
+     */
+    @ConcurrentMethod
     TOPS medianBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Produces a single row table with the standard deviation of each column.
+     * <p>
+     * When the input table is empty, zero output rows are produced.
+     */
+    @ConcurrentMethod
     TOPS stdBy();
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
+     * of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS stdBy(String... groupByColumns);
 
-    TOPS stdBy(Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
+     * of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
+    TOPS stdBy(ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
+     * of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS stdBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Produces a single row table with the variance of each column.
+     * <p>
+     * When the input table is empty, zero output rows are produced.
+     */
+    @ConcurrentMethod
     TOPS varBy();
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS varBy(String... groupByColumns);
 
-    TOPS varBy(Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
+    TOPS varBy(ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
+     * fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS varBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Produces a single row table with the absolute sum of each column.
+     * <p>
+     * When the input table is empty, zero output rows are produced.
+     */
+    @ConcurrentMethod
     TOPS absSumBy();
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
+     * the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS absSumBy(String... groupByColumns);
 
-    TOPS absSumBy(Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
+     * the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
+    TOPS absSumBy(ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
+     * the rest of the fields
+     *
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS absSumBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Computes the weighted sum for all rows in the table using weightColumn for the rest of the fields
+     * <p>
+     * If the weight column is a floating point type, all result columns will be doubles. If the weight column is an
+     * integral type, all integral input columns will have long results and all floating point input columns will have
+     * double results.
+     *
+     * @param weightColumn the column to use for the weight
+     */
+    @ConcurrentMethod
     TOPS wsumBy(String weightColumn);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the weighted sum using weightColumn
+     * for the rest of the fields
+     * <p>
+     * If the weight column is a floating point type, all result columns will be doubles. If the weight column is an
+     * integral type, all integral input columns will have long results and all floating point input columns will have
+     * double results.
+     *
+     * @param weightColumn the column to use for the weight
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS wsumBy(String weightColumn, String... groupByColumns);
 
-    TOPS wsumBy(String weightColumn, Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the weighted sum using weightColumn
+     * for the rest of the fields
+     * <p>
+     * If the weight column is a floating point type, all result columns will be doubles. If the weight column is an
+     * integral type, all integral input columns will have long results and all floating point input columns will have
+     * double results.
+     *
+     * @param weightColumn the column to use for the weight
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
+    TOPS wsumBy(String weightColumn, ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the weighted sum using weightColumn
+     * for the rest of the fields
+     * <p>
+     * If the weight column is a floating point type, all result columns will be doubles. If the weight column is an
+     * integral type, all integral input columns will have long results and all floating point input columns will have
+     * double results.
+     *
+     * @param weightColumn the column to use for the weight
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS wsumBy(String weightColumn, Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Produces a single row table with the weighted average using weightColumn for the rest of the fields
+     * <p>
+     * When the input table is empty, zero output rows are produced.
+     *
+     * @param weightColumn the column to use for the weight
+     */
+    @ConcurrentMethod
     TOPS wavgBy(String weightColumn);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the weighted average using
+     * weightColumn for the rest of the fields
+     *
+     * @param weightColumn the column to use for the weight
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS wavgBy(String weightColumn, String... groupByColumns);
 
-    TOPS wavgBy(String weightColumn, Selectable... groupByColumns);
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the weighted average using
+     * weightColumn for the rest of the fields
+     *
+     * @param weightColumn the column to use for the weight
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
+    TOPS wavgBy(String weightColumn, ColumnName... groupByColumns);
 
+    /**
+     * Groups the data column according to <code>groupByColumns</code> and computes the weighted average using
+     * weightColumn for the rest of the fields
+     *
+     * @param weightColumn the column to use for the weight
+     * @param groupByColumns The grouping columns as in {@link TableOperations#groupBy}
+     */
+    @ConcurrentMethod
     TOPS wavgBy(String weightColumn, Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------

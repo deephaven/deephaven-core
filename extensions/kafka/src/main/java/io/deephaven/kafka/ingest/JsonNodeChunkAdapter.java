@@ -65,9 +65,11 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
             case Object:
                 if (dataType == String.class) {
                     return new JsonNodeStringFieldCopier(fieldName);
-                } else {
-                    throw new UncheckedDeephavenException("Raw objects not supported for JSON");
                 }
+                if (dataType.isAssignableFrom(com.fasterxml.jackson.databind.JsonNode.class)) {
+                    return new JsonNodeJsonNodeFieldCopier(fieldName);
+                }
+                throw new UncheckedDeephavenException("Type " + dataType.getSimpleName() + " not supported for JSON");
         }
         throw new IllegalArgumentException("Can not convert field of type " + dataType);
     }

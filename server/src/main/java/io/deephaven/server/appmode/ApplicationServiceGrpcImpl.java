@@ -15,6 +15,7 @@ import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
+import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.object.TypeLookup;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
@@ -42,7 +43,6 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
     private static final String QUERY_SCOPE_DESCRIPTION = "query scope variable";
 
-    private final AppMode mode;
     private final Scheduler scheduler;
     private final SessionService sessionService;
     private final TypeLookup typeLookup;
@@ -60,11 +60,10 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     private final Map<AppFieldId, State> accumulated = new LinkedHashMap<>();
 
     @Inject
-    public ApplicationServiceGrpcImpl(final AppMode mode,
+    public ApplicationServiceGrpcImpl(
             final Scheduler scheduler,
             final SessionService sessionService,
             final TypeLookup typeLookup) {
-        this.mode = mode;
         this.scheduler = scheduler;
         this.sessionService = sessionService;
         this.typeLookup = typeLookup;
@@ -72,7 +71,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
     @Override
     public synchronized void onScopeChanges(final ScriptSession scriptSession, final ScriptSession.Changes changes) {
-        if (!mode.hasVisibilityToConsoleExports() || changes.isEmpty()) {
+        if (ConsoleServiceGrpcImpl.REMOTE_CONSOLE_DISABLED || changes.isEmpty()) {
             return;
         }
         for (Entry<String, String> e : changes.removed.entrySet()) {
@@ -89,18 +88,12 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
     @Override
     public synchronized void onRemoveField(ApplicationState app, Field<?> oldField) {
-        if (!mode.hasVisibilityToAppExports()) {
-            return;
-        }
         remove(AppFieldId.from(app, oldField.name()));
         schedulePropagationOrClearIncrementalState();
     }
 
     @Override
     public synchronized void onNewField(final ApplicationState app, final Field<?> field) {
-        if (!mode.hasVisibilityToAppExports()) {
-            return;
-        }
         final AppFieldId id = AppFieldId.from(app, field.name());
         final String type = typeLookup.type(field.value()).orElse(null);
         create(id, field.description().orElse(null), type);

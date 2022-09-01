@@ -1,9 +1,8 @@
 package io.deephaven.engine.table.impl;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.Strings;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
@@ -26,7 +25,7 @@ import java.util.*;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 /**
- * The core of the {@link TableWithDefaults#updateBy(UpdateByControl, Collection, Collection)} operation.
+ * The core of the {@link Table#updateBy(UpdateByControl, Collection, Collection)} operation.
  */
 public abstract class UpdateBy {
     protected final ChunkSource.WithPrev<Values>[] inputSources;
@@ -74,23 +73,23 @@ public abstract class UpdateBy {
     /**
      * Apply the specified operations to each group of rows in the source table and produce a result table with the same
      * index as the source with each operator applied.
-     * 
+     *
      * @param source the source to apply to.
      * @param clauses the operations to apply.
      * @param byColumns the columns to group by before applying operations
-     * 
+     *
      * @return a new table with the same index as the source with all the operations applied.
      */
     public static Table updateBy(@NotNull final QueryTable source,
-            @NotNull final Collection<? extends UpdateByClause> clauses,
-            @NotNull final Collection<? extends Selectable> byColumns,
+            @NotNull final Collection<? extends UpdateByOperation> clauses,
+            @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByControl control) {
 
         WritableRowRedirection rowRedirection = null;
-        if (control.useRedirection()) {
+        if (control.useRedirectionOrDefault()) {
             if (!source.isRefreshing()) {
                 if (!source.isFlat() && SparseConstants.sparseStructureExceedsOverhead(source.getRowSet(),
-                        control.maxStaticSparseMemoryOverhead())) {
+                        control.maxStaticSparseMemoryOverheadOrDefault())) {
                     rowRedirection = new InverseRowRedirectionImpl(source.getRowSet());
                 }
             } else {
@@ -109,10 +108,9 @@ public abstract class UpdateBy {
             }
         }
 
+        // TODO(deephaven-core#2693): Improve UpdateBy implementation for ColumnName
         // generate a MatchPair array for use by the existing algorithm
-        MatchPair[] pairs = byColumns.stream()
-                .map(s -> new MatchPair(s.newColumn().name(), Strings.of(s.expression())))
-                .toArray(MatchPair[]::new);
+        MatchPair[] pairs = MatchPair.fromPairs(byColumns);
 
         final UpdateByOperatorFactory updateByOperatorFactory =
                 new UpdateByOperatorFactory(source, pairs, rowRedirection, control);
@@ -153,12 +151,15 @@ public abstract class UpdateBy {
         }
 
         descriptionBuilder.append(", pairs={").append(MatchPair.matchString(pairs)).append("})");
+
+        final List<ColumnSource<?>> originalKeySources = new ArrayList<>(pairs.length);
         final List<ColumnSource<?>> keySources = new ArrayList<>(pairs.length);
         for (final MatchPair byColumn : pairs) {
             if (!source.hasColumns(byColumn.rightColumn)) {
                 problems.add(byColumn.rightColumn);
                 continue;
             }
+            originalKeySources.add(source.getColumnSource(byColumn.rightColumn));
             keySources.add(ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(byColumn.rightColumn)));
         }
 
@@ -173,6 +174,7 @@ public abstract class UpdateBy {
                 resultSources,
                 rowRedirection,
                 keySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
+                originalKeySources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
                 pairs,
                 control);
     }

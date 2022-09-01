@@ -6,20 +6,19 @@ package io.deephaven.parquet.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.stringset.HashStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.stringset.StringSet;
-import io.deephaven.engine.util.TestTableTools;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.InMemoryTable;
-import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.TestTableTools;
+import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
+import io.deephaven.stringset.HashStringSet;
+import io.deephaven.stringset.StringSet;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.junit.*;
@@ -43,6 +42,10 @@ import static io.deephaven.engine.util.TableTools.*;
  * Tests for {@link ParquetTools}.
  */
 public class TestParquetTools {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
     private final static String testRoot =
             Configuration.getInstance().getWorkspacePath() + File.separator + "TestParquetTools";
     private final static File testRootFile = new File(testRoot);
@@ -84,23 +87,19 @@ public class TestParquetTools {
 
     @After
     public void tearDown() {
-        try {
-            if (testRootFile.exists()) {
-                int tries = 0;
-                boolean success = false;
-                do {
-                    try {
-                        FileUtils.deleteRecursively(testRootFile);
-                        success = true;
-                    } catch (Exception e) {
-                        System.gc();
-                        tries++;
-                    }
-                } while (!success && tries < 10);
-                TestCase.assertTrue(success);
-            }
-        } finally {
-            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        if (testRootFile.exists()) {
+            int tries = 0;
+            boolean success = false;
+            do {
+                try {
+                    FileUtils.deleteRecursively(testRootFile);
+                    success = true;
+                } catch (Exception e) {
+                    System.gc();
+                    tries++;
+                }
+            } while (!success && tries < 10);
+            TestCase.assertTrue(success);
         }
     }
 
@@ -138,9 +137,9 @@ public class TestParquetTools {
         TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();
 
-        QueryLibrary.importClass(TestEnum.class);
-        QueryLibrary.importClass(HashStringSet.class);
-        QueryLibrary.importStatic(this.getClass());
+        ExecutionContext.getContext().getQueryLibrary().importClass(TestEnum.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(HashStringSet.class);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(this.getClass());
         Table test = TableTools.emptyTable(10).select("enumC=TestEnum.values()[i]", "enumSet=newSet(" +
                 "toS(enumC_[(i + 9) % 10])," +
                 "toS(enumC_[i])," +
@@ -369,31 +368,27 @@ public class TestParquetTools {
 
     @Test
     public void testBigArrays() {
-        try {
-            QueryLibrary.importClass(LongVectorDirect.class);
-            QueryLibrary.importClass(LongVector.class);
-            QueryLibrary.importClass(LongStream.class);
-            QueryLibrary.importClass(IntVectorDirect.class);
-            QueryLibrary.importClass(IntVector.class);
-            QueryLibrary.importClass(IntStream.class);
-            QueryLibrary.importClass(TestParquetTools.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(LongVectorDirect.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(LongVector.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(LongStream.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(IntVectorDirect.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(IntVector.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(IntStream.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(TestParquetTools.class);
 
-            final Table stuff = emptyTable(10)
-                    .update("Biggie = (int)(500_000/(k+1))",
-                            "Doobles = (LongVector)new LongVectorDirect(LongStream.range(0, Biggie).toArray())",
-                            "Woobles = TestParquetTools.generateDoubles(Biggie)",
-                            "Goobles = (IntVector)new IntVectorDirect(IntStream.range(0, 2*Biggie).toArray())",
-                            "Toobles = TestParquetTools.generateDoubles(2*Biggie)",
-                            "Noobles = TestParquetTools.makeSillyStringArray(Biggie)");
+        final Table stuff = emptyTable(10)
+                .update("Biggie = (int)(500_000/(k+1))",
+                        "Doobles = (LongVector)new LongVectorDirect(LongStream.range(0, Biggie).toArray())",
+                        "Woobles = TestParquetTools.generateDoubles(Biggie)",
+                        "Goobles = (IntVector)new IntVectorDirect(IntStream.range(0, 2*Biggie).toArray())",
+                        "Toobles = TestParquetTools.generateDoubles(2*Biggie)",
+                        "Noobles = TestParquetTools.makeSillyStringArray(Biggie)");
 
-            final File f2w = new File(testRoot, "bigArray.parquet");
-            ParquetTools.writeTable(stuff, f2w);
+        final File f2w = new File(testRoot, "bigArray.parquet");
+        ParquetTools.writeTable(stuff, f2w);
 
-            final Table readBack = ParquetTools.readTable(f2w);
-            assertTableEquals(stuff, readBack);
-        } finally {
-            QueryLibrary.resetLibrary();
-        }
+        final Table readBack = ParquetTools.readTable(f2w);
+        assertTableEquals(stuff, readBack);
     }
 
     public static DoubleVector generateDoubles(int howMany) {

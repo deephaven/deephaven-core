@@ -6,10 +6,6 @@
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVectorExpansionKernel and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
 package io.deephaven.extensions.barrage.chunk.vector;
 
 import io.deephaven.chunk.DoubleChunk;

@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.updateby;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.api.updateby.UpdateByClause;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.function.Numeric;
@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
@@ -33,7 +34,7 @@ public class TestCumProd extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(1000, false, false, false, 0xABCD1234).t;
-        final Table result = t.updateBy(UpdateByClause.CumProd());
+        final Table result = t.updateBy(UpdateByOperation.CumProd());
         for (String col : t.getDefinition().getColumnNamesArray()) {
             if ("boolCol".equals(col)) {
                 continue;
@@ -49,12 +50,12 @@ public class TestCumProd extends BaseUpdateByTest {
 
     @Test
     public void testNullOnBucketChange() throws IOException {
-        final TableWithDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
+        final TableDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
                 byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
                 shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
                 intCol("IntVal", 1, 2, NULL_INT, 3));
 
-        final TableWithDefaults expected = testTable(stringCol("Sym", "A", "A", "B", "B"),
+        final TableDefaults expected = testTable(stringCol("Sym", "A", "A", "B", "B"),
                 byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
                 shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
                 intCol("IntVal", 1, 2, NULL_INT, 3),
@@ -62,10 +63,10 @@ public class TestCumProd extends BaseUpdateByTest {
                 longCol("ShortValProd", 1, 2, NULL_LONG, 3),
                 longCol("IntValProd", 1, 2, NULL_LONG, 3));
 
-        final Table r = t.updateBy(UpdateByClause.of(
-                UpdateByClause.CumProd("ByteValProd=ByteVal"),
-                UpdateByClause.CumProd("ShortValProd=ShortVal"),
-                UpdateByClause.CumProd("IntValProd=IntVal")), "Sym");
+        final Table r = t.updateBy(List.of(
+                UpdateByOperation.CumProd("ByteValProd=ByteVal"),
+                UpdateByOperation.CumProd("ShortValProd=ShortVal"),
+                UpdateByOperation.CumProd("IntValProd=IntVal")), "Sym");
 
         assertTableEquals(expected, r);
     }
@@ -83,8 +84,9 @@ public class TestCumProd extends BaseUpdateByTest {
     private void doTestStaticBucketed(boolean grouped) {
         final QueryTable t = createTestTable(10000, true, grouped, false, 0x4321CBDA).t;
 
-        final Table result = t.updateBy(UpdateByClause.CumProd("byteCol", "shortCol", "intCol", "longCol", "floatCol",
-                "doubleCol", "bigIntCol", "bigDecimalCol"), "Sym");
+        final Table result =
+                t.updateBy(UpdateByOperation.CumProd("byteCol", "shortCol", "intCol", "longCol", "floatCol",
+                        "doubleCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
         final PartitionedTable preOp = t.partitionBy("Sym");
         final PartitionedTable postOp = result.partitionBy("Sym");
@@ -124,8 +126,8 @@ public class TestCumProd extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return bucketed ? t.updateBy(UpdateByClause.CumProd(), "Sym")
-                                : t.updateBy(UpdateByClause.CumProd());
+                        return bucketed ? t.updateBy(UpdateByOperation.CumProd(), "Sym")
+                                : t.updateBy(UpdateByOperation.CumProd());
                     }
                 }
         };
@@ -146,7 +148,7 @@ public class TestCumProd extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByClause.CumProd());
+                        return t.updateBy(UpdateByOperation.CumProd());
                     }
                 }
         };
@@ -168,7 +170,7 @@ public class TestCumProd extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByClause.CumProd(), "Sym");
+                        return t.updateBy(UpdateByOperation.CumProd(), "Sym");
                     }
                 }
         };
@@ -289,7 +291,7 @@ public class TestCumProd extends BaseUpdateByTest {
                 result[i] = result[i - 1];
             } else if (isBD) {
                 result[i] = ((BigDecimal) result[i - 1]).multiply((BigDecimal) values[i],
-                        UpdateByControl.defaultInstance().mathContext());
+                        UpdateByControl.mathContextDefault());
             } else {
                 result[i] = ((BigInteger) result[i - 1]).multiply((BigInteger) values[i]);
             }

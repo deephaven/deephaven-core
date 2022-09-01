@@ -11,4 +11,6 @@ public interface StreamReaderOptions {
     ColumnConversionMode columnConversionMode();
 
     int batchSize();
+
+    int maxMessageSize();
 }

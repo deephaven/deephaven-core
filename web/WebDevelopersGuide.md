@@ -610,7 +610,7 @@ These instances are immutable - all operations that compose them to build bigger
      third.
      * `isInf` - Returns true if the given number is "infinity".
      * `isNaN` - Returns true if the given number is "not a number".
-     * `isNormal` - Returns true if the given number is not null, is not infinity, and is not "not a number".
+     * `isFinite` - Returns true if the given number is not null, is not infinity, and is not "not a number".
      * `startsWith` - Returns true if the first string starts with the second string.
      * `endsWith` - Returns true if the first string ends with the second string.
      * `matches` - Returns true if the first string argument matches the second string used as a Java regular expression.
@@ -1022,6 +1022,8 @@ This enum describes the name of each supported operation/aggregation type when c
 ###### Methods
 
  * `addEventListener(String eventType, Function eventListener)`
+ * `getConsoleTypes():String[]` - Retrieve the available console types for this worker.
+ * `getHeapInfo():HeapInfo` - Retrieve the current heap info for this worker.
  * `removeEventListener(String eventType, Function eventListener)`
  * `onLogMessage(Function logHandler):Function`
  * `startSession(String scriptLanguage):Promise<IdeSession>`
@@ -1188,6 +1190,11 @@ as needed.
  * `VariableDefinition created`
  * `VariableDefinition updated`
  * `VariableDefinition removed`
+
+##### Class `HeapInfo`
+ * `Number maximumHeapSize` - Maximum heap size of this worker.
+ * `Number freeMemory` - Free memory of this worker.
+ * `Number totalHeapSize` - Total heap size available for this worker.
 -->
 
 #### The `dh.plot` namespace:

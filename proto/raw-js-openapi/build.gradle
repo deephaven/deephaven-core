@@ -3,16 +3,21 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-evaluationDependsOn ':proto'
-evaluationDependsOn ':proto:proto-backplane-grpc'
 evaluationDependsOn Docker.registryProject('node')
 
-def backplaneProject = project(':proto:proto-backplane-grpc')
+configurations {
+    js
+}
+
+dependencies {
+    js project(path: ':proto:proto-backplane-grpc', configuration: 'js')
+}
+
 def webpackSourcesLocation = layout.buildDirectory.dir("${buildDir}/dhapi")
 
 Docker.registerDockerTask(project, 'webpackSources') {
     copyIn {
-        from(backplaneProject.tasks.findByName('generateProtobuf').outputs.files) {
+        from(configurations.js) {
             // note: we are only copying the JS and not TS files.
             include '**/*.js'
             into 'raw-js-openapi/build/js-src'
@@ -39,10 +44,6 @@ Docker.registerDockerTask(project, 'webpackSources') {
         include 'dh-internal.js'
         into(webpackSourcesLocation.get().dir('jsapi'))
     }
-}
-
-configurations {
-    js
 }
 
 artifacts {

@@ -6,22 +6,47 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.util.NullSafeAddition;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
 
-class CountAggregationOperator implements IterativeChunkedAggregationOperator {
+class CountAggregationOperator extends BasicStateChangeRecorder implements IterativeChunkedAggregationOperator {
+
     private final String resultName;
     private final LongArraySource countColumnSource;
 
-    CountAggregationOperator(String resultName) {
+    /**
+     * Construct a count aggregation operator.
+     *
+     * @param resultName The name of the result column if this operator should expose its results, else {@code null}
+     */
+    CountAggregationOperator(@Nullable final String resultName) {
         this.resultName = resultName;
         this.countColumnSource = new LongArraySource();
+    }
+
+    private boolean exposesResult() {
+        return resultName != null;
+    }
+
+    private void recordAdd(final long destination, final long rowsAdded) {
+        final long oldCount = countColumnSource.getAndAddUnsafe(destination, rowsAdded);
+        if (oldCount == 0) {
+            onReincarnated(destination);
+        }
+    }
+
+    private void recordRemove(final long destination, final long rowsRemoved) {
+        final long oldCount = countColumnSource.getAndAddUnsafe(destination, -rowsRemoved);
+        if (oldCount == rowsRemoved) {
+            onEmptied(destination);
+        }
     }
 
     @Override
@@ -32,10 +57,12 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            final long newCount = length.get(ii);
-            countColumnSource.getAndAddUnsafe(destination, newCount);
+            final long rowsAdded = length.get(ii);
+            recordAdd(destination, rowsAdded);
         }
-        stateModified.fillWithValue(0, startPositions.size(), true);
+        if (exposesResult()) {
+            stateModified.fillWithValue(0, startPositions.size(), true);
+        }
     }
 
     @Override
@@ -46,23 +73,39 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            final long newCount = length.get(ii);
-            countColumnSource.getAndAddUnsafe(destination, -newCount);
+            final long rowsRemoved = length.get(ii);
+            recordRemove(destination, rowsRemoved);
         }
-        stateModified.fillWithValue(0, startPositions.size(), true);
+        if (exposesResult()) {
+            stateModified.fillWithValue(0, startPositions.size(), true);
+        }
     }
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        countColumnSource.getAndAddUnsafe(destination, chunkSize);
+        recordAdd(destination, chunkSize);
         return true;
     }
 
     @Override
     public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        countColumnSource.getAndAddUnsafe(destination, -chunkSize);
+        recordRemove(destination, chunkSize);
+        return true;
+    }
+
+    @Override
+    public boolean unchunkedRowSet() {
+        // Optimize initial grouped addition by accepting un-chunked row sets in lieu of iterative calls to
+        // addChunk with null values and null inputRowKeys.
+        // NB: Count is unusual in allowing this while returning false for requiresRowKeys().
+        return true;
+    }
+
+    @Override
+    public boolean addRowSet(SingletonContext context, RowSet rowSet, long destination) {
+        recordAdd(destination, rowSet.size());
         return true;
     }
 
@@ -71,13 +114,15 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
             Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
-        stateModified.fillWithValue(0, startPositions.size(), false);
+        // We have no inputs, so we should never get here.
+        throw new IllegalStateException();
     }
 
     @Override
     public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
             Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
-        return false;
+        // We have no inputs, so we should never get here.
+        throw new IllegalStateException();
     }
 
     @Override
@@ -87,11 +132,13 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        return Collections.singletonMap(resultName, countColumnSource);
+        return exposesResult() ? Collections.singletonMap(resultName, countColumnSource) : Collections.emptyMap();
     }
 
     @Override
     public void startTrackingPrevValues() {
-        countColumnSource.startTrackingPrevValues();
+        if (exposesResult()) {
+            countColumnSource.startTrackingPrevValues();
+        }
     }
 }

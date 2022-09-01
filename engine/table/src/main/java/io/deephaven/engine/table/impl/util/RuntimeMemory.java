@@ -16,10 +16,10 @@ import java.util.List;
  * Cache memory utilization.
  *
  * <p>
- * >Calling Runtime.getRuntime().getFreeMemory() is expensive; and we may do it a lot when we have automatically
- * computed tables, such as in a partitionBy. Instead of calling the runtime directly from the performance
- * instrumentation framework, we call this class's methods; which cache the result for a configurable number of
- * milliseconds to avoid repeated calls that are not likely any different./p>
+ * >Calling Runtime.getRuntime().freeMemory() is expensive; and we may do it a lot when we have automatically computed
+ * tables, such as in a partitionBy. Instead of calling the runtime directly from the performance instrumentation
+ * framework, we call this class's methods; which cache the result for a configurable number of milliseconds to avoid
+ * repeated calls that are not likely any different./p>
  *
  * <p>
  * Additionally, we log our JVM heap usage on a regular basis; to enable users to quickly examine their worker logs and
@@ -68,6 +68,13 @@ public class RuntimeMemory {
          * The approximated total time of GC collections since program start, in milliseconds.
          */
         long totalCollectionTimeMs;
+
+        private void readInto(Sample buf) {
+            buf.freeMemory = lastFreeMemory;
+            buf.totalMemory = lastTotalMemory;
+            buf.totalCollections = totalCollections;
+            buf.totalCollectionTimeMs = totalCollectionTimeMs;
+        }
     }
 
     private volatile Snapshot currSnapshot;
@@ -108,19 +115,21 @@ public class RuntimeMemory {
 
     public static class Sample {
         /**
-         * What is the last free memory value we retrieved from the Runtime.
+         * What is the last free memory value we retrieved from the {@link Runtime#freeMemory()}.
          */
         public long freeMemory;
         /**
-         * What is the last total memory value we retrieved from the Runtime.
+         * What is the last total memory value we retrieved from the {@link Runtime#totalMemory()}.
          */
         public long totalMemory;
         /**
-         * The total number of GC collections since program start.
+         * The total number of GC collections since program start. The sum of
+         * {@link GarbageCollectorMXBean#getCollectionCount()}.
          */
         public long totalCollections;
         /**
-         * The approximated total time of GC collections since program start, in milliseconds.
+         * The approximated total time of GC collections since program start, in milliseconds. The sum of the
+         * {@link GarbageCollectorMXBean#getCollectionTime()}.
          */
         public long totalCollectionTimeMs;
 
@@ -145,7 +154,7 @@ public class RuntimeMemory {
     }
 
     /**
-     * Read last collected samples.
+     * Read last collected samples. Triggers a new snapshot if the last snapshot is older than {@code cacheInterval}.
      *
      * @param buf a user provided buffer object to store the samples.
      */
@@ -172,10 +181,7 @@ public class RuntimeMemory {
                 }
             }
         }
-        buf.freeMemory = snapshot.lastFreeMemory;
-        buf.totalMemory = snapshot.lastTotalMemory;
-        buf.totalCollections = snapshot.totalCollections;
-        buf.totalCollectionTimeMs = snapshot.totalCollectionTimeMs;
+        snapshot.readInto(buf);
         if (logInterval > 0 && now >= snapshot.nextLog) {
             synchronized (this) {
                 if (now >= currSnapshot.nextLog) {
@@ -189,9 +195,18 @@ public class RuntimeMemory {
     }
 
     /**
+     * Read last collected samples.
+     *
+     * @param buf a user provided buffer object to store the samples.
+     */
+    public void readOnly(final Sample buf) {
+        currSnapshot.readInto(buf);
+    }
+
+    /**
      * See {@link Runtime#maxMemory()}.
      */
-    long getMaxMemory() {
+    public long maxMemory() {
         return maxMemory;
     }
 }

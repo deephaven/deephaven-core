@@ -3,6 +3,7 @@
  */
 package io.deephaven.plot;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -254,7 +255,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         initialize();
     }
 
-    private void configureTreeMapPlot() {
+    private void configureTreemapPlot() {
         this.setDimension(2);
         chart.setChartType(ChartType.TREEMAP);
         xAxis().setType(AxisImpl.Type.CATEGORY);
@@ -277,12 +278,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         if (sds instanceof SelectableDataSetOneClick) {
             Collections.addAll(cols, ((SelectableDataSetOneClick) sds).getByColumns());
         }
-
         final Collection<? extends Aggregation> aggs = aggSupplier.get();
-        final Collection<? extends Selectable> selectableCols = Selectable.from(cols);
-        final SelectColumn[] gbsColumns = SelectColumn.from(selectableCols);
-        final Function<Table, Table> applyAggs = t -> t.aggBy(aggs, selectableCols);
-        return sds.transform(MemoizedOperationKey.aggBy(aggs, gbsColumns), applyAggs);
+        final Collection<? extends ColumnName> columnNames = ColumnName.from(cols);
+        final Function<Table, Table> applyAggs = t -> t.aggBy(aggs, columnNames);
+        return sds.transform(MemoizedOperationKey.aggBy(aggs, false, null, columnNames), applyAggs);
     }
 
     private static SelectableDataSet getLastBySelectableDataSet(final SelectableDataSet sds, final String... columns) {
@@ -1867,9 +1866,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     // region Tree Map
 
-    private CategoryDataSeriesInternal treeMapPlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles,
+    private CategoryDataSeriesInternal treemapPlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles,
                                                final SwappableTable[] swappableTables) {
-        configureTreeMapPlot();
+        configureTreemapPlot();
 
         if (tableHandles != null) {
             for (TableHandle tableHandle : tableHandles) {
@@ -1889,11 +1888,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
 
     @Override
-    public CategoryDataSeries treeMapPlot(Comparable seriesName, Table t, String values, String ids, String parents, @Nullable String labels, @Nullable String text, @Nullable String color, @Nullable String hoverText) {
-        final TableHandle h = PlotUtils.createCategoryTableHandle(t, new String[] { ids }, values, parents, labels, text, color, hoverText);
-        return treeMapPlot(new CategoryTreeMapDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, ids, parents, labels, values, text, color, hoverText), new TableHandle[]{h}, null);
+    public CategoryDataSeries treemapPlot(Comparable seriesName, Table t, String ids, String parents, @Nullable String values, @Nullable String labels, @Nullable String hoverText, @Nullable String color) {
+        final TableHandle h = PlotUtils.createCategoryTableHandle(t, new String[] { ids }, parents, values, labels, hoverText, color);
+        return treemapPlot(new CategoryTreemapDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, ids, parents, values, labels, hoverText, color), new TableHandle[]{h}, null);
     }
-
 
     // endregion
 

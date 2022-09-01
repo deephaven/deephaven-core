@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import org.jetbrains.annotations.NotNull;
@@ -30,7 +30,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     public NoLanguageDeephavenSession(final String scriptType) {
-        super(null, null, false);
+        super(null, null);
 
         this.scriptType = scriptType;
         variables = new LinkedHashMap<>();

@@ -3,9 +3,9 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.SelectColumn;
 
 import java.util.Collection;
 
@@ -85,7 +85,7 @@ public class FreezeBy {
      *
      * @return a copy of the input table frozen by key
      */
-    public static Table freezeBy(Table input, SelectColumn... groupByColumns) {
+    public static Table freezeBy(Table input, ColumnName... groupByColumns) {
         return input.aggAllBy(AggSpec.freeze(), groupByColumns);
     }
 }

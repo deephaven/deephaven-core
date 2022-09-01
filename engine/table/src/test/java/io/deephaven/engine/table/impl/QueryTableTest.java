@@ -25,7 +25,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.vector.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.time.DateTime;
@@ -345,7 +345,6 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testView() {
-        QueryScope.setScope(new QueryScope.StandaloneImpl());
         QueryScope.addParam("indexMinEdge", 2.0);
         QueryScope.addParam("IsIndex", true);
         QueryScope.addParam("MEF", 1.0);

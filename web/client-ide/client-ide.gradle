@@ -12,8 +12,8 @@ configurations {
 }
 
 dependencies {
-    compile project(':web-client-api')
-    compile project(':open-api-lang-parser')
+    implementation project(':web-client-api')
+    implementation project(':open-api-lang-parser')
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 }

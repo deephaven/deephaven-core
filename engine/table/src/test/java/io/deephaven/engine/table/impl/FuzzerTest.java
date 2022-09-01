@@ -7,10 +7,11 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.GroovyDeephavenSession;
@@ -97,7 +98,7 @@ public class FuzzerTest {
 
     private GroovyDeephavenSession getGroovySession(@Nullable TimeProvider timeProvider) throws IOException {
         final GroovyDeephavenSession session = new GroovyDeephavenSession(NoOp.INSTANCE, RunScripts.serviceLoader());
-        QueryScope.setScope(session.newQueryScope());
+        session.getExecutionContext().open();
         return session;
     }
 
@@ -335,6 +336,7 @@ public class FuzzerTest {
 
     private void validateBindingPartitionedTableConstituents(
             GroovyDeephavenSession session, Map<String, Object> hardReferences) {
+        final ExecutionContext executionContext = ExecutionContext.makeSystemicExecutionContext();
         // noinspection unchecked
         session.getBinding().getVariables().forEach((k, v) -> {
             if (v instanceof PartitionedTable) {
@@ -342,7 +344,7 @@ public class FuzzerTest {
                 if (!partitionedTable.table().isRefreshing()) {
                     return;
                 }
-                final PartitionedTable validated = partitionedTable.transform(table -> {
+                final PartitionedTable validated = partitionedTable.transform(executionContext, table -> {
                     final String description = k.toString() + "_" + System.identityHashCode(table);
                     final QueryTable coalesced = (QueryTable) table.coalesce();
                     addValidator(hardReferences, description, coalesced);

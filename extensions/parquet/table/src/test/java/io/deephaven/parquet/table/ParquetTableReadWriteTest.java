@@ -5,20 +5,22 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -37,6 +39,9 @@ public class ParquetTableReadWriteTest {
 
     private static File rootFile;
 
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
     @Before
     public void setUp() {
         rootFile = new File(ROOT_FILENAME);
@@ -53,7 +58,7 @@ public class ParquetTableReadWriteTest {
     }
 
     private static Table getTableFlat(int size, boolean includeSerializable) {
-        QueryLibrary.importClass(SomeSillyTest.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList("someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
                         "nonNullString = `` + (i % 60)",
@@ -77,7 +82,7 @@ public class ParquetTableReadWriteTest {
     }
 
     private static Table getOneColumnTableFlat(int size) {
-        QueryLibrary.importClass(SomeSillyTest.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
         return TableTools.emptyTable(size).select(
                 // "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null"
                 "someIntColumn = i % 3 == 0 ? null:i");
@@ -85,9 +90,9 @@ public class ParquetTableReadWriteTest {
 
     private static Table getGroupedOneColumnTable(int size) {
         Table t = getOneColumnTableFlat(size);
-        QueryLibrary.importClass(ArrayStringSet.class);
-        QueryLibrary.importClass(StringSet.class);
-        Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)");
+        ExecutionContext.getContext().getQueryLibrary().importClass(ArrayStringSet.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(StringSet.class);
+        Table result = t.updateView("groupKey = i % 100 + (int)(i/10)").groupBy("groupKey");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name
@@ -121,7 +126,7 @@ public class ParquetTableReadWriteTest {
     }
 
     private static Table getEmptyArray(int size) {
-        QueryLibrary.importClass(SomeSillyTest.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
         return TableTools.emptyTable(size).select(
                 "someEmptyString = new String[0]",
                 "someEmptyInt = new int[0]",
@@ -131,9 +136,9 @@ public class ParquetTableReadWriteTest {
 
     private static Table getGroupedTable(int size, boolean includeSerializable) {
         Table t = getTableFlat(size, includeSerializable);
-        QueryLibrary.importClass(ArrayStringSet.class);
-        QueryLibrary.importClass(StringSet.class);
-        Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)");
+        ExecutionContext.getContext().getQueryLibrary().importClass(ArrayStringSet.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(StringSet.class);
+        Table result = t.updateView("groupKey = i % 100 + (int)(i/10)").groupBy("groupKey");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name
@@ -246,7 +251,7 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void groupingByBigInt() {
-        QueryLibrary.importClass(BigInteger.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(BigInteger.class);
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("someInt"),
                 ColumnDefinition.fromGenericType("someBigInt", BigInteger.class).withGrouping());

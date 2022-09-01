@@ -7,15 +7,16 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.FileUtils;
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.context.QueryLibrary;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.SafeCloseable;
@@ -59,15 +60,12 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     private final File classCacheDirectory;
 
-    protected final QueryScope queryScope;
-    protected final QueryLibrary queryLibrary;
-    protected final CompilerTools.Context compilerContext;
+    protected final ExecutionContext executionContext;
 
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
 
-    protected AbstractScriptSession(ObjectTypeLookup objectTypeLookup, @Nullable Listener changeListener,
-            boolean isDefaultScriptSession) {
+    protected AbstractScriptSession(ObjectTypeLookup objectTypeLookup, @Nullable Listener changeListener) {
         this.objectTypeLookup = objectTypeLookup;
         this.changeListener = changeListener;
 
@@ -76,30 +74,21 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         classCacheDirectory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId)).toFile();
         createOrClearDirectory(classCacheDirectory);
 
-        queryScope = newQueryScope();
-        queryLibrary = QueryLibrary.makeNewLibrary();
+        final QueryScope queryScope = newQueryScope();
+        final CompilerTools.Context compilerContext =
+                CompilerTools.newContext(classCacheDirectory, getClass().getClassLoader());
 
-        compilerContext = new CompilerTools.Context(classCacheDirectory, getClass().getClassLoader()) {
-            {
-                addClassSource(getFakeClassDestination());
-            }
+        executionContext = ExecutionContext.newBuilder()
+                .markSystemic()
+                .newQueryLibrary()
+                .setQueryScope(queryScope)
+                .setCompilerContext(compilerContext)
+                .build();
+    }
 
-            @Override
-            public File getFakeClassDestination() {
-                return classCacheDirectory;
-            }
-
-            @Override
-            public String getClassPath() {
-                return classCacheDirectory.getAbsolutePath() + File.pathSeparatorChar + super.getClassPath();
-            }
-        };
-
-        if (isDefaultScriptSession) {
-            CompilerTools.setDefaultContext(compilerContext);
-            QueryScope.setDefaultScope(queryScope);
-            QueryLibrary.setDefaultLibrary(queryLibrary);
-        }
+    @Override
+    public ExecutionContext getExecutionContext() {
+        return executionContext;
     }
 
     protected synchronized void publishInitial() {
@@ -147,30 +136,16 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     public synchronized final Changes evaluateScript(final String script, final @Nullable String scriptName) {
         RuntimeException evaluateErr = null;
         final Changes diff;
-        try (S fromSnapshot = takeSnapshot()) {
+        // retain any objects which are created in the executed code, we'll release them when the script session
+        // closes
+        try (S fromSnapshot = takeSnapshot();
+                final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
 
-            // store pointers to exist query scope static variables
-            final QueryLibrary prevQueryLibrary = QueryLibrary.getLibrary();
-            final CompilerTools.Context prevCompilerContext = CompilerTools.getContext();
-            final QueryScope prevQueryScope = QueryScope.getScope();
-
-            // retain any objects which are created in the executed code, we'll release them when the script session
-            // closes
-            try (final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
-                // point query scope static state to our session's state
-                QueryScope.setScope(queryScope);
-                CompilerTools.setContext(compilerContext);
-                QueryLibrary.setLibrary(queryLibrary);
-
+            try {
                 // actually evaluate the script
-                evaluate(script, scriptName);
+                executionContext.apply(() -> evaluate(script, scriptName));
             } catch (final RuntimeException err) {
                 evaluateErr = err;
-            } finally {
-                // restore pointers to query scope static variables
-                QueryScope.setScope(prevQueryScope);
-                CompilerTools.setContext(prevCompilerContext);
-                QueryLibrary.setLibrary(prevQueryLibrary);
             }
 
             try (S toSnapshot = takeSnapshot()) {
@@ -324,6 +299,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         @Override
         public void putObjectFields(Object object) {
             throw new UnsupportedOperationException();
+        }
+
+        public ScriptSession scriptSession() {
+            return scriptSession;
         }
     }
 

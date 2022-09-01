@@ -1,12 +1,12 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.api.Selectable;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.BadDataBehavior;
-import io.deephaven.api.updateby.EmaControl;
+import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.Table;
-import io.deephaven.api.updateby.UpdateByClause;
 import io.deephaven.engine.table.impl.EvalNugget;
-import io.deephaven.engine.table.impl.TableWithDefaults;
+import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -14,10 +14,7 @@ import io.deephaven.test.types.ParallelTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.table.impl.RefreshingTableTestCase.simulateShiftAwareStep;
@@ -75,9 +72,9 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
             result.t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         }
 
-        final EmaControl skipControl = EmaControl.builder()
-                .onNullValue(BadDataBehavior.Skip)
-                .onNanValue(BadDataBehavior.Skip).build();
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 new EvalNugget() {
@@ -85,36 +82,24 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
 
                     @Override
                     protected Table e() {
-                        TableWithDefaults base = result.t;
+                        TableDefaults base = result.t;
                         if (!appendOnly) {
-                            base = (TableWithDefaults) base.sort("ts");
+                            base = (TableDefaults) base.sort("ts");
                         }
 
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
-                        final Collection<? extends UpdateByClause> clauses = UpdateByClause.of(
-                                UpdateByClause.Fill(),
-                                UpdateByClause.Ema(skipControl, "ts", 10 * MINUTE,
+                        final Collection<? extends UpdateByOperation> clauses = List.of(
+                                UpdateByOperation.Fill(),
+                                UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
-                                UpdateByClause.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
-                                UpdateByClause.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
-                                UpdateByClause.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
-                                UpdateByClause
+                                UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
+                                UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
+                                UpdateByOperation.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
+                                UpdateByOperation
                                         .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
-
-                        final UpdateByControl control;
-                        if (redirected) {
-                            control = new UpdateByControl() {
-                                @Override
-                                public boolean useRedirection() {
-                                    return true;
-                                }
-                            };
-                        } else {
-                            control = UpdateByControl.defaultInstance();
-                        }
-
+                        final UpdateByControl control = UpdateByControl.builder().useRedirection(redirected).build();
                         return bucketed
-                                ? base.updateBy(control, clauses, Selectable.from("Sym"))
+                                ? base.updateBy(control, clauses, ColumnName.from("Sym"))
                                 : base.updateBy(control, clauses);
                     }
                 },

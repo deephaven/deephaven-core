@@ -4,17 +4,17 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
-import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.io.logger.Logger;
@@ -87,7 +87,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
         try {
             final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
-            final QueryScope queryScope = QueryScope.getScope();
+            final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
             for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
                 possibleParams.put(param.getName(), param);
                 possibleVariables.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
@@ -129,8 +129,9 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
             final QueryLanguageParser.Result result =
                     new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
-                            QueryLibrary.getPackageImports(), QueryLibrary.getClassImports(),
-                            QueryLibrary.getStaticImports(),
+                            ExecutionContext.getContext().getQueryLibrary().getPackageImports(),
+                            ExecutionContext.getContext().getQueryLibrary().getClassImports(),
+                            ExecutionContext.getContext().getQueryLibrary().getStaticImports(),
                             possibleVariables, possibleVariableParameterizedTypes, unboxArguments).getResult();
 
             log.debug("Expression (after language conversion) : " + result.getConvertedExpression());
@@ -246,6 +247,18 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
     @Override
     public abstract AbstractConditionFilter copy();
+
+    protected void onCopy(final AbstractConditionFilter copy) {
+        if (initialized) {
+            copy.initialized = true;
+            copy.usedColumns = usedColumns;
+            copy.usedColumnArrays = usedColumnArrays;
+            copy.usesI = usesI;
+            copy.usesII = usesII;
+            copy.usesK = usesK;
+            copy.params = params;
+        }
+    }
 
     @Override
     public String toString() {

@@ -3,6 +3,7 @@
  */
 package io.deephaven.plot.util;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.verify.Require;
@@ -17,7 +18,7 @@ import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.gui.color.ColorPaletteArray;
 import io.deephaven.util.QueryConstants;
@@ -722,7 +723,7 @@ public class PlotUtils {
         lastColumns.removeAll(Arrays.asList(catColumns));
         final Table result = t.aggBy(
                 createCategoryAggs(AggLast(lastColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))),
-                Selectable.from(catColumns));
+                ColumnName.from(catColumns));
 
         // We must explicitly copy attributes because we are doing a modified manual first/lastBy which will not
         // automatically do the copy.
@@ -731,7 +732,7 @@ public class PlotUtils {
     }
 
     public static Table createCategoryHistogramTable(final Table t, final String... byColumns) {
-        return t.aggBy(createCategoryAggs(AggCount(IntervalXYDataSeriesArray.COUNT)), Selectable.from(byColumns));
+        return t.aggBy(createCategoryAggs(AggCount(IntervalXYDataSeriesArray.COUNT)), ColumnName.from(byColumns));
 
     }
 

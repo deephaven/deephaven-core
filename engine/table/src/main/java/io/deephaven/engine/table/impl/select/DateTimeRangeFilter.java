@@ -53,7 +53,11 @@ public class DateTimeRangeFilter extends LongRangeFilter {
 
     @Override
     public DateTimeRangeFilter copy() {
-        return new DateTimeRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        final DateTimeRangeFilter copy =
+                new DateTimeRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
+        copy.chunkFilter = chunkFilter;
+        copy.longFilter = longFilter;
+        return copy;
     }
 
     @Override

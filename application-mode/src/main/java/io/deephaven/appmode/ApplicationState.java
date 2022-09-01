@@ -9,10 +9,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ServiceLoader;
 
 public class ApplicationState {
 
     public interface Factory {
+
+        static Iterable<Factory> loadFromServiceFactory() {
+            return ServiceLoader.load(Factory.class);
+        }
+
         ApplicationState create(Listener appStateListener);
     }
 
