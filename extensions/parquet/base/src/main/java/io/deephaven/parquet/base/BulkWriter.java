@@ -31,7 +31,7 @@ public interface BulkWriter<BUFFER_TYPE> {
     }
 
     /**
-     * Write a buffers worth of values to the underlying page.
+     * Write a buffer's worth of values to the underlying page.
      *
      * @param bulkValues the buffer of values
      * @param rowCount the total number of rows to write.
@@ -39,7 +39,7 @@ public interface BulkWriter<BUFFER_TYPE> {
     void writeBulk(@NotNull BUFFER_TYPE bulkValues, int rowCount);
 
     /**
-     * Write a buffers worth of values to the underlying page. This method will find, without writing, {@code null}
+     * Write a buffer's worth of values to the underlying page. This method will find, without writing, {@code null}
      * values and record their offsets in an {@link WriteResult#nullOffsets IntBuffer} in the result. The appropriate
      * definition level will be set for null values.
      *
@@ -55,7 +55,7 @@ public interface BulkWriter<BUFFER_TYPE> {
             int rowCount) throws IOException;
 
     /**
-     * Write a buffers worth of packed vector values to the underlying page. This method will set the proper definition
+     * Write a buffer's worth of packed vector values to the underlying page. This method will set the proper definition
      * level and repetition values in the encoders for {@code null} values.
      *
      * @param bulkValues the packed array values
@@ -73,8 +73,8 @@ public interface BulkWriter<BUFFER_TYPE> {
             final int nonNullValueCount) throws IOException;
 
     /**
-     * Write a buffers worth of packed vector values to the underlying page, skipping null values. This method will find
-     * {@code null} values and record their offsets in an {@link WriteResult#nullOffsets IntBuffer} in the result.
+     * Write a buffer's worth of packed vector values to the underlying page, skipping null values. This method will
+     * find {@code null} values and record their offsets in an {@link WriteResult#nullOffsets IntBuffer} in the result.
      *
      * @param bulkValues the packed vector values to write
      * @param rowCount the number of rows being written.

@@ -141,7 +141,7 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
             throw new IllegalStateException("Unable to write " + requiredCapacity + " values");
         }
 
-        int newCapacity = currentCapacity * 2;
+        int newCapacity = currentCapacity;
         while(newCapacity < requiredCapacity) {
             newCapacity = Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2);
         }
@@ -157,13 +157,12 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
         newIntBuf.mark();
 
         if(this.innerBuffer != null) {
-            targetBuffer.flip();
+            targetBuffer.limit(targetBuffer.position());
+            targetBuffer.reset();
             newIntBuf.put(targetBuffer);
             allocator.release(innerBuffer);
         }
-        this.innerBuffer = newBuf;
-        this.targetBuffer = newIntBuf;
-        targetBuffer.mark();
-        innerBuffer.mark();
+        innerBuffer = newBuf;
+        targetBuffer = newIntBuf;
     }
 }

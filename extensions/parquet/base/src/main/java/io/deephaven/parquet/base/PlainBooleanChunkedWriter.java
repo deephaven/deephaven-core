@@ -85,9 +85,9 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
             final byte next = bulkValues.get();
             if (next != QueryConstants.NULL_BYTE) {
                 writeBoolean(next == 1);
-                dlEncoder.writeInt(1);
+                dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
-                dlEncoder.writeInt(0);
+                dlEncoder.writeInt(DL_ITEM_NULL);
             }
         }
         return new WriteResult(rowCount);

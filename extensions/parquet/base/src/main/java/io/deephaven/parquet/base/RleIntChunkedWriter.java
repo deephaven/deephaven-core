@@ -109,9 +109,9 @@ public class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
             int next = bulkValues.get();
             if (next != QueryConstants.NULL_INT) {
                 writeInteger(next);
-                dlEncoder.writeInt(1);
+                dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
-                dlEncoder.writeInt(0);
+                dlEncoder.writeInt(DL_ITEM_NULL);
             }
         }
         return new WriteResult(rowCount);

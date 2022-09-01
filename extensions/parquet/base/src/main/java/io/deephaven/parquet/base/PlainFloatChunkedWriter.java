@@ -1,10 +1,10 @@
 /*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+/*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PlainIntChunkedWriter and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.parquet.base;
 
@@ -148,7 +148,7 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
             throw new IllegalStateException("Unable to write " + requiredCapacity + " values");
         }
 
-        int newCapacity = currentCapacity * 2;
+        int newCapacity = currentCapacity;
         while(newCapacity < requiredCapacity) {
             newCapacity = Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2);
         }
@@ -164,13 +164,12 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
         newFloatBuf.mark();
 
         if(this.innerBuffer != null) {
-            targetBuffer.flip();
+            targetBuffer.limit(targetBuffer.position());
+            targetBuffer.reset();
             newFloatBuf.put(targetBuffer);
             allocator.release(innerBuffer);
         }
-        this.innerBuffer = newBuf;
-        this.targetBuffer = newFloatBuf;
-        targetBuffer.mark();
-        innerBuffer.mark();
+        innerBuffer = newBuf;
+        targetBuffer = newFloatBuf;
     }
 }

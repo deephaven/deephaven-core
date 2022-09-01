@@ -62,19 +62,19 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         return defaultMaximumDictionaryKeys;
     }
 
-    public static final int MIN_DEFAULT_PAGE_SIZE = 64 * 1024;
+    private static final int MIN_DEFAULT_PAGE_SIZE = 64 << 10;
     private static volatile int defaultTargetPageSize = 1 << 20;
 
     /**
      * Set the default target page size (in bytes) used to section rows of data into pages during column writing. This
-     * number should be no smaller than {@link #MIN_DEFAULT_PAGE_SIZE}.
+     * number should be no smaller than {@value #MIN_DEFAULT_PAGE_SIZE}.
      *
      * @param newDefaultSizeBytes the new default target page size.
      */
     public static void setDefaultTargetPageSize(final int newDefaultSizeBytes) {
         if (newDefaultSizeBytes < MIN_DEFAULT_PAGE_SIZE) {
             throw new IllegalArgumentException(
-                    "default page sizes should be larger than " + MIN_DEFAULT_PAGE_SIZE + " bytes");
+                    "Default target page size should be larger than " + MIN_DEFAULT_PAGE_SIZE + " bytes");
         }
         defaultTargetPageSize = newDefaultSizeBytes;
     }

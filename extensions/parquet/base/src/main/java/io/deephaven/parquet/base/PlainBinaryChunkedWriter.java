@@ -50,7 +50,7 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
 
     @Override
     public void reset() {
-        innerBuffer.position(0);
+        innerBuffer.reset();
         innerBuffer.limit(innerBuffer.capacity());
     }
 
@@ -95,9 +95,9 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
         for (int i = 0; i < rowCount; i++) {
             if (bulkValues[i] != null) {
                 writeBytes(bulkValues[i]);
-                dlEncoder.writeInt(1);
+                dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
-                dlEncoder.writeInt(0);
+                dlEncoder.writeInt(DL_ITEM_NULL);
             }
         }
         return new WriteResult(rowCount);
@@ -118,7 +118,7 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     }
 
     private void ensureCapacityFor(@NotNull final Binary v) {
-        if(v.length() == 0 || innerBuffer.remaining() > v.length() + Integer.BYTES) {
+        if(v.length() == 0 || innerBuffer.remaining() >= v.length() + Integer.BYTES) {
             return;
         }
 
@@ -129,7 +129,7 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
             throw new IllegalStateException("Unable to write " + requiredCapacity + " values");
         }
 
-        int newCapacity = currentCapacity * 2;
+        int newCapacity = currentCapacity;
         while(newCapacity < requiredCapacity) {
             newCapacity = Math.min(Integer.MAX_VALUE, newCapacity * 2);
         }
@@ -137,11 +137,11 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
         final ByteBuffer newBuf = allocator.allocate(newCapacity);
         newBuf.order(ByteOrder.LITTLE_ENDIAN);
         newBuf.mark();
-        innerBuffer.flip();
+
+        innerBuffer.limit(innerBuffer.position());
+        innerBuffer.reset();
         newBuf.put(innerBuffer);
         allocator.release(innerBuffer);
-        this.innerBuffer = newBuf;
-        innerBuffer.mark();
+        innerBuffer = newBuf;
     }
-
 }

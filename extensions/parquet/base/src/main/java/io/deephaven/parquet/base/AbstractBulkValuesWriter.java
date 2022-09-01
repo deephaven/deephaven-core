@@ -27,7 +27,7 @@ public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
     private static final int DL_VECTOR_NULL_ELEMENT = 2;
     private static final int DL_VECTOR_ACTUAL_VALUE = 3;
 
-    // These DL values are only value for individual items
+    // These DL values are only relevant for individual items
     static final int DL_ITEM_NULL = 0;
     static final int DL_ITEM_PRESENT = 1;
 
@@ -50,7 +50,7 @@ public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
      *
      * <p>
      * Definition and Repetition levels are used to define how the complex structure is encoded into multiple columns.
-     * Repetition levels define the number of common prefix elements an item shares with it's immediate predecessor,
+     * Repetition levels define the number of common prefix elements an item shares with its immediate predecessor,
      * where the value 0 represents the root node of a single instance of a structure. The best way to think about this
      * is to understand how it is read back - see
      * <a href="https://storage.googleapis.com/pub-tools-public-publication-data/pdf/36632.pdf">Dremel Paper</a> pgs 3
