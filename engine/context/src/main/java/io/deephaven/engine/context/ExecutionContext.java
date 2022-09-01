@@ -47,7 +47,7 @@ public class ExecutionContext {
 
     private static volatile ExecutionContext defaultContext = null;
 
-    private static ExecutionContext getDefaultContext() {
+    public static ExecutionContext getDefaultContext() {
         ExecutionContext localContext;
         if ((localContext = defaultContext) == null) {
             synchronized (ExecutionContext.class) {
