@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
+import jpy
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
@@ -622,8 +623,16 @@ class TableTestCase(BaseTestCase):
         inner_func("param str")
 
     def test_nested_scopes(self):
+        _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+        context = _JExecutionContext.newBuilder() \
+                .captureCompilerContext()         \
+                .captureQueryLibrary()            \
+                .captureQueryScope()              \
+                .build()
         def inner_func(p) -> str:
+            openContext = context.open()
             t = empty_table(1).update("X = p * 10")
+            openContext.close()
             return t.to_string().split()[2]
 
         t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")

@@ -93,7 +93,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // We can only parallelize this column if we are not redirected, our destination provides ensure previous, and
         // the select column is stateless
         canParallelizeThisColumn = canUseThreads && !isRedirected
-                && WritableSourceWithEnsurePrevious.providesEnsurePrevious(ws) && sc.isStateless();
+                && WritableSourceWithPrepareForParallelPopulation.supportsParallelPopulation(ws) && sc.isStateless();
 
         // If we were created on a systemic thread, we want to be sure to make sure that any updates are also
         // applied systemically.
@@ -145,7 +145,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         final boolean hasShifts = upstream.shifted().nonempty();
 
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
-                                (resultTypeIsTable || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
+                                ((resultTypeIsTable && totalSize > 0)
+                                        || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
                             final long divisionSize = resultTypeIsTable ? 1
                                     : Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                             (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
@@ -204,7 +205,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity();
 
-        copyPreviousValues(upstream);
+        prepareSourcesForParallelPopulation(upstream);
 
         final boolean checkTableOperations =
                 UpdateGraphProcessor.DEFAULT.getCheckTableOperations()
@@ -537,13 +538,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
     }
 
-    void copyPreviousValues(TableUpdate upstream) {
+    void prepareSourcesForParallelPopulation(TableUpdate upstream) {
         // we do not permit in-column parallelization with redirected results, so do not need to worry about how this
         // interacts with the previous clearing of the redirection index that has occurred at the start of applyUpdate
-        try (final WritableRowSet changedRows =
-                upstream.added().union(upstream.getModifiedPreShift())) {
+        try (final WritableRowSet changedRows = upstream.added().union(upstream.getModifiedPreShift())) {
             changedRows.insert(upstream.removed());
-            ((WritableSourceWithEnsurePrevious) (writableSource)).ensurePrevious(changedRows);
+            ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
+                    .prepareForParallelPopulation(changedRows);
         }
     }
 
