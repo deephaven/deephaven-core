@@ -24,6 +24,7 @@ public class PyLogOutputStream extends OutputStream {
 
     @Override
     public void write(@NotNull byte[] b) throws IOException {
+        // TODO (deephaven#2793) switch to modern method overloads when jpy#87 is fixed
         rawIoBaseSupplier.get().callMethod("write", new String(b));
     }
 
@@ -36,11 +37,13 @@ public class PyLogOutputStream extends OutputStream {
 
     @Override
     public void flush() throws IOException {
+        // TODO (deephaven#2793) switch to modern method overloads when jpy#87 is fixed
         rawIoBaseSupplier.get().callMethod("flush");
     }
 
     @Override
     public void close() throws IOException {
+        // TODO (deephaven#2793) switch to modern method overloads when jpy#87 is fixed
         rawIoBaseSupplier.get().callMethod("close");
     }
 }
