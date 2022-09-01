@@ -56,7 +56,8 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
 
     @Override
     public ByteBuffer getByteBufferView() {
-        innerBuffer.flip();
+        innerBuffer.limit(innerBuffer.position());
+        innerBuffer.reset();
         return innerBuffer;
     }
 
