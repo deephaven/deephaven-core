@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -105,10 +104,7 @@ public class UnionSourceManager {
             updateCommitter = null;
         }
 
-        try (final Stream<Table> initialConstituents = currConstituents();
-                final SafeCloseable ignored = mergedListener == null ? null
-                        : LivenessScopeStack.open(mergedListener, false)) {
-
+        try (final Stream<Table> initialConstituents = currConstituents()) {
             initialConstituents.forEach((final Table constituent) -> {
                 final long shiftAmount = unionRedirection.appendInitialTable(constituent.getRowSet().lastRowKey());
                 resultRows.insertWithShift(shiftAmount, constituent.getRowSet());
