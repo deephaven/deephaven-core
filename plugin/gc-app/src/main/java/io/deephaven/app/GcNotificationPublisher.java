@@ -11,15 +11,17 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.stream.StreamConsumer;
+import io.deephaven.stream.StreamPublisher;
 import io.deephaven.stream.StreamToTableAdapter;
 import io.deephaven.time.DateTimeUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 import java.util.Arrays;
 import java.util.Objects;
 
-final class GcNotificationConsumer {
+final class GcNotificationPublisher implements StreamPublisher {
 
     private static final TableDefinition DEFINITION = TableDefinition.of(
             ColumnDefinition.ofLong("Id"),
@@ -60,25 +62,38 @@ final class GcNotificationConsumer {
                         "GcName", "GcAction", "GcCause");
     }
 
-    private final StreamConsumer consumer;
     private final long vmStartMillis;
     private WritableChunk<Values>[] chunks;
+    private StreamConsumer consumer;
 
-    GcNotificationConsumer(StreamConsumer consumer) {
-        this.consumer = Objects.requireNonNull(consumer);
+    GcNotificationPublisher() {
         this.vmStartMillis = ManagementFactory.getRuntimeMXBean().getStartTime();
         // noinspection unchecked
         chunks = StreamToTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
     }
 
+    @Override
+    public void register(@NotNull StreamConsumer consumer) {
+        if (this.consumer != null) {
+            throw new IllegalStateException("Can not register multiple StreamConsumers.");
+        }
+        this.consumer = Objects.requireNonNull(consumer);
+    }
+
     public synchronized void add(GarbageCollectionNotificationInfo gcNotification) {
         final GcInfo gcInfo = gcNotification.getGcInfo();
+
+        // Note: there's potential for possible further optimization by having a typed field per column (ie, doing the
+        // casts only once per flush). Also, potential to use `set` with our own size field instead of `add`.
         chunks[0].asWritableLongChunk().add(gcInfo.getId());
         chunks[1].asWritableLongChunk().add(DateTimeUtils.millisToNanos(vmStartMillis + gcInfo.getStartTime()));
         chunks[2].asWritableLongChunk().add(DateTimeUtils.millisToNanos(vmStartMillis + gcInfo.getEndTime()));
-        chunks[3].<String>asWritableObjectChunk().add(gcNotification.getGcName().intern());
-        chunks[4].<String>asWritableObjectChunk().add(gcNotification.getGcAction().intern());
-        chunks[5].<String>asWritableObjectChunk().add(gcNotification.getGcCause().intern());
+
+        // Note: there may be value in interning these strings for ring tables if we find they are causing a lot of
+        // extra memory usage.
+        chunks[3].<String>asWritableObjectChunk().add(gcNotification.getGcName());
+        chunks[4].<String>asWritableObjectChunk().add(gcNotification.getGcAction());
+        chunks[5].<String>asWritableObjectChunk().add(gcNotification.getGcCause());
 
         // This is a bit of a de-normalization - arguably, it could be computed by joining against the "pools" table.
         // But this is a very useful summary value, and easy for use to provide here for more convenience.
@@ -95,6 +110,7 @@ final class GcNotificationConsumer {
         }
     }
 
+    @Override
     public synchronized void flush() {
         if (chunks[0].size() == 0) {
             return;

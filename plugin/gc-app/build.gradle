@@ -8,5 +8,4 @@ dependencies {
     implementation project(':engine-table')
 
     Classpaths.inheritAutoService(project)
-    Classpaths.inheritImmutables(project)
 }

@@ -10,8 +10,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.stream.StreamConsumer;
+import io.deephaven.stream.StreamPublisher;
 import io.deephaven.stream.StreamToTableAdapter;
 import io.deephaven.util.QueryConstants;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.management.MemoryUsage;
 import java.util.Arrays;
@@ -19,7 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
-final class GcPoolsConsumer {
+final class GcPoolsPublisher implements StreamPublisher {
 
     private static final TableDefinition DEFINITION = TableDefinition.of(
             ColumnDefinition.ofLong("Id"),
@@ -34,9 +36,6 @@ final class GcPoolsConsumer {
             ColumnDefinition.ofLong("AfterMax"));
 
     private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
-
-    // Let's be conservative since we don't know exactly how many pools there may be.
-    private static final int POOL_SIZE_UPPER_BOUND = 128;
 
     public static TableDefinition definition() {
         return DEFINITION;
@@ -71,19 +70,32 @@ final class GcPoolsConsumer {
                         "Name");
     }
 
-    private final StreamConsumer consumer;
     private WritableChunk<Values>[] chunks;
+    private StreamConsumer consumer;
     private boolean isFirst;
 
-    GcPoolsConsumer(StreamConsumer consumer) {
-        this.consumer = Objects.requireNonNull(consumer);
+    GcPoolsPublisher() {
         // noinspection unchecked
         chunks = StreamToTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
         isFirst = true;
     }
 
+    @Override
+    public void register(@NotNull StreamConsumer consumer) {
+        if (this.consumer != null) {
+            throw new IllegalStateException("Can not register multiple StreamConsumers.");
+        }
+        this.consumer = Objects.requireNonNull(consumer);
+    }
+
     public synchronized void add(GcInfo info) {
         final Map<String, MemoryUsage> afterMap = info.getMemoryUsageAfterGc();
+        int poolSize = afterMap.size();
+        if (chunks[0].size() + poolSize >= CHUNK_SIZE) {
+            // Note: we don't expect this to trigger since we are checking the size after the add, but it's an extra
+            // safety if a JVM implementation adds additional pools types during runtime.
+            flushInternal();
+        }
         for (Entry<String, MemoryUsage> e : info.getMemoryUsageBeforeGc().entrySet()) {
             final String poolName = e.getKey();
             final MemoryUsage before = e.getValue();
@@ -91,8 +103,10 @@ final class GcPoolsConsumer {
             if (!isFirst && equals(before, after)) {
                 continue;
             }
+            // Note: there's potential for possible further optimization by having a typed field per column (ie, doing
+            // the casts only once per flush). Also, potential to use `set` with our own size field instead of `add`.
             chunks[0].asWritableLongChunk().add(info.getId());
-            chunks[1].<String>asWritableObjectChunk().add(poolName.intern());
+            chunks[1].<String>asWritableObjectChunk().add(poolName);
 
             chunks[2].asWritableLongChunk().add(negativeOneToNullLong(before.getInit()));
             chunks[3].asWritableLongChunk().add(before.getUsed());
@@ -105,11 +119,12 @@ final class GcPoolsConsumer {
             chunks[9].asWritableLongChunk().add(negativeOneToNullLong(after.getMax()));
         }
         isFirst = false;
-        if (chunks[0].size() + POOL_SIZE_UPPER_BOUND >= CHUNK_SIZE) {
+        if (chunks[0].size() + poolSize >= CHUNK_SIZE) {
             flushInternal();
         }
     }
 
+    @Override
     public synchronized void flush() {
         if (chunks[0].size() == 0) {
             return;
