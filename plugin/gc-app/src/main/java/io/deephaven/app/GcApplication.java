@@ -113,15 +113,10 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
         return "true".equalsIgnoreCase(System.getProperty(POOLS_STATS_ENABLED, "true"));
     }
 
-    private final GcNotificationPublisher notificationInfoPublisher;
-    private final GcPoolsPublisher poolsPublisher;
+    private GcNotificationPublisher notificationInfoPublisher;
+    private GcPoolsPublisher poolsPublisher;
     @SuppressWarnings("FieldCanBeLocal")
     private LivenessScope scope;
-
-    public GcApplication() {
-        this.notificationInfoPublisher = new GcNotificationPublisher();
-        this.poolsPublisher = new GcPoolsPublisher();
-    }
 
     @Override
     public void handleNotification(Notification notification, Object handback) {
@@ -153,6 +148,8 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
         if (!notificationInfoEnabled() && !poolsEnabled()) {
             return state;
         }
+        notificationInfoPublisher = new GcNotificationPublisher();
+        poolsPublisher = new GcPoolsPublisher();
         scope = new LivenessScope();
         try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
             if (notificationInfoEnabled) {
