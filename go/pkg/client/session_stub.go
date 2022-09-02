@@ -87,7 +87,7 @@ func startRefresher(ctx context.Context, sessionStub sessionpb2.SessionServiceCl
 		return err
 	}
 
-	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("deephaven_session_id", string(handshakeResp.SessionToken)))
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", string(handshakeResp.SessionToken)))
 
 	token.setToken(handshakeResp.SessionToken)
 

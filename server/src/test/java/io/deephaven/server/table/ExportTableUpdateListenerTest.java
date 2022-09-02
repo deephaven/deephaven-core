@@ -18,7 +18,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.util.auth.AuthContext;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.TestControlledScheduler;

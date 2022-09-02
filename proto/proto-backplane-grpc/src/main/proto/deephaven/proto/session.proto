@@ -75,6 +75,18 @@ service SessionService {
   rpc TerminationNotification(TerminationNotificationRequest) returns (TerminationNotificationResponse) {}
 }
 
+message WrappedAuthenticationRequest {
+  /*
+   * The type of the protobuf the auth payload protobuf.
+   */
+  string type = 1;
+
+  /*
+   * The serialized payload of the protobuf instance.
+   */
+  bytes payload = 2;
+}
+
 /*
  * The request that a client provides to a server on handshake.
  */
