@@ -1,7 +1,7 @@
 FROM deephaven/node:local-build
 WORKDIR /usr/src/app
 
-ARG WEB_VERSION=0.15.5-embed-chart.1
+ARG WEB_VERSION=0.16.0
 
 # Pull in the published code-studio package from npmjs and extract is
 RUN set -eux; \
