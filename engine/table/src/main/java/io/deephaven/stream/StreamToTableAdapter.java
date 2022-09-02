@@ -65,7 +65,7 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
     private ChunkColumnSource<?>[] prevChunkSources;
 
     /** A list of failures that have occurred. */
-    private List<Exception> enqueuedFailure;
+    private List<Throwable> enqueuedFailure;
 
     private volatile QueryTable table;
     private volatile Runnable shutdownCallback;
@@ -306,7 +306,7 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
                 throw new UncheckedDeephavenException(
                         MultiException.maybeWrapInMultiException(
                                 "Multiple errors encountered while ingesting stream",
-                                enqueuedFailure.toArray(new Exception[0])));
+                                enqueuedFailure.toArray(new Throwable[0])));
             }
         }
 
@@ -386,7 +386,7 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
     }
 
     @Override
-    public void acceptFailure(@NotNull Exception cause) {
+    public void acceptFailure(@NotNull Throwable cause) {
         if (!alive) {
             return;
         }
