@@ -148,8 +148,6 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
         if (!notificationInfoEnabled() && !poolsEnabled()) {
             return state;
         }
-        notificationInfoPublisher = new GcNotificationPublisher();
-        poolsPublisher = new GcPoolsPublisher();
         scope = new LivenessScope();
         try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
             if (notificationInfoEnabled) {
@@ -164,6 +162,7 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
     }
 
     private void setNotificationInfo(ApplicationState state) {
+        notificationInfoPublisher = new GcNotificationPublisher();
         final StreamToTableAdapter adapter = new StreamToTableAdapter(GcNotificationPublisher.definition(),
                 notificationInfoPublisher, UpdateGraphProcessor.DEFAULT, NOTIFICATION_INFO);
         final Table notificationInfo = adapter.table();
@@ -178,6 +177,7 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
     }
 
     private void setPools(ApplicationState state) {
+        poolsPublisher = new GcPoolsPublisher();
         final StreamToTableAdapter adapter = new StreamToTableAdapter(GcPoolsPublisher.definition(), poolsPublisher,
                 UpdateGraphProcessor.DEFAULT, POOLS);
         final Table pools = adapter.table();
