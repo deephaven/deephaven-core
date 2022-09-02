@@ -35,7 +35,7 @@ final class GcPoolsPublisher implements StreamPublisher {
             ColumnDefinition.ofLong("AfterCommitted"),
             ColumnDefinition.ofLong("AfterMax"));
 
-    private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
+    private static final int INITIAL_CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
 
     public static TableDefinition definition() {
         return DEFINITION;
@@ -70,13 +70,15 @@ final class GcPoolsPublisher implements StreamPublisher {
                         "Name");
     }
 
+    private int chunkSize;
     private WritableChunk<Values>[] chunks;
     private StreamConsumer consumer;
     private boolean isFirst;
 
     GcPoolsPublisher() {
+        chunkSize = INITIAL_CHUNK_SIZE;
         // noinspection unchecked
-        chunks = StreamToTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        chunks = StreamToTableAdapter.makeChunksForDefinition(DEFINITION, chunkSize);
         isFirst = true;
     }
 
@@ -90,11 +92,12 @@ final class GcPoolsPublisher implements StreamPublisher {
 
     public synchronized void add(GcInfo info) {
         final Map<String, MemoryUsage> afterMap = info.getMemoryUsageAfterGc();
-        int poolSize = afterMap.size();
-        if (chunks[0].size() + poolSize >= CHUNK_SIZE) {
-            // Note: we don't expect this to trigger since we are checking the size after the add, but it's an extra
-            // safety if a JVM implementation adds additional pools types during runtime.
-            flushInternal();
+        final int poolSize = afterMap.size();
+        final int initialSize = chunks[0].size();
+        // Note: we don't expect this to trigger since we are checking the size after the add, but it's an extra
+        // safety if a JVM implementation adds additional pools types during runtime.
+        if (initialSize + poolSize >= chunkSize) {
+            maybeFlushAndGrow(initialSize, poolSize);
         }
         for (Entry<String, MemoryUsage> e : info.getMemoryUsageBeforeGc().entrySet()) {
             final String poolName = e.getKey();
@@ -119,7 +122,7 @@ final class GcPoolsPublisher implements StreamPublisher {
             chunks[9].asWritableLongChunk().add(negativeOneToNullLong(after.getMax()));
         }
         isFirst = false;
-        if (chunks[0].size() + poolSize >= CHUNK_SIZE) {
+        if (initialSize + 2 * poolSize >= chunkSize) {
             flushInternal();
         }
     }
@@ -132,10 +135,19 @@ final class GcPoolsPublisher implements StreamPublisher {
         flushInternal();
     }
 
+    private void maybeFlushAndGrow(int initialSize, int poolSize) {
+        if (initialSize > 0) {
+            consumer.accept(chunks);
+        }
+        chunkSize = Math.max(chunkSize, poolSize);
+        // noinspection unchecked
+        chunks = StreamToTableAdapter.makeChunksForDefinition(DEFINITION, chunkSize);
+    }
+
     private void flushInternal() {
         consumer.accept(chunks);
         // noinspection unchecked
-        chunks = StreamToTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        chunks = StreamToTableAdapter.makeChunksForDefinition(DEFINITION, chunkSize);
     }
 
     public void acceptFailure(Throwable e) {
