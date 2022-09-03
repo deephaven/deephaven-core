@@ -152,6 +152,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     @Override
     public void onFailure(Throwable originalException, Entry sourceEntry) {
+        forceReferenceCountToZero();
         onFailureInternal(originalException, sourceEntry == null ? entry : sourceEntry);
     }
 
@@ -194,7 +195,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 log.error().append("Error logging failure from ").append(entry).append(": ").append(e).endl();
             }
             try {
-                onFailureInternal(originalException, sourceEntry);
+                onFailure(originalException, sourceEntry);
             } catch (Exception e) {
                 log.error().append("Error propagating failure from ").append(sourceEntry).append(": ").append(e).endl();
             }
@@ -319,7 +320,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
                 // If the table has an error, we should cease processing further updates.
                 failed = true;
-                onFailureInternal(e, entry);
+                onFailure(e, entry);
             } finally {
                 entry.onUpdateEnd();
                 final long oldLastCompletedStep =

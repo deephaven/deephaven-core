@@ -36,7 +36,7 @@ public abstract class BaseStreamFirstOrLastChunkedOperator
     /**
      * Result columns, parallel to {@link #inputColumns} and {@link #outputColumns}.
      */
-    protected final Map<String, ArrayBackedColumnSource<?>> resultColumns;
+    private final Map<String, ArrayBackedColumnSource<?>> resultColumns;
     /**
      * <p>
      * Input columns, parallel to {@link #outputColumns} and {@link #resultColumns}.
@@ -54,7 +54,7 @@ public abstract class BaseStreamFirstOrLastChunkedOperator
     /**
      * Cached pointer to the most-recently allocated {@link #redirections}.
      */
-    protected SoftReference<LongArraySource> cachedRedirections;
+    private SoftReference<LongArraySource> cachedRedirections;
     /**
      * Map from destination slot to first key. Only used during a step to keep track of the appropriate rows to copy
      * into the output columns.
@@ -95,9 +95,10 @@ public abstract class BaseStreamFirstOrLastChunkedOperator
 
     @Override
     @OverridingMethodsMustInvokeSuper
-    public void resetForStep(@NotNull final TableUpdate upstream) {
+    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         if ((redirections = cachedRedirections.get()) == null) {
             cachedRedirections = new SoftReference<>(redirections = new LongArraySource());
+            ensureCapacity(startingDestinationsCount);
         }
     }
 

@@ -9,6 +9,7 @@ import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.MatchPair;
@@ -127,9 +128,29 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         return sanityCheckJoins;
     }
 
+    private static ExecutionContext getOrCreateExecutionContext(final boolean requiresFullContext) {
+        ExecutionContext context = ExecutionContext.getContextToRecord();
+        if (context == null) {
+            final ExecutionContext.Builder builder = ExecutionContext.newBuilder()
+                    .captureCompilerContext()
+                    .markSystemic();
+            if (requiresFullContext) {
+                builder.newQueryLibrary();
+                builder.emptyQueryScope();
+            }
+            context = builder.build();
+        }
+        return context;
+    }
+
     private PartitionedTable.Proxy basicTransform(@NotNull final UnaryOperator<Table> transformer) {
+        return basicTransform(false, transformer);
+    }
+
+    private PartitionedTable.Proxy basicTransform(
+            final boolean requiresFullContext, @NotNull final UnaryOperator<Table> transformer) {
         return new PartitionedTableProxyImpl(
-                target.transform(null, transformer),
+                target.transform(getOrCreateExecutionContext(requiresFullContext), transformer),
                 requireMatchingKeys,
                 sanityCheckJoins);
     }
@@ -138,13 +159,22 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             @NotNull final TableOperations<?, ?> other,
             @NotNull final BinaryOperator<Table> transformer,
             @Nullable final Collection<? extends JoinMatch> joinMatches) {
+        return complexTransform(false, other, transformer, joinMatches);
+    }
+
+    private PartitionedTable.Proxy complexTransform(
+            final boolean requiresFullContext,
+            @NotNull final TableOperations<?, ?> other,
+            @NotNull final BinaryOperator<Table> transformer,
+            @Nullable final Collection<? extends JoinMatch> joinMatches) {
+        final ExecutionContext context = getOrCreateExecutionContext(requiresFullContext);
         if (other instanceof Table) {
             final Table otherTable = (Table) other;
             if ((target.table().isRefreshing() || otherTable.isRefreshing()) && joinMatches != null) {
                 UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
             }
             return new PartitionedTableProxyImpl(
-                    target.transform(null, ct -> transformer.apply(ct, otherTable)),
+                    target.transform(context, ct -> transformer.apply(ct, otherTable)),
                     requireMatchingKeys,
                     sanityCheckJoins);
         }
@@ -173,7 +203,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             final PartitionedTable rhsToUse = maybeRewrap(validatedRhsTable, otherTarget);
 
             return new PartitionedTableProxyImpl(
-                    lhsToUse.partitionedTransform(rhsToUse, null, transformer),
+                    lhsToUse.partitionedTransform(rhsToUse, context, transformer),
                     requireMatchingKeys,
                     sanityCheckJoins);
         }
@@ -482,16 +512,17 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
-        return basicTransform(ct -> ct.aggAllBy(spec, groupByColumns));
+        return basicTransform(true, ct -> ct.aggAllBy(spec, groupByColumns));
     }
 
     @Override
     public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
             TableOperations<?, ?> initialGroups, Collection<? extends ColumnName> groupByColumns) {
         if (initialGroups == null) {
-            return basicTransform(ct -> ct.aggBy(aggregations, preserveEmpty, null, groupByColumns));
+            return basicTransform(true, ct -> ct.aggBy(aggregations, preserveEmpty, null, groupByColumns));
         }
-        return complexTransform(initialGroups, (ct, ot) -> ct.aggBy(aggregations, preserveEmpty, ot, groupByColumns),
+        return complexTransform(true, initialGroups,
+                (ct, ot) -> ct.aggBy(aggregations, preserveEmpty, ot, groupByColumns),
                 null);
     }
 

@@ -102,14 +102,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     }
 
     private void handleException(Exception e) {
-        dependent.notifyListenersOnError(e, getEntry());
-        try {
-            if (SystemicObjectTracker.isSystemic(dependent)) {
-                AsyncClientErrorNotifier.reportError(e);
-            }
-        } catch (IOException ioe) {
-            throw new UncheckedTableException("Exception in " + getEntry().toString(), e);
-        }
+        onFailure(e, getEntry());
         updateInProgress = false;
     }
 

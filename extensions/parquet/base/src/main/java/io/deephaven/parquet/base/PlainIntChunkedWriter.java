@@ -1,13 +1,15 @@
-/**
+/*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
+import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.rle.RunLengthBitPackingHybridEncoder;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -15,23 +17,19 @@ import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
 /**
- * Plain encoding except for booleans
+ * A writer for encoding ints in the PLAIN format
  */
-public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, Number> {
+public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
+    private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Integer.BYTES;
     private final ByteBufferAllocator allocator;
-    private final int originalLimit;
 
-    private final IntBuffer targetBuffer;
-    private final ByteBuffer innerBuffer;
+    private IntBuffer targetBuffer;
+    private ByteBuffer innerBuffer;
 
-    PlainIntChunkedWriter(int pageSize, ByteBufferAllocator allocator) {
-        innerBuffer = allocator.allocate(pageSize);
-        innerBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        originalLimit = innerBuffer.limit();
+
+    PlainIntChunkedWriter(final int targetPageSize, @NotNull final ByteBufferAllocator allocator) {
         this.allocator = allocator;
-        targetBuffer = innerBuffer.asIntBuffer();
-        targetBuffer.mark();
-        innerBuffer.mark();
+        realloc(targetPageSize);
     }
 
     @Override
@@ -41,7 +39,7 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, N
 
     @Override
     public long getBufferedSize() {
-        return targetBuffer.remaining() * Integer.BYTES;
+        return (long) targetBuffer.remaining() * Integer.BYTES;
     }
 
     @Override
@@ -52,8 +50,8 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, N
 
     @Override
     public void reset() {
-        innerBuffer.limit(originalLimit);
         innerBuffer.reset();
+        innerBuffer.limit(innerBuffer.capacity());
         targetBuffer.reset();
     }
 
@@ -84,33 +82,39 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, N
     }
 
     @Override
-    public void writeBulk(IntBuffer bulkValues, int rowCount) {
+    public void writeBulk(@NotNull IntBuffer bulkValues, int rowCount) {
+        ensureCapacityFor(bulkValues);
         targetBuffer.put(bulkValues);
     }
 
+    @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(IntBuffer bulkValues, Number nullValue, RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException {
-        int nullInt = nullValue.intValue();
+    public WriteResult writeBulkFilterNulls(@NotNull final IntBuffer bulkValues,
+                                            @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
+                                            final int rowCount) throws IOException {
+        ensureCapacityFor(bulkValues);
         while (bulkValues.hasRemaining()) {
-            int next = bulkValues.get();
-            if (next != nullInt) {
+            final int next = bulkValues.get();
+            if (next != QueryConstants.NULL_INT) {
                 writeInteger(next);
-                dlEncoder.writeInt(1);
+                dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
-                dlEncoder.writeInt(0);
+                dlEncoder.writeInt(DL_ITEM_NULL);
             }
         }
         return new WriteResult(rowCount);
     }
 
+    @NotNull
     @Override
-    public WriteResult writeBulkFilterNulls(IntBuffer bulkValues, Number nullValue, int rowCount) {
-        int nullInt = nullValue.intValue();
+    public WriteResult writeBulkFilterNulls(@NotNull final IntBuffer bulkValues,
+                                            final int rowCount) {
+        ensureCapacityFor(bulkValues);
         int i = 0;
         IntBuffer nullOffsets = IntBuffer.allocate(4);
         while (bulkValues.hasRemaining()) {
-            int next = bulkValues.get();
-            if (next != nullInt) {
+            final int next = bulkValues.get();
+            if (next != QueryConstants.NULL_INT) {
                 writeInteger(next);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
@@ -119,5 +123,46 @@ public class PlainIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer, N
             i++;
         }
         return new WriteResult(rowCount, nullOffsets);
+    }
+
+    private void ensureCapacityFor(@NotNull final IntBuffer valuesToAdd) {
+        if(!valuesToAdd.hasRemaining()) {
+            return;
+        }
+
+        final int currentCapacity = targetBuffer.capacity();
+        final int currentPosition = targetBuffer.position();
+        final int requiredCapacity = currentPosition + valuesToAdd.remaining();
+        if(requiredCapacity < currentCapacity) {
+            return;
+        }
+
+        if(requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
+            throw new IllegalStateException("Unable to write " + requiredCapacity + " values");
+        }
+
+        int newCapacity = currentCapacity;
+        while(newCapacity < requiredCapacity) {
+            newCapacity = Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2);
+        }
+
+        realloc(newCapacity * Integer.BYTES);
+    }
+
+    private void realloc(final int newCapacity) {
+        final ByteBuffer newBuf = allocator.allocate(newCapacity);
+        newBuf.order(ByteOrder.LITTLE_ENDIAN);
+        final IntBuffer newIntBuf = newBuf.asIntBuffer();
+        newBuf.mark();
+        newIntBuf.mark();
+
+        if(this.innerBuffer != null) {
+            targetBuffer.limit(targetBuffer.position());
+            targetBuffer.reset();
+            newIntBuf.put(targetBuffer);
+            allocator.release(innerBuffer);
+        }
+        innerBuffer = newBuf;
+        targetBuffer = newIntBuf;
     }
 }

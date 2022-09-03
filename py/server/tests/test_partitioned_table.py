@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
+import jpy
 import unittest
 
 from deephaven.agg import partition
@@ -116,6 +117,12 @@ class PartitionedTableTestCase(BaseTestCase):
         self.assertGreater(len(constituent_tables), 0)
 
     def test_transform(self):
+        _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+        context = _JExecutionContext.newBuilder() \
+                .captureCompilerContext()         \
+                .captureQueryLibrary()            \
+                .emptyQueryScope()                \
+                .build().open()
         pt = self.partitioned_table.transform(transform_func)
         self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
@@ -125,14 +132,22 @@ class PartitionedTableTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             pt = self.partitioned_table.transform(lambda t, t1: t.join(t1))
         self.assertRegex(str(cm.exception), r"missing .* argument")
+        context.close()
 
     def test_partitioned_transform(self):
+        _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+        context = _JExecutionContext.newBuilder() \
+                .captureCompilerContext()         \
+                .captureQueryLibrary()            \
+                .emptyQueryScope()                \
+                .build().open()
         other_pt = self.partitioned_table.transform(transform_func)
         pt = self.partitioned_table.partitioned_transform(other_pt, partitioned_transform_func)
         self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
         pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer())
         self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+        context.close()
 
     def test_partition_agg(self):
         with ugp.shared_lock():

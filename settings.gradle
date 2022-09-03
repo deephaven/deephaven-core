@@ -236,6 +236,9 @@ project(':plugin-figure').projectDir = file('plugin/figure')
 include(':plugin-partitionedtable')
 project(':plugin-partitionedtable').projectDir = file('plugin/partitionedtable')
 
+include(':plugin-gc-app')
+project(':plugin-gc-app').projectDir = file('plugin/gc-app')
+
 include(':envoy')
 
 include(':grpc-proxy')
