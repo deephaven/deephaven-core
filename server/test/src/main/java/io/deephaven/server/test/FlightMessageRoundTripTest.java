@@ -325,6 +325,11 @@ public abstract class FlightMessageRoundTripTest {
                 }
                 return Optional.empty();
             }
+
+            @Override
+            public void initialize(String targetUrl) {
+                // do nothing
+            }
         });
 
         final MutableBoolean tokenChanged = new MutableBoolean();
@@ -844,6 +849,11 @@ public abstract class FlightMessageRoundTripTest {
                 return Optional.of(new AuthContext.Anonymous());
             }
             return Optional.empty();
+        }
+
+        @Override
+        public void initialize(String targetUrl) {
+            // do nothing
         }
     }
 }

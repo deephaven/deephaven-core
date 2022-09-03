@@ -1,5 +1,8 @@
 package io.deephaven.auth;
 
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
+
 import java.nio.ByteBuffer;
 import java.util.Optional;
 
@@ -8,9 +11,25 @@ import java.util.Optional;
  * authentication handler.
  */
 public class AnonymousAuthenticationHandler implements AuthenticationRequestHandler {
+    private final static Logger log = LoggerFactory.getLogger(AnonymousAuthenticationHandler.class);
+
     @Override
     public String getAuthType() {
         return "Anonymous";
+    }
+
+    @Override
+    public void initialize(String targetUrl) {
+        for (int ii = 0; ii < 5; ++ii) {
+            log.warn().endl();
+        }
+        log.warn().append("================================================================================").endl();
+        log.warn().append("WARNING! Anonymous authentication is enabled. This is not recommended!").endl();
+        log.warn().append("       Listening on ").append(targetUrl).endl();
+        log.warn().append("================================================================================").endl();
+        for (int ii = 0; ii < 5; ++ii) {
+            log.warn().endl();
+        }
     }
 
     @Override

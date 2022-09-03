@@ -41,6 +41,9 @@ public class AuthContextModule {
                 final Class<?> clazz = AuthContextModule.class.getClassLoader().loadClass(handler);
                 Object instance = clazz.getDeclaredConstructor().newInstance();
                 if (instance instanceof BasicAuthMarshaller.Handler) {
+                    if (basicAuthMarshaller != null) {
+                        throw new UncheckedDeephavenException("Found multiple BasicAuthMarshaller.Handlers");
+                    }
                     basicAuthMarshaller = new BasicAuthMarshaller((BasicAuthMarshaller.Handler) instance);
                     authHandlerMap.put(basicAuthMarshaller.getAuthType(), basicAuthMarshaller);
                 } else if (instance instanceof AuthenticationRequestHandler) {

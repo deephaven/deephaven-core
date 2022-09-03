@@ -8,6 +8,7 @@ description 'authentication: Deephaven authentication and identity'
 dependencies {
     api project(':Base')
     api project(':proto:proto-backplane-grpc')
+    implementation project(':log-factory')
 
     Classpaths.inheritArrow(project, 'flight-core', 'implementation')
 }

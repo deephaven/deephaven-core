@@ -59,6 +59,13 @@ public interface AuthenticationRequestHandler {
     Optional<AuthContext> login(String payload, MetadataResponseListener listener)
             throws AuthenticationException;
 
+    /**
+     * Initialize request handler with the provided url.
+     *
+     * @param targetUrl the base url of the hosted UI
+     */
+    void initialize(String targetUrl);
+
     interface HandshakeResponseListener {
         void respond(long protocolVersion, ByteBuffer payload);
     }
