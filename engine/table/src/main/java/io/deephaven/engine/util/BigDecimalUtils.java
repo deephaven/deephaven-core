@@ -6,7 +6,7 @@ package io.deephaven.engine.util;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -60,7 +60,7 @@ public class BigDecimalUtils {
      * @return a {@code PrecisionAndScale} object result.
      */
     public static PrecisionAndScale computePrecisionAndScale(
-            final TrackingRowSet rowSet,
+            final RowSet rowSet,
             final ColumnSource<BigDecimal> source) {
         final int sz = 4096;
         // we first compute max(precision - scale) and max(scale), which corresponds to
