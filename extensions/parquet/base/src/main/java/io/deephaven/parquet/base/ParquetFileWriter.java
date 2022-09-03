@@ -62,7 +62,8 @@ public class ParquetFileWriter {
     @SuppressWarnings("unused")
     RowGroupWriter addRowGroup(final String path, final boolean append) throws IOException {
         RowGroupWriterImpl rowGroupWriter =
-                new RowGroupWriterImpl(path, append, channelsProvider, type, targetPageSize, allocator, compressorAdapter);
+                new RowGroupWriterImpl(path, append, channelsProvider, type, targetPageSize, allocator,
+                        compressorAdapter);
         blocks.add(rowGroupWriter.getBlock());
         return rowGroupWriter;
     }
