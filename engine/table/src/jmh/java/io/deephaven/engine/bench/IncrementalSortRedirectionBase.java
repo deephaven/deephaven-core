@@ -1,8 +1,6 @@
 package io.deephaven.engine.bench;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
@@ -54,27 +52,6 @@ public abstract class IncrementalSortRedirectionBase {
     private Table ms;
     private int numCycles;
     private BlackholeListener listener;
-
-    private class BlackholeListener extends InstrumentedTableUpdateListener {
-
-        private final Blackhole blackhole;
-        private Throwable e;
-
-        public BlackholeListener(Blackhole blackhole) {
-            super("Blackhole Listener");
-            this.blackhole = blackhole;
-        }
-
-        @Override
-        public void onUpdate(TableUpdate upstream) {
-            blackhole.consume(upstream);
-        }
-
-        @Override
-        protected void onFailureInternal(Throwable originalException, Entry sourceEntry) {
-            e = originalException;
-        }
-    }
 
     @Setup(Level.Invocation)
     public void setup(Blackhole blackhole) throws Exception {
@@ -138,5 +115,6 @@ public abstract class IncrementalSortRedirectionBase {
                 throw listener.e;
             }
         }
+        System.out.println(listener.updates);
     }
 }
