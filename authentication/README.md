@@ -40,7 +40,7 @@ is an exact match.
 Flight Auth2 `Authentication` Header
 ------------------------------------
 Flight Auth was reenvisioned for the client to send an `Authentication` header to identify themselves. The header
-contains a prefix such as `BasicAuth` or `Bearer` followed by a text payload. This prefix is used to route the request
+contains a prefix such as `Basic` or `Bearer` followed by a text payload. This prefix is used to route the request
 to the instance of `io.deephaven.auth.AuthenticationRequestHandler` where `getAuthType` is an exact match.
 
 Session Bearer Token

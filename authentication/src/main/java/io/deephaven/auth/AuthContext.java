@@ -13,7 +13,7 @@ public abstract class AuthContext implements LogOutputAppendable {
     public abstract LogOutput append(LogOutput logOutput);
 
     @Override
-    final public String toString() {
+    public final String toString() {
         return new LogOutputStringImpl().append(this).toString();
     }
 
