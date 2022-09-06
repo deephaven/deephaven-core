@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
  * The DynamicTableWriter creates an in-memory table using ArrayBackedColumnSources of the type specified in the
  * constructor. You can retrieve the table using the {@code getTable} function.
  * <p>
- * This class is not thread safe, you must synchronize externally.
+ * This class is not thread safe, you must synchronize externally. However, multiple setters may safely log
+ * concurrently.
  */
 public class DynamicTableWriter implements TableWriter {
     private final UpdateSourceQueryTable table;
