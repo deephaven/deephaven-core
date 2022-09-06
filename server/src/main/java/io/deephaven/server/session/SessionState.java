@@ -37,7 +37,7 @@ import io.deephaven.server.util.Scheduler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.auth.AuthContext;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;

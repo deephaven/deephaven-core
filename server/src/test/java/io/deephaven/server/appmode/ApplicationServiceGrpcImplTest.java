@@ -15,13 +15,15 @@ import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.auth.AuthContext;
+import io.deephaven.auth.AuthContext;
 import io.grpc.Context;
 import io.grpc.stub.StreamObserver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
@@ -41,7 +43,7 @@ public class ApplicationServiceGrpcImplTest {
         scheduler = new TestControlledScheduler();
         sessionService = new SessionService(scheduler,
                 authContext -> new SessionState(scheduler, NoLanguageDeephavenSession::new, authContext),
-                TOKEN_EXPIRE_MS);
+                TOKEN_EXPIRE_MS, Optional.empty(), Collections.emptyMap());
         applicationServiceGrpcImpl = new ApplicationServiceGrpcImpl(scheduler, sessionService,
                 new TypeLookup(ObjectTypeLookup.NoOp.INSTANCE));
     }

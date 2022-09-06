@@ -43,7 +43,7 @@ class Session:
             port (int): the port number that Deephaven server is listening on, default is 10000
             never_timeout (bool, optional): never allow the session to timeout, default is True
             session_type (str, optional): the Deephaven session type. Defaults to 'python'
-        
+
         Raises:
             DHError
         """
@@ -90,7 +90,7 @@ class Session:
 
     @property
     def grpc_metadata(self):
-        return [(b'deephaven_session_id', self.session_token)]
+        return [(b'authorization', self.session_token)]
 
     @property
     def table_service(self):
@@ -116,12 +116,12 @@ class Session:
             self._flight_service = ArrowFlightService(self)
 
         return self._flight_service
-    
+
     @property
     def app_service(self):
         if not self._app_service:
             self._app_service = AppService(self)
-        
+
         return self._app_service
 
     def make_ticket(self, ticket_no=None):
@@ -150,7 +150,7 @@ class Session:
             if not list_fields.cancel():
                 raise DHError("could not cancel ListFields subscription")
             return resp.created if resp.created else []
-    
+
     def _connect(self):
         with self._r_lock:
             self.grpc_channel, self.session_token, self._timeout = self.session_service.connect()
@@ -251,7 +251,7 @@ class Session:
                 # Explicitly close the table without releasing it (because it isn't ours)
                 faketable.ticket = None
                 faketable.schema = None
-                
+
 
     def bind_table(self, name: str, table: Table) -> None:
         """ Bind a table to the given name on the server so that it can be referenced by that name.

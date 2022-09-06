@@ -20,7 +20,8 @@ String[] mods = [
         'server',
         'table-api',
         'qst',
-        'go'
+        'go',
+        'authentication',
 ]
 
         // new web projects; these modules are intended to form a complete, modular web application,
@@ -325,6 +326,8 @@ project(':hotspot').projectDir = file('hotspot')
 include(':hotspot-impl')
 project(':hotspot-impl').projectDir = file('hotspot-impl')
 
+include ':authentication'
+
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
         include(":docker-${name}")
@@ -375,3 +378,4 @@ if (isCiServer) {
         }
     }
 }
+
