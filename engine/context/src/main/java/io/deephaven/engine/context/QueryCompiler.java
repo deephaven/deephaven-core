@@ -101,7 +101,8 @@ public class QueryCompiler {
             final ClassLoader parentClassLoader,
             final boolean isCacheDirectory) {
         final ClassLoader parentClassLoaderToUse = parentClassLoader == null
-                ? QueryCompiler.class.getClassLoader() : parentClassLoader;
+                ? QueryCompiler.class.getClassLoader()
+                : parentClassLoader;
         this.classDestination = classDestination;
         this.isCacheDirectory = isCacheDirectory;
         ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
