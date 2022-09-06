@@ -473,4 +473,21 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         z = (z ^ (z >>> 27)) * 0x94d049bb133111ebL;
         return z ^ (z >>> 31);
     }
+
+
+    /**
+     * This poorly distributed hash function has been intentionally left with the acknowledgement that some sequentially
+     * indexed key cases may benefit from the cacheability of the poor distribution. If we find common use cases in the
+     * future where this poor first hash causes more problems than it solves, we can update it to a better distributed
+     * hash function.
+     */
+    static int probe1(long key, int range) {
+        final long badHash = (key ^ (key >>> 32));
+        return (int) ((badHash & 0x7fffffffffffffffL) % range);
+    }
+
+    static int probe2(long key, int range) {
+        final long mixHash = mix64(key);
+        return (int) ((mixHash & 0x7fffffffffffffffL) % range);
+    }
 }
