@@ -272,7 +272,7 @@ public class QueryCompiler {
     }
 
     private static void ensureDirectories(final File file, final Supplier<String> runtimeErrMsg) {
-        // File.mkdirs() checks for existrance on entry, in which case it returns false.
+        // File.mkdirs() checks for existence on entry, in which case it returns false.
         // It may also return false on a failure to create.
         // Also note, two separate threads or JVMs may be running this code in parallel. It's possible that we could
         // lose the race
