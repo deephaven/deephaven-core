@@ -1474,6 +1474,9 @@ public class ConstructSnapshot {
                 } else {
                     chunkSize = (int) (size - offset);
                 }
+
+                // a shared context is good for only one chunk of rows
+                sharedContext.reset();
             }
         }
         return result;
