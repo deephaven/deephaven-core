@@ -782,32 +782,34 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void writeRow() {
-            boolean doFlush = false;
-            switch (flags) {
-                case SingleRow:
-                    doFlush = true;
-                case StartTransaction:
-                    if (lastCommittedRow != lastSetterRow) {
-                        lastSetterRow = lastCommittedRow + 1;
-                    }
-                    break;
-                case EndTransaction:
-                    doFlush = true;
-                    break;
-                case None:
-                    break;
-            }
-            row = lastSetterRow++;
+            synchronized (DynamicTableWriter.this) {
+                boolean doFlush = false;
+                switch (flags) {
+                    case SingleRow:
+                        doFlush = true;
+                    case StartTransaction:
+                        if (lastCommittedRow != lastSetterRow) {
+                            lastSetterRow = lastCommittedRow + 1;
+                        }
+                        break;
+                    case EndTransaction:
+                        doFlush = true;
+                        break;
+                    case None:
+                        break;
+                }
+                row = lastSetterRow++;
 
-            // Before this row can be returned to a pool, it needs to ensure that the underlying sources
-            // are appropriately sized to avoid race conditions.
-            ensureCapacity(row);
-            columnToSetter.values().forEach((x) -> x.setRow(row));
+                // Before this row can be returned to a pool, it needs to ensure that the underlying sources
+                // are appropriately sized to avoid race conditions.
+                ensureCapacity(row);
+                columnToSetter.values().forEach((x) -> x.setRow(row));
 
-            // The row has been committed during set, we just need to insert the row keys into the table
-            if (doFlush) {
-                DynamicTableWriter.this.addRangeToTableIndex(lastCommittedRow + 1, row);
-                lastCommittedRow = row;
+                // The row has been committed during set, we just need to insert the row keys into the table
+                if (doFlush) {
+                    DynamicTableWriter.this.addRangeToTableIndex(lastCommittedRow + 1, row);
+                    lastCommittedRow = row;
+                }
             }
         }
 
