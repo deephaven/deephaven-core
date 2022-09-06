@@ -3,11 +3,10 @@
  */
 package io.deephaven.parquet.table;
 
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.TrackingRowSet;
-
+import io.deephaven.engine.table.TableDefinition;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Types;
@@ -25,7 +24,7 @@ class MappedSchema {
     static MappedSchema create(
             final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
             final TableDefinition definition,
-            final TrackingRowSet rowSet,
+            final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             final ParquetInstructions instructions,
             final ColumnDefinition<?>... extraColumns) {
