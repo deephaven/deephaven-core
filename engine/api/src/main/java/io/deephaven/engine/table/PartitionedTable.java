@@ -203,7 +203,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      *
      * @apiNote {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for an
      *          empty input table. It is required to install an ExecutionContext to access any
-     *          QueryLibrary/QueryScope/CompilerContext functionality from the {@code transformer}.
+     *          QueryLibrary/QueryScope/QueryCompiler functionality from the {@code transformer}.
      *
      * @param transformer The {@link UnaryOperator} to apply to all constituent {@link Table tables}
      * @return The new PartitionedTable containing the resulting constituents
@@ -245,7 +245,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      *
      * @apiNote {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for
      *          empty input tables. It is required to install an ExecutionContext to access any
-     *          QueryLibrary/QueryScope/CompilerContext functionality from the {@code transformer}.
+     *          QueryLibrary/QueryScope/QueryCompiler functionality from the {@code transformer}.
      *
      * @param other The other PartitionedTable to find constituents in
      * @param transformer The {@link BinaryOperator} to apply to all pairs of constituent {@link Table tables}
@@ -275,7 +275,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * </ol>
      * <p>
      * {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for empty input
-     * tables. It is required to install an ExecutionContext to access any QueryLibrary/QueryScope/CompilerContext
+     * tables. It is required to install an ExecutionContext to access any QueryLibrary/QueryScope/QueryCompiler
      * functionality from the {@code transformer}.
      *
      * @param other The other PartitionedTable to find constituents in

@@ -209,11 +209,11 @@ class UgpTestCase(BaseTestCase):
 
         _ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
         _context = _ExecutionContext.newBuilder() \
-          .captureCompilerContext() \
-          .captureQueryLibrary() \
-          .emptyQueryScope() \
-          .build() \
-          .open()
+                .captureQueryCompiler()           \
+                .captureQueryLibrary()            \
+                .emptyQueryScope()                \
+                .build()                          \
+                .open()
 
         with self.subTest("Merge"):
             ugp.auto_locking = False

@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class TestCompilerTools {
+public class TestQueryCompiler {
     private final static int NUM_THREADS = 500;
     private final static int NUM_METHODS = 5000;
     private final static long WAIT_BETWEEN_THREAD_START_MILLIS = 5;
@@ -158,7 +158,8 @@ public class TestCompilerTools {
         } else {
             startMillis = 0;
         }
-        CompilerTools.compile(className, CLASS_CODE, "io.deephaven.temp");
+        ExecutionContext.getContext().getQueryCompiler()
+                .compile(className, CLASS_CODE, "io.deephaven.temp");
         if (printDetails) {
             final long endMillis = System.currentTimeMillis();
             System.out.println(printMillis(endMillis) + ": Thread 0 ending compile: (" + (endMillis - startMillis)
@@ -185,8 +186,8 @@ public class TestCompilerTools {
                 "}");
 
         StringBuilder codeLog = new StringBuilder();
-        final Class<?> clazz1 =
-                CompilerTools.compile("Test", program1Text, "com.deephaven.test", codeLog, Collections.emptyMap());
+        final Class<?> clazz1 = ExecutionContext.getContext().getQueryCompiler()
+                .compile("Test", program1Text, "com.deephaven.test", codeLog, Collections.emptyMap());
         final Method m1 = clazz1.getMethod("main", String[].class);
         Object[] args1 = new Object[] {new String[] {"hello", "there"}};
         m1.invoke(null, args1);
@@ -208,8 +209,9 @@ public class TestCompilerTools {
             Thread t = new Thread(() -> {
                 StringBuilder codeLog = new StringBuilder();
                 try {
-                    final Class<?> clazz1 = CompilerTools.compile("Test", program1Text, "com.deephaven.test", codeLog,
-                            Collections.emptyMap());
+                    final Class<?> clazz1 = ExecutionContext.getContext().getQueryCompiler()
+                            .compile("Test", program1Text, "com.deephaven.test", codeLog,
+                                    Collections.emptyMap());
                     final Method m1 = clazz1.getMethod("main", String[].class);
                     Object[] args1 = new Object[] {new String[] {"hello", "there"}};
                     m1.invoke(null, args1);

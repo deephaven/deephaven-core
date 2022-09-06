@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.util.ModelFileGenerator;
@@ -48,7 +47,7 @@ public class TestFormulaColumnGeneration {
     public void setUp() {
         executionContext = ExecutionContext.newBuilder()
                 .newQueryLibrary("DEFAULT")
-                .captureCompilerContext()
+                .captureQueryCompiler()
                 .captureQueryScope()
                 .build().open();
     }

@@ -8,6 +8,7 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.value.Value;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -69,8 +70,7 @@ public interface SelectColumn extends Selectable {
      *
      * @return a list of columns on which the result of this is dependent
      * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
-     *          {@link io.deephaven.engine.context.CompilerTools} usage needs to be resolved within initDef.
-     *          Implementations must be idempotent.
+     *          {@link QueryCompiler} usage needs to be resolved within initDef. Implementations must be idempotent.
      */
     List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap);
 
