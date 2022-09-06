@@ -96,11 +96,12 @@ public class QueryCompiler {
         this(classDestination, null, false);
     }
 
-    private QueryCompiler(File classDestination, ClassLoader parentClassLoader, boolean isCacheDirectory) {
-        if (parentClassLoader == null) {
-            parentClassLoader = this.getClassLoader();
-        }
-        final ClassLoader finalParentClassLoader = parentClassLoader;
+    private QueryCompiler(
+            final File classDestination,
+            final ClassLoader parentClassLoader,
+            final boolean isCacheDirectory) {
+        final ClassLoader parentClassLoaderToUse = parentClassLoader == null
+                ? QueryCompiler.class.getClassLoader() : parentClassLoader;
         this.classDestination = classDestination;
         this.isCacheDirectory = isCacheDirectory;
         ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
@@ -116,7 +117,7 @@ public class QueryCompiler {
         // We should be able to create this class loader, even if this is invoked from external code
         // that does not have sufficient security permissions.
         this.ucl = doPrivileged((PrivilegedAction<WritableURLClassLoader>) () -> new WritableURLClassLoader(urls,
-                finalParentClassLoader));
+                parentClassLoaderToUse));
 
         if (isCacheDirectory) {
             addClassSource(classDestination);
@@ -389,7 +390,9 @@ public class QueryCompiler {
             try {
                 clazz = findClass(name);
             } catch (ClassNotFoundException e) {
-                clazz = getParent().loadClass(name);
+                if (getParent() != null) {
+                    clazz = getParent().loadClass(name);
+                }
             }
 
             if (resolve) {
