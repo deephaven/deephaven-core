@@ -52,7 +52,7 @@ public class TestConditionFilter extends PythonTest {
             .getBooleanForClassWithDefault(TestConditionFilter.class, "QueryCompiler.logEnabled", false);
 
     private final Table testDataTable;
-    private boolean compilerToolsLogEnabledInitial = false;
+    private boolean queryCompilerLogEnabledInitial = false;
 
     public TestConditionFilter() {
         testDataTable = getTestDataTable();
@@ -67,12 +67,12 @@ public class TestConditionFilter extends PythonTest {
             ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(),
                     PythonMatchFilterTest.class.getCanonicalName(), new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
-        compilerToolsLogEnabledInitial = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
+        queryCompilerLogEnabledInitial = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
     }
 
     @After
     public void tearDown() throws Exception {
-        QueryCompiler.setLogEnabled(compilerToolsLogEnabledInitial);
+        QueryCompiler.setLogEnabled(queryCompilerLogEnabledInitial);
     }
 
     @Test
