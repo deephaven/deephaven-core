@@ -751,7 +751,6 @@ public class SessionState {
                 parents = Collections.emptyList();
                 exportMain = null;
                 errorHandler = null;
-                caughtException = null;
             }
 
             if ((state == ExportNotification.State.EXPORTED && isNonExport()) || isExportStateTerminal(state)) {
@@ -774,6 +773,9 @@ public class SessionState {
             if (parent != null && isExportStateTerminal(parent.state)) {
                 synchronized (this) {
                     errorId = parent.errorId;
+                    if (parent.caughtException instanceof StatusRuntimeException) {
+                        caughtException = parent.caughtException;
+                    }
                     ExportNotification.State terminalState = ExportNotification.State.DEPENDENCY_FAILED;
 
                     if (errorId == null) {
@@ -976,6 +978,7 @@ public class SessionState {
         protected synchronized void destroy() {
             super.destroy();
             result = null;
+            caughtException = null;
         }
 
         /**

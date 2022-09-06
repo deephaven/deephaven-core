@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.proto.util.ExportTicketHelper;
+import io.deephaven.server.table.ExportTableUpdateListenerTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -18,6 +19,7 @@ import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.auth.AuthContext;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -1246,6 +1248,44 @@ public class SessionStateTest {
         });
         scheduler.runUntilQueueEmpty();
         Assert.eq(clr.refCount, "clr.refCount", 0);
+    }
+
+    @Test
+    public void testCascadingStatusRuntimeFailureDeliversToErrorHandler() {
+        final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++)
+                .submit(() -> {
+                    throw Status.DATA_LOSS.asRuntimeException();
+                });
+
+        final MutableBoolean submitRan = new MutableBoolean();
+        final MutableObject<Throwable> caughtErr = new MutableObject<>();
+        final StreamObserver<?> observer = new StreamObserver<>() {
+            @Override
+            public void onNext(Object value) {
+                throw new RuntimeException("this should not reach test framework");
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                caughtErr.setValue(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                throw new RuntimeException("this should not reach test framework");
+            }
+        };
+        session.newExport(nextExportId++)
+                .onError(observer)
+                .require(e1)
+                .submit(submitRan::setTrue);
+
+        scheduler.runUntilQueueEmpty();
+        Assert.eqFalse(submitRan.booleanValue(), "submitRan.booleanValue()");
+        Assert.eqTrue(caughtErr.getValue() instanceof StatusRuntimeException, "caughtErr.getValue()");
+
+        final StatusRuntimeException sre = (StatusRuntimeException) caughtErr.getValue();
+        Assert.eq(sre.getStatus(), "sre.getStatus()", Status.DATA_LOSS, "Status.DATA_LOSS");
     }
 
     private static long getExportId(final ExportNotification notification) {
