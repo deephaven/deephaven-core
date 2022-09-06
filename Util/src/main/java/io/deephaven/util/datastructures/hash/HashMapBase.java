@@ -461,4 +461,16 @@ public abstract class HashMapBase implements TNullableLongLongMap {
     public TLongCollection valueCollection() {
         return null;
     }
+
+    /**
+     * Computes Stafford variant 13 of 64bit mix function.
+     *
+     * <p>
+     * See java.util.SplittableRandom#mix64(long).
+     */
+    static long mix64(long z) {
+        z = (z ^ (z >>> 30)) * 0xbf58476d1ce4e5b9L;
+        z = (z ^ (z >>> 27)) * 0x94d049bb133111ebL;
+        return z ^ (z >>> 31);
+    }
 }
