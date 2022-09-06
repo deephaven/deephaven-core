@@ -524,6 +524,7 @@ public class SessionState {
         /** used to identify and propagate error details */
         private String errorId;
         private String dependentHandle;
+        private Exception caughtException;
 
         /**
          * @param exportId the export id for this export
@@ -740,7 +741,7 @@ public class SessionState {
                 if (errorId == null) {
                     assignErrorId();
                 }
-                safelyExecute(() -> errorHandler.onError(state, errorId, dependentHandle));
+                safelyExecute(() -> errorHandler.onError(state, errorId, caughtException, dependentHandle));
             }
 
             if (state == ExportNotification.State.EXPORTED || isExportStateTerminal(state)) {
@@ -772,6 +773,9 @@ public class SessionState {
             if (parent != null && isExportStateTerminal(parent.state)) {
                 synchronized (this) {
                     errorId = parent.errorId;
+                    if (parent.caughtException instanceof StatusRuntimeException) {
+                        caughtException = parent.caughtException;
+                    }
                     ExportNotification.State terminalState = ExportNotification.State.DEPENDENCY_FAILED;
 
                     if (errorId == null) {
@@ -841,7 +845,6 @@ public class SessionState {
                 }
                 setState(ExportNotification.State.RUNNING);
             }
-            Exception exception = null;
             boolean shouldLog = false;
             int evaluationNumber = -1;
             QueryProcessingResults queryProcessingResults = null;
@@ -858,7 +861,7 @@ public class SessionState {
                     shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
                 }
             } catch (final Exception err) {
-                exception = err;
+                caughtException = err;
                 synchronized (this) {
                     if (!isExportStateTerminal(state)) {
                         assignErrorId();
@@ -867,12 +870,12 @@ public class SessionState {
                     }
                 }
             } finally {
-                if (exception != null && queryProcessingResults != null) {
-                    queryProcessingResults.setException(exception.toString());
+                if (caughtException != null && queryProcessingResults != null) {
+                    queryProcessingResults.setException(caughtException.toString());
                 }
                 QueryPerformanceRecorder.resetInstance();
             }
-            if ((shouldLog || exception != null) && queryProcessingResults != null) {
+            if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
                 final MemoryTableLoggers memLoggers = MemoryTableLoggers.getInstance();
                 final QueryPerformanceLogLogger qplLogger = memLoggers.getQplLogger();
                 final QueryOperationPerformanceLogLogger qoplLogger = memLoggers.getQoplLogger();
@@ -975,6 +978,7 @@ public class SessionState {
         protected synchronized void destroy() {
             super.destroy();
             result = null;
+            caughtException = null;
         }
 
         /**
@@ -1141,7 +1145,9 @@ public class SessionState {
          * @param dependentExportId an identifier for the export id of the dependent that caused the failure if
          *        applicable
          */
-        void onError(final ExportNotification.State resultState, @Nullable final String errorContext,
+        void onError(final ExportNotification.State resultState,
+                final String errorContext,
+                @Nullable final Exception cause,
                 @Nullable final String dependentExportId);
     }
     @FunctionalInterface
@@ -1248,7 +1254,12 @@ public class SessionState {
          * @return this builder
          */
         public ExportBuilder<T> onErrorHandler(final ExportErrorGrpcHandler errorHandler) {
-            return onError(((resultState, errorContext, dependentExportId) -> {
+            return onError(((resultState, errorContext, cause, dependentExportId) -> {
+                if (cause instanceof StatusRuntimeException) {
+                    errorHandler.onError((StatusRuntimeException) cause);
+                    return;
+                }
+
                 final String dependentStr = dependentExportId == null ? ""
                         : (" (related parent export id: " + dependentExportId + ")");
                 errorHandler.onError(GrpcUtil.statusRuntimeException(
