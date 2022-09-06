@@ -11,7 +11,8 @@ import groovy.lang.MissingPropertyException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
-import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -58,7 +59,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private static final Logger log = LoggerFactory.getLogger(GroovyDeephavenSession.class);
 
     public static final String SCRIPT_TYPE = "Groovy";
-    private static final String PACKAGE = CompilerTools.DYNAMIC_GROOVY_CLASS_PREFIX;
+    private static final String PACKAGE = QueryCompiler.DYNAMIC_GROOVY_CLASS_PREFIX;
     private static final String SCRIPT_PREFIX = "io.deephaven.engine.util.Script";
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
@@ -141,7 +142,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         groovyShell.setVariable("__groovySession", this);
         groovyShell.setVariable("DB_SCRIPT_PATH", DEFAULT_SCRIPT_PATH);
 
-        executionContext.getCompilerContext().setParentClassLoader(getShell().getClassLoader());
+        executionContext.getQueryCompiler().setParentClassLoader(getShell().getClassLoader());
 
         publishInitial();
 
@@ -550,7 +551,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     public static byte[] getDynamicClass(String name) {
-        return readClass(CompilerTools.getContext().getFakeClassDestination(), name);
+        return readClass(ExecutionContext.getContext().getQueryCompiler().getFakeClassDestination(), name);
     }
 
     private static byte[] readClass(final File rootDirectory, final String className) {
@@ -573,7 +574,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         } catch (RuntimeException e) {
             throw new GroovyExceptionWrapper(e);
         }
-        final File dynamicClassDestination = CompilerTools.getContext().getFakeClassDestination();
+        final File dynamicClassDestination = ExecutionContext.getContext().getQueryCompiler().getFakeClassDestination();
         if (dynamicClassDestination == null) {
             return;
         }
@@ -601,7 +602,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 }
 
                 try {
-                    CompilerTools.writeClass(dynamicClassDestination, entry.getKey(), entry.getValue());
+                    QueryCompiler.writeClass(dynamicClassDestination, entry.getKey(), entry.getValue());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -714,7 +715,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     @Override
     public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoaderSupplier,
             ScriptPathLoaderState scriptLoaderState) {
-        CompilerTools.getContext().setParentClassLoader(getShell().getClassLoader());
+        ExecutionContext.getContext().getQueryCompiler().setParentClassLoader(getShell().getClassLoader());
         setScriptPathLoader(pathLoaderSupplier, true);
     }
 
@@ -764,7 +765,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             }
         } else {
             log.warn().append("Incorrect closure type for query: ")
-                    .append(sourceClosure == null ? "(null)" : sourceClosure.getClass().toString()).endl();
+                    .append(sourceClosure.getClass().toString()).endl();
         }
 
         return false;

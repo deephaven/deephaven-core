@@ -41,8 +41,8 @@ import java.util.stream.Stream;
 
 import static java.security.AccessController.doPrivileged;
 
-public class CompilerTools {
-    private static final Logger log = LoggerFactory.getLogger(CompilerTools.class);
+public class QueryCompiler {
+    private static final Logger log = LoggerFactory.getLogger(QueryCompiler.class);
     /**
      * We pick a number just shy of 65536, leaving a little elbow room for good luck.
      */
@@ -53,14 +53,77 @@ public class CompilerTools {
 
     private static final String IDENTIFYING_FIELD_NAME = "_CLASS_BODY_";
 
-    private static final String CODEGEN_TIMEOUT_PROP = "CompilerTools.codegen.timeoutMs";
+    private static final String CODEGEN_TIMEOUT_PROP = "QueryCompiler.codegen.timeoutMs";
     private static final long CODEGEN_TIMEOUT_MS_DEFAULT = TimeUnit.SECONDS.toMillis(10); // 10 seconds
-    private static final String CODEGEN_LOOP_DELAY_PROP = "CompilerTools.codegen.retry.delay";
+    private static final String CODEGEN_LOOP_DELAY_PROP = "QueryCompiler.codegen.retry.delay";
     private static final long CODEGEN_LOOP_DELAY_MS_DEFAULT = 100;
     private static final long codegenTimeoutMs =
             Configuration.getInstance().getLongWithDefault(CODEGEN_TIMEOUT_PROP, CODEGEN_TIMEOUT_MS_DEFAULT);
     private static final long codegenLoopDelayMs =
             Configuration.getInstance().getLongWithDefault(CODEGEN_LOOP_DELAY_PROP, CODEGEN_LOOP_DELAY_MS_DEFAULT);
+
+    private static boolean logEnabled = Configuration.getInstance().getBoolean("QueryCompiler.logEnabledDefault");
+
+    public static final String FORMULA_PREFIX = "io.deephaven.temp";
+    public static final String DYNAMIC_GROOVY_CLASS_PREFIX = "io.deephaven.dynamic";
+
+    public static QueryCompiler create(File cacheDirectory, ClassLoader classLoader) {
+        return new QueryCompiler(cacheDirectory, classLoader, true);
+    }
+
+    static QueryCompiler createForUnitTests() {
+        return new QueryCompiler(new File(Configuration.getInstance().getWorkspacePath() +
+                File.separator + "cache" + File.separator + "classes"));
+    }
+
+    private final Map<String, CompletableFuture<Class<?>>> knownClasses = new HashMap<>();
+
+    private final String[] dynamicPatterns = new String[] {DYNAMIC_GROOVY_CLASS_PREFIX, FORMULA_PREFIX};
+
+    private final File classDestination;
+    private final boolean isCacheDirectory;
+    private final Set<File> additionalClassLocations;
+    private volatile WritableURLClassLoader ucl;
+
+    /** package-private constructor for {@link io.deephaven.engine.context.PoisonedQueryCompiler} */
+    QueryCompiler() {
+        classDestination = null;
+        isCacheDirectory = false;
+        additionalClassLocations = null;
+    }
+
+    private QueryCompiler(File classDestination) {
+        this(classDestination, null, false);
+    }
+
+    private QueryCompiler(
+            final File classDestination,
+            final ClassLoader parentClassLoader,
+            final boolean isCacheDirectory) {
+        final ClassLoader parentClassLoaderToUse = parentClassLoader == null
+                ? QueryCompiler.class.getClassLoader()
+                : parentClassLoader;
+        this.classDestination = classDestination;
+        this.isCacheDirectory = isCacheDirectory;
+        ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
+                classDestination.getAbsolutePath());
+        additionalClassLocations = new LinkedHashSet<>();
+
+        URL[] urls = new URL[1];
+        try {
+            urls[0] = (classDestination.toURI().toURL());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("", e);
+        }
+        // We should be able to create this class loader, even if this is invoked from external code
+        // that does not have sufficient security permissions.
+        this.ucl = doPrivileged((PrivilegedAction<WritableURLClassLoader>) () -> new WritableURLClassLoader(urls,
+                parentClassLoaderToUse));
+
+        if (isCacheDirectory) {
+            addClassSource(classDestination);
+        }
+    }
 
     /**
      * Enables or disables compilation logging.
@@ -69,8 +132,8 @@ public class CompilerTools {
      * @return The value of {@code logEnabled} before calling this method.
      */
     public static boolean setLogEnabled(boolean logEnabled) {
-        boolean original = CompilerTools.logEnabled;
-        CompilerTools.logEnabled = logEnabled;
+        boolean original = QueryCompiler.logEnabled;
+        QueryCompiler.logEnabled = logEnabled;
         return original;
     }
 
@@ -82,18 +145,6 @@ public class CompilerTools {
     public static void writeClass(final File destinationDirectory, final String className, final byte[] data)
             throws IOException {
         writeClass(destinationDirectory, className, data, null);
-    }
-
-    private static void ensureDirectories(final File file, final Supplier<String> runtimeErrMsg) {
-        // File.mkdirs() checks for existrance on entry, in which case it returns false.
-        // It may also return false on a failure to create.
-        // Also note, two separate threads or JVMs may be running this code in parallel. It's possible that we could
-        // lose the race
-        // (and therefore mkdirs() would return false), but still get the directory we need (and therefore exists()
-        // would return true)
-        if (!file.mkdirs() && !file.isDirectory()) {
-            throw new RuntimeException(runtimeErrMsg.get());
-        }
     }
 
     /*
@@ -144,269 +195,34 @@ public class CompilerTools {
         fileOutStream.close();
     }
 
-    public static final String FORMULA_PREFIX = "io.deephaven.temp";
-    public static final String DYNAMIC_GROOVY_CLASS_PREFIX = "io.deephaven.dynamic";
-
-    public interface Context {
-        Map<String, CompletableFuture<Class<?>>> getKnownClasses();
-
-        ClassLoader getClassLoaderForFormula(Map<String, Class<?>> parameterClasses);
-
-        File getClassDestination();
-
-        File getFakeClassDestination();
-
-        String getClassPath();
-
-        void setParentClassLoader(ClassLoader parentClassLoader);
+    public File getFakeClassDestination() {
+        // Groovy classes need to be written out to a location where they can be found by the compiler
+        // (so that filters and formulae can use them).
+        //
+        // We don't want the regular runtime class loader to find them, because then they get "stuck" in there
+        // even if the class itself changes, and we can't forget it. So instead we use a single-use class loader
+        // for each formula, that will always read the class from disk.
+        return isCacheDirectory ? classDestination : null;
     }
 
-    public static Context newContext(File cacheDirectory, ClassLoader classLoader) {
-        return new CompilerTools.ContextImpl(cacheDirectory, classLoader, true);
+    public void setParentClassLoader(final ClassLoader parentClassLoader) {
+        // The system should always be able to create this class loader, even if invoked from something that
+        // doesn't have the right security permissions for it.
+        ucl = doPrivileged(
+                (PrivilegedAction<WritableURLClassLoader>) () -> new WritableURLClassLoader(ucl.getURLs(),
+                        parentClassLoader));
     }
 
-    private static class ContextImpl implements Context {
-        private final Map<String, CompletableFuture<Class<?>>> knownClasses = new HashMap<>();
-
-        String[] dynamicPatterns = new String[] {DYNAMIC_GROOVY_CLASS_PREFIX, FORMULA_PREFIX};
-
-        private final File classDestination;
-        private final boolean isCacheDirectory;
-        private final Set<File> additionalClassLocations;
-        private volatile WritableURLClassLoader ucl;
-
-        private ContextImpl(File classDestination) {
-            this(classDestination, Context.class.getClassLoader(), false);
-        }
-
-        private ContextImpl(File classDestination, ClassLoader parentClassLoader, boolean isCacheDirectory) {
-            this.classDestination = classDestination;
-            this.isCacheDirectory = isCacheDirectory;
-            ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
-                    classDestination.getAbsolutePath());
-            additionalClassLocations = new LinkedHashSet<>();
-
-            URL[] urls = new URL[1];
-            try {
-                urls[0] = (classDestination.toURI().toURL());
-            } catch (MalformedURLException e) {
-                throw new RuntimeException("", e);
-            }
-            // We should be able to create this class loader, even if this is invoked from external code
-            // that does not have sufficient security permissions.
-            this.ucl = doPrivileged((PrivilegedAction<WritableURLClassLoader>) () -> new WritableURLClassLoader(urls,
-                    parentClassLoader));
-
-            if (isCacheDirectory) {
-                addClassSource(classDestination);
-            }
-        }
-
-        @Override
-        public Map<String, CompletableFuture<Class<?>>> getKnownClasses() {
-            return knownClasses;
-        }
-
-        @Override
-        public ClassLoader getClassLoaderForFormula(final Map<String, Class<?>> parameterClasses) {
-            // We should always be able to get our own class loader, even if this is invoked from external code
-            // that doesn't have security permissions to make ITS own class loader.
-            return doPrivileged((PrivilegedAction<URLClassLoader>) () -> new URLClassLoader(ucl.getURLs(), ucl) {
-                // Once we find a class that is missing, we should not attempt to load it again,
-                // otherwise we can end up with a StackOverflow Exception
-                final HashSet<String> missingClasses = new HashSet<>();
-
-                @Override
-                protected Class<?> findClass(String name) throws ClassNotFoundException {
-                    // If we have a parameter that uses this class, return it
-                    final Class<?> paramClass = parameterClasses.get(name);
-                    if (paramClass != null) {
-                        return paramClass;
-                    }
-
-                    // Unless we are looking for a formula or Groovy class, we should use the default behavior
-                    if (!isFormulaClass(name)) {
-                        return super.findClass(name);
-                    }
-
-                    // if it is a groovy class, always try to use the instance in the shell
-                    if (name.startsWith(DYNAMIC_GROOVY_CLASS_PREFIX)) {
-                        try {
-                            return ucl.getParent().loadClass(name);
-                        } catch (final ClassNotFoundException ignored) {
-                            // we'll try to load it otherwise
-                        }
-                    }
-
-                    // We've already not found this class, so we should not try to search again
-                    if (missingClasses.contains(name)) {
-                        return super.findClass(name);
-                    }
-
-                    final byte[] bytes;
-                    try {
-                        bytes = loadClassData(name);
-                    } catch (IOException ioe) {
-                        missingClasses.add(name);
-                        return super.loadClass(name);
-                    }
-                    return defineClass(name, bytes, 0, bytes.length);
-                }
-
-                @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-                private boolean isFormulaClass(String name) {
-                    return Arrays.stream(dynamicPatterns).anyMatch(name::startsWith);
-                }
-
-                @Override
-                public Class<?> loadClass(String name) throws ClassNotFoundException {
-                    if (!isFormulaClass(name)) {
-                        return super.loadClass(name);
-                    }
-                    return findClass(name);
-                }
-
-                private byte[] loadClassData(String name) throws IOException {
-                    try {
-                        // The compiler should always have access to the class-loader directories,
-                        // even if code that invokes this does not.
-                        return doPrivileged((PrivilegedExceptionAction<byte[]>) () -> {
-                            final File destFile = new File(classDestination,
-                                    name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
-                            if (destFile.exists()) {
-                                return Files.readAllBytes(destFile.toPath());
-                            }
-
-                            for (File location : additionalClassLocations) {
-                                final File checkFile = new File(location,
-                                        name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
-                                if (checkFile.exists()) {
-                                    return Files.readAllBytes(checkFile.toPath());
-                                }
-                            }
-
-                            throw new FileNotFoundException(name);
-                        });
-                    } catch (final PrivilegedActionException pae) {
-                        final Exception inner = pae.getException();
-                        if (inner instanceof IOException) {
-                            throw (IOException) inner;
-                        } else {
-                            throw new RuntimeException(inner);
-                        }
-                    }
-                }
-            });
-        }
-
-        private static class WritableURLClassLoader extends URLClassLoader {
-            private WritableURLClassLoader(URL[] urls, ClassLoader parent) {
-                super(urls, parent);
-            }
-
-            @Override
-            protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-                Class<?> clazz = findLoadedClass(name);
-                if (clazz != null) {
-                    return clazz;
-                }
-
-                try {
-                    clazz = findClass(name);
-                } catch (ClassNotFoundException e) {
-                    clazz = getParent().loadClass(name);
-                }
-
-                if (resolve) {
-                    resolveClass(clazz);
-                }
-                return clazz;
-            }
-
-            @Override
-            public synchronized void addURL(URL url) {
-                super.addURL(url);
-            }
-        }
-
-        protected void addClassSource(File classSourceDirectory) {
-            synchronized (additionalClassLocations) {
-                if (additionalClassLocations.contains(classSourceDirectory)) {
-                    return;
-                }
-                additionalClassLocations.add(classSourceDirectory);
-            }
-            try {
-                ucl.addURL(classSourceDirectory.toURI().toURL());
-            } catch (MalformedURLException e) {
-                throw new RuntimeException("", e);
-            }
-        }
-
-        public File getFakeClassDestination() {
-            // Groovy classes need to be written out to a location where they can be found by the compiler
-            // (so that filters and formulae can use them).
-            //
-            // We don't want the regular runtime class loader to find them, because then they get "stuck" in there
-            // even if the class itself changes, and we can't forget it. So instead we use a single-use class loader
-            // for each formula, that will always read the class from disk.
-            return isCacheDirectory ? classDestination : null;
-        }
-
-        @Override
-        public File getClassDestination() {
-            return classDestination;
-        }
-
-        public String getClassPath() {
-            StringBuilder sb = new StringBuilder();
-            sb.append(classDestination.getAbsolutePath());
-            synchronized (additionalClassLocations) {
-                for (File classLoc : additionalClassLocations) {
-                    sb.append(File.pathSeparatorChar).append(classLoc.getAbsolutePath());
-                }
-            }
-            return sb.toString();
-        }
-
-        public WritableURLClassLoader getClassLoader() {
-            return ucl;
-        }
-
-        public void setParentClassLoader(final ClassLoader parentClassLoader) {
-            // The system should always be able to create this class loader, even if invoked from something that
-            // doesn't have the right security permissions for it.
-            ucl = doPrivileged(
-                    (PrivilegedAction<WritableURLClassLoader>) () -> new WritableURLClassLoader(ucl.getURLs(),
-                            parentClassLoader));
-        }
-
-        public void cleanup() {
-            FileUtils.deleteRecursively(classDestination);
-        }
-    }
-
-    static Context createContextForUnitTests() {
-        return new ContextImpl(new File(Configuration.getInstance().getWorkspacePath() +
-                File.separator + "cache" + File.separator + "classes"));
-    }
-
-    public static Context getContext() {
-        return ExecutionContext.getContext().getCompilerContext();
-    }
-
-    private static boolean logEnabled = Configuration.getInstance().getBoolean("CompilerTools.logEnabledDefault");
-
-    public static Class<?> compile(String className, String classBody, String packageNameRoot) {
+    public final Class<?> compile(String className, String classBody, String packageNameRoot) {
         return compile(className, classBody, packageNameRoot, null, Collections.emptyMap());
     }
 
-    public static Class<?> compile(String className, String classBody, String packageNameRoot,
+    public final Class<?> compile(String className, String classBody, String packageNameRoot,
             Map<String, Class<?>> parameterClasses) {
         return compile(className, classBody, packageNameRoot, null, parameterClasses);
     }
 
-    public static Class<?> compile(String className, String classBody, String packageNameRoot, StringBuilder codeLog) {
+    public final Class<?> compile(String className, String classBody, String packageNameRoot, StringBuilder codeLog) {
         return compile(className, classBody, packageNameRoot, codeLog, Collections.emptyMap());
     }
 
@@ -420,7 +236,7 @@ public class CompilerTools {
      * @param parameterClasses Generic parameters, empty if none required
      * @return The compiled class
      */
-    public static Class<?> compile(@NotNull final String className,
+    public Class<?> compile(@NotNull final String className,
             @NotNull final String classBody,
             @NotNull final String packageNameRoot,
             @Nullable final StringBuilder codeLog,
@@ -428,15 +244,13 @@ public class CompilerTools {
         CompletableFuture<Class<?>> promise;
         final boolean promiseAlreadyMade;
 
-        final Context context = getContext();
-
-        synchronized (context) {
-            promise = context.getKnownClasses().get(classBody);
+        synchronized (this) {
+            promise = knownClasses.get(classBody);
             if (promise != null) {
                 promiseAlreadyMade = true;
             } else {
                 promise = new CompletableFuture<>();
-                context.getKnownClasses().put(classBody, promise);
+                knownClasses.put(classBody, promise);
                 promiseAlreadyMade = false;
             }
         }
@@ -452,19 +266,186 @@ public class CompilerTools {
 
         // It's my job to fulfill the promise
         try {
-            return compileHelper(className, classBody, packageNameRoot, codeLog, parameterClasses, context);
+            return compileHelper(className, classBody, packageNameRoot, codeLog, parameterClasses);
         } catch (RuntimeException e) {
             promise.completeExceptionally(e);
             throw e;
         }
     }
 
-    private static Class<?> compileHelper(@NotNull final String className,
+    private static void ensureDirectories(final File file, final Supplier<String> runtimeErrMsg) {
+        // File.mkdirs() checks for existence on entry, in which case it returns false.
+        // It may also return false on a failure to create.
+        // Also note, two separate threads or JVMs may be running this code in parallel. It's possible that we could
+        // lose the race
+        // (and therefore mkdirs() would return false), but still get the directory we need (and therefore exists()
+        // would return true)
+        if (!file.mkdirs() && !file.isDirectory()) {
+            throw new RuntimeException(runtimeErrMsg.get());
+        }
+    }
+
+    private ClassLoader getClassLoaderForFormula(final Map<String, Class<?>> parameterClasses) {
+        // We should always be able to get our own class loader, even if this is invoked from external code
+        // that doesn't have security permissions to make ITS own class loader.
+        return doPrivileged((PrivilegedAction<URLClassLoader>) () -> new URLClassLoader(ucl.getURLs(), ucl) {
+            // Once we find a class that is missing, we should not attempt to load it again,
+            // otherwise we can end up with a StackOverflow Exception
+            final HashSet<String> missingClasses = new HashSet<>();
+
+            @Override
+            protected Class<?> findClass(String name) throws ClassNotFoundException {
+                // If we have a parameter that uses this class, return it
+                final Class<?> paramClass = parameterClasses.get(name);
+                if (paramClass != null) {
+                    return paramClass;
+                }
+
+                // Unless we are looking for a formula or Groovy class, we should use the default behavior
+                if (!isFormulaClass(name)) {
+                    return super.findClass(name);
+                }
+
+                // if it is a groovy class, always try to use the instance in the shell
+                if (name.startsWith(DYNAMIC_GROOVY_CLASS_PREFIX)) {
+                    try {
+                        return ucl.getParent().loadClass(name);
+                    } catch (final ClassNotFoundException ignored) {
+                        // we'll try to load it otherwise
+                    }
+                }
+
+                // We've already not found this class, so we should not try to search again
+                if (missingClasses.contains(name)) {
+                    return super.findClass(name);
+                }
+
+                final byte[] bytes;
+                try {
+                    bytes = loadClassData(name);
+                } catch (IOException ioe) {
+                    missingClasses.add(name);
+                    return super.loadClass(name);
+                }
+                return defineClass(name, bytes, 0, bytes.length);
+            }
+
+            @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+            private boolean isFormulaClass(String name) {
+                return Arrays.stream(dynamicPatterns).anyMatch(name::startsWith);
+            }
+
+            @Override
+            public Class<?> loadClass(String name) throws ClassNotFoundException {
+                if (!isFormulaClass(name)) {
+                    return super.loadClass(name);
+                }
+                return findClass(name);
+            }
+
+            private byte[] loadClassData(String name) throws IOException {
+                try {
+                    // The compiler should always have access to the class-loader directories,
+                    // even if code that invokes this does not.
+                    return doPrivileged((PrivilegedExceptionAction<byte[]>) () -> {
+                        final File destFile = new File(classDestination,
+                                name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
+                        if (destFile.exists()) {
+                            return Files.readAllBytes(destFile.toPath());
+                        }
+
+                        for (File location : additionalClassLocations) {
+                            final File checkFile = new File(location,
+                                    name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
+                            if (checkFile.exists()) {
+                                return Files.readAllBytes(checkFile.toPath());
+                            }
+                        }
+
+                        throw new FileNotFoundException(name);
+                    });
+                } catch (final PrivilegedActionException pae) {
+                    final Exception inner = pae.getException();
+                    if (inner instanceof IOException) {
+                        throw (IOException) inner;
+                    } else {
+                        throw new RuntimeException(inner);
+                    }
+                }
+            }
+        });
+    }
+
+    private static class WritableURLClassLoader extends URLClassLoader {
+        private WritableURLClassLoader(URL[] urls, ClassLoader parent) {
+            super(urls, parent);
+        }
+
+        @Override
+        protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            Class<?> clazz = findLoadedClass(name);
+            if (clazz != null) {
+                return clazz;
+            }
+
+            try {
+                clazz = findClass(name);
+            } catch (ClassNotFoundException e) {
+                if (getParent() != null) {
+                    clazz = getParent().loadClass(name);
+                }
+            }
+
+            if (resolve) {
+                resolveClass(clazz);
+            }
+            return clazz;
+        }
+
+        @Override
+        public synchronized void addURL(URL url) {
+            super.addURL(url);
+        }
+    }
+
+    private void addClassSource(File classSourceDirectory) {
+        synchronized (additionalClassLocations) {
+            if (additionalClassLocations.contains(classSourceDirectory)) {
+                return;
+            }
+            additionalClassLocations.add(classSourceDirectory);
+        }
+        try {
+            ucl.addURL(classSourceDirectory.toURI().toURL());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("", e);
+        }
+    }
+
+    private File getClassDestination() {
+        return classDestination;
+    }
+
+    private String getClassPath() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(classDestination.getAbsolutePath());
+        synchronized (additionalClassLocations) {
+            for (File classLoc : additionalClassLocations) {
+                sb.append(File.pathSeparatorChar).append(classLoc.getAbsolutePath());
+            }
+        }
+        return sb.toString();
+    }
+
+    private WritableURLClassLoader getClassLoader() {
+        return ucl;
+    }
+
+    private Class<?> compileHelper(@NotNull final String className,
             @NotNull final String classBody,
             @NotNull final String packageNameRoot,
             @Nullable final StringBuilder codeLog,
-            @NotNull final Map<String, Class<?>> parameterClasses,
-            @NotNull final Context context) {
+            @NotNull final Map<String, Class<?>> parameterClasses) {
         // NB: We include class name hash in order to (hopefully) account for case insensitive file systems.
         final int classNameHash = className.hashCode();
         final int classBodyHash = classBody.hashCode();
@@ -518,13 +499,13 @@ public class CompilerTools {
             // We have a class. It either contains the formula we are looking for (cases 2, A, and B) or a different
             // formula with the same name (cases 3 and C). In either case, we should store the result in our cache,
             // either fulfilling an existing promise or making a new, fulfilled promise.
-            synchronized (context) {
+            synchronized (this) {
                 // Note we are doing something kind of subtle here. We are removing an entry whose key was matched by
                 // value equality and replacing it with a value-equal but reference-different string that is a static
                 // member of the class we just loaded. This should be easier on the garbage collector because we are
                 // replacing a calculated value with a classloaded value and so in effect we are "canonicalizing" the
                 // string. This is important because these long strings stay in knownClasses forever.
-                CompletableFuture<Class<?>> p = context.getKnownClasses().remove(identifyingFieldValue);
+                CompletableFuture<Class<?>> p = knownClasses.remove(identifyingFieldValue);
                 if (p == null) {
                     // If we encountered a different class than the one we're looking for, make a fresh promise and
                     // immediately fulfill it. This is for the purpose of populating the cache in case someone comes
@@ -532,7 +513,7 @@ public class CompilerTools {
                     // throwing it away now, even though this is not the class we're looking for.
                     p = new CompletableFuture<>();
                 }
-                context.getKnownClasses().put(identifyingFieldValue, p);
+                knownClasses.put(identifyingFieldValue, p);
                 // It's also possible that some other code has already fulfilled this promise with exactly the same
                 // class. That's ok though: the promise code does not reject multiple sets to the identical value.
                 p.complete(result);
@@ -554,9 +535,9 @@ public class CompilerTools {
                 + ", class body hash=" + classBodyHash + " - contact Deephaven support!");
     }
 
-    private static Class<?> tryLoadClassByFqName(String fqClassName, Map<String, Class<?>> parameterClasses) {
+    private Class<?> tryLoadClassByFqName(String fqClassName, Map<String, Class<?>> parameterClasses) {
         try {
-            return getContext().getClassLoaderForFormula(parameterClasses).loadClass(fqClassName);
+            return getClassLoaderForFormula(parameterClasses).loadClass(fqClassName);
         } catch (ClassNotFoundException cnfe) {
             return null;
         }
@@ -641,7 +622,7 @@ public class CompilerTools {
         return 3;
     }
 
-    static class JavaSourceFromString extends SimpleJavaFileObject {
+    private static class JavaSourceFromString extends SimpleJavaFileObject {
         final String code;
 
         JavaSourceFromString(String name, String code) {
@@ -654,11 +635,11 @@ public class CompilerTools {
         }
     }
 
-    static class JavaSourceFromFile extends SimpleJavaFileObject {
+    private static class JavaSourceFromFile extends SimpleJavaFileObject {
         private static final int JAVA_LENGTH = Kind.SOURCE.extension.length();
         final String code;
 
-        JavaSourceFromFile(File basePath, File file) {
+        private JavaSourceFromFile(File basePath, File file) {
             super(URI.create("string:///" + createName(basePath, file).replace('.', '/') + Kind.SOURCE.extension),
                     Kind.SOURCE);
             try {
@@ -682,12 +663,13 @@ public class CompilerTools {
             }
         }
 
+        @Override
         public CharSequence getCharContent(boolean ignoreEncodingErrors) {
             return code;
         }
     }
 
-    private static void maybeCreateClass(String className, String code, String packageName, String fqClassName) {
+    private void maybeCreateClass(String className, String code, String packageName, String fqClassName) {
         final String finalCode = makeFinalCode(className, code, packageName);
 
         // The 'compile' action does a bunch of things that need security permissions; this always needs to run
@@ -696,8 +678,7 @@ public class CompilerTools {
             log.info().append("Generating code ").append(finalCode).endl();
         }
 
-        final Context ctx = getContext();
-        final File ctxClassDestination = ctx.getClassDestination();
+        final File ctxClassDestination = getClassDestination();
 
         final String[] splitPackageName = packageName.split("\\.");
         if (splitPackageName.length == 0) {
@@ -735,7 +716,7 @@ public class CompilerTools {
         }
 
         try {
-            maybeCreateClassHelper(fqClassName, finalCode, splitPackageName, ctx, rootPathAsString, tempDirAsString);
+            maybeCreateClassHelper(fqClassName, finalCode, splitPackageName, rootPathAsString, tempDirAsString);
         } finally {
             AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
                 try {
@@ -748,8 +729,8 @@ public class CompilerTools {
         }
     }
 
-    private static void maybeCreateClassHelper(String fqClassName, String finalCode, String[] splitPackageName,
-            Context ctx, String rootPathAsString, String tempDirAsString) {
+    private void maybeCreateClassHelper(String fqClassName, String finalCode, String[] splitPackageName,
+            String rootPathAsString, String tempDirAsString) {
         final StringWriter compilerOutput = new StringWriter();
 
         final JavaCompiler compiler =
@@ -758,7 +739,7 @@ public class CompilerTools {
             throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
         }
 
-        final String classPathAsString = ctx.getClassPath() + File.pathSeparator + getJavaClassPath();
+        final String classPathAsString = getClassPath() + File.pathSeparator + getJavaClassPath();
         final List<String> compilerOptions = AccessController.doPrivileged(
                 (PrivilegedAction<List<String>>) () -> Arrays.asList("-d", tempDirAsString, "-cp", classPathAsString));
 
@@ -772,14 +753,13 @@ public class CompilerTools {
                 Collections.singletonList(new JavaSourceFromString(fqClassName, finalCode)))
                 .call();
         if (!result) {
-            throw new RuntimeException("Error compiling class " + fqClassName + ":\n" + compilerOutput.toString());
+            throw new RuntimeException("Error compiling class " + fqClassName + ":\n" + compilerOutput);
         }
         // The above has compiled into into e.g.
         // /tmp/workspace/cache/classes/temporaryCompilationDirectory12345/io/deephaven/test/cm12862183232603186v52_0/{various
         // class files}
         // We want to atomically move it to e.g.
         // /tmp/workspace/cache/classes/io/deephaven/test/cm12862183232603186v52_0/{various class files}
-        // Our strategy
         try {
             AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
                 Path srcDir = Paths.get(tempDirAsString, splitPackageName);
@@ -809,7 +789,7 @@ public class CompilerTools {
      * @param javaFiles the java source files
      * @return a Pair of success, and the compiler output
      */
-    public static Pair<Boolean, String> tryCompile(File basePath, Collection<File> javaFiles) throws IOException {
+    private Pair<Boolean, String> tryCompile(File basePath, Collection<File> javaFiles) throws IOException {
         try {
             // We need multiple filesystem accesses et al, so make this whole section privileged.
             return AccessController.doPrivileged((PrivilegedExceptionAction<Pair<Boolean, String>>) () -> {
@@ -823,7 +803,6 @@ public class CompilerTools {
 
                 try {
                     final StringWriter compilerOutput = new StringWriter();
-                    final Context ctx = getContext();
                     final String javaClasspath = getJavaClassPath();
 
                     final Collection<JavaFileObject> javaFileObjects = javaFiles.stream()
@@ -831,7 +810,7 @@ public class CompilerTools {
 
                     final boolean result = compiler.getTask(compilerOutput, null, null,
                             Arrays.asList("-d", outputDirectory.getAbsolutePath(), "-cp",
-                                    ctx.getClassPath() + File.pathSeparator + javaClasspath),
+                                    getClassPath() + File.pathSeparator + javaClasspath),
                             null, javaFileObjects).call();
 
                     return new Pair<>(result, compilerOutput.toString());
@@ -854,7 +833,7 @@ public class CompilerTools {
      *
      * @return
      */
-    public static String getJavaClassPath() {
+    private static String getJavaClassPath() {
         String javaClasspath;
         {
             final StringBuilder javaClasspathBuilder = new StringBuilder(System.getProperty("java.class.path"));
@@ -862,18 +841,18 @@ public class CompilerTools {
             final String teamCityWorkDir = System.getProperty("teamcity.build.workingDir");
             if (teamCityWorkDir != null) {
                 // We are running in TeamCity, get the classpath differently
-                final File classDirs[] = new File(teamCityWorkDir + "/_out_/classes").listFiles();
+                final File[] classDirs = new File(teamCityWorkDir + "/_out_/classes").listFiles();
 
                 for (File f : classDirs) {
                     javaClasspathBuilder.append(File.pathSeparator).append(f.getAbsolutePath());
                 }
-                final File testDirs[] = new File(teamCityWorkDir + "/_out_/test-classes").listFiles();
+                final File[] testDirs = new File(teamCityWorkDir + "/_out_/test-classes").listFiles();
 
                 for (File f : testDirs) {
                     javaClasspathBuilder.append(File.pathSeparator).append(f.getAbsolutePath());
                 }
 
-                final File jars[] = FileUtils.findAllFiles(new File(teamCityWorkDir + "/lib"));
+                final File[] jars = FileUtils.findAllFiles(new File(teamCityWorkDir + "/lib"));
                 for (File f : jars) {
                     if (f.getName().endsWith(".jar")) {
                         javaClasspathBuilder.append(File.pathSeparator).append(f.getAbsolutePath());
@@ -890,7 +869,7 @@ public class CompilerTools {
         if (javaClasspath.matches(intellijClassPathJarRegex)) {
             try {
                 final Enumeration<URL> resources =
-                        CompilerTools.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
+                        QueryCompiler.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
                 final Attributes.Name createdByAttribute = new Attributes.Name("Created-By");
                 final Attributes.Name classPathAttribute = new Attributes.Name("Class-Path");
                 while (resources.hasMoreElements()) {

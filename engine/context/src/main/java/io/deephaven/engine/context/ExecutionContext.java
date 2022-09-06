@@ -26,7 +26,7 @@ public class ExecutionContext {
         return ExecutionContext.newBuilder()
                 .captureQueryScope()
                 .captureQueryLibrary()
-                .captureCompilerContext()
+                .captureQueryCompiler()
                 .markSystemic()
                 .build();
     }
@@ -37,7 +37,7 @@ public class ExecutionContext {
                 .markSystemic()
                 .newQueryScope()
                 .newQueryLibrary()
-                .setCompilerContext(CompilerTools.createContextForUnitTests())
+                .setQueryCompiler(QueryCompiler.createForUnitTests())
                 .build();
     }
 
@@ -96,17 +96,17 @@ public class ExecutionContext {
 
     private final QueryLibrary queryLibrary;
     private final QueryScope queryScope;
-    private final CompilerTools.Context compilerContext;
+    private final QueryCompiler queryCompiler;
 
     private ExecutionContext(
             final boolean isSystemic,
             final QueryLibrary queryLibrary,
             final QueryScope queryScope,
-            final CompilerTools.Context compilerContext) {
+            final QueryCompiler queryCompiler) {
         this.isSystemic = isSystemic;
         this.queryLibrary = queryLibrary;
         this.queryScope = queryScope;
-        this.compilerContext = compilerContext;
+        this.queryCompiler = queryCompiler;
     }
 
     /**
@@ -154,8 +154,8 @@ public class ExecutionContext {
         return queryScope;
     }
 
-    public CompilerTools.Context getCompilerContext() {
-        return compilerContext;
+    public QueryCompiler getQueryCompiler() {
+        return queryCompiler;
     }
 
     @SuppressWarnings("unused")
@@ -164,7 +164,7 @@ public class ExecutionContext {
 
         private QueryLibrary queryLibrary = PoisonedQueryLibrary.INSTANCE;
         private QueryScope queryScope = PoisonedQueryScope.INSTANCE;
-        private CompilerTools.Context compilerContext = PoisonedCompilerToolsContext.INSTANCE;
+        private QueryCompiler queryCompiler = PoisonedQueryCompiler.INSTANCE;
 
         /**
          * A systemic execution context is one that is supplied by the system and not the user. A systemic context will
@@ -213,20 +213,20 @@ public class ExecutionContext {
         }
 
         /**
-         * Use the provided CompilerTools.Context.
+         * Use the provided QueryCompiler
          */
         @ScriptApi
-        public Builder setCompilerContext(final CompilerTools.Context compilerContext) {
-            this.compilerContext = compilerContext;
+        public Builder setQueryCompiler(final QueryCompiler queryCompiler) {
+            this.queryCompiler = queryCompiler;
             return this;
         }
 
         /**
-         * Use the current ExecutionContext's CompilerTools.Context instance.
+         * Use the current ExecutionContext's QueryCompiler instance.
          */
         @ScriptApi
-        public Builder captureCompilerContext() {
-            compilerContext = currentContext.get().getCompilerContext();
+        public Builder captureQueryCompiler() {
+            queryCompiler = currentContext.get().getQueryCompiler();
             return this;
         }
 
@@ -297,7 +297,7 @@ public class ExecutionContext {
          */
         @ScriptApi
         public ExecutionContext build() {
-            return new ExecutionContext(isSystemic, queryLibrary, queryScope, compilerContext);
+            return new ExecutionContext(isSystemic, queryLibrary, queryScope, queryCompiler);
         }
     }
 }

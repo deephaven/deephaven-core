@@ -465,7 +465,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final ExecutionContext executionContext = ExecutionContext.newBuilder()
                 .captureQueryScopeVars("pauseHelper2")
                 .captureQueryLibrary()
-                .captureCompilerContext()
+                .captureQueryCompiler()
                 .build();
         final PartitionedTable result2 =
                 sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").partitionBy("USym2")
@@ -552,7 +552,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final ExecutionContext executionContext = ExecutionContext.newBuilder()
                 .captureQueryScopeVars("pauseHelper")
                 .captureQueryLibrary()
-                .captureCompilerContext()
+                .captureQueryCompiler()
                 .build();
         final PartitionedTable result2 = sourceTable2.partitionBy("USym2")
                 .transform(executionContext, t -> t.update("SlowItDown2=pauseHelper.pauseValue(2 * k)"));
@@ -755,7 +755,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final Table underlying;
         try (final SafeCloseable ignored = ExecutionContext.newBuilder()
                 .captureQueryLibrary()
-                .captureCompilerContext()
+                .captureQueryCompiler()
                 .captureQueryScope()
                 .build().open()) {
             underlying = base.update(
@@ -818,7 +818,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             protected Table e() {
                 // note we cannot reuse the execution context and remove the values as the table is built each iteration
                 try (final SafeCloseable ignored = ExecutionContext.newBuilder()
-                        .captureCompilerContext()
+                        .captureQueryCompiler()
                         .captureQueryLibrary()
                         .newQueryScope()
                         .build().open()) {

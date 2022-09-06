@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import groovy.lang.Closure;
-import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.util.type.TypeUtils;
 
 import java.lang.reflect.Modifier;
@@ -48,7 +48,7 @@ public class QueryScopeParamTypeUtil {
         }
 
         final String name = cls.getName();
-        if (!name.startsWith(CompilerTools.DYNAMIC_GROOVY_CLASS_PREFIX)) {
+        if (!name.startsWith(QueryCompiler.DYNAMIC_GROOVY_CLASS_PREFIX)) {
             return;
         }
 
