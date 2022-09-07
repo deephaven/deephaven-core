@@ -36,7 +36,8 @@ public abstract class DeephavenApiServerTestBase {
             DeephavenApiServerModule.class,
             LogModule.class,
             NoConsoleSessionModule.class,
-            ServerBuilderInProcessModule.class
+            ServerBuilderInProcessModule.class,
+            ExecutionContextUnitTestModule.class,
     })
     public interface TestComponent {
 
@@ -59,9 +60,6 @@ public abstract class DeephavenApiServerTestBase {
             @BindsInstance
             Builder withErr(@Named("err") PrintStream err);
 
-            @BindsInstance
-            Builder withExecutionContext(ExecutionContext context);
-
             TestComponent build();
         }
     }
@@ -83,7 +81,6 @@ public abstract class DeephavenApiServerTestBase {
         LogBufferGlobal.setInstance(logBuffer);
 
         serverComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
-                .withExecutionContext(ExecutionContext.createForUnitTests())
                 .withSchedulerPoolSize(4)
                 .withSessionTokenExpireTmMs(sessionTokenExpireTmMs())
                 .withOut(System.out)

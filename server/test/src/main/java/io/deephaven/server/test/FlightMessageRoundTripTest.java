@@ -133,11 +133,6 @@ public abstract class FlightMessageRoundTripTest {
         ScheduledExecutorService provideExecutorService() {
             return null;
         }
-
-        @Provides
-        ExecutionContext provideExecutionContext() {
-            return ExecutionContext.createForUnitTests();
-        }
     }
 
     public interface TestComponent {
