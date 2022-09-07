@@ -719,8 +719,9 @@ class TableTestCase(BaseTestCase):
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)
 
         for i in range(2, 5):
-            x.v = i
-            self.wait_ticking_table_update(rt, row_count=i, timeout=5)
+            with ugp.exclusive_lock():
+                x.v = i
+                self.wait_ticking_table_update(rt, row_count=rt.size + 1, timeout=5)
         self.verify_table_data(rt, list(range(1, 5)))
 
 
