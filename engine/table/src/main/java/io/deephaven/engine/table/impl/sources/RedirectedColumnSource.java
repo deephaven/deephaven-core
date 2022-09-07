@@ -728,11 +728,6 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return innerSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return innerSource.isStateless();
     }

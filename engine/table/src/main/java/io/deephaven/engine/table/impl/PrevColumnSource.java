@@ -168,11 +168,6 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return originalSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return originalSource.isStateless();
     }

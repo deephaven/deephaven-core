@@ -61,11 +61,6 @@ public class UngroupedIntArrayColumnSource extends UngroupedColumnSource<Integer
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return innerSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return innerSource.isStateless();
     }

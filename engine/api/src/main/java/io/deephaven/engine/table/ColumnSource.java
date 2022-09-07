@@ -174,19 +174,6 @@ public interface ColumnSource<T>
     }
 
     /**
-     * Can this column source be evaluated on an arbitrary thread?
-     *
-     * Most column sources can be evaluated on an arbitrary thread, however those that do call into Python can not be
-     * evaluated on an arbitrary thread as the calling thread may already have the GIL, which would result in a deadlock
-     * when the column source takes the GIL to evaluate formulas.
-     *
-     * @return true if this column prevents parallelization
-     */
-    default boolean preventsParallelism() {
-        return false;
-    }
-
-    /**
      * Most column sources will return the same value for a given row without respect to the order that the rows are
      * read. Those columns sources are considered "stateless" and should return true.
      *

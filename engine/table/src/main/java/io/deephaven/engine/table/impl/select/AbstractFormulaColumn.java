@@ -198,7 +198,6 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @NotNull
     private ColumnSource<?> getViewColumnSource(boolean lazy) {
-        final boolean preventsParallelization = preventsParallelization();
         final boolean isStateless = isStateless();
 
         final SecurityManager sm = System.getSecurityManager();
@@ -219,17 +218,15 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
                 final Formula formula = getFormula(lazy, columnSources, params);
                 // noinspection unchecked,rawtypes
                 return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula,
-                        preventsParallelization, isStateless);
+                        isStateless);
             }, context);
         } else {
             final Formula formula = getFormula(lazy, columnSources, params);
             // noinspection unchecked,rawtypes
             return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula,
-                    preventsParallelization, isStateless);
+                    isStateless);
         }
     }
-
-    public abstract boolean preventsParallelization();
 
     private Formula getFormula(boolean initLazyMap,
             Map<String, ? extends ColumnSource<?>> columnsToData,

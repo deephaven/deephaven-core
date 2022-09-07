@@ -61,11 +61,6 @@ public class UngroupedFloatArrayColumnSource extends UngroupedColumnSource<Float
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return innerSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return innerSource.isStateless();
     }

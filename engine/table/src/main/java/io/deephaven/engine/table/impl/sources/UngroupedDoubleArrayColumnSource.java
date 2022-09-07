@@ -61,11 +61,6 @@ public class UngroupedDoubleArrayColumnSource extends UngroupedColumnSource<Doub
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return innerSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return innerSource.isStateless();
     }

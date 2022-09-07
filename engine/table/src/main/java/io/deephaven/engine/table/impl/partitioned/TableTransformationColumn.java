@@ -66,7 +66,7 @@ public class TableTransformationColumn extends BaseTableTransformationColumn {
     @NotNull
     @Override
     public ColumnSource<?> getDataView() {
-        return new ViewColumnSource<>(Table.class, new OutputFormula(), false, true);
+        return new ViewColumnSource<>(Table.class, new OutputFormula(), true);
     }
 
     @Override

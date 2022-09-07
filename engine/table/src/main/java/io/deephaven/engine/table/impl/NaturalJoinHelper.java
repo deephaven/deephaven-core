@@ -522,11 +522,6 @@ class NaturalJoinHelper {
         }
 
         @Override
-        public boolean preventsParallelism() {
-            return symbolSource.preventsParallelism();
-        }
-
-        @Override
         public boolean isStateless() {
             return symbolSource.isStateless();
         }
