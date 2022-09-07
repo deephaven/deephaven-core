@@ -145,23 +145,23 @@ set(ALL_FILES
     proto/deephaven/proto/ticket.pb.cc
     proto/deephaven/proto/ticket.pb.h
 
-    third_party/flatbuffers/allocator.h
-    third_party/flatbuffers/array.h
-    third_party/flatbuffers/base.h
-    third_party/flatbuffers/buffer.h
-    third_party/flatbuffers/buffer_ref.h
-    third_party/flatbuffers/default_allocator.h
-    third_party/flatbuffers/detached_buffer.h
-    third_party/flatbuffers/flatbuffer_builder.h
-    third_party/flatbuffers/flatbuffers.h
-    third_party/flatbuffers/stl_emulation.h
-    third_party/flatbuffers/string.h
-    third_party/flatbuffers/struct.h
-    third_party/flatbuffers/table.h
-    third_party/flatbuffers/util.h
-    third_party/flatbuffers/vector_downward.h
-    third_party/flatbuffers/vector.h
-    third_party/flatbuffers/verifier.h
+    third_party/flatbuffers/include/flatbuffers/allocator.h
+    third_party/flatbuffers/include/flatbuffers/array.h
+    third_party/flatbuffers/include/flatbuffers/base.h
+    third_party/flatbuffers/include/flatbuffers/buffer.h
+    third_party/flatbuffers/include/flatbuffers/buffer_ref.h
+    third_party/flatbuffers/include/flatbuffers/default_allocator.h
+    third_party/flatbuffers/include/flatbuffers/detached_buffer.h
+    third_party/flatbuffers/include/flatbuffers/flatbuffer_builder.h
+    third_party/flatbuffers/include/flatbuffers/flatbuffers.h
+    third_party/flatbuffers/include/flatbuffers/stl_emulation.h
+    third_party/flatbuffers/include/flatbuffers/string.h
+    third_party/flatbuffers/include/flatbuffers/struct.h
+    third_party/flatbuffers/include/flatbuffers/table.h
+    third_party/flatbuffers/include/flatbuffers/util.h
+    third_party/flatbuffers/include/flatbuffers/vector_downward.h
+    third_party/flatbuffers/include/flatbuffers/vector.h
+    third_party/flatbuffers/include/flatbuffers/verifier.h
     )
 
 add_library(client ${ALL_FILES})
@@ -172,7 +172,7 @@ target_compile_options(client PRIVATE -Wall -Werror)
 
 target_include_directories(client PRIVATE ${Boost_INCLUDE_DIR})
 target_include_directories(client PRIVATE include/private)
-target_include_directories(client PRIVATE third_party)
+target_include_directories(client PRIVATE third_party/flatbuffers/include)
 target_include_directories(client PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
 # Protos and flatbuf are doing their own thing.
