@@ -5,6 +5,7 @@ package io.deephaven.server.session;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.table.ExportTableUpdateListenerTest;
@@ -61,7 +62,7 @@ public class SessionStateTest {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
         scheduler = new TestControlledScheduler();
-        session = new SessionState(scheduler, NoLanguageDeephavenSession::new, AUTH_CONTEXT);
+        session = new SessionState(scheduler, ExecutionContext::createForUnitTests, AUTH_CONTEXT);
         session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
                 DateTimeUtils.nanosToTime(Long.MAX_VALUE), session));
         nextExportId = 1;
@@ -637,7 +638,7 @@ public class SessionStateTest {
 
     @Test
     public void testVerifyExpirationSession() {
-        final SessionState session = new SessionState(scheduler, NoLanguageDeephavenSession::new, AUTH_CONTEXT);
+        final SessionState session = new SessionState(scheduler, ExecutionContext::createForUnitTests, AUTH_CONTEXT);
         final SessionService.TokenExpiration expiration =
                 new SessionService.TokenExpiration(UUID.randomUUID(), DateTimeUtils.nanosToTime(Long.MAX_VALUE),
                         session);

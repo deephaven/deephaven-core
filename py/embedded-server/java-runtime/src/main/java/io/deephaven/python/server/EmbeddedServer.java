@@ -11,6 +11,7 @@ import io.deephaven.integrations.python.PyLogOutputStream;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferOutputStream;
+import io.deephaven.server.console.SessionToExecutionStateModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
 import io.deephaven.server.console.python.PythonGlobalScopeModule;
@@ -48,6 +49,7 @@ public class EmbeddedServer {
             JettyServerModule.class,
             PythonConsoleSessionModule.class,
             GroovyConsoleSessionModule.class,
+            SessionToExecutionStateModule.class,
     })
     public interface PythonServerComponent extends DeephavenApiServerComponent {
         @Component.Builder
