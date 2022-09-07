@@ -20,6 +20,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
@@ -49,7 +50,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperato
 
         public byte curVal = nullValue;
 
-        protected Context(final int chunkSize) {
+        protected Context(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
             this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
             this.fillContext.ensureCapacity(chunkSize);
             this.outputValues = new SizedByteChunk<>(chunkSize);
@@ -145,8 +146,8 @@ public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperato
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
+        return new Context(chunkSize, timestampSsa);
     }
 
     @Override
@@ -205,6 +206,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperato
     public void processChunk(@NotNull final UpdateContext updateContext,
                              @NotNull final RowSequence inputKeys,
                              @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                             @Nullable final LongChunk<OrderedRowKeys> posChunk,
                              @NotNull final Chunk<Values> valuesChunk,
                              @NotNull final RowSet postUpdateSourceIndex) {
         final Context ctx = (Context) updateContext;

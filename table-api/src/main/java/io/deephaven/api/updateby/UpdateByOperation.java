@@ -240,6 +240,19 @@ public interface UpdateByOperation {
         return RollingSumSpec.ofTicks(prevTimeTicks, fwdTimeTicks).clause(pairs);
     }
 
+    /**
+     * Create an {@link RollingSumSpec rolling sum} for the supplied column name pairs, using time as
+     * the windowing unit. Uses the default OperationControl settings.
+     *
+     * @param prevWindowDuration the look-behind window size (in Duration)
+     * @param fwdWindowDuration the look-ahead window size (in Duration)
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingSum(String timestampCol, Duration prevWindowDuration, Duration fwdWindowDuration, String... pairs) {
+        return RollingSumSpec.ofTime(timestampCol, prevWindowDuration, fwdWindowDuration).clause(pairs);
+    }
+
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {

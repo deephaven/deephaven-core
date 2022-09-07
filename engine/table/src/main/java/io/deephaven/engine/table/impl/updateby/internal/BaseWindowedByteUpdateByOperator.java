@@ -44,13 +44,13 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
 
         @Override
         public void loadInfluencerValueChunk() {
-            int size = influencerKeys.intSize();
+            int size = influencerRows.intSize();
             // fill the window values chunk
             if (candidateValuesChunk == null) {
                 candidateValuesChunk = WritableByteChunk.makeWritableChunk(size);
             }
             try (ChunkSource.FillContext fc = valueSource.makeFillContext(size)){
-                valueSource.fillChunk(fc, candidateValuesChunk, influencerKeys);
+                valueSource.fillChunk(fc, candidateValuesChunk, influencerRows);
             }
         }
     }
@@ -58,8 +58,8 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
     public BaseWindowedByteUpdateByOperator(@NotNull final MatchPair pair,
                                             @NotNull final String[] affectingColumns,
                                             @NotNull final OperationControl control,
-                                            @Nullable final LongRecordingUpdateByOperator timeRecorder,
                                             @Nullable final String timestampColumnName,
+                                            @Nullable final ColumnSource<?> timestampColumnSource,
                                             final long reverseTimeScaleUnits,
                                             final long forwardTimeScaleUnits,
                                             @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
@@ -67,7 +67,7 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
                                             // region extra-constructor-args
                                             // endregion extra-constructor-args
                                     ) {
-        super(pair, affectingColumns, control, timeRecorder, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext);
+        super(pair, affectingColumns, control, timestampColumnName, timestampColumnSource, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext);
         this.valueSource = valueSource;
         // region constructor
         this.nullValue = getNullValue();
@@ -100,6 +100,7 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
     protected abstract void doProcessChunk(@NotNull final Context ctx,
                                            @NotNull final RowSequence inputKeys,
                                            @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                                           @Nullable final LongChunk<OrderedRowKeys> posChunk,
                                            @NotNull final Chunk<Values> workingChunk);
 
     // endregion
@@ -117,10 +118,11 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
     public void processChunk(@NotNull final UpdateContext updateContext,
                              @NotNull final RowSequence inputKeys,
                              @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                             @Nullable final LongChunk<OrderedRowKeys> posChunk,
                              @NotNull final Chunk<Values> valuesChunk,
                              @NotNull final RowSet postUpdateSourceIndex) {
         final Context ctx = (Context) updateContext;
-        doProcessChunk(ctx, inputKeys, keyChunk, valuesChunk);
+        doProcessChunk(ctx, inputKeys, keyChunk, posChunk, valuesChunk);
         ctx.getModifiedBuilder().appendRowSequence(inputKeys);
     }
 

@@ -1,13 +1,17 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.api.updateby.BadDataBehavior;
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -15,6 +19,7 @@ import org.junit.experimental.categories.Category;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -25,6 +30,8 @@ import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
 import static io.deephaven.engine.table.impl.TstUtils.testTable;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.function.Basic.isNull;
+import static io.deephaven.time.DateTimeUtils.MINUTE;
+import static io.deephaven.time.DateTimeUtils.convertDateTime;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -140,6 +147,43 @@ public class TestRollingSum extends BaseUpdateByTest {
             });
             return source;
         });
+    }
+
+    @Test
+    public void testStaticZeroKeyTimed() {
+        final QueryTable t = createTestTable(1000, false, false, false, 0xFFFABBBC,
+                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
+
+        final OperationControl resetControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.RESET)
+                .onNanValue(BadDataBehavior.RESET).build();
+
+        Duration prevTime = Duration.ofMinutes(10);
+        Duration postTime = Duration.ZERO;
+
+        final Table summed =
+                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
+                        "doubleCol", "boolCol"
+// TODO: put these back                        ,"bigIntCol", "bigDecimalCol"
+                ));
+
+
+        DateTime[] ts = (DateTime[])t.getColumn("ts").getDirect();
+        long[] timestamps = new long[t.intSize()];
+        for (int i = 0; i < t.intSize(); i++) {
+            timestamps[i] = ts[i].getNanos();
+        }
+
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingSumTime(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(), timestamps,
+                    summed.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
+        }
     }
 
     // endregion
@@ -311,6 +355,51 @@ public class TestRollingSum extends BaseUpdateByTest {
             final int head = Math.max(0, i - prevTicks + 1);
             final int tail = Math.min(values.length - 1, i + postTicks);
 
+
+            // compute everything in this window
+            for (int computeIdx = head; computeIdx <= tail; computeIdx++) {
+                if (!isNull(values[computeIdx])) {
+                    if (result[i] == NULL_LONG) {
+                        result[i] = values[computeIdx];
+                    } else {
+                        result[i] += values[computeIdx];
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private long[] rollingSumTime(short[] values, long[] timestamps, long prevNanos, long postNanos) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new long[0];
+        }
+
+        long[] result = new long[values.length];
+
+        int head = 0;
+        int tail = 0;
+
+        for (int i = 0; i < values.length; i++) {
+            result[i] = NULL_LONG;
+
+            // set the head and the tail
+            final long headTime = timestamps[i] - prevNanos;
+            final long tailTime = timestamps[i] + postNanos;
+
+            // advance head and tail until they are in the correct spots
+            while (head < values.length && timestamps[head] < headTime) {
+                head++;
+            }
+
+            while (tail < values.length && timestamps[tail] < tailTime) {
+                tail++;
+            }
 
             // compute everything in this window
             for (int computeIdx = head; computeIdx <= tail; computeIdx++) {
@@ -540,8 +629,32 @@ public class TestRollingSum extends BaseUpdateByTest {
         final float deltaF = .001f;
         final double deltaD = .001d;
 
-        if (expected instanceof short[]) {
+        if (expected instanceof byte[]) {
+            assertArrayEquals(rollingSum((byte[]) expected, prevTicks, postTicks), (long[]) actual);
+        } else if (expected instanceof short[]) {
             assertArrayEquals(rollingSum((short[]) expected, prevTicks, postTicks), (long[]) actual);
+        } else if (expected instanceof int[]) {
+            assertArrayEquals(rollingSum((int[]) expected, prevTicks, postTicks), (long[]) actual);
+        } else if (expected instanceof long[]) {
+            assertArrayEquals(rollingSum((long[]) expected, prevTicks, postTicks), (long[]) actual);
+        } else if (expected instanceof float[]) {
+            assertArrayEquals(rollingSum((float[]) expected, prevTicks, postTicks), (float[]) actual, deltaF);
+        } else if (expected instanceof double[]) {
+            assertArrayEquals(rollingSum((double[]) expected, prevTicks, postTicks), (double[]) actual, deltaD);
+        } else if (expected instanceof Boolean[]) {
+            assertArrayEquals(rollingSum((Boolean[]) expected, prevTicks, postTicks), (long[]) actual);
+        } else {
+//            assertArrayEquals(rollingSum((Object[]) expected, type == BigDecimal.class, prevTicks, postTicks), (Object[]) actual);
+        }
+    }
+
+    final void assertWithRollingSumTime(final @NotNull Object expected, final @NotNull Object actual,
+                        final @NotNull long[] timestamps, Class type, long prevTime, long postTime) {
+        final float deltaF = .001f;
+        final double deltaD = .001d;
+
+        if (expected instanceof short[]) {
+            assertArrayEquals(rollingSumTime((short[]) expected, timestamps, prevTime, postTime), (long[]) actual);
         }
 //        if (expected instanceof byte[]) {
 //            assertArrayEquals(rollingSum((byte[]) expected, prevTicks, postTicks), (long[]) actual);

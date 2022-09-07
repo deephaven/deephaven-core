@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -89,79 +90,6 @@ public interface UpdateByOperator {
     }
 
     /**
-     * Find the smallest valued key that participated in the upstream {@link TableUpdate}.
-     *
-     * @param added the added rows
-     * @param modified the modified rows
-     * @param removed the removed rows
-     * @param shifted the shifted rows
-     *
-     * @return the smallest key that participated in any part of the update.
-     */
-    static long smallestAffectedKey(@NotNull final RowSet added,
-            @NotNull final RowSet modified,
-            @NotNull final RowSet removed,
-            @NotNull final RowSetShiftData shifted,
-            @NotNull final RowSet affectedIndex) {
-
-        long smallestModifiedKey = Long.MAX_VALUE;
-        if (removed.isNonempty()) {
-            smallestModifiedKey = removed.firstRowKey();
-        }
-
-        if (added.isNonempty()) {
-            smallestModifiedKey = Math.min(smallestModifiedKey, added.firstRowKey());
-        }
-
-        if (modified.isNonempty()) {
-            smallestModifiedKey = Math.min(smallestModifiedKey, modified.firstRowKey());
-        }
-
-        if (shifted.nonempty()) {
-            final long firstModKey = modified.isEmpty() ? Long.MAX_VALUE : modified.firstRowKey();
-            boolean modShiftFound = !modified.isEmpty();
-            boolean affectedFound = false;
-            try (final RowSequence.Iterator it = affectedIndex.getRowSequenceIterator()) {
-                for (int shiftIdx = 0; shiftIdx < shifted.size() && (!modShiftFound || !affectedFound); shiftIdx++) {
-                    final long shiftStart = shifted.getBeginRange(shiftIdx);
-                    final long shiftEnd = shifted.getEndRange(shiftIdx);
-                    final long shiftDelta = shifted.getShiftDelta(shiftIdx);
-
-                    if (!affectedFound) {
-                        if (it.advance(shiftStart + shiftDelta)) {
-                            final long maybeAffectedKey = it.peekNextKey();
-                            if (maybeAffectedKey <= shiftEnd + shiftDelta) {
-                                affectedFound = true;
-                                final long keyToCompare =
-                                        shiftDelta > 0 ? maybeAffectedKey - shiftDelta : maybeAffectedKey;
-                                smallestModifiedKey = Math.min(smallestModifiedKey, keyToCompare);
-                            }
-                        } else {
-                            affectedFound = true;
-                        }
-                    }
-
-                    if (!modShiftFound) {
-                        if (firstModKey <= (shiftEnd + shiftDelta)) {
-                            modShiftFound = true;
-                            // If the first modified key is in the range we should include it
-                            if (firstModKey >= (shiftStart + shiftDelta)) {
-                                smallestModifiedKey = Math.min(smallestModifiedKey, firstModKey - shiftDelta);
-                            } else {
-                                // Otherwise it's not included in any shifts, and since shifts can't reorder rows
-                                // it is the smallest possible value and we've already accounted for it above.
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return smallestModifiedKey;
-    }
-
-    /**
      * A context item for use with {@link Table#updateBy(UpdateByControl, Collection, String...)} for non-bucketed
      * updates.
      */
@@ -173,12 +101,14 @@ public interface UpdateByOperator {
          * @param source the rowset of the parent table (affected rows will be a subset)
          */
         RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final TrackingRowSet source,
-                                           final boolean upstreamAppendOnly);
+                                           final boolean initialStep);
 
         /**
          * Return the rows computed by the {@Code determineAffectedRows()}
          */
         RowSet getAffectedRows();
+
+        LongSegmentedSortedArray getTimestampSsa();
     }
 
     /**
@@ -230,10 +160,11 @@ public interface UpdateByOperator {
      * Make an {@link UpdateContext} suitable for use with non-bucketed updates.
      *
      * @param chunkSize The expected size of chunks that will be provided during the update,
+     * @param timestampSsa The timestamp SSA to use for time-based operations (null if using ticks)
      * @return a new context
      */
     @NotNull
-    UpdateContext makeUpdateContext(final int chunkSize);
+    UpdateContext makeUpdateContext(final int chunkSize, final LongSegmentedSortedArray timestampSsa);
 
     /**
      * <p>
@@ -286,6 +217,14 @@ public interface UpdateByOperator {
     boolean requiresKeys();
 
     /**
+     * Query if the operator requires position values for the current stage. This method will always be invoked after an
+     * appropriate invocation of {@link #initializeFor(UpdateContext, RowSet)}
+     *
+     * @return true if the operator requires position indices for this operation
+     */
+    boolean requiresPositions();
+
+    /**
      * Query if the operator requires values for the current stage.
      *
      * @param context the context object
@@ -316,13 +255,15 @@ public interface UpdateByOperator {
      * @param context the context object
      * @param inputKeys the keys contained in the chunk
      * @param keyChunk a {@link LongChunk} containing the keys if requested by {@link #requiresKeys()} or null.
+     * @param posChunk a {@link LongChunk} containing the positions if requested by {@link #requiresPositions()} or null.
      * @param valuesChunk the current chunk of working values.
      * @param postUpdateSourceIndex the resulting source index af
      */
     void processChunk(@NotNull final UpdateContext context,
                       @NotNull final RowSequence inputKeys,
                       @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                      @NotNull final Chunk<Values> valuesChunk,
+                      @Nullable final LongChunk<OrderedRowKeys> posChunk,
+                      @Nullable final Chunk<Values> valuesChunk,
                       @NotNull final RowSet postUpdateSourceIndex);
 
     /**

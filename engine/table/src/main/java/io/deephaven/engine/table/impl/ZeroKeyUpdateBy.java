@@ -1,24 +1,25 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
 import io.deephaven.util.SafeCloseable;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Map;
 
-import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * An implementation of {@link UpdateBy} dedicated to zero key computation.
@@ -28,8 +29,10 @@ class ZeroKeyUpdateBy extends UpdateBy {
     final boolean applyShifts;
 
     /** store timestamp data in an Ssa (if needed) */
-    final LongSegmentedSortedArray tsSsa;
-    final String tsColumnName;
+    final String timestampColumnName;
+    final LongSegmentedSortedArray timestampSsa;
+    final ChunkSource.WithPrev<Values> timestampColumn;
+    final ModifiedColumnSet timestampColumnSet;
 
     /**
      * Perform an updateBy without any key columns.
@@ -70,15 +73,19 @@ class ZeroKeyUpdateBy extends UpdateBy {
         super(operators, source, redirContext, control);
 
         // do we need a timestamp SSA?
-        this.tsColumnName = Arrays.stream(operators)
+        this.timestampColumnName = Arrays.stream(operators)
                 .filter(op -> op.getTimestampColumnName() != null)
                 .map(UpdateByOperator::getTimestampColumnName)
                 .findFirst().orElse(null);
 
-        if (tsColumnName != null) {
-            this.tsSsa = new LongSegmentedSortedArray(1024);
+        if (timestampColumnName != null) {
+            this.timestampSsa = new LongSegmentedSortedArray(4096);
+            this.timestampColumn = ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(this.timestampColumnName));
+            this.timestampColumnSet = source.newModifiedColumnSet(timestampColumnName);
         } else {
-            this.tsSsa = null;
+            this.timestampSsa = null;
+            this.timestampColumn = null;
+            this.timestampColumnSet = null;
         }
         this.applyShifts = applyShifts;
     }
@@ -86,6 +93,111 @@ class ZeroKeyUpdateBy extends UpdateBy {
     ZeroKeyUpdateByListener newListener(@NotNull final String description, @NotNull final QueryTable result) {
         return new ZeroKeyUpdateByListener(description, source, result);
     }
+
+    private void processUpdateForSsa(TableUpdate upstream) {
+        final boolean stampModified = upstream.modifiedColumnSet().containsAny(timestampColumnSet);
+
+        final RowSet restampRemovals;
+        final RowSet restampAdditions;
+
+        // modifies are remove + add operations
+        if (stampModified) {
+            restampAdditions = upstream.added().union(upstream.modified());
+            restampRemovals = upstream.removed().union(upstream.getModifiedPreShift());
+        } else {
+            restampAdditions = upstream.added();
+            restampRemovals = upstream.removed();
+        }
+
+        // removes
+        if (restampRemovals.isNonempty()) {
+            final int size = (int)Math.min(restampRemovals.size(), 4096);
+            try (final RowSequence.Iterator it = restampRemovals.getRowSequenceIterator();
+                 final ChunkSource.GetContext context = timestampColumn.makeGetContext(size);
+                 final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
+                 final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
+
+                MutableLong lastTimestamp = new MutableLong(NULL_LONG);
+                while (it.hasMore()) {
+                    RowSequence chunkRs = it.getNextRowSequenceWithLength(4096);
+
+                    // get the chunks for values and keys
+                    LongChunk<? extends Values> valuesChunk = timestampColumn.getPrevChunk(context, chunkRs).asLongChunk();
+                    LongChunk<OrderedRowKeys> keysChunk = chunkRs.asRowKeyChunk();
+
+                    // push only non-null values/keys into the Ssa
+                    fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
+                    timestampSsa.remove(ssaValues, ssaKeys);
+                }
+            }
+        }
+
+        // shifts
+        if (upstream.shifted().nonempty()) {
+            final int size = Math.max(upstream.modified().intSize() + Math.max(upstream.added().intSize(), upstream.removed().intSize()), (int) upstream.shifted().getEffectiveSize());
+            try (final RowSet prevRowSet = source.getRowSet().copyPrev();
+                 final RowSet withoutMods = prevRowSet.minus(upstream.getModifiedPreShift());
+                 final ColumnSource.GetContext getContext = timestampColumn.makeGetContext(size)) {
+
+                final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
+                while (sit.hasNext()) {
+                    sit.next();
+                    try (final RowSet subRowSet = withoutMods.subSetByKeyRange(sit.beginRange(), sit.endRange());
+                         final RowSet rowSetToShift = subRowSet.minus(upstream.removed())) {
+                        if (rowSetToShift.isEmpty()) {
+                            continue;
+                        }
+
+                        final LongChunk<? extends Values> shiftValues = timestampColumn.getPrevChunk(getContext, rowSetToShift).asLongChunk();
+
+                        timestampSsa.applyShift(shiftValues, rowSetToShift.asRowKeyChunk(), sit.shiftDelta());
+                    }
+                }
+            }
+        }
+
+        // adds
+        if (restampAdditions.isNonempty()) {
+            final int size = (int)Math.min(restampAdditions.size(), 4096);
+            try (final RowSequence.Iterator it = restampAdditions.getRowSequenceIterator();
+                 final ChunkSource.GetContext context = timestampColumn.makeGetContext(size);
+                 final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
+                 final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
+                MutableLong lastTimestamp = new MutableLong(NULL_LONG);
+
+                while (it.hasMore()) {
+                    RowSequence chunkRs = it.getNextRowSequenceWithLength(4096);
+
+                    // get the chunks for values and keys
+                    LongChunk<? extends Values> valuesChunk = timestampColumn.getChunk(context, chunkRs).asLongChunk();
+                    LongChunk<OrderedRowKeys> keysChunk = chunkRs.asRowKeyChunk();
+
+                    // push only non-null values/keys into the Ssa
+                    fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
+                    timestampSsa.insert(ssaValues, ssaKeys);
+                }
+            }
+        }
+    }
+
+    private void fillChunkWithNonNull(LongChunk<OrderedRowKeys> keysChunk, LongChunk<? extends Values> valuesChunk, WritableLongChunk<OrderedRowKeys> ssaKeys, WritableLongChunk<? extends Values> ssaValues, MutableLong lastTimestamp) {
+        // reset the insertion chunks
+        ssaValues.setSize(0);
+        ssaKeys.setSize(0);
+
+        // add only non-null timestamps to this Ssa
+        for (int i = 0; i < valuesChunk.size(); i++) {
+            long ts = valuesChunk.get(i);
+            if (ts < lastTimestamp.longValue()) {
+                throw(new IllegalStateException("updateBy time-based operators require non-descending timestamp values"));
+            }
+            if (ts != NULL_LONG) {
+                ssaValues.add(ts);
+                ssaKeys.add(keysChunk.get(i));
+            }
+        }
+    }
+
 
     void doInitialAdditions() {
         final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
@@ -98,17 +210,20 @@ class ZeroKeyUpdateBy extends UpdateBy {
         }
 
         // add all the SSA data
+        if (timestampColumnName != null) {
+            processUpdateForSsa(fakeUpdate);
+        }
 
         try (final UpdateContext ctx = new UpdateContext(fakeUpdate, null, true)) {
             ctx.setAllAffected();
 
             // do a reprocessing phase for operators that can't add directly
-            ctx.reprocessRows(RowSetShiftData.EMPTY);
+            ctx.processRows(RowSetShiftData.EMPTY);
         }
     }
 
     /**
-     * An object to hold the transient state during a single {@link ShiftAwareListener#onUpdate(TableUpdate)} update
+     * An object to hold the transient state during a single {@link InstrumentedTableUpdateListenerAdapter#onUpdate(TableUpdate)} update
      * cycle.
      */
     private class UpdateContext implements SafeCloseable {
@@ -123,6 +238,9 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
         /** true if any operator requested keys */
         boolean anyRequireKeys;
+
+        /** true if any operator requested positions */
+        boolean anyRequirePositions;
 
         /** An array of context objects for each underlying operator */
         final UpdateByOperator.UpdateContext[] opContext;
@@ -139,6 +257,9 @@ class ZeroKeyUpdateBy extends UpdateBy {
         /** A Chunk of longs to store the keys being updated */
         final SizedLongChunk<OrderedRowKeys> keyChunk;
 
+        /** A Chunk of longs to store the posiitions of the keys being updated */
+        final SizedLongChunk<OrderedRowKeys> posChunk;
+
         /** A sharedContext to be used with previous values */
         SharedContext prevSharedContext;
 
@@ -151,8 +272,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
         /** A Long Chunk for previous keys */
         WritableLongChunk<OrderedRowKeys> prevKeyChunk;
 
-
-        final RowSet affectedRows;
+        final RowSet rowsToProcess;
 
         @SuppressWarnings("resource")
         UpdateContext(@NotNull final TableUpdate upstream,
@@ -167,6 +287,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
             this.fillContexts = new SizedSafeCloseable[operators.length];
             this.opContext = new UpdateByOperator.UpdateContext[operators.length];
             this.keyChunk = new SizedLongChunk<>();
+            this.posChunk = new SizedLongChunk<>();
             this.inputChunkPopulated = new boolean[operators.length];
 
             if (upstream.shifted().nonempty()) {
@@ -181,9 +302,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 this.prevFillContexts = new ChunkSource.FillContext[operators.length];
             }
 
-            final boolean upstreamAppendOnly =
-                    isInitializeStep || UpdateByOperator.isAppendOnly(upstream, source.getRowSet().lastRowKeyPrev());
-
             // noinspection unchecked
             this.postWorkingChunks = new SizedSafeCloseable[operators.length];
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
@@ -196,7 +314,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     continue;
                 }
 
-                opContext[opIdx] = operators[opIdx].makeUpdateContext(chunkSize);
+                opContext[opIdx] = operators[opIdx].makeUpdateContext(chunkSize, timestampSsa);
 
                 final int slotPosition = inputSourceSlots[opIdx];
                 if (fillContexts[slotPosition] == null) {
@@ -226,12 +344,12 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 }
                 // trigger the operator to determine its own set of affected rows (window-specific), do not close()
                 // since this is managed by the operator context
-                final RowSet rs = opContext[opIdx].determineAffectedRows(upstream, source.getRowSet(), upstreamAppendOnly);
+                final RowSet rs = opContext[opIdx].determineAffectedRows(upstream, source.getRowSet(), isInitializeStep);
 
                 // union the operator rowsets together to get a global set
                 tmp.insert(rs);
             }
-            affectedRows = tmp;
+            rowsToProcess = tmp;
         }
 
         public SharedContext getSharedContext() {
@@ -255,6 +373,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
             this.chunkSize = newChunkSize;
             this.keyChunk.ensureCapacity(newChunkSize);
+            this.posChunk.ensureCapacity(newChunkSize);
 
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (!opAffected[opIdx]) {
@@ -277,11 +396,15 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 if (opAffected[opIdx]) {
                     operators[opIdx].initializeFor(opContext[opIdx], updateRowSet);
                     anyRequireKeys |= operators[opIdx].requiresKeys();
+                    anyRequirePositions |= operators[opIdx].requiresPositions();
                 }
             }
 
             if (anyRequireKeys) {
                 keyChunk.ensureCapacity(chunkSize);
+            }
+            if (anyRequirePositions) {
+                posChunk.ensureCapacity(chunkSize);
             }
         }
 
@@ -300,7 +423,8 @@ class ZeroKeyUpdateBy extends UpdateBy {
         public void close() {
             sharedContext.close();
             keyChunk.close();
-            affectedRows.close();
+            posChunk.close();
+            rowsToProcess.close();
 
             if (prevKeyChunk != null) {
                 prevKeyChunk.close();
@@ -356,31 +480,59 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
         void doUpdate(@NotNull final RowSet updateRowSet,
                 @NotNull final RowSet preShiftUpdateRowSet) {
-            if (updateRowSet.isEmpty()) {
+
+        }
+
+        /**
+         * Locate the smallest key that requires reprocessing and then replay the table from that point
+         */
+        private void processRows(RowSetShiftData shifted) {
+            // Get a sub-index of the source from that minimum reprocessing index and make sure we update our
+            // contextual chunks and FillContexts to an appropriate size for this step.
+            final RowSet sourceRowSet = source.getRowSet();
+
+            final int newChunkSize = (int) Math.min(control.chunkCapacityOrDefault(), rowsToProcess.size());
+            setChunkSize(newChunkSize);
+
+            for (int opIndex = 0; opIndex < operators.length; opIndex++) {
+                if (opAffected[opIndex]) {
+                    final long keyStart = opContext[opIndex].getAffectedRows().firstRowKey();
+                    final long keyBefore;
+                    try (final RowSet.SearchIterator sit = sourceRowSet.searchIterator()) {
+                        keyBefore = sit.binarySearchValue(
+                                (compareTo, ignored) -> Long.compare(keyStart - 1, compareTo), 1);
+                    }
+                    // apply a shift to keyBefore since the output column is still in prev key space-
+
+                    operators[opIndex].resetForProcess(opContext[opIndex], sourceRowSet, keyBefore);
+                }
+            }
+
+            // Now iterate rowset to reprocess.
+            if (rowsToProcess.isEmpty()) {
                 return;
             }
 
-            try (final RowSequence.Iterator okIt = updateRowSet.getRowSequenceIterator();
-                    final RowSequence.Iterator preShiftOkIt = preShiftUpdateRowSet == updateRowSet ? null
-                            : preShiftUpdateRowSet.getRowSequenceIterator()) {
-                initializeFor(updateRowSet);
+            initializeFor(rowsToProcess);
 
-                while (okIt.hasMore()) {
+            try (final RowSet positionsToProcess = anyRequirePositions ? source.getRowSet().invert(rowsToProcess) : null;
+                 final RowSequence.Iterator keyIt = rowsToProcess.getRowSequenceIterator();
+                 final RowSequence.Iterator posIt = positionsToProcess == null ? null
+                         : positionsToProcess.getRowSequenceIterator()) {
+
+                while (keyIt.hasMore()) {
                     sharedContext.reset();
                     if (prevSharedContext != null) {
                         prevSharedContext.reset();
                     }
                     Arrays.fill(inputChunkPopulated, false);
 
-                    final RowSequence chunkOk = okIt.getNextRowSequenceWithLength(chunkSize);
-                    final RowSequence prevChunkOk = preShiftUpdateRowSet == updateRowSet ? chunkOk
-                            : preShiftOkIt.getNextRowSequenceWithLength(chunkSize);
-
+                    final RowSequence chunkOk = keyIt.getNextRowSequenceWithLength(chunkSize);
                     if (anyRequireKeys) {
                         chunkOk.fillRowKeyChunk(keyChunk.get());
-                        if (prevChunkOk != chunkOk) {
-                            prevChunkOk.fillRowKeyChunk(prevKeyChunk);
-                        }
+                    }
+                    if (anyRequirePositions) {
+                        posIt.getNextRowSequenceWithLength(chunkSize).fillRowKeyChunk(posChunk.get());
                     }
 
                     for (int opIdx = 0; opIdx < operators.length; opIdx++) {
@@ -403,44 +555,15 @@ class ZeroKeyUpdateBy extends UpdateBy {
                                 currentOp.processChunk(opContext[opIdx],
                                         intersect,
                                         keyChunk.get(),
+                                        posChunk.get(),
                                         postWorkingChunks[slotPosition].get(),
                                         source.getRowSet());
                             }
                         }
                     }
                 }
-
                 finishFor();
             }
-        }
-
-        /**
-         * Locate the smallest key that requires reprocessing and then replay the table from that point
-         */
-        private void reprocessRows(RowSetShiftData shifted) {
-            // Get a sub-index of the source from that minimum reprocessing index and make sure we update our
-            // contextual chunks and FillContexts to an appropriate size for this step.
-            final RowSet sourceRowSet = source.getRowSet();
-
-            final int newChunkSize = (int) Math.min(control.chunkCapacityOrDefault(), affectedRows.size());
-            setChunkSize(newChunkSize);
-
-            for (int opIndex = 0; opIndex < operators.length; opIndex++) {
-                if (opAffected[opIndex]) {
-                    final long keyStart = opContext[opIndex].getAffectedRows().firstRowKey();
-                    final long keyBefore;
-                    try (final RowSet.SearchIterator sit = sourceRowSet.searchIterator()) {
-                        keyBefore = sit.binarySearchValue(
-                                (compareTo, ignored) -> Long.compare(keyStart - 1, compareTo), 1);
-                    }
-                    // apply a shift to keyBefore since the output column is still in prev key space-
-
-                    operators[opIndex].resetForProcess(opContext[opIndex], sourceRowSet, keyBefore);
-                }
-            }
-
-            // Now iterate rowset to reprocess.
-            doUpdate(affectedRows, affectedRows);
         }
 
         /**
@@ -481,7 +604,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
     }
 
     /**
-     * The Listener for apply an upstream {@link ShiftAwareListener#onUpdate(Update) update}
+     * The Listener for apply an upstream {@link InstrumentedTableUpdateListenerAdapter#onUpdate(TableUpdate) update}
      */
     class ZeroKeyUpdateByListener extends InstrumentedTableUpdateListenerAdapter {
         private final QueryTable result;
@@ -509,7 +632,12 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
         @Override
         public void onUpdate(TableUpdate upstream) {
+
             try (final UpdateContext ctx = new UpdateContext(upstream, inputModifiedColumnSets, false)) {
+                // update the Ssa
+                if (timestampColumnName != null) {
+                    processUpdateForSsa(upstream);
+                }
 
                 if (applyShifts) {
                     if (redirContext.isRedirected()) {
@@ -532,7 +660,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 }
 
                 // Now do the reprocessing phase.
-                ctx.reprocessRows(upstream.shifted());
+                ctx.processRows(upstream.shifted());
 
                 final TableUpdateImpl downstream = new TableUpdateImpl();
                 // copy these rowSets since TableUpdateImpl#reset will close them with the upstream update

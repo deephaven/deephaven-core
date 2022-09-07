@@ -2,25 +2,16 @@ package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
-import io.deephaven.engine.table.impl.UpdateByOperator;
-import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -94,13 +85,16 @@ public class LongRecordingUpdateByOperator extends UpdateByCumulativeOperator {
     }
 
     @Override
-    public void processChunk(@NotNull UpdateContext updateContext, @NotNull RowSequence inputKeys, @Nullable LongChunk<OrderedRowKeys> keyChunk, @NotNull Chunk<Values> valuesChunk, @NotNull RowSet postUpdateSourceIndex) {
+    public void processChunk(@NotNull UpdateContext updateContext, @NotNull RowSequence inputKeys,
+                             @Nullable LongChunk<OrderedRowKeys> keyChunk,
+                             @Nullable LongChunk<OrderedRowKeys> posChunk,
+                             @NotNull Chunk<Values> valuesChunk, @NotNull RowSet postUpdateSourceIndex) {
         currentContext.addedChunk = valuesChunk.asLongChunk();
     }
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
+    public UpdateContext makeUpdateContext(int chunkSize, LongSegmentedSortedArray timestampSsa) {
         return this.currentContext = new RecordingContext();
     }
 

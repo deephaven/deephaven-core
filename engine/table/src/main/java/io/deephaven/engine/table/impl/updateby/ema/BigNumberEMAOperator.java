@@ -9,9 +9,9 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
@@ -36,8 +36,8 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
                 timeRecorder == null ? BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault()) : null;
         long lastStamp = NULL_LONG;
 
-        EmaContext(final int chunkSize) {
-            super(chunkSize);
+        EmaContext(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
+            super(chunkSize, timestampSsa);
         }
     }
 
@@ -76,8 +76,8 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize) {
-        return new EmaContext(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
+        return new EmaContext(chunkSize, timestampSsa);
     }
 
     @Override
