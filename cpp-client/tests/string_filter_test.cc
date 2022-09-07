@@ -1,26 +1,15 @@
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-#include "tests/catch.hpp"
+#include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 
-using deephaven::client::highlevel::TableHandle;
-
-namespace deephaven {
-namespace client {
-namespace tests {
+using deephaven::client::TableHandle;
+namespace deephaven::client::tests {
 namespace {
 void testFilter(const char *description, const TableHandle &filteredTable,
     const std::vector<std::string> &tickerData,
-    const std::vector<double> &closeData) {
-  INFO(description);
-  INFO(filteredTable.stream(true));
-  compareTable(
-      filteredTable,
-      "Ticker", tickerData,
-      "Close", closeData
-      );
-}
+    const std::vector<double> &closeData);
 }  // namespace
 
 TEST_CASE("String Filter", "[strfilter]") {
@@ -61,6 +50,18 @@ TEST_CASE("String Filter", "[strfilter]") {
         tickerData, closeData);
   }
 }
-}  // namespace tests
-}  // namespace client
-}  // namespace deephaven
+
+namespace {
+void testFilter(const char *description, const TableHandle &filteredTable,
+    const std::vector<std::string> &tickerData,
+    const std::vector<double> &closeData) {
+  INFO(description);
+  INFO(filteredTable.stream(true));
+  compareTable(
+      filteredTable,
+      "Ticker", tickerData,
+      "Close", closeData
+  );
+}
+}  // namespace
+}  // namespace deephaven::client::tests {

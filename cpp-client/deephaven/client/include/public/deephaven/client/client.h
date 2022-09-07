@@ -1081,12 +1081,9 @@ public:
   std::shared_ptr<arrow::flight::FlightStreamReader> getFlightStreamReader() const;
 
   /**
-   * Early unstable interface to subscribe/unsubscribe to ticking tables. This interface supports
-   * append-only tables and will call back with an error if the table changes in a way that is not
-   * append-only.
+   * Subscribe to a ticking table.
    */
-  std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback,
-      bool wantImmer);
+  std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback);
   /**
    * Unsubscribe from the table.
    */

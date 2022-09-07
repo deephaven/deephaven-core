@@ -4,6 +4,7 @@
 #pragma once
 
 #include <arrow/type.h>
+#include "deephaven/client/types.h"
 
 namespace deephaven::client::arrowutil {
 
@@ -33,18 +34,28 @@ public:
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::FloatType &type) final {
+  arrow::Status Visit(const arrow::FloatType &) final {
     inner_.template operator()<float>();
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::DoubleType &type) final {
+  arrow::Status Visit(const arrow::DoubleType &) final {
     inner_.template operator()<double>();
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::StringType &type) final {
+  arrow::Status Visit(const arrow::BooleanType &) final {
+    inner_.template operator()<bool>();
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::StringType &) final {
     inner_.template operator()<std::string>();
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::TimestampType &) final {
+    inner_.template operator()<deephaven::client::DateTime>();
     return arrow::Status::OK();
   }
 
@@ -96,10 +107,45 @@ public:
     return arrow::Status::OK();
   }
 
+  arrow::Status Visit(const arrow::BooleanArray &) final {
+    inner_.template operator()<bool>();
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::TimestampArray &) final {
+    inner_.template operator()<deephaven::client::DateTime>();
+    return arrow::Status::OK();
+  }
+
   Inner &inner() { return inner_; }
   const Inner &inner() const { return inner_; }
 
 private:
   Inner inner_;
 };
+
+/**
+ * Returns true iff type T is one of the numeric types.
+ */
+template<typename T>
+constexpr bool isNumericType() {
+  static_assert(
+      std::is_same_v<T, int8_t> ||
+      std::is_same_v<T, int16_t> ||
+      std::is_same_v<T, int32_t> ||
+      std::is_same_v<T, int64_t> ||
+      std::is_same_v<T, float> ||
+      std::is_same_v<T, double> ||
+      std::is_same_v<T, bool> ||
+      std::is_same_v<T, std::string> ||
+      std::is_same_v<T, deephaven::client::DateTime>,
+          "T is not one of the supported element types for Deephaven columns");
+
+  return std::is_same_v<T, int8_t> ||
+      std::is_same_v<T, int16_t> ||
+      std::is_same_v<T, int32_t> ||
+      std::is_same_v<T, int64_t> ||
+      std::is_same_v<T, float> ||
+      std::is_same_v<T, double>;
+}
 }  // namespace deephaven::client::arrowutil

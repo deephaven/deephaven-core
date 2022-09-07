@@ -4,9 +4,9 @@
 #include <iostream>
 #include <arrow/flight/client.h>
 #include <arrow/flight/client_auth.h>
-#include "tests/catch.hpp"
+#include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
-#include "deephaven/client/highlevel/client.h"
+#include "deephaven/client/client.h"
 #include "deephaven/client/utility/utility.h"
 
 #include <iostream>
@@ -23,18 +23,15 @@
 #include <arrow/table.h>
 #include <arrow/util/key_value_metadata.h>
 
-using deephaven::client::highlevel::Client;
-using deephaven::client::highlevel::NumCol;
-using deephaven::client::highlevel::StrCol;
-using deephaven::client::highlevel::TableHandle;
+using deephaven::client::Client;
+using deephaven::client::NumCol;
+using deephaven::client::StrCol;
+using deephaven::client::TableHandle;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
 
-namespace deephaven {
-namespace client {
-namespace tests {
-
+namespace deephaven::client::tests {
 TEST_CASE("Create / update / fetch a table", "[select]") {
   auto tm = TableMakerForTests::create();
 
@@ -229,6 +226,4 @@ TEST_CASE("New columns", "[select]") {
         );
   }
 }
-}  // namespace tests
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::tests

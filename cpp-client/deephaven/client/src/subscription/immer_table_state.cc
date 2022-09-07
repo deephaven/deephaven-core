@@ -13,11 +13,10 @@
 #include "deephaven/client/immerutil/abstract_flex_vector.h"
 #include "deephaven/client/subscription/shift_processor.h"
 #include "deephaven/client/utility/utility.h"
-#include "immer/flex_vector.hpp"
-#include "immer/flex_vector_transient.hpp"
 
 using deephaven::client::arrowutil::ArrowTypeVisitor;
 using deephaven::client::arrowutil::ArrowArrayTypeVisitor;
+using deephaven::client::arrowutil::isNumericType;
 using deephaven::client::chunk::Int64Chunk;
 using deephaven::client::column::ColumnSource;
 using deephaven::client::container::RowSequence;
@@ -25,6 +24,9 @@ using deephaven::client::container::RowSequenceBuilder;
 using deephaven::client::container::RowSequenceIterator;
 using deephaven::client::subscription::ShiftProcessor;
 using deephaven::client::immerutil::AbstractFlexVectorBase;
+using deephaven::client::immerutil::GenericAbstractFlexVector;
+using deephaven::client::immerutil::NumericAbstractFlexVector;
+using deephaven::client::table::Schema;
 using deephaven::client::table::Table;
 using deephaven::client::utility::ColumnDefinitions;
 using deephaven::client::utility::makeReservedVector;
@@ -34,24 +36,32 @@ using deephaven::client::utility::stringf;
 
 namespace deephaven::client::subscription {
 namespace {
-// void mapShifter(int64_t start, int64_t endInclusive, int64_t dest, std::map<int64_t, int64_t> *zm);
 class MyTable final : public Table {
 public:
-  explicit MyTable(std::vector<std::shared_ptr<ColumnSource>> sources, size_t numRows);
+  explicit MyTable(std::shared_ptr<Schema> schema,
+      std::vector<std::shared_ptr<ColumnSource>> sources, size_t numRows);
   ~MyTable() final;
 
   std::shared_ptr<RowSequence> getRowSequence() const final;
+
   std::shared_ptr<ColumnSource> getColumn(size_t columnIndex) const final {
     return sources_[columnIndex];
   }
+
   size_t numRows() const final {
     return numRows_;
   }
+
   size_t numColumns() const final {
     return sources_.size();
   }
 
+  const Schema &schema() const final {
+    return *schema_;
+  }
+
 private:
+  std::shared_ptr<Schema> schema_;
   std::vector<std::shared_ptr<ColumnSource>> sources_;
   size_t numRows_ = 0;
 };
@@ -62,12 +72,10 @@ std::vector<std::unique_ptr<AbstractFlexVectorBase>> makeFlexVectorsFromArrays(
     const std::vector<std::shared_ptr<arrow::Array>> &arrays);
 }  // namespace
 
-//ImmerTableState::ImmerTableState(const ColumnDefinitions &colDefs)
-//    std::vector<std::unique_ptr<AbstractFlexVectorBase>> flexVectors) :
-//    flexVectors_(std::move(flexVectors)) {}
-
-ImmerTableState::ImmerTableState(const ColumnDefinitions &colDefs) {
-  flexVectors_ = makeFlexVectorsFromColDefs(colDefs);
+ImmerTableState::ImmerTableState(std::shared_ptr<ColumnDefinitions> colDefs) :
+    colDefs_(std::move(colDefs)) {
+  schema_ = std::make_shared<Schema>(colDefs_->vec());
+  flexVectors_ = makeFlexVectorsFromColDefs(*colDefs_);
 }
 
 ImmerTableState::~ImmerTableState() = default;
@@ -189,13 +197,13 @@ std::shared_ptr<Table> ImmerTableState::snapshot() const {
   for (const auto &fv : flexVectors_) {
     columnSources.push_back(fv->makeColumnSource());
   }
-  return std::make_shared<MyTable>(std::move(columnSources), spaceMapper_.size());
+  return std::make_shared<MyTable>(schema_, std::move(columnSources), spaceMapper_.size());
 }
 
 namespace {
 
-MyTable::MyTable(std::vector<std::shared_ptr<ColumnSource>> sources, size_t numRows) :
-    sources_(std::move(sources)), numRows_(numRows) {}
+MyTable::MyTable(std::shared_ptr<Schema> schema, std::vector<std::shared_ptr<ColumnSource>> sources,
+    size_t numRows) : schema_(std::move(schema)), sources_(std::move(sources)), numRows_(numRows) {}
 MyTable::~MyTable() = default;
 
 std::shared_ptr<RowSequence> MyTable::getRowSequence() const {
@@ -208,7 +216,11 @@ std::shared_ptr<RowSequence> MyTable::getRowSequence() const {
 struct FlexVectorMaker final {
   template<typename T>
   void operator()() {
-    result_ = AbstractFlexVectorBase::create(immer::flex_vector<T>());
+    if constexpr(isNumericType<T>()) {
+      result_ = std::make_unique<NumericAbstractFlexVector<T>>();
+    } else {
+      result_ = std::make_unique<GenericAbstractFlexVector<T>>();
+    }
   }
 
   std::unique_ptr<AbstractFlexVectorBase> result_;

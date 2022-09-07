@@ -16,11 +16,12 @@ class ImmerTableState final {
   typedef deephaven::client::column::ColumnSource ColumnSource;
   typedef deephaven::client::container::RowSequence RowSequence;
   typedef deephaven::client::immerutil::AbstractFlexVectorBase AbstractFlexVectorBase;
+  typedef deephaven::client::table::Schema Schema;
   typedef deephaven::client::table::Table Table;
   typedef deephaven::client::utility::ColumnDefinitions ColumnDefinitions;
 
 public:
-  explicit ImmerTableState(const ColumnDefinitions &colDefs);
+  explicit ImmerTableState(std::shared_ptr<ColumnDefinitions> colDefs);
   ~ImmerTableState();
 
   std::shared_ptr<RowSequence> addKeys(const RowSequence &rowsToAddKeySpace);
@@ -44,6 +45,8 @@ private:
       std::unique_ptr<AbstractFlexVectorBase> modifiedData,
       const RowSequence &rowsToModifyKeySpace);
 
+  std::shared_ptr<ColumnDefinitions> colDefs_;
+  std::shared_ptr<Schema> schema_;
   std::vector<std::unique_ptr<AbstractFlexVectorBase>> flexVectors_;
   // Keeps track of keyspace -> index space mapping
   SpaceMapper spaceMapper_;

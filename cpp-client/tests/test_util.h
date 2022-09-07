@@ -18,14 +18,11 @@
 #include <arrow/type.h>
 #include <arrow/table.h>
 #include <arrow/util/key_value_metadata.h>
-#include "deephaven/client/highlevel/client.h"
+#include "deephaven/client/client.h"
 #include "deephaven/client/utility/utility.h"
 #include "deephaven/client/utility/table_maker.h"
 
-namespace deephaven {
-namespace client {
-namespace tests {
-
+namespace deephaven::client::tests {
 class ColumnNamesForTests {
 public:
   ColumnNamesForTests();
@@ -68,9 +65,9 @@ private:
 };
 
 class TableMakerForTests {
-  typedef deephaven::client::highlevel::Client Client;
-  typedef deephaven::client::highlevel::TableHandleManager TableHandleManager;
-  typedef deephaven::client::highlevel::TableHandle TableHandle;
+  typedef deephaven::client::Client Client;
+  typedef deephaven::client::TableHandleManager TableHandleManager;
+  typedef deephaven::client::TableHandle TableHandle;
 public:
   static TableMakerForTests create();
 
@@ -114,16 +111,13 @@ void compareTableRecurse(int depth, const std::shared_ptr<arrow::Table> &table,
   compareTableRecurse(depth + 1, table, std::forward<Args>(rest)...);
 }
 
-std::shared_ptr<arrow::Table> basicValidate(const deephaven::client::highlevel::TableHandle &table,
+std::shared_ptr<arrow::Table> basicValidate(const deephaven::client::TableHandle &table,
     int expectedColumns);
 }  // namespace internal
 
 template<typename... Args>
-void compareTable(const deephaven::client::highlevel::TableHandle &table, Args &&... args) {
+void compareTable(const deephaven::client::TableHandle &table, Args &&... args) {
   auto arrowTable = internal::basicValidate(table, sizeof...(Args) / 2);
   internal::compareTableRecurse(0, arrowTable, std::forward<Args>(args)...);
 }
-
-}  // namespace tests
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::tests

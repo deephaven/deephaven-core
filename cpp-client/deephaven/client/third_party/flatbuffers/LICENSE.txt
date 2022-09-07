@@ -1,7 +1,0 @@
-TODO: put correct license here
-indicating we are using Flatbuffers v2.0.6
-modifications are:
-- copied only the files we needed
-- moved the namespace of the code to a Deephaven-internal namespace,
-  so as not to conflict with any other flatbuffers being linked
-  (such as the one inside Arrow)

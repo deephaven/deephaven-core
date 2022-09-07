@@ -5,17 +5,14 @@
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/client/utility/utility.h"
 
-namespace deephaven {
-namespace client {
-namespace tests {
-
-using deephaven::client::highlevel::TableHandle;
+using deephaven::client::TableHandle;
 using deephaven::client::utility::okOrThrow;
 using deephaven::client::utility::valueOrThrow;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
 
+namespace deephaven::client::tests {
 ColumnNamesForTests::ColumnNamesForTests() : importDate_("ImportDate"), ticker_("Ticker"),
   open_("Open"), close_("Close"), volume_("Volume") {}
 ColumnNamesForTests::ColumnNamesForTests(ColumnNamesForTests &&other) noexcept = default;
@@ -206,7 +203,4 @@ std::shared_ptr<arrow::Table> basicValidate(const TableHandle &table, int expect
   return arrowTable;
 }
 }  // namespace internal
-
-}  // namespace tests
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::tests

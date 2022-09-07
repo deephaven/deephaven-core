@@ -15,7 +15,7 @@ public:
   BatchParser() = delete;
 
   static void parseBatches(
-      const ColumnDefinitions &colDefs,
+      size_t expectedNumCols,
       size_t numBatches,
       bool allowInconsistentColumnSizes,
       arrow::flight::FlightStreamReader *fsr,

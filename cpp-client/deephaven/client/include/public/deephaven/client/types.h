@@ -4,9 +4,9 @@
 #pragma once
 
 #include <limits>
+#include <cmath>
 #include <cstdint>
 #include <ostream>
-#include <math.h>
 
 namespace deephaven::client {
 class DeephavenConstants {
@@ -52,6 +52,39 @@ public:
   static constexpr const int64_t NULL_LONG = std::numeric_limits<int64_t>::min();
   static constexpr const int64_t MIN_LONG = std::numeric_limits<int64_t>::min() + 1;
   static constexpr const int64_t MAX_LONG = std::numeric_limits<int64_t>::max();
+};
+
+template<typename T>
+struct DeephavenConstantsForType {};
+
+template<>
+struct DeephavenConstantsForType<int8_t> {
+  static constexpr const int8_t NULL_VALUE = DeephavenConstants::NULL_BYTE;
+};
+
+template<>
+struct DeephavenConstantsForType<int16_t> {
+  static constexpr const int16_t NULL_VALUE = DeephavenConstants::NULL_SHORT;
+};
+
+template<>
+struct DeephavenConstantsForType<int32_t> {
+  static constexpr const int32_t NULL_VALUE = DeephavenConstants::NULL_INT;
+};
+
+template<>
+struct DeephavenConstantsForType<int64_t> {
+  static constexpr const int64_t NULL_VALUE = DeephavenConstants::NULL_LONG;
+};
+
+template<>
+struct DeephavenConstantsForType<float> {
+  static constexpr const float NULL_VALUE = DeephavenConstants::NULL_FLOAT;
+};
+
+template<>
+struct DeephavenConstantsForType<double> {
+  static constexpr const double NULL_VALUE = DeephavenConstants::NULL_DOUBLE;
 };
 
 /**

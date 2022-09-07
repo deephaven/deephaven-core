@@ -1,20 +1,18 @@
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-#include "tests/catch.hpp"
+#include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 #include "deephaven/client/utility/utility.h"
 
-using deephaven::client::highlevel::BooleanExpression;
-using deephaven::client::highlevel::NumericExpression;
-using deephaven::client::highlevel::TableHandleManager;
-using deephaven::client::highlevel::TableHandle;
+using deephaven::client::BooleanExpression;
+using deephaven::client::NumericExpression;
+using deephaven::client::TableHandleManager;
+using deephaven::client::TableHandle;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
 
-namespace deephaven {
-namespace client {
-namespace tests {
+namespace deephaven::client::tests {
 TEST_CASE("Last By", "[lastby]") {
   auto tm = TableMakerForTests::create();
   auto table = tm.table();
@@ -38,6 +36,4 @@ TEST_CASE("Last By", "[lastby]") {
       "Close", closeData
       );
 }
-}  // namespace tests
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::tests
