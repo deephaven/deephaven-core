@@ -19,6 +19,7 @@ import org.apache.parquet.schema.MessageType;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
@@ -54,6 +55,7 @@ public class ParquetFileWriter {
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
         writeChannel = channelsProvider.getWriteChannel(filePath, false); // TODO add support for appending
+        writeChannel.write(ByteBuffer.wrap(ParquetFileReader.MAGIC));
         this.type = type;
         this.channelsProvider = channelsProvider;
         this.compressor = DeephavenCodecFactory.getInstance().getByName(codecName);
@@ -78,7 +80,6 @@ public class ParquetFileWriter {
 
     public void close() throws IOException {
         try (final OutputStream os = Channels.newOutputStream(writeChannel)) {
-            os.write(ParquetFileReader.MAGIC);
             serializeOffsetIndexes(offsetIndexes, blocks, os);
             ParquetMetadata footer =
                     new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
