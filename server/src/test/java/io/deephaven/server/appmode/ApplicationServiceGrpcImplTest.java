@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.appmode;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -42,7 +43,7 @@ public class ApplicationServiceGrpcImplTest {
         livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
         sessionService = new SessionService(scheduler,
-                authContext -> new SessionState(scheduler, NoLanguageDeephavenSession::new, authContext),
+                authContext -> new SessionState(scheduler, ExecutionContext::createForUnitTests, authContext),
                 TOKEN_EXPIRE_MS, Optional.empty(), Collections.emptyMap());
         applicationServiceGrpcImpl = new ApplicationServiceGrpcImpl(scheduler, sessionService,
                 new TypeLookup(ObjectTypeLookup.NoOp.INSTANCE));

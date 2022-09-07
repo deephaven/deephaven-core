@@ -5,6 +5,7 @@ package io.deephaven.server.runner;
 
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
@@ -51,6 +52,7 @@ public class DeephavenApiServer {
     private final UriResolvers uriResolvers;
     private final SessionService sessionService;
     private final Map<String, AuthenticationRequestHandler> authenticationHandlers;
+    private final Provider<ExecutionContext> executionContextProvider;
 
     @Inject
     public DeephavenApiServer(
@@ -62,7 +64,8 @@ public class DeephavenApiServer {
             final ApplicationInjector applicationInjector,
             final UriResolvers uriResolvers,
             final SessionService sessionService,
-            final Map<String, AuthenticationRequestHandler> authenticationHandlers) {
+            final Map<String, AuthenticationRequestHandler> authenticationHandlers,
+            final Provider<ExecutionContext> executionContextProvider) {
         this.server = server;
         this.ugp = ugp;
         this.logInit = logInit;
@@ -72,6 +75,7 @@ public class DeephavenApiServer {
         this.uriResolvers = uriResolvers;
         this.sessionService = sessionService;
         this.authenticationHandlers = authenticationHandlers;
+        this.executionContextProvider = executionContextProvider;
     }
 
     @VisibleForTesting
@@ -162,6 +166,8 @@ public class DeephavenApiServer {
     void startForUnitTests() throws Exception {
         pluginRegistration.registerAll();
         applicationInjector.run();
+        executionContextProvider.get().getQueryLibrary().updateVersionString("DEFAULT");
+
         log.info().append("Starting server...").endl();
         server.start();
     }

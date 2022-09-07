@@ -15,6 +15,7 @@ import io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -132,6 +133,11 @@ public abstract class FlightMessageRoundTripTest {
         ScheduledExecutorService provideExecutorService() {
             return null;
         }
+
+        @Provides
+        ExecutionContext provideExecutionContext() {
+            return ExecutionContext.createForUnitTests();
+        }
     }
 
     public interface TestComponent {
@@ -150,6 +156,8 @@ public abstract class FlightMessageRoundTripTest {
         AuthTestModule.BasicAuthTestImpl basicAuthHandler();
 
         Map<String, AuthenticationRequestHandler> authRequestHandlers();
+
+        ExecutionContext executionContext();
     }
 
     private GrpcServer server;
@@ -174,7 +182,7 @@ public abstract class FlightMessageRoundTripTest {
 
         scriptSession = component.scriptSession();
         sessionService = component.sessionService();
-        executionContext = scriptSession.getExecutionContext().open();
+        executionContext = component.executionContext().open();
 
         serverLocation = Location.forGrpcInsecure("localhost", actualPort);
         currentSession = sessionService.newSession(new AuthContext.SuperUser());

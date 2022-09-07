@@ -136,13 +136,13 @@ public class SessionState {
 
     @AssistedInject
     public SessionState(final Scheduler scheduler,
-            final Provider<ScriptSession> scriptSessionProvider,
+            final Provider<ExecutionContext> executionContextProvider,
             @Assisted final AuthContext authContext) {
         this.sessionId = UuidCreator.toString(UuidCreator.getRandomBased());
         this.logPrefix = "SessionState{" + sessionId + "}: ";
         this.scheduler = scheduler;
         this.authContext = authContext;
-        this.executionContext = scriptSessionProvider.get().getExecutionContext();
+        this.executionContext = executionContextProvider.get();
         log.info().append(logPrefix).append("session initialized").endl();
     }
 

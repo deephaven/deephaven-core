@@ -5,6 +5,7 @@ package io.deephaven.server.netty;
 
 import dagger.BindsInstance;
 import dagger.Component;
+import io.deephaven.server.console.SessionToExecutionStateModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
 import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
@@ -28,6 +29,7 @@ import javax.inject.Singleton;
         NettyServerModule.class,
         PythonConsoleSessionModule.class,
         GroovyConsoleSessionModule.class,
+        SessionToExecutionStateModule.class,
 })
 public interface NettyServerComponent extends DeephavenApiServerComponent {
     @Component.Builder
