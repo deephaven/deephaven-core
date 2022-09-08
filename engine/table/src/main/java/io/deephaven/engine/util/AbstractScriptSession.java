@@ -7,14 +7,13 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.FileUtils;
-import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.plugin.type.ObjectType;
@@ -75,14 +74,13 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         createOrClearDirectory(classCacheDirectory);
 
         final QueryScope queryScope = newQueryScope();
-        final CompilerTools.Context compilerContext =
-                CompilerTools.newContext(classCacheDirectory, getClass().getClassLoader());
+        final QueryCompiler compilerContext = QueryCompiler.create(classCacheDirectory, getClass().getClassLoader());
 
         executionContext = ExecutionContext.newBuilder()
                 .markSystemic()
                 .newQueryLibrary()
                 .setQueryScope(queryScope)
-                .setCompilerContext(compilerContext)
+                .setQueryCompiler(compilerContext)
                 .build();
     }
 

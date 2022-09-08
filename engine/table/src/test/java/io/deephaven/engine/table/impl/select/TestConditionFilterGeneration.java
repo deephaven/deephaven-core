@@ -27,7 +27,7 @@ public class TestConditionFilterGeneration {
     public void setUp() {
         executionContext = ExecutionContext.newBuilder()
                 .newQueryLibrary("DEFAULT")
-                .captureCompilerContext()
+                .captureQueryCompiler()
                 .captureQueryScope()
                 .build().open();
 

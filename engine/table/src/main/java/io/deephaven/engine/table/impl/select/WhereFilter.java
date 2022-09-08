@@ -8,6 +8,7 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
 import io.deephaven.api.filter.*;
 import io.deephaven.api.value.Value;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -107,8 +108,7 @@ public interface WhereFilter extends Filter {
      *
      * @param tableDefinition the definition of the table that will be filtered
      * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
-     *          {@link io.deephaven.engine.context.CompilerTools} usage needs to be resolved within init.
-     *          Implementations must be idempotent.
+     *          {@link QueryCompiler} usage needs to be resolved within init. Implementations must be idempotent.
      */
     void init(TableDefinition tableDefinition);
 

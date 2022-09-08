@@ -1,0 +1,350 @@
+diff -ur orig/allocator.h flatbuffers/allocator.h
+--- orig/allocator.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/allocator.h	2022-08-06 02:58:02.748814653 -0400
+@@ -19,7 +19,12 @@
+ 
+ #include "flatbuffers/base.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++
++namespace deephaven::third_party::flatbuffers {
+ 
+ // Allocator interface. This is flatbuffers-specific and meant only for
+ // `vector_downward` usage.
+@@ -65,4 +70,4 @@
+ 
+ }  // namespace flatbuffers
+ 
+-#endif  // FLATBUFFERS_ALLOCATOR_H_
+\ No newline at end of file
++#endif  // FLATBUFFERS_ALLOCATOR_H_
+diff -ur orig/array.h flatbuffers/array.h
+--- orig/array.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/array.h	2022-08-06 02:58:02.748814653 -0400
+@@ -21,7 +21,12 @@
+ #include "flatbuffers/stl_emulation.h"
+ #include "flatbuffers/vector.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++
++namespace deephaven::third_party::flatbuffers {
+ 
+ // This is used as a helper type for accessing arrays.
+ template<typename T, uint16_t length> class Array {
+diff -ur orig/base.h flatbuffers/base.h
+--- orig/base.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/base.h	2022-08-06 02:58:02.748814653 -0400
+@@ -143,7 +143,11 @@
+ #define FLATBUFFERS_VERSION_REVISION 6
+ #define FLATBUFFERS_STRING_EXPAND(X) #X
+ #define FLATBUFFERS_STRING(X) FLATBUFFERS_STRING_EXPAND(X)
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+   // Returns version as string  "MAJOR.MINOR.REVISION".
+   const char* FLATBUFFERS_VERSION();
+ }
+@@ -221,21 +225,21 @@
+     // Check for std::string_view (in c++17)
+     #if __has_include(<string_view>) && (__cplusplus >= 201606 || (defined(_HAS_CXX17) && _HAS_CXX17))
+       #include <string_view>
+-      namespace flatbuffers {
++      namespace deephaven::third_party::flatbuffers {
+         typedef std::string_view string_view;
+       }
+       #define FLATBUFFERS_HAS_STRING_VIEW 1
+     // Check for std::experimental::string_view (in c++14, compiler-dependent)
+     #elif __has_include(<experimental/string_view>) && (__cplusplus >= 201411)
+       #include <experimental/string_view>
+-      namespace flatbuffers {
++      namespace deephaven::third_party::flatbuffers {
+         typedef std::experimental::string_view string_view;
+       }
+       #define FLATBUFFERS_HAS_STRING_VIEW 1
+     // Check for absl::string_view
+     #elif __has_include("absl/strings/string_view.h")
+       #include "absl/strings/string_view.h"
+-      namespace flatbuffers {
++      namespace deephaven::third_party::flatbuffers {
+         typedef absl::string_view string_view;
+       }
+       #define FLATBUFFERS_HAS_STRING_VIEW 1
+@@ -308,7 +312,7 @@
+ /// @endcond
+ 
+ /// @file
+-namespace flatbuffers {
++namespace deephaven::third_party::flatbuffers {
+ 
+ /// @cond FLATBUFFERS_INTERNAL
+ // Our default offset / size type, 32bit on purpose on 64bit systems.
+diff -ur orig/buffer.h flatbuffers/buffer.h
+--- orig/buffer.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/buffer.h	2022-08-06 02:58:02.748814653 -0400
+@@ -19,7 +19,11 @@
+ 
+ #include "flatbuffers/base.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ // Wrapper for uoffset_t to allow safe template specialization.
+ // Value is allowed to be 0 to indicate a null object (see e.g. AddOffset).
+@@ -139,4 +143,4 @@
+ 
+ }  // namespace flatbuffers
+ 
+-#endif  // FLATBUFFERS_BUFFER_H_
+\ No newline at end of file
++#endif  // FLATBUFFERS_BUFFER_H_
+diff -ur orig/buffer_ref.h flatbuffers/buffer_ref.h
+--- orig/buffer_ref.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/buffer_ref.h	2022-08-06 02:58:02.748814653 -0400
+@@ -20,7 +20,11 @@
+ #include "flatbuffers/base.h"
+ #include "flatbuffers/verifier.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ // Convenient way to bundle a buffer and its length, to pass it around
+ // typed by its root.
+@@ -50,4 +54,4 @@
+ 
+ }  // namespace flatbuffers
+ 
+-#endif  // FLATBUFFERS_BUFFER_REF_H_
+\ No newline at end of file
++#endif  // FLATBUFFERS_BUFFER_REF_H_
+diff -ur orig/default_allocator.h flatbuffers/default_allocator.h
+--- orig/default_allocator.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/default_allocator.h	2022-08-06 02:58:02.748814653 -0400
+@@ -20,7 +20,11 @@
+ #include "flatbuffers/allocator.h"
+ #include "flatbuffers/base.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ // DefaultAllocator uses new/delete to allocate memory regions
+ class DefaultAllocator : public Allocator {
+@@ -61,4 +65,4 @@
+ 
+ }  // namespace flatbuffers
+ 
+-#endif  // FLATBUFFERS_DEFAULT_ALLOCATOR_H_
+\ No newline at end of file
++#endif  // FLATBUFFERS_DEFAULT_ALLOCATOR_H_
+diff -ur orig/detached_buffer.h flatbuffers/detached_buffer.h
+--- orig/detached_buffer.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/detached_buffer.h	2022-08-06 02:58:02.748814653 -0400
+@@ -21,7 +21,11 @@
+ #include "flatbuffers/base.h"
+ #include "flatbuffers/default_allocator.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ // DetachedBuffer is a finished flatbuffer memory region, detached from its
+ // builder. The original memory region and allocator are also stored so that
+diff -ur orig/flatbuffer_builder.h flatbuffers/flatbuffer_builder.h
+--- orig/flatbuffer_builder.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/flatbuffer_builder.h	2022-08-06 02:58:02.748814653 -0400
+@@ -33,7 +33,11 @@
+ #include "flatbuffers/vector_downward.h"
+ #include "flatbuffers/verifier.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ // Converts a Field ID to a virtual table offset.
+ inline voffset_t FieldIndexToOffset(voffset_t field_id) {
+diff -ur orig/flatbuffers.h flatbuffers/flatbuffers.h
+--- orig/flatbuffers.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/flatbuffers.h	2022-08-06 02:58:02.748814653 -0400
+@@ -33,7 +33,11 @@
+ #include "flatbuffers/vector_downward.h"
+ #include "flatbuffers/verifier.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ /// @brief This can compute the start of a FlatBuffer from a root pointer, i.e.
+ /// it is the opposite transformation of GetRoot().
+diff -ur orig/stl_emulation.h flatbuffers/stl_emulation.h
+--- orig/stl_emulation.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/stl_emulation.h	2022-08-06 02:58:02.748814653 -0400
+@@ -56,7 +56,11 @@
+ #endif // defined(FLATBUFFERS_USE_STD_SPAN)
+ 
+ // This header provides backwards compatibility for older versions of the STL.
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ #if defined(FLATBUFFERS_TEMPLATES_ALIASES)
+   template <typename T>
+diff -ur orig/string.h flatbuffers/string.h
+--- orig/string.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/string.h	2022-08-06 02:58:02.748814653 -0400
+@@ -20,7 +20,11 @@
+ #include "flatbuffers/base.h"
+ #include "flatbuffers/vector.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ struct String : public Vector<char> {
+   const char *c_str() const { return reinterpret_cast<const char *>(Data()); }
+@@ -61,4 +65,4 @@
+ 
+ }  // namespace flatbuffers
+ 
+-#endif  // FLATBUFFERS_STRING_H_
+\ No newline at end of file
++#endif  // FLATBUFFERS_STRING_H_
+diff -ur orig/struct.h flatbuffers/struct.h
+--- orig/struct.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/struct.h	2022-08-06 02:58:02.748814653 -0400
+@@ -19,7 +19,11 @@
+ 
+ #include "flatbuffers/base.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ // "structs" are flat structures that do not have an offset table, thus
+ // always have all members present and do not support forwards/backwards
+@@ -50,4 +54,4 @@
+ 
+ }  // namespace flatbuffers
+ 
+-#endif  // FLATBUFFERS_STRUCT_H_
+\ No newline at end of file
++#endif  // FLATBUFFERS_STRUCT_H_
+diff -ur orig/table.h flatbuffers/table.h
+--- orig/table.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/table.h	2022-08-06 02:58:02.748814653 -0400
+@@ -20,7 +20,11 @@
+ #include "flatbuffers/base.h"
+ #include "flatbuffers/verifier.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ // "tables" use an offset table (possibly shared) that allows fields to be
+ // omitted and added at will, but uses an extra indirection to read.
+diff -ur orig/util.h flatbuffers/util.h
+--- orig/util.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/util.h	2022-08-06 02:58:02.748814653 -0400
+@@ -33,7 +33,11 @@
+ 
+ #include <string>
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ // @locale-independent functions for ASCII characters set.
+ 
+diff -ur orig/vector_downward.h flatbuffers/vector_downward.h
+--- orig/vector_downward.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/vector_downward.h	2022-08-06 02:58:02.748814653 -0400
+@@ -21,7 +21,11 @@
+ #include "flatbuffers/default_allocator.h"
+ #include "flatbuffers/detached_buffer.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ // This is a minimal replication of std::vector<uint8_t> functionality,
+ // except growing from higher to lower addresses. i.e push_back() inserts data
+diff -ur orig/vector.h flatbuffers/vector.h
+--- orig/vector.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/vector.h	2022-08-06 02:58:02.748814653 -0400
+@@ -20,7 +20,11 @@
+ #include "flatbuffers/base.h"
+ #include "flatbuffers/buffer.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ struct String;
+ 
+diff -ur orig/verifier.h flatbuffers/verifier.h
+--- orig/verifier.h	2022-09-07 19:04:45.122547635 -0400
++++ flatbuffers/verifier.h	2022-08-06 02:58:02.748814653 -0400
+@@ -21,7 +21,11 @@
+ #include "flatbuffers/util.h"
+ #include "flatbuffers/vector.h"
+ 
+-namespace flatbuffers {
++// Move the vendored copy of flatbuffers to a private namespace so it doesn't conflict
++// with the flatbuffers namespace compiled into Arrow.
++namespace deephaven::third_party::flatbuffers {}
++namespace flatbuffers = deephaven::third_party::flatbuffers;
++namespace deephaven::third_party::flatbuffers {
+ 
+ // Helper class to verify the integrity of a FlatBuffer
+ class Verifier FLATBUFFERS_FINAL_CLASS {

@@ -189,8 +189,8 @@ public class TestFormulaColumn {
 
     @Test
     public void testNoInput() {
-        final String oldValue = Configuration.getInstance().getProperty("CompilerTools.logEnabledDefault");
-        Configuration.getInstance().setProperty("CompilerTools.logEnabledDefault", "true");
+        final String oldValue = Configuration.getInstance().getProperty("QueryCompiler.logEnabledDefault");
+        Configuration.getInstance().setProperty("QueryCompiler.logEnabledDefault", "true");
         try {
             FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "(String)\"1234\"");
             formulaColumn.initDef(Collections.emptyMap());
@@ -202,7 +202,7 @@ public class TestFormulaColumn {
             final long longResult = longFormulaColumn.getDataView().getLong(0);
             assertEquals(longResult, 1234L);
         } finally {
-            Configuration.getInstance().setProperty("CompilerTools.logEnabledDefault", oldValue);
+            Configuration.getInstance().setProperty("QueryCompiler.logEnabledDefault", oldValue);
         }
     }
 

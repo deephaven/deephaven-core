@@ -198,79 +198,231 @@ private:
   std::shared_ptr<impl::ClientImpl> impl_;
 };
 
+/**
+ * Defines an aggregator class that represents one of a variet of aggregation operations.
+ */
 class Aggregate {
 public:
+  /**
+   * Returns an aggregator that computes the total sum of values, within an aggregation group,
+   * for each input column.
+   */
   template<typename ...Args>
   static Aggregate absSum(Args &&... args);
+  /**
+   * Returns an aggregator that computes the total sum of values, within an aggregation group,
+   * for each input column.
+   */
   static Aggregate absSum(std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes an array of all values within an aggregation group,
+   * for each input column.
+   */
   template<typename ...Args>
   static Aggregate group(Args &&... args);
+
+  /**
+   * Returns an aggregator that computes an array of all values within an aggregation group,
+   * for each input column.
+   */
   static Aggregate group(std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes the average (mean) of values, within an aggregation group,
+   * for each input column.
+   */
   template<typename ...Args>
   static Aggregate avg(Args &&... args);
+
+  /**
+   * Returns an aggregator that computes the average (mean) of values, within an aggregation group,
+   * for each input column.
+   */
   static Aggregate avg(std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes the number of elements within an aggregation group.
+   */
   template<typename ColArg>
   static Aggregate count(ColArg &&arg);
+
+  /**
+   * Returns an aggregator that computes the number of elements within an aggregation group.
+   */
   static Aggregate count(std::string columnSpec);
 
+  /**
+   * Returns an aggregator that computes the first value, within an aggregation group,
+   * for each input column.
+   */
   template<typename ...Args>
   static Aggregate first(Args &&... args);
+
+  /**
+   * Returns an aggregator that computes the first value, within an aggregation group,
+   * for each input column.
+   */
   static Aggregate first(std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes the last value, within an aggregation group,
+   * for each input column.
+   */
   template<typename ...Args>
   static Aggregate last(Args &&... args);
+
+  /**
+   * Returns an aggregator that computes the last value, within an aggregation group,
+   * for each input column.
+   */
   static Aggregate last(std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes the maximum value, within an aggregation group,
+   * for each input column.
+   */
   template<typename ...Args>
   static Aggregate max(Args &&... args);
+
+  /**
+   * Returns an aggregator that computes the maximum value, within an aggregation group,
+   * for each input column.
+   */
   static Aggregate max(std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes the median value, within an aggregation group,
+   * for each input column.
+   */
   template<typename ...Args>
   static Aggregate med(Args &&... args);
+
+  /**
+   * Returns an aggregator that computes the median value, within an aggregation group,
+   * for each input column.
+   */
   static Aggregate med(std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes the minimum value, within an aggregation group,
+   * for each input column.
+   */
   template<typename ...Args>
   static Aggregate min(Args &&... args);
+
+  /**
+   * Returns an aggregator that computes the minimum value, within an aggregation group,
+   * for each input column.
+   */
   static Aggregate min(std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes the designated percentile of values, within an aggregation
+   * group, for each input column.
+   */
   template<typename ...Args>
   static Aggregate pct(double percentile, bool avgMedian, Args &&... args);
+
+  /**
+   * Returns an aggregator that computes the designated percentile of values, within an aggregation
+   * group, for each input column.
+   */
   static Aggregate pct(double percentile, bool avgMedian, std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes the standard deviation of values, within an aggregation
+   * group, for each input column.
+   */
   template<typename ...Args>
   static Aggregate std(Args &&... args);
+
+  /**
+   * Returns an aggregator that computes the standard deviation of values, within an aggregation
+   * group, for each input column.
+   */
   static Aggregate std(std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes the total sum of values, within an aggregation group,
+   * for each input column.
+   */
   template<typename ...Args>
   static Aggregate sum(Args &&... args);
+
+  /**
+   * Returns an aggregator that computes the total sum of values, within an aggregation group,
+   * for each input column.
+   */
   static Aggregate sum(std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes the variance of values, within an aggregation group,
+   * for each input column.
+   */
   template<typename ...Args>
   static Aggregate var(Args &&... args);
+
+  /**
+   * Returns an aggregator that computes the variance of values, within an aggregation group,
+   * for each input column.
+   */
   static Aggregate var(std::vector<std::string> columnSpecs);
 
+  /**
+   * Returns an aggregator that computes the weighted average of values, within an aggregation
+   * group, for each input column.
+   */
   template<typename ColArg, typename ...Args>
   static Aggregate wavg(ColArg &&weightColumn, Args &&... args);
+  /**
+   * Returns an aggregator that computes the weighted average of values, within an aggregation
+   * group, for each input column.
+   */
   static Aggregate wavg(std::string weightColumn, std::vector<std::string> columnSpecs);
 
+  /**
+   * Constructor.
+   */
   explicit Aggregate(std::shared_ptr<impl::AggregateImpl> impl);
 
+  /**
+   * Returns the underlying "impl" object. Used internally.
+   */
   const std::shared_ptr<impl::AggregateImpl> &impl() const { return impl_; }
 
 private:
   std::shared_ptr<impl::AggregateImpl> impl_;
 };
 
+/**
+ * Represents a collection of Aggregate objects.
+ */
 class AggregateCombo {
 public:
+  /**
+   * Create an AggregateCombo from an initializer list.
+   */
   static AggregateCombo create(std::initializer_list<Aggregate> list);
+  /**
+   * Create an AggregateCombo from a vector.
+   */
   static AggregateCombo create(std::vector<Aggregate> vec);
+
+  /**
+   * Move constructor.
+   */
+  AggregateCombo(AggregateCombo &&other) noexcept;
+  /**
+   * Move assignment operator.
+   */
+  AggregateCombo &operator=(AggregateCombo &&other) noexcept;
 
   ~AggregateCombo();
 
+  /**
+   * Returns the underlying "impl" object. Used internally.
+   */
   const std::shared_ptr<impl::AggregateComboImpl> &impl() const { return impl_; }
 
 private:
@@ -279,88 +431,158 @@ private:
   std::shared_ptr<impl::AggregateComboImpl> impl_;
 };
 
+/**
+ * Returns an aggregator that computes the total sum of values, within an aggregation group,
+ * for each input column.
+ */
 template<typename ...Args>
 Aggregate aggAbsSum(Args &&... args) {
   return Aggregate::absSum(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes an array of all values within an aggregation group,
+ * for each input column.
+ */
 template<typename ...Args>
 Aggregate aggGroup(Args &&... args) {
   return Aggregate::group(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the average (mean) of values, within an aggregation group,
+ * for each input column.
+ */
 template<typename ...Args>
 Aggregate aggAvg(Args &&... args) {
   return Aggregate::avg(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the number of elements within an aggregation group.
+ */
 template<typename ...Args>
 Aggregate aggCount(Args &&... args) {
   return Aggregate::count(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the first value, within an aggregation group,
+ * for each input column.
+ */
 template<typename ...Args>
 Aggregate aggFirst(Args &&... args) {
   return Aggregate::first(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the last value, within an aggregation group,
+ * for each input column.
+ */
 template<typename ...Args>
 Aggregate aggLast(Args &&... args) {
   return Aggregate::last(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the maximum value, within an aggregation group,
+ * for each input column.
+ */
 template<typename ...Args>
 Aggregate aggMax(Args &&... args) {
   return Aggregate::max(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the median value, within an aggregation group,
+ * for each input column.
+ */
 template<typename ...Args>
 Aggregate aggMed(Args &&... args) {
   return Aggregate::med(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the minimum value, within an aggregation group,
+ * for each input column.
+ */
 template<typename ...Args>
 Aggregate aggMin(Args &&... args) {
   return Aggregate::min(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the designated percentile of values, within an aggregation
+ * group, for each input column.
+ */
 template<typename ...Args>
 Aggregate aggPct(double percentile, Args &&... args) {
   return Aggregate::pct(percentile, std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the standard deviation of values, within an aggregation
+ * group, for each input column.
+ */
 template<typename ...Args>
 Aggregate aggStd(Args &&... args) {
   return Aggregate::std(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the total sum of values, within an aggregation group,
+ * for each input column.
+ */
 template<typename ...Args>
 Aggregate aggSum(Args &&... args) {
   return Aggregate::sum(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the variance of values, within an aggregation group,
+ * for each input column.
+ */
 template<typename ...Args>
 Aggregate aggVar(Args &&... args) {
   return Aggregate::var(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an aggregator that computes the weighted average of values, within an aggregation
+ * group, for each input column.
+ */
 template<typename ...Args>
 Aggregate aggWavg(Args &&... args) {
   return Aggregate::wavg(std::forward<Args>(args)...);
 }
 
+/**
+ * Returns an AggregateCombo object, which represents a collection of aggregators.
+ */
 inline AggregateCombo aggCombo(std::initializer_list<Aggregate> args) {
   return AggregateCombo::create(args);
 }
 
 namespace internal {
-// Holds a string, regardless of T. Used for GetCols
+/**
+ * Used internally. Holds a std::string, regardless of T. Used for GetCols.
+ * T is ignored but we use it to make sure we are passed the right number of arguments.
+ */
 template<typename T>
 struct StringHolder {
+  /**
+   * Constructor.
+   */
   StringHolder(std::string s) : s_(std::move(s)) {}
 
+  /**
+   * Constructor.
+   */
   StringHolder(const char *s) : s_(s) {}
 
+  /**
+   * Constructor.
+   */
   StringHolder(std::string_view s) : s_(s) {}
 
   std::string s_;
@@ -558,11 +780,11 @@ public:
    * A variadic form of minBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
-   * @param args The columns to group by
+   * @param columnSpecs The columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle minBy(Args &&... args) const;
+  TableHandle minBy(Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "min" aggregate operation
    * applied to the remaining columns.
@@ -575,11 +797,11 @@ public:
    * A variadic form of maxBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
-   * @param args The columns to group by
+   * @param columnSpecs The columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle maxBy(Args &&... args) const;
+  TableHandle maxBy(Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "max" aggregate operation
    * applied to the remaining columns.
@@ -592,11 +814,11 @@ public:
    * A variadic form of sumBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
-   * @param args The columns to group by
+   * @param columnSpecs The columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle sumBy(Args &&... args) const;
+  TableHandle sumBy(Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "sum" aggregate operation
    * applied to the remaining columns.
@@ -609,11 +831,11 @@ public:
    * A variadic form of absSumBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, `const char *`, or `SelectColumn`.
-   * @param args The columns to group by
+   * @param columnSpecs The columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle absSumBy(Args &&... args) const;
+  TableHandle absSumBy(Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "absSum" aggregate operation
    * applied to the remaining columns.
@@ -630,7 +852,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle varBy(Args &&... args) const;
+  TableHandle varBy(Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "var" aggregate operation
    * applied to the remaining columns.
@@ -647,7 +869,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle stdBy(Args &&... args) const;
+  TableHandle stdBy(Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "std" aggregate operation
    * applied to the remaining columns.
@@ -664,7 +886,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle avgBy(Args &&... args) const;
+  TableHandle avgBy(Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "avg" aggregate operation
    * applied to the remaining columns.
@@ -681,7 +903,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle firstBy(Args &&... args) const;
+  TableHandle firstBy(Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "first" aggregate operation
    * applied to the remaining columns.
@@ -698,7 +920,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle lastBy(Args &&... args) const;
+  TableHandle lastBy(Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "last" aggregate operation
    * applied to the remaining columns.
@@ -715,7 +937,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle medianBy(Args &&... args) const;
+  TableHandle medianBy(Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "median" aggregate operation
    * applied to the remaining columns.
@@ -732,7 +954,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle percentileBy(double percentile, bool avgMedian, Args &&... args) const;
+  TableHandle percentileBy(double percentile, bool avgMedian, Args &&... columnSpecs) const;
   // TODO(kosak): document avgMedian
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "percentile" aggregate operation
@@ -752,7 +974,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle percentileBy(double percentile, Args &&... args) const;
+  TableHandle percentileBy(double percentile, Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, with the "percentile" aggregate operation
    * applied to the remaining columns.
@@ -773,7 +995,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename CCol, typename ...Args>
-  TableHandle countBy(CCol &&countByColumn, Args &&... args) const;
+  TableHandle countBy(CCol &&countByColumn, Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, having a new column named by
    * `countByColumn` containing the size of each group.
@@ -793,7 +1015,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename WCol, typename ...Args>
-  TableHandle wAvgBy(WCol &&weightColumn, Args &&... args) const;
+  TableHandle wAvgBy(WCol &&weightColumn, Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, having a new column named by
    * `weightColumn` containing the weighted average of each group.
@@ -812,7 +1034,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle tailBy(int64_t n, Args &&... args) const;
+  TableHandle tailBy(int64_t n, Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, containing the last `n` rows of
    * each group.
@@ -831,7 +1053,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle headBy(int64_t n, Args &&... args) const;
+  TableHandle headBy(int64_t n, Args &&... columnSpecs) const;
   /**
    * Creates a new table from this table, grouped by columnSpecs, containing the first `n` rows of
    * each group.
@@ -863,7 +1085,7 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle ungroup(bool nullFill, Args &&... args) const;
+  TableHandle ungroup(bool nullFill, Args &&... columnSpecs) const;
   //TODO(kosak): document nullFill
   /**
    * Creates a new table from this table with the column array data ungrouped. This is the inverse
@@ -881,8 +1103,8 @@ public:
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
-  TableHandle ungroup(Args &&... args) const {
-    return ungroup(false, std::forward<Args>(args)...);
+  TableHandle ungroup(Args &&... columnSpecs) const {
+    return ungroup(false, std::forward<Args>(columnSpecs)...);
   }
 
   /**
@@ -1001,12 +1223,12 @@ public:
 
   /**
    * Binds this table to a variable name in the QueryScope.
-   * @param variable
+   * @param variable The QueryScope variable to bind to.
    */
   void bindToVariable(std::string variable) const;
   /**
    * The async version of bindToVariable(std::string variable) const.
-   * @param The QueryScope variable to bind to.
+   * @param variable The QueryScope variable to bind to.
    * @param callback The asynchronous callback.
    */
   void bindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback) const;
@@ -1069,9 +1291,14 @@ public:
    */
   internal::TableHandleStreamAdaptor stream(bool wantHeaders) const;
 
-  // for debugging
+  /**
+   * Used internally, for debugging.
+   */
   void observe() const;
 
+  /**
+   * Used internally. Returns the underlying impl object.
+   */
   const std::shared_ptr<impl::TableHandleImpl> &impl() const { return impl_; }
 
   /**
@@ -1081,12 +1308,9 @@ public:
   std::shared_ptr<arrow::flight::FlightStreamReader> getFlightStreamReader() const;
 
   /**
-   * Early unstable interface to subscribe/unsubscribe to ticking tables. This interface supports
-   * append-only tables and will call back with an error if the table changes in a way that is not
-   * append-only.
+   * Subscribe to a ticking table.
    */
-  std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback,
-      bool wantImmer);
+  std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback);
   /**
    * Unsubscribe from the table.
    */
@@ -1329,145 +1553,145 @@ TableHandle TableHandle::by(Args &&... args) const {
 }
 
 template<typename ...Args>
-TableHandle TableHandle::by(AggregateCombo combo, Args &&... args) const {
+TableHandle TableHandle::by(AggregateCombo combo, Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return by(std::move(combo), std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::minBy(Args &&... args) const {
+TableHandle TableHandle::minBy(Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return minBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::maxBy(Args &&... args) const {
+TableHandle TableHandle::maxBy(Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return maxBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::sumBy(Args &&... args) const {
+TableHandle TableHandle::sumBy(Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return sumBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::absSumBy(Args &&... args) const {
+TableHandle TableHandle::absSumBy(Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return absSumBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::varBy(Args &&... args) const {
+TableHandle TableHandle::varBy(Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return varBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::stdBy(Args &&... args) const {
+TableHandle TableHandle::stdBy(Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return stdBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::avgBy(Args &&... args) const {
+TableHandle TableHandle::avgBy(Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return avgBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::firstBy(Args &&... args) const {
+TableHandle TableHandle::firstBy(Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return firstBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::lastBy(Args &&... args) const {
+TableHandle TableHandle::lastBy(Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return lastBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::medianBy(Args &&... args) const {
+TableHandle TableHandle::medianBy(Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return medianBy(std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::percentileBy(double percentile, bool avgMedian, Args &&... args) const {
+TableHandle TableHandle::percentileBy(double percentile, bool avgMedian, Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return percentileBy(percentile, avgMedian, std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::percentileBy(double percentile, Args &&... args) const {
+TableHandle TableHandle::percentileBy(double percentile, Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return percentileBy(percentile, std::move(columns));
 }
 
 template<typename CCol, typename ...Args>
-TableHandle TableHandle::countBy(CCol &&countByColumn, Args &&... args) const {
+TableHandle TableHandle::countBy(CCol &&countByColumn, Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return countBy(internal::ConvertToString::toString(countByColumn), std::move(columns));
 }
 
 template<typename WCol, typename ...Args>
-TableHandle TableHandle::wAvgBy(WCol &&weightColumn, Args &&... args) const {
+TableHandle TableHandle::wAvgBy(WCol &&weightColumn, Args &&... columnSpecs) const {
   std::vector<std::string> columns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return wAvgBy(internal::ConvertToString::toString(weightColumn), std::move(columns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::tailBy(int64_t n, Args &&... args) const {
+TableHandle TableHandle::tailBy(int64_t n, Args &&... columnSpecs) const {
   std::vector<std::string> lastByColumns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return tailBy(n, std::move(lastByColumns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::headBy(int64_t n, Args &&... args) const {
+TableHandle TableHandle::headBy(int64_t n, Args &&... columnSpecs) const {
   std::vector<std::string> lastByColumns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return headBy(n, std::move(lastByColumns));
 }
 
 template<typename ...Args>
-TableHandle TableHandle::ungroup(bool nullFill, Args &&... args) const {
+TableHandle TableHandle::ungroup(bool nullFill, Args &&... columnSpecs) const {
   std::vector<std::string> groupByColumns = {
-      internal::ConvertToString::toString(std::forward<Args>(args))...
+      internal::ConvertToString::toString(std::forward<Args>(columnSpecs))...
   };
   return ungroup(nullFill, std::move(groupByColumns));
 }

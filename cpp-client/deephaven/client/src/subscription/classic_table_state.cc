@@ -4,20 +4,28 @@
 #include "deephaven/client/subscription/classic_table_state.h"
 
 #include <memory>
+#include "deephaven/client/arrowutil/arrow_visitors.h"
 #include "deephaven/client/chunk/chunk_filler.h"
 #include "deephaven/client/chunk/chunk_maker.h"
+#include "deephaven/client/column/column_source.h"
+#include "deephaven/client/column/array_column_source.h"
 #include "deephaven/client/container/row_sequence.h"
 #include "deephaven/client/subscription/shift_processor.h"
 #include "deephaven/client/utility/utility.h"
 
+using deephaven::client::arrowutil::ArrowTypeVisitor;
+using deephaven::client::arrowutil::isNumericType;
+using deephaven::client::chunk::BooleanChunk;
 using deephaven::client::chunk::ChunkFiller;
 using deephaven::client::chunk::ChunkMaker;
 using deephaven::client::chunk::UInt64Chunk;
 using deephaven::client::column::ColumnSource;
+using deephaven::client::column::GenericArrayColumnSource;
 using deephaven::client::column::MutableColumnSource;
 using deephaven::client::column::NumericArrayColumnSource;
 using deephaven::client::container::RowSequence;
 using deephaven::client::container::RowSequenceBuilder;
+using deephaven::client::table::Schema;
 using deephaven::client::table::Table;
 using deephaven::client::utility::ColumnDefinitions;
 using deephaven::client::utility::makeReservedVector;
@@ -34,7 +42,7 @@ makeColumnSources(const ColumnDefinitions &colDefs);
 
 class TableView final : public Table {
 public:
-  TableView(std::vector<std::shared_ptr<MutableColumnSource>> columns,
+  TableView(std::shared_ptr<Schema> schema, std::vector<std::shared_ptr<MutableColumnSource>> columns,
       std::shared_ptr<std::map<uint64_t, uint64_t>> redirection);
   ~TableView() final;
 
@@ -50,18 +58,25 @@ public:
     return redirection_->size();
   }
 
-  size_t numColumns() const override {
+  size_t numColumns() const final {
     return columns_.size();
   }
 
+  const Schema &schema() const final {
+    return *schema_;
+  }
+
 private:
+  std::shared_ptr<Schema> schema_;
   std::vector<std::shared_ptr<MutableColumnSource>> columns_;
   std::shared_ptr<std::map<uint64_t, uint64_t>> redirection_;
 };
 
 class UnwrappedTableView final : public Table {
 public:
-  UnwrappedTableView(std::vector<std::shared_ptr<MutableColumnSource>> columns, size_t numRows);
+  UnwrappedTableView(std::shared_ptr<Schema> schema,
+      std::vector<std::shared_ptr<MutableColumnSource>> columns,
+      size_t numRows);
   ~UnwrappedTableView() final;
 
   std::shared_ptr<RowSequence> getRowSequence() const final;
@@ -78,7 +93,12 @@ public:
     return columns_.size();
   }
 
+  const Schema &schema() const final {
+    return *schema_;
+  }
+
 private:
+  std::shared_ptr<Schema> schema_;
   std::vector<std::shared_ptr<MutableColumnSource>> columns_;
   size_t numRows_ = 0;
 };
@@ -154,13 +174,14 @@ void ClassicTableState::addData(const std::vector<std::shared_ptr<arrow::Array>>
   auto ncols = data.size();
   auto nrows = rowsToAddIndexSpace.size();
   auto sequentialRows = RowSequence::createSequential(0, nrows);
+  auto nullFlags = BooleanChunk::create(nrows);
   for (size_t i = 0; i < ncols; ++i) {
     const auto &src = *data[i];
     auto *dest = columns_[i].get();
     auto anyChunk = ChunkMaker::createChunkFor(*dest, nrows);
-    auto &chunk = anyChunk.unwrap();
-    ChunkFiller::fillChunk(src, *sequentialRows, &chunk);
-    dest->fillFromChunkUnordered(chunk, rowsToAddIndexSpace);
+    auto &dataChunk = anyChunk.unwrap();
+    ChunkFiller::fillChunk(src, *sequentialRows, &dataChunk, &nullFlags);
+    dest->fillFromChunkUnordered(dataChunk, &nullFlags, rowsToAddIndexSpace);
   }
 }
 
@@ -177,11 +198,11 @@ void ClassicTableState::applyShifts(const RowSequence &firstIndex, const RowSequ
 }
 
 std::shared_ptr<Table> ClassicTableState::snapshot() const {
-  return std::make_shared<TableView>(columns_, redirection_);
+  return std::make_shared<TableView>(schema_, columns_, redirection_);
 }
 
 std::shared_ptr<Table> ClassicTableState::snapshotUnwrapped() const {
-  return std::make_shared<UnwrappedTableView>(columns_, redirection_->size());
+  return std::make_shared<UnwrappedTableView>(schema_, columns_, redirection_->size());
 }
 
 std::vector<UInt64Chunk> ClassicTableState::modifyKeys(
@@ -237,8 +258,9 @@ void ClassicTableState::modifyData(const std::vector<std::shared_ptr<arrow::Arra
     auto sequentialRows = RowSequence::createSequential(0, nrows);
     auto anyChunk = ChunkMaker::createChunkFor(*destCol, nrows);
     auto &chunk = anyChunk.unwrap();
-    ChunkFiller::fillChunk(srcArray, *sequentialRows, &chunk);
-    destCol->fillFromChunkUnordered(chunk, rows);
+    auto nullFlags = BooleanChunk::create(nrows);
+    ChunkFiller::fillChunk(srcArray, *sequentialRows, &chunk, &nullFlags);
+    destCol->fillFromChunkUnordered(chunk, &nullFlags, rows);
   }
 }
 
@@ -293,20 +315,14 @@ void mapShifter(uint64_t begin, uint64_t end, uint64_t dest, std::map<uint64_t, 
   }
 }
 
-struct MyVisitor final : public arrow::TypeVisitor {
-  arrow::Status Visit(const arrow::Int32Type &type) final {
-    columnSource_ = NumericArrayColumnSource<int32_t>::create();
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::Int64Type &type) final {
-    columnSource_ = NumericArrayColumnSource<int64_t>::create();
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::DoubleType &type) final {
-    columnSource_ = NumericArrayColumnSource<double>::create();
-    return arrow::Status::OK();
+struct ColumnSourceMaker final {
+  template<typename T>
+  void operator()() {
+    if constexpr(isNumericType<T>()) {
+      columnSource_ = NumericArrayColumnSource<T>::create();
+    } else {
+      columnSource_ = GenericArrayColumnSource<T>::create();
+    }
   }
 
   std::shared_ptr<MutableColumnSource> columnSource_;
@@ -315,25 +331,27 @@ struct MyVisitor final : public arrow::TypeVisitor {
 std::vector<std::shared_ptr<MutableColumnSource>> makeColumnSources(const ColumnDefinitions &colDefs) {
   std::vector<std::shared_ptr<MutableColumnSource>> result;
   for (const auto &[name, arrowType] : colDefs.vec()) {
-    MyVisitor v;
+    ArrowTypeVisitor<ColumnSourceMaker> v;
     okOrThrow(DEEPHAVEN_EXPR_MSG(arrowType->Accept(&v)));
-    result.push_back(v.columnSource_);
+    result.push_back(std::move(v.inner().columnSource_));
   }
 
   return result;
 }
 
-TableView::TableView(std::vector<std::shared_ptr<MutableColumnSource>> columns,
-    std::shared_ptr<std::map<uint64_t, uint64_t>> redirection) : columns_(std::move(columns)),
-    redirection_(std::move(redirection)) {}
+TableView::TableView(std::shared_ptr<Schema> schema,
+    std::vector<std::shared_ptr<MutableColumnSource>> columns,
+    std::shared_ptr<std::map<uint64_t, uint64_t>> redirection) : schema_(std::move(schema)),
+    columns_(std::move(columns)), redirection_(std::move(redirection)) {}
 TableView::~TableView() = default;
 
 std::shared_ptr<RowSequence> TableView::getRowSequence() const {
   throw std::runtime_error("TODO(kosak)");
 }
 
-UnwrappedTableView::UnwrappedTableView(std::vector<std::shared_ptr<MutableColumnSource>> columns,
-    size_t numRows) : columns_(std::move(columns)), numRows_(numRows) {}
+UnwrappedTableView::UnwrappedTableView(std::shared_ptr<Schema> schema,
+    std::vector<std::shared_ptr<MutableColumnSource>> columns, size_t numRows) :
+    schema_(std::move(schema)), columns_(std::move(columns)), numRows_(numRows) {}
 UnwrappedTableView::~UnwrappedTableView() = default;
 
 std::shared_ptr<RowSequence> UnwrappedTableView::getRowSequence() const {

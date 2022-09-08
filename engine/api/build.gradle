@@ -6,6 +6,7 @@ plugins {
 description 'Engine API: Engine API module, suitable as a compile-time dependency for most queries'
 
 dependencies {
+    api project(':authentication')
     api project(':qst')
     api project(':engine-chunk')
     api project(':engine-context')

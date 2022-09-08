@@ -6,6 +6,7 @@ plugins {
 
 dependencies {
     implementation project(':Base')
+    implementation project(':authentication')
     implementation project(':engine-table')//Table, LTM, TableDiff, TableTools, ScriptSession
     implementation project(':server')
     implementation project(':proto:proto-backplane-grpc-flight')

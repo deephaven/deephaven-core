@@ -4,14 +4,18 @@
 package io.deephaven.server.session;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.auth.AuthContext;
+import io.deephaven.auth.AuthContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Collections;
+import java.util.Optional;
 
 public class SessionServiceTest {
 
@@ -27,8 +31,8 @@ public class SessionServiceTest {
         livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
         sessionService = new SessionService(scheduler,
-                authContext -> new SessionState(scheduler, NoLanguageDeephavenSession::new, authContext),
-                TOKEN_EXPIRE_MS);
+                authContext -> new SessionState(scheduler, ExecutionContext::createForUnitTests, authContext),
+                TOKEN_EXPIRE_MS, Optional.empty(), Collections.emptyMap());
     }
 
     @After

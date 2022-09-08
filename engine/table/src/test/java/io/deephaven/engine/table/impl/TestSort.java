@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.NotSortableException;
 import io.deephaven.engine.table.DataColumn;
@@ -32,11 +32,11 @@ import org.junit.experimental.categories.Category;
 @Category(OutOfBandTest.class)
 public class TestSort extends BaseArrayTestCase {
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(TestSort.class, "CompilerTools.logEnabled", false);
+    private static final boolean ENABLE_QUERY_COMPILER_LOGGING = Configuration.getInstance()
+            .getBooleanForClassWithDefault(TestSort.class, "QueryCompiler.logEnabled", false);
 
     private boolean lastMemoize = false;
-    private boolean oldCompilerToolsLogEnabled;
+    private boolean oldQueryCompilerLogEnabled;
     private SafeCloseable executionContext;
 
     @Override
@@ -45,14 +45,14 @@ public class TestSort extends BaseArrayTestCase {
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
         lastMemoize = QueryTable.setMemoizeResults(false);
-        oldCompilerToolsLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
+        oldQueryCompilerLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
         executionContext = ExecutionContext.createForUnitTests().open();
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        CompilerTools.setLogEnabled(oldCompilerToolsLogEnabled);
+        QueryCompiler.setLogEnabled(oldQueryCompilerLogEnabled);
         QueryTable.setMemoizeResults(lastMemoize);
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
         executionContext.close();

@@ -7,6 +7,7 @@
 #include <memory>
 #include <string_view>
 #include <variant>
+#include "deephaven/client/types.h"
 #include "deephaven/client/utility/utility.h"
 
 namespace deephaven::client::chunk {
@@ -63,6 +64,7 @@ private:
   std::shared_ptr<T[]> data_;
 };
 
+typedef GenericChunk<bool> BooleanChunk;
 typedef GenericChunk<int8_t> Int8Chunk;
 typedef GenericChunk<int16_t> Int16Chunk;
 typedef GenericChunk<int32_t> Int32Chunk;
@@ -71,13 +73,14 @@ typedef GenericChunk<uint64_t> UInt64Chunk;
 typedef GenericChunk<float> FloatChunk;
 typedef GenericChunk<double> DoubleChunk;
 typedef GenericChunk<std::string> StringChunk;
+typedef GenericChunk<deephaven::client::DateTime> DateTimeChunk;
 
 /**
  * Typesafe union of all the Chunk types.
  */
 class AnyChunk {
-  typedef std::variant<Int8Chunk, Int16Chunk, Int32Chunk, Int64Chunk, UInt64Chunk,
-  FloatChunk, DoubleChunk, StringChunk> variant_t;
+  typedef std::variant<Int8Chunk, Int16Chunk, Int32Chunk, Int64Chunk, UInt64Chunk, FloatChunk,
+    DoubleChunk, BooleanChunk, StringChunk, DateTimeChunk> variant_t;
 
 public:
   template<typename T>
@@ -145,7 +148,9 @@ public:
   virtual void visit(const UInt64Chunk &) const = 0;
   virtual void visit(const FloatChunk &) const = 0;
   virtual void visit(const DoubleChunk &) const = 0;
+  virtual void visit(const BooleanChunk &) const = 0;
   virtual void visit(const StringChunk &) const = 0;
+  virtual void visit(const DateTimeChunk &) const = 0;
 };
 
 template<typename T>
@@ -187,7 +192,17 @@ struct TypeToChunk<double> {
 };
 
 template<>
+struct TypeToChunk<bool> {
+  typedef deephaven::client::chunk::BooleanChunk type_t;
+};
+
+template<>
 struct TypeToChunk<std::string> {
   typedef deephaven::client::chunk::StringChunk type_t;
+};
+
+template<>
+struct TypeToChunk<deephaven::client::DateTime> {
+  typedef deephaven::client::chunk::DateTimeChunk type_t;
 };
 }  // namespace deephaven::client::chunk

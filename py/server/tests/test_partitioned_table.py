@@ -119,7 +119,7 @@ class PartitionedTableTestCase(BaseTestCase):
     def test_transform(self):
         _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
         context = _JExecutionContext.newBuilder() \
-                .captureCompilerContext()         \
+                .captureQueryCompiler()           \
                 .captureQueryLibrary()            \
                 .emptyQueryScope()                \
                 .build().open()
@@ -137,7 +137,7 @@ class PartitionedTableTestCase(BaseTestCase):
     def test_partitioned_transform(self):
         _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
         context = _JExecutionContext.newBuilder() \
-                .captureCompilerContext()         \
+                .captureQueryCompiler()           \
                 .captureQueryLibrary()            \
                 .emptyQueryScope()                \
                 .build().open()

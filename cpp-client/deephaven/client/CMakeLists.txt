@@ -44,6 +44,7 @@ set(ALL_FILES
     include/private/deephaven/client/impl/util.h
 
     include/private/deephaven/client/arrowutil/arrow_visitors.h
+    include/private/deephaven/client/arrowutil/arrow_value_converter.h
 
     src/columns.cc
     src/expressions.cc
@@ -53,6 +54,7 @@ set(ALL_FILES
     src/chunk/chunk.cc
     src/chunk/chunk_filler.cc
     src/chunk/chunk_maker.cc
+    src/column/array_column_source.cc
     src/column/column_source.cc
     src/container/row_sequence.cc
     src/table/table.cc
@@ -65,6 +67,7 @@ set(ALL_FILES
     include/public/deephaven/client/chunk/chunk.h
     include/public/deephaven/client/chunk/chunk_filler.h
     include/public/deephaven/client/chunk/chunk_maker.h
+    include/public/deephaven/client/column/array_column_source.h
     include/public/deephaven/client/column/column_source.h
     include/public/deephaven/client/container/row_sequence.h
     include/public/deephaven/client/table/table.h
@@ -87,7 +90,6 @@ set(ALL_FILES
     src/subscription/subscribe_thread.cc
     src/subscription/update_processor.cc
 
-
     src/immerutil/abstract_flex_vector.cc
     src/immerutil/immer_column_source.cc
     include/private/deephaven/client/immerutil/abstract_flex_vector.h
@@ -107,6 +109,8 @@ set(ALL_FILES
     include/private/deephaven/client/utility/misc.h
     include/public/deephaven/client/utility/table_maker.h
     include/public/deephaven/client/utility/utility.h
+
+    flatbuf/deephaven/flatbuf/Barrage_generated.h
 
     proto/deephaven/proto/application.grpc.pb.cc
     proto/deephaven/proto/application.grpc.pb.h
@@ -141,7 +145,23 @@ set(ALL_FILES
     proto/deephaven/proto/ticket.pb.cc
     proto/deephaven/proto/ticket.pb.h
 
-    flatbuf/deephaven/flatbuf/Barrage_generated.h
+    third_party/flatbuffers/include/flatbuffers/allocator.h
+    third_party/flatbuffers/include/flatbuffers/array.h
+    third_party/flatbuffers/include/flatbuffers/base.h
+    third_party/flatbuffers/include/flatbuffers/buffer.h
+    third_party/flatbuffers/include/flatbuffers/buffer_ref.h
+    third_party/flatbuffers/include/flatbuffers/default_allocator.h
+    third_party/flatbuffers/include/flatbuffers/detached_buffer.h
+    third_party/flatbuffers/include/flatbuffers/flatbuffer_builder.h
+    third_party/flatbuffers/include/flatbuffers/flatbuffers.h
+    third_party/flatbuffers/include/flatbuffers/stl_emulation.h
+    third_party/flatbuffers/include/flatbuffers/string.h
+    third_party/flatbuffers/include/flatbuffers/struct.h
+    third_party/flatbuffers/include/flatbuffers/table.h
+    third_party/flatbuffers/include/flatbuffers/util.h
+    third_party/flatbuffers/include/flatbuffers/vector_downward.h
+    third_party/flatbuffers/include/flatbuffers/vector.h
+    third_party/flatbuffers/include/flatbuffers/verifier.h
     )
 
 add_library(client ${ALL_FILES})
@@ -152,7 +172,7 @@ target_compile_options(client PRIVATE -Wall -Werror)
 
 target_include_directories(client PRIVATE ${Boost_INCLUDE_DIR})
 target_include_directories(client PRIVATE include/private)
-target_include_directories(client PRIVATE third_party)
+target_include_directories(client PRIVATE third_party/flatbuffers/include)
 target_include_directories(client PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
 # Protos and flatbuf are doing their own thing.

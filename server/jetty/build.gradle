@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    api project(':authentication')
     api project(':server')
     api(project(':Integrations')) {
         because 'downstream dagger compile'
@@ -35,6 +36,7 @@ dependencies {
     implementation project(':grpc-java:grpc-mtls')
 
     testImplementation project(':server-test')
+    testImplementation TestTools.projectDependency(project, ':server')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

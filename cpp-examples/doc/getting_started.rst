@@ -19,14 +19,14 @@ Hello, World
 Deephaven client programs typically follow this recipe:
 
 1. Connect to the server with
-   :cpp:func:`Client::connect <deephaven::client::highlevel::Client::connect>`
+   :cpp:func:`Client::connect <deephaven::client::Client::connect>`
    providing the server hostname and port.
 2. Call
-   :cpp:func:`Client.getManager <deephaven::client::highlevel::Client::getManager>`
+   :cpp:func:`Client.getManager <deephaven::client::Client::getManager>`
    to get a
-   :cpp:class:`TableHandleManager <deephaven::client::highlevel::TableHandleManager>`.
+   :cpp:class:`TableHandleManager <deephaven::client::TableHandleManager>`.
 3. Use that
-   :cpp:class:`TableHandleManager <deephaven::client::highlevel::TableHandleManager>`
+   :cpp:class:`TableHandleManager <deephaven::client::TableHandleManager>`
    to create, access, or modify tables in the system.
 4. Clean up resources automatically when the variables exit their scopes.
 
@@ -37,7 +37,7 @@ This is the "Hello, World" example from the file ``hello_world/main.cc``.
   #include <iostream>
   #include "deephaven/client/highlevel/client.h"
 
-  using deephaven::client::highlevel::Client;
+  using deephaven::client::Client;
 
   int main() {
     const char *server = "localhost:10000";

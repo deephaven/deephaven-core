@@ -15,10 +15,11 @@ _sym_db = _symbol_database.Default()
 from pydeephaven.proto import ticket_pb2 as deephaven_dot_proto_dot_ticket__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x64\x65\x65phaven/proto/session.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\":\n\x10HandshakeRequest\x12\x15\n\rauth_protocol\x18\x01 \x01(\x11\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"\x96\x01\n\x11HandshakeResponse\x12\x17\n\x0fmetadata_header\x18\x01 \x01(\x0c\x12\x15\n\rsession_token\x18\x02 \x01(\x0c\x12&\n\x1atoken_deadline_time_millis\x18\x03 \x01(\x12\x42\x02\x30\x01\x12)\n\x1dtoken_expiration_delay_millis\x18\x04 \x01(\x12\x42\x02\x30\x01\"\x16\n\x14\x43loseSessionResponse\"G\n\x0eReleaseRequest\x12\x35\n\x02id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x11\n\x0fReleaseResponse\"\x8b\x01\n\rExportRequest\x12<\n\tsource_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x10\n\x0e\x45xportResponse\"\x1b\n\x19\x45xportNotificationRequest\"\xb7\x03\n\x12\x45xportNotification\x12\x39\n\x06ticket\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12Q\n\x0c\x65xport_state\x18\x02 \x01(\x0e\x32;.io.deephaven.proto.backplane.grpc.ExportNotification.State\x12\x0f\n\x07\x63ontext\x18\x03 \x01(\t\x12\x18\n\x10\x64\x65pendent_handle\x18\x04 \x01(\t\"\xe7\x01\n\x05State\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07PENDING\x10\x01\x12\x0e\n\nPUBLISHING\x10\x02\x12\n\n\x06QUEUED\x10\x03\x12\x0b\n\x07RUNNING\x10\x04\x12\x0c\n\x08\x45XPORTED\x10\x05\x12\x0c\n\x08RELEASED\x10\x06\x12\r\n\tCANCELLED\x10\x07\x12\n\n\x06\x46\x41ILED\x10\x08\x12\x15\n\x11\x44\x45PENDENCY_FAILED\x10\t\x12\x1a\n\x16\x44\x45PENDENCY_NEVER_FOUND\x10\n\x12\x18\n\x14\x44\x45PENDENCY_CANCELLED\x10\x0b\x12\x17\n\x13\x44\x45PENDENCY_RELEASED\x10\x0c\" \n\x1eTerminationNotificationRequest\"\x97\x02\n\x1fTerminationNotificationResponse\x12\x1c\n\x14\x61\x62normal_termination\x18\x01 \x01(\x08\x12\x0e\n\x06reason\x18\x02 \x01(\t\x12\"\n\x1ais_from_uncaught_exception\x18\x03 \x01(\x08\x12\x63\n\x0cstack_traces\x18\x04 \x03(\x0b\x32M.io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace\x1a=\n\nStackTrace\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x10\n\x08\x65lements\x18\x03 \x03(\t2\xb5\x07\n\x0eSessionService\x12y\n\nNewSession\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x34.io.deephaven.proto.backplane.grpc.HandshakeResponse\"\x00\x12\x82\x01\n\x13RefreshSessionToken\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x34.io.deephaven.proto.backplane.grpc.HandshakeResponse\"\x00\x12~\n\x0c\x43loseSession\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x37.io.deephaven.proto.backplane.grpc.CloseSessionResponse\"\x00\x12r\n\x07Release\x12\x31.io.deephaven.proto.backplane.grpc.ReleaseRequest\x1a\x32.io.deephaven.proto.backplane.grpc.ReleaseResponse\"\x00\x12y\n\x10\x45xportFromTicket\x12\x30.io.deephaven.proto.backplane.grpc.ExportRequest\x1a\x31.io.deephaven.proto.backplane.grpc.ExportResponse\"\x00\x12\x8e\x01\n\x13\x45xportNotifications\x12<.io.deephaven.proto.backplane.grpc.ExportNotificationRequest\x1a\x35.io.deephaven.proto.backplane.grpc.ExportNotification\"\x00\x30\x01\x12\xa2\x01\n\x17TerminationNotification\x12\x41.io.deephaven.proto.backplane.grpc.TerminationNotificationRequest\x1a\x42.io.deephaven.proto.backplane.grpc.TerminationNotificationResponse\"\x00\x42\x43H\x01P\x01Z=github.com/deephaven/deephaven-core/go/internal/proto/sessionb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x64\x65\x65phaven/proto/session.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"=\n\x1cWrappedAuthenticationRequest\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\":\n\x10HandshakeRequest\x12\x15\n\rauth_protocol\x18\x01 \x01(\x11\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"\x96\x01\n\x11HandshakeResponse\x12\x17\n\x0fmetadata_header\x18\x01 \x01(\x0c\x12\x15\n\rsession_token\x18\x02 \x01(\x0c\x12&\n\x1atoken_deadline_time_millis\x18\x03 \x01(\x12\x42\x02\x30\x01\x12)\n\x1dtoken_expiration_delay_millis\x18\x04 \x01(\x12\x42\x02\x30\x01\"\x16\n\x14\x43loseSessionResponse\"G\n\x0eReleaseRequest\x12\x35\n\x02id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x11\n\x0fReleaseResponse\"\x8b\x01\n\rExportRequest\x12<\n\tsource_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x10\n\x0e\x45xportResponse\"\x1b\n\x19\x45xportNotificationRequest\"\xb7\x03\n\x12\x45xportNotification\x12\x39\n\x06ticket\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12Q\n\x0c\x65xport_state\x18\x02 \x01(\x0e\x32;.io.deephaven.proto.backplane.grpc.ExportNotification.State\x12\x0f\n\x07\x63ontext\x18\x03 \x01(\t\x12\x18\n\x10\x64\x65pendent_handle\x18\x04 \x01(\t\"\xe7\x01\n\x05State\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07PENDING\x10\x01\x12\x0e\n\nPUBLISHING\x10\x02\x12\n\n\x06QUEUED\x10\x03\x12\x0b\n\x07RUNNING\x10\x04\x12\x0c\n\x08\x45XPORTED\x10\x05\x12\x0c\n\x08RELEASED\x10\x06\x12\r\n\tCANCELLED\x10\x07\x12\n\n\x06\x46\x41ILED\x10\x08\x12\x15\n\x11\x44\x45PENDENCY_FAILED\x10\t\x12\x1a\n\x16\x44\x45PENDENCY_NEVER_FOUND\x10\n\x12\x18\n\x14\x44\x45PENDENCY_CANCELLED\x10\x0b\x12\x17\n\x13\x44\x45PENDENCY_RELEASED\x10\x0c\" \n\x1eTerminationNotificationRequest\"\x97\x02\n\x1fTerminationNotificationResponse\x12\x1c\n\x14\x61\x62normal_termination\x18\x01 \x01(\x08\x12\x0e\n\x06reason\x18\x02 \x01(\t\x12\"\n\x1ais_from_uncaught_exception\x18\x03 \x01(\x08\x12\x63\n\x0cstack_traces\x18\x04 \x03(\x0b\x32M.io.deephaven.proto.backplane.grpc.TerminationNotificationResponse.StackTrace\x1a=\n\nStackTrace\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x10\n\x08\x65lements\x18\x03 \x03(\t2\xb5\x07\n\x0eSessionService\x12y\n\nNewSession\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x34.io.deephaven.proto.backplane.grpc.HandshakeResponse\"\x00\x12\x82\x01\n\x13RefreshSessionToken\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x34.io.deephaven.proto.backplane.grpc.HandshakeResponse\"\x00\x12~\n\x0c\x43loseSession\x12\x33.io.deephaven.proto.backplane.grpc.HandshakeRequest\x1a\x37.io.deephaven.proto.backplane.grpc.CloseSessionResponse\"\x00\x12r\n\x07Release\x12\x31.io.deephaven.proto.backplane.grpc.ReleaseRequest\x1a\x32.io.deephaven.proto.backplane.grpc.ReleaseResponse\"\x00\x12y\n\x10\x45xportFromTicket\x12\x30.io.deephaven.proto.backplane.grpc.ExportRequest\x1a\x31.io.deephaven.proto.backplane.grpc.ExportResponse\"\x00\x12\x8e\x01\n\x13\x45xportNotifications\x12<.io.deephaven.proto.backplane.grpc.ExportNotificationRequest\x1a\x35.io.deephaven.proto.backplane.grpc.ExportNotification\"\x00\x30\x01\x12\xa2\x01\n\x17TerminationNotification\x12\x41.io.deephaven.proto.backplane.grpc.TerminationNotificationRequest\x1a\x42.io.deephaven.proto.backplane.grpc.TerminationNotificationResponse\"\x00\x42\x43H\x01P\x01Z=github.com/deephaven/deephaven-core/go/internal/proto/sessionb\x06proto3')
 
 
 
+_WRAPPEDAUTHENTICATIONREQUEST = DESCRIPTOR.message_types_by_name['WrappedAuthenticationRequest']
 _HANDSHAKEREQUEST = DESCRIPTOR.message_types_by_name['HandshakeRequest']
 _HANDSHAKERESPONSE = DESCRIPTOR.message_types_by_name['HandshakeResponse']
 _CLOSESESSIONRESPONSE = DESCRIPTOR.message_types_by_name['CloseSessionResponse']
@@ -32,6 +33,13 @@ _TERMINATIONNOTIFICATIONREQUEST = DESCRIPTOR.message_types_by_name['TerminationN
 _TERMINATIONNOTIFICATIONRESPONSE = DESCRIPTOR.message_types_by_name['TerminationNotificationResponse']
 _TERMINATIONNOTIFICATIONRESPONSE_STACKTRACE = _TERMINATIONNOTIFICATIONRESPONSE.nested_types_by_name['StackTrace']
 _EXPORTNOTIFICATION_STATE = _EXPORTNOTIFICATION.enum_types_by_name['State']
+WrappedAuthenticationRequest = _reflection.GeneratedProtocolMessageType('WrappedAuthenticationRequest', (_message.Message,), {
+  'DESCRIPTOR' : _WRAPPEDAUTHENTICATIONREQUEST,
+  '__module__' : 'pydeephaven.proto.session_pb2'
+  # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest)
+  })
+_sym_db.RegisterMessage(WrappedAuthenticationRequest)
+
 HandshakeRequest = _reflection.GeneratedProtocolMessageType('HandshakeRequest', (_message.Message,), {
   'DESCRIPTOR' : _HANDSHAKEREQUEST,
   '__module__' : 'pydeephaven.proto.session_pb2'
@@ -126,32 +134,34 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _HANDSHAKERESPONSE.fields_by_name['token_deadline_time_millis']._serialized_options = b'0\001'
   _HANDSHAKERESPONSE.fields_by_name['token_expiration_delay_millis']._options = None
   _HANDSHAKERESPONSE.fields_by_name['token_expiration_delay_millis']._serialized_options = b'0\001'
-  _HANDSHAKEREQUEST._serialized_start=98
-  _HANDSHAKEREQUEST._serialized_end=156
-  _HANDSHAKERESPONSE._serialized_start=159
-  _HANDSHAKERESPONSE._serialized_end=309
-  _CLOSESESSIONRESPONSE._serialized_start=311
-  _CLOSESESSIONRESPONSE._serialized_end=333
-  _RELEASEREQUEST._serialized_start=335
-  _RELEASEREQUEST._serialized_end=406
-  _RELEASERESPONSE._serialized_start=408
-  _RELEASERESPONSE._serialized_end=425
-  _EXPORTREQUEST._serialized_start=428
-  _EXPORTREQUEST._serialized_end=567
-  _EXPORTRESPONSE._serialized_start=569
-  _EXPORTRESPONSE._serialized_end=585
-  _EXPORTNOTIFICATIONREQUEST._serialized_start=587
-  _EXPORTNOTIFICATIONREQUEST._serialized_end=614
-  _EXPORTNOTIFICATION._serialized_start=617
-  _EXPORTNOTIFICATION._serialized_end=1056
-  _EXPORTNOTIFICATION_STATE._serialized_start=825
-  _EXPORTNOTIFICATION_STATE._serialized_end=1056
-  _TERMINATIONNOTIFICATIONREQUEST._serialized_start=1058
-  _TERMINATIONNOTIFICATIONREQUEST._serialized_end=1090
-  _TERMINATIONNOTIFICATIONRESPONSE._serialized_start=1093
-  _TERMINATIONNOTIFICATIONRESPONSE._serialized_end=1372
-  _TERMINATIONNOTIFICATIONRESPONSE_STACKTRACE._serialized_start=1311
-  _TERMINATIONNOTIFICATIONRESPONSE_STACKTRACE._serialized_end=1372
-  _SESSIONSERVICE._serialized_start=1375
-  _SESSIONSERVICE._serialized_end=2324
+  _WRAPPEDAUTHENTICATIONREQUEST._serialized_start=98
+  _WRAPPEDAUTHENTICATIONREQUEST._serialized_end=159
+  _HANDSHAKEREQUEST._serialized_start=161
+  _HANDSHAKEREQUEST._serialized_end=219
+  _HANDSHAKERESPONSE._serialized_start=222
+  _HANDSHAKERESPONSE._serialized_end=372
+  _CLOSESESSIONRESPONSE._serialized_start=374
+  _CLOSESESSIONRESPONSE._serialized_end=396
+  _RELEASEREQUEST._serialized_start=398
+  _RELEASEREQUEST._serialized_end=469
+  _RELEASERESPONSE._serialized_start=471
+  _RELEASERESPONSE._serialized_end=488
+  _EXPORTREQUEST._serialized_start=491
+  _EXPORTREQUEST._serialized_end=630
+  _EXPORTRESPONSE._serialized_start=632
+  _EXPORTRESPONSE._serialized_end=648
+  _EXPORTNOTIFICATIONREQUEST._serialized_start=650
+  _EXPORTNOTIFICATIONREQUEST._serialized_end=677
+  _EXPORTNOTIFICATION._serialized_start=680
+  _EXPORTNOTIFICATION._serialized_end=1119
+  _EXPORTNOTIFICATION_STATE._serialized_start=888
+  _EXPORTNOTIFICATION_STATE._serialized_end=1119
+  _TERMINATIONNOTIFICATIONREQUEST._serialized_start=1121
+  _TERMINATIONNOTIFICATIONREQUEST._serialized_end=1153
+  _TERMINATIONNOTIFICATIONRESPONSE._serialized_start=1156
+  _TERMINATIONNOTIFICATIONRESPONSE._serialized_end=1435
+  _TERMINATIONNOTIFICATIONRESPONSE_STACKTRACE._serialized_start=1374
+  _TERMINATIONNOTIFICATIONRESPONSE_STACKTRACE._serialized_end=1435
+  _SESSIONSERVICE._serialized_start=1438
+  _SESSIONSERVICE._serialized_end=2387
 # @@protoc_insertion_point(module_scope)

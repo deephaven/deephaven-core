@@ -22,6 +22,8 @@ public:
 
   const map_t &map() const { return map_; }
 
+  size_t size() const { return vec_.size(); }
+
 private:
   vec_t vec_;
   map_t map_;

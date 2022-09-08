@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -344,7 +344,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         g.replace("ARGS", makeCommaSeparatedList(args));
         g.replace("FORMULA_STRING", ta.wrapWithCastIfNecessary(formulaString));
         g.replace("COLUMN_NAME", StringEscapeUtils.escapeJava(columnName));
-        final String joinedFormulaString = CompilerTools.createEscapedJoinedString(formulaString);
+        final String joinedFormulaString = QueryCompiler.createEscapedJoinedString(formulaString);
         g.replace("JOINED_FORMULA_STRING", joinedFormulaString);
         g.replace("EXCEPTION_TYPE", EVALUATION_EXCEPTION_CLASSNAME);
         return g.freeze();
@@ -765,10 +765,11 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         addParamClass.accept(p.type);
                         return null;
                     });
+            final QueryCompiler compiler = ExecutionContext.getContext().getQueryCompiler();
             return AccessController
                     .doPrivileged(
-                            (PrivilegedExceptionAction<Class<?>>) () -> CompilerTools.compile(className, classBody,
-                                    CompilerTools.FORMULA_PREFIX,
+                            (PrivilegedExceptionAction<Class<?>>) () -> compiler.compile(className, classBody,
+                                    QueryCompiler.FORMULA_PREFIX,
                                     QueryScopeParamTypeUtil.expandParameterClasses(paramClasses)));
         } catch (PrivilegedActionException pae) {
             throw new FormulaCompilationException("Formula compilation error for: " + what, pae.getException());

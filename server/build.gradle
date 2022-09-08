@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    implementation project(':authentication')
     implementation project(':engine-table')
     implementation project(':extensions-csv')
     implementation project(':extensions-parquet-table')
