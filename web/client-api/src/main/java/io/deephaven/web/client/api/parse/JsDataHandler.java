@@ -118,12 +118,12 @@ public enum JsDataHandler {
             return context.dateTimePattern + "." + stringBuilder;
         }
 
-        private long parseDateString(String str, ParseContext context ) {
+        private long parseDateString(String str, ParseContext context) {
             final String s = ensureSeparator(str, context);
             final int spaceIndex = s.indexOf(' ');
             final String dateTimeString;
             final String timeZoneString;
-            if (spaceIndex == - 1) {
+            if (spaceIndex == -1) {
                 // Zulu is an exception to the space rule
                 if (s.endsWith("Z")) {
                     dateTimeString = s.substring(0, s.length() - 1);
@@ -133,14 +133,15 @@ public enum JsDataHandler {
                     timeZoneString = null;
                 }
             } else {
-                dateTimeString =  s.substring(0, spaceIndex);
+                dateTimeString = s.substring(0, spaceIndex);
                 timeZoneString = s.substring(spaceIndex + 1);
             }
             final String pattern = getSubsecondPattern(dateTimeString, context);
             final TimeZone timeZone = timeZoneString == null
                     ? context.timeZone.unwrap()
                     : JsTimeZone.getTimeZone(timeZoneString).unwrap();
-            return JsDateTimeFormat.getFormat(pattern).parseWithTimezoneAsLong(dateTimeString, timeZone, JsTimeZone.needsDstAdjustment(timeZoneString));
+            return JsDateTimeFormat.getFormat(pattern).parseWithTimezoneAsLong(dateTimeString, timeZone,
+                    JsTimeZone.needsDstAdjustment(timeZoneString));
         }
 
         @Override
