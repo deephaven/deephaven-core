@@ -162,7 +162,7 @@ public interface Table extends
     // TODO (https://github.com/deephaven/deephaven-core/issues/64 or
     // https://github.com/deephaven/deephaven-core/issues/65):
     // Rename and repurpose this attribute
-    String HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE = "HierarchicalChildrenTableMap";
+    String HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE = "HierarchicalChildrenTable";
     String HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE = "HierarchicalSourceTable";
     String TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE = "TreeTableFilterReverseLookup";
     String HIERARCHICAL_SOURCE_INFO_ATTRIBUTE = "HierarchicalSourceTableInfo";

@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import static io.deephaven.engine.table.Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE;
+import static io.deephaven.engine.table.Table.HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE;
 import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
 
 /**
@@ -203,7 +203,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             if (table.hasAttribute(NON_DISPLAY_TABLE)) {
                 return Optional.empty();
             }
-            if (table.hasAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)) {
+            if (table.hasAttribute(HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE)) {
                 return Optional.of("TreeTable");
             }
             return Optional.of("Table");

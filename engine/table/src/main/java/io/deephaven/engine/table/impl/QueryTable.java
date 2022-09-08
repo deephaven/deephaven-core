@@ -15,6 +15,7 @@ import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
@@ -81,6 +82,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.MatchPair.matchString;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 
 /**
@@ -511,85 +513,84 @@ public class QueryTable extends BaseTable {
     @Override
     public Table rollup(final Collection<? extends Aggregation> aggregations, final boolean includeConstituents,
             final Collection<? extends ColumnName> groupByColumns) {
-        throw new UnsupportedOperationException("rollup is not yet implemented in community");
-        // TODO https://github.com/deephaven/deephaven-core/issues/65): Implement rollups based on PartitionedTable
-//        if (isStream() && includeConstituents) {
-//            throw streamUnsupported("rollup with included constituents");
-//        }
-//        final MemoizedOperationKey rollupKey =
-//                MemoizedOperationKey.rollup(aggregations, List.of(groupByColumns), includeConstituents);
-//        return memoizeResult(rollupKey,
-//                () -> {
-//                    final QueryTable baseLevel = aggNoMemo(AggregationProcessor.forRollupBase(aggregations,
-//                            includeConstituents), gbsColumns);
-//
-//                    final Deque<SelectColumn> gbsColumnsToReaggregate = new ArrayDeque<>(Arrays.asList(gbsColumns));
-//                    final Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.length);
-//                    QueryTable lastLevel = baseLevel;
-//                    while (!gbsColumnsToReaggregate.isEmpty()) {
-//                        nullColumnNames.addFirst(gbsColumnsToReaggregate.removeLast().getName());
-//                        final TableDefinition lastLevelDefinition = lastLevel.getDefinition();
-//                        final Map<String, Class<?>> nullColumns =
-//                                nullColumnNames.stream()
-//                                        .collect(Collectors.toMap(Function.identity(),
-//                                                ncn -> lastLevelDefinition.getColumn(ncn).getDataType(),
-//                                                Assert::neverInvoked, LinkedHashMap::new));
-//                        lastLevel =
-//                                lastLevel.aggNoMemo(
-//                                        AggregationProcessor.forRollupReaggregated(aggregations, nullColumns),
-//                                        gbsColumnsToReaggregate.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
-//                    }
-//
-//                    final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
-//                            .map(ColumnDefinition::getName).filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX))
-//                            .toArray(String[]::new);
-//                    final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop);
-//                    final Object reverseLookup = Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE),
-//                            "REVERSE_LOOKUP_ATTRIBUTE");
-//                    finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
-//
-//                    final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations,
-//                            gbsColumns,
-//                            includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
-//                    result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
-//                    copyAttributes(result,
-//                            CopyAttributeOperation.Rollup);
-//                    maybeUpdateSortableColumns(result);
-//
-//                    return result;
-//                });
+        if (isStream() && includeConstituents) {
+            throw streamUnsupported("rollup with included constituents");
+        }
+        final MemoizedOperationKey rollupKey =
+                MemoizedOperationKey.rollup(aggregations, groupByColumns, includeConstituents);
+        return memoizeResult(rollupKey, () -> {
+            final QueryTable baseLevel = aggNoMemo(
+                    AggregationProcessor.forRollupBase(aggregations, includeConstituents), false, null, groupByColumns);
+
+            final Deque<ColumnName> columnsToReaggregate = new ArrayDeque<>(groupByColumns);
+            final Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.size());
+            QueryTable lastLevel = baseLevel;
+            while (!columnsToReaggregate.isEmpty()) {
+                nullColumnNames.addFirst(columnsToReaggregate.removeLast().name());
+                final TableDefinition lastLevelDefinition = lastLevel.getDefinition();
+                final Map<String, Class<?>> nullColumns = nullColumnNames.stream().collect(Collectors.toMap(
+                        Function.identity(), ncn -> lastLevelDefinition.getColumn(ncn).getDataType(),
+                        Assert::neverInvoked, LinkedHashMap::new));
+                lastLevel = lastLevel.aggNoMemo(
+                        AggregationProcessor.forRollupReaggregated(aggregations, nullColumns), false, null,
+                        new ArrayList<>(columnsToReaggregate));
+            }
+
+            final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
+                    .map(ColumnDefinition::getName)
+                    .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
+            final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop);
+            final Object reverseLookup =
+                    Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE), "REVERSE_LOOKUP_ATTRIBUTE");
+            finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
+
+            final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, groupByColumns,
+                    includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
+            result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
+            copyAttributes(result, CopyAttributeOperation.Rollup);
+            maybeUpdateSortableColumns(result);
+
+            return result;
+        });
     }
 
     @Override
     public Table treeTable(String idColumn, String parentColumn) {
-        throw new UnsupportedOperationException("treeTable is not yet implemented in community");
-        // TODO https://github.com/deephaven/deephaven-core/issues/64): Implement treeTable based on PartitionedTable
-        /*
-         * if (isStream()) { throw streamUnsupported("treeTable"); } return
-         * memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> { // TODO
-         * (https://github.com/deephaven/deephaven-core/issues/64): // Need key initialization and preserve-empty
-         * support to be able to get the root reliably for // initially-empty parents. final PartitionedTable
-         * partitionedTable = partitionBy(false, parentColumn); final QueryTable rootTable = (QueryTable)
-         * partitionedTable.table().where(new MatchFilter(parentColumn, (Object) null)); final Table result =
-         * HierarchicalTable.createFrom((QueryTable) rootTable.copy(), new TreeTableInfo(idColumn, parentColumn));
-         *
-         * // If the parent table has an RLL attached to it, we can re-use it. final ReverseLookup reverseLookup; if
-         * (hasAttribute(PREPARED_RLL_ATTRIBUTE)) { reverseLookup = (ReverseLookup)
-         * getAttribute(PREPARED_RLL_ATTRIBUTE); final String[] listenerCols = reverseLookup.getKeyColumns();
-         *
-         * if (listenerCols.length != 1 || !listenerCols[0].equals(idColumn)) { final String listenerColError =
-         * StringUtils.joinStrings(Arrays.stream(listenerCols).map(col -> "'" + col + "'"), ", "); throw new
-         * IllegalStateException( "Table was prepared for Tree table with a different Id column. Expected `" + idColumn
-         * + "`, Actual " + listenerColError); } } else { reverseLookup =
-         * ReverseLookupListener.makeReverseLookupListenerWithSnapshot(QueryTable.this, idColumn); }
-         *
-         * result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, partitionedTable);
-         * result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
-         * result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup); copyAttributes(result,
-         * CopyAttributeOperation.Treetable); maybeUpdateSortableColumns(result);
-         *
-         * return result; });
-         */
+        if (isStream()) {
+            throw streamUnsupported("treeTable");
+        }
+        return memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> {
+            // TODO (https://github.com/deephaven/deephaven-core/issues/64): 
+            // Need key initialization and preserve-empty support to be able to get the root reliably for 
+            // initially-empty parents.
+            final PartitionedTable partitionedTable = partitionBy(false, parentColumn);
+            final QueryTable rootTable = (QueryTable) partitionedTable.table().where(new MatchFilter(parentColumn, (Object) null));
+            final Table result = HierarchicalTable.createFrom((QueryTable) rootTable.copy(), new TreeTableInfo(idColumn, parentColumn));
+
+            // If the parent table has an RLL attached to it, we can re-use it.
+            final ReverseLookup reverseLookup;
+            if (hasAttribute(PREPARED_RLL_ATTRIBUTE)) {
+                reverseLookup = (ReverseLookup) getAttribute(PREPARED_RLL_ATTRIBUTE);
+                final String[] listenerCols = reverseLookup.getKeyColumns();
+                if (listenerCols.length != 1 || !listenerCols[0].equals(idColumn)) {
+                    final String listenerColError =
+                            StringUtils.joinStrings(Arrays.stream(listenerCols).map(col -> "'" + col + "'"), ", ");
+                    throw new IllegalStateException(
+                            "Table was prepared for treeTable with a different identifier column. Expected `" + idColumn
+                                    + "`, Actual " + listenerColError);
+                }
+            } else {
+                reverseLookup = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(QueryTable.this, idColumn);
+            }
+
+            result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE, partitionedTable);
+            result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
+            result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
+            copyAttributes(result, CopyAttributeOperation.Treetable);
+            maybeUpdateSortableColumns(result);
+
+            return result;
+        });
     }
 
     @Override
@@ -3172,15 +3173,21 @@ public class QueryTable extends BaseTable {
         R getIfValid() {
             if (reference != null) {
                 final R cachedResult = reference.get();
-                if (!isFailedTable(cachedResult) && Liveness.verifyCachedObjectForReuse(cachedResult)) {
+                if (!isFailed(cachedResult) && Liveness.verifyCachedObjectForReuse(cachedResult)) {
                     return cachedResult;
                 }
             }
             return null;
         }
 
-        private boolean isFailedTable(R cachedResult) {
-            return cachedResult instanceof Table && ((Table) cachedResult).isFailed();
+        private boolean isFailed(R cachedResult) {
+            if (cachedResult instanceof Table) {
+                return ((Table) cachedResult).isFailed();
+            }
+            if (cachedResult instanceof PartitionedTable) {
+                return ((PartitionedTable) cachedResult).table().isFailed();
+            }
+            return false;
         }
     }
 

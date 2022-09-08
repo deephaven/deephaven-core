@@ -107,7 +107,7 @@ class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
         }
 
         masterRll = (ReverseLookup) treeForDisplay.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE);
-        masterTableMap = (TableMap) treeForDisplay.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
+        masterTableMap = (TableMap) treeForDisplay.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE);
         sourceTable = treeForDisplay.getSourceTable();
 
         return prepared;
