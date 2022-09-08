@@ -129,11 +129,6 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public final ChunkType getChunkType() {
-        return originalSource.getChunkType();
-    }
-
-    @Override
     public final GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
         return originalSource.makeGetContext(chunkCapacity, sharedContext);
     }

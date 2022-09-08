@@ -146,20 +146,8 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     }
 
     @Override
-    @FinalDefault
-    public FillContext makeFillContext(int chunkCapacity) {
-        return delegate.makeFillContext(chunkCapacity);
-    }
-
-    @Override
     public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
         return delegate.makeGetContext(chunkCapacity, sharedContext);
-    }
-
-    @Override
-    @FinalDefault
-    public GetContext makeGetContext(int chunkCapacity) {
-        return delegate.makeGetContext(chunkCapacity);
     }
 
     @Override

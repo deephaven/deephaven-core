@@ -57,6 +57,8 @@ dependencies {
     if ('true' == project.findProperty('extensions.classgraph.enabled')) {
         runtimeOnly project(':extensions-classgraph')
     }
+    testImplementation project(':extensions-classgraph')
+
     if ('true' == project.findProperty('extensions.suanshu.enabled')) {
         runtimeOnly project(':extensions-suanshu')
     }
