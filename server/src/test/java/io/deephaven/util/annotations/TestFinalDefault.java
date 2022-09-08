@@ -151,29 +151,43 @@ public class TestFinalDefault {
     }
     public interface TestGenericInterface<T> {
         @ExpectException
-        default T test(T t) { return null; }
+        default T test(T t) {
+            return null;
+        }
     }
     public static class TestGenericClassA<T> implements TestGenericInterface<T> {
-        public T test(T t) { return null; }
+        public T test(T t) {
+            return null;
+        }
     }
     public static class TestGenericClassB<T> implements TestGenericInterface<T> {
         @Override
-        public T test(T t) { return null; }
+        public T test(T t) {
+            return null;
+        }
     }
     public static class TestGenericClassC<T> implements TestGenericInterface<T> {
         @ExpectException
-        public T test(T t) { return null; }
+        public T test(T t) {
+            return null;
+        }
     }
     public static class TestFixedClassA implements TestGenericInterface<String> {
-        public String test(String s) { return null; }
+        public String test(String s) {
+            return null;
+        }
     }
     public static class TestFixedClassB implements TestGenericInterface<String> {
         @Override
-        public String test(String s) { return null; }
+        public String test(String s) {
+            return null;
+        }
     }
     public static class TestFixedClassC implements TestGenericInterface<String> {
         @ExpectException
-        public String test(String s) { return null; }
+        public String test(String s) {
+            return null;
+        }
     }
 
     private static void expectFailure(final Runnable runner) {
