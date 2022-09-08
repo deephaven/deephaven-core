@@ -24,10 +24,10 @@ Consider the following program from ``cpp-examples/make_table``:
   #include "deephaven/client/highlevel/client.h"
   #include "deephaven/client/utility/table_maker.h"
 
-  using deephaven::client::highlevel::NumCol;
-  using deephaven::client::highlevel::Client;
-  using deephaven::client::highlevel::TableHandle;
-  using deephaven::client::highlevel::TableHandleManager;
+  using deephaven::client::NumCol;
+  using deephaven::client::Client;
+  using deephaven::client::TableHandle;
+  using deephaven::client::TableHandleManager;
   using deephaven::client::utility::TableMaker;
 
   // This example shows how to use the TableMaker wrapper to make a simple table.

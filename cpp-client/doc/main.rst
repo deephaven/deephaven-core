@@ -2,11 +2,11 @@ Top-level class: Client
 =======================
 
 The main entry point to the Deephaven Client API. Use
-:cpp:func:`connect <deephaven::client::highlevel::Client::connect>`
+:cpp:func:`connect <deephaven::client::Client::connect>`
 to connect to a Deephaven instance, then call
-:cpp:func:`getManager <deephaven::client::highlevel::Client::getManager>`
+:cpp:func:`getManager <deephaven::client::Client::getManager>`
 to get a
-:cpp:class:`TableHandleManager <deephaven::client::highlevel::TableHandleManager>`
+:cpp:class:`TableHandleManager <deephaven::client::TableHandleManager>`
 
-.. doxygenclass:: deephaven::client::highlevel::Client
+.. doxygenclass:: deephaven::client::Client
    :members:

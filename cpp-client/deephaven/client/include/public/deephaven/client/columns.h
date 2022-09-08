@@ -27,29 +27,47 @@ class AssignedColumnImpl;
  */
 class IrisRepresentable {
 public:
+  /**
+   * Constructor.
+   */
   explicit IrisRepresentable(std::shared_ptr<impl::IrisRepresentableImpl> impl) : impl_(
       std::move(impl)) {}
 
+  /**
+   * Destructor.
+   */
   virtual ~IrisRepresentable();
 
+  /**
+   * Gets underlying "impl" member. Used internally.
+   */
   impl::IrisRepresentableImpl *getIrisRepresentableImpl() const {
     return impl_.get();
   }
 
 protected:
+  /**
+   * The underlying implementation.
+   */
   std::shared_ptr<impl::IrisRepresentableImpl> impl_;
 };
 
 /**
- * A base class for representing columns in the fluent interface. Objects inheriting from SelectColumn
- * are suitable for use in methods like TableHandle::select() const
+ * A base class for representing columns in the fluent interface. Objects inheriting from
+ * SelectColumn are suitable for use in methods like TableHandle::select() const
  * Some common leaf classes are StrCol, NumCol, and DateTimeCol.
  */
 class SelectColumn : public virtual IrisRepresentable {
 public:
+  /**
+   * Constructor.
+   */
   explicit SelectColumn(std::shared_ptr<impl::IrisRepresentableImpl> impl) : IrisRepresentable(
       std::move(impl)) {}
 
+  /**
+   * Destructor.
+   */
   ~SelectColumn() override;
 };
 
@@ -59,9 +77,15 @@ public:
  */
 class MatchWithColumn : public virtual IrisRepresentable {
 public:
+  /**
+   * Constructor.
+   */
   explicit MatchWithColumn(std::shared_ptr<impl::IrisRepresentableImpl> impl) : IrisRepresentable(
       std::move(impl)) {}
 
+  /**
+   * Destructor.
+   */
   ~MatchWithColumn() override;
 };
 
@@ -76,11 +100,26 @@ public:
    * Constructor. Used internally.
    */
   explicit Column(std::shared_ptr<impl::ColumnImpl> impl);
+  /**
+   * Destructor.
+   */
   ~Column() override;
 
+  /**
+   * Create a SortPair from this column, with direction_ set to ascending and abs_ set to the
+   * incoming parameter.
+   */
   SortPair ascending(bool abs = false) const;
+
+  /**
+   * Create a SortPair from this column, with direction_ set to descending and abs_ set to the
+   * incoming parameter.
+   */
   SortPair descending(bool abs = false) const;
 
+  /**
+   * Gets the name of this column.
+   */
   const std::string &name() const;
 };
 
@@ -179,8 +218,6 @@ public:
   /**
    * Create the NumCol. Used internally. Typically client code will call TableHandle::getNumCol()
    * or TableHandle::getCols<>().
-   * @param Column name
-   * @return the NumCol
    */
   static NumCol create(std::string name);
   /**
@@ -214,8 +251,6 @@ public:
   /**
    * Create the StrCol. Used internally. Typically client code will call TableHandle::getStrCol()
    * or TableHandle::getCols<>().
-   * @param Column name
-   * @return the StrCol
    */
   static StrCol create(std::string name);
   /**
@@ -249,8 +284,6 @@ public:
   /**
    * Create the DateTimeCol. Used internally. Typically client code will call TableHandle::getDateTimeCol()
    * or TableHandle::getCols<>().
-   * @param Column name
-   * @return the DateTimeCol
    */
   static DateTimeCol create(std::string name);
   /**

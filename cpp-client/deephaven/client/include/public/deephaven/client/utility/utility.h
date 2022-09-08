@@ -255,8 +255,8 @@ void okOrThrow(const DebugInfo &debugInfo, const arrow::Status &status);
 /**
  * If result's internal status is OK, return result's contained value.
  * Otherwise throw a runtime error with an informative message.
+ * @param debugInfo A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MESSAGE.
  * @param result The arrow::Result
- * @param message An optional message to be included in the exception message.
  */
 template<typename T>
 T valueOrThrow(const DebugInfo &debugInfo, arrow::Result<T> result) {
