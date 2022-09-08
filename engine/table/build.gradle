@@ -29,7 +29,6 @@ configurations {
     jmhRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
-
 dependencies {
     api project(':Util')
     api project(':TableLogger')
@@ -151,15 +150,8 @@ tasks.test.maxHeapSize = maxHeapSize
 
 jmh {
     jmhVersion = '1.35'
-    // -prof gc
-//    profilers = ['gc']
-    // -rf JSON
-    resultFormat = 'JSON'
-
-    if (project.hasProperty('jmh.includes')) {
-        includes = [ project.property('jmh.includes') ]
-    }
 }
 
+// No need to assemble the jar by default on build
+// assemble.dependsOn(jmhJar)
 check.dependsOn(jmhClasses)
-assemble.dependsOn(jmhJar)
