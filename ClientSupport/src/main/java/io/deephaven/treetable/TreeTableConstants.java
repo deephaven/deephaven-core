@@ -16,6 +16,6 @@ public class TreeTableConstants {
     public static final String CHILD_PRESENCE_COLUMN = "__CHILD_PRESENCE__";
 
     public static boolean isTreeTable(Table t) {
-        return t.hasAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
+        return t.hasAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE);
     }
 }

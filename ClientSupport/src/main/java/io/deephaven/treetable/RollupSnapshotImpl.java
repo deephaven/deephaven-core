@@ -187,7 +187,7 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
 
     @Override
     TableMap getTableMap(Table t) {
-        return Require.neqNull((TableMap) t.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE),
+        return Require.neqNull((TableMap) t.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE),
                 "Child Table Map");
     }
 

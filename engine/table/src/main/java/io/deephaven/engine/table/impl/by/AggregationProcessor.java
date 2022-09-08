@@ -135,7 +135,7 @@ import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_DOUBLE
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
-import static io.deephaven.engine.table.Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE;
+import static io.deephaven.engine.table.Table.HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE;
 import static io.deephaven.engine.table.Table.REVERSE_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.impl.RollupAttributeCopier.DEFAULT_INSTANCE;
 import static io.deephaven.engine.table.impl.RollupAttributeCopier.LEAF_WITHCONSTITUENTS_INSTANCE;
@@ -953,7 +953,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             addNoInputOperator(partitionOperator);
             transformers.add(makeRollupKeysTransformer(groupByColumnNames));
-            transformers.add(new RollupTableMapAndReverseLookupAttributeSetter(partitionOperator, false, true));
+            transformers.add(new RollupChildrenAndReverseLookupAttributeSetter(partitionOperator, false, true));
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1088,7 +1088,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             addNoInputOperator(partitionOperator);
             transformers.add(makeRollupKeysTransformer(groupByColumnNames));
-            transformers.add(new RollupTableMapAndReverseLookupAttributeSetter(partitionOperator, true, false));
+            transformers.add(new RollupChildrenAndReverseLookupAttributeSetter(partitionOperator, true, false));
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1917,14 +1917,14 @@ public class AggregationProcessor implements AggregationContextFactory {
         return new RollupSmartKeyColumnDuplicationTransformer(groupByColumnNames);
     }
 
-    private static class RollupTableMapAndReverseLookupAttributeSetter implements AggregationContextTransformer {
+    private static class RollupChildrenAndReverseLookupAttributeSetter implements AggregationContextTransformer {
 
         private final PartitionByChunkedOperator partitionOperator;
         private final boolean reaggregated;
         private final boolean includeConstituents;
         private ReverseLookup reverseLookup;
 
-        private RollupTableMapAndReverseLookupAttributeSetter(
+        private RollupChildrenAndReverseLookupAttributeSetter(
                 @NotNull final PartitionByChunkedOperator partitionOperator,
                 final boolean reaggregated,
                 final boolean includeConstituents) {
@@ -1935,7 +1935,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public QueryTable transformResult(@NotNull final QueryTable table) {
-            table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
+            table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE,
                     // TODO (https://github.com/deephaven/deephaven-core/issues/65):
                     // Make rollups work with partitioned tables instead of table maps. PartitionedTable here?
                     partitionOperator.getResultColumns().values().iterator().next());
@@ -1994,7 +1994,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     private static void setRollupLeafAttributes(@NotNull final QueryTable table) {
         table.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Normal);
-        table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
+        table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE,
                 // TODO (https://github.com/deephaven/deephaven-core/issues/65):
                 // Make rollups work with partitioned tables instead of table maps. Empty PartitionedTable here?
                 "placeholder");

@@ -352,7 +352,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Preview));
 
         // Tree table attributes
-        tempMap.put(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, EnumSet.of(
+        tempMap.put(HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.Sort,
                 CopyAttributeOperation.Filter,

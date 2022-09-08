@@ -17,7 +17,7 @@ public class RollupAttributeCopier {
     public final static PartitionByChunkedOperator.AttributeCopier LEAF_WITHCONSTITUENTS_INSTANCE = (pt, st) -> {
         pt.copyAttributes(st, BaseTable.CopyAttributeOperation.PartitionBy);
         st.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Constituent);
-        st.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
+        st.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE,
                 // TODO (https://github.com/deephaven/deephaven-core/issues/65):
                 // Make rollups work with partitioned tables instead of table maps. Empty PartitionedTable here?
                 "placeholder");
