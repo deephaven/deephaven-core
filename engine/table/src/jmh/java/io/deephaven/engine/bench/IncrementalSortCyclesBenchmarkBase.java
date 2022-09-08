@@ -36,21 +36,17 @@ public abstract class IncrementalSortCyclesBenchmarkBase {
     private BlackholeListener listener;
     private int numCycles;
 
-    public void init(int tableSize, int cycleSize, int numCycles, String indexToValueFunction, boolean reverse,
+    public void init(long initialSize, long cycleSize, int numCycles, String indexToValueFunction, boolean reverse,
             Blackhole blackhole)
             throws Exception {
-        if (cycleSize * numCycles > tableSize) {
-            throw new IllegalArgumentException();
-        }
         engine = new EngineCleanup();
         engine.setUp();
         ugp = UpdateGraphProcessor.DEFAULT;
         ugp.startCycleForUnitTests();
         try {
-            final int initialSize = tableSize - cycleSize * numCycles;
             this.numCycles = numCycles;
             filter = new IncrementalReleaseFilter(initialSize, cycleSize);
-            out = TableTools.emptyTable(tableSize)
+            out = TableTools.emptyTable(initialSize + cycleSize * numCycles)
                     .select(String.format("Value=%s(ii)", indexToValueFunction));
             if (reverse) {
                 out = out.reverse();

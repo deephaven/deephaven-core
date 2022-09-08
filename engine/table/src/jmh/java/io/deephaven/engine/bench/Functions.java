@@ -2,23 +2,23 @@ package io.deephaven.engine.bench;
 
 public class Functions {
 
-    public static long ordered(long ix) {
+    public static long identity(long ix) {
         return ix;
     }
 
-    public static long ordered_2(long ix) {
+    public static long mod_2(long ix) {
         return ix % 2;
     }
 
-    public static long ordered_10(long ix) {
+    public static long mod_10(long ix) {
         return ix % 10;
     }
 
-    public static long ordered_100(long ix) {
+    public static long mod_100(long ix) {
         return ix % 100;
     }
 
-    public static long ordered_1000(long ix) {
+    public static long mod_1000(long ix) {
         return ix % 1000;
     }
 
@@ -62,5 +62,12 @@ public class Functions {
 
     public static long prng_1000(long ix) {
         return (prng(ix) & 0x7FFFFFFFFFFFFFFFL) % 1000;
+    }
+
+    /**
+     * A binomial distribution with p=0.5, n=64.
+     */
+    public static long prng_binomial_64(long ix) {
+        return Long.bitCount(prng(ix));
     }
 }

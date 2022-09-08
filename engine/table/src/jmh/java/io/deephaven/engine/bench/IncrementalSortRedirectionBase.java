@@ -32,6 +32,9 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Classes that extend this may want to experiment with the system property "UnionRedirection.allocationUnit" and
  * implementation of {@link io.deephaven.util.datastructures.hash.HashMapBase}.
+ *
+ * <p>
+ * See <a href="https://github.com/deephaven/deephaven-core/issues/2784">#2784</a>
  */
 @Fork(value = 2, jvmArgs = {"-Xms16G", "-Xmx16G"})
 @BenchmarkMode(Mode.Throughput)
@@ -103,7 +106,7 @@ public abstract class IncrementalSortRedirectionBase {
 
     @Benchmark
     @OperationsPerInvocation(REMAINING_ROWS)
-    public void updateCycle() throws Throwable {
+    public void numRows() throws Throwable {
         for (int i = 0; i < numCycles; ++i) {
             ugp.startCycleForUnitTests();
             try {
@@ -115,6 +118,5 @@ public abstract class IncrementalSortRedirectionBase {
                 throw listener.e;
             }
         }
-        System.out.println(listener.updates);
     }
 }
