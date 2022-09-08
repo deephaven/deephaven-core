@@ -179,7 +179,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     @Override
-    @FinalDefault
     default IntegerColumnIterator integerColumnIterator(@NotNull final String columnName) {
         return new IntegerColumnIterator(this, columnName);
     }
