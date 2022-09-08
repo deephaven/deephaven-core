@@ -56,7 +56,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final boolean flattenedResult;
     private final boolean alreadyFlattenedSources;
     private final BitSet dependencyBitSet;
-    private final boolean canUseThreads;
     private final boolean canParallelizeThisColumn;
     private final boolean isSystemic;
     private final boolean resultTypeIsLivenessReferent;
@@ -86,13 +85,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.flattenedResult = flattenedResult;
         this.alreadyFlattenedSources = alreadyFlattenedSources;
 
-        // We can't use threads at all if we have column that uses a Python query scope, because we are likely operating
-        // under the GIL which will cause a deadlock
-        canUseThreads = !sc.getDataView().preventsParallelism();
-
         // We can only parallelize this column if we are not redirected, our destination provides ensure previous, and
         // the select column is stateless
-        canParallelizeThisColumn = canUseThreads && !isRedirected
+        canParallelizeThisColumn = !isRedirected
                 && WritableSourceWithPrepareForParallelPopulation.supportsParallelPopulation(ws) && sc.isStateless();
 
         // If we were created on a systemic thread, we want to be sure to make sure that any updates are also
@@ -573,6 +568,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public boolean allowCrossColumnParallelization() {
-        return canUseThreads && inner.allowCrossColumnParallelization();
+        return inner.allowCrossColumnParallelization();
     }
 }

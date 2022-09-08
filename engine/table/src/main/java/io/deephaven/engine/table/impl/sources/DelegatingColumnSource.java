@@ -203,11 +203,6 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return delegate.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return delegate.isStateless();
     }

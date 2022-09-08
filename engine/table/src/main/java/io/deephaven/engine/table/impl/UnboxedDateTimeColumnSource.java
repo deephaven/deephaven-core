@@ -50,11 +50,6 @@ public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return alternateColumnSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return alternateColumnSource.isStateless();
     }
