@@ -67,12 +67,11 @@ public class DeephavenCompressorAdapterFactory {
         private boolean innerCompressorPooled;
         private Compressor innerCompressor;
 
-        public boolean innerDecompressorPooled;
+        private boolean innerDecompressorPooled;
         private Decompressor innerDecompressor;
 
         private CodecWrappingCompressorAdapter(CompressionCodec compressionCodec) {
             this.compressionCodec = compressionCodec;
-            this.innerCompressor = compressionCodec.createCompressor();
         }
 
         @Override
