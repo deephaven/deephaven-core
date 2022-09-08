@@ -218,6 +218,8 @@ AggregateCombo AggregateCombo::create(std::vector<Aggregate> vec) {
 }
 
 AggregateCombo::AggregateCombo(std::shared_ptr<impl::AggregateComboImpl> impl) : impl_(std::move(impl)) {}
+AggregateCombo::AggregateCombo(AggregateCombo &&other) noexcept = default;
+AggregateCombo &AggregateCombo::operator=(AggregateCombo &&other) noexcept = default;
 AggregateCombo::~AggregateCombo() = default;
 
 TableHandle::TableHandle() = default;

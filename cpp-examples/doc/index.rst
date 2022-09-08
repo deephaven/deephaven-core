@@ -11,7 +11,7 @@ functionality. The library...
   between operations, without burdening the caller with managing callback
   state.
 * Provides a shared ownership model so that objects like
-  :cpp:class:`TableHandle <deephaven::client::highlevel::TableHandle>`
+  :cpp:class:`TableHandle <deephaven::client::TableHandle>`
   can be manipulated like value types (e.g. freely copied). Their corresponding
   server resources will be cleaned up when last one goes out of scope.
 

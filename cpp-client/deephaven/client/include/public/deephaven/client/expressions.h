@@ -71,6 +71,9 @@ public:
   }
 
 protected:
+  /**
+   * The underlying implementation object.
+   */
   std::shared_ptr<impl::ExpressionImpl> impl_;
 };
 
@@ -96,16 +99,50 @@ public:
    */
   ~BooleanExpression() final;
 
+  /**
+   * Used internally.
+   */
   std::shared_ptr<impl::BooleanExpressionImpl> implAsBooleanExpressionImpl() const;
 
+  /**
+   * Unary operator !
+   * @param expr The incoming BooleanExpression.
+   * @return A BooleanExpression representing the logical NOT of the argument.
+   */
   friend BooleanExpression operator!(const BooleanExpression &expr);
+
+  /**
+   * Boolean operator &. Equivalent to operator &&.
+   * @param lhs A BooleanExpression representing the left-hand side of the AND.
+   * @param rhs A BooelanExpression representing the right-hand side of the AND.
+   * @return The BooleanExpression representing the expression `lhs AND rhs`
+   */
   friend BooleanExpression operator&(const BooleanExpression &lhs, const BooleanExpression &rhs);
+
+  /**
+   * Boolean operator |. Equivalent to operator ||.
+   * @param lhs A BooleanExpression representing the left-hand side of the OR.
+   * @param rhs A BooelanExpression representing the right-hand side of the OR.
+   * @return The BooleanExpression representing the expression `lhs OR rhs`
+   */
   friend BooleanExpression operator|(const BooleanExpression &lhs, const BooleanExpression &rhs);
 
+  /**
+   * Boolean operator &&.
+   * @param lhs A BooleanExpression representing the left-hand side of the AND.
+   * @param rhs A BooelanExpression representing the right-hand side of the AND.
+   * @return The BooleanExpression representing the expression `lhs AND rhs`
+   */
   friend BooleanExpression operator&&(const BooleanExpression &lhs, const BooleanExpression &rhs) {
     return lhs & rhs;
   }
 
+  /**
+   * Boolean operator ||.
+   * @param lhs A BooleanExpression representing the left-hand side of the OR.
+   * @param rhs A BooelanExpression representing the right-hand side of the OR.
+   * @return The BooleanExpression representing the expression `lhs OR rhs`
+   */
   friend BooleanExpression operator||(const BooleanExpression &lhs, const BooleanExpression &rhs) {
     return lhs | rhs;
   }
@@ -151,6 +188,9 @@ public:
    */
   ~NumericExpression() override;
 
+  /**
+   * Used internally.
+   */
   std::shared_ptr<impl::NumericExpressionImpl> implAsNumericExpressionImpl() const;
 
   /**
