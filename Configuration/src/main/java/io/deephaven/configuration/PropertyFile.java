@@ -17,8 +17,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.BitSet;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -60,7 +58,7 @@ public class PropertyFile {
 
     /**
      * Return the Properties object loaded by this property file.
-     * 
+     *
      * @return the Properties object.
      */
     public Properties getProperties() {
@@ -69,7 +67,7 @@ public class PropertyFile {
 
     /**
      * Collect all of the properties in this property file that begin with a given prefix.
-     * 
+     *
      * @return a new Properties object containing the selected properties, with the prefix removed.
      */
     public Properties getProperties(String prefix) {
@@ -421,12 +419,7 @@ public class PropertyFile {
                     throw new PropertyException("null value for property " + propName);
                 } else {
                     source = "file";
-                    // Setting field accessibility should be allowed by our code, but not from outside classes, so
-                    // this should be privileged.
-                    AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-                        f.setAccessible(true);
-                        return null;
-                    });
+                    f.setAccessible(true);
                     final String fieldTypeName = f.getType().getName();
                     if (fieldTypeName.equals("java.lang.String")) {
                         f.set(obj, value.trim());
@@ -554,7 +547,7 @@ public class PropertyFile {
     /**
      * Parse a set of non-negative ints from a property. Format is comma-separated individual values and ranges of the
      * form start-end.
-     * 
+     *
      * @example 0,22,100-200,99,1000-2000
      * @param propertyName
      * @return A set of ints derived from the specified property.

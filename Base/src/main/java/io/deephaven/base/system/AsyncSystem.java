@@ -35,7 +35,7 @@ public class AsyncSystem {
     /**
      * Creates an {@link UncaughtExceptionHandler} which calls out to
      * {@link #exitUncaught(Thread, Throwable, int, PrintStream)}.
-     * 
+     *
      * @param status the exit status
      * @return the uncaught exception handler
      */
@@ -55,15 +55,8 @@ public class AsyncSystem {
      * @param name the name to attach to the thread
      * @param status exit status
      * @param out the output print stream (on exception)
-     * @throws SecurityException if a security manager exists and its {@code checkExit} method doesn't allow exit with
-     *         the specified status.
      */
     public static void exit(String name, int status, PrintStream out) {
-        // preemptively checks security manager in the same way that System.exit does
-        final SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkExit(status);
-        }
         createThread(name, status, out)
                 .start();
     }

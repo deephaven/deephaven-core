@@ -25,10 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -38,8 +34,6 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.security.AccessController.doPrivileged;
 
 public class QueryCompiler {
     private static final Logger log = LoggerFactory.getLogger(QueryCompiler.class);
@@ -117,8 +111,7 @@ public class QueryCompiler {
         }
         // We should be able to create this class loader, even if this is invoked from external code
         // that does not have sufficient security permissions.
-        this.ucl = doPrivileged((PrivilegedAction<WritableURLClassLoader>) () -> new WritableURLClassLoader(urls,
-                parentClassLoaderToUse));
+        this.ucl = new WritableURLClassLoader(urls, parentClassLoaderToUse);
 
         if (isCacheDirectory) {
             addClassSource(classDestination);
@@ -208,9 +201,7 @@ public class QueryCompiler {
     public void setParentClassLoader(final ClassLoader parentClassLoader) {
         // The system should always be able to create this class loader, even if invoked from something that
         // doesn't have the right security permissions for it.
-        ucl = doPrivileged(
-                (PrivilegedAction<WritableURLClassLoader>) () -> new WritableURLClassLoader(ucl.getURLs(),
-                        parentClassLoader));
+        ucl = new WritableURLClassLoader(ucl.getURLs(), parentClassLoader);
     }
 
     public final Class<?> compile(String className, String classBody, String packageNameRoot) {
@@ -288,7 +279,7 @@ public class QueryCompiler {
     private ClassLoader getClassLoaderForFormula(final Map<String, Class<?>> parameterClasses) {
         // We should always be able to get our own class loader, even if this is invoked from external code
         // that doesn't have security permissions to make ITS own class loader.
-        return doPrivileged((PrivilegedAction<URLClassLoader>) () -> new URLClassLoader(ucl.getURLs(), ucl) {
+        return new URLClassLoader(ucl.getURLs(), ucl) {
             // Once we find a class that is missing, we should not attempt to load it again,
             // otherwise we can end up with a StackOverflow Exception
             final HashSet<String> missingClasses = new HashSet<>();
@@ -344,36 +335,23 @@ public class QueryCompiler {
             }
 
             private byte[] loadClassData(String name) throws IOException {
-                try {
-                    // The compiler should always have access to the class-loader directories,
-                    // even if code that invokes this does not.
-                    return doPrivileged((PrivilegedExceptionAction<byte[]>) () -> {
-                        final File destFile = new File(classDestination,
-                                name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
-                        if (destFile.exists()) {
-                            return Files.readAllBytes(destFile.toPath());
-                        }
+                final File destFile = new File(classDestination,
+                        name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
+                if (destFile.exists()) {
+                    return Files.readAllBytes(destFile.toPath());
+                }
 
-                        for (File location : additionalClassLocations) {
-                            final File checkFile = new File(location,
-                                    name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
-                            if (checkFile.exists()) {
-                                return Files.readAllBytes(checkFile.toPath());
-                            }
-                        }
-
-                        throw new FileNotFoundException(name);
-                    });
-                } catch (final PrivilegedActionException pae) {
-                    final Exception inner = pae.getException();
-                    if (inner instanceof IOException) {
-                        throw (IOException) inner;
-                    } else {
-                        throw new RuntimeException(inner);
+                for (File location : additionalClassLocations) {
+                    final File checkFile = new File(location,
+                            name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
+                    if (checkFile.exists()) {
+                        return Files.readAllBytes(checkFile.toPath());
                     }
                 }
+
+                throw new FileNotFoundException(name);
             }
-        });
+        };
     }
 
     private static class WritableURLClassLoader extends URLClassLoader {
@@ -698,34 +676,25 @@ public class QueryCompiler {
         final String rootPathAsString;
         final String tempDirAsString;
         try {
-            final Pair<String, String> resultPair =
-                    AccessController.doPrivileged((PrivilegedExceptionAction<Pair<String, String>>) () -> {
-                        final String rootPathString = ctxClassDestination.getAbsolutePath();
-                        final Path rootPathWithPackage = Paths.get(rootPathString, truncatedSplitPackageName);
-                        final File rpf = rootPathWithPackage.toFile();
-                        ensureDirectories(rpf, () -> "Couldn't create package directories: " + rootPathWithPackage);
-                        final Path tempPath =
-                                Files.createTempDirectory(Paths.get(rootPathString), "temporaryCompilationDirectory");
-                        final String tempPathString = tempPath.toFile().getAbsolutePath();
-                        return new Pair<>(rootPathString, tempPathString);
-                    });
-            rootPathAsString = resultPair.first;
-            tempDirAsString = resultPair.second;
-        } catch (PrivilegedActionException pae) {
-            throw new RuntimeException(pae.getException());
+            rootPathAsString = ctxClassDestination.getAbsolutePath();
+            final Path rootPathWithPackage = Paths.get(rootPathAsString, truncatedSplitPackageName);
+            final File rpf = rootPathWithPackage.toFile();
+            ensureDirectories(rpf, () -> "Couldn't create package directories: " + rootPathWithPackage);
+            final Path tempPath =
+                    Files.createTempDirectory(Paths.get(rootPathAsString), "temporaryCompilationDirectory");
+            tempDirAsString = tempPath.toFile().getAbsolutePath();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
         }
 
         try {
             maybeCreateClassHelper(fqClassName, finalCode, splitPackageName, rootPathAsString, tempDirAsString);
         } finally {
-            AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-                try {
-                    FileUtils.deleteRecursively(new File(tempDirAsString));
-                } catch (Exception e) {
-                    // ignore errors here
-                }
-                return null;
-            });
+            try {
+                FileUtils.deleteRecursively(new File(tempDirAsString));
+            } catch (Exception e) {
+                // ignore errors here
+            }
         }
     }
 
@@ -733,15 +702,13 @@ public class QueryCompiler {
             String rootPathAsString, String tempDirAsString) {
         final StringWriter compilerOutput = new StringWriter();
 
-        final JavaCompiler compiler =
-                AccessController.doPrivileged((PrivilegedAction<JavaCompiler>) ToolProvider::getSystemJavaCompiler);
+        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
             throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
         }
 
         final String classPathAsString = getClassPath() + File.pathSeparator + getJavaClassPath();
-        final List<String> compilerOptions = AccessController.doPrivileged(
-                (PrivilegedAction<List<String>>) () -> Arrays.asList("-d", tempDirAsString, "-cp", classPathAsString));
+        final List<String> compilerOptions = Arrays.asList("-d", tempDirAsString, "-cp", classPathAsString);
 
         final StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
 
@@ -760,25 +727,18 @@ public class QueryCompiler {
         // class files}
         // We want to atomically move it to e.g.
         // /tmp/workspace/cache/classes/io/deephaven/test/cm12862183232603186v52_0/{various class files}
+        Path srcDir = Paths.get(tempDirAsString, splitPackageName);
+        Path destDir = Paths.get(rootPathAsString, splitPackageName);
         try {
-            AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
-                Path srcDir = Paths.get(tempDirAsString, splitPackageName);
-                Path destDir = Paths.get(rootPathAsString, splitPackageName);
-                try {
-                    Files.move(srcDir, destDir, StandardCopyOption.ATOMIC_MOVE);
-                } catch (IOException ioe) {
-                    // The move might have failed for a variety of bad reasons. However, if the reason was because
-                    // we lost the race to some other process, that's a harmless/desirable outcome, and we can ignore
-                    // it.
-                    if (!Files.exists(destDir)) {
-                        throw new IOException("Move failed for some reason other than destination already existing",
-                                ioe);
-                    }
-                }
-                return null;
-            });
-        } catch (PrivilegedActionException pae) {
-            throw new RuntimeException(pae.getException());
+            Files.move(srcDir, destDir, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException ioe) {
+            // The move might have failed for a variety of bad reasons. However, if the reason was because
+            // we lost the race to some other process, that's a harmless/desirable outcome, and we can ignore
+            // it.
+            if (!Files.exists(destDir)) {
+                throw new RuntimeException("Move failed for some reason other than destination already existing",
+                        ioe);
+            }
         }
     }
 
@@ -790,41 +750,29 @@ public class QueryCompiler {
      * @return a Pair of success, and the compiler output
      */
     private Pair<Boolean, String> tryCompile(File basePath, Collection<File> javaFiles) throws IOException {
+        // We need multiple filesystem accesses et al, so make this whole section privileged.
+        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) {
+            throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
+        }
+
+        final File outputDirectory = Files.createTempDirectory("temporaryCompilationDirectory").toFile();
+
         try {
-            // We need multiple filesystem accesses et al, so make this whole section privileged.
-            return AccessController.doPrivileged((PrivilegedExceptionAction<Pair<Boolean, String>>) () -> {
+            final StringWriter compilerOutput = new StringWriter();
+            final String javaClasspath = getJavaClassPath();
 
-                final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-                if (compiler == null) {
-                    throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
-                }
+            final Collection<JavaFileObject> javaFileObjects = javaFiles.stream()
+                    .map(f -> new JavaSourceFromFile(basePath, f)).collect(Collectors.toList());
 
-                final File outputDirectory = Files.createTempDirectory("temporaryCompilationDirectory").toFile();
+            final boolean result = compiler.getTask(compilerOutput, null, null,
+                    Arrays.asList("-d", outputDirectory.getAbsolutePath(), "-cp",
+                            getClassPath() + File.pathSeparator + javaClasspath),
+                    null, javaFileObjects).call();
 
-                try {
-                    final StringWriter compilerOutput = new StringWriter();
-                    final String javaClasspath = getJavaClassPath();
-
-                    final Collection<JavaFileObject> javaFileObjects = javaFiles.stream()
-                            .map(f -> new JavaSourceFromFile(basePath, f)).collect(Collectors.toList());
-
-                    final boolean result = compiler.getTask(compilerOutput, null, null,
-                            Arrays.asList("-d", outputDirectory.getAbsolutePath(), "-cp",
-                                    getClassPath() + File.pathSeparator + javaClasspath),
-                            null, javaFileObjects).call();
-
-                    return new Pair<>(result, compilerOutput.toString());
-
-                } finally {
-                    FileUtils.deleteRecursively(outputDirectory);
-                }
-            });
-        } catch (final PrivilegedActionException pae) {
-            if (pae.getException() instanceof IOException) {
-                throw (IOException) pae.getException();
-            } else {
-                throw new RuntimeException(pae.getException());
-            }
+            return new Pair<>(result, compilerOutput.toString());
+        } finally {
+            FileUtils.deleteRecursively(outputDirectory);
         }
     }
 
