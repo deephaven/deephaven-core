@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
+    id 'me.champeau.jmh' version '0.6.7'
 }
 
 description 'Engine Table: Implementation and closely-coupled utilities'
@@ -20,6 +21,12 @@ sourceSets {
             include '**'
         }
     }
+}
+
+configurations {
+    // Ensure jmh picks up the same dependencies as tests
+    jmhImplementation.extendsFrom testImplementation
+    jmhRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 dependencies {
@@ -140,3 +147,11 @@ tasks.testParallel.maxHeapSize = maxHeapSize
 tasks.testSerial.maxHeapSize = maxHeapSize
 tasks.testOutOfBand.maxHeapSize = maxHeapSize
 tasks.test.maxHeapSize = maxHeapSize
+
+jmh {
+    jmhVersion = '1.35'
+}
+
+// No need to assemble the jar by default on build
+// assemble.dependsOn(jmhJar)
+check.dependsOn(jmhClasses)
