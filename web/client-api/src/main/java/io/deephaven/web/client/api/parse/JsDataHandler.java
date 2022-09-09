@@ -94,32 +94,32 @@ public enum JsDataHandler {
     },
     DATE_TIME(Type.Int, "io.deephaven.time.DateTime", "datetime") {
         // Ensures that the 'T' separator character is in the date time
-        private String ensureSeparator(String s, ParseContext context) {
-            if (s.charAt(context.separatorIndex) == ' ') {
+        private String ensureSeparator(String s) {
+            if (s.charAt(SEPARATOR_INDEX) == ' ') {
                 StringBuilder stringBuilder = new StringBuilder(s);
-                stringBuilder.setCharAt(context.separatorIndex, 'T');
+                stringBuilder.setCharAt(SEPARATOR_INDEX, 'T');
                 return stringBuilder.toString();
             }
             return s;
         }
 
-        // Updates the pattern for the correct number of subsecond digits 'S'
-        private String getSubsecondPattern(String s, ParseContext context) {
+        // Guess the pattern for the correct number of subsecond digits 'S'
+        private String getSubsecondPattern(String s) {
             final int decimalIndex = s.indexOf('.');
             if (decimalIndex == -1) {
                 // No subsecond digits
-                return context.dateTimePattern;
+                return DEFAULT_DATE_TIME_PATTERN;
             }
             final int numDigits = s.length() - decimalIndex - 1;
             final StringBuilder stringBuilder = new StringBuilder(numDigits);
             for (int i = 0; i < numDigits; i++) {
                 stringBuilder.append('S');
             }
-            return context.dateTimePattern + "." + stringBuilder;
+            return DEFAULT_DATE_TIME_PATTERN + "." + stringBuilder;
         }
 
         private long parseDateString(String str, ParseContext context) {
-            final String s = ensureSeparator(str, context);
+            final String s = ensureSeparator(str);
             final int spaceIndex = s.indexOf(' ');
             final String dateTimeString;
             final String timeZoneString;
@@ -136,12 +136,23 @@ public enum JsDataHandler {
                 dateTimeString = s.substring(0, spaceIndex);
                 timeZoneString = s.substring(spaceIndex + 1);
             }
-            final String pattern = getSubsecondPattern(dateTimeString, context);
+
             final TimeZone timeZone = timeZoneString == null
                     ? context.timeZone.unwrap()
                     : JsTimeZone.getTimeZone(timeZoneString).unwrap();
-            return JsDateTimeFormat.getFormat(pattern).parseWithTimezoneAsLong(dateTimeString, timeZone,
-                    JsTimeZone.needsDstAdjustment(timeZoneString));
+            boolean needsAdjustment = JsTimeZone.needsDstAdjustment(timeZoneString);
+
+            try {
+                // First try with the pattern we already have
+                return JsDateTimeFormat.getFormat(context.dateTimePattern).parseWithTimezoneAsLong(dateTimeString,
+                        timeZone, needsAdjustment);
+            } catch (IllegalArgumentException e) {
+                // We failed to parse with the existing context pattern, try and update the pattern from the string of
+                // text and do it again
+                context.dateTimePattern = getSubsecondPattern(dateTimeString);
+                return JsDateTimeFormat.getFormat(context.dateTimePattern).parseWithTimezoneAsLong(dateTimeString,
+                        timeZone, needsAdjustment);
+            }
         }
 
         @Override
@@ -479,6 +490,10 @@ public enum JsDataHandler {
 
     private static final Uint8Array EMPTY = new Uint8Array(0);
 
+    private static final String DEFAULT_DATE_TIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss";
+
+    private static final int SEPARATOR_INDEX = DEFAULT_DATE_TIME_PATTERN.indexOf('T');
+
     private final int arrowTypeType;
     private final String deephavenType;
 
@@ -508,9 +523,7 @@ public enum JsDataHandler {
 
     public static class ParseContext {
         public JsTimeZone timeZone;
-        public String dateTimePattern = "yyyy-MM-dd'T'HH:mm:ss";
-
-        public int separatorIndex = 10;
+        public String dateTimePattern = DEFAULT_DATE_TIME_PATTERN;
     }
 
     public static class Node {
