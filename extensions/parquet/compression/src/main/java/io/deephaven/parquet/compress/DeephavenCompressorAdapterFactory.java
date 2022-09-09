@@ -67,9 +67,6 @@ public class DeephavenCompressorAdapterFactory {
         private boolean innerCompressorPooled;
         private Compressor innerCompressor;
 
-        private boolean innerDecompressorPooled;
-        private Decompressor innerDecompressor;
-
         private CodecWrappingCompressorAdapter(CompressionCodec compressionCodec) {
             this.compressionCodec = compressionCodec;
         }
@@ -105,23 +102,27 @@ public class DeephavenCompressorAdapterFactory {
         @Override
         public BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize)
                 throws IOException {
-            if (innerDecompressor == null) {
-                innerDecompressor = CodecPool.getDecompressor(compressionCodec);
-                innerDecompressorPooled = innerDecompressor != null;
-            }
-
-            if (innerDecompressor != null) {
+            final Decompressor decompressor = CodecPool.getDecompressor(compressionCodec);
+            if (decompressor != null) {
                 // It is permitted for a decompressor to be null, otherwise we want to reset() it to
                 // be ready for a new stream.
                 // Note that this strictly shouldn't be necessary, since returnDecompressor will reset
                 // it as well, but this is the pattern copied from CodecFactory.decompress.
-                innerDecompressor.reset();
+                decompressor.reset();
             }
-            // Note that we don't close this, we assume the caller will close their input stream when ready,
-            // and this won't need to be closed.
-            InputStream buffered = ByteStreams.limit(IOUtils.buffer(inputStream), compressedSize);
-            CompressionInputStream decompressed = compressionCodec.createInputStream(buffered, innerDecompressor);
-            return BytesInput.copy(BytesInput.from(decompressed, uncompressedSize));
+
+            try {
+                // Note that we don't close this, we assume the caller will close their input stream when ready,
+                // and this won't need to be closed.
+                InputStream buffered = ByteStreams.limit(IOUtils.buffer(inputStream), compressedSize);
+                CompressionInputStream decompressed = compressionCodec.createInputStream(buffered, decompressor);
+                return BytesInput.copy(BytesInput.from(decompressed, uncompressedSize));
+            } finally {
+                // Always return it, the pool will decide if it should be reused or not.
+                // CodecFactory has no logic around only returning after successful streams,
+                // and the instance appears to leak otherwise.
+                CodecPool.returnDecompressor(decompressor);
+            }
         }
 
         @Override
@@ -129,20 +130,12 @@ public class DeephavenCompressorAdapterFactory {
             if (innerCompressor != null) {
                 innerCompressor.reset();
             }
-
-            if (innerDecompressor != null) {
-                innerDecompressor.reset();
-            }
         }
 
         @Override
         public void close() {
             if (innerCompressor != null && innerCompressorPooled) {
                 CodecPool.returnCompressor(innerCompressor);
-            }
-
-            if (innerDecompressor != null && innerDecompressorPooled) {
-                CodecPool.returnDecompressor(innerDecompressor);
             }
         }
     }
