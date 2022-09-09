@@ -109,8 +109,6 @@ public class QueryCompiler {
         } catch (MalformedURLException e) {
             throw new RuntimeException("", e);
         }
-        // We should be able to create this class loader, even if this is invoked from external code
-        // that does not have sufficient security permissions.
         this.ucl = new WritableURLClassLoader(urls, parentClassLoaderToUse);
 
         if (isCacheDirectory) {
@@ -199,8 +197,6 @@ public class QueryCompiler {
     }
 
     public void setParentClassLoader(final ClassLoader parentClassLoader) {
-        // The system should always be able to create this class loader, even if invoked from something that
-        // doesn't have the right security permissions for it.
         ucl = new WritableURLClassLoader(ucl.getURLs(), parentClassLoader);
     }
 
@@ -277,8 +273,6 @@ public class QueryCompiler {
     }
 
     private ClassLoader getClassLoaderForFormula(final Map<String, Class<?>> parameterClasses) {
-        // We should always be able to get our own class loader, even if this is invoked from external code
-        // that doesn't have security permissions to make ITS own class loader.
         return new URLClassLoader(ucl.getURLs(), ucl) {
             // Once we find a class that is missing, we should not attempt to load it again,
             // otherwise we can end up with a StackOverflow Exception
@@ -650,8 +644,6 @@ public class QueryCompiler {
     private void maybeCreateClass(String className, String code, String packageName, String fqClassName) {
         final String finalCode = makeFinalCode(className, code, packageName);
 
-        // The 'compile' action does a bunch of things that need security permissions; this always needs to run
-        // with elevated permissions.
         if (logEnabled) {
             log.info().append("Generating code ").append(finalCode).endl();
         }
@@ -684,7 +676,7 @@ public class QueryCompiler {
                     Files.createTempDirectory(Paths.get(rootPathAsString), "temporaryCompilationDirectory");
             tempDirAsString = tempPath.toFile().getAbsolutePath();
         } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
+            throw new UncheckedIOException(ioe);
         }
 
         try {
@@ -736,7 +728,7 @@ public class QueryCompiler {
             // we lost the race to some other process, that's a harmless/desirable outcome, and we can ignore
             // it.
             if (!Files.exists(destDir)) {
-                throw new RuntimeException("Move failed for some reason other than destination already existing",
+                throw new UncheckedIOException("Move failed for some reason other than destination already existing",
                         ioe);
             }
         }
@@ -750,7 +742,6 @@ public class QueryCompiler {
      * @return a Pair of success, and the compiler output
      */
     private Pair<Boolean, String> tryCompile(File basePath, Collection<File> javaFiles) throws IOException {
-        // We need multiple filesystem accesses et al, so make this whole section privileged.
         final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
             throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");

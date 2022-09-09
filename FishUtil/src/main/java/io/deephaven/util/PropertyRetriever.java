@@ -93,7 +93,6 @@ public class PropertyRetriever {
     private static String getPropertyFromFileOrProperty(
             final Configuration configuration, final String propertyMeaning,
             final String fileProperty, final String propertyName) {
-        // We need permission to read the property and access the file, so this needs to be privileged.
         if (fileProperty != null && configuration.hasProperty(fileProperty)) {
             if (propertyName != null && configuration.hasProperty(propertyName)) {
                 throw new IllegalArgumentException("Conflicting properties for " + propertyMeaning + " - both "

@@ -47,9 +47,6 @@ public class NioUtil {
     }
 
     private static Selector reduceSelectorGarbageImpl(Selector selector) {
-        // This code does several things that normally would be restricted, like accessing the Sun classes
-        // and changing the accessibility of fields via reflection. We need to make sure that we can do this,
-        // but client code cannot, so we need to do all of this within a 'privileged' block.
         try {
             Class<?> selectorImplClass = Class.forName("sun.nio.ch.SelectorImpl");
             Require.instanceOf(selector, "selector", selectorImplClass);

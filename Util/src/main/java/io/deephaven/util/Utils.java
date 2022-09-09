@@ -229,8 +229,6 @@ public class Utils {
             }
             cl = cl.getParent();
         }
-        // We should be able to create this class loader even if this is invoked from external code that lacks that
-        // permission.
         return new URLClassLoader(all.toArray(new URL[0]), null);
     }
 
