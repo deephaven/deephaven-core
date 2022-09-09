@@ -43,7 +43,6 @@ import org.jpy.PyObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.*;
@@ -766,13 +765,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         return null;
                     });
             final QueryCompiler compiler = ExecutionContext.getContext().getQueryCompiler();
-            return AccessController
-                    .doPrivileged(
-                            (PrivilegedExceptionAction<Class<?>>) () -> compiler.compile(className, classBody,
-                                    QueryCompiler.FORMULA_PREFIX,
-                                    QueryScopeParamTypeUtil.expandParameterClasses(paramClasses)));
-        } catch (PrivilegedActionException pae) {
-            throw new FormulaCompilationException("Formula compilation error for: " + what, pae.getException());
+            return compiler.compile(className, classBody, QueryCompiler.FORMULA_PREFIX,
+                    QueryScopeParamTypeUtil.expandParameterClasses(paramClasses));
         }
     }
 

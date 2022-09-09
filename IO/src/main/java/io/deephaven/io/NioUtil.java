@@ -12,8 +12,6 @@ import io.deephaven.base.verify.Require;
 import java.lang.reflect.Field;
 import java.nio.channels.Selector;
 import java.nio.channels.spi.AbstractSelector;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Set;
 
@@ -49,68 +47,63 @@ public class NioUtil {
     }
 
     private static Selector reduceSelectorGarbageImpl(Selector selector) {
-        // This code does several things that normally would be restricted, like accessing the Sun classes
-        // and changing the accessibility of fields via reflection. We need to make sure that we can do this,
-        // but client code cannot, so we need to do all of this within a 'privileged' block.
-        return AccessController.doPrivileged((PrivilegedAction<Selector>) () -> {
-            try {
-                Class<?> selectorImplClass = Class.forName("sun.nio.ch.SelectorImpl");
-                Require.instanceOf(selector, "selector", selectorImplClass);
+        try {
+            Class<?> selectorImplClass = Class.forName("sun.nio.ch.SelectorImpl");
+            Require.instanceOf(selector, "selector", selectorImplClass);
 
-                Field cancelledKeysField = AbstractSelector.class.getDeclaredField("cancelledKeys");
-                cancelledKeysField.setAccessible(true);
-                Set newCancelledKeys = new LowGarbageArraySet();
-                cancelledKeysField.set(selector, newCancelledKeys);
+            Field cancelledKeysField = AbstractSelector.class.getDeclaredField("cancelledKeys");
+            cancelledKeysField.setAccessible(true);
+            Set newCancelledKeys = new LowGarbageArraySet();
+            cancelledKeysField.set(selector, newCancelledKeys);
 
-                Field keysField = selectorImplClass.getDeclaredField("keys");
-                keysField.setAccessible(true);
-                Field publicKeysField = selectorImplClass.getDeclaredField("publicKeys");
-                publicKeysField.setAccessible(true);
-                Set newKeys = new LowGarbageArraySet();
-                keysField.set(selector, newKeys);
-                publicKeysField.set(selector, newKeys);
+            Field keysField = selectorImplClass.getDeclaredField("keys");
+            keysField.setAccessible(true);
+            Field publicKeysField = selectorImplClass.getDeclaredField("publicKeys");
+            publicKeysField.setAccessible(true);
+            Set newKeys = new LowGarbageArraySet();
+            keysField.set(selector, newKeys);
+            publicKeysField.set(selector, newKeys);
 
-                Field selectedKeysField = selectorImplClass.getDeclaredField("selectedKeys");
-                selectedKeysField.setAccessible(true);
-                Field publicSelectedKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
-                publicSelectedKeysField.setAccessible(true);
-                Set newSelectedKeys = new LowGarbageArraySet();
-                selectedKeysField.set(selector, newSelectedKeys);
-                publicSelectedKeysField.set(selector, newSelectedKeys);
+            Field selectedKeysField = selectorImplClass.getDeclaredField("selectedKeys");
+            selectedKeysField.setAccessible(true);
+            Field publicSelectedKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
+            publicSelectedKeysField.setAccessible(true);
+            Set newSelectedKeys = new LowGarbageArraySet();
+            selectedKeysField.set(selector, newSelectedKeys);
+            publicSelectedKeysField.set(selector, newSelectedKeys);
 
-                if (System.getProperty("os.name").startsWith("Windows")
-                        && System.getProperty("java.vendor").startsWith("Oracle")) {
-                    Class<?> windowsSelectorImplClass = Class.forName("sun.nio.ch.WindowsSelectorImpl");
-                    Require.instanceOf(selector, "selector", windowsSelectorImplClass);
+            if (System.getProperty("os.name").startsWith("Windows")
+                    && System.getProperty("java.vendor").startsWith("Oracle")) {
+                Class<?> windowsSelectorImplClass = Class.forName("sun.nio.ch.WindowsSelectorImpl");
+                Require.instanceOf(selector, "selector", windowsSelectorImplClass);
 
-                    Field threadsField = windowsSelectorImplClass.getDeclaredField("threads");
-                    threadsField.setAccessible(true);
-                    List newThreads = new LowGarbageArrayList();
-                    threadsField.set(selector, newThreads);
+                Field threadsField = windowsSelectorImplClass.getDeclaredField("threads");
+                threadsField.setAccessible(true);
+                List newThreads = new LowGarbageArrayList();
+                threadsField.set(selector, newThreads);
 
-                } else if (System.getProperty("os.name").startsWith("Linux")) {
-                    Class<?> ePollSelectorImplClass = Class.forName("sun.nio.ch.EPollSelectorImpl");
-                    Require.instanceOf(selector, "selector", ePollSelectorImplClass);
+            } else if (System.getProperty("os.name").startsWith("Linux")) {
+                Class<?> ePollSelectorImplClass = Class.forName("sun.nio.ch.EPollSelectorImpl");
+                Require.instanceOf(selector, "selector", ePollSelectorImplClass);
 
-                    Field fdToKeyField = ePollSelectorImplClass.getDeclaredField("fdToKey");
-                    fdToKeyField.setAccessible(true);
-                    LowGarbageArrayIntegerMap newFdToKey = new LowGarbageArrayIntegerMap();
-                    fdToKeyField.set(selector, newFdToKey);
+                Field fdToKeyField = ePollSelectorImplClass.getDeclaredField("fdToKey");
+                fdToKeyField.setAccessible(true);
+                LowGarbageArrayIntegerMap newFdToKey = new LowGarbageArrayIntegerMap();
+                fdToKeyField.set(selector, newFdToKey);
 
-                } else if (System.getProperty("os.name").startsWith("SunOS")) {
-                    Class<?> devPollSelectorImplClass = Class.forName("sun.nio.ch.DevPollSelectorImpl");
-                    Require.instanceOf(selector, "selector", devPollSelectorImplClass);
+            } else if (System.getProperty("os.name").startsWith("SunOS")) {
+                Class<?> devPollSelectorImplClass = Class.forName("sun.nio.ch.DevPollSelectorImpl");
+                Require.instanceOf(selector, "selector", devPollSelectorImplClass);
 
-                    Field fdToKeyField = devPollSelectorImplClass.getDeclaredField("fdToKey");
-                    fdToKeyField.setAccessible(true);
-                    LowGarbageArrayIntegerMap newFdToKey = new LowGarbageArrayIntegerMap();
-                    fdToKeyField.set(selector, newFdToKey);
-                }
-
-                return selector;
-            } catch (final NoSuchFieldException | IllegalAccessException | ClassNotFoundException e) {
-                throw Assert.exceptionNeverCaught(e);
+                Field fdToKeyField = devPollSelectorImplClass.getDeclaredField("fdToKey");
+                fdToKeyField.setAccessible(true);
+                LowGarbageArrayIntegerMap newFdToKey = new LowGarbageArrayIntegerMap();
+                fdToKeyField.set(selector, newFdToKey);
             }
-        });
+
+            return selector;
+        } catch (final NoSuchFieldException | IllegalAccessException | ClassNotFoundException e) {
+            throw Assert.exceptionNeverCaught(e);
+        }
     }
 }
