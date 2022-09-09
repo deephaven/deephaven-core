@@ -601,20 +601,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return rollup(aggregations, false, groupByColumns);
     }
 
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations) {
-        return rollup(aggregations, false, ZERO_LENGTH_COLUMNNAME_ARRAY);
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents) {
-        return rollup(aggregations, includeConstituents, ZERO_LENGTH_COLUMNNAME_ARRAY);
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
     // Snapshot Operations
     // -----------------------------------------------------------------------------------------------------------------
