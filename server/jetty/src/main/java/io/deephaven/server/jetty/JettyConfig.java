@@ -26,6 +26,7 @@ public abstract class JettyConfig implements ServerConfig {
     public static final int DEFAULT_PLAINTEXT_PORT = 10000;
     public static final String HTTP_WEBSOCKETS = "http.websockets";
     public static final String HTTP_HTTP1 = "http.http1";
+    public static final String HTTP_JSPLUGINS = "http.jsPlugins";
 
 
     public static Builder builder() {
@@ -48,8 +49,9 @@ public abstract class JettyConfig implements ServerConfig {
      * {@link ServerConfig#buildFromConfig(ServerConfig.Builder, Configuration)}.
      *
      * <p>
-     * Additionally, parses the property {@value HTTP_WEBSOCKETS} into {@link Builder#websockets(Boolean)} and
-     * {@value HTTP_HTTP1} into {@link Builder#http1(Boolean)}.
+     * Additionally, parses the property {@value HTTP_WEBSOCKETS} into {@link Builder#websockets(Boolean)},
+     * {@value HTTP_HTTP1} into {@link Builder#http1(Boolean)}, and {@value HTTP_JSPLUGINS} into
+     * {@link Builder#jsPlugins()}.
      *
      * @param config the config
      * @return the builder
@@ -58,11 +60,15 @@ public abstract class JettyConfig implements ServerConfig {
         final Builder builder = ServerConfig.buildFromConfig(builder(), config);
         String httpWebsockets = config.getStringWithDefault(HTTP_WEBSOCKETS, null);
         String httpHttp1 = config.getStringWithDefault(HTTP_HTTP1, null);
+        String httpJsPlugins = config.getStringWithDefault(HTTP_JSPLUGINS, null);
         if (httpWebsockets != null) {
             builder.websockets(Boolean.parseBoolean(httpWebsockets));
         }
         if (httpHttp1 != null) {
             builder.http1(Boolean.parseBoolean(httpHttp1));
+        }
+        if (httpJsPlugins != null) {
+            builder.jsPlugins(Boolean.parseBoolean(httpJsPlugins));
         }
         return builder;
     }
@@ -87,6 +93,12 @@ public abstract class JettyConfig implements ServerConfig {
      */
     @Nullable
     public abstract Boolean http1();
+
+    /**
+     * Include js-plugins.
+     */
+    @Nullable
+    public abstract Boolean jsPlugins();
 
     /**
      * Returns {@link #websockets()} if explicitly set. If {@link #proxyHint()} is {@code true}, returns {@code false}.
@@ -122,10 +134,23 @@ public abstract class JettyConfig implements ServerConfig {
         return true;
     }
 
+    /**
+     * Returns {@link #jsPlugins()} if explicitly set, otherwise defaults to {@code true}.
+     */
+    public final boolean jsPluginsOrDefault() {
+        final Boolean jsPlugins = jsPlugins();
+        if (jsPlugins != null) {
+            return jsPlugins;
+        }
+        return true;
+    }
+
     public interface Builder extends ServerConfig.Builder<JettyConfig, Builder> {
 
         Builder websockets(Boolean websockets);
 
         Builder http1(Boolean http1);
+
+        Builder jsPlugins(Boolean jsPlugins);
     }
 }

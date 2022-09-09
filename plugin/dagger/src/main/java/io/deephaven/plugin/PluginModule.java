@@ -6,6 +6,7 @@ package io.deephaven.plugin;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
+import io.deephaven.plugin.type.JsType;
 import io.deephaven.plugin.type.ObjectType;
 
 import java.util.ServiceLoader;
@@ -36,5 +37,11 @@ public interface PluginModule {
     @ElementsIntoSet
     static Set<Registration> providesServiceLoaderObjectTypes() {
         return ServiceLoader.load(ObjectType.class).stream().map(Provider::get).collect(Collectors.toSet());
+    }
+
+    @Provides
+    @ElementsIntoSet
+    static Set<Registration> providesServiceLoaderJsTypes() {
+        return ServiceLoader.load(JsType.class).stream().map(Provider::get).collect(Collectors.toSet());
     }
 }

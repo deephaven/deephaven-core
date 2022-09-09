@@ -10,6 +10,7 @@ import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
 import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
+import io.deephaven.server.jetty.jsplugin.JsPluginsModule;
 import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
 import io.deephaven.server.runner.DeephavenApiConfigModule;
@@ -30,6 +31,7 @@ import javax.inject.Singleton;
         PythonConsoleSessionModule.class,
         GroovyConsoleSessionModule.class,
         SessionToExecutionStateModule.class,
+        JsPluginsModule.class
 })
 public interface JettyServerComponent extends DeephavenApiServerComponent {
     @Component.Builder

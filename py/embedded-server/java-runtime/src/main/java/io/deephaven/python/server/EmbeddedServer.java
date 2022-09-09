@@ -19,6 +19,7 @@ import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyConfig.Builder;
 import io.deephaven.server.jetty.JettyServerModule;
+import io.deephaven.server.jetty.jsplugin.JsPluginsModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
 import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServer;
@@ -50,6 +51,7 @@ public class EmbeddedServer {
             PythonConsoleSessionModule.class,
             GroovyConsoleSessionModule.class,
             SessionToExecutionStateModule.class,
+            JsPluginsModule.class
     })
     public interface PythonServerComponent extends DeephavenApiServerComponent {
         @Component.Builder

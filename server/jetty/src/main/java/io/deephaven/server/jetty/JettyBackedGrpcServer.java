@@ -3,15 +3,15 @@
  */
 package io.deephaven.server.jetty;
 
-import io.deephaven.server.config.ServerConfig;
+import io.deephaven.server.jetty.jsplugin.JsPlugins;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.ssl.config.CiphersIntermediate;
 import io.deephaven.ssl.config.ProtocolsIntermediate;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
-import io.grpc.servlet.web.websocket.WebSocketServerStream;
 import io.grpc.servlet.jakarta.web.GrpcWebFilter;
+import io.grpc.servlet.web.websocket.WebSocketServerStream;
 import jakarta.servlet.DispatcherType;
 import jakarta.websocket.server.ServerEndpointConfig;
 import nl.altindag.ssl.SSLFactory;
@@ -50,7 +50,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
     @Inject
     public JettyBackedGrpcServer(
             final JettyConfig config,
-            final GrpcFilter filter) {
+            final GrpcFilter filter,
+            final JsPlugins jsPlugins) {
         jetty = new Server();
         jetty.addConnector(createConnector(jetty, config));
 
@@ -84,6 +85,11 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
+
+        // Set up /js-plugins/*
+        if (config.jsPluginsOrDefault()) {
+            context.addServlet(jsPlugins.servletHolder("js-plugins"), "/js-plugins/*");
+        }
 
         // Set up websocket for grpc-web
         if (config.websocketsOrDefault()) {

@@ -8,6 +8,7 @@ import deephaven.plugin
 from typing import Union, Type
 from deephaven.plugin import Plugin, Registration
 from deephaven.plugin.object import ObjectType
+from deephaven.plugin.js import JsType
 from .object import ObjectTypeAdapter
 
 _JCallbackAdapter = jpy.get_type('io.deephaven.server.plugin.python.CallbackAdapter')
@@ -27,6 +28,9 @@ class RegistrationAdapter(Registration.Callback):
             plugin = plugin()
         if isinstance(plugin, ObjectType):
             self._callback.registerObjectType(plugin.name, ObjectTypeAdapter(plugin))
+        elif isinstance(plugin, JsType):
+            with plugin.path() as path:
+                self._callback.registerJsType(str(path))
         else:
             raise NotImplementedError
 

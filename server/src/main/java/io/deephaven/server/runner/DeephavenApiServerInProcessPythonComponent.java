@@ -9,6 +9,7 @@ import io.deephaven.server.console.SessionToExecutionStateModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
 import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
 import io.deephaven.server.log.LogModule;
+import io.deephaven.server.plugin.type.JsTypesNoOpModule;
 import io.grpc.ManagedChannelBuilder;
 
 import javax.inject.Named;
@@ -23,6 +24,7 @@ import java.io.PrintStream;
         PythonGlobalScopeCopyModule.class,
         ServerBuilderInProcessModule.class,
         SessionToExecutionStateModule.class,
+        JsTypesNoOpModule.class
 })
 public interface DeephavenApiServerInProcessPythonComponent {
 
