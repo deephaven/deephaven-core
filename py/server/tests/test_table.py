@@ -625,11 +625,11 @@ class TableTestCase(BaseTestCase):
 
     def test_nested_scopes(self):
         _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-        context = _JExecutionContext.newBuilder() \
-            .captureQueryCompiler() \
-            .captureQueryLibrary() \
-            .captureQueryScope() \
-            .build()
+        context = (_JExecutionContext.newBuilder()
+                   .captureQueryCompiler()
+                   .captureQueryLibrary()
+                   .captureQueryScope()
+                   .build())
 
         def inner_func(p) -> str:
             openContext = context.open()
