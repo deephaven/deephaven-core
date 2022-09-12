@@ -1001,7 +1001,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         seekRowRequest.setContains(contains);
         seekRowRequest.setIsBackward(isBackwards);
 
-        return Callbacks.<SeekRowResponse, String>promise(null, c -> workerConnection.tableServiceClient().seekRow(seekRowRequest, workerConnection.metadata(), c))
+        return Callbacks.<SeekRowResponse, Object>grpcUnaryPromise(c -> workerConnection.tableServiceClient().seekRow(seekRowRequest, workerConnection.metadata(), c::apply))
                 .then(seekRowResponse -> Promise.resolve(LongWrapper.ofString(seekRowResponse.getResultRow())));
     }
 
